@@ -409,7 +409,8 @@ def merge_anchors(anchors, n_R, n_P, g_R=None, g_P=None):
 
 # -------------------- expansion + core detection --------------------
 
-def expand_mapping(mapping, g_R, g_P, max_passes=20):
+def expand_mapping(mapping, g_R, g_P,
+                   events=None, atom_island_R=None, atom_island_P=None):
     """
     Pure-connectivity expansion from already-mapped atoms. For each mapped
     pair (u, v), pair u's unmapped R-neighbors with v's unmapped
@@ -417,10 +418,22 @@ def expand_mapping(mapping, g_R, g_P, max_passes=20):
     pairing in arbitrary order (symmetric atoms like methyl Hs are
     interchangeable). If counts differ, leave them unmapped -- that's a
     real connectivity change at this atom, i.e. reaction-core.
+    Loops until no further progress is made.
+
+    Optional trace recording:
+      events         : list to receive island_locked events (one per
+                       (parent, element) group).
+      atom_island_R  : dict to receive R-atom -> island_id map. Newly
+                       paired atoms inherit the parent's island.
+      atom_island_P  : dict to receive P-atom -> island_id map.
     """
+    record = events is not None
+    track = atom_island_R is not None and atom_island_P is not None
     inv = {v: k for k, v in mapping.items()}
-    for _ in range(max_passes):
+    pass_no = 0
+    while True:
         progressed = False
+        pass_no += 1
         for u in list(mapping.keys()):
             v = mapping[u]
             r_groups = defaultdict(list)
@@ -437,10 +450,33 @@ def expand_mapping(mapping, g_R, g_P, max_passes=20):
                 ps = p_groups.get(el, [])
                 if len(ps) != len(rs):
                     continue  # connectivity change here, leave unmapped
+                if track:
+                    parent_island = atom_island_R.get(u)
+                    if parent_island is None:
+                        parent_island = _next_island_id(atom_island_R)
+                        atom_island_R[u] = parent_island
+                        atom_island_P[v] = parent_island
+                paired = []
                 for w, x in zip(rs, ps):
                     mapping[w] = x
                     inv[x] = w
                     progressed = True
+                    if track:
+                        atom_island_R[w] = parent_island
+                        atom_island_P[x] = parent_island
+                    if record:
+                        paired.append((int(w), int(x)))
+                if record and paired:
+                    events.append({
+                        'type': 'island_locked',
+                        'island_idx': parent_island if track else None,
+                        'pairs': paired,
+                        'merged_with': [],
+                        'relabeled': [],
+                        'mapped_total': len(mapping),
+                        'expand_pass': pass_no,
+                        'parent_atom': int(u),
+                    })
         if not progressed:
             break
     return mapping
@@ -458,6 +494,23 @@ def _set_unique(cands):
         return True
     s0 = frozenset(cands[0].values())
     return all(frozenset(c.values()) == s0 for c in cands[1:])
+
+
+def _p_atoms_from_cands(cands):
+    """Union of P atoms across all candidate isos. Used for trace events
+    so the visualizer can color every P-atom currently still-possible as
+    an image of the growing fragment."""
+    out = set()
+    for c in cands:
+        for v in c.values():
+            out.add(int(v))
+    return sorted(out)
+
+
+def _next_island_id(atom_island_R):
+    """Smallest unused island id. Used by find_islands and expand_mapping
+    when allocating ids during trace recording."""
+    return max(atom_island_R.values(), default=0) + 1
 
 
 def _filter_cands_by_cross_bonds(cands, fragment, mapping, g_R, g_P, wbo_tol):
@@ -555,11 +608,15 @@ def grow_island(g_R, g_P, seed, mapping, inv,
                 wbo_tol=0.5,
                 growth_min_wbo=0.6,
                 top_degen=0.1,
-                max_lock_cands=100,
-                min_lock_size=2):
+                min_lock_size=2,
+                events=None):
     """
-    Grow a fragment from `seed` in g_R and lock it as an island when it
-    matches uniquely (or with a small symmetry-equivalent set) in g_P.
+    Grow a fragment from `seed` in g_R and lock it as an island when
+    growth halts. Any cand surviving the chemistry-boundary stop has
+    the same fragment and the same WBO-consistent assignment up to
+    symmetric atoms (e.g. methyl Hs); picking candidates[0] is safe
+    because all surviving cands are chemically equivalent. No cand-
+    count cap.
 
     --- Inputs ---
     g_R, g_P     : NetworkX undirected graphs of R and P (nodes have
@@ -581,48 +638,97 @@ def grow_island(g_R, g_P, seed, mapping, inv,
                             shell's max-WBO are considered (top-1 with
                             small-tie tolerance for chemically-equivalent
                             bonds).
-    max_lock_cands  (8)   : how many candidate isos we still accept as
-                            "symmetry-degenerate" at growth halt. >8 is
-                            treated as too ambiguous -> reject.
-    min_lock_size   (2)   : require the fragment to have grown beyond
-                            just the seed before it can lock. Singletons
-                            (size 1) are always rejected.
+    min_lock_size   (2)   : minimum fragment size for a lock. Default 2
+                            prevents singleton seeds from polluting the
+                            mapping during main growth (a low-idx singleton
+                            could steal symmetric atoms that a higher-idx
+                            big seed needs for its iso). Truly leftover
+                            atoms are paired by `residual_pair` after
+                            expand_mapping.
+    events          (None): if a list is passed, every seed_start /
+                            commit / seed_end decision is appended to it
+                            for visualization. Behavior is identical
+                            with or without recording.
 
     --- Termination ---
     Returns the iso (dict R->P) when:
-      * cands == 1, or
+      * cands are set-unique (early lock), or
       * growth halts (frontier exhausted / no strong frontier / no
-        extension keeps any cand alive) AND cands <= max_lock_cands AND
-        fragment_size >= min_lock_size.
-    Returns None otherwise (chemistry-boundary or too-ambiguous seed).
+        extension keeps any cand alive) AND fragment_size >= min_lock_size.
+    Returns None otherwise (chemistry boundary kicked all cands).
     """
-    # Hardcoded safety caps (rarely tweaked).
-    max_cands_hard = 2000  # cap during growth to prevent memory blowup
-    max_iters = g_R.number_of_nodes()  # outer-loop safety, rarely tight
+    max_cands_hard = 2000
+    max_iters = g_R.number_of_nodes()
+    record = events is not None
 
-    # ... (after seed init below, before main loop, we'll do an eager
-    # mapped-frontier absorption at every step)
     if seed in mapping:
         return None
     seed_el = g_R.nodes[seed]['element']
     candidates = [{seed: v} for v in g_P.nodes()
                   if v not in inv and g_P.nodes[v]['element'] == seed_el]
     if not candidates:
+        if record:
+            events.append({'type': 'seed_start', 'seed': seed,
+                           'init_cands': 0, 'p_atoms': []})
+            events.append({'type': 'seed_end', 'result': 'no_initial_cands'})
         return None
     fragment = {seed}
-    distance = {seed: 0}  # graph distance from seed within fragment
+    distance = {seed: 0}
+    if record:
+        events.append({
+            'type': 'seed_start',
+            'seed': seed,
+            'init_cands': len(candidates),
+            'fragment': sorted(fragment),
+            'p_atoms': _p_atoms_from_cands(candidates),
+        })
+
+    def _try_lock(reason):
+        # POLICY: when growth has halted (frontier exhausted, no strong
+        # frontier, or all extensions cut) and cands remain non-empty,
+        # commit candidates[0]. The cands all share the same fragment
+        # and the same WBO-consistent assignment; any remaining
+        # ambiguity is symmetry over interchangeable atoms (methyl Hs,
+        # equivalent ligands), where every cand gives the same bond-
+        # classification result. We do not score / tiebreak — pick any.
+        ok = bool(candidates) and len(fragment) >= min_lock_size
+        if record:
+            events.append({
+                'type': 'seed_end',
+                'result': 'success' if ok else reason,
+                'final_cands': len(candidates),
+                'fragment': sorted(fragment),
+                'iso': ({int(k): int(v) for k, v in candidates[0].items()}
+                        if ok else None),
+            })
+        return candidates[0] if ok else None
+
     for _ in range(max_iters):
-        # PHASE A: eagerly absorb any frontier atoms that are already in
-        # `mapping` (previously-locked island atoms). Each absorption
-        # pins its image and narrows cands.
+        # PHASE A: eagerly absorb any frontier atoms already in `mapping`
+        # (previously-locked island atoms). Each absorption pins its
+        # image and narrows cands.
         fragment, candidates = _absorb_mapped_frontier(
             g_R, g_P, fragment, candidates, mapping, inv, wbo_tol,
             distance=distance)
         if not candidates:
+            if record:
+                events.append({
+                    'type': 'seed_end', 'result': 'absorb_failed',
+                    'final_cands': 0,
+                    'fragment': sorted(fragment),
+                    'iso': None,
+                })
             return None
-        # Set-uniqueness: lock when all isos describe the same P-atom set
-        # (symmetry-induced sequence permutations are accepted).
+        # Set-uniqueness: lock when all isos cover the same P-atom set
+        # (symmetry-induced sequence permutations accepted).
         if _set_unique(candidates):
+            if record:
+                events.append({
+                    'type': 'seed_end', 'result': 'success',
+                    'final_cands': len(candidates),
+                    'fragment': sorted(fragment),
+                    'iso': {int(k): int(v) for k, v in candidates[0].items()},
+                })
             return candidates[0]
         frontier = set()
         for u in fragment:
@@ -630,85 +736,147 @@ def grow_island(g_R, g_P, seed, mapping, inv,
                 if n not in fragment:
                     frontier.add(n)
         if not frontier:
-            # Whole connected component absorbed. Lock if set-unique
-            # (all cands cover same P-atom set) and fragment grew.
-            if _set_unique(candidates) and len(fragment) >= min_lock_size:
-                return candidates[0]
-            return None
+            return _try_lock('no_frontier')
 
         # Only consider strong-bonded frontier atoms.
         frontier_info = {}
+        filter_reason = {}
         for n in frontier:
             bonded = [u for u in g_R.neighbors(n) if u in fragment]
             max_w = max(g_R[u][n]['wbo'] for u in bonded)
-            if max_w < growth_min_wbo:
-                continue
-            # Distance from seed = 1 + min distance of any bonded fragment atom
             dist = 1 + min(distance[u] for u in bonded if u in distance)
+            if max_w < growth_min_wbo:
+                if record:
+                    filter_reason[n] = (f'wbo<{growth_min_wbo}', max_w, dist)
+                continue
             frontier_info[n] = (dist, max_w)
         if not frontier_info:
-            # Only weak (<0.6) frontier remaining. Lock if set-unique.
-            if _set_unique(candidates) and len(fragment) >= min_lock_size:
-                return candidates[0]
-            return None
+            return _try_lock('no_strong_frontier')
 
-        # BFS-by-distance-from-seed FIRST: grow seed's direct neighbors
-        # before going to second-shell atoms. Within the same distance
-        # shell, apply top-1 WBO with `top_degen` tolerance.
-        min_dist = min(d for (d, _) in frontier_info.values())
-        same_shell = {n: w for n, (d, w) in frontier_info.items() if d == min_dist}
-        top_w = max(same_shell.values())
-        top_band = [n for n, w in same_shell.items() if w >= top_w - top_degen]
-
+        # BFS-by-distance-from-seed PREFERRED: try closest shell first,
+        # but if no extension works there, fall back to further shells
+        # (any atom in fragment can propagate). "If 16 ways, keep
+        # propagating from any atom in island."
+        shells_sorted = sorted(set(d for (d, _) in frontier_info.values()))
         best_n = None
         best_cands = None
-        for n in top_band:
-            n_el = g_R.nodes[n]['element']
-            bonded_in_frag = [u for u in g_R.neighbors(n) if u in fragment]
-            r_wbos = [(u, g_R[u][n]['wbo']) for u in bonded_in_frag]
-            n_pinned = mapping.get(n, None)  # soft merge constraint
-            new_cands = []
-            over = False
-            for cand in candidates:
-                used_p = set(cand.values())
-                v_set = set(g_P.neighbors(cand[bonded_in_frag[0]]))
-                for u in bonded_in_frag[1:]:
-                    v_set &= set(g_P.neighbors(cand[u]))
-                v_set -= used_p
-                if n_pinned is not None:
-                    v_set = v_set & {n_pinned}
-                for v in v_set:
-                    if g_P.nodes[v]['element'] != n_el:
+        tries = []
+        chosen_shell = None
+        chosen_top_w = None
+        for cur_dist in shells_sorted:
+            same_shell = {n: w for n, (d, w) in frontier_info.items() if d == cur_dist}
+            top_w = max(same_shell.values())
+            tier_top = [n for n, w in same_shell.items() if w >= top_w - top_degen]
+            tier_rest = [n for n, w in same_shell.items() if w < top_w - top_degen]
+            # Two tiers per shell: top-WBO band first, then lower-WBO
+            # fallback. If top band all cut (e.g. chemistry-boundary
+            # high-WBO bond like a C=C → C-C), try other propagation
+            # directions from the fragment before giving up the shell.
+            for tier_atoms in (tier_top, tier_rest):
+                for n in tier_atoms:
+                    n_el = g_R.nodes[n]['element']
+                    bonded_in_frag = [u for u in g_R.neighbors(n) if u in fragment]
+                    r_wbos = [(u, g_R[u][n]['wbo']) for u in bonded_in_frag]
+                    n_pinned = mapping.get(n, None)
+                    new_cands = []
+                    over = False
+                    for cand in candidates:
+                        used_p = set(cand.values())
+                        v_set = set(g_P.neighbors(cand[bonded_in_frag[0]]))
+                        for u in bonded_in_frag[1:]:
+                            v_set &= set(g_P.neighbors(cand[u]))
+                        v_set -= used_p
+                        if n_pinned is not None:
+                            v_set = v_set & {n_pinned}
+                        for v in v_set:
+                            if g_P.nodes[v]['element'] != n_el:
+                                continue
+                            if all(abs(w - g_P[cand[u]][v]['wbo']) <= wbo_tol
+                                   for u, w in r_wbos):
+                                nc = dict(cand); nc[n] = v
+                                new_cands.append(nc)
+                                if len(new_cands) > max_cands_hard:
+                                    over = True; break
+                        if over: break
+                    if record:
+                        decision = 'CUT' if (over or not new_cands) else 'ok'
+                        wbo_str = ', '.join(f'{u}:{w:.2f}' for u, w in r_wbos)
+                        max_w_to_frag = max(w for _, w in r_wbos) if r_wbos else 0.0
+                        min_d = 1 + min(distance[u] for u, _ in r_wbos
+                                        if u in distance)
+                        tries.append({
+                            'atom': int(n),
+                            'element': g_R.nodes[n]['element'],
+                            'new_cands': len(new_cands),
+                            'over': over,
+                            'decision': decision,
+                            'max_wbo_to_frag': round(max_w_to_frag, 3),
+                            'wbo_bonds': wbo_str,
+                            'distance_from_seed': min_d,
+                            'shell_attempted': cur_dist,
+                        })
+                    if over or not new_cands:
                         continue
-                    if all(abs(w - g_P[cand[u]][v]['wbo']) <= wbo_tol
-                           for u, w in r_wbos):
-                        nc = dict(cand); nc[n] = v
-                        new_cands.append(nc)
-                        if len(new_cands) > max_cands_hard:
-                            over = True; break
-                if over: break
-            if over or not new_cands:
-                continue
-            if best_cands is None or len(new_cands) < len(best_cands):
-                best_n = n
-                best_cands = new_cands
+                    if best_cands is None or len(new_cands) < len(best_cands):
+                        best_n = n
+                        best_cands = new_cands
+                        chosen_shell = cur_dist
+                        chosen_top_w = top_w
+                if best_n is not None:
+                    break  # extension found at this tier -- commit it
+            if best_n is not None:
+                break  # extension found at this shell -- commit it
+
         if best_n is None:
-            # No extension keeps any candidate alive. Lock if set-unique.
-            if _set_unique(candidates) and len(fragment) >= min_lock_size:
-                return candidates[0]
-            return None
+            return _try_lock('all_cut')
+
+        # Build step_info for this commit BEFORE we extend.
+        step_info = None
+        if record:
+            if chosen_shell is None:
+                chosen_shell = shells_sorted[0] if shells_sorted else 0
+                chosen_top_w = max((w for (_, w) in frontier_info.values()),
+                                   default=0.0)
+            filtered = [{
+                'atom': int(n),
+                'element': g_R.nodes[n]['element'],
+                'max_wbo_to_frag': round(w, 3),
+                'distance_from_seed': d,
+                'filtered_reason': reason,
+            } for n, (reason, w, d) in filter_reason.items()]
+            step_info = {
+                'cands_before': len(candidates),
+                'shell': chosen_shell,
+                'top_wbo': round(chosen_top_w, 3),
+                'tried': tries,
+                'filtered': filtered,
+            }
+
         fragment.add(best_n)
-        # Update distance for the newly committed atom
-        bonded_in_frag = [u for u in g_R.neighbors(best_n) if u in fragment - {best_n}]
+        bonded_in_frag = [u for u in g_R.neighbors(best_n)
+                          if u in fragment - {best_n}]
         distance[best_n] = 1 + min(distance[u] for u in bonded_in_frag)
         candidates = best_cands
-    # End of max_iters loop
-    if _set_unique(candidates) and len(fragment) >= min_lock_size:
-        return candidates[0]
-    return None
+        if record:
+            commit_bonds = [(u, round(g_R[u][best_n]['wbo'], 3))
+                            for u in bonded_in_frag]
+            events.append({
+                'type': 'commit',
+                'added': int(best_n),
+                'element': g_R.nodes[best_n]['element'],
+                'cands': len(candidates),
+                'fragment': sorted(fragment),
+                'p_atoms': _p_atoms_from_cands(candidates),
+                'distance_from_seed': distance[best_n],
+                'bonds_to_fragment': commit_bonds,
+                'step_info': step_info,
+            })
+
+    return _try_lock('max_iters')
 
 
-def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P, wbo_tol=0.5):
+def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P,
+                           wbo_tol=0.5, events=None):
     """
     After all seeds are tried, find every pair of islands (A, B) that
     share at least one direct edge in g_R (i.e., an atom in A is bonded
@@ -720,11 +888,14 @@ def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P, wbo_
     is reaction chemistry).
     Iterates until no more merges happen (A merges into B may enable
     a transitive (A+B)-C merge).
+
+    Optional `events` list receives island_locked events with
+    island_island_merge=True and cross_bonds metadata.
     """
+    record = events is not None
     progressed = True
     while progressed:
         progressed = False
-        # Find all (A, B) pairs that touch (and aren't the same island)
         seen = set()
         for u, v in g_R.edges():
             iA = atom_island_R.get(u)
@@ -735,8 +906,8 @@ def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P, wbo_
             if pair in seen:
                 continue
             seen.add(pair)
-            # Validate merge: every cross-island bond must agree on WBO
             ok = True
+            cross_bonds = [] if record else None
             for x, y in g_R.edges():
                 ixA = atom_island_R.get(x)
                 ixB = atom_island_R.get(y)
@@ -749,44 +920,123 @@ def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P, wbo_
                 wP = g_P[px][py]['wbo']
                 if abs(wR - wP) > wbo_tol:
                     ok = False; break
+                if record:
+                    cross_bonds.append((int(x), int(y),
+                                        round(wR, 3), round(wP, 3)))
             if not ok:
                 continue
-            # Merge: pick the smaller id and relabel
             keep, drop = pair
+            relabeled = []
             for r, idx in list(atom_island_R.items()):
                 if idx == drop:
+                    if record:
+                        relabeled.append((int(r), int(drop)))
                     atom_island_R[r] = keep
                     atom_island_P[mapping[r]] = keep
+            if record:
+                events.append({
+                    'type': 'island_locked',
+                    'island_idx': keep,
+                    'pairs': [],
+                    'merged_with': [drop],
+                    'relabeled': relabeled,
+                    'mapped_total': len(mapping),
+                    'island_island_merge': True,
+                    'cross_bonds': cross_bonds,
+                })
             progressed = True
             break
     return mapping, atom_island_R, atom_island_P
 
 
-def find_islands(g_R, g_P, wbo_tol=0.5):
+def find_islands(g_R, g_P, wbo_tol=0.5,
+                 events=None, atom_island_R=None, atom_island_P=None):
     """
     Iteratively grow islands with soft merge. Each pass walks every
     unmapped seed; if grow_island returns a unique iso, commit it
     (which may merge with already-locked islands automatically because
     grow_island treats mapped neighbors as constraints). Stop when a
     pass commits nothing. Atoms never mapped are the reaction core.
+
+    Optional trace recording:
+      events         : list to receive pass_start / seed_* / commit /
+                       island_locked events.
+      atom_island_R  : dict to receive R-atom -> island_id map.
+      atom_island_P  : dict to receive P-atom -> island_id map.
+    All three are independent — pass any subset.
     """
+    record = events is not None
+    track = atom_island_R is not None and atom_island_P is not None
     mapping = {}
     inv = {}
     n_islands = 0
+    pass_no = 0
     while True:
         progressed = False
+        pass_no += 1
+        if record:
+            events.append({'type': 'pass_start', 'pass': pass_no,
+                           'mapped': len(mapping)})
         for seed in sorted(g_R.nodes()):
             if seed in mapping:
                 continue
-            iso = grow_island(g_R, g_P, seed, mapping, inv, wbo_tol=wbo_tol)
+            iso = grow_island(g_R, g_P, seed, mapping, inv,
+                              wbo_tol=wbo_tol, events=events)
             if iso is None:
                 continue
+
+            # Determine which existing islands this iso touches and pick
+            # the surviving id. When not tracking, just allocate fresh.
+            if track:
+                touched = set()
+                for r in iso.keys():
+                    if r in atom_island_R:
+                        touched.add(atom_island_R[r])
+                if touched:
+                    merged_id = min(touched)
+                else:
+                    merged_id = _next_island_id(atom_island_R)
+            else:
+                touched = set()
+                merged_id = None
+
+            committed_new = []
+            relabeled = []
             for r, p in iso.items():
-                if r not in mapping and p not in inv:
+                if r not in mapping:
                     mapping[r] = p
                     inv[p] = r
+                    if track:
+                        atom_island_R[r] = merged_id
+                        atom_island_P[p] = merged_id
+                    if record:
+                        committed_new.append((int(r), int(p)))
+                elif track and atom_island_R.get(r) != merged_id:
+                    if record:
+                        relabeled.append((int(r), int(atom_island_R[r])))
+                    atom_island_R[r] = merged_id
+                    atom_island_P[mapping[r]] = merged_id
+            if track:
+                for r in list(atom_island_R.keys()):
+                    if (atom_island_R[r] in touched
+                            and atom_island_R[r] != merged_id):
+                        if record:
+                            relabeled.append((int(r), int(atom_island_R[r])))
+                        atom_island_R[r] = merged_id
+                        atom_island_P[mapping[r]] = merged_id
+
             n_islands += 1
             progressed = True
+            if record:
+                events.append({
+                    'type': 'island_locked',
+                    'island_idx': merged_id if track else n_islands,
+                    'pairs': committed_new,
+                    'merged_with': (sorted(touched - {merged_id})
+                                    if track else []),
+                    'relabeled': relabeled,
+                    'mapped_total': len(mapping),
+                })
         if not progressed:
             break
     return mapping, n_islands

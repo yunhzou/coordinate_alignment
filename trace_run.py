@@ -1,7 +1,9 @@
 """
-Run grow_island with trace logging on a single step, then build an HTML
-animation showing each seed attempt, fragment growth, cand count, and
-cut/commit decisions.
+Render an HTML animation of grow_island's decisions on a single benchmark
+step. The algorithm itself lives in rxn_core_frag; this module is a
+thin renderer that calls the production functions with event/island
+recording enabled, then turns the resulting event log into a slider-
+driven 3Dmol view.
 """
 
 from __future__ import annotations
@@ -10,390 +12,35 @@ import sys
 from pathlib import Path
 
 from rxn_core_frag import (
-    run_xtb, build_graph, expand_mapping, classify_bonds,
-    write_xyz_str,
+    run_xtb, build_graph, write_xyz_str,
+    find_islands, expand_mapping, merge_touching_islands,
 )
 
 
-def _p_atoms_from_cands(cands):
-    """Return the union of P atoms across ALL candidate isos -- so the
-    user can see every place in the product where the current R fragment
-    could potentially be mapped. As the fragment grows and cands narrows,
-    this set shrinks. When cands == 1, this equals the unique iso's
-    image."""
-    out = set()
-    for c in cands:
-        for v in c.values():
-            out.add(int(v))
-    return sorted(out)
-
-
-def grow_island_traced(g_R, g_P, seed, mapping, inv,
-                       wbo_tol=0.5, growth_min_wbo=0.6, top_degen=0.1,
-                       max_lock_cands=100, min_lock_size=2):
-    max_cands_hard = 2000
-    max_iters = g_R.number_of_nodes()
-    """Same logic as grow_island, but records every decision into `events`."""
+def find_islands_with_trace(g_R, g_P, wbo_tol=0.5):
+    """Run the full island-finder pipeline (seed grow + expand + island
+    merge) with event/island recording enabled. Returns (mapping, events).
+    The algorithm matches `analyze` in rxn_core_frag exactly -- this is
+    just the same code paths with optional logging turned on."""
     events = []
-    if seed in mapping:
-        return None, events
-    seed_el = g_R.nodes[seed]['element']
-    candidates = [{seed: v} for v in g_P.nodes()
-                  if v not in inv and g_P.nodes[v]['element'] == seed_el]
-    if not candidates:
-        events.append({'type': 'seed_start', 'seed': seed, 'init_cands': 0,
-                       'p_atoms': []})
-        events.append({'type': 'seed_end', 'result': 'no_initial_cands'})
-        return None, events
-    fragment = {seed}
-    distance = {seed: 0}
-    events.append({
-        'type': 'seed_start',
-        'seed': seed,
-        'init_cands': len(candidates),
-        'fragment': sorted(fragment),
-        'p_atoms': _p_atoms_from_cands(candidates),
-    })
-    for _ in range(max_iters):
-        if len(candidates) == 1:
-            events.append({
-                'type': 'seed_end', 'result': 'success',
-                'final_cands': len(candidates),
-                'fragment': sorted(fragment),
-                'iso': {int(k): int(v) for k, v in candidates[0].items()},
-            })
-            return candidates[0], events
-        frontier = set()
-        for u in fragment:
-            for n in g_R.neighbors(u):
-                if n not in fragment:
-                    frontier.add(n)
-        if not frontier:
-            ok = (bool(candidates) and len(candidates) <= max_lock_cands
-                  and len(fragment) >= min_lock_size)
-            events.append({
-                'type': 'seed_end',
-                'result': 'success' if ok else 'no_frontier',
-                'final_cands': len(candidates),
-                'fragment': sorted(fragment),
-                'iso': {int(k): int(v) for k, v in candidates[0].items()} if ok else None,
-            })
-            return (candidates[0] if ok else None), events
-
-        # Compute frontier info: distance from seed + max WBO; track WHY
-        # each frontier atom was filtered (so the trace can explain it).
-        frontier_info = {}
-        filter_reason = {}  # atom -> reason string
-        for n in frontier:
-            bonded = [u for u in g_R.neighbors(n) if u in fragment]
-            max_w = max(g_R[u][n]['wbo'] for u in bonded)
-            dist = 1 + min(distance[u] for u in bonded if u in distance)
-            if max_w < growth_min_wbo:
-                filter_reason[n] = (f'wbo<{growth_min_wbo}', max_w, dist)
-                continue
-            frontier_info[n] = (dist, max_w)
-        if not frontier_info:
-            ok = (bool(candidates) and len(candidates) <= max_lock_cands
-                  and len(fragment) >= min_lock_size)
-            events.append({
-                'type': 'seed_end',
-                'result': 'success' if ok else 'no_strong_frontier',
-                'final_cands': len(candidates),
-                'fragment': sorted(fragment),
-                'iso': {int(k): int(v) for k, v in candidates[0].items()} if ok else None,
-            })
-            return (candidates[0] if ok else None), events
-        # BFS by distance, then top-WBO within shell
-        min_dist = min(d for (d, _) in frontier_info.values())
-        for n, (d, w) in frontier_info.items():
-            if d != min_dist:
-                filter_reason[n] = (f'shell={d}>min_shell={min_dist}', w, d)
-        same_shell = {n: w for n, (d, w) in frontier_info.items() if d == min_dist}
-        top_w = max(same_shell.values())
-        for n, w in same_shell.items():
-            if w < top_w - top_degen:
-                filter_reason[n] = (f'wbo {w:.2f} < top {top_w:.2f} - {top_degen}',
-                                    w, min_dist)
-        strong_frontier = [n for n, w in same_shell.items() if w >= top_w - top_degen]
-
-        best_n = None
-        best_cands = None
-        tries = []
-        for n in strong_frontier:
-            n_el = g_R.nodes[n]['element']
-            bonded = [u for u in g_R.neighbors(n) if u in fragment]
-            r_wbos = [(u, g_R[u][n]['wbo']) for u in bonded]
-            n_pinned = mapping.get(n, None)
-            new_cands = []
-            over = False
-            for cand in candidates:
-                used_p = set(cand.values())
-                v_set = set(g_P.neighbors(cand[bonded[0]]))
-                for u in bonded[1:]:
-                    v_set &= set(g_P.neighbors(cand[u]))
-                v_set -= used_p
-                if n_pinned is not None:
-                    v_set = v_set & {n_pinned}
-                for v in v_set:
-                    if g_P.nodes[v]['element'] != n_el:
-                        continue
-                    if all(abs(w - g_P[cand[u]][v]['wbo']) <= wbo_tol
-                           for u, w in r_wbos):
-                        nc = dict(cand); nc[n] = v
-                        new_cands.append(nc)
-                        if len(new_cands) > max_cands_hard:
-                            over = True; break
-                if over: break
-            decision = 'CUT' if (over or not new_cands) else 'ok'
-            # Connecting bond WBO(s) and distance from seed
-            wbo_str = ', '.join(f'{u}:{w:.2f}' for u, w in r_wbos)
-            max_w = max(w for _, w in r_wbos) if r_wbos else 0.0
-            min_d = 1 + min(distance[u] for u, _ in r_wbos if u in distance)
-            tries.append({
-                'atom': int(n),
-                'element': g_R.nodes[n]['element'],
-                'new_cands': len(new_cands),
-                'over': over,
-                'decision': decision,
-                'max_wbo_to_frag': round(max_w, 3),
-                'wbo_bonds': wbo_str,
-                'distance_from_seed': min_d,
-            })
-            if not new_cands or over:
-                continue
-            if best_cands is None or len(new_cands) < len(best_cands):
-                best_n = n
-                best_cands = new_cands
-        # NO tries event -- user wants only commit/seed frames.
-        # Capture the tried/filtered metadata to attach to the next commit.
-        filtered = []
-        for n, (reason, w, d) in filter_reason.items():
-            filtered.append({
-                'atom': int(n),
-                'element': g_R.nodes[n]['element'],
-                'max_wbo_to_frag': round(w, 3),
-                'distance_from_seed': d,
-                'filtered_reason': reason,
-            })
-        _step_info = {
-            'cands_before': len(candidates),
-            'shell': min_dist,
-            'top_wbo': round(top_w, 3),
-            'tried': tries,
-            'filtered': filtered,
-        }
-        if best_n is None:
-            ok = (bool(candidates) and len(candidates) <= max_lock_cands
-                  and len(fragment) >= min_lock_size)
-            events.append({
-                'type': 'seed_end',
-                'result': 'success' if ok else 'all_cut',
-                'final_cands': len(candidates),
-                'fragment': sorted(fragment),
-                'iso': {int(k): int(v) for k, v in candidates[0].items()} if ok else None,
-            })
-            return (candidates[0] if ok else None), events
-        fragment.add(best_n)
-        bonded_in_frag = [u for u in g_R.neighbors(best_n) if u in fragment - {best_n}]
-        distance[best_n] = 1 + min(distance[u] for u in bonded_in_frag)
-        commit_bonds = [(u, round(g_R[u][best_n]['wbo'], 3)) for u in bonded_in_frag]
-        candidates = best_cands
-        events.append({
-            'type': 'commit',
-            'added': int(best_n),
-            'element': g_R.nodes[best_n]['element'],
-            'cands': len(candidates),
-            'fragment': sorted(fragment),
-            'p_atoms': _p_atoms_from_cands(candidates),
-            'distance_from_seed': distance[best_n],
-            'bonds_to_fragment': commit_bonds,
-            # Step metadata: what was considered before this commit
-            'step_info': _step_info,
-        })
-    ok = (bool(candidates) and len(candidates) <= max_lock_cands
-          and len(fragment) >= min_lock_size)
-    events.append({
-        'type': 'seed_end',
-        'result': 'success' if ok else 'max_iters',
-        'final_cands': len(candidates),
-        'fragment': sorted(fragment),
-        'iso': {int(k): int(v) for k, v in candidates[0].items()} if ok else None,
-    })
-    return (candidates[0] if ok else None), events
-
-
-def find_islands_traced(g_R, g_P, wbo_tol=0.5):
-    """STRICTLY SEQUENTIAL trace: walk seed atoms in order, try each one
-    exactly once, fully propagate or abort, move to next. No multi-pass
-    retry, no parallel seed exploration."""
-    mapping = {}
-    inv = {}
     atom_island_R = {}
     atom_island_P = {}
-    all_events = []
-    n_islands_total = 0
-    all_events.append({'type': 'pass_start', 'pass': 1, 'mapped': 0})
-    if True:  # single pass
-        for seed in sorted(g_R.nodes()):
-            if seed in mapping:
-                continue
-            iso, events = grow_island_traced(
-                g_R, g_P, seed, mapping, inv, wbo_tol=wbo_tol)
-            all_events.extend(events)
-            if iso is None:
-                continue
-
-            # Determine which existing islands this iso touches
-            touched = set()
-            for r in iso.keys():
-                if r in atom_island_R:
-                    touched.add(atom_island_R[r])
-            # Pick a canonical id: smallest touched, or new id if none
-            if touched:
-                merged_id = min(touched)
-            else:
-                n_islands_total += 1
-                merged_id = n_islands_total
-
-            # Commit new atoms to the merged_id; relabel old atoms in touched
-            committed_new = []
-            relabeled = []
-            for r, p in iso.items():
-                if r not in mapping:
-                    mapping[r] = p
-                    inv[p] = r
-                    atom_island_R[r] = merged_id
-                    atom_island_P[p] = merged_id
-                    committed_new.append((int(r), int(p)))
-                else:
-                    # Relabel if this atom was in a different (touched) island
-                    if atom_island_R.get(r) != merged_id:
-                        relabeled.append((int(r), int(atom_island_R[r])))
-                        atom_island_R[r] = merged_id
-                        atom_island_P[mapping[r]] = merged_id
-            # Also relabel any other atoms whose island_id is in `touched`
-            for r in list(atom_island_R.keys()):
-                if atom_island_R[r] in touched and atom_island_R[r] != merged_id:
-                    relabeled.append((int(r), int(atom_island_R[r])))
-                    atom_island_R[r] = merged_id
-                    atom_island_P[mapping[r]] = merged_id
-
-            all_events.append({
-                'type': 'island_locked',
-                'island_idx': merged_id,
-                'pairs': committed_new,
-                'merged_with': sorted(touched - {merged_id}),
-                'relabeled': relabeled,
-                'mapped_total': len(mapping),
-            })
-        # end single sequential pass
-
-    # Phase 2: expand_mapping -- pair up symmetric same-element neighbors
-    # of mapped atoms (e.g. the three methyl Hs that strict fragment
-    # growth refused to lock alone). The new atoms join the PARENT atom's
-    # island (no new color), since they're chemically equivalent extensions
-    # of an existing locked atom.
-    from collections import defaultdict as _dd
-    progressed = True
-    pass_no_exp = 0
-    while progressed:
-        progressed = False
-        pass_no_exp += 1
-        for u in list(mapping.keys()):
-            v = mapping[u]
-            r_groups = _dd(list)
-            for w in g_R.neighbors(u):
-                if w in mapping:
-                    continue
-                r_groups[g_R.nodes[w]['element']].append(w)
-            p_groups = _dd(list)
-            for x in g_P.neighbors(v):
-                if x in inv:
-                    continue
-                p_groups[g_P.nodes[x]['element']].append(x)
-            for el, rs in r_groups.items():
-                ps = p_groups.get(el, [])
-                if len(ps) != len(rs):
-                    continue
-                # Paired atoms join u's island
-                parent_island = atom_island_R.get(u)
-                if parent_island is None:
-                    n_islands_total += 1
-                    parent_island = n_islands_total
-                    atom_island_R[u] = parent_island
-                    atom_island_P[v] = parent_island
-                paired = []
-                for w, x in zip(rs, ps):
-                    mapping[w] = x
-                    inv[x] = w
-                    atom_island_R[w] = parent_island
-                    atom_island_P[x] = parent_island
-                    paired.append((int(w), int(x)))
-                if paired:
-                    all_events.append({
-                        'type': 'island_locked',
-                        'island_idx': parent_island,
-                        'pairs': paired,
-                        'merged_with': [],
-                        'relabeled': [],
-                        'mapped_total': len(mapping),
-                        'expand_pass': pass_no_exp,
-                        'parent_atom': int(u),
-                    })
-                    progressed = True
-    # Phase 3: explicit ISLAND-TO-ISLAND MERGE pass.
-    # For every pair of distinct islands that share a direct edge in g_R,
-    # check whether the cross-island bond(s) are valid in g_P (with WBO
-    # match). If so, merge the two islands into one (relabel atoms).
-    while True:
-        merged_this_round = False
-        seen = set()
-        for u, v in g_R.edges():
-            iA = atom_island_R.get(u); iB = atom_island_R.get(v)
-            if iA is None or iB is None or iA == iB:
-                continue
-            pair = (min(iA, iB), max(iA, iB))
-            if pair in seen: continue
-            seen.add(pair)
-            ok = True
-            cross_bonds = []
-            for x, y in g_R.edges():
-                ixA = atom_island_R.get(x); ixB = atom_island_R.get(y)
-                if {ixA, ixB} != {iA, iB}: continue
-                wR = g_R[x][y]['wbo']
-                px, py = mapping[x], mapping[y]
-                if not g_P.has_edge(px, py):
-                    ok = False; break
-                wP = g_P[px][py]['wbo']
-                if abs(wR - wP) > wbo_tol:
-                    ok = False; break
-                cross_bonds.append((int(x), int(y), round(wR, 3), round(wP, 3)))
-            if not ok:
-                continue
-            keep, drop = pair
-            relabeled = []
-            for r, idx in list(atom_island_R.items()):
-                if idx == drop:
-                    relabeled.append((int(r), int(drop)))
-                    atom_island_R[r] = keep
-                    atom_island_P[mapping[r]] = keep
-            all_events.append({
-                'type': 'island_locked',
-                'island_idx': keep,
-                'pairs': [],
-                'merged_with': [drop],
-                'relabeled': relabeled,
-                'mapped_total': len(mapping),
-                'island_island_merge': True,
-                'cross_bonds': cross_bonds,
-            })
-            merged_this_round = True
-            break
-        if not merged_this_round:
-            break
-
-    all_events.append({'type': 'done', 'mapped': len(mapping)})
-    return mapping, all_events
+    mapping, _ = find_islands(
+        g_R, g_P, wbo_tol=wbo_tol,
+        events=events,
+        atom_island_R=atom_island_R, atom_island_P=atom_island_P,
+    )
+    expand_mapping(
+        mapping, g_R, g_P,
+        events=events,
+        atom_island_R=atom_island_R, atom_island_P=atom_island_P,
+    )
+    merge_touching_islands(
+        g_R, g_P, mapping, atom_island_R, atom_island_P,
+        wbo_tol=wbo_tol, events=events,
+    )
+    events.append({'type': 'done', 'mapped': len(mapping)})
+    return mapping, events
 
 
 HTML = r"""<!doctype html>
@@ -777,7 +424,7 @@ def main():
     elP, xyzP_arr, wboP = run_xtb(bench / 'product.xyz', work / 'P')
     g_R = build_graph(elR, wboR)
     g_P = build_graph(elP, wboP)
-    mapping, events = find_islands_traced(g_R, g_P, wbo_tol=0.5)
+    mapping, events = find_islands_with_trace(g_R, g_P, wbo_tol=0.5)
 
     print(f'{step}: {len(events)} events, {len(mapping)} atoms mapped')
 
