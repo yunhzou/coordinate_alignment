@@ -127,29 +127,28 @@ function loadStep(name) {
   if (!d) return;
   const els = d.elements;
 
-  // R-side dashed bonds: R->TS broken (red), R->TS formed (green)
+  // Convention from R->P (overall) deltas:
+  //   delta < 0  ->  bond is BREAKING (existed in R, gone or weaker in P)
+  //   delta > 0  ->  bond is FORMING  (didn't exist in R, present in P)
+  // Reactant panel: only BREAKING bonds (red)
+  // Product panel:  only FORMING bonds (green)
+  // TS panel:       both, plus in-flight (orange) on top
   const rDashes = [];
-  d.rt_changes.forEach(([i, j, wR, wT]) => {
-    const color = wT < wR ? 'red' : 'green';
-    rDashes.push([i, j, color, color === 'red' ? 'R→TS↓' : 'R→TS↑']);
-  });
-
-  // P-side dashed bonds: TS->P broken (red), TS->P formed (green)
   const pDashes = [];
-  d.tp_changes.forEach(([i, j, wT, wP]) => {
-    const color = wP < wT ? 'red' : 'green';
-    pDashes.push([i, j, color, color === 'red' ? 'TS→P↓' : 'TS→P↑']);
-  });
-
-  // TS-side dashed bonds: in-flight bonds (orange) + R->P changes still active
   const tDashes = [];
-  d.inflight.forEach(([i, j, wR, wT, wP]) => {
-    tDashes.push([i, j, '#ffa500', `WBO=${wT.toFixed(2)}`]);
+  d.rp_changes.forEach(([i, j, wR, wP, delta]) => {
+    if (delta < 0) {
+      rDashes.push([i, j, 'red',   'BROKEN']);
+      tDashes.push([i, j, 'red',   'breaking']);
+    } else {
+      pDashes.push([i, j, 'green', 'FORMED']);
+      tDashes.push([i, j, 'green', 'forming']);
+    }
   });
-  // Also overlay R->TS and TS->P breaks/forms on TS panel
-  d.rt_changes.forEach(([i, j, wR, wT]) => {
-    const c = wT < wR ? 'red' : 'green';
-    tDashes.push([i, j, c, c === 'red' ? 'R→TS↓' : 'R→TS↑']);
+  // In-flight: bonds whose WBO_TS sits between WBO_R and WBO_P --
+  // orange overlay on the TS panel.
+  d.inflight.forEach(([i, j, wR, wT, wP]) => {
+    tDashes.push([i, j, '#ffa500', `flight WBO=${wT.toFixed(2)}`]);
   });
 
   vR = setupViewer('vR', vR, d.xyzR, rDashes);
