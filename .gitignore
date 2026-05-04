@@ -12,3 +12,4 @@ __pycache__/
 .DS_Store
 
 # (out/ kept — HTML viewers are useful artifacts)
+work_rtsp/
