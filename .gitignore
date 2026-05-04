@@ -1,0 +1,12 @@
+# xtb working directories (regenerable, ~MBs)
+work/
+work_frag/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# (out/ kept — HTML viewers are useful artifacts)
