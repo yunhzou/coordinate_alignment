@@ -1,6 +1,8 @@
 # xtb working directories (regenerable, ~MBs)
 work/
 work_frag/
+work_tsdisco/
+work_tsalign/
 
 # Python cache
 __pycache__/

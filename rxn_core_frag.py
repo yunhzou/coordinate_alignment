@@ -64,21 +64,29 @@ def write_xyz_str(elements, coords, comment=""):
 
 
 def run_xtb(xyz_path, workdir, charge=0, uhf=0):
+    """Run an xtb GFN2 single-point and return (elements, coords, wbo).
+    Caches by reusing existing `wbo` file in workdir when the input xyz
+    file is already present and matches; xtb is the dominant cost so
+    re-runs of `analyze` are fast once the cache is populated."""
     workdir = Path(workdir); workdir.mkdir(parents=True, exist_ok=True)
     local = workdir / Path(xyz_path).name
-    shutil.copy(xyz_path, local)
-    cmd = ["xtb", local.name, "--gfn", "2", "--sp"]
-    if charge: cmd += ["--chrg", str(charge)]
-    if uhf: cmd += ["--uhf", str(uhf)]
-    res = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
-    if res.returncode != 0:
-        raise RuntimeError(f"xtb failed: {res.stderr[-500:]}")
+    src_text = Path(xyz_path).read_text()
+    cached_text = local.read_text() if local.exists() else None
+    wf = workdir / "wbo"
+    cached = (cached_text == src_text) and wf.exists()
+    if not cached:
+        shutil.copy(xyz_path, local)
+        cmd = ["xtb", local.name, "--gfn", "2", "--sp"]
+        if charge: cmd += ["--chrg", str(charge)]
+        if uhf: cmd += ["--uhf", str(uhf)]
+        res = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
+        if res.returncode != 0:
+            raise RuntimeError(f"xtb failed: {res.stderr[-500:]}")
+        if not wf.exists():
+            raise RuntimeError("no wbo file")
     elements, coords = parse_xyz(local)
     n = len(elements)
     wbo = np.zeros((n, n))
-    wf = workdir / "wbo"
-    if not wf.exists():
-        raise RuntimeError("no wbo file")
     for ln in wf.read_text().splitlines():
         parts = ln.split()
         if len(parts) < 3: continue
@@ -683,25 +691,49 @@ def grow_island(g_R, g_P, seed, mapping, inv,
             'p_atoms': _p_atoms_from_cands(candidates),
         })
 
+    def _cand_valence_score(cand):
+        # Sum of |R-unmapped-neighbor-element-count - P-unmapped-neighbor-
+        # element-count| over each fragment atom. Lower is better:
+        # a cand where each fragment atom's image has the same future
+        # neighbor signature as the original is preferred. This breaks
+        # pseudo-symmetric ties (e.g. a C with H neighbor mapped to a C
+        # with H neighbor, not a C with N neighbor).
+        used_p = set(cand.values())
+        score = 0
+        for u, p in cand.items():
+            r_els = Counter(g_R.nodes[n]['element']
+                            for n in g_R.neighbors(u)
+                            if n not in cand and n not in mapping)
+            p_els = Counter(g_P.nodes[v]['element']
+                            for v in g_P.neighbors(p)
+                            if v not in used_p and v not in inv)
+            for el in set(r_els) | set(p_els):
+                score += abs(r_els[el] - p_els[el])
+        return score
+
     def _try_lock(reason):
         # POLICY: when growth has halted (frontier exhausted, no strong
         # frontier, or all extensions cut) and cands remain non-empty,
-        # commit candidates[0]. The cands all share the same fragment
-        # and the same WBO-consistent assignment; any remaining
-        # ambiguity is symmetry over interchangeable atoms (methyl Hs,
-        # equivalent ligands), where every cand gives the same bond-
-        # classification result. We do not score / tiebreak — pick any.
+        # commit ONE cand. With cands>1 not set_unique, use a valence-
+        # aware tiebreaker: pick the cand whose fragment-atom images
+        # have matching unmapped-neighbor element multisets. This avoids
+        # pseudo-symmetric permutation errors (e.g. swapping a C-with-H
+        # for a C-with-N just because their fragment-internal WBOs match).
         ok = bool(candidates) and len(fragment) >= min_lock_size
+        if ok and len(candidates) > 1 and not _set_unique(candidates):
+            chosen = min(candidates, key=_cand_valence_score)
+        else:
+            chosen = candidates[0] if candidates else None
         if record:
             events.append({
                 'type': 'seed_end',
                 'result': 'success' if ok else reason,
                 'final_cands': len(candidates),
                 'fragment': sorted(fragment),
-                'iso': ({int(k): int(v) for k, v in candidates[0].items()}
+                'iso': ({int(k): int(v) for k, v in chosen.items()}
                         if ok else None),
             })
-        return candidates[0] if ok else None
+        return chosen if ok else None
 
     for _ in range(max_iters):
         # PHASE A: eagerly absorb any frontier atoms already in `mapping`
@@ -720,16 +752,23 @@ def grow_island(g_R, g_P, seed, mapping, inv,
                 })
             return None
         # Set-uniqueness: lock when all isos cover the same P-atom set
-        # (symmetry-induced sequence permutations accepted).
+        # (symmetry-induced sequence permutations accepted). Among
+        # set-equivalent permutations, use the valence-aware tiebreaker
+        # to pick the sequence whose individual R->P pairings best match
+        # neighbor-element multisets.
         if _set_unique(candidates):
+            if len(candidates) > 1:
+                chosen = min(candidates, key=_cand_valence_score)
+            else:
+                chosen = candidates[0]
             if record:
                 events.append({
                     'type': 'seed_end', 'result': 'success',
                     'final_cands': len(candidates),
                     'fragment': sorted(fragment),
-                    'iso': {int(k): int(v) for k, v in candidates[0].items()},
+                    'iso': {int(k): int(v) for k, v in chosen.items()},
                 })
-            return candidates[0]
+            return chosen
         frontier = set()
         for u in fragment:
             for n in g_R.neighbors(u):
@@ -875,6 +914,74 @@ def grow_island(g_R, g_P, seed, mapping, inv,
     return _try_lock('max_iters')
 
 
+def split_islands_by_chemistry(g_R, g_P, mapping, atom_island_R, atom_island_P,
+                               wbo_tol=0.5, events=None):
+    """
+    Soft-validation post-pass: an island id assigned during find_islands
+    can include atoms connected only through chemistry-boundary bonds
+    (e.g. R has a C=C with WBO 1.92, P has C-C with WBO 1.05; |diff|=0.87
+    fails wbo_tol=0.5). The two endpoints get the same island id because
+    the iso committing them transitively touched the same island via
+    OTHER preserved bonds, but the direct bond between them is NOT
+    WBO-preserved.
+
+    For each island, build a sub-graph using ONLY WBO-preserved bonds
+    (bond exists in both g_R and g_P with |dWBO| <= wbo_tol) and split
+    into connected components. The largest component keeps the original
+    id; others get fresh ids.
+
+    Optional `events` list receives one island_locked event per split.
+    """
+    record = events is not None
+    by_island = defaultdict(set)
+    for r, k in atom_island_R.items():
+        by_island[k].add(r)
+
+    next_id = max(atom_island_R.values(), default=0) + 1
+    for old_id, atoms in list(by_island.items()):
+        if len(atoms) <= 1:
+            continue
+        # Subgraph: nodes = island atoms, edges = WBO-preserved bonds
+        sub = nx.Graph()
+        sub.add_nodes_from(atoms)
+        for u in atoms:
+            for v in g_R.neighbors(u):
+                if v not in atoms or v <= u:
+                    continue
+                wR = g_R[u][v]['wbo']
+                pu, pv = mapping[u], mapping[v]
+                if not g_P.has_edge(pu, pv):
+                    continue
+                wP = g_P[pu][pv]['wbo']
+                if abs(wR - wP) <= wbo_tol:
+                    sub.add_edge(u, v)
+        components = sorted(nx.connected_components(sub), key=len, reverse=True)
+        if len(components) <= 1:
+            continue
+        # Keep largest at old_id; others get new ids.
+        for comp in components[1:]:
+            new_id = next_id
+            next_id += 1
+            relabeled = []
+            for r in comp:
+                if record:
+                    relabeled.append((int(r), int(old_id)))
+                atom_island_R[r] = new_id
+                atom_island_P[mapping[r]] = new_id
+            if record:
+                events.append({
+                    'type': 'island_locked',
+                    'island_idx': new_id,
+                    'pairs': [],
+                    'merged_with': [],
+                    'relabeled': relabeled,
+                    'mapped_total': len(mapping),
+                    'island_split': True,
+                    'split_from': int(old_id),
+                })
+    return mapping, atom_island_R, atom_island_P
+
+
 def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P,
                            wbo_tol=0.5, events=None):
     """
@@ -950,7 +1057,8 @@ def merge_touching_islands(g_R, g_P, mapping, atom_island_R, atom_island_P,
 
 
 def find_islands(g_R, g_P, wbo_tol=0.5,
-                 events=None, atom_island_R=None, atom_island_P=None):
+                 events=None, atom_island_R=None, atom_island_P=None,
+                 seed_order=None):
     """
     Iteratively grow islands with soft merge. Each pass walks every
     unmapped seed; if grow_island returns a unique iso, commit it
@@ -977,7 +1085,8 @@ def find_islands(g_R, g_P, wbo_tol=0.5,
         if record:
             events.append({'type': 'pass_start', 'pass': pass_no,
                            'mapped': len(mapping)})
-        for seed in sorted(g_R.nodes()):
+        order = seed_order if seed_order is not None else sorted(g_R.nodes())
+        for seed in order:
             if seed in mapping:
                 continue
             iso = grow_island(g_R, g_P, seed, mapping, inv,
@@ -985,14 +1094,41 @@ def find_islands(g_R, g_P, wbo_tol=0.5,
             if iso is None:
                 continue
 
-            # Determine which existing islands this iso touches and pick
-            # the surviving id. When not tracking, just allocate fresh.
+            # Soft-merge: detect chemistry-boundary cross-bonds. If any
+            # iso atom has a strong R-bond (>= growth_min_wbo=0.6) to a
+            # mapped atom OUTSIDE the iso, and that bond fails WBO match
+            # against g_P, the iso is at a chemistry boundary. Form a
+            # NEW island and relabel any absorbed atoms into it, instead
+            # of inheriting the existing island id via topological
+            # overlap. This separates atoms across e.g. a C=C → C-C
+            # bond order change even when alternative ring paths are
+            # preserved.
+            chemistry_boundary = False
+            for r, p in iso.items():
+                for n in g_R.neighbors(r):
+                    if n in iso:
+                        continue
+                    if n not in mapping:
+                        continue
+                    wR = g_R[r][n]['wbo']
+                    if wR < 0.6:
+                        continue
+                    pn = mapping[n]
+                    if not g_P.has_edge(p, pn):
+                        chemistry_boundary = True; break
+                    if abs(wR - g_P[p][pn]['wbo']) > wbo_tol:
+                        chemistry_boundary = True; break
+                if chemistry_boundary:
+                    break
+
             if track:
                 touched = set()
                 for r in iso.keys():
                     if r in atom_island_R:
                         touched.add(atom_island_R[r])
-                if touched:
+                if chemistry_boundary:
+                    merged_id = _next_island_id(atom_island_R)
+                elif touched:
                     merged_id = min(touched)
                 else:
                     merged_id = _next_island_id(atom_island_R)
@@ -1016,7 +1152,12 @@ def find_islands(g_R, g_P, wbo_tol=0.5,
                         relabeled.append((int(r), int(atom_island_R[r])))
                     atom_island_R[r] = merged_id
                     atom_island_P[mapping[r]] = merged_id
-            if track:
+            if track and not chemistry_boundary:
+                # Transitive merge: when this iso connects two existing
+                # islands cleanly (no chemistry-boundary cross-bond),
+                # all atoms in touched islands fold into merged_id.
+                # Skipped for chemistry-boundary case so atoms not in
+                # iso stay in their original island.
                 for r in list(atom_island_R.keys()):
                     if (atom_island_R[r] in touched
                             and atom_island_R[r] != merged_id):
@@ -1103,14 +1244,18 @@ def map_residual_by_3d(mapping, coords_R, coords_P, elements_R, elements_P, k_lo
 
 # -------------------- bond classification --------------------
 
-def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.6, bond_low=0.3):
+def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.5, dwbo_threshold=0.5):
     """
-    Hysteresis-style classification to avoid false positives from
-    WBO drift across a single threshold:
-      broken iff WBO_R >= bond_high and WBO_P < bond_low
-      formed iff WBO_R < bond_low and WBO_P >= bond_high
-    Bonds whose WBO sits in the [bond_low, bond_high) gray zone on either
-    side are treated as preserved partial bonds, not flagged.
+    Bond classification by WBO change:
+      broken iff WBO_R >= bond_high AND (WBO_R - WBO_P) >= dwbo_threshold
+      formed iff WBO_P >= bond_high AND (WBO_P - WBO_R) >= dwbo_threshold
+
+    Captures both full bond breaks (WBO ≈ 1.0 → ≈ 0) AND partial
+    bond-order changes (e.g. C=C ≈ 1.9 → C-C ≈ 1.0, dWBO=0.9 ≥ 0.5).
+    Bonds whose WBO change is below `dwbo_threshold` are treated as
+    preserved (the bond is the same chemistry on both sides).
+    Unmapped endpoints are always flagged as broken/formed since their
+    image WBO is undefined.
     """
     inv = {v: k for k, v in mapping.items()}
     nR, nP = wbo_R.shape[0], wbo_P.shape[0]
@@ -1122,7 +1267,7 @@ def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.6, bond_low=0.3):
             if i not in mapping or j not in mapping:
                 broken.append((i, j, float(wR), None)); continue
             wP = wbo_P[mapping[i], mapping[j]]
-            if wP < bond_low:
+            if wR - wP >= dwbo_threshold:
                 broken.append((i, j, float(wR), float(wP)))
     for ip in range(nP):
         for jp in range(ip + 1, nP):
@@ -1131,7 +1276,7 @@ def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.6, bond_low=0.3):
             if ip not in inv or jp not in inv:
                 formed.append((ip, jp, None, float(wP))); continue
             wR = wbo_R[inv[ip], inv[jp]]
-            if wR < bond_low:
+            if wP - wR >= dwbo_threshold:
                 formed.append((ip, jp, float(wR), float(wP)))
     core_R = set()
     core_P = set()
@@ -1140,11 +1285,69 @@ def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.6, bond_low=0.3):
     return broken, formed, sorted(core_R), sorted(core_P)
 
 
+def remove_phantom_pairs(broken, formed, elements_R, elements_P, wbo_tol=0.5):
+    """
+    Cancel (broken, formed) pairs that are the same bond mis-labeled by
+    atom-permutation noise. A pair cancels iff:
+      * elements at the two ends match (as an unordered pair), and
+      * |WBO_R(broken) - WBO_P(formed)| <= wbo_tol.
+    Greedy match: for each broken bond, find the first compatible
+    unmatched formed bond and remove both. The remainder is the chemistry
+    that actually changed (a bond truly broken or truly formed without a
+    permutation-equivalent counterpart). A bond is real iff its WBO
+    changes by more than `wbo_tol` -- which is exactly what the cancel
+    test checks against.
+    """
+    matched_b = set()
+    matched_f = set()
+    for bi, (i, j, wR, _) in enumerate(broken):
+        if bi in matched_b:
+            continue
+        elR_pair = tuple(sorted([elements_R[i], elements_R[j]]))
+        for fi, (ip, jp, _, wP) in enumerate(formed):
+            if fi in matched_f:
+                continue
+            elP_pair = tuple(sorted([elements_P[ip], elements_P[jp]]))
+            if elR_pair != elP_pair:
+                continue
+            if abs(wR - wP) > wbo_tol:
+                continue
+            matched_b.add(bi)
+            matched_f.add(fi)
+            break
+    new_broken = [b for bi, b in enumerate(broken) if bi not in matched_b]
+    new_formed = [f for fi, f in enumerate(formed) if fi not in matched_f]
+    return new_broken, new_formed
+
+
 # -------------------- driver --------------------
+
+def _generate_seed_orders(g_R, n_trials, rng_seed=42):
+    """Diverse seed orderings for multi-trial analyze."""
+    import random
+    nodes = list(g_R.nodes())
+    orders = [
+        sorted(nodes),
+        sorted(nodes, reverse=True),
+        sorted(nodes, key=lambda n: -g_R.degree(n)),
+        sorted(nodes, key=lambda n: g_R.degree(n)),
+    ]
+    rng = random.Random(rng_seed)
+    while len(orders) < n_trials:
+        perm = list(nodes); rng.shuffle(perm); orders.append(perm)
+    return orders[:n_trials]
+
 
 def analyze(reactant_xyz, product_xyz, workdir,
             charge=0, uhf=0,
-            graph_bond_cut=0.5, bond_high=0.6, bond_low=0.3):
+            graph_bond_cut=0.5, bond_high=0.5, dwbo_threshold=0.5,
+            n_seeds=10):
+    """
+    Run xtb on R and P, then attempt the island-finder pipeline with
+    `n_seeds` different seed orderings. The "best" run is selected by
+    minimizing total broken+formed flags (after phantom-pair removal),
+    breaking ties by maximum mapped-atom count. xtb only runs once.
+    """
     workdir = Path(workdir)
     elR, xyzR, wboR = run_xtb(reactant_xyz, workdir / "R", charge=charge, uhf=uhf)
     elP, xyzP, wboP = run_xtb(product_xyz, workdir / "P", charge=charge, uhf=uhf)
@@ -1154,29 +1357,38 @@ def analyze(reactant_xyz, product_xyz, workdir,
     g_R = build_graph(elR, wboR, bond_cut=graph_bond_cut)
     g_P = build_graph(elP, wboP, bond_cut=graph_bond_cut)
 
-    # Strict grow-until-unique with WBO tol=0.5 and soft merge.
-    mapping, n_islands = find_islands(g_R, g_P, wbo_tol=0.5)
-    n_after_merge = len(mapping)
-    # Element-counted expansion for symmetric neighbors of mapped atoms.
-    mapping = expand_mapping(mapping, g_R, g_P)
-    n_after_expand = len(mapping)
-    fallback_atoms = set()
-    anchors = []
+    orders = _generate_seed_orders(g_R, n_seeds)
+    best = None
+    for order in orders:
+        mapping, _ = find_islands(g_R, g_P, wbo_tol=0.5, seed_order=order)
+        mapping = expand_mapping(mapping, g_R, g_P)
+        broken, formed, _, _ = classify_bonds(
+            mapping, wboR, wboP,
+            bond_high=bond_high, dwbo_threshold=dwbo_threshold)
+        # Phantom removal disabled by default -- it was masking real
+        # chemistry like proton transfers (pr1.tempo_ts2: 2 broken + 2
+        # formed got cancelled because both pairs were O-H/O-I element
+        # matches with similar WBO, even though the bonds were on
+        # different physical atoms).
+        n_total = len(broken) + len(formed)
+        score = (n_total, -len(mapping))
+        if best is None or score < best[0]:
+            best = (score, mapping, broken, formed)
 
-    broken, formed, core_R, core_P = classify_bonds(mapping, wboR, wboP,
-                                                    bond_high=bond_high, bond_low=bond_low)
-    # core_R / core_P now contains ONLY atoms touching a broken/formed bond.
-    # Fallback-mapped atoms whose bonds are preserved aren't core. (We keep
-    # fallback_atoms in the result dict for inspection if needed.)
+    score, mapping, broken, formed = best
+    core_R = sorted({i for (i, j, _, _) in broken}
+                    | {j for (i, j, _, _) in broken})
+    core_P = sorted({i for (i, j, _, _) in formed}
+                    | {j for (i, j, _, _) in formed})
 
     return dict(
         elements_R=elR, coords_R=xyzR, wbo_R=wboR,
         elements_P=elP, coords_P=xyzP, wbo_P=wboP,
-        anchors=anchors, mapping=mapping,
+        anchors=[], mapping=mapping,
         broken=broken, formed=formed,
         core_R=core_R, core_P=core_P,
-        n_after_merge=n_after_merge,
-        n_after_expand=n_after_expand,
-        n_anchors=len(anchors),
-        fallback_atoms=sorted(fallback_atoms),
+        n_after_merge=len(mapping),
+        n_after_expand=len(mapping),
+        n_anchors=0,
+        fallback_atoms=[],
     )

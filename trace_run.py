@@ -14,10 +14,11 @@ from pathlib import Path
 from rxn_core_frag import (
     run_xtb, build_graph, write_xyz_str,
     find_islands, expand_mapping, merge_touching_islands,
+    split_islands_by_chemistry,
 )
 
 
-def find_islands_with_trace(g_R, g_P, wbo_tol=0.5):
+def find_islands_with_trace(g_R, g_P, wbo_tol=0.5, seed_order=None):
     """Run the full island-finder pipeline (seed grow + expand + island
     merge) with event/island recording enabled. Returns (mapping, events).
     The algorithm matches `analyze` in rxn_core_frag exactly -- this is
@@ -29,6 +30,7 @@ def find_islands_with_trace(g_R, g_P, wbo_tol=0.5):
         g_R, g_P, wbo_tol=wbo_tol,
         events=events,
         atom_island_R=atom_island_R, atom_island_P=atom_island_P,
+        seed_order=seed_order,
     )
     expand_mapping(
         mapping, g_R, g_P,
@@ -36,6 +38,10 @@ def find_islands_with_trace(g_R, g_P, wbo_tol=0.5):
         atom_island_R=atom_island_R, atom_island_P=atom_island_P,
     )
     merge_touching_islands(
+        g_R, g_P, mapping, atom_island_R, atom_island_P,
+        wbo_tol=wbo_tol, events=events,
+    )
+    split_islands_by_chemistry(
         g_R, g_P, mapping, atom_island_R, atom_island_P,
         wbo_tol=wbo_tol, events=events,
     )
