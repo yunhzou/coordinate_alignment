@@ -19,3 +19,6 @@ work_core_rmsd/
 work_seedcompare/
 Benchmark_Guesses_Collective_Package/
 work_modedemo/
+work_pq_compare_old/
+work_pq_compare_new/
+work_pq_smoke/
