@@ -329,27 +329,28 @@ function loadStep(name) {
   if (!d) return;
   const els = d.elements;
 
-  // Convention from R->P (overall) deltas:
-  //   delta < 0  ->  bond is BREAKING (existed in R, gone or weaker in P)
-  //   delta > 0  ->  bond is FORMING  (didn't exist in R, present in P)
-  // Reactant panel: only BREAKING bonds (red)
-  // Product panel:  only FORMING bonds (green)
-  // TS panel:       both, plus in-flight (orange) on top
+  // Per-panel bond cylinders use that panel's native atom indices.
+  // R panel:  rp_changes (R-indexed). delta<0 = BROKEN.
+  // P panel:  rp_changes_P (P-indexed). delta>0 = FORMED.
+  // TS panel: rp_changes_TS + inflight_TS (TS-indexed).
   const rDashes = [];
   const pDashes = [];
   const tDashes = [];
   d.rp_changes.forEach(([i, j, wR, wP, delta]) => {
     if (delta < 0) {
-      rDashes.push([i, j, 'red',   'BROKEN']);
-      tDashes.push([i, j, 'red',   'breaking']);
-    } else {
-      pDashes.push([i, j, 'green', 'FORMED']);
-      tDashes.push([i, j, 'green', 'forming']);
+      rDashes.push([i, j, 'red', 'BROKEN']);
     }
   });
-  // In-flight: bonds whose WBO_TS sits between WBO_R and WBO_P --
-  // orange overlay on the TS panel.
-  d.inflight.forEach(([i, j, wR, wT, wP]) => {
+  (d.rp_changes_P || []).forEach(([i, j, wR, wP, delta]) => {
+    if (delta > 0) {
+      pDashes.push([i, j, 'green', 'FORMED']);
+    }
+  });
+  (d.rp_changes_TS || []).forEach(([i, j, wR, wP, delta]) => {
+    const c = delta < 0 ? 'red' : 'green';
+    tDashes.push([i, j, c, delta < 0 ? 'breaking' : 'forming']);
+  });
+  (d.inflight_TS || []).forEach(([i, j, wR, wT, wP]) => {
     tDashes.push([i, j, '#ffa500', `flight WBO=${wT.toFixed(2)}`]);
   });
 

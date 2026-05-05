@@ -149,15 +149,20 @@ def analyze_step_rp(step_dir):
 
 
 def analyze_step_rtsp(step_dir, ts_path):
-    """3-panel: R / TS / P, all in R-frame indexing."""
+    """3-panel: R / TS / P, each in its OWN native coordinate frame.
+    Bond-change cylinders are mapped through R↔P and R↔TS alignments
+    so they render at the correct atoms on each panel without needing
+    to reindex the geometries. This avoids Frankenstein displays when
+    some atoms don't map (their fallback coords would be wrong)."""
     name = step_dir.name
     chg, uhf = LOOKUP.get(name, (0, 0))
     base = analyze_rp(step_dir, chg, uhf, name)
     wd = base["wd"]
     elR = base["elR"]; xyzR = base["xyzR"]; wboR = base["wboR"]
     elP = base["elP"]; xyzP = base["xyzP"]; wboP = base["wboP"]
+    map_R_to_P = base["mapping"]
 
-    # TS xtb
+    # TS xtb in its own native frame
     sanitized_ts = re.sub(r"[^A-Za-z0-9._-]", "_", ts_path.stem)[:80]
     ts_local = wd / f"{sanitized_ts}.xyz"
     ts_local.write_text(ts_path.read_text())
@@ -166,15 +171,16 @@ def analyze_step_rtsp(step_dir, ts_path):
     g_TS = build_graph(elTS, wboTS)
     map_R_to_TS = best_mapping(base["g_R"], g_TS, wboR, wboTS)
 
-    # Reindex P and TS into R-frame
+    # Bond-change classification still done in R-frame (R↔P semantics).
+    # We project P-side WBO into an n_R-by-n_R matrix using the R→P map
+    # ONLY for the chemistry classification; we do NOT use it for
+    # rendering coordinates.
     n_R = len(elR)
-    elP_r, xyzP_r = reindex_xyz_to_target(base["mapping"], elP, xyzP, n_R, elR, xyzR)
     wboP_r = np.zeros_like(wboR)
-    for ri, pi in base["mapping"].items():
-        for rj, pj in base["mapping"].items():
+    for ri, pi in map_R_to_P.items():
+        for rj, pj in map_R_to_P.items():
             if ri < rj:
                 wboP_r[ri, rj] = wboP[pi, pj]; wboP_r[rj, ri] = wboP[pi, pj]
-    elTS_r, xyzTS_r = reindex_xyz_to_target(map_R_to_TS, elTS, xyzTS, n_R, elR, xyzR)
     wboTS_r = np.zeros_like(wboR)
     for ri, ti in map_R_to_TS.items():
         for rj, tj in map_R_to_TS.items():
@@ -191,24 +197,46 @@ def analyze_step_rtsp(step_dir, ts_path):
         if lo + 0.15 < wT < hi - 0.15:
             inflight.append((i, j, wR_, wT, wP_))
 
+    # Translate R-indexed bond-change pairs to P-indexed and TS-indexed
+    # for rendering on each panel. Bonds whose endpoints aren't both
+    # mapped get dropped (they'd have nowhere to render).
+    def to_p(rp_list):
+        out = []
+        for (i, j, wA, wB, d) in rp_list:
+            if i in map_R_to_P and j in map_R_to_P:
+                out.append([map_R_to_P[i], map_R_to_P[j], wA, wB, d])
+        return out
+    def to_ts(rp_list):
+        out = []
+        for (i, j, wA, wB, d) in rp_list:
+            if i in map_R_to_TS and j in map_R_to_TS:
+                out.append([map_R_to_TS[i], map_R_to_TS[j], wA, wB, d])
+        return out
+
     return {
         "name": name,
         "natoms": len(elR),
         "elements": elR,
-        "xyzR": write_xyz_str(elR, xyzR, comment="reactant (R-frame)"),
-        "xyzTS": write_xyz_str(elTS_r, xyzTS_r, comment=f"TS: {ts_path.name}"),
-        "xyzP": write_xyz_str(elP_r, xyzP_r, comment="product (R-frame)"),
-        "bonds_R": all_bonds(wboR),
-        "bonds_TS": all_bonds(wboTS_r),
-        "bonds_P": all_bonds(wboP_r),
-        "rt_changes": rt,
-        "tp_changes": tp,
-        "rp_changes": rp,
-        "inflight": inflight,
+        # Native-frame coordinates for each panel (no reindexing)
+        "xyzR": write_xyz_str(elR, xyzR, comment="reactant"),
+        "xyzTS": write_xyz_str(elTS, xyzTS, comment=f"TS: {ts_path.name}"),
+        "xyzP": write_xyz_str(elP, xyzP, comment="product"),
+        # Bond-change lists per panel (in panel-native indexing)
+        "rt_changes": rt,                # R-indexed (renders on R panel)
+        "tp_changes": tp,                # R-indexed
+        "rp_changes": rp,                # R-indexed (renders on R panel)
+        "rp_changes_P": to_p(rp),        # P-indexed (renders on P panel)
+        "rp_changes_TS": to_ts(rp),      # TS-indexed (renders on TS panel)
+        "inflight": inflight,            # R-indexed
+        "inflight_TS": [[map_R_to_TS[i], map_R_to_TS[j], wR_, wT, wP_]
+                         for (i, j, wR_, wT, wP_) in inflight
+                         if i in map_R_to_TS and j in map_R_to_TS],
         "n_R_to_TS": len(rt),
         "n_TS_to_P": len(tp),
         "n_R_to_P": len(rp),
         "n_inflight": len(inflight),
+        "n_mapped_R_to_P": len(map_R_to_P),
+        "n_mapped_R_to_TS": len(map_R_to_TS),
         "charge": chg, "uhf": uhf,
         "ts_source": ts_path.name,
     }

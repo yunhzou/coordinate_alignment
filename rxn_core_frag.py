@@ -63,6 +63,67 @@ def write_xyz_str(elements, coords, comment=""):
     return "\n".join(out) + "\n"
 
 
+def run_xtb_hess(xyz_path, workdir, charge=0, uhf=0):
+    """Run an xtb GFN2 Hessian/frequency calc. Returns
+    (elements, coords, frequencies, modes) where modes is a
+    (3N_modes, N_atoms, 3) array of mass-weighted displacement
+    vectors. Caches by xyz-content + presence of g98.out."""
+    workdir = Path(workdir); workdir.mkdir(parents=True, exist_ok=True)
+    local = workdir / Path(xyz_path).name
+    src_text = Path(xyz_path).read_text()
+    cached_text = local.read_text() if local.exists() else None
+    g98 = workdir / "g98.out"
+    cached = (cached_text == src_text) and g98.exists()
+    if not cached:
+        shutil.copy(xyz_path, local)
+        cmd = ["xtb", local.name, "--gfn", "2", "--hess"]
+        if charge: cmd += ["--chrg", str(charge)]
+        if uhf: cmd += ["--uhf", str(uhf)]
+        res = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
+        if res.returncode != 0:
+            raise RuntimeError(f"xtb hess failed: {res.stderr[-500:]}")
+        if not g98.exists():
+            raise RuntimeError("no g98.out")
+    elements, coords = parse_xyz(local)
+    n_atoms = len(elements)
+    # Parse g98.out (Gaussian-style normal modes)
+    text = g98.read_text().splitlines()
+    freqs = []
+    modes = []     # list of length-3*n_atoms vectors (flattened per mode)
+    i = 0
+    while i < len(text):
+        line = text[i]
+        if line.lstrip().startswith("Frequencies --"):
+            parts = line.split("--", 1)[1].split()
+            block_freqs = [float(x) for x in parts]
+            n_block = len(block_freqs)
+            # Skip "Reduced masses --", "Force constants --", "IR intensities --",
+            # then the header "Atom AN X Y Z X Y Z ..."
+            j = i + 1
+            while j < len(text) and not text[j].lstrip().startswith("Atom"):
+                j += 1
+            # Modes table: lines from j+1 to j+n_atoms+1
+            block_modes = [[] for _ in range(n_block)]
+            for a in range(n_atoms):
+                row = text[j + 1 + a].split()
+                # row layout: Atom AN  X Y Z X Y Z ...
+                # 2 leading numeric fields, then n_block * 3 floats
+                vals = [float(x) for x in row[2:2 + 3 * n_block]]
+                for b in range(n_block):
+                    block_modes[b].extend(vals[3*b: 3*b+3])
+            freqs.extend(block_freqs)
+            modes.extend(block_modes)
+            i = j + 1 + n_atoms
+        else:
+            i += 1
+    freqs = np.array(freqs)
+    if modes:
+        modes_arr = np.array(modes).reshape(len(modes), n_atoms, 3)
+    else:
+        modes_arr = np.zeros((0, n_atoms, 3))
+    return elements, coords, freqs, modes_arr
+
+
 def run_xtb(xyz_path, workdir, charge=0, uhf=0):
     """Run an xtb GFN2 single-point and return (elements, coords, wbo).
     Caches by reusing existing `wbo` file in workdir when the input xyz

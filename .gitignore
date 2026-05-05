@@ -14,3 +14,7 @@ __pycache__/
 # (out/ kept — HTML viewers are useful artifacts)
 work_rtsp/
 work_bgcp/
+work_modes/
+work_core_rmsd/
+work_seedcompare/
+Benchmark_Guesses_Collective_Package/
