@@ -620,57 +620,41 @@ def _filter_cands_by_cross_bonds(cands, fragment, mapping, g_R, g_P, wbo_tol):
     return out
 
 
-def _absorb_mapped_frontier(g_R, g_P, fragment, candidates, mapping, inv,
-                             wbo_tol, distance=None):
-    """Repeatedly absorb any frontier atom that is already in `mapping`
-    (a previously-locked atom). Each absorption pins that atom's image
-    to mapping[n] and narrows cands accordingly. Returns updated
-    (fragment, candidates). Stops when no more mapped frontier atoms
-    can be absorbed."""
-    while True:
-        absorbed = False
-        # Frontier: atoms outside fragment, bonded to something inside.
-        for u in list(fragment):
-            for n in g_R.neighbors(u):
-                if n in fragment:
-                    continue
-                if n not in mapping:
-                    continue
-                # Try to absorb n with pinned image mapping[n]
-                bonded = [b for b in g_R.neighbors(n) if b in fragment]
-                r_wbos = [(b, g_R[b][n]['wbo']) for b in bonded]
-                n_pinned = mapping[n]
-                n_el = g_R.nodes[n]['element']
-                if g_P.nodes[n_pinned]['element'] != n_el:
-                    continue  # element mismatch — shouldn't happen
-                new_cands = []
-                for cand in candidates:
-                    used_p = set(cand.values())
-                    if n_pinned in used_p:
-                        continue
-                    # Check that n_pinned is a P-neighbor of cand[b] for all b
-                    ok = True
-                    for (b, wR) in r_wbos:
-                        if not g_P.has_edge(cand[b], n_pinned):
-                            ok = False; break
-                        if abs(wR - g_P[cand[b]][n_pinned]['wbo']) > wbo_tol:
-                            ok = False; break
-                    if ok:
-                        nc = dict(cand); nc[n] = n_pinned
-                        new_cands.append(nc)
-                if new_cands:
-                    fragment.add(n)
-                    candidates = new_cands
-                    if distance is not None:
-                        distance[n] = 1 + min(distance[b] for b in bonded
-                                               if b in distance)
-                    absorbed = True
-                    break
-            if absorbed:
-                break
-        if not absorbed:
-            break
-    return fragment, candidates
+def _seed_merge_test(g_R, g_P, seed, candidates, mapping,
+                     wbo_tol, growth_min_wbo):
+    """Test whether `seed` can be uniquely placed into an existing
+    island it's adjacent to, by applying the bond constraints from
+    every mapped g_R neighbor of seed simultaneously.
+
+    Returns one of:
+      ('merge', narrow_cand)  -- exactly one cand satisfies all bonds;
+                                 seed should merge into the island.
+      ('split', None)         -- 0 or >1 cands satisfy; seed can't be
+                                 uniquely placed via the island, so it
+                                 should form its own island and grow
+                                 into unmapped territory only.
+      ('no_island_neighbor', None)  -- seed has no mapped neighbors;
+                                       no merge test applies.
+    """
+    mapped_nbrs = [(n, mapping[n], g_R[seed][n]['wbo'])
+                   for n in g_R.neighbors(seed)
+                   if n in mapping and g_R[seed][n]['wbo'] >= growth_min_wbo]
+    if not mapped_nbrs:
+        return 'no_island_neighbor', None
+    narrow = []
+    for cand in candidates:
+        cand_s = cand[seed]
+        ok = True
+        for (n, p_n, wR) in mapped_nbrs:
+            if not g_P.has_edge(cand_s, p_n):
+                ok = False; break
+            if abs(wR - g_P[cand_s][p_n]['wbo']) > wbo_tol:
+                ok = False; break
+        if ok:
+            narrow.append(cand)
+    if len(narrow) == 1:
+        return 'merge', narrow[0]
+    return 'split', None
 
 
 def grow_island(g_R, g_P, seed, mapping, inv,
@@ -752,6 +736,30 @@ def grow_island(g_R, g_P, seed, mapping, inv,
             'p_atoms': _p_atoms_from_cands(candidates),
         })
 
+    # MERGE TEST: if seed has any mapped neighbor in some island,
+    # check whether the seed can be uniquely placed via the bond
+    # constraint(s) to that island.
+    #   merge -> return size-1 iso; find_islands will commit it into
+    #            the touched island.
+    #   split -> the seed cannot be uniquely placed via the island;
+    #            it forms its own island and grows ONLY into unmapped
+    #            atoms (no absorption of island atoms into the iso).
+    merge_status, merge_cand = _seed_merge_test(
+        g_R, g_P, seed, candidates, mapping, wbo_tol, growth_min_wbo)
+    if merge_status == 'merge':
+        if record:
+            events.append({
+                'type': 'seed_end', 'result': 'success',
+                'final_cands': 1,
+                'fragment': [int(seed)],
+                'iso': {int(seed): int(merge_cand[seed])},
+                'merge_into_island': True,
+            })
+        return merge_cand
+    # If split, drop the island bond constraint -- the seed grows
+    # independently into unmapped territory only. We enforce this by
+    # excluding mapped atoms from the BFS frontier below.
+
     def _cand_valence_score(cand):
         # Sum of |R-unmapped-neighbor-element-count - P-unmapped-neighbor-
         # element-count| over each fragment atom. Lower is better:
@@ -797,16 +805,13 @@ def grow_island(g_R, g_P, seed, mapping, inv,
         return chosen if ok else None
 
     for _ in range(max_iters):
-        # PHASE A: eagerly absorb any frontier atoms already in `mapping`
-        # (previously-locked island atoms). Each absorption pins its
-        # image and narrows cands.
-        fragment, candidates = _absorb_mapped_frontier(
-            g_R, g_P, fragment, candidates, mapping, inv, wbo_tol,
-            distance=distance)
+        # No absorption phase: in the new policy, seeds adjacent to
+        # islands are handled by the merge_test above. Here the seed
+        # grows ONLY into unmapped atoms.
         if not candidates:
             if record:
                 events.append({
-                    'type': 'seed_end', 'result': 'absorb_failed',
+                    'type': 'seed_end', 'result': 'no_cands',
                     'final_cands': 0,
                     'fragment': sorted(fragment),
                     'iso': None,
@@ -833,8 +838,13 @@ def grow_island(g_R, g_P, seed, mapping, inv,
         frontier = set()
         for u in fragment:
             for n in g_R.neighbors(u):
-                if n not in fragment:
-                    frontier.add(n)
+                if n in fragment:
+                    continue
+                if n in mapping:
+                    # Skip mapped atoms — under the new policy, seeds
+                    # in the "split" path don't absorb island atoms.
+                    continue
+                frontier.add(n)
         if not frontier:
             return _try_lock('no_frontier')
 
