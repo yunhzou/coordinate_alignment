@@ -1323,19 +1323,20 @@ def remove_phantom_pairs(broken, formed, elements_R, elements_P, wbo_tol=0.5):
 # -------------------- driver --------------------
 
 def _generate_seed_orders(g_R, n_trials, rng_seed=42):
-    """Diverse seed orderings for multi-trial analyze."""
+    """Random seed orderings for multi-trial analyze.
+
+    Random-only (no structured orderings like sorted/degree). Structured
+    orderings sometimes find degenerate-low-event mappings that game the
+    min-events scoring (e.g. pr1.tempo_ts8 returned 0/0 from a structured
+    ordering while every random ordering correctly recovered 2/2). Random
+    seedings give consistent, chemistry-faithful answers."""
     import random
     nodes = list(g_R.nodes())
-    orders = [
-        sorted(nodes),
-        sorted(nodes, reverse=True),
-        sorted(nodes, key=lambda n: -g_R.degree(n)),
-        sorted(nodes, key=lambda n: g_R.degree(n)),
-    ]
     rng = random.Random(rng_seed)
+    orders = []
     while len(orders) < n_trials:
         perm = list(nodes); rng.shuffle(perm); orders.append(perm)
-    return orders[:n_trials]
+    return orders
 
 
 def analyze(reactant_xyz, product_xyz, workdir,
