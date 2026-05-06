@@ -339,53 +339,123 @@ function applyEvent(idx) {{
   }}
   vP.render();
 
-  // ---- Event log ---- (full metadata)
-  let txt = `[${{idx + 1}}/${{events.length}}] ${{lastEvent.type}}\n`;
-  if (lastEvent.type === 'seed_start') {{
-    txt += `  seed = R[${{lastEvent.seed}}]\n`;
-    txt += `  initial cands = ${{lastEvent.init_cands}}\n`;
-    txt += `  fragment = [${{lastEvent.fragment.join(', ')}}]\n`;
-    txt += `  first iso P-atoms = [${{(lastEvent.p_atoms||[]).join(', ')}}]`;
-  }} else if (lastEvent.type === 'commit') {{
-    txt += `  + R[${{lastEvent.added}}](${{lastEvent.element || '?'}}),  cands=${{lastEvent.cands}},  fragment_size=${{lastEvent.fragment.length}}\n`;
-    if (lastEvent.bonds_to_fragment) {{
-      txt += `  bonds to fragment: [${{lastEvent.bonds_to_fragment.map(([u,w]) => `R[${{u}}]:WBO=${{w}}`).join(', ')}}]\n`;
+  // ---- Event log ---- (verbose diagnostic for PQ events)
+  const e = lastEvent;
+  let txt = `[${{idx + 1}}/${{events.length}}]  ${{e.type.toUpperCase()}}`;
+  if (e.scenario) txt += `  (${{e.scenario}})`;
+  txt += `\n`;
+
+  function fmtCand(c) {{
+    return '{{' + Object.keys(c).sort((a,b)=>+a-+b).map(k => `R[${{k}}]→P[${{c[k]}}]`).join(', ') + '}}';
+  }}
+  function fmtHeapTop(h) {{
+    if (!h || !h.length) return '  (heap empty)';
+    return h.map(x => `    R[${{x.frag_atom}}]→R[${{x.ext_atom}}]  WBO=${{x.wbo}}  [${{x.ext_status}}]`).join('\n');
+  }}
+
+  if (e.type === 'pass_start') {{
+    txt += `  pass ${{e.pass}}, mapped so far = ${{e.mapped}}`;
+  }} else if (e.type === 'seed_start') {{
+    txt += `  seed = R[${{e.seed}}]\n`;
+    txt += `  initial cands = ${{e.init_cands}}\n`;
+    txt += `  candidate P-atoms (set): [${{(e.p_atoms||[]).join(', ')}}]`;
+  }} else if (e.type === 'pop') {{
+    const ed = e.edge;
+    txt += `  POPPED edge: R[${{ed.frag_atom}}] → R[${{ed.ext_atom}}](${{ed.ext_element}})  WBO=${{ed.wbo}}\n`;
+    txt += `  scenario: ${{e.scenario}}`;
+    if (e.scenario === 'merge_island') txt += `   island_id=${{e.island_id_at_ext}}  →P[${{e.island_image}}]`;
+    txt += `\n`;
+    const ps = e.pre_state;
+    txt += `  fragment (${{ps.fragment_size}} atoms): [${{ps.fragment.join(', ')}}]\n`;
+    txt += `  cands count: ${{ps.cands_count}}\n`;
+    txt += `  P-atoms claimed across cands: [${{ps.p_atoms_in_cands.join(', ')}}]\n`;
+    txt += `  cand sample (top ${{ps.cands_sample.length}}):\n`;
+    for (let i = 0; i < ps.cands_sample.length; i++) {{
+      txt += `    [${{i}}] ${{fmtCand(ps.cands_sample[i])}}\n`;
     }}
-    if (lastEvent.distance_from_seed !== undefined) {{
-      txt += `  distance from seed = ${{lastEvent.distance_from_seed}}\n`;
+    txt += `  HEAP next ${{e.heap_top_after_pop.length}}:\n${{fmtHeapTop(e.heap_top_after_pop)}}`;
+  }} else if (e.type === 'pop_skip') {{
+    txt += `  skipped edge R[${{e.edge.frag_atom}}]→R[${{e.edge.ext_atom}}] WBO=${{e.edge.wbo}}: ${{e.reason}}`;
+  }} else if (e.type === 'commit') {{
+    const ed = e.edge;
+    txt += `  + R[${{e.added}}](${{e.element || '?'}}) added to fragment\n`;
+    if (ed) txt += `  via edge R[${{ed.frag_atom}}]→R[${{ed.ext_atom}}] WBO=${{ed.wbo}}\n`;
+    if (e.scenario === 'merge_island') {{
+      txt += `  WHOLE-ISLAND MERGE: absorbed ${{e.island_size_absorbed}} atoms = [${{(e.island_atoms_absorbed||[]).join(', ')}}]\n`;
+    }} else if (e.cand_n_value_set) {{
+      txt += `  cand[R[${{e.added}}]] possible values: [${{e.cand_n_value_set.join(', ')}}]\n`;
     }}
-    const si = lastEvent.step_info;
-    if (si) {{
-      txt += `  --- step decision: shell=${{si.shell}},  top WBO=${{si.top_wbo}},  cands_before=${{si.cands_before}} ---\n`;
-      txt += `  TRIED (${{si.tried.length}}):\n`;
-      for (const t of si.tried) {{
-        txt += `    R[${{t.atom}}](${{t.element}})  WBO=${{t.max_wbo_to_frag}}  dist=${{t.distance_from_seed}}  bonds=[${{t.wbo_bonds}}]  new_cands=${{t.new_cands}} → ${{t.decision}}\n`;
+    if (e.cands_after !== undefined) {{
+      txt += `  cands: ${{e.cands_before}} → ${{e.cands_after}}\n`;
+    }} else if (e.cands !== undefined) {{
+      txt += `  cands = ${{e.cands}}\n`;
+    }}
+    txt += `  fragment now ${{e.fragment.length}} atoms\n`;
+    if (e.cands_sample_after) {{
+      txt += `  cand sample after:\n`;
+      for (let i = 0; i < e.cands_sample_after.length; i++) {{
+        txt += `    [${{i}}] ${{fmtCand(e.cands_sample_after[i])}}\n`;
       }}
-      if (si.filtered && si.filtered.length) {{
-        txt += `  FILTERED (${{si.filtered.length}}):\n`;
-        for (const f of si.filtered) {{
-          txt += `    R[${{f.atom}}](${{f.element}})  WBO=${{f.max_wbo_to_frag}}  dist=${{f.distance_from_seed}}  reason: ${{f.filtered_reason}}\n`;
+    }}
+    if (e.bonds_to_fragment) {{
+      txt += `  bonds to fragment: [${{e.bonds_to_fragment.map(([u,w]) => `R[${{u}}]:WBO=${{w}}`).join(', ')}}]\n`;
+    }}
+    if (e.distance_from_seed !== undefined) {{
+      txt += `  distance from seed = ${{e.distance_from_seed}}\n`;
+    }}
+    if (e.step_info) {{
+      const si = e.step_info;
+      txt += `  --- step decision: shell=${{si.shell}}, top WBO=${{si.top_wbo}}, cands_before=${{si.cands_before}} ---\n`;
+      if (si.tried) for (const t of si.tried) {{
+        txt += `    R[${{t.atom}}](${{t.element}}) WBO=${{t.max_wbo_to_frag}} → ${{t.decision}}\n`;
+      }}
+    }}
+    if (e.heap_remaining !== undefined) {{
+      txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}`;
+    }}
+  }} else if (e.type === 'consumed') {{
+    const ed = e.edge;
+    txt += `  CONSUMED edge: R[${{ed.frag_atom}}] → R[${{ed.ext_atom}}](${{ed.ext_element}})  WBO=${{ed.wbo}}\n`;
+    txt += `  scenario: ${{e.scenario}}, reason: ${{e.reason}}\n`;
+    if (e.island_image !== undefined) {{
+      txt += `  island_id=${{e.island_id}}, image=P[${{e.island_image}}]\n`;
+    }}
+    txt += `  fragment (${{e.fragment.length}} atoms) unchanged, cands (${{e.cands_count}}) unchanged\n`;
+    if (e.why_per_cand) {{
+      txt += `  WHY EACH CAND FAILED:\n`;
+      for (const w of e.why_per_cand) {{
+        txt += `    cand[${{w.cand_idx}}]: `;
+        if (w.cand_at_in_frag_neighbors) {{
+          txt += `at neighbors: ${{Object.keys(w.cand_at_in_frag_neighbors).map(k => `R[${{k}}]→P[${{w.cand_at_in_frag_neighbors[k]}}]`).join(', ')}}\n`;
+          txt += `             common P-neighbor set size = ${{w.common_v_set_size}}\n`;
+          for (const t of w.tried_v) {{
+            txt += `               try v=P[${{t.v}}]: ${{t.rejected ? 'REJECT' : 'OK'}} — ${{t.reason}}\n`;
+          }}
+        }} else if (w.reasons) {{
+          txt += `\n`;
+          for (const r of w.reasons) txt += `      • ${{r}}\n`;
         }}
       }}
     }}
-  }} else if (lastEvent.type === 'seed_end') {{
-    txt += `  result = ${{lastEvent.result}}\n  final cands = ${{lastEvent.final_cands}}\n  fragment final size = ${{lastEvent.fragment.length}}\n  fragment atoms = [${{lastEvent.fragment.join(', ')}}]`;
-    if (lastEvent.iso) txt += `\n  iso = ${{JSON.stringify(lastEvent.iso)}}`;
-  }} else if (lastEvent.type === 'island_locked') {{
-    txt += `  island #${{lastEvent.island_idx}} locked\n`;
-    txt += `  new pairs (${{lastEvent.pairs.length}}): ${{lastEvent.pairs.map(p => `R[${{p[0]}}]→P[${{p[1]}}]`).join(', ')}}\n`;
-    txt += `  total mapped = ${{lastEvent.mapped_total}}`;
-    if (lastEvent.merged_with && lastEvent.merged_with.length) {{
-      txt += `\n  merged with islands: [${{lastEvent.merged_with.join(', ')}}]`;
-      txt += `\n  relabeled atoms: ${{lastEvent.relabeled ? lastEvent.relabeled.map(([r,old]) => `R[${{r}}](was #${{old}})`).join(', ') : ''}}`;
+    txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}`;
+  }} else if (e.type === 'seed_end') {{
+    txt += `  result = ${{e.result}},  final cands = ${{e.final_cands}}\n`;
+    if (e.lock_reason) txt += `  lock reason = ${{e.lock_reason}}\n`;
+    txt += `  fragment final size = ${{e.fragment.length}}\n`;
+    txt += `  fragment atoms = [${{e.fragment.join(', ')}}]`;
+    if (e.iso) txt += `\n  iso = ${{fmtCand(e.iso)}}`;
+    if (e.heap_remaining !== undefined) txt += `\n  heap remaining at lock = ${{e.heap_remaining}}`;
+  }} else if (e.type === 'island_locked') {{
+    txt += `  island #${{e.island_idx}} locked\n`;
+    txt += `  new pairs (${{e.pairs.length}}): ${{e.pairs.map(p => `R[${{p[0]}}]→P[${{p[1]}}]`).join(', ')}}\n`;
+    txt += `  total mapped = ${{e.mapped_total}}`;
+    if (e.merged_with && e.merged_with.length) {{
+      txt += `\n  merged with islands: [${{e.merged_with.join(', ')}}]`;
     }}
-    if (lastEvent.parent_atom !== undefined) {{
-      txt += `\n  expand-merge with parent R[${{lastEvent.parent_atom}}] (pass ${{lastEvent.expand_pass}})`;
-    }}
-  }} else if (lastEvent.type === 'pass_start') {{
-    txt += `  pass ${{lastEvent.pass}},  mapped so far = ${{lastEvent.mapped}}`;
-  }} else if (lastEvent.type === 'done') {{
-    txt += `  final mapped = ${{lastEvent.mapped}}`;
+  }} else if (e.type === 'done') {{
+    txt += `  final mapped = ${{e.mapped}}`;
+  }} else {{
+    txt += `  ${{JSON.stringify(e)}}`;
   }}
   eventDiv.textContent = txt;
   counter.textContent = `${{idx + 1}} / ${{events.length}}`;

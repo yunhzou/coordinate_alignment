@@ -188,14 +188,105 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
         })
 
+    def _heap_snapshot(k=8):
+        """Top-k pending heap entries (does not mutate the heap)."""
+        peek = list(heap)
+        peek.sort()
+        return [{'frag_atom': int(uu), 'ext_atom': int(nn),
+                 'wbo': round(-w, 3),
+                 'ext_status': ('mapped' if nn in mapping
+                                else 'frag' if nn in fragment
+                                else 'free')}
+                for w, uu, nn in peek[:k]
+                if frozenset({uu, nn}) not in used_edges and nn not in fragment]
+
+    def _cands_sample(cs, k=10):
+        return [{int(a): int(b) for a, b in c.items()} for c in cs[:k]]
+
+    def _why_extend_failed(n_atom):
+        """Per-cand explanation of why extension to n_atom failed."""
+        bonded = [u for u in g_R.neighbors(n_atom) if u in fragment]
+        n_el = g_R.nodes[n_atom]['element']
+        r_wbos = [(u, g_R[u][n_atom]['wbo']) for u in bonded]
+        out = []
+        for ci, cand in enumerate(cands[:5]):
+            used_p = set(cand.values())
+            v_set = set(g_P.neighbors(cand[bonded[0]]))
+            for u in bonded[1:]:
+                v_set &= set(g_P.neighbors(cand[u]))
+            v_set -= used_p
+            tried = []
+            for v in sorted(v_set):
+                why = []
+                if v in inv:
+                    why.append(f'P[{v}] in global inv')
+                elif g_P.nodes[v]['element'] != n_el:
+                    why.append(f'element {g_P.nodes[v]["element"]} != {n_el}')
+                else:
+                    bad = []
+                    for u, w in r_wbos:
+                        wp = g_P[cand[u]][v]['wbo']
+                        if abs(w - wp) > iso_tol:
+                            bad.append(f'|{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}>{iso_tol}')
+                    if bad:
+                        why.append('; '.join(bad))
+                tried.append({'v': int(v), 'rejected': bool(why),
+                              'reason': '; '.join(why) if why else 'OK'})
+            out.append({
+                'cand_idx': ci,
+                'cand_at_in_frag_neighbors': {int(u): int(cand[u]) for u in bonded},
+                'common_v_set_size': len(v_set),
+                'tried_v': tried,
+            })
+        return out
+
+    def _why_merge_failed(n_atom):
+        """Per-cand explanation of why whole-island merge to n_atom failed."""
+        if islands_R is None or n_atom not in islands_R:
+            island_atoms = [n_atom]
+        else:
+            target_iid = islands_R[n_atom]
+            island_atoms = [r for r, k in islands_R.items() if k == target_iid]
+        out = []
+        for ci, cand in enumerate(cands[:5]):
+            why = []
+            used_p = set(cand.values())
+            for r in island_atoms:
+                p = mapping[r]
+                if p in used_p and cand.get(r) != p:
+                    why.append(f'P[{p}] (image of R[{r}]) already used by R[{[k for k,v in cand.items() if v==p][0]}]')
+                if r in cand and cand[r] != p:
+                    why.append(f'R[{r}] in cand as P[{cand[r]}], conflicts with mapping P[{p}]')
+            # cross-bond check
+            nc = dict(cand)
+            for r, p in [(r, mapping[r]) for r in island_atoms if r not in nc]:
+                nc[r] = p
+            check_set = set(island_atoms) | fragment
+            for r in island_atoms:
+                for r2 in g_R.neighbors(r):
+                    if r2 not in check_set or r2 not in nc: continue
+                    if r >= r2 and r2 in island_atoms: continue
+                    wR = g_R[r][r2]['wbo']
+                    p, p2 = nc[r], nc[r2]
+                    if not g_P.has_edge(p, p2):
+                        why.append(f'no P-edge P[{p}]-P[{p2}] (R[{r}]-R[{r2}] WBO={wR:.3f})')
+                    else:
+                        wP = g_P[p][p2]['wbo']
+                        if abs(wR - wP) > iso_tol:
+                            why.append(f'R[{r}]-R[{r2}]: |{wR:.3f}-{wP:.3f}|={abs(wR-wP):.3f} (P[{p}]-P[{p2}])')
+            out.append({'cand_idx': ci, 'reasons': why[:8]})
+        return out
+
     while heap:
-        # Early-lock check before each pop (saves work on big symmetric scaffolds)
         if _set_unique(cands) and len(cands) == 1 and len(fragment) >= min_lock_size:
             if record:
                 events.append({
                     'type': 'seed_end', 'result': 'success',
-                    'final_cands': 1, 'fragment': sorted(int(x) for x in fragment),
+                    'final_cands': 1,
+                    'fragment': sorted(int(x) for x in fragment),
                     'iso': {int(k): int(v) for k, v in cands[0].items()},
+                    'lock_reason': 'set_unique_len1_during_BFS',
+                    'heap_remaining': len(heap),
                 })
             return [cands[0]]
 
@@ -206,50 +297,88 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             continue
         used_edges.add(edge)
         if n in fragment:
+            if record:
+                events.append({
+                    'type': 'pop_skip',
+                    'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
+                    'reason': 'ext_atom already in fragment',
+                })
             continue
 
-        if n in mapping:
+        n_in_mapping = n in mapping
+        if record:
+            events.append({
+                'type': 'pop',
+                'edge': {'frag_atom': int(u), 'ext_atom': int(n),
+                         'wbo': round(wbo, 3),
+                         'ext_element': g_R.nodes[n]['element']},
+                'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
+                'island_id_at_ext': (int(islands_R[n]) if islands_R and n in islands_R else None),
+                'island_image': (int(mapping[n]) if n_in_mapping else None),
+                'pre_state': {
+                    'fragment_size': len(fragment),
+                    'fragment': sorted(int(x) for x in fragment),
+                    'cands_count': len(cands),
+                    'cands_sample': _cands_sample(cands, 5),
+                    'p_atoms_in_cands': sorted({int(v) for c in cands for v in c.values()}),
+                },
+                'heap_top_after_pop': _heap_snapshot(8),
+            })
+
+        if n_in_mapping:
             new_cands, added = _merge_whole_island(
                 cands, fragment, n, mapping, islands_R, g_R, g_P, iso_tol)
             if new_cands:
+                why = None
                 cands = new_cands
-                # Add every island atom in one shot, push their out-edges.
                 ref_dist = distance.get(u, 0) + 1
                 for r in added:
                     fragment.add(r)
                     if r not in distance:
-                        # Distance via the bond that triggered the merge,
-                        # plus one step for each intra-island hop. This is
-                        # an over-estimate but only used for event display.
                         distance[r] = ref_dist
                 for r in added:
                     _push_edges_from(heap, used_edges, g_R, r, fragment, graph_floor)
                 if record:
                     events.append({
                         'type': 'commit',
+                        'scenario': 'merge_island',
+                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
                         'added': int(n), 'element': g_R.nodes[n]['element'],
-                        'cands': len(cands),
+                        'island_atoms_absorbed': [int(r) for r in added],
+                        'island_size_absorbed': len(added),
+                        'island_image': int(mapping[n]),
+                        'cands_before': len(cands),  # post = same here
+                        'cands_after': len(cands),
+                        'cands_sample_after': _cands_sample(cands, 5),
                         'fragment': sorted(int(x) for x in fragment),
                         'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
                         'distance_from_seed': distance[n],
-                        'bonds_to_fragment': [(int(u), round(wbo, 3))],
-                        'merge_into_island': True,
-                        'island_atom': int(n), 'island_image': int(mapping[n]),
-                        'island_size_absorbed': len(added),
+                        'heap_remaining': len(heap),
+                        'heap_top': _heap_snapshot(8),
                     })
             else:
                 if record:
                     events.append({
                         'type': 'consumed',
-                        'frag_atom': int(u), 'ext_atom': int(n),
-                        'wbo': round(wbo, 3),
+                        'scenario': 'merge_island',
+                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
+                                 'ext_element': g_R.nodes[n]['element']},
                         'reason': 'merge_failed',
+                        'island_image': int(mapping[n]),
+                        'island_id': int(islands_R[n]) if islands_R and n in islands_R else None,
+                        'why_per_cand': _why_merge_failed(n),
+                        'cands_count': len(cands),
+                        'cands_sample': _cands_sample(cands, 5),
                         'fragment': sorted(int(x) for x in fragment),
+                        'heap_remaining': len(heap),
+                        'heap_top': _heap_snapshot(8),
                     })
         else:
+            why = _why_extend_failed(n) if record else None
             new_cands = _extend_cands_free(
                 cands, fragment, n, g_R, g_P, iso_tol, max_cands_hard, inv)
             if new_cands:
+                old_count = len(cands)
                 cands = new_cands
                 fragment.add(n)
                 distance[n] = 1 + min(distance[x] for x in g_R.neighbors(n) if x in fragment - {n})
@@ -257,21 +386,35 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 if record:
                     events.append({
                         'type': 'commit',
+                        'scenario': 'extend_free',
+                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
                         'added': int(n), 'element': g_R.nodes[n]['element'],
-                        'cands': len(cands),
+                        'cand_n_value_set': sorted({int(c[n]) for c in cands}),
+                        'cands_before': old_count,
+                        'cands_after': len(cands),
+                        'cands_sample_after': _cands_sample(cands, 5),
                         'fragment': sorted(int(x) for x in fragment),
                         'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
                         'distance_from_seed': distance[n],
                         'bonds_to_fragment': [(int(u), round(wbo, 3))],
+                        'extension_details': why,
+                        'heap_remaining': len(heap),
+                        'heap_top': _heap_snapshot(8),
                     })
             else:
                 if record:
                     events.append({
                         'type': 'consumed',
-                        'frag_atom': int(u), 'ext_atom': int(n),
-                        'wbo': round(wbo, 3),
+                        'scenario': 'extend_free',
+                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
+                                 'ext_element': g_R.nodes[n]['element']},
                         'reason': 'cut_all_cands',
+                        'why_per_cand': why,
+                        'cands_count': len(cands),
+                        'cands_sample': _cands_sample(cands, 5),
                         'fragment': sorted(int(x) for x in fragment),
+                        'heap_remaining': len(heap),
+                        'heap_top': _heap_snapshot(8),
                     })
 
     # heap empty
