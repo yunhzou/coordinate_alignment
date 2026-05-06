@@ -114,6 +114,13 @@ def main():
             per_ig_best_align[ts['label']] = ba_any
         ig_best_any.sort(reverse=True)
         ig_best_imag.sort(reverse=True)
+        # Cumulative-max (pass@k oracle convention): topK_any = max
+        # alignment achievable when oracle picks the top-K IGs. Since
+        # we sort desc, this is just np.maximum.accumulate(...). All
+        # entries collapse to ig_best_any[0] but we keep the column
+        # structure so the schema is uniform.
+        cum_any  = list(np.maximum.accumulate(ig_best_any))  if ig_best_any  else []
+        cum_imag = list(np.maximum.accumulate(ig_best_imag)) if ig_best_imag else []
 
         # ── Verifier top5 (clean_v2): align of best mode in each picked IG ──
         elements = gt['xyz_elements']
@@ -171,9 +178,14 @@ def main():
             random_passk.append(e_max)
 
         row = {'step': data['step'], 'n_ig': len(igs)}
+        # NEW pass@k semantics: topK_any = best alignment over the top-K
+        # selected IGs (cumulative max). Per-rank values are now in
+        # rankK_any / rankK_any_imag.
         for k in range(K_ORACLE):
-            row[f'top{k+1}_any']      = round(ig_best_any[k],  6) if k < len(ig_best_any)  else 0.0
-            row[f'top{k+1}_any_imag'] = round(ig_best_imag[k], 6) if k < len(ig_best_imag) else 0.0
+            row[f'top{k+1}_any']       = round(cum_any[k], 6)       if k < len(cum_any)       else 0.0
+            row[f'top{k+1}_any_imag']  = round(cum_imag[k], 6)      if k < len(cum_imag)      else 0.0
+            row[f'rank{k+1}_any']      = round(ig_best_any[k], 6)   if k < len(ig_best_any)   else 0.0
+            row[f'rank{k+1}_any_imag'] = round(ig_best_imag[k], 6)  if k < len(ig_best_imag)  else 0.0
         for k in range(K_VERIFIER):
             row[f'verifier_top{k+1}']        = round(verifier_align_best[k],   6)  if k < len(verifier_align_best)   else 0.0
             row[f'verifier_top{k+1}_picked'] = round(verifier_align_picked[k], 6)  if k < len(verifier_align_picked) else 0.0
