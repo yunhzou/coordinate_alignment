@@ -96,11 +96,17 @@ def main():
         mapping = out['mapping']
         inv = {v: k for k, v in mapping.items()}
 
-        # Bond indices for cylinder drawing.
-        # broken bonds are R-side indices (drawn on R viewer in red dashed)
-        # formed bonds are P-side indices (drawn on P viewer in green dashed)
-        broken_idx = [[int(a), int(b)] for (a, b, _, _) in broken]
-        formed_idx_P = [[int(a), int(b)] for (a, b, _, _) in formed]
+        # Bond indices: draw BOTH broken and formed on BOTH viewers using
+        # the appropriate frame's atom indices (via mapping/inv).
+        # broken bonds are R-side indices natively; in P frame use mapping.
+        broken_R = [[int(a), int(b)] for (a, b, _, _) in broken]
+        broken_P = [[int(mapping[a]), int(mapping[b])]
+                    for (a, b, _, _) in broken
+                    if a in mapping and b in mapping]
+        formed_P = [[int(a), int(b)] for (a, b, _, _) in formed]
+        formed_R = [[int(inv[a]), int(inv[b])]
+                    for (a, b, _, _) in formed
+                    if a in inv and b in inv]
 
         cls = classify(old_rows.get(name), {
             'n_broken': out['n_broken'],
@@ -123,8 +129,8 @@ def main():
             'old_mapped': int(old_rows.get(name, {}).get('n_mapped', 0) or 0),
             'xyzR': write_xyz_str(elR, out['coords_R'], comment='reactant'),
             'xyzP': write_xyz_str(elP, out['coords_P'], comment='product'),
-            'broken_idx': broken_idx,
-            'formed_idx_P': formed_idx_P,
+            'broken_R': broken_R, 'broken_P': broken_P,
+            'formed_R': formed_R, 'formed_P': formed_P,
             'broken_table': bond_table_rows(broken, elR),
             'formed_table': bond_table_rows(formed, elP),
         }
@@ -218,6 +224,7 @@ HTML = r"""<!doctype html>
   <button onclick="prevStep()">◀</button>
   <button onclick="nextStep()">▶</button>
   <span class="stats" id="stats"></span>
+  <label style="font-size:13px"><input type="checkbox" id="showLabels" checked onchange="render(sel.value)"> labels</label>
   <span class="legend" style="margin-left:auto"><span class="lb">broken</span><span class="lf">formed</span></span>
 </div>
 
@@ -269,6 +276,38 @@ function nextStep() { if (sel.selectedIndex < sel.options.length - 1) { sel.sele
 sel.addEventListener('change', () => render(sel.value));
 
 let vR, vP;
+function drawBondCylinders(viewer, atoms, pairs, color) {
+  for (const [i, j] of pairs) {
+    if (i == null || j == null) continue;
+    if (i >= atoms.length || j >= atoms.length) continue;
+    viewer.addCylinder({
+      start: {x: atoms[i].x, y: atoms[i].y, z: atoms[i].z},
+      end:   {x: atoms[j].x, y: atoms[j].y, z: atoms[j].z},
+      color: color, radius: 0.12, dashed: true,
+    });
+  }
+}
+function highlightAtoms(viewer, atoms, indices, color) {
+  const set = new Set(indices.flat().filter(x => x != null));
+  for (const i of set) {
+    if (i >= atoms.length) continue;
+    viewer.setStyle({serial: i + 1},
+      {stick: {radius: 0.12, color: color},
+       sphere: {scale: 0.34, color: color}});
+  }
+}
+function addAtomLabels(viewer, xyz) {
+  const lines = xyz.trim().split('\n');
+  const n = parseInt(lines[0]);
+  for (let i = 0; i < n; i++) {
+    const parts = lines[2 + i].trim().split(/\s+/);
+    viewer.addLabel(String(i), {
+      position: {x: +parts[1], y: +parts[2], z: +parts[3]},
+      fontSize: 9, fontColor: 'black',
+      showBackground: false, borderThickness: 0, inFront: true,
+    });
+  }
+}
 function render(name) {
   const d = STEPS[name];
   if (!d) return;
@@ -280,31 +319,30 @@ function render(name) {
   document.getElementById('sP').textContent = '';
   document.getElementById('vR').innerHTML = '';
   document.getElementById('vP').innerHTML = '';
+  const showLabels = document.getElementById('showLabels').checked;
+
   vR = $3Dmol.createViewer('vR', {backgroundColor: 'white'});
   vR.addModel(d.xyzR, 'xyz');
   vR.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
-  // broken bonds drawn on R
   const atomsR = vR.selectedAtoms({});
-  for (const [i, j] of d.broken_idx) {
-    if (i < atomsR.length && j < atomsR.length) {
-      vR.addCylinder({start: {x:atomsR[i].x,y:atomsR[i].y,z:atomsR[i].z},
-                      end:   {x:atomsR[j].x,y:atomsR[j].y,z:atomsR[j].z},
-                      color: 'red', radius: 0.10, dashed: true});
-    }
-  }
+  // highlight atoms involved in broken (red tint) and formed (green tint)
+  highlightAtoms(vR, atomsR, d.broken_R, '#cc0000');
+  highlightAtoms(vR, atomsR, d.formed_R, '#008800');
+  // draw broken bonds (red dashed) and formed bonds (green dashed) — both on R panel
+  drawBondCylinders(vR, atomsR, d.broken_R, 'red');
+  drawBondCylinders(vR, atomsR, d.formed_R, 'green');
+  if (showLabels) addAtomLabels(vR, d.xyzR);
   vR.zoomTo(); vR.render();
 
   vP = $3Dmol.createViewer('vP', {backgroundColor: 'white'});
   vP.addModel(d.xyzP, 'xyz');
   vP.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
   const atomsP = vP.selectedAtoms({});
-  for (const [i, j] of d.formed_idx_P) {
-    if (i < atomsP.length && j < atomsP.length) {
-      vP.addCylinder({start: {x:atomsP[i].x,y:atomsP[i].y,z:atomsP[i].z},
-                      end:   {x:atomsP[j].x,y:atomsP[j].y,z:atomsP[j].z},
-                      color: 'green', radius: 0.10, dashed: true});
-    }
-  }
+  highlightAtoms(vP, atomsP, d.broken_P, '#cc0000');
+  highlightAtoms(vP, atomsP, d.formed_P, '#008800');
+  drawBondCylinders(vP, atomsP, d.broken_P, 'red');
+  drawBondCylinders(vP, atomsP, d.formed_P, 'green');
+  if (showLabels) addAtomLabels(vP, d.xyzP);
   vP.zoomTo(); vP.render();
 
   document.getElementById('brokenTab').innerHTML = d.broken_table;
