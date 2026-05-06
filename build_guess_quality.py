@@ -30,6 +30,7 @@ import numpy as np
 SRC_DIR = Path(__file__).parent / "out" / "mode_viewer"
 OUT_HTML = SRC_DIR / "guess_quality.html"
 OUT_CSV = Path(__file__).parent / "out" / "mode_analysis" / "guess_quality.csv"
+OUT_CSV_TOP2 = Path(__file__).parent / "out" / "mode_analysis" / "guess_quality_top2.csv"
 
 
 def cos_sim(a, b):
@@ -221,12 +222,51 @@ def main():
         rows = step_rows(payload)
         all_rows.extend(rows)
 
-    # CSV
+    # CSV — long format (one row per IG)
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     if all_rows:
         with OUT_CSV.open('w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=list(all_rows[0].keys()))
             w.writeheader(); w.writerows(all_rows)
+
+    # CSV — wide top-2 per step (one row per step, ranked by gt_alignment)
+    by_step = {}
+    for r in all_rows:
+        by_step.setdefault(r['step'], []).append(r)
+    top2_rows = []
+    for step in sorted(by_step.keys()):
+        igs = sorted(by_step[step], key=lambda r: -r['gt_alignment'])
+        if not igs:
+            continue
+        ref = igs[0]
+        row = {
+            'step':           step,
+            'n_atoms':        ref['n_atoms'],
+            'n_core':         ref['n_core'],
+            'gt_freq':        ref['gt_freq'],
+            'gt_bond_ovlp':   ref['gt_bond_ovlp'],
+            'gt_n_imag':      ref['gt_n_imag'],
+            'n_ig_total':     len(igs),
+        }
+        for k, slot in [(0, 'top1'), (1, 'top2')]:
+            if k < len(igs):
+                ig = igs[k]
+                row[f'{slot}_label']        = ig['ig_label']
+                row[f'{slot}_freq']         = ig['ig_freq']
+                row[f'{slot}_is_imag']      = int(ig['ig_is_imag'])
+                row[f'{slot}_n_imag']       = ig['ig_n_imag']
+                row[f'{slot}_bond_ovlp']    = ig['ig_bond_ovlp']
+                row[f'{slot}_rxn_ovlp']     = ig['ig_rxn_ovlp']
+                row[f'{slot}_gt_alignment'] = ig['gt_alignment']
+            else:
+                for f in ('label', 'freq', 'is_imag', 'n_imag',
+                         'bond_ovlp', 'rxn_ovlp', 'gt_alignment'):
+                    row[f'{slot}_{f}'] = ''
+        top2_rows.append(row)
+    if top2_rows:
+        with OUT_CSV_TOP2.open('w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(top2_rows[0].keys()))
+            w.writeheader(); w.writerows(top2_rows)
 
     # HTML — embed pre-rendered rows + JSON for client-side sort/filter
     json_rows = json.dumps(all_rows)
@@ -250,8 +290,9 @@ def main():
               f"max={a.max():.3f}  min={a.min():.3f}")
         for thr in [0.9, 0.7, 0.5, 0.3, 0.1]:
             print(f"  ≥{thr}: {(a >= thr).sum():>4} / {len(a)} IGs ({100*(a >= thr).mean():.1f}%)")
-    print(f"\nCSV:  {OUT_CSV}")
-    print(f"HTML: {OUT_HTML}")
+    print(f"\nCSV (all IGs):       {OUT_CSV}")
+    print(f"CSV (top-2 per step): {OUT_CSV_TOP2}")
+    print(f"HTML:                 {OUT_HTML}")
 
 
 if __name__ == "__main__":
