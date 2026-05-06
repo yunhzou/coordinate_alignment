@@ -34,7 +34,9 @@ from bgcp_io import BGCP_ROOT, LOOKUP, list_step_dirs
 from align_bgcp_coords import load_cached_xtb, fill_unmapped_greedy, reindex_to_R_frame
 from analyze_core_modes import (
     parse_g98_modes, core_atoms_in_R_frame, reindex_modes_to_R, list_ts_caches,
-    reaction_coord_delta, rxn_overlap_per_mode, WORK_MODES,
+    reaction_coord_delta, rxn_overlap_per_mode,
+    bond_reaction_vector, bond_overlap_per_mode,
+    WORK_MODES,
 )
 
 
@@ -97,7 +99,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     <div class="core-atoms" id="coreAtomsInfo"></div>
     <div style="overflow-y:auto;max-height:540px;margin-top:6px">
       <table>
-        <thead><tr><th>rank</th><th>idx</th><th>freq cm⁻¹</th><th>rxn ovlp</th><th>core frac</th></tr></thead>
+        <thead><tr><th>rank</th><th>idx</th><th>freq cm⁻¹</th><th>bond ovlp</th><th>rxn ovlp</th><th>core frac</th></tr></thead>
         <tbody id="modeTab"></tbody>
       </table>
     </div>
@@ -163,7 +165,7 @@ function updateInfo() {
   const f = m.freq.toFixed(2);
   const tag = m.freq < 0 ? '<span style="color:#c00;font-weight:600">imag</span>' : 'real';
   document.getElementById('info').innerHTML =
-    `mode #${m.idx} · ${tag} freq=${f} cm⁻¹ · rxn_overlap=${m.rxn_overlap.toFixed(3)} · core_frac=${m.core_fraction.toFixed(3)}`;
+    `mode #${m.idx} · ${tag} freq=${f} cm⁻¹ · bond_ovlp=${m.bond_overlap.toFixed(3)} · rxn_ovlp=${m.rxn_overlap.toFixed(3)} · core_frac=${m.core_fraction.toFixed(3)}`;
   document.getElementById('coreAtomsInfo').innerHTML =
     `<b>Core atoms (R-frame, ${DATA.core_atoms.length}):</b> ${DATA.core_atoms.join(', ')}`;
 }
@@ -183,7 +185,7 @@ function rebuildModeList() {
     tr.id = 'mode-row-' + mIdx;
     tr.classList.add('clickable');
     if (m.freq < 0) tr.classList.add('imag');
-    tr.innerHTML = `<td>${rank}</td><td>${m.idx}</td><td>${m.freq.toFixed(2)}</td><td>${m.rxn_overlap.toFixed(3)}</td><td>${m.core_fraction.toFixed(3)}</td>`;
+    tr.innerHTML = `<td>${rank}</td><td>${m.idx}</td><td>${m.freq.toFixed(2)}</td><td>${m.bond_overlap.toFixed(3)}</td><td>${m.rxn_overlap.toFixed(3)}</td><td>${m.core_fraction.toFixed(3)}</td>`;
     tr.onclick = () => selectMode(mIdx);
     tbody.appendChild(tr);
   });
@@ -267,6 +269,10 @@ def build_step_data(name):
     full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
     delta_RP = reaction_coord_delta(xyzR, xyzP, full_RP)
     n_R = len(elR)
+    broken_R = [(int(a), int(b)) for (a, b, _, _) in rp_res['broken']]
+    formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
+                for (a, b, _, _) in rp_res['formed']
+                if a in inv_RP and b in inv_RP]
     broken_bonds = [[int(a), int(b)] for (a, b, _, _) in rp_res['broken']]
     formed_bonds_R = []
     for (a, b, _, _) in rp_res['formed']:
@@ -298,20 +304,26 @@ def build_step_data(name):
         core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
         fraction = np.where(total > 1e-12, core_e / total, 0.0)
         rxn_ov = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
+        # bond_overlap: project onto bond-stretching / -compressing direction
+        ts_xyz_in_R = np.zeros_like(np.asarray(xyzR))
+        for r, t in mapping_RT.items():
+            ts_xyz_in_R[r] = xyzT[t]
+        V = bond_reaction_vector(ts_xyz_in_R, broken_R, formed_R)
+        bond_ov = bond_overlap_per_mode(modes_R, V)
         imag_mask = freqs < 0
         n_imag = int(imag_mask.sum())
 
-        # Pick default mode: imag mode with highest rxn_overlap; else mode 0.
+        # Pick default mode: imag mode with highest bond_overlap; else mode 0.
         if n_imag > 0:
             imag_idx = np.where(imag_mask)[0]
-            default_mode_idx = int(imag_idx[np.argmax(rxn_ov[imag_idx])])
+            default_mode_idx = int(imag_idx[np.argmax(bond_ov[imag_idx])])
         else:
-            default_mode_idx = int(np.argmax(rxn_ov))
+            default_mode_idx = int(np.argmax(bond_ov))
 
-        # Build modes payload — keep all imag, plus top-30 real by rxn_overlap.
+        # Keep all imag, plus top-30 real by bond_overlap, for the table.
         keep_idx = list(np.where(imag_mask)[0])
         real_idx = [i for i in range(len(freqs)) if not imag_mask[i]]
-        real_idx.sort(key=lambda i: -rxn_ov[i])
+        real_idx.sort(key=lambda i: -bond_ov[i])
         keep_idx += real_idx[:30]
         keep_idx = sorted(set(keep_idx))
         modes_payload = []
@@ -319,6 +331,7 @@ def build_step_data(name):
             modes_payload.append({
                 'idx': int(i),
                 'freq': round(float(freqs[i]), 4),
+                'bond_overlap': round(float(bond_ov[i]), 4),
                 'rxn_overlap': round(float(rxn_ov[i]), 4),
                 'core_fraction': round(float(fraction[i]), 4),
                 'disp': [[round(float(x), 4) for x in v] for v in modes_R[i]],
@@ -364,14 +377,14 @@ def render_one(name):
             .replace('__STEP__', name)
             .replace('__DATA__', json.dumps(payload)))
     out_path.write_text(html)
-    # Top imag rxn_overlap across all TS, for index summary.
+    # Top imag bond_overlap across all TS, for index summary.
     best_imag_ov = 0.0
     best_imag_label = '—'
     n_ts_with_imag = 0
     for ts in payload['ts_list']:
         for m in ts['modes']:
-            if m['freq'] < 0 and m['rxn_overlap'] > best_imag_ov:
-                best_imag_ov = m['rxn_overlap']
+            if m['freq'] < 0 and m['bond_overlap'] > best_imag_ov:
+                best_imag_ov = m['bond_overlap']
                 best_imag_label = ts['label']
         if ts['n_imag'] > 0:
             n_ts_with_imag += 1
@@ -414,7 +427,7 @@ concentrated on the reaction-core atoms (the atoms touching broken/formed bonds)
 
 <table id="t"><thead><tr>
 <th>step</th><th>N</th><th>core</th><th>n_TS</th><th>n_TS_with_imag</th>
-<th>best imag rxn_overlap</th><th>best label</th>
+<th>best imag bond_overlap</th><th>best label</th>
 </tr></thead><tbody>
 __ROWS__
 </tbody></table>
