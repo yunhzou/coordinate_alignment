@@ -93,15 +93,24 @@ function nextStep() { if (sel.selectedIndex < sel.options.length - 1) { sel.sele
 sel.addEventListener('change', () => render(sel.value));
 
 let vR, vP;
-function drawBondCylinders(viewer, atoms, pairs, color) {
+function drawBondCylinders(viewer, atoms, pairs, color, labelText) {
   for (const [i, j] of pairs) {
     if (i == null || j == null) continue;
     if (i >= atoms.length || j >= atoms.length) continue;
+    const a = atoms[i], b = atoms[j];
     viewer.addCylinder({
-      start: {x: atoms[i].x, y: atoms[i].y, z: atoms[i].z},
-      end:   {x: atoms[j].x, y: atoms[j].y, z: atoms[j].z},
+      start: {x: a.x, y: a.y, z: a.z},
+      end:   {x: b.x, y: b.y, z: b.z},
       color: color, radius: 0.12, dashed: true,
     });
+    if (labelText) {
+      const mid = {x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, z: (a.z + b.z) / 2};
+      viewer.addLabel(`${labelText} ${i}-${j}`, {
+        position: mid,
+        fontColor: 'white', backgroundColor: color, backgroundOpacity: 0.85,
+        fontSize: 11, borderThickness: 0, inFront: true,
+      });
+    }
   }
 }
 function highlightAtoms(viewer, atoms, indices, color) {
@@ -143,7 +152,7 @@ function render(name) {
   vR.addModel(d.xyzR, 'xyz');
   vR.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
   const atomsR = vR.selectedAtoms({});
-  drawBondCylinders(vR, atomsR, d.broken_R, 'red');
+  drawBondCylinders(vR, atomsR, d.broken_R, 'red', 'BROKEN');
   if (showLabels) addAtomLabels(vR, d.xyzR);
   vR.zoomTo(); vR.render();
 
@@ -152,7 +161,7 @@ function render(name) {
   vP.addModel(d.xyzP, 'xyz');
   vP.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
   const atomsP = vP.selectedAtoms({});
-  drawBondCylinders(vP, atomsP, d.formed_P, 'green');
+  drawBondCylinders(vP, atomsP, d.formed_P, 'green', 'FORMED');
   if (showLabels) addAtomLabels(vP, d.xyzP);
   vP.zoomTo(); vP.render();
 
