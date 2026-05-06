@@ -100,7 +100,7 @@ def _merge_island(cands, fragment, n, mapping, g_R, g_P, iso_tol):
 def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    graph_floor=0.2,
                    iso_tol=0.5,
-                   min_lock_size=2,
+                   min_lock_size=1,
                    max_branches=8,
                    max_cands_hard=2000):
     """
