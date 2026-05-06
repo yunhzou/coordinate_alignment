@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>pr7.V.dodh_ts71 — PQ result</title>
+<script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<style>
+body{font-family:-apple-system,sans-serif;margin:12px;background:#fafafa}
+.row{display:flex;gap:12px}
+.pane{flex:1;background:white;border:1px solid #ddd;border-radius:6px;padding:8px}
+.viewer{width:100%;height:560px;position:relative}
+.legend span{display:inline-block;padding:2px 8px;margin-right:6px;border-radius:4px;font-size:12px}
+.b{background:#ffd6d6;color:#800}
+.f{background:#d6f0d6;color:#060}
+.u{background:#f8e3a3;color:#663300}
+table{border-collapse:collapse;font-size:12px;margin-top:6px}
+td,th{border:1px solid #ccc;padding:2px 6px}
+h3{margin:6px 0}
+.stats{font-size:13px;color:#444;margin-bottom:8px}
+</style></head><body>
+<h2>pr7.V.dodh_ts71 — PQ algorithm result (rxn_core_pq)</h2>
+<div class="stats">
+  N atoms: 24 | mapped: 24/24 | broken: 2 | formed: 3 |
+  chirality violations: 0 | charge: -1 | uhf: 2
+</div>
+<div><span class="legend"><span class="b">broken bonds (in R)</span>
+<span class="f">formed bonds (in P)</span>
+<span class="u">unmapped atoms (highlighted on both)</span></span></div>
+<p><a href="index.html">↑ this step's seed comparison</a> |
+<a href="../index.html">↑↑ all regressions</a></p>
+
+<div class="row">
+  <div class="pane"><h3>Reactant</h3><div id="vR" class="viewer"></div></div>
+  <div class="pane"><h3>Product (R-frame indices)</h3><div id="vP" class="viewer"></div></div>
+</div>
+
+<div class="row" style="margin-top:12px">
+  <div class="pane"><h3>Broken bonds (R indices)</h3><table><tr><th>i</th><th>j</th><th>WBO_R</th><th>WBO_P</th></tr><tr><td>5</td><td>6</td><td>1.33</td><td>0.00</td></tr><tr><td>16</td><td>17</td><td>1.03</td><td>0.00</td></tr></table></div>
+  <div class="pane"><h3>Formed bonds (P indices, mapped to R where possible)</h3><table><tr><th>i</th><th>j</th><th>WBO_R</th><th>WBO_P</th></tr><tr><td>0</td><td>2</td><td>0.58</td><td>2.10</td></tr><tr><td>4</td><td>6</td><td>0.00</td><td>1.30</td></tr><tr><td>18</td><td>19</td><td>1.09</td><td>2.04</td></tr></table></div>
+</div>
+
+<script>
+const xyzR = "24\nR\nV  0.937293  -0.318616  0.410932\nN  -1.057608  0.100774  0.039554\nC  -1.898018  -0.914039  -0.109096\nC  -1.434716  1.370837  -0.016869\nC  -1.182868  -2.256782  -0.124411\nC  -0.252305  2.322837  0.051060\nO  0.874658  1.705044  0.106308\nO  0.092424  -2.138641  -0.036453\nO  -1.831374  -3.286258  -0.240055\nO  -0.437087  3.529551  0.018168\nC  -3.251210  -0.673715  -0.283283\nC  -3.683741  0.648528  -0.306376\nC  -2.771262  1.692115  -0.183210\nH  -3.070576  2.730293  -0.225431\nH  -4.736544  0.867840  -0.439638\nO  1.321574  -0.454665  1.946213\nO  2.336897  -0.587666  -0.775735\nC  3.422492  0.255794  -1.003604\nH  3.605616  0.307236  -2.095923\nH  3.196594  1.295542  -0.711509\nH  4.704716  -1.165331  0.143831\nC  4.662926  -0.191314  -0.324272\nH  5.551523  0.428736  -0.339758\nH  -3.930330  -1.506068  -0.407084\n";
+const xyzP = "24\nP\nV  0.903406  0.000000  0.000201\nO  0.000600  0.000000  -1.322484\nO  0.000000  0.000000  1.322484\nN  3.040722  0.000000  0.000336\nO  1.483819  1.925957  0.000367\nO  1.483820  -1.925957  0.000367\nC  2.708642  2.323429  0.000340\nC  3.676595  1.161277  0.000290\nO  3.110833  3.474333  0.000359\nC  5.060609  1.206377  0.000188\nC  5.753063  0.000000  0.000133\nC  5.060609  -1.206376  0.000188\nC  3.676595  -1.161277  0.000290\nC  2.708643  -2.323429  0.000340\nO  3.110834  -3.474333  0.000359\nH  5.565389  2.162615  0.000144\nH  6.836516  0.000000  0.000041\nH  5.565389  -2.162615  0.000144\nC  16.836516  0.000000  0.662084\nC  16.836516  0.000000  -0.662084\nH  16.836516  0.922297  1.231614\nH  16.836516  0.922297  -1.231614\nH  16.836516  -0.922297  -1.231614\nH  16.836516  -0.922297  1.231614\n";
+const broken = [[5, 6], [16, 17]];     // [[i,j], ...] in R indices
+const formed_R = [[0, 6], [16, 5], [17, 21]]; // [[i,j], ...] using mapping^-1; null if unmapped
+const formed_P = [[0, 2], [4, 6], [18, 19]]; // [[ip,jp], ...] in P indices
+const unmapped_R = [];
+const unmapped_P = [];
+
+function setup(div, xyz, broken_pairs, formed_pairs, unmapped) {
+  const v = $3Dmol.createViewer(div, {backgroundColor: 'white'});
+  v.addModel(xyz, 'xyz');
+  v.setStyle({}, {stick: {radius: 0.12}, sphere: {radius: 0.30}});
+  // highlight unmapped atoms in orange
+  for (const i of unmapped) {
+    v.setStyle({serial: i + 1}, {stick: {radius: 0.12}, sphere: {radius: 0.50, color: 'orange'}});
+  }
+  // dashed bond cylinders
+  const atoms = v.selectedAtoms({});
+  function pos(i) {
+    const a = atoms[i];
+    return {x: a.x, y: a.y, z: a.z};
+  }
+  for (const [i, j] of broken_pairs) {
+    if (i == null || j == null || i >= atoms.length || j >= atoms.length) continue;
+    v.addCylinder({start: pos(i), end: pos(j), color: 'red',
+                   radius: 0.10, dashed: true});
+  }
+  for (const [i, j] of formed_pairs) {
+    if (i == null || j == null || i >= atoms.length || j >= atoms.length) continue;
+    v.addCylinder({start: pos(i), end: pos(j), color: 'green',
+                   radius: 0.10, dashed: true});
+  }
+  v.zoomTo();
+  v.render();
+}
+
+setup('vR', xyzR, broken, formed_R.filter(p => p[0] != null && p[1] != null),
+      unmapped_R);
+setup('vP', xyzP, broken.filter(p => false /* draw broken on R only */),
+      formed_P, unmapped_P);
+</script>
+</body></html>

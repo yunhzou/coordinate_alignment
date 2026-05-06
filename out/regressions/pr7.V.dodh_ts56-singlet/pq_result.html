@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>pr7.V.dodh_ts56-singlet — PQ result</title>
+<script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<style>
+body{font-family:-apple-system,sans-serif;margin:12px;background:#fafafa}
+.row{display:flex;gap:12px}
+.pane{flex:1;background:white;border:1px solid #ddd;border-radius:6px;padding:8px}
+.viewer{width:100%;height:560px;position:relative}
+.legend span{display:inline-block;padding:2px 8px;margin-right:6px;border-radius:4px;font-size:12px}
+.b{background:#ffd6d6;color:#800}
+.f{background:#d6f0d6;color:#060}
+.u{background:#f8e3a3;color:#663300}
+table{border-collapse:collapse;font-size:12px;margin-top:6px}
+td,th{border:1px solid #ccc;padding:2px 6px}
+h3{margin:6px 0}
+.stats{font-size:13px;color:#444;margin-bottom:8px}
+</style></head><body>
+<h2>pr7.V.dodh_ts56-singlet — PQ algorithm result (rxn_core_pq)</h2>
+<div class="stats">
+  N atoms: 27 | mapped: 27/27 | broken: 4 | formed: 4 |
+  chirality violations: 0 | charge: -1 | uhf: 0
+</div>
+<div><span class="legend"><span class="b">broken bonds (in R)</span>
+<span class="f">formed bonds (in P)</span>
+<span class="u">unmapped atoms (highlighted on both)</span></span></div>
+<p><a href="index.html">↑ this step's seed comparison</a> |
+<a href="../index.html">↑↑ all regressions</a></p>
+
+<div class="row">
+  <div class="pane"><h3>Reactant</h3><div id="vR" class="viewer"></div></div>
+  <div class="pane"><h3>Product (R-frame indices)</h3><div id="vP" class="viewer"></div></div>
+</div>
+
+<div class="row" style="margin-top:12px">
+  <div class="pane"><h3>Broken bonds (R indices)</h3><table><tr><th>i</th><th>j</th><th>WBO_R</th><th>WBO_P</th></tr><tr><td>6</td><td>9</td><td>0.59</td><td>0.00</td></tr><tr><td>7</td><td>18</td><td>0.87</td><td>0.00</td></tr><tr><td>8</td><td>9</td><td>1.35</td><td>0.00</td></tr><tr><td>17</td><td>26</td><td>0.81</td><td>0.00</td></tr></table></div>
+  <div class="pane"><h3>Formed bonds (P indices, mapped to R where possible)</h3><table><tr><th>i</th><th>j</th><th>WBO_R</th><th>WBO_P</th></tr><tr><td>6</td><td>17</td><td>0.00</td><td>1.15</td></tr><tr><td>7</td><td>8</td><td>0.00</td><td>1.29</td></tr><tr><td>24</td><td>25</td><td>0.00</td><td>0.92</td></tr><tr><td>24</td><td>26</td><td>0.00</td><td>0.92</td></tr></table></div>
+</div>
+
+<script>
+const xyzR = "27\nR\nC  1.623759  1.425839  0.020590\nN  1.301511  0.136194  0.007616\nC  2.202717  -0.835953  -0.102555\nC  3.547032  -0.524911  -0.218133\nC  3.914773  0.817187  -0.212211\nC  2.949402  1.811389  -0.089930\nV  -0.685037  -0.388067  0.165435\nO  -1.521789  -0.871540  1.756203\nC  1.589493  -2.230677  -0.087051\nO  0.312300  -2.220372  0.018114\nC  0.415449  2.339367  0.183684\nO  -0.686410  1.697427  0.294612\nO  2.327766  -3.204552  -0.169798\nO  0.585946  3.552544  0.198371\nO  -1.896028  -0.479553  -1.193168\nC  -3.014040  0.345746  -1.385604\nC  -4.205306  -0.133068  -0.570723\nO  -4.078969  0.083182  0.817807\nH  -1.465440  -1.815668  1.931568\nH  -3.292047  0.322167  -2.449661\nH  -2.789427  1.385885  -1.116756\nH  -5.097409  0.415501  -0.890775\nH  -4.371542  -1.197401  -0.793087\nH  3.198964  2.863457  -0.076446\nH  4.960005  1.089434  -0.300971\nH  4.269951  -1.323853  -0.308009\nH  -3.249974  -0.313954  1.140281\n";
+const xyzP = "27\nP\nC  3.064839  -1.155047  -0.654342\nN  3.712179  0.001944  -0.773938\nC  3.087136  1.174608  -0.690404\nC  1.739133  1.233892  -0.382849\nC  1.054368  0.036633  -0.184955\nC  1.716870  -1.179522  -0.343734\nV  5.737087  -0.022977  -1.166184\nO  5.135861  -1.911227  -1.392926\nC  3.966464  -2.315289  -1.001256\nO  3.577787  -3.470543  -0.946549\nC  4.012544  2.305388  -1.065257\nO  3.651027  3.470543  -1.039486\nO  7.547139  -0.045914  -1.631034\nH  1.245258  2.194255  -0.318202\nH  0.000000  0.050625  0.062945\nH  1.205703  -2.128134  -0.247890\nO  5.174331  1.866630  -1.445631\nO  6.324822  -0.016337  0.608772\nC  7.685658  0.329882  0.694047\nC  8.392744  -0.245009  -0.526339\nH  7.802593  1.425824  0.699653\nH  8.117870  -0.051201  1.631034\nH  9.368388  0.236552  -0.687406\nH  8.576371  -1.320969  -0.379335\nO  19.368388  0.000000  0.293779\nH  19.368388  0.758628  -0.293779\nH  19.368388  -0.758628  -0.293779\n";
+const broken = [[6, 9], [7, 18], [8, 9], [17, 26]];     // [[i,j], ...] in R indices
+const formed_R = [[6, 17], [7, 8], [9, 26], [9, 18]]; // [[i,j], ...] using mapping^-1; null if unmapped
+const formed_P = [[6, 17], [7, 8], [24, 25], [24, 26]]; // [[ip,jp], ...] in P indices
+const unmapped_R = [];
+const unmapped_P = [];
+
+function setup(div, xyz, broken_pairs, formed_pairs, unmapped) {
+  const v = $3Dmol.createViewer(div, {backgroundColor: 'white'});
+  v.addModel(xyz, 'xyz');
+  v.setStyle({}, {stick: {radius: 0.12}, sphere: {radius: 0.30}});
+  // highlight unmapped atoms in orange
+  for (const i of unmapped) {
+    v.setStyle({serial: i + 1}, {stick: {radius: 0.12}, sphere: {radius: 0.50, color: 'orange'}});
+  }
+  // dashed bond cylinders
+  const atoms = v.selectedAtoms({});
+  function pos(i) {
+    const a = atoms[i];
+    return {x: a.x, y: a.y, z: a.z};
+  }
+  for (const [i, j] of broken_pairs) {
+    if (i == null || j == null || i >= atoms.length || j >= atoms.length) continue;
+    v.addCylinder({start: pos(i), end: pos(j), color: 'red',
+                   radius: 0.10, dashed: true});
+  }
+  for (const [i, j] of formed_pairs) {
+    if (i == null || j == null || i >= atoms.length || j >= atoms.length) continue;
+    v.addCylinder({start: pos(i), end: pos(j), color: 'green',
+                   radius: 0.10, dashed: true});
+  }
+  v.zoomTo();
+  v.render();
+}
+
+setup('vR', xyzR, broken, formed_R.filter(p => p[0] != null && p[1] != null),
+      unmapped_R);
+setup('vP', xyzP, broken.filter(p => false /* draw broken on R only */),
+      formed_P, unmapped_P);
+</script>
+</body></html>

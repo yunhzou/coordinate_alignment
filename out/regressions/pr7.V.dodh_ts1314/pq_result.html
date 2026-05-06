@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>pr7.V.dodh_ts1314 — PQ result</title>
+<script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<style>
+body{font-family:-apple-system,sans-serif;margin:12px;background:#fafafa}
+.row{display:flex;gap:12px}
+.pane{flex:1;background:white;border:1px solid #ddd;border-radius:6px;padding:8px}
+.viewer{width:100%;height:560px;position:relative}
+.legend span{display:inline-block;padding:2px 8px;margin-right:6px;border-radius:4px;font-size:12px}
+.b{background:#ffd6d6;color:#800}
+.f{background:#d6f0d6;color:#060}
+.u{background:#f8e3a3;color:#663300}
+table{border-collapse:collapse;font-size:12px;margin-top:6px}
+td,th{border:1px solid #ccc;padding:2px 6px}
+h3{margin:6px 0}
+.stats{font-size:13px;color:#444;margin-bottom:8px}
+</style></head><body>
+<h2>pr7.V.dodh_ts1314 — PQ algorithm result (rxn_core_pq)</h2>
+<div class="stats">
+  N atoms: 38 | mapped: 38/38 | broken: 3 | formed: 2 |
+  chirality violations: 2 | charge: -1 | uhf: 0
+</div>
+<div><span class="legend"><span class="b">broken bonds (in R)</span>
+<span class="f">formed bonds (in P)</span>
+<span class="u">unmapped atoms (highlighted on both)</span></span></div>
+<p><a href="index.html">↑ this step's seed comparison</a> |
+<a href="../index.html">↑↑ all regressions</a></p>
+
+<div class="row">
+  <div class="pane"><h3>Reactant</h3><div id="vR" class="viewer"></div></div>
+  <div class="pane"><h3>Product (R-frame indices)</h3><div id="vP" class="viewer"></div></div>
+</div>
+
+<div class="row" style="margin-top:12px">
+  <div class="pane"><h3>Broken bonds (R indices)</h3><table><tr><th>i</th><th>j</th><th>WBO_R</th><th>WBO_P</th></tr><tr><td>8</td><td>11</td><td>0.52</td><td>0.00</td></tr><tr><td>8</td><td>18</td><td>0.91</td><td>0.00</td></tr><tr><td>16</td><td>17</td><td>1.02</td><td>0.00</td></tr></table></div>
+  <div class="pane"><h3>Formed bonds (P indices, mapped to R where possible)</h3><table><tr><th>i</th><th>j</th><th>WBO_R</th><th>WBO_P</th></tr><tr><td>10</td><td>17</td><td>0.91</td><td>2.12</td></tr><tr><td>32</td><td>33</td><td>1.00</td><td>2.04</td></tr></table></div>
+</div>
+
+<script>
+const xyzR = "38\nR\nC  -2.383408  0.256522  0.771532\nC  -3.517111  -0.488535  1.055414\nC  -3.736297  -1.655411  0.335278\nC  -2.813826  -2.049187  -0.625299\nC  -1.704446  -1.247412  -0.843222\nN  -1.523745  -0.125451  -0.160548\nC  -0.575252  -1.546461  -1.798970\nO  0.330700  -0.652102  -1.782277\nV  0.111811  1.201581  -0.688800\nO  -0.751547  1.983169  -1.752341\nC  -1.962828  1.529730  1.459452\nO  -0.874066  2.004657  0.989998\nO  -0.590337  -2.589784  -2.451942\nO  1.081969  -0.124826  1.028997\nP  2.122076  -1.201712  1.065933\nC  1.432434  -2.866558  0.922258\nO  1.860776  1.258418  -1.478123\nC  2.315573  2.518203  -1.060714\nC  1.294157  2.820314  -0.010702\nC  3.000488  -1.193155  2.647672\nC  3.384873  -1.087054  -0.208984\nO  -2.638102  1.989395  2.375104\nH  -2.923407  -2.955899  -1.204250\nH  -4.616314  -2.258299  0.527084\nH  2.290170  3.240314  -1.893663\nH  3.363670  2.471938  -0.710928\nH  0.741683  3.753368  -0.060443\nH  1.571502  2.560408  1.007028\nH  -4.193775  -0.141753  1.824558\nH  2.206322  -3.620819  1.072165\nH  0.652576  -2.997135  1.673108\nH  0.998090  -2.996744  -0.068644\nH  3.763610  -1.971826  2.683650\nH  3.472208  -0.219602  2.783827\nH  2.286113  -1.348330  3.456685\nH  4.032370  -1.965244  -0.187839\nH  2.879081  -0.993307  -1.169539\nH  3.978218  -0.186977  -0.053175\n";
+const xyzP = "38\nP\nN  3.792683  -0.242151  -0.356794\nC  3.283932  1.001912  -0.285610\nC  1.937532  1.259078  -0.166939\nC  1.068822  0.174667  -0.097872\nC  1.592538  -1.098181  -0.132217\nC  2.973450  -1.299802  -0.266405\nC  4.307448  2.102203  -0.321899\nO  3.984513  3.275821  -0.263375\nC  3.461004  -2.752527  -0.281975\nO  3.678705  -3.233394  -1.403995\nV  5.934494  -0.262017  -0.619345\nO  3.477764  -3.275821  0.846947\nO  5.970795  -0.912074  -2.074773\nO  5.518622  1.655689  -0.405045\nO  7.844053  0.469207  -0.586029\nP  9.050680  -0.362965  -0.190567\nC  9.125882  -1.944501  -1.036235\nO  6.199105  -1.373385  0.514005\nC  9.112546  -0.688789  1.574440\nC  10.541843  0.549682  -0.616805\nH  0.956357  -1.969599  -0.050193\nH  0.000000  0.328836  -0.004665\nH  1.604351  2.286285  -0.123261\nH  9.997323  -1.272344  1.831062\nH  9.129806  0.259231  2.112588\nH  8.209916  -1.237464  1.843859\nH  11.433633  -0.011247  -0.335482\nH  10.553253  0.734842  -1.690840\nH  10.535523  1.506643  -0.094902\nH  10.011432  -2.502954  -0.730580\nH  8.225076  -2.507468  -0.791554\nH  9.150195  -1.775084  -2.112588\nC  21.433633  0.000000  0.662084\nC  21.433633  0.000000  -0.662084\nH  21.433633  0.922297  1.231614\nH  21.433633  0.922297  -1.231614\nH  21.433633  -0.922297  -1.231614\nH  21.433633  -0.922297  1.231614\n";
+const broken = [[8, 11], [8, 18], [16, 17]];     // [[i,j], ...] in R indices
+const formed_R = [[8, 16], [18, 17]]; // [[i,j], ...] using mapping^-1; null if unmapped
+const formed_P = [[10, 17], [32, 33]]; // [[ip,jp], ...] in P indices
+const unmapped_R = [];
+const unmapped_P = [];
+
+function setup(div, xyz, broken_pairs, formed_pairs, unmapped) {
+  const v = $3Dmol.createViewer(div, {backgroundColor: 'white'});
+  v.addModel(xyz, 'xyz');
+  v.setStyle({}, {stick: {radius: 0.12}, sphere: {radius: 0.30}});
+  // highlight unmapped atoms in orange
+  for (const i of unmapped) {
+    v.setStyle({serial: i + 1}, {stick: {radius: 0.12}, sphere: {radius: 0.50, color: 'orange'}});
+  }
+  // dashed bond cylinders
+  const atoms = v.selectedAtoms({});
+  function pos(i) {
+    const a = atoms[i];
+    return {x: a.x, y: a.y, z: a.z};
+  }
+  for (const [i, j] of broken_pairs) {
+    if (i == null || j == null || i >= atoms.length || j >= atoms.length) continue;
+    v.addCylinder({start: pos(i), end: pos(j), color: 'red',
+                   radius: 0.10, dashed: true});
+  }
+  for (const [i, j] of formed_pairs) {
+    if (i == null || j == null || i >= atoms.length || j >= atoms.length) continue;
+    v.addCylinder({start: pos(i), end: pos(j), color: 'green',
+                   radius: 0.10, dashed: true});
+  }
+  v.zoomTo();
+  v.render();
+}
+
+setup('vR', xyzR, broken, formed_R.filter(p => p[0] != null && p[1] != null),
+      unmapped_R);
+setup('vP', xyzP, broken.filter(p => false /* draw broken on R only */),
+      formed_P, unmapped_P);
+</script>
+</body></html>
