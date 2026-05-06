@@ -60,40 +60,70 @@ def main():
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Four panels: mean alignment + ≥0.7 + ≥0.5 + ≥0.3 pass-rate
-    fig, axes = plt.subplots(1, 4, figsize=(15, 4.2))
+    # 2x2 grid: mean alignment + ≥0.7 + ≥0.5 + ≥0.3 pass-rate
+    fig, axes = plt.subplots(2, 2, figsize=(13, 10))
+    axes = axes.flatten()
     panels = [
         ('mean alignment',                  lambda a: a.mean(axis=0),                    None),
         ('% steps reaching alignment ≥ 0.7', lambda a: (a >= 0.7).mean(axis=0) * 100,    '%'),
         ('% steps reaching alignment ≥ 0.5', lambda a: (a >= 0.5).mean(axis=0) * 100,    '%'),
         ('% steps reaching alignment ≥ 0.3', lambda a: (a >= 0.3).mean(axis=0) * 100,    '%'),
     ]
+    # Vertical-offset (in points) per method so labels don't collide.
+    label_offsets = {'oracle': 12, 'verifier': 12, 'random': -18}
+
+    def _label_ks(method, k_list):
+        """Where to draw value annotations.
+        Oracle is constant in k → only label endpoints (k=1, k=K)."""
+        if method == 'oracle':
+            return [k_list[0], k_list[-1]]
+        return k_list
+
     for ax, (title, fn, units) in zip(axes, panels):
+        # Pre-compute per-method curves to detect collisions for label placement.
+        ys = {name: fn(arrs[name]) for name in methods}
+        ymax_data = max(y.max() for y in ys.values())
         for name, (_, color, ls, label) in methods.items():
-            y = fn(arrs[name])
-            ax.plot(ks, y, marker='o', linestyle=ls, color=color, label=label, lw=2,
-                    markersize=6)
-            for k, val in zip(ks, y):
+            y = ys[name]
+            ax.plot(ks, y, marker='o', linestyle=ls, color=color, label=label, lw=2.2,
+                    markersize=7)
+            for k in _label_ks(name, ks):
+                val = y[k - 1]
+                # If this point is within ±2 % of another curve at same k,
+                # nudge the label vertically to avoid overlap.
+                offset_y = label_offsets[name]
+                for other in methods:
+                    if other == name: continue
+                    if abs(ys[other][k - 1] - val) < (0.02 * (1 if units is None else 100)):
+                        # collision: push verifier down if oracle is the same value;
+                        # push random further down
+                        if name == 'verifier' and ys.get('oracle', y)[k - 1] - val < 1e-6:
+                            offset_y = -18
+                        if name == 'random':
+                            offset_y = -22
                 fmt = f'{val:.2f}' if units is None else f'{val:.0f}'
                 ax.annotate(fmt, (k, val), textcoords='offset points',
-                            xytext=(0, 8 if name != 'random' else -14),
-                            ha='center', fontsize=8, color=color)
+                            xytext=(0, offset_y), ha='center', fontsize=9, color=color)
         ax.set_xticks(ks)
-        ax.set_xlabel('k (top-k IGs picked)')
-        ax.set_title(title, fontsize=10)
+        ax.set_xlabel('k  (top-k IGs picked)')
+        ax.set_title(title, fontsize=12, pad=14)
         ax.grid(alpha=0.3)
-        ax.set_xlim(0.7, K_MAX + 0.3)
+        ax.set_xlim(0.55, K_MAX + 0.45)
+        # Headroom so the top labels don't crowd the panel border
         if units == '%':
-            ax.set_ylim(bottom=0)
             ax.set_ylabel('% of steps')
+            ax.set_ylim(0, max(ymax_data * 1.22, 5))
         else:
             ax.set_ylabel('mean cosine alignment')
-            ax.set_ylim(bottom=0)
-    axes[0].legend(loc='lower right', fontsize=9)
-    fig.suptitle(f'pass@k comparison on 155 elementary steps\n'
-                 f'(verifier vs uniform-random baseline; oracle ceiling shown for reference)',
-                 fontsize=11)
-    fig.tight_layout()
+            ax.set_ylim(0, max(ymax_data * 1.22, 0.05))
+    axes[0].legend(loc='lower right', fontsize=10, framealpha=0.95)
+    fig.suptitle(f'pass@k: clean_v2 verifier vs uniform-random baseline   '
+                 f'(oracle ceiling shown for reference, N = 155 steps)',
+                 fontsize=13, y=0.995)
+    fig.subplots_adjust(top=0.90, hspace=0.42, wspace=0.25,
+                        left=0.08, right=0.97, bottom=0.07)
+    # NB: do NOT call tight_layout() here — it would override the
+    # subplots_adjust spacing we set above.
 
     out_png = OUT_DIR / 'passk_comparison.png'
     out_pdf = OUT_DIR / 'passk_comparison.pdf'
