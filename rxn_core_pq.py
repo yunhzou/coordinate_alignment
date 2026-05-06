@@ -152,7 +152,7 @@ def _merge_whole_island_LEGACY(cands, fragment, n, mapping, islands_R,
 
 def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    graph_floor=0.2,
-                   iso_tol=0.5,
+                   iso_tol=1.0,
                    min_lock_size=1,
                    max_branches=8,
                    max_cands_hard=2000,
@@ -528,7 +528,7 @@ class _Branch:
 
 
 def find_islands_pq(g_R, g_P, seed_order,
-                    graph_floor=0.2, iso_tol=0.5,
+                    graph_floor=0.2, iso_tol=1.0,
                     max_branches=8, events=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
@@ -655,7 +655,7 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42):
 
 def analyze_pq(reactant_xyz, product_xyz, workdir,
                charge=0, uhf=0,
-               graph_floor=0.2, iso_tol=0.5,
+               graph_floor=0.2, iso_tol=1.0,
                bond_high=0.5, dwbo_threshold=0.5,
                n_seeds=10, max_branches=8,
                chirality=True,
