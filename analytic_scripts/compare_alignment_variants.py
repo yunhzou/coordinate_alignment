@@ -40,7 +40,7 @@ from ranker import (rk_clean_v2, ATOMIC_MASS, cos_sim,
 
 VIEWER_DIR = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'mode_viewer'
 HUMAN_CSV  = PROJECT_ROOT / 'appendix_perparation' / 'analtics' / 'final_quality_measurement-humanversion (1).csv'
-OUT_CSV    = PROJECT_ROOT / 'out' / 'mode_analysis' / 'alignment_variants_vs_human.csv'
+OUT_CSV    = PROJECT_ROOT / 'appendix_perparation' / 'analtics' / 'alignment_variants_vs_human.csv'
 
 
 def load_step_payload(html_path):
