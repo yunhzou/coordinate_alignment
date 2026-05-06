@@ -1,8 +1,10 @@
 # xtb working directories (regenerable, ~MBs)
 work/
+work_bgcp/
 work_frag/
-work_tsdisco/
-work_tsalign/
+work_pq_compare_old/
+work_pq_compare_new/
+work_pq_smoke/
 
 # Python cache
 __pycache__/
@@ -11,14 +13,12 @@ __pycache__/
 # macOS
 .DS_Store
 
-# (out/ kept — HTML viewers are useful artifacts)
-work_rtsp/
-work_bgcp/
-work_modes/
-work_core_rmsd/
-work_seedcompare/
+# Run logs
+out/*.log
+
+# Untracked stale artifacts
+out_initial_posing_mode/
+my_idea.md
+
+# Benchmark data — too large to ship
 Benchmark_Guesses_Collective_Package/
-work_modedemo/
-work_pq_compare_old/
-work_pq_compare_new/
-work_pq_smoke/

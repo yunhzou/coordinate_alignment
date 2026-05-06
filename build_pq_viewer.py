@@ -22,7 +22,7 @@ from pathlib import Path
 
 from rxn_core_pq import analyze_pq
 from rxn_core_frag import write_xyz_str
-from build_bgcp_viewer import (
+from bgcp_io import (
     BGCP_ROOT, WORK, LOOKUP, list_step_dirs, read_xyzs,
 )
 

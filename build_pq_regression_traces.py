@@ -3,7 +3,7 @@ Generate NEW-PQ-algorithm trace HTMLs for each of the 7 regressed steps,
 10 random seed orderings each. Output: out/regressions/<step>/pq_seed_*.html
 plus a per-step pq_index.html linking to all 10 seeds.
 
-Reuses trace_run.HTML — events emitted by grow_island_pq use the same
+Reuses trace_html.HTML — events emitted by grow_island_pq use the same
 schema (seed_start, commit, seed_end, island_locked, pass_start, done)
 plus an extra 'consumed' event type (silently skipped by the renderer
 unless we patch it; it still increments the slider so the user can step
@@ -21,8 +21,8 @@ from rxn_core_pq import find_islands_pq
 from rxn_core_frag import (
     run_xtb, build_graph, write_xyz_str, classify_bonds, expand_mapping,
 )
-from trace_run import HTML
-from build_bgcp_viewer import BGCP_ROOT, LOOKUP, WORK as BGCP_WORK, read_xyzs
+from trace_html import HTML
+from bgcp_io import BGCP_ROOT, LOOKUP, WORK as BGCP_WORK, read_xyzs
 
 
 REGRESSIONS = [
