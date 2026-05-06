@@ -321,22 +321,20 @@ function render(name) {
   document.getElementById('vP').innerHTML = '';
   const showLabels = document.getElementById('showLabels').checked;
 
-  // R panel: broken bonds only (these EXIST in R, lost in P)
+  // R panel: broken bonds (red dashed)
   vR = $3Dmol.createViewer('vR', {backgroundColor: 'white'});
   vR.addModel(d.xyzR, 'xyz');
   vR.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
   const atomsR = vR.selectedAtoms({});
-  highlightAtoms(vR, atomsR, d.broken_R, '#cc0000');
   drawBondCylinders(vR, atomsR, d.broken_R, 'red');
   if (showLabels) addAtomLabels(vR, d.xyzR);
   vR.zoomTo(); vR.render();
 
-  // P panel: formed bonds only (these EXIST in P, didn't in R)
+  // P panel: formed bonds (green dashed)
   vP = $3Dmol.createViewer('vP', {backgroundColor: 'white'});
   vP.addModel(d.xyzP, 'xyz');
   vP.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
   const atomsP = vP.selectedAtoms({});
-  highlightAtoms(vP, atomsP, d.formed_P, '#008800');
   drawBondCylinders(vP, atomsP, d.formed_P, 'green');
   if (showLabels) addAtomLabels(vP, d.xyzP);
   vP.zoomTo(); vP.render();
