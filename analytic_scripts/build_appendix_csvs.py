@@ -43,7 +43,11 @@ import numpy as np
 from ranker import rk_clean_v2 as rank_clean_v2  # canonical verifier
 
 ROOT = Path('/Users/yunhengz/empty_for_claude/rxn_core')
-SRC = ROOT / 'out' / 'mode_viewer'
+# Source priority: live out/mode_viewer if populated, else fall back to
+# the cleaned per-step HTMLs already mirrored under appendix_perparation/.
+_LIVE = ROOT / 'out' / 'mode_viewer'
+_MIRROR = ROOT / 'appendix_perparation' / 'viewer' / 'mode_viewer'
+SRC = _LIVE if any(_LIVE.glob('*.html')) else _MIRROR
 OUT_DIR = ROOT / 'appendix_perparation' / 'analtics'
 OUT_FINAL = OUT_DIR / 'final_quality_measurement.csv'
 OUT_MODES = OUT_DIR / 'initial_guess_modes.csv'
@@ -133,12 +137,38 @@ def main():
                 if len(ranked) >= K_VERIFIER: break
                 ranked.append((ts, picked))
 
-        verifier_align_best = []  # best mode in IG vs GT
-        verifier_align_picked = []  # mode the verifier picked vs GT
+        verifier_align_best = []  # best mode in IG vs GT (per-rank, not cumulative)
+        verifier_align_picked = []  # mode the verifier picked vs GT (per-rank)
         for ts, picked in ranked[:K_VERIFIER]:
             verifier_align_best.append(per_ig_best_align.get(ts['label'], 0.0))
             verifier_align_picked.append(
                 cos_sim(np.asarray(picked['disp']), gt_disp))
+        # Cumulative max — pass@k for apples-to-apples vs random/oracle pass@k
+        verifier_pass = []
+        run_max = 0.0
+        for v in verifier_align_best:
+            run_max = max(run_max, v); verifier_pass.append(run_max)
+        while len(verifier_pass) < K_VERIFIER:
+            verifier_pass.append(run_max)
+
+        # ── Random baseline pass@k (k=1..5) ──
+        # Closed-form expected MAX gt_alignment when k IGs are sampled
+        # uniformly without replacement from the pool of N=len(igs).
+        # If a_(1) >= a_(2) >= ... >= a_(N) are the sorted oracle_any values,
+        # then  E[max over random k-subset]
+        #     = sum_{r=1}^{N-k+1} a_(r) * C(N-r, k-1) / C(N, k).
+        # This is what a "no-signal" verifier would achieve in expectation.
+        from math import comb
+        N = len(ig_best_any)
+        random_passk = []
+        for k in range(1, K_VERIFIER + 1):
+            denom = comb(N, k)
+            if denom == 0:
+                random_passk.append(0.0); continue
+            e_max = 0.0
+            for r in range(1, N - k + 2):
+                e_max += ig_best_any[r - 1] * comb(N - r, k - 1) / denom
+            random_passk.append(e_max)
 
         row = {'step': data['step'], 'n_ig': len(igs)}
         for k in range(K_ORACLE):
@@ -147,6 +177,13 @@ def main():
         for k in range(K_VERIFIER):
             row[f'verifier_top{k+1}']        = round(verifier_align_best[k],   6)  if k < len(verifier_align_best)   else 0.0
             row[f'verifier_top{k+1}_picked'] = round(verifier_align_picked[k], 6)  if k < len(verifier_align_picked) else 0.0
+            row[f'verifier_pass{k+1}']       = round(verifier_pass[k], 6)
+            row[f'random_pass{k+1}']         = round(random_passk[k], 6)
+        # Oracle pass@k for completeness (= top1_any for all k since
+        # max over any non-empty subset containing rank-1 IG = a_(1)).
+        # So we just record top1_any in oracle_pass<k>.
+        for k in range(K_VERIFIER):
+            row[f'oracle_pass{k+1}'] = round(ig_best_any[0], 6) if ig_best_any else 0.0
         final_rows.append(row)
 
         # ── Per-mode CSV ──
@@ -197,14 +234,17 @@ def main():
     print(f"  modes CSV    : {OUT_MODES}")
 
     if final_rows:
-        # Headline: oracle vs verifier per k
-        print(f"\nOracle (any) by k    /    Verifier-best by k:")
-        print(f"{'k':>3}  {'oracle_mean':>11}  {'oracle≥0.7':>10}  {'verif_mean':>11}  {'verif≥0.7':>9}")
-        for k in (1, 2, 3, 5):
-            o = np.array([r[f'top{k}_any']      for r in final_rows])
-            v = np.array([r.get(f'verifier_top{k}', 0) for r in final_rows])
-            print(f"{k:>3}  {o.mean():>11.3f}  {(o>=0.7).mean()*100:>9.1f}%  "
-                  f"{v.mean():>11.3f}  {(v>=0.7).mean()*100:>8.1f}%")
+        # Headline: oracle / verifier / random pass@k (cumulative-max convention)
+        print(f"\nPass@k (cumulative-max) — oracle ceiling | clean_v2 verifier | uniform-random baseline:")
+        print(f"{'k':>3}  {'or_mean':>7}  {'or_≥0.7':>7}  {'vf_mean':>7}  {'vf_≥0.7':>7}  {'rd_mean':>7}  {'rd_≥0.7':>7}  {'lift_vf-rd_mean':>14}")
+        for k in (1, 2, 3, 4, 5):
+            o  = np.array([r[f'oracle_pass{k}']         for r in final_rows])
+            v  = np.array([r[f'verifier_pass{k}']       for r in final_rows])
+            rd = np.array([r[f'random_pass{k}']         for r in final_rows])
+            print(f"{k:>3}  {o.mean():7.3f}  {(o>=0.7).mean()*100:6.1f}%  "
+                  f"{v.mean():7.3f}  {(v>=0.7).mean()*100:6.1f}%  "
+                  f"{rd.mean():7.3f}  {(rd>=0.7).mean()*100:6.1f}%  "
+                  f"{(v.mean()-rd.mean())*1000:+12.1f}m")
 
 
 if __name__ == '__main__':
