@@ -115,14 +115,11 @@ doesn't escape the fact that **on lost-cause steps (oracle < 0.5)
 no per-step signal can recover the right answer**. About 14 % of
 steps are in this regime.
 
-To push further you'd need either:
-
-- **GT-aware tuning** (uses GT data → not allowed for fair ranking).
-- **Cross-step transfer**: a learned model trained on (step, IG)
-  pairs with GT-derived labels (Tier 2 #7 in the roadmap doc).
-  This is the most plausible next step.
-- **Better IG generation**: ~half the gap to oracle is fundamental
-  to IG quality. (Tier 4 in the roadmap doc.)
+To push further you'd need a **learned ranker** trained on
+(step, IG, mode) features with GT-alignment as label. The IGs
+themselves contain the answers — oracle reaches 0.3 alignment on
+**every** step, 0.5 on 86 % — so the gap is *purely selection*, not
+IG quality.
 
 ## Iterations 7–15: hitting the signal floor
 
@@ -190,13 +187,10 @@ consensus, structural consensus, imag_count) cap at ~30 % rank ≤ 2 of
 because multiple "good enough" IGs exist per step. The diversity
 penalty captures this.
 
-Closing the rest of the gap requires:
-
-- a **learned model** over (step, IG, mode) features supervised by
-  GT-alignment (cross-step transfer; Tier 2 in the roadmap), or
-- **better IGs** so the rank-2 ceiling rises (Tier 4).
-
-Both are out of scope for the current "rerank existing IGs" task.
+Closing the rest of the gap requires a **learned model** over
+(step, IG, mode) features supervised by GT-alignment. The IGs
+already contain alignments ≥ 0.3 on 100 % of steps — the issue is
+identifying which IG, not generating better ones.
 
 ## Code
 
