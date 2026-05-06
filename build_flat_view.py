@@ -18,6 +18,23 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
+
+
+def kabsch(P, Q):
+    """Optimal rotation+translation aligning Q to P.
+    Returns (R, t) such that (R @ Q.T).T + t ≈ P (least-squares)."""
+    P = np.asarray(P, dtype=float)
+    Q = np.asarray(Q, dtype=float)
+    Pc = P.mean(0); Qc = Q.mean(0)
+    H = (Q - Qc).T @ (P - Pc)
+    U, S, Vt = np.linalg.svd(H)
+    d = np.sign(np.linalg.det(Vt.T @ U.T))
+    D = np.diag([1.0, 1.0, d])
+    R = Vt.T @ D @ U.T
+    t = Pc - R @ Qc
+    return R, t
+
 
 SRC_DIR = Path(__file__).parent / "out" / "mode_viewer"
 OUT_HTML = SRC_DIR / "flat_view.html"
@@ -70,13 +87,28 @@ def build_flat_payload(step_payload):
             'disp': m['disp'],
         }
 
+    panels = [to_panel(ts, m) for (ts, m) in chosen]
+
+    # Kabsch-align panels 1 and 2 to panel 0 (GT). Operates on the R-frame
+    # aligned coordinates so atom indices already correspond. The same
+    # rotation is applied to displacement vectors (rotation only — no
+    # translation, since displacements are differences not positions).
+    target_xyz = np.asarray(panels[0]['xyz_coords'])
+    for p in panels[1:]:
+        Q = np.asarray(p['xyz_coords'])
+        R, t = kabsch(target_xyz, Q)
+        new_xyz = (Q @ R.T) + t
+        new_disp = np.asarray(p['disp']) @ R.T
+        p['xyz_coords'] = [[round(float(x), 4) for x in v] for v in new_xyz]
+        p['disp']       = [[round(float(x), 4) for x in v] for v in new_disp]
+
     return {
         'step': step_payload['step'],
         'n_atoms': step_payload['n_atoms'],
         'core_atoms': step_payload['core_atoms'],
         'broken_bonds': step_payload['broken_bonds'],
         'formed_bonds_R': step_payload['formed_bonds_R'],
-        'panels': [to_panel(ts, m) for (ts, m) in chosen],
+        'panels': panels,
     }
 
 
