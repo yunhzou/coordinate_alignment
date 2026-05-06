@@ -1,0 +1,66 @@
+PQ vs OLD comparison summary across BGCP
+======================================================================
+
+## STRICT_REGRESS (0 steps)
+
+## LOOSE_REGRESS (8 steps)
+  +4   OLD 2/2/ 27  PQ 4/4/ 27  pr7.V.dodh_ts56-singlet
+      PQ broken: 6(V)-9(O),7(O)-18(H),8(C)-9(O),17(O)-26(H)
+      PQ formed: 6(V)-17(O),7(O)-8(C),24(O)-25(H),24(O)-26(H)
+  +4   OLD 2/2/ 27  PQ 4/4/ 27  pr7.V.dodh_ts56-triplet
+      PQ broken: 6(V)-9(O),7(O)-18(H),8(C)-9(O),17(O)-26(H)
+      PQ formed: 6(V)-17(O),7(O)-8(C),24(O)-25(H),24(O)-26(H)
+  +2   OLD 3/1/ 18  PQ 4/2/ 18  pr16.carbocation_ts5
+      PQ broken: 0(C)-1(C),2(C)-6(C),8(C)-14(C),10(C)-12(C)
+      PQ formed: 0(C)-5(C),4(C)-14(C)
+  +2   OLD 2/2/ 38  PQ 3/3/ 38  pr7.V.dodh_ts1314
+      PQ broken: 8(V)-11(O),8(V)-18(C),16(O)-17(C)
+      PQ formed: 10(V)-13(O),10(V)-17(O),32(C)-33(C)
+  +2   OLD 1/2/ 24  PQ 2/3/ 24  pr7.V.dodh_ts71
+      PQ broken: 5(C)-6(O),16(O)-17(C)
+      PQ formed: 0(V)-2(O),4(O)-6(C),18(C)-19(C)
+  +1   OLD 3/4/ 59  PQ 4/4/ 61  Jackie_TS_04
+      PQ broken: 0(Pd)-9(C),1(O)-3(B),2(H)-26(O),6(O)-8(H)
+      PQ formed: 0(Pd)-26(O),1(O)-2(H),3(B)-6(O),7(H)-9(C)
+  +1   OLD 1/2/ 29  PQ 2/2/ 29  pr1.tempo_ts2
+      PQ broken: 11(O)-12(C),22(O)-23(H)
+      PQ formed: 0(O)-20(H),25(C)-26(O)
+  +1   OLD 2/1/ 38  PQ 2/2/ 38  pr7.V.dodh_ts156
+      PQ broken: 12(V)-21(O),12(V)-22(P)
+      PQ formed: 6(V)-16(O),24(O)-25(P)
+
+## WIN (31 steps)
+  -41  OLD 20/23/140  PQ 1/1/149  pr12.Co_Silylation_JACS2015_TS_Dstar-Estar
+  -18  OLD 5/19/ 58  PQ 3/3/ 60  pr9.carbene.rearr_ts33
+  -16  OLD 8/11/ 74  PQ 1/2/ 77  Jackie_TS_06
+  -15  OLD 3/14/134  PQ 1/1/136  pr12.Co_Silylation_JACS2015_TS_C-DStep2
+  -10  OLD 6/7/134  PQ 1/2/137  pr17.carbene.ins_ts8
+  -8   OLD 5/6/ 70  PQ 2/1/ 72  pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult6
+  -8   OLD 4/6/ 81  PQ 1/1/ 83  pr15.Fe_crosscoupling_ACScat2023_TS2_prime_step2_redPath_mult3
+  -8   OLD 5/7/ 80  PQ 2/2/ 82  pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult6
+  -8   OLD 4/6/ 81  PQ 1/1/ 83  pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS2_prime_step2_redPath_mult3
+  -8   OLD 4/6/ 35  PQ 1/1/ 37  pr4.Suzuki-Brcleavage_ts2.Br-cleavage-A
+  -8   OLD 4/7/ 35  PQ 1/2/ 37  pr4.Suzuki-Brcleavage_ts2.Br-cleavage-B
+  -8   OLD 4/6/ 35  PQ 1/1/ 37  pr4.Suzuki-Brcleavage_ts2.Br-cleavage-C
+  -8   OLD 4/6/ 35  PQ 1/1/ 37  pr4.Suzuki-Brcleavage_ts2.Br-cleavage-D
+  -7   OLD 5/6/ 73  PQ 2/2/ 74  pr10.carborane_ts3
+  -5   OLD 4/5/ 38  PQ 3/1/ 38  Jackie_TS_11
+  -4   OLD 3/2/ 74  PQ 1/0/ 74  pr10.carborane_ts2
+  -4   OLD 3/3/135  PQ 1/1/135  pr17.carbene.ins_ts6a
+  -4   OLD 4/4/ 54  PQ 2/2/ 54  pr19.heck_ts1
+  -3   OLD 2/3/ 67  PQ 1/1/ 67  pr11.cycloadditions_tsIa
+  -3   OLD 2/3/ 67  PQ 1/1/ 67  pr11.cycloadditions_tsIb
+  -2   OLD 4/4/ 56  PQ 3/3/ 56  Jackie_TS_10
+  -2   OLD 3/2/131  PQ 2/1/133  pr14.Pd_hydroamination_JOC2025_TS12_step2_prot_oxidation
+  -2   OLD 3/2/ 16  PQ 2/1/ 18  pr16.carbocation_ts12
+  -2   OLD 2/3/ 18  PQ 1/2/ 18  pr16.carbocation_ts7
+  -1   OLD 3/1/ 44  PQ 2/1/ 46  Cyclobutane_JOC2023_updated_TS-CD_step1
+  -1   OLD 2/1/ 44  PQ 1/1/ 46  Cyclobutane_JOC2023_updated_TS-D1D-3step3D-3
+  -1   OLD 2/2/ 74  PQ 1/2/ 74  pr10.carborane_ts1
+  -1   OLD 3/1/ 44  PQ 2/1/ 46  pr13.Cyclobutane_JOC2023_TS-CD_step1
+  -1   OLD 1/2/ 88  PQ 1/1/ 90  pr5.Noyori_ts26
+  -1   OLD 1/2/ 85  PQ 1/1/ 87  pr5.Noyori_ts56
+  -1   OLD 2/2/ 31  PQ 2/1/ 31  pr7.V.dodh_ts32
+
+## TIE (121 steps)
+
