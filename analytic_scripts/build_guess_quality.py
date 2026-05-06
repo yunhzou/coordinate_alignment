@@ -18,6 +18,13 @@ Outputs:
   out/mode_analysis/guess_quality.csv — long-format rows
 """
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import csv
 import json
 import re
@@ -27,10 +34,10 @@ from pathlib import Path
 import numpy as np
 
 
-SRC_DIR = Path(__file__).parent / "out" / "mode_viewer"
+SRC_DIR = PROJECT_ROOT / "out" / "mode_viewer"
 OUT_HTML = SRC_DIR / "guess_quality.html"
-OUT_CSV = Path(__file__).parent / "out" / "mode_analysis" / "guess_quality.csv"
-OUT_CSV_TOP2 = Path(__file__).parent / "out" / "mode_analysis" / "guess_quality_top2.csv"
+OUT_CSV = PROJECT_ROOT / "out" / "mode_analysis" / "guess_quality.csv"
+OUT_CSV_TOP2 = PROJECT_ROOT / "out" / "mode_analysis" / "guess_quality_top2.csv"
 
 
 def cos_sim(a, b):

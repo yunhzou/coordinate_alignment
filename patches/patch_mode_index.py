@@ -1,11 +1,18 @@
 """Rebuild out/mode_viewer/index.html from the patched per-step HTMLs.
 Sorts steps by best imag bond_overlap across their TS structures."""
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import json
 import re
 from pathlib import Path
 
-OUT_DIR = Path(__file__).parent / "out" / "mode_viewer"
+OUT_DIR = PROJECT_ROOT / "out" / "mode_viewer"
 
 
 INDEX_HTML = r"""<!doctype html>

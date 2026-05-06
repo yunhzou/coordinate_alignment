@@ -7,6 +7,13 @@ Loads R/P WBO matrices for dwbo-based variants. R↔P alignment runs once
 per step (~0.5s) for variants needing mapping_RP.
 """
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import json, re, time
 from collections import Counter
 from pathlib import Path

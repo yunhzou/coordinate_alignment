@@ -8,6 +8,13 @@ This adds the NEW-algorithm result so they sit side-by-side.
 Usage: python build_pq_regression_viewers.py
 """
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import json
 import re
 from pathlib import Path
@@ -27,7 +34,7 @@ REGRESSIONS = [
     "pr16.carbocation_ts5",
 ]
 
-OUT_ROOT = Path(__file__).parent / "out" / "regressions"
+OUT_ROOT = PROJECT_ROOT / "out" / "regressions"
 WORK = Path(__file__).parent / "work_bgcp"
 
 

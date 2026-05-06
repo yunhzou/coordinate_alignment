@@ -1,13 +1,20 @@
 """Regenerate out/mode_analysis/<step>.csv from the patched per-step
 HTMLs. Pure data extraction — no alignment, no xtb."""
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import csv
 import json
 import re
 from pathlib import Path
 
-SRC = Path(__file__).parent / "out" / "mode_viewer"
-DST = Path(__file__).parent / "out" / "mode_analysis"
+SRC = PROJECT_ROOT / "out" / "mode_viewer"
+DST = PROJECT_ROOT / "out" / "mode_analysis"
 DST.mkdir(exist_ok=True)
 
 

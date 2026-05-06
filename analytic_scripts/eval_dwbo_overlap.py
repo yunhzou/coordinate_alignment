@@ -25,6 +25,13 @@ Outputs:
   prints summary table.
 """
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import csv
 import json
 import re
@@ -40,9 +47,9 @@ from analyze_core_modes import bond_reaction_vector, bond_overlap_per_mode
 from bgcp_io import list_step_dirs
 
 
-SRC_DIR = Path(__file__).parent / "out" / "mode_viewer"
+SRC_DIR = PROJECT_ROOT / "out" / "mode_viewer"
 WORK_MODES = Path("/Users/yunhengz/empty_for_claude/rxn_core/work_modes")
-OUT_CSV = Path(__file__).parent / "out" / "mode_analysis" / "dwbo_overlap_eval.csv"
+OUT_CSV = PROJECT_ROOT / "out" / "mode_analysis" / "dwbo_overlap_eval.csv"
 
 
 def cos_sim(a, b):

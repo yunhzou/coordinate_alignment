@@ -6,6 +6,13 @@ the better the signal at identifying the best IG.
 Aim: identify a signal where best-IG ranks ≤ 2 in many steps.
 """
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
+
 import time
 from pathlib import Path
 import numpy as np
