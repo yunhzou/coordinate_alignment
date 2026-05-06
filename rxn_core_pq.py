@@ -188,17 +188,40 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
         })
 
-    def _heap_snapshot(k=8):
-        """Top-k pending heap entries (does not mutate the heap)."""
+    def _heap_snapshot(k=None):
+        """Pending heap entries sorted by WBO desc, filtered to live
+        (not yet consumed, not already in fragment). k=None → all."""
         peek = list(heap)
         peek.sort()
+        live = [(w, uu, nn) for (w, uu, nn) in peek
+                if frozenset({uu, nn}) not in used_edges and nn not in fragment]
+        if k is not None:
+            live = live[:k]
         return [{'frag_atom': int(uu), 'ext_atom': int(nn),
                  'wbo': round(-w, 3),
                  'ext_status': ('mapped' if nn in mapping
-                                else 'frag' if nn in fragment
                                 else 'free')}
-                for w, uu, nn in peek[:k]
-                if frozenset({uu, nn}) not in used_edges and nn not in fragment]
+                for w, uu, nn in live]
+
+    def _pool_by_frag_atom():
+        """Live propagation pool grouped by fragment atom. Each atom's
+        outgoing live edges sorted WBO desc."""
+        peek = list(heap)
+        peek.sort()
+        by_u = defaultdict(list)
+        for w, uu, nn in peek:
+            if frozenset({uu, nn}) in used_edges: continue
+            if nn in fragment: continue
+            by_u[int(uu)].append({
+                'ext_atom': int(nn),
+                'wbo': round(-w, 3),
+                'ext_status': ('mapped' if nn in mapping else 'free'),
+                'ext_element': g_R.nodes[nn]['element'],
+            })
+        return [{'frag_atom': int(u),
+                 'frag_element': g_R.nodes[u]['element'],
+                 'edges': sorted(by_u[u], key=lambda x: -x['wbo'])}
+                for u in sorted(by_u.keys())]
 
     def _cands_sample(cs, k=10):
         return [{int(a): int(b) for a, b in c.items()} for c in cs[:k]]
@@ -323,6 +346,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'p_atoms_in_cands': sorted({int(v) for c in cands for v in c.values()}),
                 },
                 'heap_top_after_pop': _heap_snapshot(8),
+                'pool_by_frag_atom': _pool_by_frag_atom(),
             })
 
         if n_in_mapping:
@@ -354,7 +378,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                         'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
                         'distance_from_seed': distance[n],
                         'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8),
+                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
                     })
             else:
                 if record:
@@ -371,7 +395,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                         'cands_sample': _cands_sample(cands, 5),
                         'fragment': sorted(int(x) for x in fragment),
                         'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8),
+                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
                     })
         else:
             why = _why_extend_failed(n) if record else None
@@ -399,7 +423,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                         'bonds_to_fragment': [(int(u), round(wbo, 3))],
                         'extension_details': why,
                         'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8),
+                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
                     })
             else:
                 if record:
@@ -414,7 +438,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                         'cands_sample': _cands_sample(cands, 5),
                         'fragment': sorted(int(x) for x in fragment),
                         'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8),
+                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
                     })
 
     # heap empty

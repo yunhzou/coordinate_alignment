@@ -352,6 +352,15 @@ function applyEvent(idx) {{
     if (!h || !h.length) return '  (heap empty)';
     return h.map(x => `    R[${{x.frag_atom}}]→R[${{x.ext_atom}}]  WBO=${{x.wbo}}  [${{x.ext_status}}]`).join('\n');
   }}
+  function fmtPool(pool) {{
+    if (!pool || !pool.length) return '  (no live edges in pool)';
+    let total = pool.reduce((a, b) => a + b.edges.length, 0);
+    let out = `  CANDIDATE POOL: ${{pool.length}} fragment atoms have ${{total}} live WBO≥0.2 edges\n`;
+    for (const grp of pool) {{
+      out += `    R[${{grp.frag_atom}}](${{grp.frag_element}}):  ${{grp.edges.map(ee => `→R[${{ee.ext_atom}}](${{ee.ext_element}})W${{ee.wbo}}[${{ee.ext_status}}]`).join('  ')}}\n`;
+    }}
+    return out;
+  }}
 
   if (e.type === 'pass_start') {{
     txt += `  pass ${{e.pass}}, mapped so far = ${{e.mapped}}`;
@@ -373,7 +382,8 @@ function applyEvent(idx) {{
     for (let i = 0; i < ps.cands_sample.length; i++) {{
       txt += `    [${{i}}] ${{fmtCand(ps.cands_sample[i])}}\n`;
     }}
-    txt += `  HEAP next ${{e.heap_top_after_pop.length}}:\n${{fmtHeapTop(e.heap_top_after_pop)}}`;
+    txt += `  HEAP next ${{e.heap_top_after_pop.length}}:\n${{fmtHeapTop(e.heap_top_after_pop)}}\n`;
+    txt += fmtPool(e.pool_by_frag_atom);
   }} else if (e.type === 'pop_skip') {{
     txt += `  skipped edge R[${{e.edge.frag_atom}}]→R[${{e.edge.ext_atom}}] WBO=${{e.edge.wbo}}: ${{e.reason}}`;
   }} else if (e.type === 'commit') {{
@@ -411,7 +421,8 @@ function applyEvent(idx) {{
       }}
     }}
     if (e.heap_remaining !== undefined) {{
-      txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}`;
+      txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}\n`;
+      txt += fmtPool(e.pool_by_frag_atom);
     }}
   }} else if (e.type === 'consumed') {{
     const ed = e.edge;
@@ -437,7 +448,8 @@ function applyEvent(idx) {{
         }}
       }}
     }}
-    txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}`;
+    txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}\n`;
+    txt += fmtPool(e.pool_by_frag_atom);
   }} else if (e.type === 'seed_end') {{
     txt += `  result = ${{e.result}},  final cands = ${{e.final_cands}}\n`;
     if (e.lock_reason) txt += `  lock reason = ${{e.lock_reason}}\n`;
