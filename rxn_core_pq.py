@@ -45,38 +45,49 @@ def _push_edges_from(heap, used_edges, g_R, atom, fragment, graph_floor):
             heapq.heappush(heap, (-w, atom, nb))
 
 
-def _extend_cands_free(cands, fragment, n, g_R, g_P, iso_tol, max_cands_hard,
-                       inv):
-    """ext_atom n is unmapped. Extend each cand to include n.
-    Require: element match, every fragment-bond |dWBO| <= iso_tol,
-    and v not already mapped by another island (`inv`)."""
-    bonded_in_frag = [u for u in g_R.neighbors(n) if u in fragment]
-    if not bonded_in_frag:
-        return None
-    n_el = g_R.nodes[n]['element']
-    r_wbos = [(u, g_R[u][n]['wbo']) for u in bonded_in_frag]
-    new_cands = []
-    for cand in cands:
-        used_p = set(cand.values())
-        v_set = set(g_P.neighbors(cand[bonded_in_frag[0]]))
-        for u in bonded_in_frag[1:]:
-            v_set &= set(g_P.neighbors(cand[u]))
-        v_set -= used_p
-        for v in v_set:
-            if v in inv:
-                continue
-            if g_P.nodes[v]['element'] != n_el:
-                continue
-            if all(abs(w - g_P[cand[u]][v]['wbo']) <= iso_tol
-                   for u, w in r_wbos):
-                nc = dict(cand); nc[n] = v
-                new_cands.append(nc)
-                if len(new_cands) > max_cands_hard:
-                    return None
-    return new_cands
+def _compute_all_isos(fragment, g_R, g_P, mapping, inv, iso_tol,
+                      islands_R, max_isos=2000):
+    """Order-independent matching: enumerate ALL valid subgraph isomorphisms
+    between (g_R subgraph induced by `fragment`) and any subgraph of g_P,
+    requiring element match on nodes and |dWBO|<=iso_tol on edges.
+
+    Filters out isos that conflict with the existing global mapping:
+      - For atoms in fragment that are already in `mapping` (island
+        atoms absorbed via merge), force iso[r] == mapping[r].
+      - For atoms in fragment that aren't yet mapped, require iso[r]
+        not in `inv` (P-atom not claimed by any other island).
+    """
+    sub_R = g_R.subgraph(fragment).copy()
+    forced = {r: mapping[r] for r in fragment if r in mapping}
+
+    def node_match(nP, nR):
+        return nR['element'] == nP['element']
+    def edge_match(eP, eR):
+        return abs(eR['wbo'] - eP['wbo']) <= iso_tol
+
+    matcher = nx.algorithms.isomorphism.GraphMatcher(
+        g_P, sub_R, node_match=node_match, edge_match=edge_match)
+    isos = []
+    for raw in matcher.subgraph_isomorphisms_iter():
+        # raw: g_P-node -> sub_R-node ; we want sub_R -> g_P
+        rev = {r: p for p, r in raw.items()}
+        ok = True
+        for r in fragment:
+            if r in forced:
+                if rev.get(r) != forced[r]:
+                    ok = False; break
+            else:
+                if rev.get(r) in inv:
+                    ok = False; break
+        if not ok:
+            continue
+        isos.append(rev)
+        if len(isos) >= max_isos:
+            break
+    return isos
 
 
-def _merge_whole_island(cands, fragment, n, mapping, islands_R,
+def _merge_whole_island_LEGACY(cands, fragment, n, mapping, islands_R,
                         g_R, g_P, iso_tol):
     """Up-front whole-island merge.
 
@@ -349,97 +360,81 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 'pool_by_frag_atom': _pool_by_frag_atom(),
             })
 
-        if n_in_mapping:
-            new_cands, added = _merge_whole_island(
-                cands, fragment, n, mapping, islands_R, g_R, g_P, iso_tol)
-            if new_cands:
-                why = None
-                cands = new_cands
-                ref_dist = distance.get(u, 0) + 1
-                for r in added:
-                    fragment.add(r)
-                    if r not in distance:
+        # ORDER-INDEPENDENT MATCHING:
+        # tentatively add n to fragment, recompute ALL valid isos from scratch
+        # using subgraph isomorphism on the fragment's R subgraph against g_P.
+        # If any iso survives, the atom is committed and cands is replaced.
+        # If none survives, the edge is consumed and the fragment doesn't grow.
+        old_count = len(cands)
+        old_fragment = set(fragment)
+        candidate_fragment = fragment | {n}
+        new_cands = _compute_all_isos(
+            candidate_fragment, g_R, g_P, mapping, inv, iso_tol,
+            islands_R, max_isos=max_cands_hard)
+        if new_cands:
+            cands = new_cands
+            ref_dist = distance.get(u, 0) + 1
+            # If island merge: also pull in the rest of the island atoms.
+            if n_in_mapping and islands_R is not None and n in islands_R:
+                target_iid = islands_R[n]
+                whole_island = [r for r, k in islands_R.items() if k == target_iid]
+                full_fragment = candidate_fragment | set(whole_island)
+                # Redo iso for full island merge
+                full_cands = _compute_all_isos(
+                    full_fragment, g_R, g_P, mapping, inv, iso_tol,
+                    islands_R, max_isos=max_cands_hard)
+                if full_cands:
+                    cands = full_cands
+                    candidate_fragment = full_fragment
+                    added_extra = [r for r in whole_island if r not in distance]
+                    for r in added_extra:
                         distance[r] = ref_dist
-                for r in added:
-                    _push_edges_from(heap, used_edges, g_R, r, fragment, graph_floor)
-                if record:
-                    events.append({
-                        'type': 'commit',
-                        'scenario': 'merge_island',
-                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
-                        'added': int(n), 'element': g_R.nodes[n]['element'],
-                        'island_atoms_absorbed': [int(r) for r in added],
-                        'island_size_absorbed': len(added),
-                        'island_image': int(mapping[n]),
-                        'cands_before': len(cands),  # post = same here
-                        'cands_after': len(cands),
-                        'cands_sample_after': _cands_sample(cands, 5),
-                        'fragment': sorted(int(x) for x in fragment),
-                        'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
-                        'distance_from_seed': distance[n],
-                        'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
-                    })
-            else:
-                if record:
-                    events.append({
-                        'type': 'consumed',
-                        'scenario': 'merge_island',
-                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
-                                 'ext_element': g_R.nodes[n]['element']},
-                        'reason': 'merge_failed',
-                        'island_image': int(mapping[n]),
-                        'island_id': int(islands_R[n]) if islands_R and n in islands_R else None,
-                        'why_per_cand': _why_merge_failed(n),
-                        'cands_count': len(cands),
-                        'cands_sample': _cands_sample(cands, 5),
-                        'fragment': sorted(int(x) for x in fragment),
-                        'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
-                    })
+            fragment = candidate_fragment
+            for r in fragment - old_fragment:
+                if r not in distance:
+                    distance[r] = ref_dist
+                _push_edges_from(heap, used_edges, g_R, r, fragment, graph_floor)
+            if record:
+                added_atoms = sorted(int(r) for r in fragment - old_fragment)
+                events.append({
+                    'type': 'commit',
+                    'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
+                    'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
+                    'added': int(n), 'element': g_R.nodes[n]['element'],
+                    'atoms_added': added_atoms,
+                    'island_size_absorbed': len(added_atoms) if n_in_mapping else None,
+                    'island_image': int(mapping[n]) if n_in_mapping else None,
+                    'cand_n_value_set': sorted({int(c[n]) for c in cands if n in c}),
+                    'cands_before': old_count,
+                    'cands_after': len(cands),
+                    'cands_sample_after': _cands_sample(cands, 5),
+                    'fragment': sorted(int(x) for x in fragment),
+                    'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
+                    'distance_from_seed': distance[n],
+                    'bonds_to_fragment': [(int(u), round(wbo, 3))],
+                    'heap_remaining': len(heap),
+                    'heap_top': _heap_snapshot(8),
+                    'pool_by_frag_atom': _pool_by_frag_atom(),
+                })
         else:
-            why = _why_extend_failed(n) if record else None
-            new_cands = _extend_cands_free(
-                cands, fragment, n, g_R, g_P, iso_tol, max_cands_hard, inv)
-            if new_cands:
-                old_count = len(cands)
-                cands = new_cands
-                fragment.add(n)
-                distance[n] = 1 + min(distance[x] for x in g_R.neighbors(n) if x in fragment - {n})
-                _push_edges_from(heap, used_edges, g_R, n, fragment, graph_floor)
-                if record:
-                    events.append({
-                        'type': 'commit',
-                        'scenario': 'extend_free',
-                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
-                        'added': int(n), 'element': g_R.nodes[n]['element'],
-                        'cand_n_value_set': sorted({int(c[n]) for c in cands}),
-                        'cands_before': old_count,
-                        'cands_after': len(cands),
-                        'cands_sample_after': _cands_sample(cands, 5),
-                        'fragment': sorted(int(x) for x in fragment),
-                        'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
-                        'distance_from_seed': distance[n],
-                        'bonds_to_fragment': [(int(u), round(wbo, 3))],
-                        'extension_details': why,
-                        'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
-                    })
-            else:
-                if record:
-                    events.append({
-                        'type': 'consumed',
-                        'scenario': 'extend_free',
-                        'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
-                                 'ext_element': g_R.nodes[n]['element']},
-                        'reason': 'cut_all_cands',
-                        'why_per_cand': why,
-                        'cands_count': len(cands),
-                        'cands_sample': _cands_sample(cands, 5),
-                        'fragment': sorted(int(x) for x in fragment),
-                        'heap_remaining': len(heap),
-                        'heap_top': _heap_snapshot(8), 'pool_by_frag_atom': _pool_by_frag_atom(),
-                    })
+            if record:
+                events.append({
+                    'type': 'consumed',
+                    'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
+                    'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
+                             'ext_element': g_R.nodes[n]['element']},
+                    'reason': ('merge_failed' if n_in_mapping else 'cut_all_cands'),
+                    'island_image': int(mapping[n]) if n_in_mapping else None,
+                    'island_id': int(islands_R[n]) if islands_R and n in islands_R else None,
+                    'why_per_cand': (_why_merge_failed(n) if n_in_mapping
+                                     else _why_extend_failed(n)),
+                    'cands_count': len(cands),
+                    'cands_sample': _cands_sample(cands, 5),
+                    'fragment': sorted(int(x) for x in fragment),
+                    'heap_remaining': len(heap),
+                    'heap_top': _heap_snapshot(8),
+                    'pool_by_frag_atom': _pool_by_frag_atom(),
+                })
 
     # heap empty
     if not cands or len(fragment) < min_lock_size:
