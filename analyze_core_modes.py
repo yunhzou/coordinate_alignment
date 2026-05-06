@@ -86,6 +86,76 @@ def parse_g98_modes(path):
     return freqs, modes_arr
 
 
+def kabsch(P, Q):
+    """Optimal rotation+translation aligning Q to P. Returns (R, t)
+    such that (R @ Q.T).T + t ≈ P (least-squares)."""
+    P = np.asarray(P, dtype=float)
+    Q = np.asarray(Q, dtype=float)
+    Pc = P.mean(0); Qc = Q.mean(0)
+    H = (Q - Qc).T @ (P - Pc)
+    U, _, Vt = np.linalg.svd(H)
+    d = np.sign(np.linalg.det(Vt.T @ U.T))
+    D = np.diag([1.0, 1.0, d])
+    R = Vt.T @ D @ U.T
+    t = Pc - R @ Qc
+    return R, t
+
+
+def reaction_coord_delta(xyzR, xyzP, mapping_RP):
+    """Per-atom reaction-coordinate displacement Δ_i = P[m(i)] - R[i]
+    after Kabsch-aligning P (in R-atom order) to R. Mapped atoms only;
+    unmapped get 0. Returns (n_R, 3) array."""
+    n_R = len(xyzR)
+    p_in_R_order = np.zeros((n_R, 3))
+    mapped = []
+    for r, p in mapping_RP.items():
+        p_in_R_order[r] = xyzP[p]
+        mapped.append(r)
+    if not mapped:
+        return np.zeros((n_R, 3))
+    idx = np.array(mapped)
+    R, t = kabsch(np.asarray(xyzR)[idx], p_in_R_order[idx])
+    p_aligned = (p_in_R_order @ R.T) + t
+    delta = p_aligned - np.asarray(xyzR)
+    # Zero out unmapped atoms (no Δ defined for them)
+    in_map = np.zeros(n_R, dtype=bool); in_map[idx] = True
+    delta[~in_map] = 0
+    return delta
+
+
+def rxn_overlap_per_mode(modes_R, delta, core_atoms):
+    """Reaction-mode overlap: projection of each full-molecule mode onto
+    the unit reaction-coord vector restricted to core atoms.
+
+    Build Δ̂_core: zero outside core atoms, normalized over core atoms.
+    Then q_m = |d_m · Δ̂_core| / ||d_m||  ∈ [0, 1].
+
+    Range semantics:
+      1.0 — mode is entirely along Δ at core atoms (no motion anywhere)
+      0.0 — mode has no component along Δ on core atoms
+    Penalizes modes that move spectator atoms (their Cartesian motion
+    inflates ||d_m|| without contributing to the numerator) and modes
+    whose core motion is misaligned with Δ. Rewards true reaction modes."""
+    n_modes = modes_R.shape[0]
+    if n_modes == 0 or not core_atoms:
+        return np.zeros(n_modes)
+    core = np.asarray(core_atoms, dtype=int)
+    delta_pad = np.zeros_like(modes_R[0])
+    delta_pad[core] = delta[core]
+    d_flat = delta_pad.reshape(-1)
+    d_norm = float(np.linalg.norm(d_flat))
+    if d_norm < 1e-9:
+        return np.zeros(n_modes)
+    d_unit = d_flat / d_norm
+    m_flat = modes_R.reshape(n_modes, -1)
+    m_norm = np.linalg.norm(m_flat, axis=1)
+    dots = np.abs(m_flat @ d_unit)
+    out = np.zeros(n_modes)
+    valid = m_norm > 1e-9
+    out[valid] = dots[valid] / m_norm[valid]
+    return out
+
+
 def core_atoms_in_R_frame(mapping_R_to_P, broken, formed):
     """Atoms touching broken (R indices) or formed (P, mapped back via inv).
     Returns sorted set of R-frame indices."""
@@ -137,12 +207,16 @@ def process_step(name):
     if not (step_modes_dir / "P" / "wbo").exists():
         raise RuntimeError(f"missing P cache for {name}")
 
-    # R/P alignment → core atoms in R-frame
+    # R/P alignment → core atoms + reaction-coord direction in R-frame
     elR, xyzR, wboR, _ = load_cached_xtb(step_modes_dir / "R")
     elP, xyzP, wboP, _ = load_cached_xtb(step_modes_dir / "P")
     rp_res = align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP)
     mapping_RP = dict(rp_res['mapping'])
     core_R = core_atoms_in_R_frame(mapping_RP, rp_res['broken'], rp_res['formed'])
+    # Fill any unmapped R atoms via element-multiset greedy so Δ is
+    # defined everywhere (spectator atoms will have Δ ≈ 0 after Kabsch).
+    full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
+    delta_RP = reaction_coord_delta(xyzR, xyzP, full_RP)
     n_R = len(elR)
 
     rows = []
@@ -177,22 +251,25 @@ def process_step(name):
             continue
 
         modes_R = reindex_modes_to_R(modes_TS, mapping_RT, n_R)
-        # Per-mode total energy (sum of squared displacements)
-        sq = (modes_R ** 2).sum(axis=2)         # (n_modes, n_atoms)
-        total = sq.sum(axis=1)                  # (n_modes,)
+        sq = (modes_R ** 2).sum(axis=2)
+        total = sq.sum(axis=1)
         core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
         fraction = np.where(total > 1e-12, core_e / total, 0.0)
+        # Reaction-coordinate overlap (cos similarity with R→P direction).
+        rxn_ov = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
 
         imag_idx = np.where(freqs < 0)[0]
         n_imag = len(imag_idx)
-        # Rank imag modes by core_fraction desc
-        order = sorted(imag_idx, key=lambda k: -fraction[k])
+        # Rank imag modes by rxn_overlap desc (then core_fraction as tiebreak).
+        order = sorted(imag_idx,
+                       key=lambda k: (-rxn_ov[k], -fraction[k]))
         for rank, k in enumerate(order):
             rows.append({
                 'step': name,
                 'ts_label': label,
                 'mode_idx': int(k),
                 'freq': float(freqs[k]),
+                'rxn_overlap': float(rxn_ov[k]),
                 'core_fraction': float(fraction[k]),
                 'mode_rank': rank,
                 'n_imag': n_imag,
@@ -206,7 +283,8 @@ def process_step(name):
     sanitized = re.sub(r"[^A-Za-z0-9._-]", "_", name)
     csv_path = OUT_CSV_DIR / f"{sanitized}.csv"
     with csv_path.open('w', newline='') as f:
-        fieldnames = ['step', 'ts_label', 'mode_idx', 'freq', 'core_fraction',
+        fieldnames = ['step', 'ts_label', 'mode_idx', 'freq',
+                      'rxn_overlap', 'core_fraction',
                       'mode_rank', 'n_imag', 'n_modes_total', 'n_core_atoms',
                       'core_atoms', 'error']
         w = csv.DictWriter(f, fieldnames=fieldnames)

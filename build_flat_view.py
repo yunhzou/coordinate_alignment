@@ -50,13 +50,14 @@ def load_step_payload(html_path):
 
 
 def best_imag_mode(ts):
-    """Return the mode dict whose freq < 0 has highest core_fraction.
-    If no imag modes available in payload, fall back to highest core_frac
-    overall (rare; the per-step HTMLs include all imag modes by design)."""
+    """Return the mode dict whose freq < 0 has highest rxn_overlap
+    (cosine similarity with R→P direction). Falls back to highest
+    rxn_overlap among all modes if no imag modes are present."""
     imag = [m for m in ts['modes'] if m['freq'] < 0]
+    key = lambda m: m.get('rxn_overlap', m.get('core_fraction', 0))
     if imag:
-        return max(imag, key=lambda m: m['core_fraction'])
-    return max(ts['modes'], key=lambda m: m['core_fraction'])
+        return max(imag, key=key)
+    return max(ts['modes'], key=key)
 
 
 def build_flat_payload(step_payload):
@@ -70,7 +71,8 @@ def build_flat_payload(step_payload):
     igs = [(ts, best_imag_mode(ts)) for ts in ts_list if ts['label'] != 'groundtruth']
     if len(igs) < 2:
         return None
-    igs.sort(key=lambda t: -t[1]['core_fraction'])
+    rank_key = lambda t: -t[1].get('rxn_overlap', t[1].get('core_fraction', 0))
+    igs.sort(key=rank_key)
     chosen = [(gt, best_imag_mode(gt)), igs[0], igs[1]]
 
     def to_panel(ts, m):
@@ -78,6 +80,7 @@ def build_flat_payload(step_payload):
             'label': ts['label'],
             'mode_idx': m['idx'],
             'freq': m['freq'],
+            'rxn_overlap': m.get('rxn_overlap', 0.0),
             'core_fraction': m['core_fraction'],
             'is_imag': m['freq'] < 0,
             'n_imag': ts['n_imag'],
@@ -177,7 +180,7 @@ function rebuildOptions() {
     const opt = document.createElement('option');
     opt.value = n;
     const gt = d.panels[0], a = d.panels[1], b = d.panels[2];
-    opt.textContent = `${n}  GT=${gt.core_fraction.toFixed(2)}/${gt.label}  A=${a.core_fraction.toFixed(2)}/${a.label}  B=${b.core_fraction.toFixed(2)}/${b.label}`;
+    opt.textContent = `${n}  GT=${gt.rxn_overlap.toFixed(2)}/${gt.label}  A=${a.rxn_overlap.toFixed(2)}/${a.label}  B=${b.rxn_overlap.toFixed(2)}/${b.label}`;
     sel.appendChild(opt);
   }
   if (sel.options.length) render(sel.value);
@@ -213,7 +216,7 @@ function buildPanes(d) {
     const div = document.createElement('div');
     div.className = 'pane';
     div.innerHTML = `<h3>${tag}: ${p.label}</h3>
-      <div class="stats">mode #${p.mode_idx} · ${imagTag} freq=${p.freq.toFixed(2)} cm⁻¹ · core_frac=${p.core_fraction.toFixed(3)} · ${p.n_imag} imag modes</div>
+      <div class="stats">mode #${p.mode_idx} · ${imagTag} freq=${p.freq.toFixed(2)} cm⁻¹ · rxn_overlap=${p.rxn_overlap.toFixed(3)} · core_frac=${p.core_fraction.toFixed(3)} · ${p.n_imag} imag modes</div>
       <div id="v${i}" class="viewer"></div>`;
     panesDiv.appendChild(div);
   }

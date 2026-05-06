@@ -34,7 +34,7 @@ from bgcp_io import BGCP_ROOT, LOOKUP, list_step_dirs
 from align_bgcp_coords import load_cached_xtb, fill_unmapped_greedy, reindex_to_R_frame
 from analyze_core_modes import (
     parse_g98_modes, core_atoms_in_R_frame, reindex_modes_to_R, list_ts_caches,
-    WORK_MODES,
+    reaction_coord_delta, rxn_overlap_per_mode, WORK_MODES,
 )
 
 
@@ -97,7 +97,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     <div class="core-atoms" id="coreAtomsInfo"></div>
     <div style="overflow-y:auto;max-height:540px;margin-top:6px">
       <table>
-        <thead><tr><th>rank</th><th>idx</th><th>freq cm⁻¹</th><th>core frac</th></tr></thead>
+        <thead><tr><th>rank</th><th>idx</th><th>freq cm⁻¹</th><th>rxn ovlp</th><th>core frac</th></tr></thead>
         <tbody id="modeTab"></tbody>
       </table>
     </div>
@@ -163,7 +163,7 @@ function updateInfo() {
   const f = m.freq.toFixed(2);
   const tag = m.freq < 0 ? '<span style="color:#c00;font-weight:600">imag</span>' : 'real';
   document.getElementById('info').innerHTML =
-    `mode #${m.idx} · ${tag} freq=${f} cm⁻¹ · core_frac=${m.core_fraction.toFixed(3)}`;
+    `mode #${m.idx} · ${tag} freq=${f} cm⁻¹ · rxn_overlap=${m.rxn_overlap.toFixed(3)} · core_frac=${m.core_fraction.toFixed(3)}`;
   document.getElementById('coreAtomsInfo').innerHTML =
     `<b>Core atoms (R-frame, ${DATA.core_atoms.length}):</b> ${DATA.core_atoms.join(', ')}`;
 }
@@ -183,7 +183,7 @@ function rebuildModeList() {
     tr.id = 'mode-row-' + mIdx;
     tr.classList.add('clickable');
     if (m.freq < 0) tr.classList.add('imag');
-    tr.innerHTML = `<td>${rank}</td><td>${m.idx}</td><td>${m.freq.toFixed(2)}</td><td>${m.core_fraction.toFixed(3)}</td>`;
+    tr.innerHTML = `<td>${rank}</td><td>${m.idx}</td><td>${m.freq.toFixed(2)}</td><td>${m.rxn_overlap.toFixed(3)}</td><td>${m.core_fraction.toFixed(3)}</td>`;
     tr.onclick = () => selectMode(mIdx);
     tbody.appendChild(tr);
   });
@@ -264,6 +264,8 @@ def build_step_data(name):
     mapping_RP = dict(rp_res['mapping'])
     inv_RP = {v: k for k, v in mapping_RP.items()}
     core_R = core_atoms_in_R_frame(mapping_RP, rp_res['broken'], rp_res['formed'])
+    full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
+    delta_RP = reaction_coord_delta(xyzR, xyzP, full_RP)
     n_R = len(elR)
     broken_bonds = [[int(a), int(b)] for (a, b, _, _) in rp_res['broken']]
     formed_bonds_R = []
@@ -295,22 +297,21 @@ def build_step_data(name):
         total = sq.sum(axis=1)
         core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
         fraction = np.where(total > 1e-12, core_e / total, 0.0)
+        rxn_ov = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
         imag_mask = freqs < 0
         n_imag = int(imag_mask.sum())
 
-        # Pick default mode: imag mode with highest core_fraction; else mode 0.
+        # Pick default mode: imag mode with highest rxn_overlap; else mode 0.
         if n_imag > 0:
             imag_idx = np.where(imag_mask)[0]
-            default_mode_idx = int(imag_idx[np.argmax(fraction[imag_idx])])
+            default_mode_idx = int(imag_idx[np.argmax(rxn_ov[imag_idx])])
         else:
-            default_mode_idx = int(np.argmax(fraction))
+            default_mode_idx = int(np.argmax(rxn_ov))
 
-        # Build modes payload — keep only imag modes + a sample of strong real
-        # modes to keep file size manageable. Keep all imag, plus top-30 real
-        # by core_fraction.
+        # Build modes payload — keep all imag, plus top-30 real by rxn_overlap.
         keep_idx = list(np.where(imag_mask)[0])
         real_idx = [i for i in range(len(freqs)) if not imag_mask[i]]
-        real_idx.sort(key=lambda i: -fraction[i])
+        real_idx.sort(key=lambda i: -rxn_ov[i])
         keep_idx += real_idx[:30]
         keep_idx = sorted(set(keep_idx))
         modes_payload = []
@@ -318,6 +319,7 @@ def build_step_data(name):
             modes_payload.append({
                 'idx': int(i),
                 'freq': round(float(freqs[i]), 4),
+                'rxn_overlap': round(float(rxn_ov[i]), 4),
                 'core_fraction': round(float(fraction[i]), 4),
                 'disp': [[round(float(x), 4) for x in v] for v in modes_R[i]],
             })
@@ -362,14 +364,14 @@ def render_one(name):
             .replace('__STEP__', name)
             .replace('__DATA__', json.dumps(payload)))
     out_path.write_text(html)
-    # Choose top imag core_fraction across all TS for index summary
-    best_imag_frac = 0.0
+    # Top imag rxn_overlap across all TS, for index summary.
+    best_imag_ov = 0.0
     best_imag_label = '—'
     n_ts_with_imag = 0
     for ts in payload['ts_list']:
         for m in ts['modes']:
-            if m['freq'] < 0 and m['core_fraction'] > best_imag_frac:
-                best_imag_frac = m['core_fraction']
+            if m['freq'] < 0 and m['rxn_overlap'] > best_imag_ov:
+                best_imag_ov = m['rxn_overlap']
                 best_imag_label = ts['label']
         if ts['n_imag'] > 0:
             n_ts_with_imag += 1
@@ -380,7 +382,7 @@ def render_one(name):
         'n_core': len(payload['core_atoms']),
         'n_ts': len(payload['ts_list']),
         'n_ts_with_imag': n_ts_with_imag,
-        'best_imag_frac': best_imag_frac,
+        'best_imag_ov': best_imag_ov,
         'best_imag_label': best_imag_label,
     }
 
@@ -412,7 +414,7 @@ concentrated on the reaction-core atoms (the atoms touching broken/formed bonds)
 
 <table id="t"><thead><tr>
 <th>step</th><th>N</th><th>core</th><th>n_TS</th><th>n_TS_with_imag</th>
-<th>best imag core_frac</th><th>best label</th>
+<th>best imag rxn_overlap</th><th>best label</th>
 </tr></thead><tbody>
 __ROWS__
 </tbody></table>
@@ -455,19 +457,19 @@ def main():
                 results.append(payload)
                 print(f"[{i:3d}/{len(steps)}] {name[:55]:55s}  "
                       f"core={payload['n_core']}  ts={payload['n_ts']}  "
-                      f"best_imag={payload['best_imag_frac']:.3f}/{payload['best_imag_label']}")
+                      f"best_imag={payload['best_imag_ov']:.3f}/{payload['best_imag_label']}")
             else:
                 print(f"[{i:3d}/{len(steps)}] {name[:55]:55s}  ERROR/skipped: {payload}")
             sys.stdout.flush()
 
     # Index page
     rows = ""
-    for r in sorted(results, key=lambda x: -x['best_imag_frac']):
+    for r in sorted(results, key=lambda x: -x['best_imag_ov']):
         rows += (f"<tr data-name='{r['name']}'>"
                  f"<td><a href='{r['file']}' target='_blank'>{r['name']}</a></td>"
                  f"<td>{r['n_atoms']}</td><td>{r['n_core']}</td>"
                  f"<td>{r['n_ts']}</td><td>{r['n_ts_with_imag']}</td>"
-                 f"<td>{r['best_imag_frac']:.3f}</td><td>{r['best_imag_label']}</td>"
+                 f"<td>{r['best_imag_ov']:.3f}</td><td>{r['best_imag_label']}</td>"
                  f"</tr>")
     (OUT_DIR / "index.html").write_text(INDEX_HTML.replace('__ROWS__', rows))
     print(f"\nDone in {time.time()-t0:.1f}s")
