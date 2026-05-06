@@ -22,3 +22,7 @@ my_idea.md
 
 # Benchmark data — too large to ship
 Benchmark_Guesses_Collective_Package/
+
+# Aligned coordinate dataset (regenerable from work_modes cache)
+Benchmark_Guesses_Coordinate_Aligned_Version/
+work_align/

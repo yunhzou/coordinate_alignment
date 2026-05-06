@@ -730,19 +730,14 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42):
     return orders
 
 
-def analyze_pq(reactant_xyz, product_xyz, workdir,
-               charge=0, uhf=0,
-               graph_floor=0.2, iso_tol=1.0,
-               bond_high=0.5, dwbo_threshold=0.5,
-               n_seeds=10, max_branches=8,
-               chirality=True,
-               return_all=False):
-    """Run xtb on R and P, build graphs at graph_floor, run priority-queue
-    grow with branching for n_seeds random orderings, score by
-    (broken+formed, chirality_violations, -mapped). Returns best."""
-    workdir = Path(workdir)
-    elR, xyzR, wboR = run_xtb(reactant_xyz, workdir / "R", charge=charge, uhf=uhf)
-    elP, xyzP, wboP = run_xtb(product_xyz, workdir / "P", charge=charge, uhf=uhf)
+def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
+                      graph_floor=0.2, iso_tol=1.0,
+                      bond_high=0.5, dwbo_threshold=0.5,
+                      n_seeds=10, max_branches=8,
+                      chirality=True, return_all=False):
+    """Pure-graph entry point: assumes (el, xyz, wbo) for R and P are
+    already in hand (e.g. loaded from a pre-computed xtb cache). Runs the
+    multi-seed PQ search + scoring. Returns the same dict as analyze_pq."""
     if Counter(elR) != Counter(elP):
         raise ValueError(f"composition mismatch: {Counter(elR)} vs {Counter(elP)}")
 
@@ -779,3 +774,23 @@ def analyze_pq(reactant_xyz, product_xyz, workdir,
     if return_all:
         out['all_scored'] = [(s, m, b, f, c) for (s, m, b, f, c) in all_results]
     return out
+
+
+def analyze_pq(reactant_xyz, product_xyz, workdir,
+               charge=0, uhf=0,
+               graph_floor=0.2, iso_tol=1.0,
+               bond_high=0.5, dwbo_threshold=0.5,
+               n_seeds=10, max_branches=8,
+               chirality=True,
+               return_all=False):
+    """Run xtb on R and P, build graphs at graph_floor, run PQ search for
+    n_seeds random orderings, score by (broken+formed, chir, -mapped)."""
+    workdir = Path(workdir)
+    elR, xyzR, wboR = run_xtb(reactant_xyz, workdir / "R", charge=charge, uhf=uhf)
+    elP, xyzP, wboP = run_xtb(product_xyz, workdir / "P", charge=charge, uhf=uhf)
+    return align_from_arrays(
+        elR, xyzR, wboR, elP, xyzP, wboP,
+        graph_floor=graph_floor, iso_tol=iso_tol,
+        bond_high=bond_high, dwbo_threshold=dwbo_threshold,
+        n_seeds=n_seeds, max_branches=max_branches,
+        chirality=chirality, return_all=return_all)
