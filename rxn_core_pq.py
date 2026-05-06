@@ -76,25 +76,67 @@ def _extend_cands_free(cands, fragment, n, g_R, g_P, iso_tol, max_cands_hard,
     return new_cands
 
 
-def _merge_island(cands, fragment, n, mapping, g_R, g_P, iso_tol):
-    """ext_atom n is mapped (island). Each cand must accept n -> mapping[n]
-    AND the bond from n's in-fragment R-neighbors must match in P."""
-    p_n = mapping[n]
+def _merge_whole_island(cands, fragment, n, mapping, islands_R,
+                        g_R, g_P, iso_tol):
+    """Up-front whole-island merge.
+
+    When propagation reaches an island atom n, pull the ENTIRE island
+    (every R-atom whose island_id matches n's) into each cand at once.
+    Then check every cross-bond between fragment+island and the rest of
+    fragment+island is consistent in P with the existing mapping.
+
+    Returns (new_cands, island_atoms_added). If new_cands is empty, no
+    cand survives — caller consumes the edge."""
+    if islands_R is None or n not in islands_R:
+        # No island bookkeeping; fall back to single-atom semantics.
+        island_atoms = [n]
+    else:
+        target_iid = islands_R[n]
+        island_atoms = [r for r, k in islands_R.items() if k == target_iid]
+    p_atoms_in_island = [mapping[r] for r in island_atoms]
     new_cands = []
+    new_added = [r for r in island_atoms if r not in fragment]
+    if not new_added:
+        return cands, []  # whole island already absorbed; nothing to do
     for cand in cands:
-        if p_n in cand.values():
-            continue  # already used by this cand
+        # 1) no P-atom in island can be already used by this cand for a
+        #    different R-atom
+        used_p = set(cand.values())
+        if any(p in used_p and cand.get(r) != p
+               for r, p in zip(island_atoms, p_atoms_in_island)):
+            continue
+        # 2) build candidate extension with all island bindings forced
+        nc = dict(cand)
         ok = True
-        for u in g_R.neighbors(n):
-            if u in fragment and u in cand:
-                if not g_P.has_edge(cand[u], p_n):
+        for r, p in zip(island_atoms, p_atoms_in_island):
+            if r in nc and nc[r] != p:
+                ok = False; break
+            nc[r] = p
+        if not ok:
+            continue
+        # 3) check every R-bond between fragment ∪ island (any pair where
+        #    at least one endpoint is in island_atoms; the other in
+        #    fragment or island_atoms) — the bond must exist in P with
+        #    matching WBO. Bonds within fragment alone were checked when
+        #    those atoms were added; bonds within island alone are
+        #    preserved by construction (the island was locked already).
+        check_set = set(island_atoms) | fragment
+        for r in island_atoms:
+            for r2 in g_R.neighbors(r):
+                if r2 not in check_set: continue
+                if r2 not in nc:        continue
+                if r >= r2 and r2 in island_atoms: continue  # canonicalize
+                wR = g_R[r][r2]['wbo']
+                p, p2 = nc[r], nc[r2]
+                if not g_P.has_edge(p, p2):
                     ok = False; break
-                if abs(g_R[u][n]['wbo'] - g_P[cand[u]][p_n]['wbo']) > iso_tol:
+                wP = g_P[p][p2]['wbo']
+                if abs(wR - wP) > iso_tol:
                     ok = False; break
+            if not ok: break
         if ok:
-            nc = dict(cand); nc[n] = p_n
             new_cands.append(nc)
-    return new_cands
+    return new_cands, new_added
 
 
 def grow_island_pq(g_R, g_P, seed, mapping, inv,
@@ -103,7 +145,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    min_lock_size=1,
                    max_branches=8,
                    max_cands_hard=2000,
-                   events=None):
+                   events=None,
+                   islands_R=None):
     """
     Grow a fragment from `seed` using priority-queue propagation.
 
@@ -166,12 +209,21 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             continue
 
         if n in mapping:
-            new_cands = _merge_island(cands, fragment, n, mapping, g_R, g_P, iso_tol)
+            new_cands, added = _merge_whole_island(
+                cands, fragment, n, mapping, islands_R, g_R, g_P, iso_tol)
             if new_cands:
                 cands = new_cands
-                fragment.add(n)
-                distance[n] = 1 + min(distance[x] for x in g_R.neighbors(n) if x in fragment - {n})
-                _push_edges_from(heap, used_edges, g_R, n, fragment, graph_floor)
+                # Add every island atom in one shot, push their out-edges.
+                ref_dist = distance.get(u, 0) + 1
+                for r in added:
+                    fragment.add(r)
+                    if r not in distance:
+                        # Distance via the bond that triggered the merge,
+                        # plus one step for each intra-island hop. This is
+                        # an over-estimate but only used for event display.
+                        distance[r] = ref_dist
+                for r in added:
+                    _push_edges_from(heap, used_edges, g_R, r, fragment, graph_floor)
                 if record:
                     events.append({
                         'type': 'commit',
@@ -183,6 +235,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                         'bonds_to_fragment': [(int(u), round(wbo, 3))],
                         'merge_into_island': True,
                         'island_atom': int(n), 'island_image': int(mapping[n]),
+                        'island_size_absorbed': len(added),
                     })
             else:
                 if record:
@@ -340,7 +393,8 @@ def find_islands_pq(g_R, g_P, seed_order,
                 isos = grow_island_pq(g_R, g_P, seed, b.mapping, b.inv,
                                       graph_floor=graph_floor, iso_tol=iso_tol,
                                       max_branches=max_branches,
-                                      events=ev_arg)
+                                      events=ev_arg,
+                                      islands_R=b.islands_R)
                 if not isos:
                     new_branches.append(b)
                     continue
