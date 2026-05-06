@@ -100,7 +100,7 @@ def summarise(name, results):
     cells = []
     for thr in (0.7, 0.5, 0.3):
         cells.append(f"{(t2>=thr).sum():>3}/{n}({100*(t2>=thr).mean():>4.1f}%)")
-    return (f"{name:32s}  k=2 mean={t2.mean():.3f}  median={np.median(t2):.3f}  "
+    return (f"{name:40s}  mean={t2.mean():.3f}  median={np.median(t2):.3f}  "
             f"≥0.7={cells[0]}  ≥0.5={cells[1]}  ≥0.3={cells[2]}")
 
 
@@ -1057,6 +1057,556 @@ def rk_ensemble_vote(sd, min_rxn=0.10):
     return [(score[i], candidates[i][0], candidates[i][1]) for i in selected_idx]
 
 
+# ─── ITERATION 7: pool modes across IGs (within-IG mode selection) ───────
+# Insight: aggressive_v1 collapses each IG to its bond_overlap-best mode.
+# But the oracle ranges over ALL modes of ALL IGs. If the right basin is
+# captured by an IG but the highest-bond_overlap mode in it isn't the right
+# one, aggressive_v1 misses. Pool all imag modes from all IGs as candidates,
+# then global diversity selection.
+
+def rk_modepool(sd, alpha=0.7, min_rxn=0.10, w_rxn=1.0, w_core=0.2,
+                topm_per_ig=3, one_per_ig=True):
+    """Pool top-M imag modes per IG. Score same as aggressive_v1.
+    one_per_ig: enforce at most one mode per IG in the top-3 (avoids
+    duplicating obviously-similar modes)."""
+    candidates = []
+    elements = sd['elR']
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        # Sort imag modes by bond_overlap, take top-M
+        imag_sorted = sorted(imag, key=lambda m: -m.get('bond_overlap', 0))
+        for picked in imag_sorted[:topm_per_ig]:
+            r = picked.get('rxn_overlap', 0)
+            if r < min_rxn: continue
+            b = picked.get('bond_overlap', 0)
+            c = picked.get('core_fraction', 0)
+            score = b * (1 + w_rxn * r) * (1 + w_core * c)
+            candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    selected = []
+    selected_labels = set()
+    remaining = list(candidates)
+    while remaining and len(selected) < 3:
+        best = None; best_score = -1e18
+        for cand in remaining:
+            if one_per_ig and cand[2] in selected_labels: continue
+            score = cand[0]
+            for sel in selected:
+                mw = mass_weighted_cos(cand[1]['disp'], sel[1]['disp'], elements)
+                score *= max(0.0, 1.0 - alpha * mw)
+            if score > best_score:
+                best_score = score; best = cand
+        if best is None: break
+        selected.append(best)
+        selected_labels.add(best[2])
+        remaining.remove(best)
+    return selected
+
+
+def rk_modepool_within_score(sd, alpha=0.7, min_rxn=0.10, w_rxn=1.0,
+                              w_core=0.2, topm_per_ig=3, one_per_ig=True):
+    """Same as modepool, but the within-IG mode is selected by the
+    weighted score (bond × (1+rxn) × (1+core)), not by bond_overlap.
+    Then ranking + diversity is on the same score."""
+    candidates = []
+    elements = sd['elR']
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        scored_modes = []
+        for m in imag:
+            r = m.get('rxn_overlap', 0)
+            if r < min_rxn: continue
+            b = m.get('bond_overlap', 0)
+            c = m.get('core_fraction', 0)
+            sc = b * (1 + w_rxn * r) * (1 + w_core * c)
+            scored_modes.append((sc, m))
+        scored_modes.sort(key=lambda t: -t[0])
+        for sc, m in scored_modes[:topm_per_ig]:
+            candidates.append((sc, m, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    selected = []
+    selected_labels = set()
+    remaining = list(candidates)
+    while remaining and len(selected) < 3:
+        best = None; best_score = -1e18
+        for cand in remaining:
+            if one_per_ig and cand[2] in selected_labels: continue
+            score = cand[0]
+            for sel in selected:
+                mw = mass_weighted_cos(cand[1]['disp'], sel[1]['disp'], elements)
+                score *= max(0.0, 1.0 - alpha * mw)
+            if score > best_score:
+                best_score = score; best = cand
+        if best is None: break
+        selected.append(best)
+        selected_labels.add(best[2])
+        remaining.remove(best)
+    return selected
+
+
+# ─── ITERATION 8: better within-IG mode selection ────────────────────────
+# Maybe the issue is purely "which mode within each IG is best by bond_ov".
+# Try: pick within IG by bond * (1 + rxn) or other combined score.
+
+def rk_within_combo(sd, alpha=0.7, min_rxn=0.10, w_rxn=1.0, w_core=0.2,
+                    within_w_rxn=1.0, within_w_core=0.0):
+    """Within-IG mode pick by bond × (1 + within_w_rxn × rxn) ×
+    (1 + within_w_core × core). IG ranking uses the global score."""
+    candidates = []
+    elements = sd['elR']
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        def within_score(m):
+            return (m.get('bond_overlap', 0)
+                    * (1 + within_w_rxn * m.get('rxn_overlap', 0))
+                    * (1 + within_w_core * m.get('core_fraction', 0)))
+        picked = max(imag, key=within_score)
+        r = picked.get('rxn_overlap', 0)
+        if r < min_rxn: continue
+        b = picked.get('bond_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        score = b * (1 + w_rxn * r) * (1 + w_core * c)
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    selected = []
+    remaining = list(candidates)
+    while remaining and len(selected) < 3:
+        best = None; best_score = -1e18
+        for cand in remaining:
+            score = cand[0]
+            for sel in selected:
+                mw = mass_weighted_cos(cand[1]['disp'], sel[1]['disp'], elements)
+                score *= max(0.0, 1.0 - alpha * mw)
+            if score > best_score:
+                best_score = score; best = cand
+        selected.append(best); remaining.remove(best)
+    return selected
+
+
+# ─── ITERATION 9: dwbo within-IG mode selection ──────────────────────────
+# Compute dwbo_overlap for each mode and use it as part of within-IG pick.
+
+def _dwbo_per_mode(sd, ts):
+    """Compute dwbo_overlap for each mode in a TS. Cached lazily on the ts dict."""
+    if '_dwbo_cache' in ts:
+        return ts['_dwbo_cache']
+    from eval_dwbo_overlap import dwbo_reaction_vector, dwbo_overlap_per_mode
+    ts_xyz = np.asarray(ts['xyz_coords'])
+    V = dwbo_reaction_vector(ts_xyz, sd['wboR'], sd['wboP'], sd['mapping_RP'])
+    modes_R = np.asarray([mm['disp'] for mm in ts['modes']])
+    out = dwbo_overlap_per_mode(modes_R, V)
+    ts['_dwbo_cache'] = out
+    return out
+
+
+def rk_within_bond_x_dwbo(sd, alpha=0.7, min_rxn=0.10, w_rxn=1.0, w_core=0.2):
+    """Within-IG: pick mode by bond × dwbo. Global rank: aggressive_v1 score."""
+    candidates = []
+    elements = sd['elR']
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        dwbo = _dwbo_per_mode(sd, ts)
+        # Find imag modes' indices
+        imag_idx = [i for i, m in enumerate(ts['modes']) if m['freq'] < 0]
+        scored = [(ts['modes'][i].get('bond_overlap', 0) * float(dwbo[i]),
+                   ts['modes'][i]) for i in imag_idx]
+        if not scored: continue
+        picked = max(scored, key=lambda x: x[0])[1]
+        r = picked.get('rxn_overlap', 0)
+        if r < min_rxn: continue
+        b = picked.get('bond_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        score = b * (1 + w_rxn * r) * (1 + w_core * c)
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    selected = []
+    remaining = list(candidates)
+    while remaining and len(selected) < 3:
+        best = None; best_score = -1e18
+        for cand in remaining:
+            score = cand[0]
+            for sel in selected:
+                mw = mass_weighted_cos(cand[1]['disp'], sel[1]['disp'], elements)
+                score *= max(0.0, 1.0 - alpha * mw)
+            if score > best_score:
+                best_score = score; best = cand
+        selected.append(best); remaining.remove(best)
+    return selected
+
+
+# ─── ITERATION 10: cluster-then-rank ──────────────────────────────────────
+# Pool all imag modes across IGs. Cluster by mass-weighted cosine. For each
+# cluster: score = max(score) × log(1+size). Pick top representatives.
+
+def rk_cluster_pool(sd, alpha=0.7, min_rxn=0.10, w_rxn=1.0, w_core=0.2,
+                    cluster_thr=0.7):
+    candidates = []
+    elements = sd['elR']
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        for m in imag:
+            r = m.get('rxn_overlap', 0)
+            if r < min_rxn: continue
+            b = m.get('bond_overlap', 0)
+            c = m.get('core_fraction', 0)
+            sc = b * (1 + w_rxn * r) * (1 + w_core * c)
+            candidates.append((sc, m, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    n = len(candidates)
+    # Mass-weighted similarity matrix (only need for clustering — sparse path)
+    order = sorted(range(n), key=lambda i: -candidates[i][0])
+    cluster_id = [-1] * n
+    cid = 0
+    for i in order:
+        if cluster_id[i] != -1: continue
+        cluster_id[i] = cid
+        for j in range(n):
+            if cluster_id[j] == -1:
+                mw = mass_weighted_cos(candidates[i][1]['disp'],
+                                       candidates[j][1]['disp'], elements)
+                if mw >= cluster_thr:
+                    cluster_id[j] = cid
+        cid += 1
+    # Score each cluster: max(score) × log(1+size)  AND store representative
+    clusters = {}
+    for i, c in enumerate(cluster_id):
+        clusters.setdefault(c, []).append(i)
+    cluster_score = []
+    for c, members in clusters.items():
+        # representative: highest-scoring member with unique IG label
+        members.sort(key=lambda i: -candidates[i][0])
+        rep = members[0]
+        size = len(set(candidates[i][2] for i in members))  # unique IG count
+        sc = candidates[rep][0] * (1 + 0.3 * np.log1p(size))
+        cluster_score.append((sc, rep, members))
+    cluster_score.sort(key=lambda t: -t[0])
+    # Pick reps from top clusters, with diversity penalty across reps
+    selected = []
+    remaining = list(cluster_score)
+    while remaining and len(selected) < 3:
+        best = None; best_sc = -1e18
+        for cs, rep, members in remaining:
+            score = cs
+            for sel in selected:
+                mw = mass_weighted_cos(candidates[rep][1]['disp'],
+                                       candidates[sel[1]]['disp'] if False
+                                       else candidates[sel[3]][1]['disp'],
+                                       elements)
+                score *= max(0.0, 1.0 - alpha * mw)
+            if score > best_sc:
+                best_sc = score; best = (cs, rep, members, rep)
+        if best is None: break
+        cs, rep, members, _ = best
+        selected.append((cs, candidates[rep][1], candidates[rep][2], rep))
+        remaining = [t for t in remaining if t[1] != rep]
+    return [(s[0], s[1], s[2]) for s in selected]
+
+
+# ─── ITERATION 12: core_fraction-dominant scores ─────────────────────────
+# Diagnostic showed core_fraction alone has 30.8% rank-of-best-IG≤2
+# vs 26.4% for bond_overlap. So core should be weighted more.
+
+def _diversity_select(candidates, alpha, elements):
+    selected = []
+    remaining = list(candidates)
+    while remaining and len(selected) < 3:
+        best = None; best_score = -1e18
+        for cand in remaining:
+            score = cand[0]
+            for sel in selected:
+                mw = mass_weighted_cos(cand[1]['disp'], sel[1]['disp'], elements)
+                score *= max(0.0, 1.0 - alpha * mw)
+            if score > best_score:
+                best_score = score; best = cand
+        selected.append(best); remaining.remove(best)
+    return selected
+
+
+def rk_pure_core(sd, alpha=0.7, min_rxn=0.10):
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        candidates.append((picked.get('core_fraction', 0), picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_core_x_bond(sd, alpha=0.7, min_rxn=0.10):
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        sc = picked.get('bond_overlap', 0) * picked.get('core_fraction', 0)
+        candidates.append((sc, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_sqrt_core_bond(sd, alpha=0.7, min_rxn=0.10):
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        sc = float(np.sqrt(max(0, picked.get('bond_overlap', 0)
+                               * picked.get('core_fraction', 0))))
+        candidates.append((sc, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_core_with_rxn(sd, alpha=0.7, min_rxn=0.10):
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        sc = picked.get('core_fraction', 0) * (1 + picked.get('rxn_overlap', 0))
+        candidates.append((sc, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+# ─── ITERATION 13: Borda rank fusion + structural prior ──────────────────
+# Idea: rank each IG by multiple signals, use sum-of-ranks (Borda).
+# Add a "single-imaginary" prior — a clean TS has exactly one imag mode.
+
+def rk_borda(sd, alpha=0.7, min_rxn=0.10, weights=None):
+    """weights: dict of {feature: weight}. None = uniform."""
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        n_imag = len(imag)
+        candidates.append({
+            'b': picked.get('bond_overlap', 0),
+            'r': picked.get('rxn_overlap', 0),
+            'c': picked.get('core_fraction', 0),
+            'n_imag': n_imag,
+            'mode': picked, 'label': ts['label'],
+        })
+    if len(candidates) < 2:
+        return rk_bond_diverse(sd, alpha)
+    n = len(candidates)
+    if weights is None:
+        weights = {'b': 1.0, 'c': 1.0, 'r': 0.5, 'single_imag': 0.5}
+    # Compute ranks per feature (1-based, lower = better)
+    def ranks_by(key, descending=True):
+        vals = [(i, c[key]) for i, c in enumerate(candidates)]
+        vals.sort(key=lambda t: -t[1] if descending else t[1])
+        out = [0] * n
+        for r, (i, _) in enumerate(vals, 1):
+            out[i] = r
+        return out
+    r_b = ranks_by('b')
+    r_c = ranks_by('c')
+    r_r = ranks_by('r')
+    r_imag = ranks_by('n_imag', descending=False)  # fewer imag = better
+    # Higher score = better; compute -weighted sum of ranks
+    scores = []
+    for i in range(n):
+        s = -(weights['b'] * r_b[i] + weights['c'] * r_c[i]
+              + weights['r'] * r_r[i] + weights['single_imag'] * r_imag[i])
+        scores.append((s, candidates[i]['mode'], candidates[i]['label']))
+    return _diversity_select(scores, alpha, sd['elR'])
+
+
+def rk_single_imag_filter(sd, alpha=0.7, min_rxn=0.10, max_imag=2,
+                           w_rxn=1.0, w_core=0.2):
+    """Like aggressive_v1 but FILTER OUT IGs with > max_imag imaginary modes
+    (those are not clean transition states)."""
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        if len(imag) > max_imag: continue  # not a clean TS
+        picked = max(imag, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        b = picked.get('bond_overlap', 0)
+        r = picked.get('rxn_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        score = b * (1 + w_rxn * r) * (1 + w_core * c)
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_combined_clean(sd, alpha=0.7, min_rxn=0.10, max_imag=3):
+    """aggressive_v1 + single-imag filter + Borda-style core/bond fusion."""
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        if len(imag) > max_imag: continue
+        picked = max(imag, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        b = picked.get('bond_overlap', 0)
+        r = picked.get('rxn_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        n_im = len(imag)
+        score = b * (1 + r) * (1 + 0.5 * c) / max(n_im, 1) ** 0.3
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_clean_v2(sd, alpha=0.7, min_rxn=0.10, max_imag=2,
+                 w_rxn=1.0, w_core=0.5, imag_pen=0.3):
+    """combined_clean tuned + soft penalty for n_imag (rather than hard cutoff)."""
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        n_imag = len(imag)
+        if n_imag > max_imag: continue
+        picked = max(imag, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        b = picked.get('bond_overlap', 0)
+        r = picked.get('rxn_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        score = b * (1 + w_rxn * r) * (1 + w_core * c) / max(n_imag, 1) ** imag_pen
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_clean_max3(sd, alpha=0.7, min_rxn=0.10, w_rxn=1.0, w_core=0.5):
+    """Soft max_imag (penalty), no hard cutoff."""
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        picked = max(imag, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        n_imag = len(imag)
+        b = picked.get('bond_overlap', 0)
+        r = picked.get('rxn_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        score = b * (1 + w_rxn * r) * (1 + w_core * c) / (1 + 0.3 * (n_imag - 1))
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, alpha)
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_adaptive_alpha(sd, min_rxn=0.10, w_rxn=1.0, w_core=0.2):
+    """Top-1 score is high (>=0.5 bond) → use alpha=0.8 for diversity.
+       Top-1 score is low (<0.3 bond) → use alpha=0.3 (trust ranking more)."""
+    candidates = []
+    elements = sd['elR']
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        b = picked.get('bond_overlap', 0)
+        r = picked.get('rxn_overlap', 0)
+        c = picked.get('core_fraction', 0)
+        score = b * (1 + w_rxn * r) * (1 + w_core * c)
+        candidates.append((score, picked, ts['label']))
+    if not candidates:
+        return rk_bond_diverse(sd, 0.5)
+    candidates.sort(key=lambda t: -t[0])
+    top_b = candidates[0][1].get('bond_overlap', 0)
+    if top_b >= 0.5:    alpha = 0.8
+    elif top_b >= 0.3:  alpha = 0.6
+    else:               alpha = 0.3
+    return _diversity_select(candidates, alpha, elements)
+
+
+def rk_normfuse(sd, alpha=0.7, min_rxn=0.10, w_b=1.0, w_c=0.5, w_r=0.3,
+                 imag_pen=0.3, max_imag=3):
+    """Normalize each signal to [0,1] within the step's IG pool, then sum."""
+    rows = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        if not imag: continue
+        if len(imag) > max_imag: continue
+        picked = max(imag, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        rows.append({
+            'b': picked.get('bond_overlap', 0),
+            'r': picked.get('rxn_overlap', 0),
+            'c': picked.get('core_fraction', 0),
+            'n_imag': len(imag),
+            'mode': picked, 'label': ts['label'],
+        })
+    if len(rows) < 2:
+        return rk_bond_diverse(sd, alpha)
+    bs = np.array([x['b'] for x in rows])
+    cs = np.array([x['c'] for x in rows])
+    rs = np.array([x['r'] for x in rows])
+    bn = (bs - bs.min()) / max(bs.max() - bs.min(), 1e-9)
+    cn = (cs - cs.min()) / max(cs.max() - cs.min(), 1e-9)
+    rn = (rs - rs.min()) / max(rs.max() - rs.min(), 1e-9)
+    candidates = []
+    for i, x in enumerate(rows):
+        s = (w_b * bn[i] + w_c * cn[i] + w_r * rn[i]) \
+            / (1 + imag_pen * (x['n_imag'] - 1))
+        candidates.append((float(s), x['mode'], x['label']))
+    return _diversity_select(candidates, alpha, sd['elR'])
+
+
+def rk_b_plus_c_rank(sd, alpha=0.7, min_rxn=0.10):
+    """Score = bond_rank_pct + core_rank_pct (additive Borda on b+c)."""
+    candidates = []
+    for ts in sd['igs']:
+        imag = imag_modes(ts)
+        modes = imag if imag else ts['modes']
+        if not modes: continue
+        picked = max(modes, key=lambda m: m.get('bond_overlap', 0))
+        if picked.get('rxn_overlap', 0) < min_rxn: continue
+        candidates.append({
+            'b': picked.get('bond_overlap', 0),
+            'c': picked.get('core_fraction', 0),
+            'mode': picked, 'label': ts['label'],
+        })
+    if len(candidates) < 2:
+        return rk_bond_diverse(sd, alpha)
+    n = len(candidates)
+    # Convert to rank percentiles
+    bs = np.array([c['b'] for c in candidates])
+    cs = np.array([c['c'] for c in candidates])
+    rb = (-bs).argsort().argsort() + 1  # 1=best
+    rc = (-cs).argsort().argsort() + 1
+    scores = []
+    for i in range(n):
+        s = -(rb[i] + rc[i])
+        scores.append((s, candidates[i]['mode'], candidates[i]['label']))
+    return _diversity_select(scores, alpha, sd['elR'])
+
+
 # ─── load all step data ───────────────────────────────────────────────────
 
 def main():
@@ -1073,17 +1623,48 @@ def main():
 
     candidates = [
         ('BASELINE bond_overlap',           rk_bond_overlap),
-        ('combined_v2 w_rxn=1.0 (best)',    lambda s: rk_combined_v2(s, 0.5, 0.10, 1.0, 0.0)),
-        # Iteration 6: aggressive
-        ('aggressive_v1',                   lambda s: rk_aggressive_v1(s, 0.5, 0.10, 1.0, 0.2)),
-        ('aggressive_v1 w_rxn=2',           lambda s: rk_aggressive_v1(s, 0.5, 0.10, 2.0, 0.0)),
-        ('aggressive_v1 alpha=0.7',         lambda s: rk_aggressive_v1(s, 0.7, 0.10, 1.0, 0.2)),
-        ('two_stage hard_excl',             lambda s: rk_two_stage(s, 0.5, 0.10)),
-        ('anchor + complement (≥0.7×bond)', lambda s: rk_anchor_then_complement(s, 0.10)),
-        ('ensemble_vote',                   rk_ensemble_vote),
+        ('aggressive_v1 alpha=0.7 (prev best)',
+                                            lambda s: rk_aggressive_v1(s, 0.7, 0.10, 1.0, 0.2)),
+        # Iteration 12 — push core_fraction weight (since it's the best
+        # rank=1-of-best-IG signal: 30.8% vs bond_overlap 26.4%)
+        ('aggressive w_core=0.5',           lambda s: rk_aggressive_v1(s, 0.7, 0.10, 1.0, 0.5)),
+        ('aggressive w_core=1.0',           lambda s: rk_aggressive_v1(s, 0.7, 0.10, 1.0, 1.0)),
+        ('aggressive w_core=2.0',           lambda s: rk_aggressive_v1(s, 0.7, 0.10, 1.0, 2.0)),
+        ('aggressive w_core=3.0',           lambda s: rk_aggressive_v1(s, 0.7, 0.10, 1.0, 3.0)),
+        ('aggressive w_core=5.0 w_rxn=0.5', lambda s: rk_aggressive_v1(s, 0.7, 0.10, 0.5, 5.0)),
+        ('aggressive w_core=10 w_rxn=0',    lambda s: rk_aggressive_v1(s, 0.7, 0.10, 0.0, 10.0)),
+        # Pure core_fraction with diversity
+        ('pure core_fraction + diversity',  lambda s: rk_pure_core(s, 0.7, 0.10)),
+        ('core × bond filter',              lambda s: rk_core_x_bond(s, 0.7, 0.10)),
+        ('sqrt(core × bond)',               lambda s: rk_sqrt_core_bond(s, 0.7, 0.10)),
+        ('core_fraction × (1+r)',           lambda s: rk_core_with_rxn(s, 0.7, 0.10)),
+        # Iter 13 — fusion + structural prior
+        ('Borda b+c+r (uniform)',           lambda s: rk_borda(s, 0.7, 0.10, {'b':1,'c':1,'r':0.5,'single_imag':0})),
+        ('Borda b+c+single_imag',           lambda s: rk_borda(s, 0.7, 0.10, {'b':1,'c':1,'r':0,'single_imag':0.7})),
+        ('Borda all uniform',               lambda s: rk_borda(s, 0.7, 0.10, None)),
+        ('aggressive + max_imag=2',         lambda s: rk_single_imag_filter(s, 0.7, 0.10, 2, 1.0, 0.2)),
+        ('aggressive + max_imag=1',         lambda s: rk_single_imag_filter(s, 0.7, 0.10, 1, 1.0, 0.2)),
+        ('combined_clean max_imag=3',       lambda s: rk_combined_clean(s, 0.7, 0.10, 3)),
+        ('combined_clean max_imag=2',       lambda s: rk_combined_clean(s, 0.7, 0.10, 2)),
+        ('rank-pct b+c',                    lambda s: rk_b_plus_c_rank(s, 0.7, 0.10)),
+        # Iter 14 — clean_v2 sweep
+        ('clean_v2 mi2 wc0.5 ip0.3',        lambda s: rk_clean_v2(s, 0.7, 0.10, 2, 1.0, 0.5, 0.3)),
+        ('clean_v2 mi2 wc0.2 ip0.3',        lambda s: rk_clean_v2(s, 0.7, 0.10, 2, 1.0, 0.2, 0.3)),
+        ('clean_v2 mi2 wc1.0 ip0.5',        lambda s: rk_clean_v2(s, 0.7, 0.10, 2, 1.0, 1.0, 0.5)),
+        ('clean_v2 mi3 wc0.5 ip0.3',        lambda s: rk_clean_v2(s, 0.7, 0.10, 3, 1.0, 0.5, 0.3)),
+        ('clean_max3 wc0.2',                lambda s: rk_clean_max3(s, 0.7, 0.10, 1.0, 0.2)),
+        ('clean_max3 wc0.5',                lambda s: rk_clean_max3(s, 0.7, 0.10, 1.0, 0.5)),
+        ('clean_max3 wc1.0',                lambda s: rk_clean_max3(s, 0.7, 0.10, 1.0, 1.0)),
+        ('adaptive_alpha',                  lambda s: rk_adaptive_alpha(s, 0.10, 1.0, 0.2)),
+        # Iter 15 — normalized fusion
+        ('normfuse b1 c0.5 r0.3',           lambda s: rk_normfuse(s, 0.7, 0.10, 1.0, 0.5, 0.3, 0.3, 3)),
+        ('normfuse b1 c1.0 r0.5',           lambda s: rk_normfuse(s, 0.7, 0.10, 1.0, 1.0, 0.5, 0.3, 3)),
+        ('normfuse b1 c0.5 r0 mi3',         lambda s: rk_normfuse(s, 0.7, 0.10, 1.0, 0.5, 0.0, 0.3, 3)),
+        ('normfuse b1 c1 r1 mi2',           lambda s: rk_normfuse(s, 0.7, 0.10, 1.0, 1.0, 1.0, 0.3, 2)),
+        ('normfuse b2 c1 r0.5 mi3',         lambda s: rk_normfuse(s, 0.7, 0.10, 2.0, 1.0, 0.5, 0.3, 3)),
     ]
-    print(f"{'method':32s}  k=2 results")
-    print('=' * 90)
+    print(f"{'method':40s}  k=2 results")
+    print('=' * 100)
     for name, fn in candidates:
         res = evaluate_topk(fn, scope)
         print(summarise(name, res))

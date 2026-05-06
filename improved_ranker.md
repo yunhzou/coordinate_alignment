@@ -124,6 +124,80 @@ To push further you'd need either:
 - **Better IG generation**: ~half the gap to oracle is fundamental
   to IG quality. (Tier 4 in the roadmap doc.)
 
+## Iterations 7–15: hitting the signal floor
+
+After `aggressive_v1` we ran a further 9 iterations (≈40 more variants)
+trying to close the remaining 0.16 mean gap to oracle. The result:
+**none** delivered a clean improvement. Best new variant is
+`clean_v2` (max_imag=2 + soft `1/n_imag^0.3` penalty + lighter core
+weight): mean **0.581** (+0.005), `≥0.5` **95** (+4 steps), but `≥0.3`
+**126** (−3) — net mixed.
+
+| iteration | family | best result | vs aggressive_v1 |
+|---|---|---|---|
+| 7 (mode pool, top-M imag/IG) | within-IG mode broadening | flat 0.576 | 0.000 |
+| 8 (within-IG combo score) | bond×(1+rxn) within IG | 0.578 | +0.002 |
+| 9 (dwbo within-IG pick) | bond × dwbo within | flat | 0.000 |
+| 10 (cluster-pool) | cluster across all imag modes | flat | ~0.000 |
+| 12 (core-dominant) | bond × (1+r) × (1+w·c), w=1–10 | flat / slight degrade | −0.002 |
+| 13 (Borda fusion) | sum-of-ranks across signals | mean drops to 0.535 | −0.04 |
+| 13 (max_imag filter) | `aggressive_v1` + ≤2 imag | 0.577 | +0.001 |
+| 13 (combined_clean) | bond × (1+r) × (1+0.5c) / n_imag^0.3 | 0.578, ≥0.5=94 | +0.002 |
+| 14 (clean_v2 sweep) | tuning above | 0.581, ≥0.5=95 | +0.005 (mixed) |
+| 14 (adaptive alpha) | alpha varies w/ top-1 confidence | flat 0.576 | 0.000 |
+| 15 (normalized fusion) | per-step rescale of features | mean drops to 0.572 | −0.005 |
+
+### Why we plateau — diagnostic on the IG-selection bottleneck
+
+We decomposed the gap to oracle:
+
+```
+Gap decomposition (aggressive_v1 vs oracle, 160 steps):
+  Both right (top-2 includes best IG, mode within 0.05): 34/160 (21%)
+  Wrong IG (best IG not even in top-2):                 121/160 (76%)
+  Right IG, wrong mode within:                           5/160 (3%)
+```
+
+The bottleneck is **picking the right 2 of 20 IGs**, not picking the
+right mode within an IG. To check whether any unsupervised signal
+could rank the best IG into top-2 more often, we tested every
+candidate signal we have:
+
+```
+feature                 rank=1  rank≤2  rank≤3
+bond_overlap            15.7%   26.4%   35.8%
+core_fraction           20.8%   30.8%   36.5%
+b × (1+r) × (1+0.2c)    15.7%   26.4%   35.8%
+rxn_overlap              8.8%   18.2%   25.2%
+mode_peer_consensus      9.4%   13.2%   14.5%
+TS-RMSD-to-consensus     5.0%    8.2%   12.6%
+imag_count (fewer best) 11.9%   18.9%   27.0%
+```
+
+**Ceiling**: the strongest single signal (core_fraction) places the
+best-IG at rank ≤ 2 only **30.8 %** of the time. All combinations we
+tried (Borda, normalized fusion, weighted product, rank averaging)
+underperform this — the signals are too correlated, and combining
+them doesn't add genuinely independent information.
+
+### What this means
+
+We're signal-bound. The available physics-derived per-IG signals
+(bond_overlap, rxn_overlap, core_fraction, dwbo_overlap, peer-mode
+consensus, structural consensus, imag_count) cap at ~30 % rank ≤ 2 of
+"best IG". The current `aggressive_v1` ranker hits **41.9 %** at
+`≥0.7` — already higher than any single-signal rank-2 hit rate,
+because multiple "good enough" IGs exist per step. The diversity
+penalty captures this.
+
+Closing the rest of the gap requires:
+
+- a **learned model** over (step, IG, mode) features supervised by
+  GT-alignment (cross-step transfer; Tier 2 in the roadmap), or
+- **better IGs** so the rank-2 ceiling rises (Tier 4).
+
+Both are out of scope for the current "rerank existing IGs" task.
+
 ## Code
 
 `improve_ranker.py` — full evaluation script with all variants.
