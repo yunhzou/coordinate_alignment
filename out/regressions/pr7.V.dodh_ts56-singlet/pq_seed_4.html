@@ -1,0 +1,368 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Island growth: PQ pr7.V.dodh_ts56-singlet  seed#4  br/fm=5/5  events=51  mapped=27/27  branches=8</title>
+<script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<style>
+ html, body { margin: 0; padding: 0; }
+ body { font-family: -apple-system, sans-serif; background: #fafafa; padding: 10px; box-sizing: border-box; }
+ h2 { margin: 4px 0 8px; }
+ .ctl { background: white; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+ .row { display: flex; gap: 10px; margin-bottom: 10px; }
+ .pane { flex: 1; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 8px; box-sizing: border-box; }
+ .viewer-wrap { position: relative; width: 100%; height: 480px; }
+ .viewer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+ input[type=range] { flex: 1; min-width: 200px; }
+ #event { font-family: ui-monospace, monospace; font-size: 12px; padding: 8px; background: #f4f4f4; border-radius: 4px; white-space: pre-wrap; max-height: 250px; overflow: auto; }
+ .legend { display: flex; gap: 6px; flex-wrap: wrap; }
+ .legend span { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+ .leg-seed { background: #ffd700; }
+ .leg-frag { background: #66c2a5; }
+ .leg-cut  { background: #f88; }
+ .leg-tried { background: #ffe066; }
+ .leg-cands-p { background: #d4a4ff; }
+ .leg-locked { background: #2ca02c; color: white; }
+ button { padding: 4px 10px; }
+ h3 { margin: 4px 0 6px; font-size: 14px; }
+ h4 { margin: 10px 0 4px; font-size: 13px; }
+ pre { font-size: 11px; margin: 0; max-height: 220px; overflow: auto; background: #fafafa; padding: 4px 6px; border-radius: 4px; }
+</style></head><body>
+
+<h2>PQ pr7.V.dodh_ts56-singlet  seed#4  br/fm=5/5  events=51  mapped=27/27  branches=8</h2>
+<div class="ctl">
+  <button id="prev">◀</button>
+  <button id="play">▶ Play</button>
+  <button id="next">▶</button>
+  <input type="range" id="slider" min="0" max="0" value="0">
+  <span id="counter">0 / 0</span>
+  <label style="font-size:13px"><input type="checkbox" id="showLabels" checked> labels</label>
+  <span class="legend" style="margin-left: auto">
+    <span class="leg-seed">seed</span>
+    <span class="leg-frag">current fragment</span>
+    <span style="background:#bbb; padding:2px 8px; border-radius:4px; font-size:12px">locked islands (each = unique color)</span>
+  </span>
+</div>
+
+<div id="clickInfo" style="background:#fffacc; padding:8px 12px; border:1px solid #ccc; border-radius:6px; margin-bottom:10px; font-family:ui-monospace, monospace; font-size:13px;">
+  Click two atoms in the same viewer (R or P) to see the WBO between them. <br>
+  Selected R: <span id="selR_display">none</span>  |  Selected P: <span id="selP_display">none</span>
+</div>
+
+<div class="row">
+  <div class="pane">
+    <h3>Reactant</h3>
+    <div class="viewer-wrap"><div id="vR" class="viewer"></div></div>
+  </div>
+  <div class="pane">
+    <h3>Product</h3>
+    <div class="viewer-wrap"><div id="vP" class="viewer"></div></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="pane">
+    <h3>Event</h3>
+    <div id="event"></div>
+  </div>
+  <div class="pane">
+    <h3>Locked mapping (R → P)</h3>
+    <pre id="locked"></pre>
+  </div>
+</div>
+
+<script>
+const xyzR = "27\nR\nC  1.623759  1.425839  0.020590\nN  1.301511  0.136194  0.007616\nC  2.202717  -0.835953  -0.102555\nC  3.547032  -0.524911  -0.218133\nC  3.914773  0.817187  -0.212211\nC  2.949402  1.811389  -0.089930\nV  -0.685037  -0.388067  0.165435\nO  -1.521789  -0.871540  1.756203\nC  1.589493  -2.230677  -0.087051\nO  0.312300  -2.220372  0.018114\nC  0.415449  2.339367  0.183684\nO  -0.686410  1.697427  0.294612\nO  2.327766  -3.204552  -0.169798\nO  0.585946  3.552544  0.198371\nO  -1.896028  -0.479553  -1.193168\nC  -3.014040  0.345746  -1.385604\nC  -4.205306  -0.133068  -0.570723\nO  -4.078969  0.083182  0.817807\nH  -1.465440  -1.815668  1.931568\nH  -3.292047  0.322167  -2.449661\nH  -2.789427  1.385885  -1.116756\nH  -5.097409  0.415501  -0.890775\nH  -4.371542  -1.197401  -0.793087\nH  3.198964  2.863457  -0.076446\nH  4.960005  1.089434  -0.300971\nH  4.269951  -1.323853  -0.308009\nH  -3.249974  -0.313954  1.140281\n";
+const xyzP = "27\nP\nC  3.064839  -1.155047  -0.654342\nN  3.712179  0.001944  -0.773938\nC  3.087136  1.174608  -0.690404\nC  1.739133  1.233892  -0.382849\nC  1.054368  0.036633  -0.184955\nC  1.716870  -1.179522  -0.343734\nV  5.737087  -0.022977  -1.166184\nO  5.135861  -1.911227  -1.392926\nC  3.966464  -2.315289  -1.001256\nO  3.577787  -3.470543  -0.946549\nC  4.012544  2.305388  -1.065257\nO  3.651027  3.470543  -1.039486\nO  7.547139  -0.045914  -1.631034\nH  1.245258  2.194255  -0.318202\nH  0.000000  0.050625  0.062945\nH  1.205703  -2.128134  -0.247890\nO  5.174331  1.866630  -1.445631\nO  6.324822  -0.016337  0.608772\nC  7.685658  0.329882  0.694047\nC  8.392744  -0.245009  -0.526339\nH  7.802593  1.425824  0.699653\nH  8.117870  -0.051201  1.631034\nH  9.368388  0.236552  -0.687406\nH  8.576371  -1.320969  -0.379335\nO  19.368388  0.000000  0.293779\nH  19.368388  0.758628  -0.293779\nH  19.368388  -0.758628  -0.293779\n";
+const events = [{"type": "pass_start", "pass": 1, "mapped": 0}, {"type": "seed_start", "seed": 21, "init_cands": 9, "fragment": [21], "p_atoms": [13, 14, 15, 20, 21, 22, 23, 25, 26]}, {"type": "commit", "added": 16, "element": "C", "cands": 7, "fragment": [16, 21], "p_atoms": [3, 4, 5, 13, 14, 15, 18, 19, 20, 21, 22, 23], "distance_from_seed": 1, "bonds_to_fragment": [[21, 0.971]]}, {"type": "commit", "added": 17, "element": "O", "cands": 4, "fragment": [16, 17, 21], "p_atoms": [12, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 2, "bonds_to_fragment": [[16, 1.013]]}, {"type": "commit", "added": 15, "element": "C", "cands": 4, "fragment": [15, 16, 17, 21], "p_atoms": [12, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 2, "bonds_to_fragment": [[16, 0.973]]}, {"type": "commit", "added": 14, "element": "O", "cands": 4, "fragment": [14, 15, 16, 17, 21], "p_atoms": [12, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 3, "bonds_to_fragment": [[15, 1.011]]}, {"type": "commit", "added": 6, "element": "V", "cands": 4, "fragment": [6, 14, 15, 16, 17, 21], "p_atoms": [6, 12, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 4, "bonds_to_fragment": [[14, 1.103]]}, {"type": "commit", "added": 7, "element": "O", "cands": 8, "fragment": [6, 7, 14, 15, 16, 17, 21], "p_atoms": [6, 7, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 5, "bonds_to_fragment": [[6, 1.075]]}, {"type": "commit", "added": 22, "element": "H", "cands": 8, "fragment": [6, 7, 14, 15, 16, 17, 21, 22], "p_atoms": [6, 7, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 2, "bonds_to_fragment": [[16, 0.958]]}, {"type": "commit", "added": 19, "element": "H", "cands": 16, "fragment": [6, 7, 14, 15, 16, 17, 19, 21, 22], "p_atoms": [6, 7, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 3, "bonds_to_fragment": [[15, 0.955]]}, {"type": "commit", "added": 20, "element": "H", "cands": 16, "fragment": [6, 7, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [6, 7, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 3, "bonds_to_fragment": [[15, 0.923]]}, {"type": "consumed", "frag_atom": 7, "ext_atom": 18, "wbo": 0.871, "reason": "cut_all_cands", "fragment": [6, 7, 14, 15, 16, 17, 19, 20, 21, 22]}, {"type": "consumed", "frag_atom": 17, "ext_atom": 26, "wbo": 0.814, "reason": "cut_all_cands", "fragment": [6, 7, 14, 15, 16, 17, 19, 20, 21, 22]}, {"type": "commit", "added": 11, "element": "O", "cands": 16, "fragment": [6, 7, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [6, 7, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 5, "bonds_to_fragment": [[6, 0.594]]}, {"type": "commit", "added": 10, "element": "C", "cands": 16, "fragment": [6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 6, "bonds_to_fragment": [[11, 1.349]]}, {"type": "consumed", "frag_atom": 10, "ext_atom": 13, "wbo": 1.585, "reason": "cut_all_cands", "fragment": [6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22]}, {"type": "commit", "added": 0, "element": "C", "cands": 16, "fragment": [0, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [0, 2, 6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 7, "bonds_to_fragment": [[10, 0.899]]}, {"type": "commit", "added": 5, "element": "C", "cands": 16, "fragment": [0, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [0, 2, 3, 5, 6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 8, "bonds_to_fragment": [[0, 1.379]]}, {"type": "commit", "added": 4, "element": "C", "cands": 16, "fragment": [0, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [0, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 9, "bonds_to_fragment": [[5, 1.427]]}, {"type": "commit", "added": 3, "element": "C", "cands": 16, "fragment": [0, 3, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [0, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 10, "bonds_to_fragment": [[4, 1.433]]}, {"type": "commit", "added": 2, "element": "C", "cands": 16, "fragment": [0, 2, 3, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [0, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 11, "bonds_to_fragment": [[3, 1.377]]}, {"type": "commit", "added": 1, "element": "N", "cands": 16, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22], "p_atoms": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 5, "bonds_to_fragment": [[0, 1.355]]}, {"type": "commit", "added": 24, "element": "H", "cands": 16, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22, 24], "p_atoms": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 10, "bonds_to_fragment": [[4, 0.969]]}, {"type": "commit", "added": 25, "element": "H", "cands": 16, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22, 24, 25], "p_atoms": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 11, "bonds_to_fragment": [[3, 0.965]]}, {"type": "commit", "added": 23, "element": "H", "cands": 16, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25], "p_atoms": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 9, "bonds_to_fragment": [[5, 0.965]]}, {"type": "commit", "added": 8, "element": "C", "cands": 16, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25], "p_atoms": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 12, "bonds_to_fragment": [[2, 0.901]]}, {"type": "commit", "added": 12, "element": "O", "cands": 16, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25], "p_atoms": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "distance_from_seed": 13, "bonds_to_fragment": [[8, 1.586]]}, {"type": "consumed", "frag_atom": 8, "ext_atom": 9, "wbo": 1.346, "reason": "cut_all_cands", "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25]}, {"type": "consumed", "frag_atom": 6, "ext_atom": 9, "wbo": 0.585, "reason": "cut_all_cands", "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25]}, {"type": "consumed", "frag_atom": 11, "ext_atom": 13, "wbo": 0.205, "reason": "cut_all_cands", "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25]}, {"type": "consumed", "frag_atom": 12, "ext_atom": 9, "wbo": 0.205, "reason": "cut_all_cands", "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25]}, {"type": "seed_end", "result": "branched", "final_cands": 16, "n_branches": 2, "fragment": [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25], "iso": {"21": 20, "16": 18, "17": 17, "15": 19, "14": 12, "6": 6, "7": 7, "22": 21, "19": 22, "20": 23, "11": 16, "10": 10, "0": 2, "5": 3, "4": 4, "3": 5, "2": 0, "1": 1, "24": 14, "25": 15, "23": 13, "8": 8, "12": 9}}, {"type": "island_locked", "island_idx": 1, "pairs": [[21, 20], [16, 18], [17, 17], [15, 19], [14, 12], [6, 6], [7, 7], [22, 21], [19, 22], [20, 23], [11, 16], [10, 10], [0, 2], [5, 3], [4, 4], [3, 5], [2, 0], [1, 1], [24, 14], [25, 15], [23, 13], [8, 8], [12, 9]], "merged_with": [], "relabeled": [], "mapped_total": 23}, {"type": "seed_start", "seed": 9, "init_cands": 2, "fragment": [9], "p_atoms": [11, 24]}, {"type": "consumed", "frag_atom": 9, "ext_atom": 8, "wbo": 1.346, "reason": "merge_failed", "fragment": [9]}, {"type": "consumed", "frag_atom": 9, "ext_atom": 6, "wbo": 0.585, "reason": "merge_failed", "fragment": [9]}, {"type": "consumed", "frag_atom": 9, "ext_atom": 12, "wbo": 0.205, "reason": "merge_failed", "fragment": [9]}, {"type": "seed_end", "result": "branched", "final_cands": 2, "n_branches": 2, "fragment": [9], "iso": {"9": 11}}, {"type": "island_locked", "island_idx": 2, "pairs": [[9, 11]], "merged_with": [], "relabeled": [], "mapped_total": 24}, {"type": "seed_start", "seed": 18, "init_cands": 2, "fragment": [18], "p_atoms": [25, 26]}, {"type": "consumed", "frag_atom": 18, "ext_atom": 7, "wbo": 0.871, "reason": "merge_failed", "fragment": [18]}, {"type": "seed_end", "result": "branched", "final_cands": 2, "n_branches": 2, "fragment": [18], "iso": {"18": 25}}, {"type": "island_locked", "island_idx": 3, "pairs": [[18, 25]], "merged_with": [], "relabeled": [], "mapped_total": 25}, {"type": "seed_start", "seed": 26, "init_cands": 1, "fragment": [26], "p_atoms": [26]}, {"type": "seed_end", "result": "success", "final_cands": 1, "fragment": [26], "iso": {"26": 26}}, {"type": "island_locked", "island_idx": 4, "pairs": [[26, 26]], "merged_with": [], "relabeled": [], "mapped_total": 26}, {"type": "seed_start", "seed": 13, "init_cands": 1, "fragment": [13], "p_atoms": [24]}, {"type": "seed_end", "result": "success", "final_cands": 1, "fragment": [13], "iso": {"13": 24}}, {"type": "island_locked", "island_idx": 5, "pairs": [[13, 24]], "merged_with": [], "relabeled": [], "mapped_total": 27}, {"type": "pass_start", "pass": 2, "mapped": 27}, {"type": "done", "mapped": 27}];
+const wboR = [[0.0, 1.3553371504771565, 0.0, 0.0, 0.0, 1.3794909817575536, 0.0, 0.0, 0.0, 0.0, 0.8992515664461033, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1.3553371504771565, 0.0, 1.352801199657222, 0.0, 0.0, 0.0, 0.5016219957339555, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.352801199657222, 0.0, 1.3767066197360591, 0.0, 0.0, 0.0, 0.0, 0.9008352748002366, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.3767066197360591, 0.0, 1.432761570633558, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9653218637122861, 0.0], [0.0, 0.0, 0.0, 1.432761570633558, 0.0, 1.4270848460880425, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9693783498208787, 0.0, 0.0], [1.3794909817575536, 0.0, 0.0, 0.0, 1.4270848460880425, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9651037276027069, 0.0, 0.0, 0.0], [0.0, 0.5016219957339555, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0752910228691448, 0.0, 0.5854431559680341, 0.0, 0.593610247581417, 0.0, 0.0, 1.10310624074045, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0752910228691448, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8710830099437582, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.9008352748002366, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.3455730652101514, 0.0, 0.0, 1.5862954807372776, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5854431559680341, 0.0, 1.3455730652101514, 0.0, 0.0, 0.0, 0.20456777764125114, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.8992515664461033, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.349190479381023, 0.0, 1.585427046384945, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.593610247581417, 0.0, 0.0, 0.0, 1.349190479381023, 0.0, 0.0, 0.2052244631324036, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5862954807372776, 0.20456777764125114, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.585427046384945, 0.2052244631324036, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.10310624074045, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0110385117097946, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0110385117097946, 0.0, 0.9728140988815533, 0.0, 0.0, 0.9547975965368112, 0.9229680900301918, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9728140988815533, 0.0, 1.0127749213667288, 0.0, 0.0, 0.0, 0.971104899946441, 0.9575577525837173, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0127749213667288, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8135088584560117], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8710830099437582, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9547975965368112, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9229680900301918, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.971104899946441, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9575577525837173, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.9651037276027069, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.9693783498208787, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.9653218637122861, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8135088584560117, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]];
+const wboP = [[0.0, 1.3009580286974078, 0.0, 0.0, 0.0, 1.4065210652294864, 0.12837323096636458, 0.0, 0.9245027348121979, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1.3009580286974078, 0.0, 1.3027810714671846, 0.0, 0.0, 0.0, 0.6396644759394874, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.3027810714671846, 0.0, 1.4142394884221487, 0.0, 0.0, 0.11722625640982048, 0.0, 0.0, 0.0, 0.9237377129472739, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.4142394884221487, 0.0, 1.4097149863025609, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9667111767894322, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.4097149863025609, 0.0, 1.4192333516870084, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9704530098272551, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1.4065210652294864, 0.0, 0.0, 0.0, 1.4192333516870084, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9665648168735536, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.12837323096636458, 0.6396644759394874, 0.11722625640982048, 0.0, 0.0, 0.0, 0.0, 0.691090639521173, 0.0, 0.0, 0.0, 0.0, 1.0180789160292292, 0.0, 0.0, 0.0, 0.6858029161828422, 1.1459763874695803, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.691090639521173, 0.0, 1.287569644866984, 0.1834214626230612, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.9245027348121979, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.287569644866984, 0.0, 1.6196975138982423, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1834214626230612, 1.6196975138982423, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.9237377129472739, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.6297409167498855, 0.0, 0.0, 0.0, 0.0, 1.2871124900954543, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.6297409167498855, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1809514757843918, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0180789160292292, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0252029357884642, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.9667111767894322, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.9704530098272551, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.9665648168735536, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6858029161828422, 0.0, 0.0, 0.0, 1.2871124900954543, 0.1809514757843918, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1459763874695803, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0112575394107508, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0112575394107508, 0.0, 0.9621292535749079, 0.9345248792575178, 0.9566987406027352, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0252029357884642, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9621292535749079, 0.0, 0.0, 0.0, 0.9565123899633459, 0.9363773157850313, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9345248792575178, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9566987406027352, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9565123899633459, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9363773157850313, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9203009828737739, 0.9202884652245541], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9203009828737739, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9202884652245541, 0.0, 0.0]];
+const elementsR = ["C", "N", "C", "C", "C", "C", "V", "O", "C", "O", "C", "O", "O", "O", "O", "C", "C", "O", "H", "H", "H", "H", "H", "H", "H", "H", "H"];
+const elementsP = ["C", "N", "C", "C", "C", "C", "V", "O", "C", "O", "C", "O", "O", "H", "H", "H", "O", "O", "C", "C", "H", "H", "H", "H", "O", "H", "H"];
+
+function parseXYZCoords(xyz) {
+  const lines = xyz.trim().split('\n');
+  const n = parseInt(lines[0]);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const parts = lines[2+i].trim().split(/\s+/);
+    out.push([+parts[1], +parts[2], +parts[3]]);
+  }
+  return out;
+}
+
+const coordsR = parseXYZCoords(xyzR);
+const coordsP = parseXYZCoords(xyzP);
+
+const vR = $3Dmol.createViewer('vR', {backgroundColor: 'white'});
+vR.addModel(xyzR, 'xyz');
+vR.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
+
+const vP = $3Dmol.createViewer('vP', {backgroundColor: 'white'});
+vP.addModel(xyzP, 'xyz');
+vP.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
+
+// --- Atom labels (toggleable) ---
+let labelHandlesR = [];
+let labelHandlesP = [];
+function addLabels() {
+  labelHandlesR.forEach(h => vR.removeLabel(h));
+  labelHandlesP.forEach(h => vP.removeLabel(h));
+  labelHandlesR = [];
+  labelHandlesP = [];
+  // Labels positioned exactly at atom centers, no background, so they
+  // don't visually shift to neighboring atoms.
+  for (let i = 0; i < coordsR.length; i++) {
+    const h = vR.addLabel(String(i), {
+      position: {x: coordsR[i][0], y: coordsR[i][1], z: coordsR[i][2]},
+      fontSize: 9, fontColor: 'black',
+      showBackground: false,
+      borderThickness: 0,
+      inFront: true,
+    });
+    labelHandlesR.push(h);
+  }
+  for (let i = 0; i < coordsP.length; i++) {
+    const h = vP.addLabel(String(i), {
+      position: {x: coordsP[i][0], y: coordsP[i][1], z: coordsP[i][2]},
+      fontSize: 9, fontColor: 'black',
+      showBackground: false,
+      borderThickness: 0,
+      inFront: true,
+    });
+    labelHandlesP.push(h);
+  }
+  vR.render(); vP.render();
+}
+function removeLabels() {
+  labelHandlesR.forEach(h => vR.removeLabel(h));
+  labelHandlesP.forEach(h => vP.removeLabel(h));
+  labelHandlesR = []; labelHandlesP = [];
+  vR.render(); vP.render();
+}
+document.getElementById('showLabels').addEventListener('change', e => {
+  if (e.target.checked) addLabels(); else removeLabels();
+});
+
+vR.zoomTo(); vR.render();
+vP.zoomTo(); vP.render();
+addLabels();
+
+// --- Click selection for WBO display ---
+let selR = [];
+let selP = [];
+function refreshSelectionDisplay() {
+  function fmt(arr, side) {
+    if (arr.length === 0) return 'none';
+    if (arr.length === 1) return `${side}[${arr[0]}](${(side==='R'?elementsR:elementsP)[arr[0]]})`;
+    if (arr.length === 2) {
+      const [i, j] = arr;
+      const els = side === 'R' ? elementsR : elementsP;
+      const wbo = side === 'R' ? wboR[i][j] : wboP[i][j];
+      return `${side}[${i}](${els[i]}) ↔ ${side}[${j}](${els[j]})  WBO = ${wbo.toFixed(3)}`;
+    }
+    return '';
+  }
+  document.getElementById('selR_display').textContent = fmt(selR, 'R');
+  document.getElementById('selP_display').textContent = fmt(selP, 'P');
+}
+
+vR.setClickable({}, true, function(atom, viewer, event, container) {
+  if (event && event.preventDefault) event.preventDefault();
+  if (event && event.stopPropagation) event.stopPropagation();
+  const idx = atom.serial;
+  if (selR.length >= 2) selR = [];
+  if (!selR.includes(idx)) selR.push(idx);
+  refreshSelectionDisplay();
+  applyEvent(+slider.value);
+});
+vP.setClickable({}, true, function(atom, viewer, event, container) {
+  if (event && event.preventDefault) event.preventDefault();
+  if (event && event.stopPropagation) event.stopPropagation();
+  const idx = atom.serial;
+  if (selP.length >= 2) selP = [];
+  if (!selP.includes(idx)) selP.push(idx);
+  refreshSelectionDisplay();
+  applyEvent(+slider.value);
+});
+
+const slider = document.getElementById('slider');
+slider.max = events.length - 1;
+const counter = document.getElementById('counter');
+const eventDiv = document.getElementById('event');
+const lockedPre = document.getElementById('locked');
+
+// Distinct color palette for islands (one color per island id; R-atom and
+// P-atom in the same island share the same color so the two viewers stay
+// visually synced).
+const ISLAND_PALETTE = [
+  '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b',
+  '#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78',
+  '#98df8a','#ff9896','#c5b0d5','#c49c94','#f7b6d2','#c7c7c7',
+  '#dbdb8d','#9edae5','#3182bd','#e6550d','#31a354','#756bb1',
+  '#636363','#969696','#fd8d3c','#74c476','#fdae6b','#a1d99b',
+];
+function islandColor(idx) { return ISLAND_PALETTE[idx % ISLAND_PALETTE.length]; }
+
+function applyEvent(idx) {
+  // mapping: r->p, atomIsland: r->island_idx (and inv for p->island_idx)
+  let mapping = {};
+  let atomIslandR = {};
+  let atomIslandP = {};
+  let currentSeed = null;
+  let fragment = [];
+  let pCands = [];
+  let lastEvent = null;
+  for (let i = 0; i <= idx; i++) {
+    const e = events[i];
+    lastEvent = e;
+    if (e.type === 'island_locked') {
+      for (const [r, p] of e.pairs) {
+        mapping[r] = p;
+        atomIslandR[r] = e.island_idx;
+        atomIslandP[p] = e.island_idx;
+      }
+      // Re-color any previously-locked atoms that have been merged into
+      // this island. `relabeled` lists (r_atom, old_island_id) pairs --
+      // they keep their R-P mapping, just change island id (= color).
+      if (e.relabeled) {
+        for (const [r, _oldId] of e.relabeled) {
+          atomIslandR[r] = e.island_idx;
+          if (mapping[r] !== undefined) atomIslandP[mapping[r]] = e.island_idx;
+        }
+      }
+      currentSeed = null; fragment = []; pCands = [];
+    } else if (e.type === 'seed_start') {
+      currentSeed = e.seed;
+      fragment = e.fragment ? e.fragment.slice() : [e.seed];
+      pCands = e.p_atoms || [];
+    } else if (e.type === 'commit') {
+      fragment = e.fragment.slice();
+      pCands = e.p_atoms || pCands;
+    } else if (e.type === 'seed_end') {
+      if (e.result !== 'success') {
+        currentSeed = null; fragment = []; pCands = [];
+      }
+    }
+  }
+
+  // ---- Reactant viewer ----
+  vR.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
+  // Group locked R atoms by island id and color each group
+  const rByIsland = {};
+  for (const r in atomIslandR) {
+    const k = atomIslandR[r];
+    if (!rByIsland[k]) rByIsland[k] = [];
+    rByIsland[k].push(+r);
+  }
+  for (const k in rByIsland) {
+    const c = islandColor(+k);
+    vR.setStyle({serial: rByIsland[k]}, {stick: {radius: 0.16, color: c}, sphere: {scale: 0.30, color: c}});
+  }
+  if (fragment.length) {
+    const fragSer = fragment.slice();
+    vR.setStyle({serial: fragSer}, {stick: {radius: 0.18, color: '#66c2a5'}, sphere: {scale: 0.32, color: '#66c2a5'}});
+  }
+  if (currentSeed !== null) vR.setStyle({serial: [currentSeed]}, {stick: {radius: 0.22, color: '#ffd700'}, sphere: {scale: 0.44, color: '#ffd700'}});
+  // Subtle highlight for user-selected atoms: no extra size, just magenta tint
+  if (selR.length) {
+    vR.setStyle({serial: selR.slice()}, {stick: {radius: 0.12, color: '#e91e63'}, sphere: {scale: 0.24, color: '#e91e63'}});
+  }
+  vR.render();
+
+  // ---- Product viewer ----
+  vP.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
+  const pByIsland = {};
+  for (const p in atomIslandP) {
+    const k = atomIslandP[p];
+    if (!pByIsland[k]) pByIsland[k] = [];
+    pByIsland[k].push(+p);
+  }
+  for (const k in pByIsland) {
+    const c = islandColor(+k);
+    vP.setStyle({serial: pByIsland[k]}, {stick: {radius: 0.16, color: c}, sphere: {scale: 0.30, color: c}});
+  }
+  if (pCands.length) {
+    const pSer = pCands.slice();
+    vP.setStyle({serial: pSer}, {stick: {radius: 0.18, color: '#66c2a5'}, sphere: {scale: 0.32, color: '#66c2a5'}});
+  }
+  if (selP.length) {
+    vP.setStyle({serial: selP.slice()}, {stick: {radius: 0.12, color: '#e91e63'}, sphere: {scale: 0.24, color: '#e91e63'}});
+  }
+  vP.render();
+
+  // ---- Event log ---- (full metadata)
+  let txt = `[${idx + 1}/${events.length}] ${lastEvent.type}\n`;
+  if (lastEvent.type === 'seed_start') {
+    txt += `  seed = R[${lastEvent.seed}]\n`;
+    txt += `  initial cands = ${lastEvent.init_cands}\n`;
+    txt += `  fragment = [${lastEvent.fragment.join(', ')}]\n`;
+    txt += `  first iso P-atoms = [${(lastEvent.p_atoms||[]).join(', ')}]`;
+  } else if (lastEvent.type === 'commit') {
+    txt += `  + R[${lastEvent.added}](${lastEvent.element || '?'}),  cands=${lastEvent.cands},  fragment_size=${lastEvent.fragment.length}\n`;
+    if (lastEvent.bonds_to_fragment) {
+      txt += `  bonds to fragment: [${lastEvent.bonds_to_fragment.map(([u,w]) => `R[${u}]:WBO=${w}`).join(', ')}]\n`;
+    }
+    if (lastEvent.distance_from_seed !== undefined) {
+      txt += `  distance from seed = ${lastEvent.distance_from_seed}\n`;
+    }
+    const si = lastEvent.step_info;
+    if (si) {
+      txt += `  --- step decision: shell=${si.shell},  top WBO=${si.top_wbo},  cands_before=${si.cands_before} ---\n`;
+      txt += `  TRIED (${si.tried.length}):\n`;
+      for (const t of si.tried) {
+        txt += `    R[${t.atom}](${t.element})  WBO=${t.max_wbo_to_frag}  dist=${t.distance_from_seed}  bonds=[${t.wbo_bonds}]  new_cands=${t.new_cands} → ${t.decision}\n`;
+      }
+      if (si.filtered && si.filtered.length) {
+        txt += `  FILTERED (${si.filtered.length}):\n`;
+        for (const f of si.filtered) {
+          txt += `    R[${f.atom}](${f.element})  WBO=${f.max_wbo_to_frag}  dist=${f.distance_from_seed}  reason: ${f.filtered_reason}\n`;
+        }
+      }
+    }
+  } else if (lastEvent.type === 'seed_end') {
+    txt += `  result = ${lastEvent.result}\n  final cands = ${lastEvent.final_cands}\n  fragment final size = ${lastEvent.fragment.length}\n  fragment atoms = [${lastEvent.fragment.join(', ')}]`;
+    if (lastEvent.iso) txt += `\n  iso = ${JSON.stringify(lastEvent.iso)}`;
+  } else if (lastEvent.type === 'island_locked') {
+    txt += `  island #${lastEvent.island_idx} locked\n`;
+    txt += `  new pairs (${lastEvent.pairs.length}): ${lastEvent.pairs.map(p => `R[${p[0]}]→P[${p[1]}]`).join(', ')}\n`;
+    txt += `  total mapped = ${lastEvent.mapped_total}`;
+    if (lastEvent.merged_with && lastEvent.merged_with.length) {
+      txt += `\n  merged with islands: [${lastEvent.merged_with.join(', ')}]`;
+      txt += `\n  relabeled atoms: ${lastEvent.relabeled ? lastEvent.relabeled.map(([r,old]) => `R[${r}](was #${old})`).join(', ') : ''}`;
+    }
+    if (lastEvent.parent_atom !== undefined) {
+      txt += `\n  expand-merge with parent R[${lastEvent.parent_atom}] (pass ${lastEvent.expand_pass})`;
+    }
+  } else if (lastEvent.type === 'pass_start') {
+    txt += `  pass ${lastEvent.pass},  mapped so far = ${lastEvent.mapped}`;
+  } else if (lastEvent.type === 'done') {
+    txt += `  final mapped = ${lastEvent.mapped}`;
+  }
+  eventDiv.textContent = txt;
+  counter.textContent = `${idx + 1} / ${events.length}`;
+
+  let lockedTxt = '';
+  for (const r of Object.keys(mapping).sort((a, b) => +a - +b)) lockedTxt += `R[${r}] → P[${mapping[r]}]\n`;
+  lockedPre.textContent = lockedTxt || '(none yet)';
+}
+
+slider.addEventListener('input', () => applyEvent(+slider.value));
+document.getElementById('prev').onclick = () => { slider.value = Math.max(0, +slider.value - 1); applyEvent(+slider.value); };
+document.getElementById('next').onclick = () => { slider.value = Math.min(events.length - 1, +slider.value + 1); applyEvent(+slider.value); };
+let playing = false; let timer = null;
+document.getElementById('play').onclick = (e) => {
+  if (playing) { clearInterval(timer); playing = false; e.target.textContent = '▶ Play'; }
+  else {
+    playing = true; e.target.textContent = '⏸ Pause';
+    timer = setInterval(() => {
+      const cur = +slider.value;
+      if (cur >= events.length - 1) { clearInterval(timer); playing = false; e.target.textContent = '▶ Play'; return; }
+      slider.value = cur + 1; applyEvent(cur + 1);
+    }, 250);
+  }
+};
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { slider.value = Math.min(events.length - 1, +slider.value + 1); applyEvent(+slider.value); }
+  if (e.key === 'ArrowLeft') { slider.value = Math.max(0, +slider.value - 1); applyEvent(+slider.value); }
+});
+applyEvent(0);
+</script>
+</body></html>

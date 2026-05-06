@@ -423,30 +423,34 @@ applyEvent(0);
 def _resolve_step_inputs(step):
     """Return (rxyz_path, pxyz_path, work_dir, charge, uhf).
 
-    Tries old Benchmark/<step>/plain/stage0/{reactant,product}.xyz first;
-    falls back to BGCP_ROOT/<step>/{reactants,products}/ with charge/mult
-    from the tsdisco lookup."""
+    Prefers BGCP_ROOT/<step>/{reactants,products}/ with charge/mult from the
+    tsdisco lookup, since BGCP is the active benchmark. Falls back to old
+    Benchmark/<step>/plain/stage0/{reactant,product}.xyz only when BGCP
+    doesn't have the step."""
+    # BGCP first
+    try:
+        from build_bgcp_viewer import BGCP_ROOT, LOOKUP, WORK, read_xyzs
+        bgcp = BGCP_ROOT / step
+        if bgcp.exists():
+            work = WORK / step
+            work.mkdir(parents=True, exist_ok=True)
+            rxyz = read_xyzs(bgcp / 'reactants')
+            pxyz = read_xyzs(bgcp / 'products')
+            if rxyz is not None and pxyz is not None:
+                rxyz_path = work / 'reactant.xyz'
+                pxyz_path = work / 'product.xyz'
+                rxyz_path.write_text(rxyz)
+                pxyz_path.write_text(pxyz)
+                chg, uhf = LOOKUP.get(step, (0, 0))
+                return rxyz_path, pxyz_path, work, chg, uhf
+    except Exception:
+        pass
+    # Old Benchmark fallback
     work_root = Path('/Users/yunhengz/empty_for_claude/rxn_core/work_frag')
     bench = Path('/Users/yunhengz/empty_for_claude/Benchmark') / step / 'plain' / 'stage0'
     if (bench / 'reactant.xyz').exists() and (bench / 'product.xyz').exists():
         return bench / 'reactant.xyz', bench / 'product.xyz', work_root / step, 0, 0
-    # BGCP fallback
-    from build_bgcp_viewer import BGCP_ROOT, LOOKUP, read_xyzs
-    bgcp = BGCP_ROOT / step
-    if not bgcp.exists():
-        raise SystemExit(f'step {step!r} not found in old Benchmark or BGCP')
-    work = work_root / step
-    work.mkdir(parents=True, exist_ok=True)
-    rxyz = read_xyzs(bgcp / 'reactants')
-    pxyz = read_xyzs(bgcp / 'products')
-    if rxyz is None or pxyz is None:
-        raise SystemExit(f'BGCP step {step!r} missing reactants/ or products/ xyz')
-    rxyz_path = work / 'reactant.xyz'
-    pxyz_path = work / 'product.xyz'
-    rxyz_path.write_text(rxyz)
-    pxyz_path.write_text(pxyz)
-    chg, uhf = LOOKUP.get(step, (0, 0))
-    return rxyz_path, pxyz_path, work, chg, uhf
+    raise SystemExit(f'step {step!r} not found in BGCP or old Benchmark')
 
 
 def main():

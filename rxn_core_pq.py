@@ -102,7 +102,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    iso_tol=0.5,
                    min_lock_size=1,
                    max_branches=8,
-                   max_cands_hard=2000):
+                   max_cands_hard=2000,
+                   events=None):
     """
     Grow a fragment from `seed` using priority-queue propagation.
 
@@ -110,61 +111,150 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
       []            -- failed (no initial cands, or fragment too small)
       [single_iso]  -- locked successfully (set-unique or single cand)
       [iso_a, ...]  -- non-set-unique saturation; caller branches
+
+    Optional `events` list receives diagnostic events (seed_start /
+    commit / consumed / merge / seed_end) compatible with the
+    existing trace_run.HTML viewer.
     """
+    record = events is not None
     if seed in mapping:
         return []
     seed_el = g_R.nodes[seed]['element']
     cands = [{seed: v} for v in g_P.nodes()
              if v not in inv and g_P.nodes[v]['element'] == seed_el]
     if not cands:
+        if record:
+            events.append({'type': 'seed_start', 'seed': int(seed),
+                           'init_cands': 0, 'fragment': [int(seed)],
+                           'p_atoms': []})
+            events.append({'type': 'seed_end', 'result': 'no_initial_cands',
+                           'final_cands': 0, 'fragment': [int(seed)],
+                           'iso': None})
         return []
     fragment = {seed}
+    distance = {seed: 0}
     used_edges = set()
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
+    if record:
+        events.append({
+            'type': 'seed_start',
+            'seed': int(seed),
+            'init_cands': len(cands),
+            'fragment': [int(seed)],
+            'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
+        })
 
     while heap:
         # Early-lock check before each pop (saves work on big symmetric scaffolds)
         if _set_unique(cands) and len(cands) == 1 and len(fragment) >= min_lock_size:
+            if record:
+                events.append({
+                    'type': 'seed_end', 'result': 'success',
+                    'final_cands': 1, 'fragment': sorted(int(x) for x in fragment),
+                    'iso': {int(k): int(v) for k, v in cands[0].items()},
+                })
             return [cands[0]]
 
         neg_w, u, n = heapq.heappop(heap)
+        wbo = -neg_w
         edge = frozenset({u, n})
         if edge in used_edges:
             continue
         used_edges.add(edge)
         if n in fragment:
-            continue  # already in (added through another edge)
+            continue
 
         if n in mapping:
             new_cands = _merge_island(cands, fragment, n, mapping, g_R, g_P, iso_tol)
             if new_cands:
                 cands = new_cands
                 fragment.add(n)
+                distance[n] = 1 + min(distance[x] for x in g_R.neighbors(n) if x in fragment - {n})
                 _push_edges_from(heap, used_edges, g_R, n, fragment, graph_floor)
-            # else: edge consumed, continue
+                if record:
+                    events.append({
+                        'type': 'commit',
+                        'added': int(n), 'element': g_R.nodes[n]['element'],
+                        'cands': len(cands),
+                        'fragment': sorted(int(x) for x in fragment),
+                        'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
+                        'distance_from_seed': distance[n],
+                        'bonds_to_fragment': [(int(u), round(wbo, 3))],
+                        'merge_into_island': True,
+                        'island_atom': int(n), 'island_image': int(mapping[n]),
+                    })
+            else:
+                if record:
+                    events.append({
+                        'type': 'consumed',
+                        'frag_atom': int(u), 'ext_atom': int(n),
+                        'wbo': round(wbo, 3),
+                        'reason': 'merge_failed',
+                        'fragment': sorted(int(x) for x in fragment),
+                    })
         else:
             new_cands = _extend_cands_free(
                 cands, fragment, n, g_R, g_P, iso_tol, max_cands_hard, inv)
             if new_cands:
                 cands = new_cands
                 fragment.add(n)
+                distance[n] = 1 + min(distance[x] for x in g_R.neighbors(n) if x in fragment - {n})
                 _push_edges_from(heap, used_edges, g_R, n, fragment, graph_floor)
-            # else: edge consumed, continue
+                if record:
+                    events.append({
+                        'type': 'commit',
+                        'added': int(n), 'element': g_R.nodes[n]['element'],
+                        'cands': len(cands),
+                        'fragment': sorted(int(x) for x in fragment),
+                        'p_atoms': sorted({int(v) for c in cands for v in c.values()}),
+                        'distance_from_seed': distance[n],
+                        'bonds_to_fragment': [(int(u), round(wbo, 3))],
+                    })
+            else:
+                if record:
+                    events.append({
+                        'type': 'consumed',
+                        'frag_atom': int(u), 'ext_atom': int(n),
+                        'wbo': round(wbo, 3),
+                        'reason': 'cut_all_cands',
+                        'fragment': sorted(int(x) for x in fragment),
+                    })
 
     # heap empty
     if not cands or len(fragment) < min_lock_size:
+        if record:
+            events.append({
+                'type': 'seed_end',
+                'result': ('no_cands' if not cands else 'too_small'),
+                'final_cands': len(cands),
+                'fragment': sorted(int(x) for x in fragment),
+                'iso': None,
+            })
         return []
     if _set_unique(cands):
+        if record:
+            events.append({
+                'type': 'seed_end', 'result': 'success',
+                'final_cands': len(cands),
+                'fragment': sorted(int(x) for x in fragment),
+                'iso': {int(k): int(v) for k, v in cands[0].items()},
+            })
         return [cands[0]]
-    # branch on distinct P-atom sets
     by_set = {}
     for c in cands:
         key = frozenset(c.values())
         if key not in by_set:
             by_set[key] = c
-    branches = list(by_set.values())
-    return branches[:max_branches]
+    branches = list(by_set.values())[:max_branches]
+    if record:
+        events.append({
+            'type': 'seed_end', 'result': 'branched',
+            'final_cands': len(cands), 'n_branches': len(branches),
+            'fragment': sorted(int(x) for x in fragment),
+            'iso': {int(k): int(v) for k, v in branches[0].items()},
+        })
+    return branches
 
 
 # -------------------- find_islands with branching --------------------
@@ -185,8 +275,7 @@ class _Branch:
         b.islands_P = dict(self.islands_P)
         b.next_iid = self.next_iid
         return b
-    def commit(self, iso, g_R):
-        # touched islands
+    def commit(self, iso, g_R, events=None):
         touched = set()
         for r in iso:
             if r in self.islands_R:
@@ -196,48 +285,72 @@ class _Branch:
         else:
             iid = self.next_iid
             self.next_iid += 1
+        committed_new = []
+        relabeled = []
         for r, p in iso.items():
             if r not in self.mapping:
                 self.mapping[r] = p
                 self.inv[p] = r
+                committed_new.append((int(r), int(p)))
+            elif self.islands_R.get(r) != iid:
+                relabeled.append((int(r), int(self.islands_R[r])))
             self.islands_R[r] = iid
             self.islands_P[p] = iid
-        # transitive merge
         for r, k in list(self.islands_R.items()):
             if k in touched and k != iid:
+                relabeled.append((int(r), int(k)))
                 self.islands_R[r] = iid
                 self.islands_P[self.mapping[r]] = iid
+        if events is not None:
+            events.append({
+                'type': 'island_locked',
+                'island_idx': int(iid),
+                'pairs': committed_new,
+                'merged_with': sorted(int(t) for t in touched - {iid}),
+                'relabeled': relabeled,
+                'mapped_total': len(self.mapping),
+            })
 
 
 def find_islands_pq(g_R, g_P, seed_order,
                     graph_floor=0.2, iso_tol=0.5,
-                    max_branches=8):
+                    max_branches=8, events=None):
     """Run growth over a single seed ordering, branching on
-    non-set-unique locks. Returns list of _Branch."""
+    non-set-unique locks. Returns list of _Branch.
+
+    Optional `events` only records the FIRST (best-mapped) branch's
+    trajectory — multi-branch traces would be confusing on a slider."""
     branches = [_Branch()]
     progressed = True
+    pass_no = 0
     while progressed:
         progressed = False
+        pass_no += 1
+        if events is not None:
+            events.append({'type': 'pass_start', 'pass': pass_no,
+                           'mapped': len(branches[0].mapping)})
         for seed in seed_order:
             new_branches = []
-            for b in branches:
+            for bi, b in enumerate(branches):
                 if seed in b.mapping:
                     new_branches.append(b)
                     continue
+                # Only record events for branch 0 to keep trace linear
+                ev_arg = events if (events is not None and bi == 0) else None
                 isos = grow_island_pq(g_R, g_P, seed, b.mapping, b.inv,
                                       graph_floor=graph_floor, iso_tol=iso_tol,
-                                      max_branches=max_branches)
+                                      max_branches=max_branches,
+                                      events=ev_arg)
                 if not isos:
                     new_branches.append(b)
                     continue
-                for iso in isos:
+                for ii, iso in enumerate(isos):
                     b2 = b.fork()
-                    b2.commit(iso, g_R)
+                    b2.commit(iso, g_R,
+                              events=events if (bi == 0 and ii == 0) else None)
                     new_branches.append(b2)
                     progressed = True
-            # cap by simple heuristic: prefer branches with more mapped atoms
             new_branches.sort(key=lambda b: -len(b.mapping))
-            # dedupe by mapping signature
             seen = set()
             uniq = []
             for b in new_branches:
@@ -249,6 +362,9 @@ def find_islands_pq(g_R, g_P, seed_order,
                 if len(uniq) >= max_branches:
                     break
             branches = uniq
+    if events is not None:
+        events.append({'type': 'done',
+                       'mapped': len(branches[0].mapping)})
     return branches
 
 
