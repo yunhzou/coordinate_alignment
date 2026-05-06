@@ -420,14 +420,42 @@ applyEvent(0);
 """
 
 
+def _resolve_step_inputs(step):
+    """Return (rxyz_path, pxyz_path, work_dir, charge, uhf).
+
+    Tries old Benchmark/<step>/plain/stage0/{reactant,product}.xyz first;
+    falls back to BGCP_ROOT/<step>/{reactants,products}/ with charge/mult
+    from the tsdisco lookup."""
+    work_root = Path('/Users/yunhengz/empty_for_claude/rxn_core/work_frag')
+    bench = Path('/Users/yunhengz/empty_for_claude/Benchmark') / step / 'plain' / 'stage0'
+    if (bench / 'reactant.xyz').exists() and (bench / 'product.xyz').exists():
+        return bench / 'reactant.xyz', bench / 'product.xyz', work_root / step, 0, 0
+    # BGCP fallback
+    from build_bgcp_viewer import BGCP_ROOT, LOOKUP, read_xyzs
+    bgcp = BGCP_ROOT / step
+    if not bgcp.exists():
+        raise SystemExit(f'step {step!r} not found in old Benchmark or BGCP')
+    work = work_root / step
+    work.mkdir(parents=True, exist_ok=True)
+    rxyz = read_xyzs(bgcp / 'reactants')
+    pxyz = read_xyzs(bgcp / 'products')
+    if rxyz is None or pxyz is None:
+        raise SystemExit(f'BGCP step {step!r} missing reactants/ or products/ xyz')
+    rxyz_path = work / 'reactant.xyz'
+    pxyz_path = work / 'product.xyz'
+    rxyz_path.write_text(rxyz)
+    pxyz_path.write_text(pxyz)
+    chg, uhf = LOOKUP.get(step, (0, 0))
+    return rxyz_path, pxyz_path, work, chg, uhf
+
+
 def main():
     step = sys.argv[1] if len(sys.argv) > 1 else 'pr13.Cyclobutane_JOC2023_TS-CD_step1'
-    bench = Path('/Users/yunhengz/empty_for_claude/Benchmark') / step / 'plain' / 'stage0'
-    work = Path('/Users/yunhengz/empty_for_claude/rxn_core/work_frag') / step
+    rxyz_path, pxyz_path, work, chg, uhf = _resolve_step_inputs(step)
     out = Path('/Users/yunhengz/empty_for_claude/rxn_core/out') / f'animate_{step}.html'
 
-    elR, xyzR_arr, wboR = run_xtb(bench / 'reactant.xyz', work / 'R')
-    elP, xyzP_arr, wboP = run_xtb(bench / 'product.xyz', work / 'P')
+    elR, xyzR_arr, wboR = run_xtb(rxyz_path, work / 'R', charge=chg, uhf=uhf)
+    elP, xyzP_arr, wboP = run_xtb(pxyz_path, work / 'P', charge=chg, uhf=uhf)
     g_R = build_graph(elR, wboR)
     g_P = build_graph(elP, wboP)
     mapping, events = find_islands_with_trace(g_R, g_P, wbo_tol=0.5)
