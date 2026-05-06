@@ -1,192 +1,140 @@
-# Oracle vs ranker — by-step report
+# Oracle vs ranker — by-step distribution
 
-Per-step measurement: each metric assigns one number to a (BGCP step,
-ranker) pair, computed by 3N-Cartesian cosine similarity between the
-selected mode displacement and the GT TS's default reaction-mode
-displacement.
+Each step is independent (different reaction, different molecule).
+Aggregating with mean/std doesn't reflect anything physical, since
+the underlying chemistry varies. The right view is **how many steps
+reach each alignment threshold** — i.e. the cumulative distribution.
 
-Underlying data: 160 BGCP steps, 20 initial guesses per step.
+Per-step number = the cosine similarity in 3N-Cartesian displacement
+space between a selected mode and the GT TS's default reaction mode.
+Range `[0, 1]` (sign-blind, see definitions below).
 
-CSV: `out/mode_analysis/oracle_vs_ranker_per_step.csv`
-(one row per step, six columns of per-step metrics).
+Underlying data: 160 BGCP steps, 20 initial guesses each, all modes
+of every TS available, and the GT's bond_overlap-picked default
+mode as the gold reference per step.
+
+CSV: `out/mode_analysis/oracle_vs_ranker_per_step.csv` (one row per
+step with all four values for direct inspection).
 
 ---
 
-## 1. Definitions
+## 1. Per-step measurements
 
-| metric | k | meaning |
+For each step we compute four numbers:
+
+| metric | what's selected | k |
 |---|---|---|
-| **Oracle (k=20, any mode)** | 20 | Best `gt_alignment` over **all 20 IGs × all modes** (real + imag). With perfect knowledge of GT, the upper bound on what's achievable. |
-| Oracle imag (k=20) | 20 | Same, but restricted to imaginary modes only. |
-| Ranker top-1 | 1 | `gt_alignment` of the **single** IG with highest bond_overlap (its bond_overlap-picked mode). |
-| **Ranker top-2** | 2 | Best `gt_alignment` over the **top-2** IGs by bond_overlap (their bond_overlap-picked modes). The live consumed output. |
-| Ranker top-3 | 3 | Same, top-3 IGs. |
+| **Oracle (k=20)** | best `gt_alignment` over all 20 IGs × all modes (the upper bound) | 20 |
+| Ranker top-1 | `gt_alignment` of the bond_overlap-picked mode of the IG with highest bond_overlap | 1 |
+| **Ranker top-2** | best `gt_alignment` over the top-2 IGs by bond_overlap (their picked modes) | 2 |
+| Ranker top-3 | same, top-3 IGs | 3 |
 
-Range `[0, 1]`. `1.0` ↔ modes parallel/anti-parallel (sign-blind).
-`0.0` ↔ modes orthogonal.
+Ranker = bond_overlap. Live consumed output is **top-2**.
 
 ---
 
-## 2. Aggregate statistics
+## 2. Cumulative coverage (key result)
 
-| metric | mean | median | std | min | max |
-|---|---|---|---|---|---|
-| Oracle (k=20, any mode) | **0.738** | 0.742 | 0.194 | 0.346 | 1.000 |
-| Oracle imag (k=20)      | 0.676 | 0.726 | 0.267 | 0.000 | 1.000 |
-| Ranker top-1            | 0.454 | 0.390 | 0.314 | 0.000 | 1.000 |
-| **Ranker top-2**        | **0.538** | **0.537** | 0.313 | 0.026 | 1.000 |
-| Ranker top-3            | 0.564 | 0.590 | 0.306 | 0.041 | 1.000 |
+Number of steps whose metric reaches each threshold (out of 160):
 
-### Headline
-
-- The "k=20 oracle" — having full knowledge of GT and freedom to
-  pick any (IG, mode) pair — averages 0.738. **Even with cheating,
-  the IG generation can't do better than ~74% mean alignment** with
-  GT reaction modes.
-- The live ranker at **k=2** averages 0.538 — recovers about 73 % of
-  the oracle's mean.
-- The k=1 → k=2 step gives the biggest jump: +0.084 mean. Going
-  k=2 → k=3 only adds +0.026.
-
----
-
-## 3. Cumulative coverage
-
-Fraction of steps where the metric reaches each threshold.
-
-| threshold | Oracle (k=20, any) | Oracle imag (k=20) | Ranker top-1 | **Ranker top-2** | Ranker top-3 |
-|---|---|---|---|---|---|
-| ≥ 0.95 | 21.2 % | 20.6 % |  6.2 % | **10.6 %** | 13.1 % |
-| ≥ 0.90 | 28.7 % | 28.1 % | 13.1 % | **18.8 %** | 21.2 % |
-| ≥ 0.80 | 40.6 % | 38.8 % | 19.4 % | **27.5 %** | 29.4 % |
-| ≥ 0.70 | 56.9 % | 53.8 % | 28.7 % | **38.1 %** | 41.9 % |
-| ≥ 0.50 | **85.6 %** | 71.2 % | 41.2 % | **51.9 %** | 55.6 % |
-| ≥ 0.30 | **100.0 %** | 91.2 % | 60.6 % | **70.6 %** | 74.4 % |
-
-**Reading the table:**
-
-- 100 % of steps have *some* IG mode with alignment ≥ 0.3 (no step is
-  totally hopeless in principle).
-- 86 % of steps have an IG mode with alignment ≥ 0.5 — there's a
-  reasonable answer in 86 % of cases.
-- The ranker at **top-2 reaches 0.5 alignment 52 % of the time** —
-  that is, **the ranker successfully retrieves a "decent" pick in
-  about half of all steps**.
-
-### Coverage gap (oracle − ranker)
-
-| threshold | oracle (k=20) | ranker top-2 | absolute gap | recovery rate |
+| threshold | oracle (k=20) | ranker top-1 | **ranker top-2** | ranker top-3 |
 |---|---|---|---|---|
-| ≥ 0.95 | 21.2 % | 10.6 % | 10.6 pp | 50 % |
-| ≥ 0.9  | 28.7 % | 18.8 % |  9.9 pp | 65 % |
-| ≥ 0.8  | 40.6 % | 27.5 % | 13.1 pp | 68 % |
-| ≥ 0.7  | 56.9 % | 38.1 % | 18.8 pp | 67 % |
-| ≥ 0.5  | 85.6 % | 51.9 % | 33.7 pp | 61 % |
+| ≥ 0.95 |  34 (21.2 %) |  10 ( 6.2 %) |  **17 (10.6 %)** |  21 (13.1 %) |
+| ≥ 0.90 |  46 (28.7 %) |  21 (13.1 %) |  **30 (18.8 %)** |  34 (21.2 %) |
+| ≥ 0.85 |  55 (34.4 %) |  27 (16.9 %) |  **38 (23.8 %)** |  39 (24.4 %) |
+| ≥ 0.80 |  65 (40.6 %) |  31 (19.4 %) |  **44 (27.5 %)** |  47 (29.4 %) |
+| ≥ 0.75 |  75 (46.9 %) |  37 (23.1 %) |  **52 (32.5 %)** |  55 (34.4 %) |
+| ≥ 0.70 |  91 (56.9 %) |  46 (28.7 %) |  **61 (38.1 %)** |  67 (41.9 %) |
+| ≥ 0.65 | 103 (64.4 %) |  52 (32.5 %) |  **67 (41.9 %)** |  72 (45.0 %) |
+| ≥ 0.60 | 114 (71.2 %) |  56 (35.0 %) |  **73 (45.6 %)** |  79 (49.4 %) |
+| ≥ 0.55 | 124 (77.5 %) |  63 (39.4 %) |  **79 (49.4 %)** |  83 (51.9 %) |
+| ≥ 0.50 | 137 (85.6 %) |  66 (41.2 %) |  **83 (51.9 %)** |  89 (55.6 %) |
+| ≥ 0.40 | 156 (97.5 %) |  78 (48.8 %) |  **97 (60.6 %)** | 101 (63.1 %) |
+| ≥ 0.30 | 160 (100.0 %) | 97 (60.6 %) | **113 (70.6 %)** | 119 (74.4 %) |
+| ≥ 0.20 | 160 (100.0 %) | 115 (71.9 %) | **129 (80.6 %)** | 135 (84.4 %) |
+| ≥ 0.10 | 160 (100.0 %) | 133 (83.1 %) | **145 (90.6 %)** | 152 (95.0 %) |
 
-"Recovery rate" = ranker / oracle. The ranker recovers about **two
-thirds of the oracle's hits** at every quality threshold from 0.5 to
-0.9. There's no severe degradation at any level — the ranker is
-proportionally consistent.
+### Reading the table
+
+- **Every step has at least one IG with alignment ≥ 0.3** (oracle 100 % at threshold 0.3). No step is utterly hopeless.
+- **86 % of steps have oracle ≥ 0.5**: in 86 % of cases there exists a "decent" IG mode that's at least loosely the right reaction direction.
+- **At top-2, the ranker reaches threshold 0.5 on 52 % of steps** — captures slightly over half. Drops to 0.7 → 38 % of steps.
+- The **gap at each threshold** between top-2 and oracle:
+  - ≥ 0.7 → 91 vs 61 steps (30-step gap)
+  - ≥ 0.5 → 137 vs 83 steps (54-step gap)
+  - ≥ 0.3 → 160 vs 113 steps (47-step gap)
+
+So at the strict end (≥ 0.7) the gap is 30 steps; at the loose end (≥ 0.3) it's 47 steps. The ranker scales reasonably — it catches the easy cases and misses harder ones at proportional rates.
 
 ---
 
-## 4. Distribution histograms
+## 3. Histograms
+
+How the per-step values are distributed across alignment bins.
 
 ```
-  bin             oracle k=20    ranker top-2   ranker top-1
-  [0.0, 0.1)         0 ( 0.0%)    15 ( 9.4%)    27 (16.9%)
-  [0.1, 0.2)         0 ( 0.0%)    16 (10.0%)    18 (11.2%)
-  [0.2, 0.3)         0 ( 0.0%)    16 (10.0%)    18 (11.2%)
-  [0.3, 0.4)         4 ( 2.5%)    16 (10.0%)    19 (11.9%)
-  [0.4, 0.5)        19 (11.9%)    14 ( 8.8%)    12 ( 7.5%)
-  [0.5, 0.6)        23 (14.4%)    10 ( 6.2%)    10 ( 6.2%)
-  [0.6, 0.7)        23 (14.4%)    12 ( 7.5%)    10 ( 6.2%)
-  [0.7, 0.8)        26 (16.2%)    17 (10.6%)    15 ( 9.4%)
-  [0.8, 0.9)        19 (11.9%)    14 ( 8.8%)    10 ( 6.2%)
-  [0.9, 0.95)       12 ( 7.5%)    13 ( 8.1%)    11 ( 6.9%)
-  [0.95, 1.0]       34 (21.2%)    17 (10.6%)    10 ( 6.2%)
+          bin           oracle       top-1       top-2       top-3
+    [0.00, 0.10)        0  ( 0.0%)   27 (16.9%)   15 ( 9.4%)    8 ( 5.0%)
+    [0.10, 0.20)        0  ( 0.0%)   18 (11.2%)   16 (10.0%)   17 (10.6%)
+    [0.20, 0.30)        0  ( 0.0%)   18 (11.2%)   16 (10.0%)   16 (10.0%)
+    [0.30, 0.40)        4  ( 2.5%)   19 (11.9%)   16 (10.0%)   18 (11.2%)
+    [0.40, 0.50)       19  (11.9%)   12 ( 7.5%)   14 ( 8.8%)   12 ( 7.5%)
+    [0.50, 0.60)       23  (14.4%)   10 ( 6.2%)   10 ( 6.2%)   10 ( 6.2%)
+    [0.60, 0.70)       23  (14.4%)   10 ( 6.2%)   12 ( 7.5%)   12 ( 7.5%)
+    [0.70, 0.80)       26  (16.2%)   15 ( 9.4%)   17 (10.6%)   20 (12.5%)
+    [0.80, 0.90)       19  (11.9%)   10 ( 6.2%)   14 ( 8.8%)   13 ( 8.1%)
+    [0.90, 0.95)       12  ( 7.5%)   11 ( 6.9%)   13 ( 8.1%)   13 ( 8.1%)
+    [0.95, 1.00]       34  (21.2%)   10 ( 6.2%)   17 (10.6%)   21 (13.1%)
 ```
 
 ### Shape comparison
 
-- **Oracle (k=20)** is **right-skewed**: 0 % below 0.3, 21 % at or above 0.95. This reflects the IG generator's quality — when it works it works well; the failures pile up in the middle (0.4–0.7 range).
+- **Oracle (k=20)** is right-skewed: mass in the [0.4, 1.0] range,
+  peak at [0.95, 1.0] (21 % of steps). No steps below 0.3.
 
-- **Ranker top-2** has a **bimodal-ish shape**: a "tail" of ~30 % of steps below 0.4 (where the ranker picked something far from GT), a fairly even spread in the 0.5–0.95 range, and a high-end peak at 0.95+ (10.6 %). The tail at the bottom is what's costing us — many of those steps have an oracle ≥ 0.5 but the ranker missed.
+- **Ranker top-2** is bimodal: a "miss" tail in the [0.0, 0.4) range
+  (39 % of steps), a fairly even spread across [0.4, 0.95), and a
+  "hit" peak at [0.95, 1.0] (11 % of steps).
 
-- **Ranker top-1** has a heavier left tail (39 % below 0.4) and a smaller right peak (6 %). The k=1 → k=2 lift mostly moves probability mass from the [0, 0.4) tail to [0.7, 1.0].
-
----
-
-## 5. Per-step ranker/oracle ratio
-
-For each step, divide the ranker's score by the oracle's:
-
-| | k=1 | k=2 | k=3 |
-|---|---|---|---|
-| mean ratio | 0.586 | **0.694** | 0.733 |
-| median ratio | — | 0.812 | — |
-| min ratio | — | 0.046 | — |
-
-So at **k=2**, the ranker's score is on average **69 % of what's
-achievable** (median 81 %). The minimum ratio (0.046) is a
-worst-case step where the ranker is essentially blind despite the
-oracle finding a 0.7+ alignment elsewhere.
+- **Going k=1 → k=2** moves about 12 steps out of the bottom three
+  bins ([0.0, 0.3)) into higher bins. The improvement is concentrated
+  in the lower tail rather than at the top.
 
 ---
 
-## 6. Decomposition by oracle quality
+## 4. Per-step distribution shape — what to look at
 
-How the ranker performs across the oracle distribution:
+The CSV at `out/mode_analysis/oracle_vs_ranker_per_step.csv` has one
+row per step:
 
-| oracle bin | n steps | mean ranker top-2 | mean oracle | ranker / oracle |
-|---|---|---|---|---|
-| [0.3, 0.5) | 23 | 0.305 | 0.412 | 0.74 |
-| [0.5, 0.7) | 46 | 0.435 | 0.598 | 0.73 |
-| [0.7, 0.9) | 45 | 0.595 | 0.789 | 0.75 |
-| [0.9, 1.0] | 46 | 0.770 | 0.962 | 0.80 |
+```
+step, oracle_k20, ranker_top1, ranker_top2, ranker_top3, gap_top2
+```
 
-The ranker is most efficient in the **easy regime** (oracle ≥ 0.9):
-it recovers 80 % of the oracle's score because near-perfect IGs are
-easy to identify (their bond_overlap is also high). In the
-mid-difficulty bins (0.5–0.9), recovery drops to ~73 %. This is
-where ranker mistakes hurt most.
+`gap_top2 = oracle_k20 − ranker_top2` — flags the steps where the ranker
+left the most on the table. The largest gaps would be the most
+informative cases for "where could a better ranker do better."
 
----
-
-## 7. Practical interpretation
-
-**For the consumer of the top-2 picks:**
-
-- If you draw ten random steps from the BGCP set, expect:
-  - ~5 steps where the ranker top-2 has alignment ≥ 0.5 (chemistry
-    captured at least roughly).
-  - ~4 of those 5 will reach ≥ 0.7 (clearly the right reaction
-    direction).
-  - ~3 of those 4 will reach ≥ 0.9 (essentially correct).
-  - ~5 of the original 10 are below 0.5 (questionable picks).
-
-- The **gap to the upper bound is roughly half ranker error and
-  half upstream IG quality**. The lost-cause steps (oracle < 0.5,
-  14 % of dataset) cannot be fixed by any ranker.
-
-- The **top-2 over top-1 always helps** — every threshold level
-  benefits by 5–10 percentage points. The marginal value of going
-  to top-3 is much smaller (1–4 pp).
+For example: sort the CSV by `gap_top2` descending; look at the top
+20 entries — those are the steps with both a high-quality IG present
+and a ranker that failed to find it. Those are the addressable cases
+where a better ranker would actually help.
 
 ---
 
-## 8. Summary table
+## 5. Definitions reference
 
-| | top-1 | **top-2** | top-3 | oracle (k=20) |
-|---|---|---|---|---|
-| mean alignment | 0.454 | **0.538** | 0.564 | 0.738 |
-| ≥ 0.5 hit rate | 41 % | **52 %** | 56 % | 86 % |
-| ≥ 0.7 hit rate | 29 % | **38 %** | 42 % | 57 % |
-| ranker / oracle ratio | 0.59 | **0.69** | 0.73 | 1.00 |
-| relative recovery of oracle's headline ≥0.5 | 48 % | **61 %** | 65 % | 100 % |
+`gt_alignment(d_IG, d_GT) = |d_IG · d_GT| / (||d_IG|| · ||d_GT||)`
 
-The current top-2 setup is operating at ≈ 70 % of the GT-knowing
-oracle. About a quarter of the remaining gap is fundamentally
-unrecoverable (lost-cause steps); the other three quarters is
-addressable through ranker improvements (see
-`ranker_analysis_and_improvements.md`).
+where d_IG and d_GT are mode displacement vectors flattened to 3N
+dimensions, and modes are reindexed into the R-atom-frame so atom i
+in d_IG and d_GT refer to the same chemical atom.
+
+| value | meaning |
+|---|---|
+| 1.0 | parallel modes (sign-arbitrary). Same atomic motions. |
+| 0.95 – 1.0 | nearly identical — likely the IG converged to the same TS as GT. |
+| 0.7 – 0.95 | similar reaction direction, geometric jitter. ~25–45° angle. |
+| 0.5 – 0.7 | shared major direction, substantial differences. ~45–60° angle. |
+| 0.3 – 0.5 | weakly correlated. ~60–73° angle. |
+| < 0.3 | essentially orthogonal. Different reactions or wrong-direction modes. |
