@@ -26,3 +26,7 @@ Benchmark_Guesses_Collective_Package/
 # Aligned coordinate dataset (regenerable from work_modes cache)
 Benchmark_Guesses_Coordinate_Aligned_Version/
 work_align/
+
+# Mode viewer/analysis output (regenerable from work_modes cache)
+out/mode_viewer/
+out/mode_analysis/
