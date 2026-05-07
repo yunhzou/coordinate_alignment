@@ -44,6 +44,61 @@ The most common profile is one broken and one formed bond (52 of
 discussed in Appendix C as bond-identification edge cases.
 
 
+## A.3 Agentic sampling
+
+For every elementary step we spawn $n = 20$ independent LLM agents.
+Each agent is initialised with a reaction-specific system prompt
+(below), receives the reactant- and product-side xyz files as input,
+and uses a small geometry-editing action set to incrementally
+build a candidate transition state. Spawns are independent: there
+is no shared memory, no coordination, no rejection sampling among
+agents. The 20 ts_guess_final.xyz outputs constitute the IG pool
+that the rest of the pipeline ranks.
+
+### Model
+
+All agents use **GPT-5.5** as the underlying LLM. We use the same
+model across every step in the benchmark; no fine-tuning, no
+chemistry-specific adapters.
+
+### System prompt
+
+The verbatim system prompt instantiated per step is:
+
+> Given the reactant-side XYZ file(s) {reactant_files} and the
+> product-side XYZ file(s) {product_files}, build the transition
+> state 3D geometry for this reaction step. This is a guaranteed
+> elementary step. The canonical atom order for scoring is the
+> reactant-side file list concatenated in the listed order. Save
+> your final transition state guess as ts_guess_final.xyz.
+
+The `{reactant_files}` and `{product_files}` placeholders are
+filled with comma-separated file paths at spawn time. The "canonical
+atom order" sentence binds the agent's saved geometry to the
+benchmark's reactant atom ordering, so that the IG xyz can be
+compared directly against the reactant-frame indexing used by the
+rest of the pipeline.
+
+### Equipped actions
+
+The agent operates the following geometry-editing actions [TODO:
+fill in concrete action names and signatures from the agent
+implementation]:
+
+| action | what it does |
+|---|---|
+| `<ACTION 1>` | <description> |
+| `<ACTION 2>` | <description> |
+| `<ACTION 3>` | <description> |
+| ...          | ... |
+
+The action set is intentionally small and focused on local
+geometry edits (atom translation, bond-distance adjustment,
+dihedral rotation, fragment rigid-body moves) rather than
+high-level chemistry primitives, so that the agent must reason
+about the reaction step before deciding what to edit.
+
+
 # Appendix B — Algorithmic detail
 
 ## B.1 Atom mapping (priority-queue alignment)

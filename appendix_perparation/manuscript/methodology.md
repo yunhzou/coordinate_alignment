@@ -1,12 +1,13 @@
 # Methodology (main text)
 
-We describe four components of our agentic transition-state discovery
-pipeline: a benchmark of elementary reaction steps; an
-unsupervised atom-mapping stage that brings reactant, product,
-ground-truth TS, and every initial-guess (IG) TS into a shared atom
-indexing; a verifier that ranks IG-TS structures by combining
-mode-derived features with a diversity penalty; and the evaluation
-metrics. Algorithmic details, hyperparameters, and ablations are in
+We describe five components of our agentic transition-state discovery
+pipeline: a benchmark of elementary reaction steps; the agentic
+sampling stage that generates the initial guesses; an unsupervised
+atom-mapping stage that brings reactant, product, ground-truth TS,
+and every initial-guess (IG) TS into a shared atom indexing; a
+verifier that ranks IG-TS structures by combining mode-derived
+features with a diversity penalty; and the evaluation metrics.
+Algorithmic details, hyperparameters, and ablations are in
 Appendix A; full equations and tolerances are in Appendix B.
 
 ## Benchmark
@@ -26,6 +27,20 @@ GFN2-xTB single-point Wiberg bond order matrix and a Hessian; both
 are cached so downstream evaluation is essentially zero-cost after
 a one-time benchmark sweep. Full benchmark statistics, deduplication
 notes, and chemistry breakdowns are in Appendix A.1.
+
+## Sampling
+
+Initial-guess transition states are produced by an agentic sampling
+stage. For every elementary step we spawn $n = 20$ independent
+LLM-driven agents, each given the reactant and product xyz files
+and asked to construct a transition-state 3D geometry. Each agent
+operates a small toolkit of geometry-editing actions and saves its
+proposal as `ts_guess_final.xyz`; the 20 outputs constitute the
+initial-guess pool that the rest of the pipeline ranks. Spawns are
+fully independent so the pool naturally covers diverse chemical
+hypotheses and conformers without any coordination between
+agents. The system prompt, the action set the agents can call, and
+the LLM identity used in this work are in Appendix A.3.
 
 ## Atom mapping
 
