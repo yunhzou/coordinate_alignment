@@ -199,14 +199,53 @@ function rebuildOptions() {
 sel.addEventListener('change', () => render(sel.value));
 function prev() { if (sel.selectedIndex > 0) { sel.selectedIndex--; render(sel.value); } }
 function next() { if (sel.selectedIndex < sel.options.length - 1) { sel.selectedIndex++; render(sel.value); } }
-document.getElementById('lines').addEventListener('change', () => render(curStep));
-document.getElementById('numbers').addEventListener('change', () => render(curStep));
-document.getElementById('alpha').addEventListener('input', () => render(curStep));
-document.getElementById('rad').addEventListener('input', () => render(curStep));
+// Parameter changes rebuild the scene but PRESERVE the camera (no zoomTo).
+document.getElementById('lines').addEventListener('change', () => render(curStep, /*preserveView=*/true));
+document.getElementById('numbers').addEventListener('change', () => render(curStep, /*preserveView=*/true));
+document.getElementById('alpha').addEventListener('input', () => render(curStep, /*preserveView=*/true));
+document.getElementById('rad').addEventListener('input', () => render(curStep, /*preserveView=*/true));
 
-// Pin state — survives across renders within the same step
-let pinned = new Set();   // atom indices pinned (R-frame; same on both sides)
-function clearPins() { pinned.clear(); render(curStep); }
+// Pin state — survives across renders within the same step.
+// pinHandles tracks the 3Dmol shape/label objects per pinned atom so we
+// can remove them incrementally on click without rebuilding the scene.
+let pinned = new Set();
+let pinHandles = new Map();   // atomIdx -> {spheres:[2], labels:[2]}
+
+function clearPins() {
+  for (const k of Array.from(pinned)) unpinAtom(k);
+}
+
+function pinAtom(k) {
+  if (pinned.has(k)) return;
+  const d = DATA[curStep]; if (!d) return;
+  const handles = {spheres: [], labels: []};
+  for (const side of [0, 1]) {
+    const c = (side === 0) ? d.coords_R[k] : d.coords_P[k];
+    if (!c) continue;
+    handles.spheres.push(viewer.addSphere(
+      {center:{x:c[0], y:c[1], z:c[2]}, radius: 0.50,
+       color: '#ff6699', opacity: 0.78}));
+    handles.labels.push(viewer.addLabel(`#${k}`,
+      {position:{x:c[0], y:c[1], z:c[2] + 0.7},
+       fontSize: 13, fontColor: 'white',
+       backgroundColor: '#993355', backgroundOpacity: 0.92,
+       showBackground: true, inFront: true}));
+  }
+  pinHandles.set(k, handles);
+  pinned.add(k);
+  viewer.render();   // does NOT reset camera
+}
+
+function unpinAtom(k) {
+  const h = pinHandles.get(k);
+  if (h) {
+    for (const s of h.spheres) viewer.removeShape(s);
+    for (const l of h.labels)  viewer.removeLabel(l);
+  }
+  pinHandles.delete(k);
+  pinned.delete(k);
+  viewer.render();
+}
 
 function buildXyz(elements, coords) {
   let body = `${elements.length}\nframe\n`;
@@ -217,8 +256,12 @@ function buildXyz(elements, coords) {
   return body;
 }
 
-function render(name) {
-  if (name !== curStep) pinned = new Set();   // new step → drop old pins
+function render(name, preserveView=false) {
+  const isStepChange = (name !== curStep);
+  if (isStepChange) {
+    pinned = new Set();
+    pinHandles = new Map();
+  }
   curStep = name;
   const d = DATA[name];
   document.getElementById('info').innerHTML =
@@ -303,9 +346,12 @@ function render(name) {
     }
   }
 
-  // Pinned highlights — orange-pink spheres + labels for clicked atoms.
-  // Drawn at every render so they survive parameter changes.
-  for (const k of pinned) addPinHighlight(k);
+  // Re-add pin highlights for atoms still pinned (only happens on
+  // parameter change, since step change resets `pinned`).
+  pinHandles = new Map();
+  const stillPinned = Array.from(pinned);
+  pinned = new Set();
+  for (const k of stillPinned) pinAtom(k);
 
   // Hover state — transient, cleared on mouseout. We track shapes/labels
   // in arrays so we can remove them precisely.
@@ -331,21 +377,6 @@ function render(name) {
          showBackground: true, inFront: true}));
     }
   }
-  function addPinHighlight(k) {
-    for (const side of [0, 1]) {
-      const c = (side === 0) ? d.coords_R[k] : d.coords_P[k];
-      if (!c) continue;
-      viewer.addSphere(
-        {center:{x:c[0], y:c[1], z:c[2]}, radius: 0.50,
-         color: '#ff6699', opacity: 0.78});
-      viewer.addLabel(`#${k}`,
-        {position:{x:c[0], y:c[1], z:c[2] + 0.7},
-         fontSize: 13, fontColor: 'white',
-         backgroundColor: '#993355', backgroundOpacity: 0.92,
-         showBackground: true, inFront: true});
-    }
-  }
-
   // Resolve a 3Dmol atom-event object to the shared atom index k.
   // The xyz parser assigns atom.serial (1-based, per model) and the
   // model index sits in atom.model. We use .serial-1 as the in-model
@@ -371,18 +402,17 @@ function render(name) {
     }
   );
 
-  // Click to pin / unpin. Each click toggles the atom index in the
-  // pinned set, then re-renders. Pins survive parameter slider changes
-  // (alpha / radius) because pinned is module-level state, but reset
-  // when the user navigates to a different step.
+  // Click to pin / unpin. Incremental: only adds or removes the
+  // hovered atom's pin shapes; never rebuilds the whole scene, never
+  // calls zoomTo. The camera stays exactly where the user left it.
   viewer.setClickable({}, true, function(atom, _viewer) {
     const k = atomToK(atom);
     if (k === null || k < 0 || k >= d.coords_R.length) return;
-    if (pinned.has(k)) pinned.delete(k); else pinned.add(k);
-    render(curStep);
+    if (pinned.has(k)) unpinAtom(k);
+    else                pinAtom(k);
   });
 
-  viewer.zoomTo();
+  if (isStepChange && !preserveView) viewer.zoomTo();
   viewer.render();
 }
 
