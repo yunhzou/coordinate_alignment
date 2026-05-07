@@ -77,33 +77,17 @@ def parse_alignment_qc(comment_line):
     return out
 
 
-def pick_anchor_atoms(xyzR, core_R, n=8):
-    """Pick n spectator atoms forming a tight peripheral cluster, used
-    as the local Kabsch reference. Strategy:
-      1. Find the spectator atom farthest from the core centroid (or
-         the molecule centroid if there are no core atoms) — this is
-         the most peripheral untouched atom.
-      2. Take that seed + its (n-1) nearest spectator neighbours by
-         Euclidean distance in R.
-    Returns a sorted list of R-frame atom indices.
-
-    Falls back to "any n atoms" if too few spectators."""
-    xyzR = np.asarray(xyzR, dtype=float)
+def pick_spectator_anchors(xyzR, core_R):
+    """Use ALL spectator atoms (those NOT touching a broken/formed
+    bond) as the Kabsch reference. If too few spectators (< 5), fall
+    back to all atoms — small molecules need every atom to define a
+    rigid frame."""
     n_atoms = len(xyzR)
     core_set = set(int(x) for x in core_R)
     spectators = [i for i in range(n_atoms) if i not in core_set]
-    if len(spectators) < n:
-        return sorted(range(n_atoms))[:min(n, n_atoms)]
-    if core_set:
-        ref = xyzR[list(core_set)].mean(0)
-    else:
-        ref = xyzR.mean(0)
-    dists_to_ref = np.linalg.norm(xyzR[spectators] - ref, axis=1)
-    seed = spectators[int(np.argmax(dists_to_ref))]
-    other = [i for i in spectators if i != seed]
-    dists_to_seed = np.linalg.norm(xyzR[other] - xyzR[seed], axis=1)
-    nearest = np.argsort(dists_to_seed)[: n - 1]
-    return sorted([seed] + [other[i] for i in nearest])
+    if len(spectators) >= 5:
+        return sorted(spectators), 'spectators'
+    return list(range(n_atoms)), 'all_atoms_fallback'
 
 
 def process_step(step):
@@ -134,14 +118,20 @@ def process_step(step):
             fmd_pairs_R = [(int(i), int(j)) for (i, j) in data.get('formed_bonds_R', [])]
             core_R      = sorted({int(x) for x in data.get('core_atoms', [])})
 
-    # Local-substructure Kabsch: pick a tight cluster of 8 spectator
-    # atoms in the periphery and align P to R using ONLY those atoms.
-    # The reactive core is then free to deviate, so the difference
-    # between R[i] and P[i] for reactive i shows the actual reaction
-    # motion rather than a global RMSD-minimised average.
-    anchors = pick_anchor_atoms(xyzR, core_R, n=8)
+    # Spectator-only Kabsch: align P to R using ALL atoms NOT touching
+    # a broken/formed bond. This minimises the spectator displacement,
+    # so every mapping line on a spectator atom should be near-zero.
+    # Long mapping lines on a spectator atom => real misalignment.
+    # Reactive (broken/formed) atoms are *expected* to have non-zero
+    # displacement — that's the actual reaction motion.
+    anchors, anchor_kind = pick_spectator_anchors(xyzR, core_R)
     Rmat, t = kabsch(xyzR[anchors], xyzP[anchors])
     xyzP_overlay = xyzP @ Rmat.T + t
+
+    # Per-atom mapping-line length after Kabsch (so JS can color-code)
+    deltas = np.linalg.norm(xyzP_overlay - xyzR, axis=1)
+    spectator_set = set(anchors) if anchor_kind == 'spectators' else set()
+    spec_disp = np.array([deltas[i] for i in spectator_set]) if spectator_set else np.array([])
     return {
         'step': step,
         'n_atoms': len(elR),
@@ -150,6 +140,10 @@ def process_step(step):
         'elements_P': list(elP),
         'coords_P':   [[round(float(x), 4) for x in v] for v in xyzP_overlay],
         'anchors':    [int(a) for a in anchors],
+        'anchor_kind': anchor_kind,
+        'deltas':     [round(float(x), 4) for x in deltas],
+        'spec_disp_mean': round(float(spec_disp.mean()), 4) if spec_disp.size else 0.0,
+        'spec_disp_max':  round(float(spec_disp.max()),  4) if spec_disp.size else 0.0,
         'pq_mapped':  qc['pq_mapped'],
         'fallback':   qc['fallback'],
         'missing':    qc['missing'],
@@ -188,8 +182,9 @@ HTML = r"""<!doctype html>
   <label><input type="checkbox" id="lines" checked> mapping lines</label>
   <label><input type="checkbox" id="numbers" checked> atom #</label>
   <button onclick="clearPins()">clear pins</button>
-  <label>line opacity <input type="range" id="alpha" min="0.1" max="1.0" step="0.05" value="0.55"></label>
-  <label>line radius <input type="range" id="rad" min="0.005" max="0.05" step="0.005" value="0.025"></label>
+  <label>line opacity <input type="range" id="alpha" min="0.1" max="1.0" step="0.05" value="0.7"></label>
+  <label>line radius <input type="range" id="rad" min="0.005" max="0.08" step="0.005" value="0.04"></label>
+  <label>misalign threshold (Å) <input type="range" id="thr" min="0.05" max="2.0" step="0.05" value="0.5"></label><span id="thrVal">0.50</span>
   <span class="legend" style="margin-left:auto">
     <span style="background:#888; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">R (CPK)</span>
     <span style="background:#cc4488; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">P (pink)</span>
@@ -234,6 +229,10 @@ document.getElementById('lines').addEventListener('change', () => render(curStep
 document.getElementById('numbers').addEventListener('change', () => render(curStep, /*preserveView=*/true));
 document.getElementById('alpha').addEventListener('input', () => render(curStep, /*preserveView=*/true));
 document.getElementById('rad').addEventListener('input', () => render(curStep, /*preserveView=*/true));
+document.getElementById('thr').addEventListener('input', e => {
+  document.getElementById('thrVal').textContent = (+e.target.value).toFixed(2);
+  render(curStep, /*preserveView=*/true);
+});
 
 // Pin state — survives across renders within the same step.
 // pinHandles tracks the 3Dmol shape/label objects per pinned atom so we
@@ -294,12 +293,28 @@ function render(name, preserveView=false) {
   }
   curStep = name;
   const d = DATA[name];
+  // List spectator atoms whose displacement exceeds the threshold —
+  // these are the suspect-mismapping signal.
+  const thr = +document.getElementById('thr').value;
+  const coreSet = new Set(d.core_R || []);
+  const suspect = [];
+  for (let i = 0; i < d.deltas.length; i++) {
+    if (!coreSet.has(i) && d.deltas[i] > thr) suspect.push([i, d.deltas[i]]);
+  }
+  suspect.sort((a, b) => b[1] - a[1]);
+  const suspectStr = suspect.length === 0
+      ? '<span style="color:#080">none above threshold</span>'
+      : suspect.slice(0, 8).map(([k, dl]) => `<b style="color:#a30">#${k}</b>=${dl.toFixed(2)}Å`).join(', ')
+        + (suspect.length > 8 ? ` (+${suspect.length-8} more)` : '');
+
   document.getElementById('info').innerHTML =
     `<b>${name}</b> · ${d.n_atoms} atoms · `
     + `PQ-mapped ${d.pq_mapped} · fallback ${d.fallback} · missing ${d.missing} · `
     + `broken = ${d.broken.length} · formed = ${d.formed_R.length} · `
     + `core (R) = ${d.core_R.length} · `
-    + `anchors = [${(d.anchors || []).join(',')}]`;
+    + `Kabsch on ${d.anchor_kind} (n=${(d.anchors||[]).length}) · `
+    + `spectator disp: mean=${d.spec_disp_mean.toFixed(3)}Å, max=${d.spec_disp_max.toFixed(3)}Å`
+    + `<br>suspect spectator atoms (Δ > ${thr.toFixed(2)}Å): ${suspectStr}`;
   if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); }
   viewer = $3Dmol.createViewer('v', {backgroundColor: 'white'});
   // Two models loaded in the SAME 3D space: R (CPK) and P (pink).
@@ -358,16 +373,31 @@ function render(name, preserveView=false) {
                          color:'green', radius: 0.10, dashed: true});
   }
 
-  // Mapping lines: thin cylinders connecting R[i] to P[i]
+  // Mapping lines: cylinders connecting R[i] to P[i]. Color is mapped
+  // to length (cold = short = well-aligned; hot = long = suspicious).
+  // Reactive atoms keep their red/green hue but with the same length-
+  // modulated thickness so the eye still groups by chemistry.
   if (document.getElementById('lines').checked) {
     const alpha = +document.getElementById('alpha').value;
-    const radius = +document.getElementById('rad').value;
+    const baseRadius = +document.getElementById('rad').value;
+    // Colour map: 0.0 → blue (#3a6dbf), 0.4 → grey (#888),
+    //             1.0 → orange (#dd8800), 2.0 → deep red (#aa0033)
+    function lengthColor(L) {
+      if (L < 0.10) return '#aaccff';   // very short — cold
+      if (L < 0.25) return '#7aa6cc';
+      if (L < 0.50) return '#888';      // typical thermal jitter
+      if (L < 1.00) return '#dd8800';   // long — suspect
+      return '#aa0033';                 // very long — strongly suspect
+    }
     for (let i = 0; i < d.coords_R.length; i++) {
       const r = d.coords_R[i], p = d.coords_P[i];
-      // Color: highlight if reactive, else light grey
-      let color = '#888';
+      const L = d.deltas[i];
+      let color = lengthColor(L);
       if (broken_atoms.has(i)) color = '#cc3333';
       else if (formed_atoms.has(i)) color = '#2a8a2a';
+      // Thicker line if above threshold — draws the eye
+      const radius = (L > thr && !broken_atoms.has(i) && !formed_atoms.has(i))
+                       ? baseRadius * 2.5 : baseRadius;
       viewer.addCylinder({start:{x:r[0], y:r[1], z:r[2]},
                           end:  {x:p[0], y:p[1], z:p[2]},
                           color: color, radius: radius, opacity: alpha});
