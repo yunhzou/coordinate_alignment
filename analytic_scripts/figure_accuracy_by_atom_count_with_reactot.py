@@ -137,8 +137,9 @@ def main():
     rates_ot = np.array(rates_ot); lo_ot = np.array(lo_ot); hi_ot = np.array(hi_ot)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    fig, (ax_acc, ax_n) = plt.subplots(2, 1, figsize=(12, 7.5),
-                                          sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+    fig, (ax_acc, ax_n) = plt.subplots(2, 1, figsize=(13, 9),
+                                          sharex=True,
+                                          gridspec_kw={'height_ratios': [2.6, 1.4]})
     nz = bin_total > 0
     w = BINWIDTH * 0.40
     x = centers
@@ -149,13 +150,13 @@ def main():
     # (CI error bars removed for visual cleanliness — k/N annotations
     # below give the sample size and Wilson CI is documented in the
     # accompanying CSV.)
-    # Annotate k/N
+    # Annotate k/N above each pair of bars
     for xi, n_, kv, kot, rv, rot in zip(x, bin_total, bin_v, bin_ot, rates_v, rates_ot):
         if n_ == 0: continue
-        ax_acc.text(xi - w/2, rv*100 + 2, f'{kv}/{n_}', ha='center', va='bottom',
-                     fontsize=8, color='#1f3d77')
-        ax_acc.text(xi + w/2, rot*100 + 2, f'{kot}/{n_}', ha='center', va='bottom',
-                     fontsize=8, color='#7b1f3d')
+        ax_acc.text(xi - w/2, rv*100 + 1.8, f'{kv}/{n_}', ha='center', va='bottom',
+                     fontsize=9, color='#1f3d77', fontweight='bold')
+        ax_acc.text(xi + w/2, rot*100 + 1.8, f'{kot}/{n_}', ha='center', va='bottom',
+                     fontsize=9, color='#7b1f3d', fontweight='bold')
     overall_v  = v_arr.mean()  * 100
     overall_ot = ot_arr.mean() * 100
     ax_acc.axhline(overall_v,  color='#3a6dbf', linestyle='--', lw=1.2, alpha=0.7,
@@ -175,22 +176,32 @@ def main():
                      f'last bin pools 90+)',
                      fontsize=12, pad=12)
 
-    # Bin populations + element-set annotation above each bar (2 lines)
-    ax_n.bar(x[nz], bin_total[nz], width=BINWIDTH * 0.86, color='#888',
-              edgecolor='white', alpha=0.85)
+    # Bin populations + element-set annotation above each bar (2 lines).
+    # Layout: count number sits just above the bar; element list sits a
+    # few units higher so it has breathing room. Larger font for the
+    # element symbols and a soft white background for legibility.
+    ax_n.bar(x[nz], bin_total[nz], width=BINWIDTH * 0.86, color='#7a7a7a',
+              edgecolor='white', alpha=0.9)
     bin_max = bin_total.max() if bin_total.max() > 0 else 1
+    count_offset = bin_max * 0.06
+    elem_offset  = bin_max * 0.32
     for xi, n_, eset in zip(x, bin_total, bin_elems):
         if n_ > 0:
-            ax_n.text(xi, n_ + 0.6, f'{n_}', ha='center', va='bottom',
-                      fontsize=9, color='#444', fontweight='bold')
-            ax_n.text(xi, n_ + 3.4, elem_lines(eset, max_per_line=6),
-                      ha='center', va='bottom', fontsize=8, color='#226699',
-                      linespacing=1.15)
-    ax_n.set_xlabel('atom count per step', fontsize=11)
-    ax_n.set_ylabel('# steps in bin', fontsize=10)
+            ax_n.text(xi, n_ + count_offset, f'{n_}',
+                      ha='center', va='bottom',
+                      fontsize=11, color='#222', fontweight='bold')
+            ax_n.text(xi, n_ + elem_offset, elem_lines(eset, max_per_line=6),
+                      ha='center', va='bottom',
+                      fontsize=10.5, color='#1c4e80', fontweight='bold',
+                      linespacing=1.25,
+                      bbox=dict(boxstyle='round,pad=0.25',
+                                facecolor='white', edgecolor='#cfd9e8',
+                                alpha=0.85))
+    ax_n.set_xlabel('atom count per step', fontsize=12)
+    ax_n.set_ylabel('# steps in bin', fontsize=11)
     ax_n.set_xticks(x)
-    ax_n.set_xticklabels(labels, fontsize=10)
-    ax_n.set_ylim(0, bin_max * 1.75)   # headroom for the 2-line element label
+    ax_n.set_xticklabels(labels, fontsize=11)
+    ax_n.set_ylim(0, bin_max * 2.1)   # extra headroom for taller element labels
     ax_n.grid(axis='y', linestyle=':', alpha=0.4)
     ax_n.set_axisbelow(True)
     fig.tight_layout()
