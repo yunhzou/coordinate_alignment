@@ -144,7 +144,7 @@ def main():
     w = BINWIDTH * 0.40
     x = centers
     ax_acc.bar(x[nz] - w/2, rates_v[nz]*100,  w, color='#3a6dbf', edgecolor='white',
-                label='clean_v2 verifier')
+                label='ours')
     ax_acc.bar(x[nz] + w/2, rates_ot[nz]*100, w, color='#cc3366', edgecolor='white',
                 label='react_OT')
     # (CI error bars removed for visual cleanliness — k/N annotations
@@ -160,7 +160,7 @@ def main():
     overall_v  = v_arr.mean()  * 100
     overall_ot = ot_arr.mean() * 100
     ax_acc.axhline(overall_v,  color='#3a6dbf', linestyle='--', lw=1.2, alpha=0.7,
-                    label=f'verifier overall = {overall_v:.1f}%')
+                    label=f'ours overall = {overall_v:.1f}%')
     ax_acc.axhline(overall_ot, color='#cc3366', linestyle='--', lw=1.2, alpha=0.7,
                     label=f'react_OT overall = {overall_ot:.1f}%')
     ax_acc.set_ylabel('accuracy (% steps with ≥ 1 good IG)', fontsize=11)
