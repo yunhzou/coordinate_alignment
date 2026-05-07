@@ -50,14 +50,21 @@ def canonical(s):
 
 
 def main():
-    # n_atoms per step
+    # n_atoms + element set per step
     n_atoms = {}
+    elements_per_step = {}
     for p in VIEWER_DIR.glob('*.html'):
         if p.name in ('flat_view.html', 'guess_quality.html', 'index.html'): continue
         m = re.search(r"const DATA = (\{.*?\});\n", p.read_text(), re.DOTALL)
         if not m: continue
         data = json.loads(m.group(1))
         n_atoms[data['step']] = data['n_atoms']
+        # Use the first TS's xyz_elements as the canonical element list
+        ts_list = data.get('ts_list', [])
+        elems = set()
+        if ts_list and ts_list[0].get('xyz_elements'):
+            elems = set(ts_list[0]['xyz_elements'])
+        elements_per_step[data['step']] = elems
 
     # Verifier pass labels
     lines = HUMAN_CSV.read_text().splitlines()
@@ -88,12 +95,22 @@ def main():
     bin_total = np.zeros(n_bins, dtype=int)
     bin_v     = np.zeros(n_bins, dtype=int)
     bin_ot    = np.zeros(n_bins, dtype=int)
-    for n, v, ot in zip(n_arr, v_arr, ot_arr):
+    bin_elems = [set() for _ in range(n_bins)]
+    for j in joined:
+        step, n, v, ot = j
         idx = (n_bins - 1) if n >= 90 else int((n - 10) // BINWIDTH)
         idx = max(0, min(idx, n_bins - 1))
         bin_total[idx] += 1
         bin_v[idx]     += int(v)
         bin_ot[idx]    += int(ot)
+        bin_elems[idx] |= elements_per_step.get(step, set())
+
+    # Element string per bin — sorted with common organic first then by symbol
+    PRIORITY = ['C', 'H', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br', 'I']
+    def elem_str(eset):
+        prio = [e for e in PRIORITY if e in eset]
+        rest = sorted(e for e in eset if e not in PRIORITY)
+        return ','.join(prio + rest)
 
     def wilson(k, n, z=1.96):
         if n == 0: return (0, 0, 0)
@@ -118,9 +135,9 @@ def main():
     w = BINWIDTH * 0.40
     x = centers
     ax_acc.bar(x[nz] - w/2, rates_v[nz]*100,  w, color='#3a6dbf', edgecolor='white',
-                label='clean_v2 verifier (human-judged)')
+                label='clean_v2 verifier')
     ax_acc.bar(x[nz] + w/2, rates_ot[nz]*100, w, color='#cc3366', edgecolor='white',
-                label='react_OT (visual inspection)')
+                label='react_OT')
     # CI bars (clip tiny negatives that come from rounding)
     yerr_v_lo = np.clip((rates_v[nz]-lo_v[nz])*100, 0, None)
     yerr_v_hi = np.clip((hi_v[nz]-rates_v[nz])*100, 0, None)
@@ -158,16 +175,24 @@ def main():
                      f'last bin pools 90+; error bars = 95% Wilson CI)',
                      fontsize=12, pad=12)
 
-    # Bin populations
+    # Bin populations + element-set annotation above each bar
     ax_n.bar(x[nz], bin_total[nz], width=BINWIDTH * 0.86, color='#888',
               edgecolor='white', alpha=0.85)
-    for xi, n_ in zip(x, bin_total):
+    bin_max = bin_total.max() if bin_total.max() > 0 else 1
+    for xi, n_, eset in zip(x, bin_total, bin_elems):
         if n_ > 0:
-            ax_n.text(xi, n_ + 0.4, f'{n_}', ha='center', va='bottom', fontsize=9, color='#444')
+            es = elem_str(eset)
+            # Two-line annotation: count + element list
+            ax_n.text(xi, n_ + 0.6, f'{n_}', ha='center', va='bottom',
+                      fontsize=9, color='#444', fontweight='bold')
+            ax_n.text(xi, n_ + 3.2, es, ha='center', va='bottom',
+                      fontsize=8, color='#226699',
+                      rotation=0)
     ax_n.set_xlabel('atom count per step', fontsize=11)
     ax_n.set_ylabel('# steps in bin', fontsize=10)
     ax_n.set_xticks(x)
     ax_n.set_xticklabels(labels, fontsize=10)
+    ax_n.set_ylim(0, bin_max * 1.55)   # headroom for the element label
     ax_n.grid(axis='y', linestyle=':', alpha=0.4)
     ax_n.set_axisbelow(True)
     fig.tight_layout()
