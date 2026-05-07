@@ -163,7 +163,7 @@ HTML = r"""<!doctype html>
  select { padding: 4px 6px; font-size: 13px; min-width: 540px; }
  input { padding: 4px 6px; font-size: 13px; }
  .pane { background: white; border: 1px solid #ddd; border-radius: 6px; padding: 8px; }
- .viewer { width: 100%; height: 720px; position: relative; }
+ .viewer { width: 100%; height: 820px; position: relative; }
  .legend span { display: inline-block; padding: 2px 8px; margin-right: 6px; border-radius: 4px; font-size: 12px; }
  .lb { background: #ffd6d6; color: #800; }
  .lf { background: #d6f0d6; color: #060; }
@@ -179,18 +179,16 @@ HTML = r"""<!doctype html>
   <input id="filter" placeholder="filter steps" oninput="rebuildOptions()">
   <button onclick="prev()">◀</button>
   <button onclick="next()">▶</button>
-  <label><input type="checkbox" id="lines" checked> mapping lines</label>
-  <label><input type="checkbox" id="numbers" checked> atom #</label>
+  <label><input type="checkbox" id="showP"> show P</label>
+  <label><input type="checkbox" id="allLines"> all mapping lines</label>
+  <label><input type="checkbox" id="numbers"> atom #</label>
   <button onclick="clearPins()">clear pins</button>
-  <label>line opacity <input type="range" id="alpha" min="0.1" max="1.0" step="0.05" value="0.7"></label>
-  <label>line radius <input type="range" id="rad" min="0.005" max="0.08" step="0.005" value="0.04"></label>
-  <label>misalign threshold (Å) <input type="range" id="thr" min="0.05" max="2.0" step="0.05" value="0.5"></label><span id="thrVal">0.50</span>
+  <label>misalign threshold Δ (Å) <input type="range" id="thr" min="0.05" max="2.0" step="0.05" value="0.5"></label><span id="thrVal">0.50</span>
+  <label>line radius <input type="range" id="rad" min="0.01" max="0.10" step="0.005" value="0.05"></label>
   <span class="legend" style="margin-left:auto">
-    <span style="background:#888; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">R (CPK)</span>
-    <span style="background:#cc4488; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">P (pink)</span>
     <span class="lb">broken</span>
     <span class="lf">formed</span>
-    <span style="background:#f5d000; color:#664400; padding:2px 8px; border-radius:4px; font-size:12px;">anchor</span>
+    <span style="background:#aa0033; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">suspect spectator (Δ&gt;thr)</span>
     <span style="background:#ffaa00; color:#553300; padding:2px 8px; border-radius:4px; font-size:12px;">hover</span>
     <span style="background:#ff6699; color:#552233; padding:2px 8px; border-radius:4px; font-size:12px;">click = pin</span>
   </span>
@@ -225,10 +223,11 @@ sel.addEventListener('change', () => render(sel.value));
 function prev() { if (sel.selectedIndex > 0) { sel.selectedIndex--; render(sel.value); } }
 function next() { if (sel.selectedIndex < sel.options.length - 1) { sel.selectedIndex++; render(sel.value); } }
 // Parameter changes rebuild the scene but PRESERVE the camera (no zoomTo).
-document.getElementById('lines').addEventListener('change', () => render(curStep, /*preserveView=*/true));
-document.getElementById('numbers').addEventListener('change', () => render(curStep, /*preserveView=*/true));
-document.getElementById('alpha').addEventListener('input', () => render(curStep, /*preserveView=*/true));
-document.getElementById('rad').addEventListener('input', () => render(curStep, /*preserveView=*/true));
+const ctlIds = ['showP', 'allLines', 'numbers', 'rad'];
+for (const id of ctlIds) {
+  document.getElementById(id).addEventListener('input', () => render(curStep, /*preserveView=*/true));
+  document.getElementById(id).addEventListener('change', () => render(curStep, /*preserveView=*/true));
+}
 document.getElementById('thr').addEventListener('input', e => {
   document.getElementById('thrVal').textContent = (+e.target.value).toFixed(2);
   render(curStep, /*preserveView=*/true);
@@ -317,24 +316,17 @@ function render(name, preserveView=false) {
     + `<br>suspect spectator atoms (Δ > ${thr.toFixed(2)}Å): ${suspectStr}`;
   if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); }
   viewer = $3Dmol.createViewer('v', {backgroundColor: 'white'});
-  // Two models loaded in the SAME 3D space: R (CPK) and P (pink).
-  // P has been Kabsch-aligned to R using a local anchor cluster, so
-  // spectator atoms overlap and reactive atoms are visibly displaced.
-  viewer.addModel(buildXyz(d.elements_R, d.coords_R), 'xyz');
-  viewer.addModel(buildXyz(d.elements_P, d.coords_P), 'xyz');
-  // R: default CPK colors, slightly thicker sticks
-  viewer.setStyle({model: 0}, {stick: {radius: 0.13}, sphere: {scale: 0.22}});
-  // P: monochrome pink, semi-transparent, thinner; visually a "ghost"
-  // overlay of the post-reaction structure on top of R.
-  viewer.setStyle({model: 1}, {stick: {radius: 0.08, color: '#cc4488', opacity: 0.55},
-                               sphere: {scale: 0.16, color: '#cc4488', opacity: 0.55}});
 
-  // Anchor highlight: yellow outline ring around each anchor atom in R
-  const anchorSet = new Set(d.anchors || []);
-  for (const k of anchorSet) {
-    const r = d.coords_R[k];
-    if (r) viewer.addSphere({center:{x:r[0],y:r[1],z:r[2]}, radius: 0.45,
-                              color:'#f5d000', opacity: 0.35});
+  // Always draw R (the reference structure) cleanly in CPK.
+  viewer.addModel(buildXyz(d.elements_R, d.coords_R), 'xyz');
+  viewer.setStyle({model: 0}, {stick: {radius: 0.14}, sphere: {scale: 0.25}});
+
+  // Optionally draw P as a translucent pink "ghost" overlay (off by default).
+  const showP = document.getElementById('showP').checked;
+  if (showP) {
+    viewer.addModel(buildXyz(d.elements_P, d.coords_P), 'xyz');
+    viewer.setStyle({model: 1}, {stick: {radius: 0.07, color: '#cc4488', opacity: 0.45},
+                                 sphere: {scale: 0.14, color: '#cc4488', opacity: 0.45}});
   }
 
   // Build a set of broken/formed atom indices
@@ -343,23 +335,21 @@ function render(name, preserveView=false) {
   const formed_atoms = new Set();
   for (const [i, j] of d.formed_R) { formed_atoms.add(i); formed_atoms.add(j); }
 
-  // Highlight broken/formed atoms as colored spheres in BOTH R and P
+  // Halo for reactive atoms: a soft-coloured sphere at the R position
+  // so the eye groups "this is a reactive atom" before reading the
+  // mapping cylinder's direction.
   for (const i of broken_atoms) {
-    const r = d.coords_R[i], p = d.coords_P[i];
-    viewer.addSphere({center:{x:r[0], y:r[1], z:r[2]}, radius: 0.35,
-                       color: '#cc3333', opacity: 0.55});
-    viewer.addSphere({center:{x:p[0], y:p[1], z:p[2]}, radius: 0.35,
-                       color: '#cc3333', opacity: 0.55});
+    const r = d.coords_R[i];
+    viewer.addSphere({center:{x:r[0],y:r[1],z:r[2]}, radius: 0.40,
+                       color: '#cc3333', opacity: 0.45});
   }
   for (const i of formed_atoms) {
-    const r = d.coords_R[i], p = d.coords_P[i];
-    viewer.addSphere({center:{x:r[0], y:r[1], z:r[2]}, radius: 0.35,
-                       color: '#2a8a2a', opacity: 0.55});
-    viewer.addSphere({center:{x:p[0], y:p[1], z:p[2]}, radius: 0.35,
-                       color: '#2a8a2a', opacity: 0.55});
+    const r = d.coords_R[i];
+    viewer.addSphere({center:{x:r[0],y:r[1],z:r[2]}, radius: 0.40,
+                       color: '#2a8a2a', opacity: 0.45});
   }
-
-  // Draw broken bond cylinders inside R, formed bond cylinders inside P
+  // Broken / formed bond cylinders inside R (always shown — they are
+  // the "reaction story" and are referenced in the mapping check).
   for (const [a, b] of d.broken) {
     const ra = d.coords_R[a], rb = d.coords_R[b];
     viewer.addCylinder({start:{x:ra[0],y:ra[1],z:ra[2]},
@@ -367,40 +357,61 @@ function render(name, preserveView=false) {
                          color:'red', radius: 0.10, dashed: true});
   }
   for (const [a, b] of d.formed_R) {
-    const pa = d.coords_P[a], pb = d.coords_P[b];
+    const pa = showP ? d.coords_P[a] : d.coords_R[a];
+    const pb = showP ? d.coords_P[b] : d.coords_R[b];
     viewer.addCylinder({start:{x:pa[0],y:pa[1],z:pa[2]},
                          end:{x:pb[0],y:pb[1],z:pb[2]},
                          color:'green', radius: 0.10, dashed: true});
   }
 
-  // Mapping lines: cylinders connecting R[i] to P[i]. Color is mapped
-  // to length (cold = short = well-aligned; hot = long = suspicious).
-  // Reactive atoms keep their red/green hue but with the same length-
-  // modulated thickness so the eye still groups by chemistry.
-  if (document.getElementById('lines').checked) {
-    const alpha = +document.getElementById('alpha').value;
-    const baseRadius = +document.getElementById('rad').value;
-    // Colour map: 0.0 → blue (#3a6dbf), 0.4 → grey (#888),
-    //             1.0 → orange (#dd8800), 2.0 → deep red (#aa0033)
-    function lengthColor(L) {
-      if (L < 0.10) return '#aaccff';   // very short — cold
-      if (L < 0.25) return '#7aa6cc';
-      if (L < 0.50) return '#888';      // typical thermal jitter
-      if (L < 1.00) return '#dd8800';   // long — suspect
-      return '#aa0033';                 // very long — strongly suspect
+  // Mapping arrows: by default we draw only the lines that matter —
+  // (a) reactive atoms (red/green, expected motion), and
+  // (b) suspect spectators (Δ > threshold, drawn fat in dark red).
+  // Toggle "all mapping lines" to draw the full set color-coded by length.
+  const showAll = document.getElementById('allLines').checked;
+  const baseRadius = +document.getElementById('rad').value;
+  function lengthColor(L) {
+    if (L < 0.10) return '#aaccff';
+    if (L < 0.25) return '#7aa6cc';
+    if (L < 0.50) return '#888';
+    if (L < 1.00) return '#dd8800';
+    return '#aa0033';
+  }
+  for (let i = 0; i < d.coords_R.length; i++) {
+    const r = d.coords_R[i], p = d.coords_P[i];
+    const L = d.deltas[i];
+    const isBroken = broken_atoms.has(i);
+    const isFormed = formed_atoms.has(i);
+    const isSuspect = (!isBroken && !isFormed) && (L > thr);
+    if (!(showAll || isBroken || isFormed || isSuspect)) continue;
+    let color, radius, opacity;
+    if (isBroken) {
+      color = '#cc3333'; radius = baseRadius * 1.3; opacity = 0.85;
+    } else if (isFormed) {
+      color = '#2a8a2a'; radius = baseRadius * 1.3; opacity = 0.85;
+    } else if (isSuspect) {
+      // Suspect spectator — make it impossible to miss
+      color = '#aa0033'; radius = baseRadius * 3.0; opacity = 0.95;
+    } else {
+      color = lengthColor(L); radius = baseRadius * 0.7; opacity = 0.55;
     }
-    for (let i = 0; i < d.coords_R.length; i++) {
-      const r = d.coords_R[i], p = d.coords_P[i];
-      const L = d.deltas[i];
-      let color = lengthColor(L);
-      if (broken_atoms.has(i)) color = '#cc3333';
-      else if (formed_atoms.has(i)) color = '#2a8a2a';
-      // Thicker line if above threshold — draws the eye
-      const radius = (L > thr && !broken_atoms.has(i) && !formed_atoms.has(i))
-                       ? baseRadius * 2.5 : baseRadius;
-      viewer.addCylinder({start:{x:r[0], y:r[1], z:r[2]},
-                          end:  {x:p[0], y:p[1], z:p[2]},
-                          color: color, radius: radius, opacity: alpha});
+    viewer.addCylinder({
+      start:{x:r[0], y:r[1], z:r[2]},
+      end:  {x:p[0], y:p[1], z:p[2]},
+      color: color, radius: radius, opacity: opacity});
+    // Draw a small arrowhead-style sphere at the P end for suspect/reactive
+    if (isBroken || isFormed || isSuspect) {
+      viewer.addSphere({center:{x:p[0], y:p[1], z:p[2]}, radius: radius*1.4,
+                        color: color, opacity: 0.9});
+    }
+  }
+  // Halo on suspect spectator atoms in R (dark red ring)
+  for (let i = 0; i < d.deltas.length; i++) {
+    if (broken_atoms.has(i) || formed_atoms.has(i)) continue;
+    if (d.deltas[i] > thr) {
+      const r = d.coords_R[i];
+      viewer.addSphere({center:{x:r[0], y:r[1], z:r[2]}, radius: 0.55,
+                        color:'#aa0033', opacity: 0.40});
     }
   }
 
