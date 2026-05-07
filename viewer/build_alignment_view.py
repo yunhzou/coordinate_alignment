@@ -5,17 +5,18 @@ For each elementary step, render reactant and product side-by-side in
 a single 3Dmol scene, with thin grey cylinders connecting each atom
 i in R to atom i in P. Atoms touching broken or formed bonds are
 highlighted (broken-bond endpoints in red, formed-bond endpoints in
-green) so the user can sanity-check the PQ alignment + bond
+green) so the user can sanity-check the alignment + bond
 classification.
 
-Reads cached xtb output:
-  appendix_perparation/xtb_frequency_calculations/<step>/R/{reactant.xyz, wbo}
-  appendix_perparation/xtb_frequency_calculations/<step>/P/{product.xyz, wbo}
+Reads ALREADY-ALIGNED geometries (no recomputation):
+  appendix_perparation/Pure_Geometries_Elementary_Step/
+    Benchmark_Guesses_Coordinate_Aligned_Version/<step>/
+      reactants/reactant_aligned.xyz   — R in its own indexing
+      products/product_aligned.xyz     — P reindexed into R-frame
 
-Runs `align_from_arrays` per step to produce the mapping (~0.5 s/step).
-P is then Kabsch-aligned to R using the mapped atoms, indexed into
-R-frame, and translated rightward so it sits to the right of R in the
-viewer.
+Bonds (broken / formed / core) are pulled from the per-step viewer
+HTMLs which already contain the classified output:
+  appendix_perparation/viewer/mode_viewer/<step>.html
 
 Output:
   appendix_perparation/viewer/alignment_view.html
@@ -30,18 +31,28 @@ PROJECT_ROOT = _HERE.parent  # _RXN_CORE_PATH_SETUP
 
 import argparse
 import json
+import re
 import time
 from pathlib import Path
 
 import numpy as np
 
-from rxn_core_pq import align_from_arrays
-from rxn_core_frag import classify_bonds, expand_mapping, build_graph
-from align_bgcp_coords import load_cached_xtb, fill_unmapped_greedy
+
+ALIGNED_DIR = (PROJECT_ROOT / 'appendix_perparation' / 'Pure_Geometries_Elementary_Step'
+               / 'Benchmark_Guesses_Coordinate_Aligned_Version')
+MODE_DIR    = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'mode_viewer'
+OUT_HTML    = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'alignment_view.html'
 
 
-XTB_DIR = PROJECT_ROOT / 'appendix_perparation' / 'xtb_frequency_calculations'
-OUT_HTML = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'alignment_view.html'
+def parse_xyz(path):
+    lines = Path(path).read_text().strip().splitlines()
+    n = int(lines[0])
+    elements, coords = [], []
+    for ln in lines[2:2 + n]:
+        parts = ln.split()
+        elements.append(parts[0])
+        coords.append([float(x) for x in parts[1:4]])
+    return elements, np.asarray(coords, dtype=float)
 
 
 def kabsch(P, Q):
@@ -56,67 +67,64 @@ def kabsch(P, Q):
     return R, t
 
 
-def reindex_to_R_frame(elR, elP, xyzP, mapping):
-    """Return (elements_in_R_order, coords_in_R_order). For unmapped
-    R atoms we fill from the nearest free P atom (already done by
-    fill_unmapped_greedy upstream)."""
-    n = len(elR)
-    out_el = list(elR); out_xyz = np.zeros((n, 3))
-    for i in range(n):
-        j = mapping.get(i)
-        if j is None:
-            out_xyz[i] = np.zeros(3)  # gap — should be rare after fallback
-            continue
-        out_el[i] = elP[j]
-        out_xyz[i] = xyzP[j]
-    return out_el, out_xyz
+def parse_alignment_qc(comment_line):
+    """Read 'pq_mapped=N/M  fallback=K  missing=L' from xyz comment."""
+    out = {}
+    for k, default in (('pq_mapped', '0/0'), ('fallback', '0'), ('missing', '0')):
+        m = re.search(rf'{k}=([\d/]+)', comment_line)
+        if m: out[k] = m.group(1)
+        else: out[k] = default
+    return out
 
 
 def process_step(step):
-    rdir = XTB_DIR / step / 'R'
-    pdir = XTB_DIR / step / 'P'
-    if not (rdir / 'wbo').exists() or not (pdir / 'wbo').exists():
+    rdir = ALIGNED_DIR / step / 'reactants'
+    pdir = ALIGNED_DIR / step / 'products'
+    rfiles = list(rdir.glob('*.xyz')) if rdir.exists() else []
+    pfiles = list(pdir.glob('*.xyz')) if pdir.exists() else []
+    if not rfiles or not pfiles:
         return None
-    elR, xyzR, wboR, _ = load_cached_xtb(rdir)
-    elP, xyzP, wboP, _ = load_cached_xtb(pdir)
-    res = align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP)
-    pq_mapping = dict(res['mapping'])
-    full = fill_unmapped_greedy(elR, xyzR, elP, xyzP, pq_mapping)
-    elP_R, xyzP_R = reindex_to_R_frame(elR, elP, xyzP, full)
-    # Kabsch P (in R-frame index) onto R using mapped atoms
-    mapped_idx = sorted(pq_mapping.keys())
-    if mapped_idx:
-        Rmat, t = kabsch(np.asarray(xyzR)[mapped_idx],
-                         np.asarray(xyzP_R)[mapped_idx])
-        xyzP_aligned = (np.asarray(xyzP_R) @ Rmat.T) + t
-    else:
-        xyzP_aligned = np.asarray(xyzP_R)
-    broken = res['broken']; formed = res['formed']
-    core_R = sorted({int(i) for (i,j,_,_) in broken} |
-                    {int(j) for (i,j,_,_) in broken})
-    inv = {v: k for k, v in full.items()}
-    core_P = sorted({int(inv[i]) for (i,j,_,_) in formed if i in inv} |
-                    {int(inv[j]) for (i,j,_,_) in formed if j in inv})
-    bro_pairs = [(int(i), int(j)) for (i,j,_,_) in broken]
-    fmd_pairs_R = []
-    for (ip, jp, _, _) in formed:
-        if ip in inv and jp in inv:
-            fmd_pairs_R.append((int(inv[ip]), int(inv[jp])))
-    # Translate P so it sits to the right of R in the viewer
+    elR, xyzR = parse_xyz(rfiles[0])
+    elP, xyzP = parse_xyz(pfiles[0])
+    if len(elR) != len(elP):
+        return None  # shouldn't happen for aligned files
+
+    # P comment line carries pq_mapped / fallback / missing fields
+    p_comment = Path(pfiles[0]).read_text().splitlines()[1] if len(pfiles) else ''
+    qc = parse_alignment_qc(p_comment)
+
+    # Bonds + core from the per-step viewer HTML (already R-frame)
+    bro_pairs = []; fmd_pairs_R = []; core_R = []
+    html = MODE_DIR / f"{step}.html"
+    if html.exists():
+        text = html.read_text()
+        m = re.search(r"const DATA = (\{.*?\});\n", text, re.DOTALL)
+        if m:
+            data = json.loads(m.group(1))
+            bro_pairs   = [(int(i), int(j)) for (i, j) in data.get('broken_bonds', [])]
+            fmd_pairs_R = [(int(i), int(j)) for (i, j) in data.get('formed_bonds_R', [])]
+            core_R      = sorted({int(x) for x in data.get('core_atoms', [])})
+
+    # Kabsch-align P to R (P is already in R-frame indexing, so atom i
+    # corresponds to atom i; we just rotate/translate for visual overlay)
+    Rmat, t = kabsch(xyzR, xyzP)
+    xyzP_kabsch = xyzP @ Rmat.T + t
+
+    # Translate P along x so it sits to the right of R in the viewer
     span = float(np.ptp(xyzR, axis=0).max() if len(xyzR) else 5.0)
     offset = max(span * 1.4, 8.0)
-    xyzP_view = xyzP_aligned + np.array([offset, 0, 0])
+    xyzP_view = xyzP_kabsch + np.array([offset, 0, 0])
     return {
         'step': step,
         'n_atoms': len(elR),
         'elements_R': list(elR),
         'coords_R':   [[round(float(x), 4) for x in v] for v in xyzR],
-        'elements_P': elP_R,
+        'elements_P': list(elP),
         'coords_P':   [[round(float(x), 4) for x in v] for v in xyzP_view],
-        'mapping':    {int(k): int(v) for k, v in full.items()},
-        'pq_mapped':  len(pq_mapping),
+        'pq_mapped':  qc['pq_mapped'],
+        'fallback':   qc['fallback'],
+        'missing':    qc['missing'],
         'core_R':     core_R,
-        'core_P':     core_P,    # already R-frame indices for core
         'broken':     bro_pairs,
         'formed_R':   fmd_pairs_R,
         'offset_x':   offset,
@@ -183,7 +191,7 @@ function rebuildOptions() {
     const d = DATA[n];
     const opt = document.createElement('option');
     opt.value = n;
-    opt.textContent = `${n}   N=${d.n_atoms}  pq=${d.pq_mapped}/${d.n_atoms}  broken=${d.broken.length} formed=${d.formed_R.length}`;
+    opt.textContent = `${n}   N=${d.n_atoms}  pq=${d.pq_mapped}  fallback=${d.fallback}  missing=${d.missing}  broken=${d.broken.length} formed=${d.formed_R.length}`;
     sel.appendChild(opt);
   }
   if (sel.options.length) render(sel.value);
@@ -214,9 +222,10 @@ function render(name) {
   curStep = name;
   const d = DATA[name];
   document.getElementById('info').innerHTML =
-    `<b>${name}</b> · ${d.n_atoms} atoms · PQ-mapped ${d.pq_mapped}/${d.n_atoms} · `
-    + `broken bonds = ${d.broken.length} · formed bonds = ${d.formed_R.length} · `
-    + `core atoms (R) = ${d.core_R.length}`;
+    `<b>${name}</b> · ${d.n_atoms} atoms · `
+    + `PQ-mapped ${d.pq_mapped} · fallback ${d.fallback} · missing ${d.missing} · `
+    + `broken = ${d.broken.length} · formed = ${d.formed_R.length} · `
+    + `core (R) = ${d.core_R.length}`;
   if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); }
   viewer = $3Dmol.createViewer('v', {backgroundColor: 'white'});
   // Two models: R first, then P (offset to right by d.offset_x already applied)
@@ -389,12 +398,12 @@ def main():
     ap.add_argument('--steps', nargs='+', default=None)
     args = ap.parse_args()
 
-    steps = sorted(d.name for d in XTB_DIR.iterdir() if d.is_dir())
+    steps = sorted(d.name for d in ALIGNED_DIR.iterdir() if d.is_dir())
     if args.steps:
         steps = [s for s in steps if s in set(args.steps)]
     if args.limit:
         steps = steps[:args.limit]
-    print(f"Processing {len(steps)} steps from {XTB_DIR}")
+    print(f"Processing {len(steps)} steps from {ALIGNED_DIR}")
 
     out = {}
     t0 = time.time(); n_skip = 0
