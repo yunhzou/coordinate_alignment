@@ -105,12 +105,20 @@ def main():
         bin_ot[idx]    += int(ot)
         bin_elems[idx] |= elements_per_step.get(step, set())
 
-    # Element string per bin — sorted with common organic first then by symbol
+    # Element list per bin — sorted with common organic first then by symbol.
+    # Returns a 2-line string when the list is long.
     PRIORITY = ['C', 'H', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br', 'I']
-    def elem_str(eset):
+    def elem_lines(eset, max_per_line=6):
         prio = [e for e in PRIORITY if e in eset]
         rest = sorted(e for e in eset if e not in PRIORITY)
-        return ','.join(prio + rest)
+        elems = prio + rest
+        if not elems: return ''
+        line1 = elems[:max_per_line]
+        line2 = elems[max_per_line:]
+        out = ','.join(line1)
+        if line2:
+            out += '\n' + ','.join(line2)
+        return out
 
     def wilson(k, n, z=1.96):
         if n == 0: return (0, 0, 0)
@@ -138,17 +146,9 @@ def main():
                 label='clean_v2 verifier')
     ax_acc.bar(x[nz] + w/2, rates_ot[nz]*100, w, color='#cc3366', edgecolor='white',
                 label='react_OT')
-    # CI bars (clip tiny negatives that come from rounding)
-    yerr_v_lo = np.clip((rates_v[nz]-lo_v[nz])*100, 0, None)
-    yerr_v_hi = np.clip((hi_v[nz]-rates_v[nz])*100, 0, None)
-    yerr_ot_lo = np.clip((rates_ot[nz]-lo_ot[nz])*100, 0, None)
-    yerr_ot_hi = np.clip((hi_ot[nz]-rates_ot[nz])*100, 0, None)
-    ax_acc.errorbar(x[nz] - w/2, rates_v[nz]*100,
-                     yerr=[yerr_v_lo, yerr_v_hi],
-                     fmt='none', ecolor='black', capsize=3, lw=1)
-    ax_acc.errorbar(x[nz] + w/2, rates_ot[nz]*100,
-                     yerr=[yerr_ot_lo, yerr_ot_hi],
-                     fmt='none', ecolor='black', capsize=3, lw=1)
+    # (CI error bars removed for visual cleanliness — k/N annotations
+    # below give the sample size and Wilson CI is documented in the
+    # accompanying CSV.)
     # Annotate k/N
     for xi, n_, kv, kot, rv, rot in zip(x, bin_total, bin_v, bin_ot, rates_v, rates_ot):
         if n_ == 0: continue
@@ -172,27 +172,25 @@ def main():
     ax_acc.legend(loc='center left', fontsize=9, framealpha=0.95)
     ax_acc.set_title(f'Accuracy by atom-count bin   '
                      f'(N = {len(joined)} steps; binwidth = {BINWIDTH} atoms; '
-                     f'last bin pools 90+; error bars = 95% Wilson CI)',
+                     f'last bin pools 90+)',
                      fontsize=12, pad=12)
 
-    # Bin populations + element-set annotation above each bar
+    # Bin populations + element-set annotation above each bar (2 lines)
     ax_n.bar(x[nz], bin_total[nz], width=BINWIDTH * 0.86, color='#888',
               edgecolor='white', alpha=0.85)
     bin_max = bin_total.max() if bin_total.max() > 0 else 1
     for xi, n_, eset in zip(x, bin_total, bin_elems):
         if n_ > 0:
-            es = elem_str(eset)
-            # Two-line annotation: count + element list
             ax_n.text(xi, n_ + 0.6, f'{n_}', ha='center', va='bottom',
                       fontsize=9, color='#444', fontweight='bold')
-            ax_n.text(xi, n_ + 3.2, es, ha='center', va='bottom',
-                      fontsize=8, color='#226699',
-                      rotation=0)
+            ax_n.text(xi, n_ + 3.4, elem_lines(eset, max_per_line=6),
+                      ha='center', va='bottom', fontsize=8, color='#226699',
+                      linespacing=1.15)
     ax_n.set_xlabel('atom count per step', fontsize=11)
     ax_n.set_ylabel('# steps in bin', fontsize=10)
     ax_n.set_xticks(x)
     ax_n.set_xticklabels(labels, fontsize=10)
-    ax_n.set_ylim(0, bin_max * 1.55)   # headroom for the element label
+    ax_n.set_ylim(0, bin_max * 1.75)   # headroom for the 2-line element label
     ax_n.grid(axis='y', linestyle=':', alpha=0.4)
     ax_n.set_axisbelow(True)
     fig.tight_layout()
