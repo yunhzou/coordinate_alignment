@@ -77,6 +77,35 @@ def parse_alignment_qc(comment_line):
     return out
 
 
+def pick_anchor_atoms(xyzR, core_R, n=8):
+    """Pick n spectator atoms forming a tight peripheral cluster, used
+    as the local Kabsch reference. Strategy:
+      1. Find the spectator atom farthest from the core centroid (or
+         the molecule centroid if there are no core atoms) — this is
+         the most peripheral untouched atom.
+      2. Take that seed + its (n-1) nearest spectator neighbours by
+         Euclidean distance in R.
+    Returns a sorted list of R-frame atom indices.
+
+    Falls back to "any n atoms" if too few spectators."""
+    xyzR = np.asarray(xyzR, dtype=float)
+    n_atoms = len(xyzR)
+    core_set = set(int(x) for x in core_R)
+    spectators = [i for i in range(n_atoms) if i not in core_set]
+    if len(spectators) < n:
+        return sorted(range(n_atoms))[:min(n, n_atoms)]
+    if core_set:
+        ref = xyzR[list(core_set)].mean(0)
+    else:
+        ref = xyzR.mean(0)
+    dists_to_ref = np.linalg.norm(xyzR[spectators] - ref, axis=1)
+    seed = spectators[int(np.argmax(dists_to_ref))]
+    other = [i for i in spectators if i != seed]
+    dists_to_seed = np.linalg.norm(xyzR[other] - xyzR[seed], axis=1)
+    nearest = np.argsort(dists_to_seed)[: n - 1]
+    return sorted([seed] + [other[i] for i in nearest])
+
+
 def process_step(step):
     rdir = ALIGNED_DIR / step / 'reactants'
     pdir = ALIGNED_DIR / step / 'products'
@@ -105,29 +134,28 @@ def process_step(step):
             fmd_pairs_R = [(int(i), int(j)) for (i, j) in data.get('formed_bonds_R', [])]
             core_R      = sorted({int(x) for x in data.get('core_atoms', [])})
 
-    # Kabsch-align P to R (P is already in R-frame indexing, so atom i
-    # corresponds to atom i; we just rotate/translate for visual overlay)
-    Rmat, t = kabsch(xyzR, xyzP)
-    xyzP_kabsch = xyzP @ Rmat.T + t
-
-    # Translate P along x so it sits to the right of R in the viewer
-    span = float(np.ptp(xyzR, axis=0).max() if len(xyzR) else 5.0)
-    offset = max(span * 1.4, 8.0)
-    xyzP_view = xyzP_kabsch + np.array([offset, 0, 0])
+    # Local-substructure Kabsch: pick a tight cluster of 8 spectator
+    # atoms in the periphery and align P to R using ONLY those atoms.
+    # The reactive core is then free to deviate, so the difference
+    # between R[i] and P[i] for reactive i shows the actual reaction
+    # motion rather than a global RMSD-minimised average.
+    anchors = pick_anchor_atoms(xyzR, core_R, n=8)
+    Rmat, t = kabsch(xyzR[anchors], xyzP[anchors])
+    xyzP_overlay = xyzP @ Rmat.T + t
     return {
         'step': step,
         'n_atoms': len(elR),
         'elements_R': list(elR),
         'coords_R':   [[round(float(x), 4) for x in v] for v in xyzR],
         'elements_P': list(elP),
-        'coords_P':   [[round(float(x), 4) for x in v] for v in xyzP_view],
+        'coords_P':   [[round(float(x), 4) for x in v] for v in xyzP_overlay],
+        'anchors':    [int(a) for a in anchors],
         'pq_mapped':  qc['pq_mapped'],
         'fallback':   qc['fallback'],
         'missing':    qc['missing'],
         'core_R':     core_R,
         'broken':     bro_pairs,
         'formed_R':   fmd_pairs_R,
-        'offset_x':   offset,
     }
 
 
@@ -160,12 +188,14 @@ HTML = r"""<!doctype html>
   <label><input type="checkbox" id="lines" checked> mapping lines</label>
   <label><input type="checkbox" id="numbers" checked> atom #</label>
   <button onclick="clearPins()">clear pins</button>
-  <label>line opacity <input type="range" id="alpha" min="0.1" max="1.0" step="0.05" value="0.45"></label>
-  <label>line radius <input type="range" id="rad" min="0.005" max="0.05" step="0.005" value="0.018"></label>
+  <label>line opacity <input type="range" id="alpha" min="0.1" max="1.0" step="0.05" value="0.55"></label>
+  <label>line radius <input type="range" id="rad" min="0.005" max="0.05" step="0.005" value="0.025"></label>
   <span class="legend" style="margin-left:auto">
+    <span style="background:#888; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">R (CPK)</span>
+    <span style="background:#cc4488; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">P (pink)</span>
     <span class="lb">broken</span>
     <span class="lf">formed</span>
-    <span class="ll">mapping</span>
+    <span style="background:#f5d000; color:#664400; padding:2px 8px; border-radius:4px; font-size:12px;">anchor</span>
     <span style="background:#ffaa00; color:#553300; padding:2px 8px; border-radius:4px; font-size:12px;">hover</span>
     <span style="background:#ff6699; color:#552233; padding:2px 8px; border-radius:4px; font-size:12px;">click = pin</span>
   </span>
@@ -268,13 +298,29 @@ function render(name, preserveView=false) {
     `<b>${name}</b> · ${d.n_atoms} atoms · `
     + `PQ-mapped ${d.pq_mapped} · fallback ${d.fallback} · missing ${d.missing} · `
     + `broken = ${d.broken.length} · formed = ${d.formed_R.length} · `
-    + `core (R) = ${d.core_R.length}`;
-  if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); }
+    + `core (R) = ${d.core_R.length} · `
+    + `anchors = [${(d.anchors || []).join(',')}]`;
+  if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); }
   viewer = $3Dmol.createViewer('v', {backgroundColor: 'white'});
-  // Two models: R first, then P (offset to right by d.offset_x already applied)
+  // Two models loaded in the SAME 3D space: R (CPK) and P (pink).
+  // P has been Kabsch-aligned to R using a local anchor cluster, so
+  // spectator atoms overlap and reactive atoms are visibly displaced.
   viewer.addModel(buildXyz(d.elements_R, d.coords_R), 'xyz');
   viewer.addModel(buildXyz(d.elements_P, d.coords_P), 'xyz');
-  viewer.setStyle({}, {stick: {radius: 0.10}, sphere: {scale: 0.20}});
+  // R: default CPK colors, slightly thicker sticks
+  viewer.setStyle({model: 0}, {stick: {radius: 0.13}, sphere: {scale: 0.22}});
+  // P: monochrome pink, semi-transparent, thinner; visually a "ghost"
+  // overlay of the post-reaction structure on top of R.
+  viewer.setStyle({model: 1}, {stick: {radius: 0.08, color: '#cc4488', opacity: 0.55},
+                               sphere: {scale: 0.16, color: '#cc4488', opacity: 0.55}});
+
+  // Anchor highlight: yellow outline ring around each anchor atom in R
+  const anchorSet = new Set(d.anchors || []);
+  for (const k of anchorSet) {
+    const r = d.coords_R[k];
+    if (r) viewer.addSphere({center:{x:r[0],y:r[1],z:r[2]}, radius: 0.45,
+                              color:'#f5d000', opacity: 0.35});
+  }
 
   // Build a set of broken/formed atom indices
   const broken_atoms = new Set();
@@ -328,20 +374,16 @@ function render(name, preserveView=false) {
     }
   }
 
-  // Always-on atom-number labels (toggled by the "atom #" checkbox).
-  // Drawn ONCE per render; small grey labels above each atom on both sides.
+  // Atom-number labels (one per atom, placed at R position only since
+  // R and P now overlap in the same coord space). The mapping line
+  // shows where P sits relative to that label.
   if (document.getElementById('numbers').checked) {
     for (let i = 0; i < d.coords_R.length; i++) {
-      const r = d.coords_R[i], p = d.coords_P[i];
+      const r = d.coords_R[i];
       viewer.addLabel(String(i),
         {position:{x:r[0], y:r[1], z:r[2] + 0.35},
          fontSize: 9, fontColor: '#444',
-         backgroundColor: 'white', backgroundOpacity: 0.55,
-         showBackground: true, inFront: true});
-      viewer.addLabel(String(i),
-        {position:{x:p[0], y:p[1], z:p[2] + 0.35},
-         fontSize: 9, fontColor: '#444',
-         backgroundColor: 'white', backgroundOpacity: 0.55,
+         backgroundColor: 'white', backgroundOpacity: 0.6,
          showBackground: true, inFront: true});
     }
   }
