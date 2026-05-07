@@ -118,27 +118,27 @@ def process_step(step):
             fmd_pairs_R = [(int(i), int(j)) for (i, j) in data.get('formed_bonds_R', [])]
             core_R      = sorted({int(x) for x in data.get('core_atoms', [])})
 
-    # Spectator-only Kabsch: align P to R using ALL atoms NOT touching
-    # a broken/formed bond. This minimises the spectator displacement,
-    # so every mapping line on a spectator atom should be near-zero.
-    # Long mapping lines on a spectator atom => real misalignment.
-    # Reactive (broken/formed) atoms are *expected* to have non-zero
-    # displacement — that's the actual reaction motion.
+    # Spectator-only Kabsch (used to compute "should-be-tiny" deltas).
     anchors, anchor_kind = pick_spectator_anchors(xyzR, core_R)
     Rmat, t = kabsch(xyzR[anchors], xyzP[anchors])
-    xyzP_overlay = xyzP @ Rmat.T + t
+    xyzP_kabsch = xyzP @ Rmat.T + t
+    # Per-atom Δ (the "spectator misalignment" signal)
+    deltas = np.linalg.norm(xyzP_kabsch - xyzR, axis=1)
+    spec_disp = np.array([deltas[i] for i in anchors]) if anchor_kind == 'spectators' else np.array([])
 
-    # Per-atom mapping-line length after Kabsch (so JS can color-code)
-    deltas = np.linalg.norm(xyzP_overlay - xyzR, axis=1)
-    spectator_set = set(anchors) if anchor_kind == 'spectators' else set()
-    spec_disp = np.array([deltas[i] for i in spectator_set]) if spectator_set else np.array([])
+    # SIDE-BY-SIDE layout: translate P along x by ~1.4× molecular span
+    # so it sits to the right of R in the viewer. Lines drawn between
+    # corresponding atoms span the gap.
+    span = float(np.ptp(xyzR, axis=0).max() if len(xyzR) else 5.0)
+    offset = max(span * 1.4, 8.0)
+    xyzP_view = xyzP_kabsch + np.array([offset, 0, 0])
     return {
         'step': step,
         'n_atoms': len(elR),
         'elements_R': list(elR),
         'coords_R':   [[round(float(x), 4) for x in v] for v in xyzR],
         'elements_P': list(elP),
-        'coords_P':   [[round(float(x), 4) for x in v] for v in xyzP_overlay],
+        'coords_P':   [[round(float(x), 4) for x in v] for v in xyzP_view],
         'anchors':    [int(a) for a in anchors],
         'anchor_kind': anchor_kind,
         'deltas':     [round(float(x), 4) for x in deltas],
@@ -150,6 +150,7 @@ def process_step(step):
         'core_R':     core_R,
         'broken':     bro_pairs,
         'formed_R':   fmd_pairs_R,
+        'offset_x':   offset,
     }
 
 
@@ -179,12 +180,22 @@ HTML = r"""<!doctype html>
   <input id="filter" placeholder="filter steps" oninput="rebuildOptions()">
   <button onclick="prev()">◀</button>
   <button onclick="next()">▶</button>
-  <label><input type="checkbox" id="showP"> show P</label>
-  <label><input type="checkbox" id="allLines"> all mapping lines</label>
   <label><input type="checkbox" id="numbers"> atom #</label>
   <button onclick="clearPins()">clear pins</button>
-  <label>misalign threshold Δ (Å) <input type="range" id="thr" min="0.05" max="2.0" step="0.05" value="0.5"></label><span id="thrVal">0.50</span>
-  <label>line radius <input type="range" id="rad" min="0.01" max="0.10" step="0.005" value="0.05"></label>
+  <span style="margin-left:8px; padding:2px 6px; border:1px solid #ddd; border-radius:4px;">
+    Mapping batch:
+    <button onclick="prevBatch()">◀ prev 5</button>
+    <span id="batchInfo">1–5 / N</span>
+    <button onclick="nextBatch()">next 5 ▶</button>
+    <label style="margin-left:6px;">sort by
+      <select id="sortBy">
+        <option value="delta_desc">Δ ↓ (largest first)</option>
+        <option value="delta_asc">Δ ↑ (smallest first)</option>
+        <option value="index">atom # ↑</option>
+      </select>
+    </label>
+    <label style="margin-left:6px;"><input type="checkbox" id="alwaysReactive" checked> always show reactive</label>
+  </span>
   <span class="legend" style="margin-left:auto">
     <span class="lb">broken</span>
     <span class="lf">formed</span>
@@ -223,15 +234,20 @@ sel.addEventListener('change', () => render(sel.value));
 function prev() { if (sel.selectedIndex > 0) { sel.selectedIndex--; render(sel.value); } }
 function next() { if (sel.selectedIndex < sel.options.length - 1) { sel.selectedIndex++; render(sel.value); } }
 // Parameter changes rebuild the scene but PRESERVE the camera (no zoomTo).
-const ctlIds = ['showP', 'allLines', 'numbers', 'rad'];
-for (const id of ctlIds) {
-  document.getElementById(id).addEventListener('input', () => render(curStep, /*preserveView=*/true));
-  document.getElementById(id).addEventListener('change', () => render(curStep, /*preserveView=*/true));
+for (const id of ['numbers', 'sortBy', 'alwaysReactive']) {
+  const el = document.getElementById(id);
+  el.addEventListener('change', () => { batchStart = 0; render(curStep, true); });
 }
-document.getElementById('thr').addEventListener('input', e => {
-  document.getElementById('thrVal').textContent = (+e.target.value).toFixed(2);
-  render(curStep, /*preserveView=*/true);
-});
+
+// Mapping-line pagination state
+const BATCH_SIZE = 5;
+let batchStart = 0;     // index into the *sorted* atom list
+function prevBatch() { batchStart = Math.max(0, batchStart - BATCH_SIZE); render(curStep, true); }
+function nextBatch() {
+  const d = DATA[curStep]; if (!d) return;
+  if (batchStart + BATCH_SIZE < d.n_atoms) batchStart += BATCH_SIZE;
+  render(curStep, true);
+}
 
 // Pin state — survives across renders within the same step.
 // pinHandles tracks the 3Dmol shape/label objects per pinned atom so we
@@ -289,45 +305,23 @@ function render(name, preserveView=false) {
   if (isStepChange) {
     pinned = new Set();
     pinHandles = new Map();
+    batchStart = 0;
   }
   curStep = name;
   const d = DATA[name];
-  // List spectator atoms whose displacement exceeds the threshold —
-  // these are the suspect-mismapping signal.
-  const thr = +document.getElementById('thr').value;
-  const coreSet = new Set(d.core_R || []);
-  const suspect = [];
-  for (let i = 0; i < d.deltas.length; i++) {
-    if (!coreSet.has(i) && d.deltas[i] > thr) suspect.push([i, d.deltas[i]]);
-  }
-  suspect.sort((a, b) => b[1] - a[1]);
-  const suspectStr = suspect.length === 0
-      ? '<span style="color:#080">none above threshold</span>'
-      : suspect.slice(0, 8).map(([k, dl]) => `<b style="color:#a30">#${k}</b>=${dl.toFixed(2)}Å`).join(', ')
-        + (suspect.length > 8 ? ` (+${suspect.length-8} more)` : '');
-
   document.getElementById('info').innerHTML =
     `<b>${name}</b> · ${d.n_atoms} atoms · `
     + `PQ-mapped ${d.pq_mapped} · fallback ${d.fallback} · missing ${d.missing} · `
     + `broken = ${d.broken.length} · formed = ${d.formed_R.length} · `
     + `core (R) = ${d.core_R.length} · `
-    + `Kabsch on ${d.anchor_kind} (n=${(d.anchors||[]).length}) · `
-    + `spectator disp: mean=${d.spec_disp_mean.toFixed(3)}Å, max=${d.spec_disp_max.toFixed(3)}Å`
-    + `<br>suspect spectator atoms (Δ > ${thr.toFixed(2)}Å): ${suspectStr}`;
+    + `spectator disp: mean=${d.spec_disp_mean.toFixed(3)}Å, max=${d.spec_disp_max.toFixed(3)}Å`;
   if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); }
   viewer = $3Dmol.createViewer('v', {backgroundColor: 'white'});
 
-  // Always draw R (the reference structure) cleanly in CPK.
+  // Side-by-side: R (CPK) on the left, P (CPK) translated to the right.
   viewer.addModel(buildXyz(d.elements_R, d.coords_R), 'xyz');
-  viewer.setStyle({model: 0}, {stick: {radius: 0.14}, sphere: {scale: 0.25}});
-
-  // Optionally draw P as a translucent pink "ghost" overlay (off by default).
-  const showP = document.getElementById('showP').checked;
-  if (showP) {
-    viewer.addModel(buildXyz(d.elements_P, d.coords_P), 'xyz');
-    viewer.setStyle({model: 1}, {stick: {radius: 0.07, color: '#cc4488', opacity: 0.45},
-                                 sphere: {scale: 0.14, color: '#cc4488', opacity: 0.45}});
-  }
+  viewer.addModel(buildXyz(d.elements_P, d.coords_P), 'xyz');
+  viewer.setStyle({}, {stick: {radius: 0.12}, sphere: {scale: 0.22}});
 
   // Build a set of broken/formed atom indices
   const broken_atoms = new Set();
@@ -335,21 +329,20 @@ function render(name, preserveView=false) {
   const formed_atoms = new Set();
   for (const [i, j] of d.formed_R) { formed_atoms.add(i); formed_atoms.add(j); }
 
-  // Halo for reactive atoms: a soft-coloured sphere at the R position
-  // so the eye groups "this is a reactive atom" before reading the
-  // mapping cylinder's direction.
+  // Halo reactive atoms in BOTH R and P
   for (const i of broken_atoms) {
-    const r = d.coords_R[i];
-    viewer.addSphere({center:{x:r[0],y:r[1],z:r[2]}, radius: 0.40,
-                       color: '#cc3333', opacity: 0.45});
+    for (const c of [d.coords_R[i], d.coords_P[i]]) {
+      viewer.addSphere({center:{x:c[0],y:c[1],z:c[2]}, radius: 0.35,
+                         color: '#cc3333', opacity: 0.45});
+    }
   }
   for (const i of formed_atoms) {
-    const r = d.coords_R[i];
-    viewer.addSphere({center:{x:r[0],y:r[1],z:r[2]}, radius: 0.40,
-                       color: '#2a8a2a', opacity: 0.45});
+    for (const c of [d.coords_R[i], d.coords_P[i]]) {
+      viewer.addSphere({center:{x:c[0],y:c[1],z:c[2]}, radius: 0.35,
+                         color: '#2a8a2a', opacity: 0.45});
+    }
   }
-  // Broken / formed bond cylinders inside R (always shown — they are
-  // the "reaction story" and are referenced in the mapping check).
+  // Broken bonds in R (left side) and formed bonds in P (right side)
   for (const [a, b] of d.broken) {
     const ra = d.coords_R[a], rb = d.coords_R[b];
     viewer.addCylinder({start:{x:ra[0],y:ra[1],z:ra[2]},
@@ -357,61 +350,65 @@ function render(name, preserveView=false) {
                          color:'red', radius: 0.10, dashed: true});
   }
   for (const [a, b] of d.formed_R) {
-    const pa = showP ? d.coords_P[a] : d.coords_R[a];
-    const pb = showP ? d.coords_P[b] : d.coords_R[b];
+    const pa = d.coords_P[a], pb = d.coords_P[b];
     viewer.addCylinder({start:{x:pa[0],y:pa[1],z:pa[2]},
                          end:{x:pb[0],y:pb[1],z:pb[2]},
                          color:'green', radius: 0.10, dashed: true});
   }
 
-  // Mapping arrows: by default we draw only the lines that matter —
-  // (a) reactive atoms (red/green, expected motion), and
-  // (b) suspect spectators (Δ > threshold, drawn fat in dark red).
-  // Toggle "all mapping lines" to draw the full set color-coded by length.
-  const showAll = document.getElementById('allLines').checked;
-  const baseRadius = +document.getElementById('rad').value;
+  // Build the *atom list to inspect*, sorted per the dropdown.
+  // batchStart picks a window of BATCH_SIZE=5 from this list.
+  const sortMode = document.getElementById('sortBy').value;
+  let order = Array.from({length: d.n_atoms}, (_, i) => i);
+  if (sortMode === 'delta_desc') order.sort((a, b) => d.deltas[b] - d.deltas[a]);
+  else if (sortMode === 'delta_asc') order.sort((a, b) => d.deltas[a] - d.deltas[b]);
+  // 'index' → already in 0..N order
+
+  if (batchStart >= d.n_atoms) batchStart = 0;
+  const showFrom = batchStart;
+  const showTo = Math.min(batchStart + BATCH_SIZE, d.n_atoms);
+  const inBatch = new Set(order.slice(showFrom, showTo));
+
+  // Reactive atoms can be force-shown (toggle) so they're always visible
+  // alongside whatever batch the user is looking at.
+  const alwaysReactive = document.getElementById('alwaysReactive').checked;
+  if (alwaysReactive) {
+    for (const i of broken_atoms) inBatch.add(i);
+    for (const i of formed_atoms) inBatch.add(i);
+  }
+
+  // Update batch info text
+  document.getElementById('batchInfo').textContent =
+      `${showFrom + 1}–${showTo} / ${d.n_atoms}  (sorted: ${sortMode.replace('_',' ')})`;
+
+  // Mapping cylinders: only for the current batch + (optionally) reactive.
+  // Color: red/green for reactive, dark red for "long Δ" suspects, grey
+  // for short displacements.
   function lengthColor(L) {
-    if (L < 0.10) return '#aaccff';
-    if (L < 0.25) return '#7aa6cc';
-    if (L < 0.50) return '#888';
-    if (L < 1.00) return '#dd8800';
+    if (L < 0.10) return '#888';
+    if (L < 0.50) return '#dd8800';
     return '#aa0033';
   }
-  for (let i = 0; i < d.coords_R.length; i++) {
+  for (const i of inBatch) {
     const r = d.coords_R[i], p = d.coords_P[i];
     const L = d.deltas[i];
     const isBroken = broken_atoms.has(i);
     const isFormed = formed_atoms.has(i);
-    const isSuspect = (!isBroken && !isFormed) && (L > thr);
-    if (!(showAll || isBroken || isFormed || isSuspect)) continue;
     let color, radius, opacity;
-    if (isBroken) {
-      color = '#cc3333'; radius = baseRadius * 1.3; opacity = 0.85;
-    } else if (isFormed) {
-      color = '#2a8a2a'; radius = baseRadius * 1.3; opacity = 0.85;
-    } else if (isSuspect) {
-      // Suspect spectator — make it impossible to miss
-      color = '#aa0033'; radius = baseRadius * 3.0; opacity = 0.95;
-    } else {
-      color = lengthColor(L); radius = baseRadius * 0.7; opacity = 0.55;
-    }
-    viewer.addCylinder({
-      start:{x:r[0], y:r[1], z:r[2]},
-      end:  {x:p[0], y:p[1], z:p[2]},
-      color: color, radius: radius, opacity: opacity});
-    // Draw a small arrowhead-style sphere at the P end for suspect/reactive
-    if (isBroken || isFormed || isSuspect) {
-      viewer.addSphere({center:{x:p[0], y:p[1], z:p[2]}, radius: radius*1.4,
-                        color: color, opacity: 0.9});
-    }
-  }
-  // Halo on suspect spectator atoms in R (dark red ring)
-  for (let i = 0; i < d.deltas.length; i++) {
-    if (broken_atoms.has(i) || formed_atoms.has(i)) continue;
-    if (d.deltas[i] > thr) {
-      const r = d.coords_R[i];
-      viewer.addSphere({center:{x:r[0], y:r[1], z:r[2]}, radius: 0.55,
-                        color:'#aa0033', opacity: 0.40});
+    if (isBroken) { color = '#cc3333'; radius = 0.06; opacity = 0.85; }
+    else if (isFormed) { color = '#2a8a2a'; radius = 0.06; opacity = 0.85; }
+    else { color = lengthColor(L); radius = 0.05; opacity = 0.85; }
+    viewer.addCylinder({start:{x:r[0],y:r[1],z:r[2]},
+                        end:  {x:p[0],y:p[1],z:p[2]},
+                        color: color, radius: radius, opacity: opacity});
+    // Atom-# labels at BOTH ends of the line, regardless of the global
+    // "atom #" toggle, so the user can read the correspondence.
+    for (const c of [r, p]) {
+      viewer.addLabel(`#${i}`,
+        {position:{x:c[0], y:c[1], z:c[2] + 0.5},
+         fontSize: 12, fontColor: 'white',
+         backgroundColor: isBroken ? '#cc3333' : (isFormed ? '#2a8a2a' : '#444'),
+         backgroundOpacity: 0.9, showBackground: true, inFront: true});
     }
   }
 
