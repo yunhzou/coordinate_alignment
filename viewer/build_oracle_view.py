@@ -51,7 +51,11 @@ def cos_sim_disp(a, b):
     return abs(float(a @ b)) / (na * nb)
 
 
-SRC_DIR = PROJECT_ROOT / "out" / "mode_viewer"
+# Source priority: live out/mode_viewer if populated, else fall back
+# to the cleaned per-step HTMLs in appendix_perparation/.
+_LIVE   = PROJECT_ROOT / "out" / "mode_viewer"
+_MIRROR = PROJECT_ROOT / "appendix_perparation" / "viewer" / "mode_viewer"
+SRC_DIR = _LIVE if any(_LIVE.glob('*.html')) else _MIRROR
 
 
 def load_step_payload(html_path):
@@ -342,7 +346,9 @@ def main():
     ap.add_argument('--out', type=str, default=None,
                     help='Output filename (default: oracle_view_top<k>.html)')
     args = ap.parse_args()
-    out_html = SRC_DIR / (args.out or f'oracle_view_top{args.top_k}.html')
+    OUT_DIR = (PROJECT_ROOT / "appendix_perparation" / "viewer") if SRC_DIR == _MIRROR else SRC_DIR
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_html = OUT_DIR / (args.out or f'oracle_view_top{args.top_k}.html')
     t0 = time.time()
     files = sorted(SRC_DIR.glob("*.html"))
     files = [f for f in files
