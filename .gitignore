@@ -20,8 +20,17 @@ out/*.log
 out_initial_posing_mode/
 my_idea.md
 
-# Benchmark data — too large to ship
+# Benchmark data — too large to ship (also the symlink under repo root)
 Benchmark_Guesses_Collective_Package/
+/Benchmark_Guesses_Collective_Package
+
+# Heavy generated viewer payloads + raw xTB frequency outputs
+appendix_perparation/viewer/mode_viewer/
+appendix_perparation/viewer/oracle_view*.html
+appendix_perparation/viewer/alignment_view.html
+appendix_perparation/viewer/midpoint_view.html
+appendix_perparation/viewer/bgcp_pq_viewer.html
+appendix_perparation/xtb_frequency_calculations/
 
 # Aligned coordinate dataset (regenerable from work_modes cache)
 Benchmark_Guesses_Coordinate_Aligned_Version/
@@ -30,3 +39,13 @@ work_align/
 # Mode viewer/analysis output (regenerable from work_modes cache)
 out/mode_viewer/
 out/mode_analysis/
+
+# Trace HTMLs (regenerable from build_large_molecule_traces.py / build_pq_regression_traces.py)
+out/large_alignment_traces/
+out/regressions/
+
+# Nested paper repo (own git history)
+ts_discovery_paper/
+
+# Local zip exports
+*.zip
