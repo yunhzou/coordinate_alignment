@@ -1,0 +1,397 @@
+"""
+Single-step end-to-end view for El Agente Disco.
+
+Pipeline (one step):
+  1. atom alignment (R <-> P)              [rxn_core_pq, cached]
+  2. core-atom identification               [classify_bonds]
+  3. xtb Hessian + normal modes per IG     [cached parses]
+  4. picked imaginary mode per IG           [max bond_overlap, n_imag<=2 filter]
+  5. rk_clean_v2 score per IG               [b * (1+wr*r) * (1+wc*c) / n_imag^p]
+  6. one HTML page: R | P | GT (top row) +
+     20 IG panels in a grid, sorted by score descending. Each IG panel
+     auto-animates its picked mode by default; if the filter rejected
+     the IG, the panel renders as a static structure with a "no valid
+     mode" badge. Every panel shows score, beta, rho, kappa, n_imag.
+
+Reuses the per-step mode_viewer payload at
+  appendix_perparation/viewer/mode_viewer/<step>.html
+which already contains all 20 IGs + groundtruth with their parsed modes
+and reactive-bond lists.
+
+Usage:
+  python viewer/build_ranked_view_one_step.py [STEP_NAME]
+  default STEP_NAME = pr16.carbocation_ts11  (18 atoms, clean 1/1 bonds)
+
+Output:
+  out/ranked_views/<step>.html
+"""
+from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve().parent
+_sys.path.insert(0, str(_HERE.parent / "src"))
+_sys.path.insert(0, str(_HERE))
+PROJECT_ROOT = _HERE.parent
+
+import json
+import re
+import sys
+from pathlib import Path
+
+
+MODE_VIEWER_DIR = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'mode_viewer'
+BGCP_ROOT = PROJECT_ROOT / 'appendix_perparation' / 'Pure_Geometries_Elementary_Step' / 'Benchmark_Guesses_Collective_Package'
+OUT_DIR = PROJECT_ROOT / 'out' / 'ranked_views'
+
+# rk_clean_v2 hyperparameters (must match src/ranker.py)
+W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
+MIN_RXN, MAX_IMAG = 0.10, 2
+
+
+def read_xyz(path: Path):
+    lines = path.read_text().strip().splitlines()
+    n = int(lines[0])
+    el, xyz = [], []
+    for ln in lines[2:2 + n]:
+        parts = ln.split()
+        el.append(parts[0])
+        xyz.append([float(x) for x in parts[1:4]])
+    return el, xyz
+
+
+def load_step_payload(step):
+    html = MODE_VIEWER_DIR / f'{step}.html'
+    if not html.exists():
+        raise SystemExit(f"per-step payload not found: {html}\n"
+                         f"Run viewer/build_mode_viewer.py first to populate "
+                         f"appendix_perparation/viewer/mode_viewer/.")
+    text = html.read_text()
+    m = re.search(r"const DATA = (\{.*?\});\n", text, re.DOTALL)
+    if not m:
+        raise SystemExit(f"could not find DATA block in {html}")
+    return json.loads(m.group(1))
+
+
+def imag_modes(ts):
+    return [m for m in ts.get('modes', []) if m.get('freq', 0) < 0]
+
+
+def pick_and_score(ts):
+    """Return (passes_filter, picked_mode, score, b, r, c, n_imag).
+    picked_mode is the imag mode we'd display; None if no imag modes."""
+    imag = imag_modes(ts)
+    n_imag = len(imag)
+    if not imag:
+        return False, None, 0.0, 0.0, 0.0, 0.0, 0
+    picked = max(imag, key=lambda m: m.get('bond_overlap', 0.0))
+    b = picked.get('bond_overlap', 0.0)
+    r = picked.get('rxn_overlap',  0.0)
+    c = picked.get('core_fraction',0.0)
+    score = b * (1 + W_RXN * r) * (1 + W_CORE * c) / max(n_imag, 1) ** IMAG_PEN
+    passes = (n_imag <= MAX_IMAG and r >= MIN_RXN)
+    return passes, picked, score, b, r, c, n_imag
+
+
+def build_view_data(step):
+    payload = load_step_payload(step)
+    n_atoms = payload['n_atoms']
+
+    gt = next((t for t in payload['ts_list']
+               if t['label'] == 'groundtruth' and t.get('modes')), None)
+    if gt is None:
+        raise SystemExit(f"no groundtruth with modes in {step}")
+    igs = [t for t in payload['ts_list']
+           if t['label'] != 'groundtruth']
+
+    # Score every IG
+    ig_records = []
+    for ig in igs:
+        passes, picked, score, b, r, c, n_imag = pick_and_score(ig)
+        ig_records.append({
+            'label': ig['label'],
+            'xyz_elements': ig['xyz_elements'],
+            'xyz_coords': ig['xyz_coords'],
+            'picked_disp': picked['disp'] if picked else None,
+            'picked_freq': float(picked['freq']) if picked else None,
+            'passes_filter': passes,
+            'score': score,
+            'beta': b,
+            'rho':  r,
+            'kappa': c,
+            'n_imag': n_imag,
+        })
+    # Sort: passes-filter first (descending score), then failed-filter (descending score)
+    ig_records.sort(key=lambda x: (-int(x['passes_filter']), -x['score']))
+
+    # GT picked mode (for the GT panel)
+    _, gt_picked, _, _, _, _, gt_n_imag = pick_and_score(gt)
+
+    # R, P xyz
+    r_dir = BGCP_ROOT / step / 'reactants'
+    p_dir = BGCP_ROOT / step / 'products'
+    R = sorted(r_dir.glob('*.xyz'))
+    P = sorted(p_dir.glob('*.xyz'))
+    if not R or not P:
+        raise SystemExit(f"missing R or P xyz under {BGCP_ROOT / step}")
+    elR, xyzR = read_xyz(R[0])
+    elP, xyzP = read_xyz(P[0])
+
+    return {
+        'step': step,
+        'n_atoms': n_atoms,
+        'core_atoms': payload.get('core_atoms', []),
+        'broken_bonds': payload.get('broken_bonds', []),
+        'formed_bonds_R': payload.get('formed_bonds_R', []),
+        'reactant':   {'xyz_elements': elR, 'xyz_coords': xyzR},
+        'product':    {'xyz_elements': elP, 'xyz_coords': xyzP},
+        'groundtruth': {
+            'xyz_elements': gt['xyz_elements'],
+            'xyz_coords':   gt['xyz_coords'],
+            'picked_disp':  gt_picked['disp'] if gt_picked else None,
+            'picked_freq':  float(gt_picked['freq']) if gt_picked else None,
+            'n_imag':       gt_n_imag,
+        },
+        'igs': ig_records,
+    }
+
+
+HTML = r"""<!doctype html>
+<html><head><meta charset="utf-8">
+<title>{title}</title>
+<script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<style>
+ html, body {{ margin:0; padding:0; }}
+ body {{ font-family:-apple-system,sans-serif; background:#fafafa; padding:14px; box-sizing:border-box; }}
+ h2 {{ margin:0 0 4px; font-size:18px; }}
+ .sub {{ color:#444; font-size:13px; margin-bottom:14px; }}
+ .legend span {{ display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-right:6px; }}
+ .leg-broken {{ background:#fcd3d3; color:#a00; }}
+ .leg-formed {{ background:#cdebd0; color:#070; }}
+ .leg-mode   {{ background:#d6e7ff; color:#024; }}
+ .leg-fail   {{ background:#eee;    color:#666; }}
+ .ref-row {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }}
+ .ig-grid {{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }}
+ .panel  {{ background:white; border:1px solid #ddd; border-radius:6px; padding:6px 8px 8px; }}
+ .panel.fail {{ background:#f7f7f7; }}
+ .ph    {{ display:flex; justify-content:space-between; align-items:baseline; font-size:12px; margin-bottom:4px; }}
+ .ph .lbl {{ font-weight:600; font-size:13px; }}
+ .ph .rk  {{ font-family:ui-monospace,monospace; color:#024; }}
+ .panel.fail .ph .rk {{ color:#888; }}
+ .vw    {{ position:relative; width:100%; height:230px; }}
+ .ref-row .vw {{ height:280px; }}
+ .vwbox {{ position:absolute; inset:0; }}
+ .meta  {{ font-family:ui-monospace,monospace; font-size:11px; color:#444; padding:3px 0 0; line-height:1.4; }}
+ .meta b {{ color:#024; }}
+ .badge-fail {{ display:inline-block; background:#eee; color:#666; padding:1px 6px; border-radius:3px; font-size:11px; margin-left:6px; }}
+</style>
+</head>
+<body>
+<h2>{title}</h2>
+<div class="sub">
+  N atoms: <b>{n_atoms}</b> &nbsp;|&nbsp;
+  broken: <b>{n_broken}</b> &nbsp;|&nbsp;
+  formed: <b>{n_formed}</b> &nbsp;|&nbsp;
+  core atoms: <b>{n_core}</b><br>
+  <span class="legend">
+    <span class="leg-broken">broken bond</span>
+    <span class="leg-formed">formed bond</span>
+    <span class="leg-mode">mode arrow (core atoms)</span>
+    <span class="leg-fail">no valid imag mode (filter fail)</span>
+  </span>
+  <br>
+  IGs are sorted by ranker score:
+  <code>S = &beta; (1 + w_r &rho;) (1 + w_c &kappa;) / n_imag^p</code>
+  with <code>w_r=1.0, w_c=0.2, p=0.3</code>; filter requires
+  <code>1 &le; n_imag &le; 2</code> and <code>&rho; &ge; 0.10</code>.
+</div>
+
+<div class="ref-row">
+  <div class="panel"><div class="ph"><span class="lbl">Reactant</span><span class="rk">static</span></div>
+    <div class="vw"><div id="vw_R" class="vwbox"></div></div></div>
+  <div class="panel"><div class="ph"><span class="lbl">Product</span><span class="rk">static</span></div>
+    <div class="vw"><div id="vw_P" class="vwbox"></div></div></div>
+  <div class="panel"><div class="ph"><span class="lbl">Ground-truth TS</span>
+    <span class="rk">freq {gt_freq_str} cm&#x207B;&#xB9;</span></div>
+    <div class="vw"><div id="vw_GT" class="vwbox"></div></div>
+    <div class="meta">n_imag = <b>{gt_n_imag}</b></div></div>
+</div>
+
+<div class="ig-grid" id="grid"></div>
+
+<script>
+const DATA = {data_json};
+
+function buildBody(elements, xyz) {{
+  const n = xyz.length;
+  let s = `${{n}}\nframe\n`;
+  for (let i = 0; i < n; i++) {{
+    s += `${{elements[i]}}  ${{xyz[i][0].toFixed(6)}}  ${{xyz[i][1].toFixed(6)}}  ${{xyz[i][2].toFixed(6)}}\n`;
+  }}
+  return s;
+}}
+function buildBodyAt(elements, xyz, disp, scale) {{
+  const n = xyz.length;
+  let s = `${{n}}\nframe\n`;
+  for (let i = 0; i < n; i++) {{
+    const x = xyz[i][0] + scale * disp[i][0];
+    const y = xyz[i][1] + scale * disp[i][1];
+    const z = xyz[i][2] + scale * disp[i][2];
+    s += `${{elements[i]}}  ${{x.toFixed(6)}}  ${{y.toFixed(6)}}  ${{z.toFixed(6)}}\n`;
+  }}
+  return s;
+}}
+
+function decorateBonds(viewer) {{
+  const atoms = viewer.selectedAtoms({{}});
+  for (const [i, j] of DATA.broken_bonds) {{
+    if (i < atoms.length && j < atoms.length) {{
+      const a = atoms[i], b = atoms[j];
+      viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
+                          color:'red', radius:0.08, dashed:true}});
+    }}
+  }}
+  for (const [i, j] of DATA.formed_bonds_R) {{
+    if (i < atoms.length && j < atoms.length) {{
+      const a = atoms[i], b = atoms[j];
+      viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
+                          color:'green', radius:0.08, dashed:true}});
+    }}
+  }}
+}}
+function drawArrows(viewer, xyz, disp) {{
+  const atoms = viewer.selectedAtoms({{}});
+  for (const i of DATA.core_atoms) {{
+    if (i >= atoms.length || !disp || !disp[i]) continue;
+    const d = disp[i];
+    const len = Math.hypot(d[0], d[1], d[2]);
+    if (len < 1e-3) continue;
+    const a = atoms[i];
+    viewer.addArrow({{
+      start:{{x:a.x, y:a.y, z:a.z}},
+      end:  {{x:a.x + d[0]*1.5, y:a.y + d[1]*1.5, z:a.z + d[2]*1.5}},
+      color:'#0066cc', radius:0.06,
+    }});
+  }}
+}}
+
+// Static (R, P)
+function makeStatic(divId, ts, withBonds=true) {{
+  const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
+  v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
+  v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
+  if (withBonds) decorateBonds(v);
+  v.zoomTo();
+  v.render();
+  return v;
+}}
+
+// Animated panel (GT, IG-with-picked-mode)
+function makeAnimated(divId, ts, disp) {{
+  const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
+  v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
+  v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
+  decorateBonds(v);
+  drawArrows(v, ts.xyz_coords, disp);
+  v.zoomTo();
+  v.render();
+
+  // animation loop
+  let t = 0;
+  const period = 30;        // frames per cycle
+  const amp = 0.6;
+  setInterval(() => {{
+    t = (t + 1) % period;
+    const scale = amp * Math.sin(2 * Math.PI * t / period);
+    v.removeAllModels();
+    v.removeAllShapes();
+    v.addModel(buildBodyAt(ts.xyz_elements, ts.xyz_coords, disp, scale), 'xyz');
+    v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
+    decorateBonds(v);
+    drawArrows(v, ts.xyz_coords, disp);
+    v.render();
+  }}, 60);
+  return v;
+}}
+
+window.addEventListener('load', () => {{
+  // Reference row
+  makeStatic('vw_R', DATA.reactant);
+  makeStatic('vw_P', DATA.product);
+  if (DATA.groundtruth.picked_disp) {{
+    makeAnimated('vw_GT', DATA.groundtruth, DATA.groundtruth.picked_disp);
+  }} else {{
+    makeStatic('vw_GT', DATA.groundtruth);
+  }}
+
+  // IG grid
+  const grid = document.getElementById('grid');
+  DATA.igs.forEach((ig, i) => {{
+    const div = document.createElement('div');
+    div.className = 'panel' + (ig.passes_filter ? '' : ' fail');
+    const failBadge = ig.passes_filter ? '' :
+      `<span class="badge-fail">filter fail</span>`;
+    const freqStr = ig.picked_freq != null ? ig.picked_freq.toFixed(0) + 'i' : '—';
+    div.innerHTML = `
+      <div class="ph">
+        <span class="lbl">${{ig.label}}${{failBadge}}</span>
+        <span class="rk">S = ${{ig.score.toFixed(3)}}</span>
+      </div>
+      <div class="vw"><div id="vw_ig${{i}}" class="vwbox"></div></div>
+      <div class="meta">
+        <b>&beta;</b>=${{ig.beta.toFixed(3)}} &nbsp;
+        <b>&rho;</b>=${{ig.rho.toFixed(3)}} &nbsp;
+        <b>&kappa;</b>=${{ig.kappa.toFixed(3)}} &nbsp;
+        <b>n_imag</b>=${{ig.n_imag}} &nbsp;
+        <b>freq</b>=${{freqStr}} cm⁻¹
+      </div>`;
+    grid.appendChild(div);
+    if (ig.picked_disp) {{
+      makeAnimated(`vw_ig${{i}}`, ig, ig.picked_disp);
+    }} else {{
+      makeStatic(`vw_ig${{i}}`, ig);
+    }}
+  }});
+}});
+</script>
+</body></html>
+"""
+
+
+def main():
+    step = sys.argv[1] if len(sys.argv) > 1 else 'pr16.carbocation_ts11'
+    print(f"Building one-step ranked view for: {step}")
+    data = build_view_data(step)
+    print(f"  n_atoms={data['n_atoms']}, "
+          f"broken={len(data['broken_bonds'])}, formed={len(data['formed_bonds_R'])}, "
+          f"core_atoms={len(data['core_atoms'])}, "
+          f"IGs={len(data['igs'])}")
+
+    passing = sum(1 for ig in data['igs'] if ig['passes_filter'])
+    print(f"  IGs passing filter: {passing}/{len(data['igs'])}")
+    print(f"  top-3 by score:")
+    for ig in data['igs'][:3]:
+        print(f"    {ig['label']:>8s}  S={ig['score']:.3f}  "
+              f"beta={ig['beta']:.3f}  rho={ig['rho']:.3f}  "
+              f"kappa={ig['kappa']:.3f}  n_imag={ig['n_imag']}  "
+              f"{'PASS' if ig['passes_filter'] else 'fail'}")
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = OUT_DIR / f"{step}.html"
+    gt_freq_str = (f"{data['groundtruth']['picked_freq']:.0f}i"
+                   if data['groundtruth']['picked_freq'] else "—")
+    html = HTML.format(
+        title=f"Ranked view — {step}",
+        n_atoms=data['n_atoms'],
+        n_broken=len(data['broken_bonds']),
+        n_formed=len(data['formed_bonds_R']),
+        n_core=len(data['core_atoms']),
+        gt_freq_str=gt_freq_str,
+        gt_n_imag=data['groundtruth']['n_imag'],
+        data_json=json.dumps(data),
+    )
+    out_path.write_text(html)
+    print(f"\nwrote {out_path}  ({out_path.stat().st_size/1e6:.2f} MB)")
+
+
+if __name__ == '__main__':
+    main()

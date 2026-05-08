@@ -167,6 +167,24 @@ A single HTML page with a dropdown over all 155 steps, R/P 3D side-by-side,
 broken (red) / formed (green) bond cylinders, and regression markers vs.
 the old baseline.
 
+### 4a. Build the one-step ranked view (R + P + 20 IGs, sorted by score)
+
+End-to-end demo for a single step: alignment + core-atom identification +
+xtb Hessian + picked imaginary mode + ranker score + a single HTML page
+with R, P, GT, and all 20 IG panels (animated on their picked mode,
+sorted by descending ranker score; IGs that fail the
+`n_imag <= 2 / rho >= 0.10` filter are shown as static structures).
+
+```bash
+python viewer/build_ranked_view_one_step.py [STEP_NAME]
+# default STEP_NAME = pr16.carbocation_ts11  (18 atoms, 1/1 broken/formed)
+# outputs: out/ranked_views/<step>.html
+```
+
+Reuses the per-step mode_viewer payload at
+`appendix_perparation/viewer/mode_viewer/<step>.html` (so step 4 below must
+have been run for `<step>` first).
+
 ### 4. Build the per-step three-panel mode viewer
 
 ```bash

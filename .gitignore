@@ -49,3 +49,6 @@ ts_discovery_paper/
 
 # Local zip exports
 *.zip
+
+# Per-step ranked viewer outputs (regenerable)
+out/ranked_views/
