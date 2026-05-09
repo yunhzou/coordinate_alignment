@@ -231,11 +231,13 @@ def process_step(step_dir: Path):
         freqs = np.asarray(r["freqs"], float)
         modes_TS = np.asarray(r["modes_TS"], float)
 
-        # Align IG<->R
+        # Align IG<->R, asking for ALL equally-good branches so we can
+        # pick the mapping that maximizes the ranker score (rather than
+        # using whichever branch happened to sort first under the
+        # alignment-only score, which doesn't see chemistry).
         try:
-            it = align_from_arrays(elR, xyzR, wboR, elT, xyzT, wboT)
-            mapping_RT = dict(it["mapping"])
-            mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, mapping_RT)
+            it = align_from_arrays(elR, xyzR, wboR, elT, xyzT, wboT,
+                                   return_all=True)
         except Exception as e:
             print(f"    align fail for {label}: {e}")
             ig_records.append({
@@ -247,19 +249,7 @@ def process_step(step_dir: Path):
             })
             continue
 
-        modes_R = reindex_modes_to_R(modes_TS, mapping_RT, n_R)
-        sq = (modes_R ** 2).sum(axis=2)
-        total = sq.sum(axis=1)
-        core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
-        kappa = np.where(total > 1e-12, core_e / total, 0.0)
-        rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
-        # IG xyz expressed in R-frame (for bond-reaction vector)
-        ts_xyz_in_R = np.zeros_like(np.asarray(xyzR))
-        for r_idx, t_idx in mapping_RT.items():
-            ts_xyz_in_R[r_idx] = xyzT[t_idx]
-        V = bond_reaction_vector(ts_xyz_in_R, broken_R, formed_R)
-        beta = bond_overlap_per_mode(modes_R, V)
-
+        # Precompute the imag-mode list once (independent of mapping).
         imag_idx = list(np.where(freqs < 0)[0])
         n_imag = len(imag_idx)
         if n_imag == 0:
@@ -270,15 +260,49 @@ def process_step(step_dir: Path):
                 "xyz_elements": elT, "xyz_coords": xyzT.tolist(),
             })
             continue
-        # Pick max-bond_overlap imag mode (in R-frame indexing).
-        # NO n_imag-count filter: every IG with >=1 imag mode gets ranked
-        # and animated; the score formula already down-weights large n_imag
-        # via the / n_imag^p term.
-        picked_k = max(imag_idx, key=lambda k: beta[k])
-        b = float(beta[picked_k]); r_ = float(rho[picked_k]); c = float(kappa[picked_k])
-        score = b * (1 + W_RXN * r_) * (1 + W_CORE * c) / max(n_imag, 1) ** IMAG_PEN
-        # Render the picked mode in R-frame on R coords (so animation
-        # uses consistent atom indexing across panels).
+
+        # Try every alignment branch; keep the one whose picked-mode
+        # score is highest. (Different branches differ only in atom-to-
+        # atom correspondence; broken / formed / chir are the same.)
+        all_branches = it.get("all_scored", [])
+        if not all_branches:
+            all_branches = [(None, dict(it["mapping"]), None, None, None)]
+        # De-duplicate equivalent mappings cheaply.
+        seen = set()
+        best = None  # (score, b, r, c, picked_k, modes_R, ts_xyz_in_R)
+        for (_, br_mapping, _, _, _) in all_branches:
+            mkey = tuple(sorted(dict(br_mapping).items()))
+            if mkey in seen:
+                continue
+            seen.add(mkey)
+            mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT,
+                                              dict(br_mapping))
+            modes_R = reindex_modes_to_R(modes_TS, mapping_RT, n_R)
+            sq = (modes_R ** 2).sum(axis=2)
+            total = sq.sum(axis=1)
+            core_e = (sq[:, core_R].sum(axis=1)
+                      if core_R else np.zeros(modes_R.shape[0]))
+            kappa = np.where(total > 1e-12, core_e / total, 0.0)
+            rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
+            ts_xyz_in_R = np.zeros_like(np.asarray(xyzR))
+            for r_idx, t_idx in mapping_RT.items():
+                ts_xyz_in_R[r_idx] = xyzT[t_idx]
+            V = bond_reaction_vector(ts_xyz_in_R, broken_R, formed_R)
+            beta = bond_overlap_per_mode(modes_R, V)
+
+            picked_k = max(imag_idx, key=lambda k: beta[k])
+            b  = float(beta[picked_k])
+            r_ = float(rho[picked_k])
+            c  = float(kappa[picked_k])
+            score = (b * (1 + W_RXN * r_) * (1 + W_CORE * c)
+                     / max(n_imag, 1) ** IMAG_PEN)
+            if best is None or score > best[0]:
+                best = (score, b, r_, c, picked_k, modes_R, ts_xyz_in_R)
+
+        score, b, r_, c, picked_k, modes_R, ts_xyz_in_R = best
+        if len(seen) > 1:
+            print(f"    {label}: {len(seen)} branches; best score={score:.3f}",
+                  flush=True)
         ig_records.append({
             "label": label,
             "score": float(score),
@@ -288,6 +312,7 @@ def process_step(step_dir: Path):
             "picked_disp": modes_R[picked_k].tolist(),
             "xyz_elements": elR,
             "xyz_coords":   ts_xyz_in_R.tolist(),
+            "n_branches": len(seen),
         })
 
     # 5. Sort by score descending. IGs with no imag mode (score=0) sink
