@@ -255,40 +255,56 @@ function buildBodyAt(elements, xyz, disp, scale) {{
   }}
   return s;
 }}
+function xyzAt(xyz, disp, scale) {{
+  const out = new Array(xyz.length);
+  for (let i = 0; i < xyz.length; i++) {{
+    out[i] = [
+      xyz[i][0] + scale * disp[i][0],
+      xyz[i][1] + scale * disp[i][1],
+      xyz[i][2] + scale * disp[i][2],
+    ];
+  }}
+  return out;
+}}
 
 // which: 'broken' (R panel only) | 'formed' (P panel only) | 'both' (TS-like)
-function decorateBonds(viewer, which) {{
-  const atoms = viewer.selectedAtoms({{}});
+// Uses xyz coords directly rather than viewer.selectedAtoms({{}}) so the
+// cylinders can be added before the first render() (selectedAtoms can
+// return empty if called before the viewer is initialized).
+function decorateBonds(viewer, which, xyz) {{
   if (which !== 'formed') {{
     for (const [i, j] of DATA.broken_bonds) {{
-      if (i < atoms.length && j < atoms.length) {{
-        const a = atoms[i], b = atoms[j];
-        viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
-                            color:'red', radius:0.08, dashed:true}});
+      if (i < xyz.length && j < xyz.length) {{
+        viewer.addCylinder({{
+          start:{{x:xyz[i][0], y:xyz[i][1], z:xyz[i][2]}},
+          end:  {{x:xyz[j][0], y:xyz[j][1], z:xyz[j][2]}},
+          color:'red', radius:0.08, dashed:true,
+        }});
       }}
     }}
   }}
   if (which !== 'broken') {{
     for (const [i, j] of DATA.formed_bonds_R) {{
-      if (i < atoms.length && j < atoms.length) {{
-        const a = atoms[i], b = atoms[j];
-        viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
-                            color:'green', radius:0.08, dashed:true}});
+      if (i < xyz.length && j < xyz.length) {{
+        viewer.addCylinder({{
+          start:{{x:xyz[i][0], y:xyz[i][1], z:xyz[i][2]}},
+          end:  {{x:xyz[j][0], y:xyz[j][1], z:xyz[j][2]}},
+          color:'green', radius:0.08, dashed:true,
+        }});
       }}
     }}
   }}
 }}
 function drawArrows(viewer, xyz, disp) {{
-  const atoms = viewer.selectedAtoms({{}});
   for (const i of DATA.core_atoms) {{
-    if (i >= atoms.length || !disp || !disp[i]) continue;
+    if (i >= xyz.length || !disp || !disp[i]) continue;
     const d = disp[i];
     const len = Math.hypot(d[0], d[1], d[2]);
     if (len < 1e-3) continue;
-    const a = atoms[i];
+    const ax = xyz[i][0], ay = xyz[i][1], az = xyz[i][2];
     viewer.addArrow({{
-      start:{{x:a.x, y:a.y, z:a.z}},
-      end:  {{x:a.x + d[0]*1.5, y:a.y + d[1]*1.5, z:a.z + d[2]*1.5}},
+      start:{{x:ax, y:ay, z:az}},
+      end:  {{x:ax + d[0]*1.5, y:ay + d[1]*1.5, z:az + d[2]*1.5}},
       color:'#0066cc', radius:0.06,
     }});
   }}
@@ -299,7 +315,7 @@ function makeStatic(divId, ts, which) {{
   const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
   v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
   v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-  decorateBonds(v, which || 'both');
+  decorateBonds(v, which || 'both', ts.xyz_coords);
   v.zoomTo();
   v.render();
   return v;
@@ -311,7 +327,7 @@ function makeAnimated(divId, ts, disp, which) {{
   const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
   v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
   v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-  decorateBonds(v, w);
+  decorateBonds(v, w, ts.xyz_coords);
   drawArrows(v, ts.xyz_coords, disp);
   v.zoomTo();
   v.render();
@@ -323,12 +339,13 @@ function makeAnimated(divId, ts, disp, which) {{
   setInterval(() => {{
     t = (t + 1) % period;
     const scale = amp * Math.sin(2 * Math.PI * t / period);
+    const cur = xyzAt(ts.xyz_coords, disp, scale);
     v.removeAllModels();
     v.removeAllShapes();
     v.addModel(buildBodyAt(ts.xyz_elements, ts.xyz_coords, disp, scale), 'xyz');
     v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-    decorateBonds(v, w);
-    drawArrows(v, ts.xyz_coords, disp);
+    decorateBonds(v, w, cur);
+    drawArrows(v, cur, disp);
     v.render();
   }}, 60);
   return v;
