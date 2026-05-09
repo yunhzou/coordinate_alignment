@@ -268,11 +268,9 @@ function xyzAt(xyz, disp, scale) {{
 }}
 
 // which: 'broken' (R panel only) | 'formed' (P panel only) | 'both' (TS-like)
-// We mark the reactive event by:
-//   - a fat translucent colored cylinder at the bond axis (visible even
-//     when 3Dmol has auto-drawn a stick bond at that distance, e.g. the
-//     broken bond on the R panel where the bond physically exists);
-//   - a colored halo sphere on each endpoint atom.
+// Solid-color dashed cylinder, radius 0.20 — wider than the default
+// 3Dmol stick-bond radius (0.10) so the marker stays visible on R / P
+// where 3Dmol auto-draws a stick bond on top of the same atom pair.
 // Uses xyz coords directly so cylinders can be added before render().
 function decorateEvent(viewer, xyz, pair, color) {{
   const [i, j] = pair;
@@ -280,13 +278,7 @@ function decorateEvent(viewer, xyz, pair, color) {{
   const a = xyz[i], b = xyz[j];
   viewer.addCylinder({{
     start:{{x:a[0], y:a[1], z:a[2]}}, end:{{x:b[0], y:b[1], z:b[2]}},
-    color:color, radius:0.18, dashed:true, opacity:0.6,
-  }});
-  viewer.addSphere({{
-    center:{{x:a[0], y:a[1], z:a[2]}}, radius:0.32, color:color, opacity:0.45,
-  }});
-  viewer.addSphere({{
-    center:{{x:b[0], y:b[1], z:b[2]}}, radius:0.32, color:color, opacity:0.45,
+    color:color, radius:0.20, dashed:true,
   }});
 }}
 function decorateBonds(viewer, which, xyz) {{
