@@ -16,7 +16,8 @@ Pipeline:
   2. PQ alignment R <-> P -> atom mapping + broken / formed bonds
   3. core_atoms in R-frame; bond-reaction vector V at TS coords
   4. xtb hess on each IG (parallel) -> g98.out -> normal modes
-  5. align each IG <-> R, reindex modes to R-frame
+  5. align each IG <-> R (every branch), reindex modes to R-frame,
+     keep the branch with the highest ranker score
   6. per-mode features: bond_overlap (beta), rxn_overlap (rho),
      core_fraction (kappa); pick max-bond_overlap imag mode per IG
   7. score = beta * (1 + w_r * rho) * (1 + w_c * kappa) / n_imag^p,
@@ -24,9 +25,28 @@ Pipeline:
      on its picked mode; IGs with n_imag == 0 render as static.
      No n_imag-count or rho filter on the viewer side.
 
-Caching: all xtb output lands in
-  work_modes/<workflow_name>/{R, P, hess_iter<i>}/
-so re-runs are cache hits (xtb is the dominant cost).
+Output: every artifact for one step lives under a single folder so the
+step is fully self-contained (you can move / share / delete a step
+without touching anything else):
+
+  out/ranked_views/<workflow_name>/
+    view.html              the ranked viewer (open in any browser)
+    alignment.json         mapping_RP, broken / formed bonds, core atoms,
+                           score-formula constants
+    scores.csv             per-IG ranked scores + features
+    aligned/
+      R.xyz                R geometry (R-frame)
+      P_in_R_frame.xyz     P reindexed to R atom order
+      iter<N>_in_R_frame.xyz  IG reindexed to R atom order
+    modes/
+      <label>_picked.xyz   picked imaginary mode in extended xyz format
+                           (element x y z dx dy dz)
+    xtb/
+      R/, P/               xtb single-point output (xyz, wbo, ...)
+      hess_iter<N>/        xtb --hess output (g98.out, hessian, ...)
+
+The xtb subtree is the cache: re-running the script on the same step
+hits the cache and rebuilds the artifacts in seconds.
 
 Usage:
   python viewer/build_ranked_view_external.py <step_dir> [step_dir ...]
@@ -68,7 +88,6 @@ from analyze_core_modes import (
 from align_bgcp_coords import fill_unmapped_greedy
 
 
-WORK_MODES = PROJECT_ROOT / "work_modes"
 OUT_DIR = PROJECT_ROOT / "out" / "ranked_views"
 
 # Score-formula hyperparameters (same shape as rk_clean_v2 score, but
@@ -164,7 +183,10 @@ def process_step(step_dir: Path):
     uhf = max(0, mult - 1)
     print(f"\n=== {workflow_name}  charge={charge} mult={mult} ===", flush=True)
 
-    cache = WORK_MODES / workflow_name
+    # All artifacts (xtb cache, aligned coords, modes, viewer, JSON, CSV)
+    # live under one self-contained directory.
+    run_dir = OUT_DIR / workflow_name
+    cache = run_dir / "xtb"
     cache.mkdir(parents=True, exist_ok=True)
 
     # 1. R, P single-points
@@ -340,16 +362,26 @@ def process_step(step_dir: Path):
                       "xyz_coords":   xyzP_in_R.tolist()},
         "igs": ig_records,
     }
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = OUT_DIR / f"{workflow_name}.html"
+    # 7. Write all artifacts under run_dir (one self-contained folder).
+    out_path = run_dir / "view.html"
     out_path.write_text(HTML.format(
-        title=f"Ranked view (external) — {workflow_name}",
+        title=f"Ranked view — {workflow_name}",
         n_atoms=n_R,
         n_broken=len(broken_R),
         n_formed=len(formed_R),
         n_core=len(core_R),
         data_json=json.dumps(data),
     ))
+    write_artifacts(
+        run_dir=run_dir,
+        workflow_name=workflow_name, charge=charge, mult=mult,
+        elR=elR, xyzR=np.asarray(xyzR, float),
+        xyzP_in_R=xyzP_in_R,
+        mapping_RP=mapping_RP,
+        broken_R=broken_R, formed_R=formed_R, core_R=core_R,
+        ig_records=ig_records,
+    )
+
     has_mode = sum(1 for ig in ig_records if ig["n_imag"] > 0)
     print(f"  IGs with at least one imag mode: {has_mode}/{len(ig_records)}", flush=True)
     print(f"  top-3 by score:")
@@ -357,8 +389,132 @@ def process_step(step_dir: Path):
         print(f"    {ig['label']:>8s}  S={ig['score']:.3f}  "
               f"beta={ig['beta']:.3f}  rho={ig['rho']:.3f}  "
               f"kappa={ig['kappa']:.3f}  n_imag={ig['n_imag']}", flush=True)
-    print(f"  wrote {out_path}", flush=True)
-    return out_path
+    print(f"  wrote {run_dir}/", flush=True)
+    return run_dir
+
+
+def _xyz_block(elements, xyz, comment=""):
+    n = len(elements)
+    lines = [str(n), comment]
+    for el, c in zip(elements, xyz):
+        lines.append(f"{el:<3s}  {c[0]:14.8f}  {c[1]:14.8f}  {c[2]:14.8f}")
+    return "\n".join(lines) + "\n"
+
+
+def _xyz_with_disp(elements, xyz, disp, comment=""):
+    """Extended xyz: element x y z dx dy dz."""
+    n = len(elements)
+    lines = [str(n), comment]
+    for el, c, d in zip(elements, xyz, disp):
+        lines.append(f"{el:<3s}  {c[0]:14.8f}  {c[1]:14.8f}  {c[2]:14.8f}"
+                     f"   {d[0]:10.6f}  {d[1]:10.6f}  {d[2]:10.6f}")
+    return "\n".join(lines) + "\n"
+
+
+def write_artifacts(run_dir, workflow_name, charge, mult,
+                    elR, xyzR, xyzP_in_R, mapping_RP,
+                    broken_R, formed_R, core_R, ig_records):
+    aligned = run_dir / "aligned"
+    modes_d = run_dir / "modes"
+    aligned.mkdir(exist_ok=True)
+    modes_d.mkdir(exist_ok=True)
+
+    (aligned / "R.xyz").write_text(
+        _xyz_block(elR, xyzR.tolist(),
+                   comment=f"R for {workflow_name} (R-frame)"))
+    (aligned / "P_in_R_frame.xyz").write_text(
+        _xyz_block(elR, xyzP_in_R.tolist(),
+                   comment=f"P (reindexed to R-frame) for {workflow_name}"))
+
+    for ig in ig_records:
+        label = ig["label"]
+        (aligned / f"{label}_in_R_frame.xyz").write_text(
+            _xyz_block(elR, ig["xyz_coords"],
+                       comment=f"{label} (reindexed to R-frame) for {workflow_name}"))
+        if ig.get("picked_disp") is not None:
+            freq = ig["picked_freq"]
+            comment = (f"{label} picked imag mode  "
+                       f"freq={freq:.1f}  "
+                       f"beta={ig['beta']:.3f}  rho={ig['rho']:.3f}  "
+                       f"kappa={ig['kappa']:.3f}  score={ig['score']:.3f}")
+            (modes_d / f"{label}_picked.xyz").write_text(
+                _xyz_with_disp(elR, ig["xyz_coords"], ig["picked_disp"],
+                               comment=comment))
+
+    alignment = {
+        "step": workflow_name,
+        "n_atoms": len(elR),
+        "charge": charge,
+        "multiplicity": mult,
+        "elements_R": elR,
+        "broken_bonds_R":   [list(b) for b in broken_R],
+        "formed_bonds_R":   [list(b) for b in formed_R],
+        "core_atoms_R":     list(core_R),
+        "mapping_RP":       {str(k): int(v) for k, v in mapping_RP.items()},
+        "score_formula": {
+            "form":  "S = beta * (1 + w_r * rho) * (1 + w_c * kappa) / n_imag^p",
+            "w_r": W_RXN, "w_c": W_CORE, "p": IMAG_PEN,
+            "filter": "none (every IG with >=1 imag mode is ranked)",
+        },
+    }
+    (run_dir / "alignment.json").write_text(json.dumps(alignment, indent=2))
+
+    csv_lines = ["rank,label,score,beta,rho,kappa,n_imag,picked_freq,n_branches"]
+    for rank, ig in enumerate(ig_records, 1):
+        freq_str = (f"{ig['picked_freq']:.2f}"
+                    if ig.get('picked_freq') is not None else "")
+        csv_lines.append(
+            f"{rank},{ig['label']},{ig['score']:.4f},{ig['beta']:.4f},"
+            f"{ig['rho']:.4f},{ig['kappa']:.4f},{ig['n_imag']},"
+            f"{freq_str},{ig.get('n_branches', 1)}"
+        )
+    (run_dir / "scores.csv").write_text("\n".join(csv_lines) + "\n")
+
+    (run_dir / "README.md").write_text(f"""# {workflow_name}
+
+End-to-end ranked-view artifacts for one elementary reaction step.
+
+## Layout
+
+```
+view.html              open in any browser; shows R + P + 20 sorted IG panels
+alignment.json         mapping_RP, broken/formed/core (R-frame), score-formula constants
+scores.csv             per-IG ranked features (rank, score, beta, rho, kappa, ...)
+aligned/
+  R.xyz                reactant geometry (R-frame indexing)
+  P_in_R_frame.xyz     product reindexed to R atom order
+  iter<N>_in_R_frame.xyz   IG reindexed to R atom order
+modes/
+  <label>_picked.xyz   picked imaginary mode in extended xyz
+                       (element x y z dx dy dz)
+xtb/
+  R/, P/               xtb GFN2 single-point output (xyz, wbo, ...)
+  hess_iter<N>/        xtb --hess output (g98.out, hessian, vibspectrum, ...)
+```
+
+## Score formula
+
+S = beta * (1 + 1.0 * rho) * (1 + 0.2 * kappa) / n_imag^0.3
+
+- beta = picked-mode displacement projected on broken/formed bond axes
+- rho  = picked-mode core-atom motion projected on R->P direction
+- kappa = fraction of picked-mode energy localized on the reactive core
+
+IGs are ranked by S descending; every IG with at least one imaginary
+mode is animated on its picked imag mode (max-beta among imag modes).
+For each IG we sweep every alignment branch (when the IG<->R mapping
+is set-non-unique) and keep the branch with the highest S, so a
+spectator-symmetry tie can't artificially deflate a good IG.
+
+## Reproducing
+
+```
+python viewer/build_ranked_view_external.py <step_dir>
+```
+
+re-runs the pipeline; the xtb subtree is the cache, so a re-run on the
+same step is a sub-second rebuild of the artifacts.
+""")
 
 
 HTML = r"""<!doctype html>
