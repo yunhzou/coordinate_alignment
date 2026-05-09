@@ -8,10 +8,10 @@ Pipeline (one step):
   4. picked imaginary mode per IG           [max bond_overlap, n_imag<=2 filter]
   5. rk_clean_v2 score per IG               [b * (1+wr*r) * (1+wc*c) / n_imag^p]
   6. one HTML page: R | P | GT (top row) +
-     20 IG panels in a grid, sorted by score descending. Each IG panel
-     auto-animates its picked mode by default; if the filter rejected
-     the IG, the panel renders as a static structure with a "no valid
-     mode" badge. Every panel shows score, beta, rho, kappa, n_imag.
+     20 IG panels in a grid, sorted by score descending. Every IG with
+     >=1 imaginary mode is animated on its picked mode; IGs with
+     n_imag == 0 render as static structures. No n_imag-count or rho
+     filter. Each panel shows score, beta, rho, kappa, n_imag.
 
 Reuses the per-step mode_viewer payload at
   appendix_perparation/viewer/mode_viewer/<step>.html
@@ -43,9 +43,10 @@ MODE_VIEWER_DIR = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'mode_viewe
 BGCP_ROOT = PROJECT_ROOT / 'appendix_perparation' / 'Pure_Geometries_Elementary_Step' / 'Benchmark_Guesses_Collective_Package'
 OUT_DIR = PROJECT_ROOT / 'out' / 'ranked_views'
 
-# rk_clean_v2 hyperparameters (must match src/ranker.py)
+# Score-formula hyperparameters (same shape as rk_clean_v2 score, but
+# applied without the n_imag<=2 / rho>=0.10 filters — the viewer shows
+# every IG with any imag mode, ranked by score).
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
-MIN_RXN, MAX_IMAG = 0.10, 2
 
 
 def read_xyz(path: Path):
@@ -77,19 +78,18 @@ def imag_modes(ts):
 
 
 def pick_and_score(ts):
-    """Return (passes_filter, picked_mode, score, b, r, c, n_imag).
-    picked_mode is the imag mode we'd display; None if no imag modes."""
+    """Return (picked_mode, score, b, r, c, n_imag).
+    picked_mode is the max-bond_overlap imag mode; None if no imag modes."""
     imag = imag_modes(ts)
     n_imag = len(imag)
     if not imag:
-        return False, None, 0.0, 0.0, 0.0, 0.0, 0
+        return None, 0.0, 0.0, 0.0, 0.0, 0
     picked = max(imag, key=lambda m: m.get('bond_overlap', 0.0))
     b = picked.get('bond_overlap', 0.0)
     r = picked.get('rxn_overlap',  0.0)
     c = picked.get('core_fraction',0.0)
     score = b * (1 + W_RXN * r) * (1 + W_CORE * c) / max(n_imag, 1) ** IMAG_PEN
-    passes = (n_imag <= MAX_IMAG and r >= MIN_RXN)
-    return passes, picked, score, b, r, c, n_imag
+    return picked, score, b, r, c, n_imag
 
 
 def build_view_data(step):
@@ -106,25 +106,25 @@ def build_view_data(step):
     # Score every IG
     ig_records = []
     for ig in igs:
-        passes, picked, score, b, r, c, n_imag = pick_and_score(ig)
+        picked, score, b, r, c, n_imag = pick_and_score(ig)
         ig_records.append({
             'label': ig['label'],
             'xyz_elements': ig['xyz_elements'],
             'xyz_coords': ig['xyz_coords'],
             'picked_disp': picked['disp'] if picked else None,
             'picked_freq': float(picked['freq']) if picked else None,
-            'passes_filter': passes,
             'score': score,
             'beta': b,
             'rho':  r,
             'kappa': c,
             'n_imag': n_imag,
         })
-    # Sort: passes-filter first (descending score), then failed-filter (descending score)
-    ig_records.sort(key=lambda x: (-int(x['passes_filter']), -x['score']))
+    # Sort by score descending. IGs with no imag mode (score=0) sink
+    # to the bottom naturally.
+    ig_records.sort(key=lambda x: -x['score'])
 
     # GT picked mode (for the GT panel)
-    _, gt_picked, _, _, _, _, gt_n_imag = pick_and_score(gt)
+    gt_picked, _, _, _, _, gt_n_imag = pick_and_score(gt)
 
     # R, P xyz
     r_dir = BGCP_ROOT / step / 'reactants'
@@ -168,21 +168,21 @@ HTML = r"""<!doctype html>
  .leg-broken {{ background:#fcd3d3; color:#a00; }}
  .leg-formed {{ background:#cdebd0; color:#070; }}
  .leg-mode   {{ background:#d6e7ff; color:#024; }}
- .leg-fail   {{ background:#eee;    color:#666; }}
+ .leg-static {{ background:#eee;    color:#666; }}
  .ref-row {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }}
  .ig-grid {{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }}
  .panel  {{ background:white; border:1px solid #ddd; border-radius:6px; padding:6px 8px 8px; }}
- .panel.fail {{ background:#f7f7f7; }}
+ .panel.no-imag {{ background:#f7f7f7; }}
  .ph    {{ display:flex; justify-content:space-between; align-items:baseline; font-size:12px; margin-bottom:4px; }}
  .ph .lbl {{ font-weight:600; font-size:13px; }}
  .ph .rk  {{ font-family:ui-monospace,monospace; color:#024; }}
- .panel.fail .ph .rk {{ color:#888; }}
+ .panel.no-imag .ph .rk {{ color:#888; }}
  .vw    {{ position:relative; width:100%; height:230px; }}
  .ref-row .vw {{ height:280px; }}
  .vwbox {{ position:absolute; inset:0; }}
  .meta  {{ font-family:ui-monospace,monospace; font-size:11px; color:#444; padding:3px 0 0; line-height:1.4; }}
  .meta b {{ color:#024; }}
- .badge-fail {{ display:inline-block; background:#eee; color:#666; padding:1px 6px; border-radius:3px; font-size:11px; margin-left:6px; }}
+ .badge-static {{ display:inline-block; background:#eee; color:#666; padding:1px 6px; border-radius:3px; font-size:11px; margin-left:6px; }}
 </style>
 </head>
 <body>
@@ -196,13 +196,14 @@ HTML = r"""<!doctype html>
     <span class="leg-broken">broken bond</span>
     <span class="leg-formed">formed bond</span>
     <span class="leg-mode">mode arrow (core atoms)</span>
-    <span class="leg-fail">no valid imag mode (filter fail)</span>
+    <span class="leg-static">n_imag = 0 (rendered static)</span>
   </span>
   <br>
-  IGs are sorted by ranker score:
+  IGs are sorted by score
   <code>S = &beta; (1 + w_r &rho;) (1 + w_c &kappa;) / n_imag^p</code>
-  with <code>w_r=1.0, w_c=0.2, p=0.3</code>; filter requires
-  <code>1 &le; n_imag &le; 2</code> and <code>&rho; &ge; 0.10</code>.
+  with <code>w_r=1.0, w_c=0.2, p=0.3</code>, descending. Every IG with
+  &ge;1 imaginary mode is animated on its picked mode (max-&beta; imag);
+  IGs with <code>n_imag = 0</code> render as static structures.
 </div>
 
 <div class="ref-row">
@@ -327,13 +328,14 @@ window.addEventListener('load', () => {{
   const grid = document.getElementById('grid');
   DATA.igs.forEach((ig, i) => {{
     const div = document.createElement('div');
-    div.className = 'panel' + (ig.passes_filter ? '' : ' fail');
-    const failBadge = ig.passes_filter ? '' :
-      `<span class="badge-fail">filter fail</span>`;
+    const hasMode = !!ig.picked_disp;
+    div.className = 'panel' + (hasMode ? '' : ' no-imag');
+    const staticBadge = hasMode ? '' :
+      `<span class="badge-static">n_imag = 0</span>`;
     const freqStr = ig.picked_freq != null ? ig.picked_freq.toFixed(0) + 'i' : '—';
     div.innerHTML = `
       <div class="ph">
-        <span class="lbl">${{ig.label}}${{failBadge}}</span>
+        <span class="lbl">${{ig.label}}${{staticBadge}}</span>
         <span class="rk">S = ${{ig.score.toFixed(3)}}</span>
       </div>
       <div class="vw"><div id="vw_ig${{i}}" class="vwbox"></div></div>
@@ -366,14 +368,13 @@ def main():
           f"core_atoms={len(data['core_atoms'])}, "
           f"IGs={len(data['igs'])}")
 
-    passing = sum(1 for ig in data['igs'] if ig['passes_filter'])
-    print(f"  IGs passing filter: {passing}/{len(data['igs'])}")
+    has_mode = sum(1 for ig in data['igs'] if ig['n_imag'] > 0)
+    print(f"  IGs with at least one imag mode: {has_mode}/{len(data['igs'])}")
     print(f"  top-3 by score:")
     for ig in data['igs'][:3]:
         print(f"    {ig['label']:>8s}  S={ig['score']:.3f}  "
               f"beta={ig['beta']:.3f}  rho={ig['rho']:.3f}  "
-              f"kappa={ig['kappa']:.3f}  n_imag={ig['n_imag']}  "
-              f"{'PASS' if ig['passes_filter'] else 'fail'}")
+              f"kappa={ig['kappa']:.3f}  n_imag={ig['n_imag']}")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out_path = OUT_DIR / f"{step}.html"
