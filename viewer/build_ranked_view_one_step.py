@@ -336,12 +336,13 @@ function makeAnimated(divId, ts, disp, which) {{
 
 window.addEventListener('load', () => {{
   // Reference row.
-  // R and P: show BOTH broken (red) and formed (green) markers as
-  // event indicators ("what reacts here"), not as physically-existing
-  // bonds. P xyz is reindexed to R-frame above so the formed_bonds_R
-  // pairs land on the right atoms on the P panel.
-  makeStatic('vw_R', DATA.reactant, 'both');
-  makeStatic('vw_P', DATA.product,  'both');
+  // R panel: only the bonds that are BREAKING (red dashed) -- exist
+  //          in R now, about to disappear.
+  // P panel: only the bonds that just FORMED (green dashed) -- exist
+  //          in P. P xyz is reindexed to R-frame above so the
+  //          formed_bonds_R pairs land on the right atoms.
+  makeStatic('vw_R', DATA.reactant, 'broken');
+  makeStatic('vw_P', DATA.product,  'formed');
   if (DATA.groundtruth.picked_disp) {{
     makeAnimated('vw_GT', DATA.groundtruth, DATA.groundtruth.picked_disp);
   }} else {{
