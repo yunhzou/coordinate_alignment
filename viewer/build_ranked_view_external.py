@@ -430,31 +430,33 @@ function xyzAt(xyz, disp, scale) {{
   return out;
 }}
 // which: 'broken' (R panel only) | 'formed' (P panel only) | 'both' (TS-like)
-// Uses xyz coords directly rather than viewer.selectedAtoms({{}}) so the
-// cylinders can be added before the first render() (selectedAtoms can
-// return empty if called before the viewer is initialized).
+// We mark the reactive event by:
+//   - a fat translucent colored cylinder at the bond axis (visible even
+//     when 3Dmol has auto-drawn a stick bond at that distance, e.g. the
+//     broken bond on the R panel where the bond physically exists);
+//   - a colored halo sphere on each endpoint atom.
+// Uses xyz coords directly so cylinders can be added before render().
+function decorateEvent(viewer, xyz, pair, color) {{
+  const [i, j] = pair;
+  if (i >= xyz.length || j >= xyz.length) return;
+  const a = xyz[i], b = xyz[j];
+  viewer.addCylinder({{
+    start:{{x:a[0], y:a[1], z:a[2]}}, end:{{x:b[0], y:b[1], z:b[2]}},
+    color:color, radius:0.18, dashed:true, opacity:0.6,
+  }});
+  viewer.addSphere({{
+    center:{{x:a[0], y:a[1], z:a[2]}}, radius:0.32, color:color, opacity:0.45,
+  }});
+  viewer.addSphere({{
+    center:{{x:b[0], y:b[1], z:b[2]}}, radius:0.32, color:color, opacity:0.45,
+  }});
+}}
 function decorateBonds(viewer, which, xyz) {{
   if (which !== 'formed') {{
-    for (const [i, j] of DATA.broken_bonds) {{
-      if (i < xyz.length && j < xyz.length) {{
-        viewer.addCylinder({{
-          start:{{x:xyz[i][0], y:xyz[i][1], z:xyz[i][2]}},
-          end:  {{x:xyz[j][0], y:xyz[j][1], z:xyz[j][2]}},
-          color:'red', radius:0.08, dashed:true,
-        }});
-      }}
-    }}
+    for (const pair of DATA.broken_bonds) decorateEvent(viewer, xyz, pair, 'red');
   }}
   if (which !== 'broken') {{
-    for (const [i, j] of DATA.formed_bonds_R) {{
-      if (i < xyz.length && j < xyz.length) {{
-        viewer.addCylinder({{
-          start:{{x:xyz[i][0], y:xyz[i][1], z:xyz[i][2]}},
-          end:  {{x:xyz[j][0], y:xyz[j][1], z:xyz[j][2]}},
-          color:'green', radius:0.08, dashed:true,
-        }});
-      }}
-    }}
+    for (const pair of DATA.formed_bonds_R) decorateEvent(viewer, xyz, pair, 'green');
   }}
 }}
 function drawArrows(viewer, xyz, disp) {{
