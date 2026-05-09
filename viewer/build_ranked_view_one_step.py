@@ -38,9 +38,15 @@ import re
 import sys
 from pathlib import Path
 
+import numpy as np
+
+from rxn_core_pq import align_from_arrays
+from align_bgcp_coords import load_cached_xtb, fill_unmapped_greedy
+
 
 MODE_VIEWER_DIR = PROJECT_ROOT / 'appendix_perparation' / 'viewer' / 'mode_viewer'
 BGCP_ROOT = PROJECT_ROOT / 'appendix_perparation' / 'Pure_Geometries_Elementary_Step' / 'Benchmark_Guesses_Collective_Package'
+WORK_MODES = PROJECT_ROOT / 'work_modes'
 OUT_DIR = PROJECT_ROOT / 'out' / 'ranked_views'
 
 # Score-formula hyperparameters (same shape as rk_clean_v2 score, but
@@ -127,14 +133,19 @@ def build_view_data(step):
     gt_picked, _, _, _, _, gt_n_imag = pick_and_score(gt)
 
     # R, P xyz
-    r_dir = BGCP_ROOT / step / 'reactants'
-    p_dir = BGCP_ROOT / step / 'products'
-    R = sorted(r_dir.glob('*.xyz'))
-    P = sorted(p_dir.glob('*.xyz'))
-    if not R or not P:
-        raise SystemExit(f"missing R or P xyz under {BGCP_ROOT / step}")
-    elR, xyzR = read_xyz(R[0])
-    elP, xyzP = read_xyz(P[0])
+    # Load cached xtb output for R and P (created by build_mode_viewer.py)
+    # so we can re-derive mapping_RP and reindex P into R-frame for display.
+    # Without this, the P panel would draw bond cylinders at wrong atom
+    # positions (formed_bonds_R is in R-frame indices; raw P xyz is in
+    # P-frame).
+    cache = WORK_MODES / step
+    elR, xyzR_arr, wboR, _ = load_cached_xtb(cache / 'R')
+    elP, xyzP_arr, wboP, _ = load_cached_xtb(cache / 'P')
+    rp = align_from_arrays(elR, xyzR_arr, wboR, elP, xyzP_arr, wboP)
+    full_RP = fill_unmapped_greedy(elR, xyzR_arr, elP, xyzP_arr, dict(rp['mapping']))
+    xyzP_in_R = np.zeros_like(np.asarray(xyzR_arr, float))
+    for i_R, i_P in full_RP.items():
+        xyzP_in_R[i_R] = xyzP_arr[i_P]
 
     return {
         'step': step,
@@ -142,8 +153,11 @@ def build_view_data(step):
         'core_atoms': payload.get('core_atoms', []),
         'broken_bonds': payload.get('broken_bonds', []),
         'formed_bonds_R': payload.get('formed_bonds_R', []),
-        'reactant':   {'xyz_elements': elR, 'xyz_coords': xyzR},
-        'product':    {'xyz_elements': elP, 'xyz_coords': xyzP},
+        'reactant':   {'xyz_elements': elR,
+                       'xyz_coords':   xyzR_arr.tolist() if hasattr(xyzR_arr,'tolist') else xyzR_arr},
+        # P shown in R-frame so atom indices line up with broken/formed pairs
+        'product':    {'xyz_elements': elR,
+                       'xyz_coords':   xyzP_in_R.tolist()},
         'groundtruth': {
             'xyz_elements': gt['xyz_elements'],
             'xyz_coords':   gt['xyz_coords'],
@@ -242,20 +256,25 @@ function buildBodyAt(elements, xyz, disp, scale) {{
   return s;
 }}
 
-function decorateBonds(viewer) {{
+// which: 'broken' (R panel only) | 'formed' (P panel only) | 'both' (TS-like)
+function decorateBonds(viewer, which) {{
   const atoms = viewer.selectedAtoms({{}});
-  for (const [i, j] of DATA.broken_bonds) {{
-    if (i < atoms.length && j < atoms.length) {{
-      const a = atoms[i], b = atoms[j];
-      viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
-                          color:'red', radius:0.08, dashed:true}});
+  if (which !== 'formed') {{
+    for (const [i, j] of DATA.broken_bonds) {{
+      if (i < atoms.length && j < atoms.length) {{
+        const a = atoms[i], b = atoms[j];
+        viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
+                            color:'red', radius:0.08, dashed:true}});
+      }}
     }}
   }}
-  for (const [i, j] of DATA.formed_bonds_R) {{
-    if (i < atoms.length && j < atoms.length) {{
-      const a = atoms[i], b = atoms[j];
-      viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
-                          color:'green', radius:0.08, dashed:true}});
+  if (which !== 'broken') {{
+    for (const [i, j] of DATA.formed_bonds_R) {{
+      if (i < atoms.length && j < atoms.length) {{
+        const a = atoms[i], b = atoms[j];
+        viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
+                            color:'green', radius:0.08, dashed:true}});
+      }}
     }}
   }}
 }}
@@ -275,23 +294,24 @@ function drawArrows(viewer, xyz, disp) {{
   }}
 }}
 
-// Static (R, P)
-function makeStatic(divId, ts, withBonds=true) {{
+// Static (R, P).  `which` selects 'broken' | 'formed' | 'both'.
+function makeStatic(divId, ts, which) {{
   const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
   v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
   v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-  if (withBonds) decorateBonds(v);
+  decorateBonds(v, which || 'both');
   v.zoomTo();
   v.render();
   return v;
 }}
 
 // Animated panel (GT, IG-with-picked-mode)
-function makeAnimated(divId, ts, disp) {{
+function makeAnimated(divId, ts, disp, which) {{
+  const w = which || 'both';
   const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
   v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
   v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-  decorateBonds(v);
+  decorateBonds(v, w);
   drawArrows(v, ts.xyz_coords, disp);
   v.zoomTo();
   v.render();
@@ -307,7 +327,7 @@ function makeAnimated(divId, ts, disp) {{
     v.removeAllShapes();
     v.addModel(buildBodyAt(ts.xyz_elements, ts.xyz_coords, disp, scale), 'xyz');
     v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-    decorateBonds(v);
+    decorateBonds(v, w);
     drawArrows(v, ts.xyz_coords, disp);
     v.render();
   }}, 60);
@@ -315,9 +335,12 @@ function makeAnimated(divId, ts, disp) {{
 }}
 
 window.addEventListener('load', () => {{
-  // Reference row
-  makeStatic('vw_R', DATA.reactant);
-  makeStatic('vw_P', DATA.product);
+  // Reference row.
+  // R: only the bonds that exist in R (broken set);
+  // P: only the bonds that exist in P (formed set, drawn correctly
+  //    because P xyz is reindexed to R-frame).
+  makeStatic('vw_R', DATA.reactant, 'broken');
+  makeStatic('vw_P', DATA.product,  'formed');
   if (DATA.groundtruth.picked_disp) {{
     makeAnimated('vw_GT', DATA.groundtruth, DATA.groundtruth.picked_disp);
   }} else {{

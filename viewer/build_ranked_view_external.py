@@ -294,7 +294,14 @@ def process_step(step_dir: Path):
     # to the bottom naturally.
     ig_records.sort(key=lambda x: -x["score"])
 
-    # 6. Build payload + render HTML
+    # 6. Reindex P xyz to R-frame so bond pairs (which live in R-frame)
+    # draw on the right atoms in the P panel. full_RP maps every R-index
+    # to a P-index (alignment + greedy fill).
+    xyzP_arr = np.asarray(xyzP, float)
+    xyzP_in_R = np.zeros_like(np.asarray(xyzR, float))
+    for i_R, i_P in full_RP.items():
+        xyzP_in_R[i_R] = xyzP_arr[i_P]
+
     data = {
         "step": workflow_name,
         "n_atoms": n_R,
@@ -303,8 +310,9 @@ def process_step(step_dir: Path):
         "formed_bonds_R":[list(b) for b in formed_R],
         "reactant":  {"xyz_elements": elR,
                       "xyz_coords":   xyzR.tolist() if hasattr(xyzR,'tolist') else xyzR},
-        "product":   {"xyz_elements": elP,
-                      "xyz_coords":   xyzP.tolist() if hasattr(xyzP,'tolist') else xyzP},
+        # P shown in R-frame so atom indices line up with broken/formed pairs
+        "product":   {"xyz_elements": elR,
+                      "xyz_coords":   xyzP_in_R.tolist()},
         "igs": ig_records,
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -410,20 +418,25 @@ function buildBodyAt(elements, xyz, disp, scale) {{
   }}
   return s;
 }}
-function decorateBonds(viewer) {{
+// which: 'broken' (R panel only) | 'formed' (P panel only) | 'both' (TS-like)
+function decorateBonds(viewer, which) {{
   const atoms = viewer.selectedAtoms({{}});
-  for (const [i, j] of DATA.broken_bonds) {{
-    if (i < atoms.length && j < atoms.length) {{
-      const a = atoms[i], b = atoms[j];
-      viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
-                          color:'red', radius:0.08, dashed:true}});
+  if (which !== 'formed') {{
+    for (const [i, j] of DATA.broken_bonds) {{
+      if (i < atoms.length && j < atoms.length) {{
+        const a = atoms[i], b = atoms[j];
+        viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
+                            color:'red', radius:0.08, dashed:true}});
+      }}
     }}
   }}
-  for (const [i, j] of DATA.formed_bonds_R) {{
-    if (i < atoms.length && j < atoms.length) {{
-      const a = atoms[i], b = atoms[j];
-      viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
-                          color:'green', radius:0.08, dashed:true}});
+  if (which !== 'broken') {{
+    for (const [i, j] of DATA.formed_bonds_R) {{
+      if (i < atoms.length && j < atoms.length) {{
+        const a = atoms[i], b = atoms[j];
+        viewer.addCylinder({{start:{{x:a.x,y:a.y,z:a.z}}, end:{{x:b.x,y:b.y,z:b.z}},
+                            color:'green', radius:0.08, dashed:true}});
+      }}
     }}
   }}
 }}
@@ -442,20 +455,21 @@ function drawArrows(viewer, xyz, disp) {{
     }});
   }}
 }}
-function makeStatic(divId, ts) {{
+function makeStatic(divId, ts, which) {{
   const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
   v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
   v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-  decorateBonds(v);
+  decorateBonds(v, which || 'both');
   v.zoomTo();
   v.render();
   return v;
 }}
-function makeAnimated(divId, ts, disp) {{
+function makeAnimated(divId, ts, disp, which) {{
+  const w = which || 'both';
   const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}});
   v.addModel(buildBody(ts.xyz_elements, ts.xyz_coords), 'xyz');
   v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-  decorateBonds(v); drawArrows(v, ts.xyz_coords, disp);
+  decorateBonds(v, w); drawArrows(v, ts.xyz_coords, disp);
   v.zoomTo(); v.render();
   let t = 0; const period = 30; const amp = 0.6;
   setInterval(() => {{
@@ -464,15 +478,18 @@ function makeAnimated(divId, ts, disp) {{
     v.removeAllModels(); v.removeAllShapes();
     v.addModel(buildBodyAt(ts.xyz_elements, ts.xyz_coords, disp, scale), 'xyz');
     v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}});
-    decorateBonds(v); drawArrows(v, ts.xyz_coords, disp);
+    decorateBonds(v, w); drawArrows(v, ts.xyz_coords, disp);
     v.render();
   }}, 60);
   return v;
 }}
 
 window.addEventListener('load', () => {{
-  makeStatic('vw_R', DATA.reactant);
-  makeStatic('vw_P', DATA.product);
+  // R: only the bonds that exist in R (the broken set);
+  // P: only the bonds that exist in P (the formed set, drawn correctly
+  //    because the P xyz is reindexed to R-frame).
+  makeStatic('vw_R', DATA.reactant, 'broken');
+  makeStatic('vw_P', DATA.product,  'formed');
   const grid = document.getElementById('grid');
   DATA.igs.forEach((ig, i) => {{
     const div = document.createElement('div');
