@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from rxn_core_frag import parse_xyz
+from .frag import parse_xyz
 
 
 def load_cached_xtb(workdir):

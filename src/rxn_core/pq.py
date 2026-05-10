@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import networkx as nx
 
-from rxn_core_frag import (
+from .frag import (
     run_xtb, build_graph, expand_mapping, classify_bonds,
 )
 

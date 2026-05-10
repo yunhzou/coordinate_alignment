@@ -55,3 +55,9 @@ ts_discovery_paper/
 
 # Per-step ranked viewer outputs (regenerable)
 out/ranked_views/
+
+# Python build artifacts
+*.egg-info/
+build/
+dist/
+*.egg

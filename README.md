@@ -55,31 +55,47 @@ The pipeline:
 
 ```
 rxn_core/
-  pipeline.py                  the all-in-one CLI entry point
+  pyproject.toml              installable Python package metadata
+  pipeline.py                 thin CLI shim (also runnable without install)
   src/
-    rxn_core_pq.py             priority-queue subgraph-iso atom mapper
-    rxn_core_frag.py           xtb single-point runner, WBO graph,
-                               classify_bonds (broken/formed detector)
-    analyze_core_modes.py      per-mode features (beta, rho, kappa) +
-                               g98.out parser + mode reindex helpers
-    align_helpers.py           load_cached_xtb, fill_unmapped_greedy,
-                               reindex_to_R_frame
-  out/                         pipeline output (gitignored)
+    rxn_core/
+      __init__.py             public API re-exports
+      pq.py                   priority-queue subgraph-iso atom mapper
+      frag.py                 xtb single-point runner, WBO graph,
+                              classify_bonds (broken/formed detector)
+      modes.py                per-mode features (beta, rho, kappa) +
+                              g98.out parser + mode reindex helpers
+      align.py                load_cached_xtb, fill_unmapped_greedy,
+                              reindex_to_R_frame
+      pipeline.py             end-to-end pipeline + main()
+  out/                        pipeline output (gitignored)
 ```
 
-## Setup
+## Install
 
 ```bash
-# Python 3.10+, xtb on $PATH, plus:
-pip install numpy networkx scipy
+# Python 3.10+, xtb on $PATH (e.g. conda install -c conda-forge xtb)
+pip install -e .
 ```
+
+After install:
+
+- `import rxn_core` works from anywhere — re-exports the alignment,
+  Hessian, and feature primitives at the top level (see "Public API"
+  below).
+- `rxn-core-pipeline <step_dir>...` is on `$PATH` as a console script.
 
 xtb (GFN2) handles all electronic-structure work — single-points for R,
-P, and every IG, plus Hessians on the IGs. https://github.com/grimme-lab/xtb
+P, and every IG, plus Hessians on the IGs.
+https://github.com/grimme-lab/xtb
 
-## Usage
+## Run the pipeline
 
 ```bash
+# Installed:
+rxn-core-pipeline <step_dir> [step_dir ...]
+
+# Or, without install, from a clone:
 python pipeline.py <step_dir> [step_dir ...]
 ```
 

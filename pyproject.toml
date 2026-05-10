@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rxn_core"
+version = "0.1.0"
+description = "WBO-graph atom alignment + per-mode reactive scoring + ranked HTML viewer for transition-state initial guesses"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["chemistry", "transition-state", "xtb", "wbo", "alignment"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+dependencies = [
+    "numpy>=1.23",
+    "networkx>=2.8",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+rxn-core-pipeline = "rxn_core.pipeline:main"
+
+[project.urls]
+Homepage = "https://github.com/yunhzou/coordinate_alignment"
+Repository = "https://github.com/yunhzou/coordinate_alignment"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Note: xtb (Grimme) is a runtime requirement but not a Python dependency;
+# install it via your system package manager (e.g. conda install -c conda-forge xtb).
