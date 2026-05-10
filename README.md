@@ -129,6 +129,58 @@ Open in any modern browser. Layout:
   badge.
 - Each panel labels `S, β, ρ, κ, n_imag, picked_freq`.
 
+## Configurable parameters
+
+All defaults are sane for the targeted system class (small organics
+through ~150-atom organometallics). Override only when you know what
+you're doing.
+
+### Pipeline (`src/rxn_core/pipeline.py`)
+
+| name | default | meaning |
+|---|---|---|
+| `W_RXN` | `1.0` | weight on ρ in the score formula |
+| `W_CORE` | `0.2` | weight on κ in the score formula |
+| `IMAG_PEN` | `0.3` | exponent on `n_imag` in the score denominator (`/ n_imag^p`) |
+| `N_WORKERS` | `4` | parallel `xtb --hess` worker processes per step |
+| `OMP_THREADS` | `4` | OpenMP threads per xtb worker (so peak CPU ≈ `N_WORKERS × OMP_THREADS`) |
+| `RXN_CORE_OUT` (env var) | `<cwd>/out` | output root override; pipeline writes to `$RXN_CORE_OUT/ranked_views/<step>/` |
+
+These are module-level constants — for now, edit them at the top of
+`src/rxn_core/pipeline.py` if you need to change them. (If you want
+them as CLI flags, easy follow-up.)
+
+### Alignment (`src/rxn_core/pq.py`)
+
+The R↔P and R↔IG aligners are built around `align_from_arrays(...)`;
+key kwargs:
+
+| name | default | meaning |
+|---|---|---|
+| `graph_floor` | `0.2` | min WBO to admit an edge into the alignment graph (lower = more weak/partial bonds survive) |
+| `iso_tol` | `1.0` | per-edge WBO match tolerance during subgraph iso (looser = more permissive matching at the reactive site, where bonds have changed) |
+| `n_seeds` | `10` | number of random seed orderings explored; more = better coverage, linear cost |
+| `max_branches` | `1_000_000` | per-pass branch cap; effectively no cap. A soft `[warn]` fires at ≥ 10 000 distinct branches in a single pass to surface pathologically symmetric inputs. |
+| `min_lock_size` | `1` | minimum fragment size that can be "locked" during PQ growth |
+| `chirality` | `True` | score chirality violations as a tiebreaker between equally-mapped branches |
+| `bond_high` | `0.5` | (in `classify_bonds`) WBO threshold for "is this a bond" |
+| `dwbo_threshold` | `0.5` | (in `classify_bonds`) min |ΔWBO| to classify an edge as broken or formed |
+| `return_all` | `False` | when `True`, returns every distinct mapping in `out['all_scored']` (used internally by the per-IG branch sweep) |
+
+`align_from_arrays` is a pure function — pass any of these as kwargs at
+the call site. `pipeline.process_step` calls it with defaults plus
+`return_all=True` for the per-IG sweep.
+
+### Score formula
+
+```
+S = β · (1 + W_RXN · ρ) · (1 + W_CORE · κ) / n_imag^IMAG_PEN
+```
+
+The viewer applies **no filter** on `n_imag` or `ρ`. Every IG with at
+least one imaginary mode is scored and animated; IGs with `n_imag = 0`
+render as static structures and sink to the bottom by S = 0.
+
 ## Score formula reference
 
 ```
