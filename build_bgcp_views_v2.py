@@ -53,15 +53,12 @@ def load(d):
     return el, np.asarray(xyz, float), wbo
 
 
-CUT_MAX_BRANCHES = 500
-BASELINE_MAX_BRANCHES = 10_000
-
 def cut_sweep(elR, wboR, elT, wboT):
     strong = [(i, j) for i in range(len(elR)) for j in range(i+1, len(elR))
               if wboR[i, j] >= WBO_STRONG]
     g_P = build_graph(elT, wboT, bond_cut=0.2)
     pool = {}
-    def run(cuts, max_br):
+    def run(cuts):
         g_R = build_graph(elR, wboR, bond_cut=0.2)
         for (i, j) in cuts:
             if g_R.has_edge(i, j): g_R.remove_edge(i, j)
@@ -69,7 +66,7 @@ def cut_sweep(elR, wboR, elT, wboT):
         out = {}; seen = set()
         for order in orders:
             try:
-                branches = find_islands_pq(g_R, g_P, order, max_branches=max_br)
+                branches = find_islands_pq(g_R, g_P, order)  # no max_branches cap
             except Exception:
                 continue
             for b in branches:
@@ -87,10 +84,10 @@ def cut_sweep(elR, wboR, elT, wboT):
                 if (br, fm) not in out:
                     out[(br, fm)] = {'mapping': mapping_full, 'cuts': frozenset(cuts)}
         return out
-    for k, v in run(set(), BASELINE_MAX_BRANCHES).items():
+    for k, v in run(set()).items():
         if k not in pool: pool[k] = v
     for (i, j) in strong:
-        for k, v in run({(i, j)}, CUT_MAX_BRANCHES).items():
+        for k, v in run({(i, j)}).items():
             if k not in pool: pool[k] = v
     return pool
 

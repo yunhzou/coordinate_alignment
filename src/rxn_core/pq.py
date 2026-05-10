@@ -77,7 +77,7 @@ def _compute_all_isos_FROM_SCRATCH(fragment, g_R, g_P, mapping, inv, iso_tol,
 
 
 def _extend_cands_incremental(cands, fragment_old, n, g_R, g_P, mapping, inv,
-                               iso_tol, islands_R, max_cands_hard=2000):
+                               iso_tol, islands_R, max_cands_hard=None):
     """Incremental order-independent extension: extend each cand to include n.
 
     Equivalence: if cands == {all valid isos of fragment_old}, then the result
@@ -168,7 +168,7 @@ def _extend_cands_incremental(cands, fragment_old, n, g_R, g_P, mapping, inv,
                        for u, w in r_wbos):
                     nc = dict(cand); nc[n] = v
                     new_cands.append(nc)
-                    if len(new_cands) > max_cands_hard:
+                    if max_cands_hard is not None and len(new_cands) > max_cands_hard:
                         return new_cands
     return new_cands
 
