@@ -750,7 +750,7 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42):
 
 def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                       graph_floor=0.2, iso_tol=1.0,
-                      bond_high=0.5, dwbo_threshold=0.5,
+                      dwbo_threshold=0.5,
                       n_seeds=10, max_branches=1_000_000,
                       chirality=True, return_all=False):
     """Pure-graph entry point: assumes (el, xyz, wbo) for R and P are
@@ -771,8 +771,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
         for b in branches:
             mapping = expand_mapping(b.mapping, g_R, g_P)
             broken, formed, _, _ = classify_bonds(
-                mapping, wboR, wboP,
-                bond_high=bond_high, dwbo_threshold=dwbo_threshold)
+                mapping, wboR, wboP, dwbo_threshold=dwbo_threshold)
             chir = (_chirality_violations(mapping, xyzR, xyzP, broken, formed, elR)
                     if chirality else 0)
             score = (len(broken) + len(formed), chir, -len(mapping))
@@ -797,7 +796,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
 def analyze_pq(reactant_xyz, product_xyz, workdir,
                charge=0, uhf=0,
                graph_floor=0.2, iso_tol=1.0,
-               bond_high=0.5, dwbo_threshold=0.5,
+               dwbo_threshold=0.5,
                n_seeds=10, max_branches=1_000_000,
                chirality=True,
                return_all=False):
@@ -809,6 +808,6 @@ def analyze_pq(reactant_xyz, product_xyz, workdir,
     return align_from_arrays(
         elR, xyzR, wboR, elP, xyzP, wboP,
         graph_floor=graph_floor, iso_tol=iso_tol,
-        bond_high=bond_high, dwbo_threshold=dwbo_threshold,
+        dwbo_threshold=dwbo_threshold,
         n_seeds=n_seeds, max_branches=max_branches,
         chirality=chirality, return_all=return_all)

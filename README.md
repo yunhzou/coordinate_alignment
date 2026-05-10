@@ -163,8 +163,7 @@ key kwargs:
 | `max_branches` | `1_000_000` | per-pass branch cap; effectively no cap. A soft `[warn]` fires at ≥ 10 000 distinct branches in a single pass to surface pathologically symmetric inputs. |
 | `min_lock_size` | `1` | minimum fragment size that can be "locked" during PQ growth |
 | `chirality` | `True` | score chirality violations as a tiebreaker between equally-mapped branches |
-| `bond_high` | `0.5` | (in `classify_bonds`) WBO threshold for "is this a bond" |
-| `dwbo_threshold` | `0.5` | (in `classify_bonds`) min |ΔWBO| to classify an edge as broken or formed |
+| `dwbo_threshold` | `0.5` | (in `classify_bonds`) min |ΔWBO| to classify an edge as broken or formed; also gates "is wR even a real bond" since wP ≥ 0 |
 | `return_all` | `False` | when `True`, returns every distinct mapping in `out['all_scored']` (used internally by the per-IG branch sweep) |
 
 `align_from_arrays` is a pure function — pass any of these as kwargs at

@@ -129,15 +129,19 @@ def expand_mapping(mapping, g_R, g_P):
     return mapping
 
 
-def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.5, dwbo_threshold=0.5):
-    """Bond classification by WBO change:
+def classify_bonds(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
+    """Bond classification by WBO change.
 
-        broken iff WBO_R >= bond_high  AND  (WBO_R - WBO_P) >= dwbo_threshold
-        formed iff WBO_P >= bond_high  AND  (WBO_P - WBO_R) >= dwbo_threshold
+        broken iff (WBO_R - WBO_P) >= dwbo_threshold
+        formed iff (WBO_P - WBO_R) >= dwbo_threshold
 
-    Captures both full bond breaks (WBO ≈ 1.0 → ≈ 0) AND partial bond-
-    order changes (C=C ≈ 1.9 → C-C ≈ 1.0, dWBO ≈ 0.9). Unmapped endpoints
-    are always flagged as broken/formed since their image WBO is undefined.
+    Since WBO is non-negative, requiring (wR - wP) >= dwbo_threshold
+    automatically implies wR >= dwbo_threshold (wP ≥ 0), so a single
+    threshold both gates "is this a bond worth considering" and "did
+    its order change enough." For pairs with one or both endpoints
+    unmapped (no image bond defined) we treat the missing wP as 0 and
+    apply the same threshold to wR.
+
     Returns (broken_list, formed_list, core_R, core_P) where each bond
     record is (i, j, wbo_R_or_None, wbo_P_or_None)."""
     inv = {v: k for k, v in mapping.items()}
@@ -146,7 +150,7 @@ def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.5, dwbo_threshold=0.5):
     for i in range(nR):
         for j in range(i + 1, nR):
             wR = wbo_R[i, j]
-            if wR < bond_high: continue
+            if wR < dwbo_threshold: continue
             if i not in mapping or j not in mapping:
                 broken.append((i, j, float(wR), None)); continue
             wP = wbo_P[mapping[i], mapping[j]]
@@ -155,7 +159,7 @@ def classify_bonds(mapping, wbo_R, wbo_P, bond_high=0.5, dwbo_threshold=0.5):
     for ip in range(nP):
         for jp in range(ip + 1, nP):
             wP = wbo_P[ip, jp]
-            if wP < bond_high: continue
+            if wP < dwbo_threshold: continue
             if ip not in inv or jp not in inv:
                 formed.append((ip, jp, None, float(wP))); continue
             wR = wbo_R[inv[ip], inv[jp]]
