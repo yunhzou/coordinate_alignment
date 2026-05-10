@@ -233,7 +233,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    graph_floor=0.2,
                    iso_tol=1.0,
                    min_lock_size=1,
-                   max_branches=8,
+                   max_branches=1_000_000,
                    max_cands_hard=2000,
                    events=None,
                    islands_R=None):
@@ -606,7 +606,7 @@ class _Branch:
 
 def find_islands_pq(g_R, g_P, seed_order,
                     graph_floor=0.2, iso_tol=1.0,
-                    max_branches=8, events=None):
+                    max_branches=1_000_000, events=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
 
@@ -655,6 +655,13 @@ def find_islands_pq(g_R, g_P, seed_order,
                 if len(uniq) >= max_branches:
                     break
             branches = uniq
+            # Soft warning: pathological symmetry can blow this up. Default
+            # cap is 1e6 so we should never hit it on real molecules; if we
+            # do, surface it so we know.
+            if len(branches) >= 10_000:
+                import sys
+                print(f"  [warn] alignment branch count = {len(branches)}",
+                      file=sys.stderr, flush=True)
     if events is not None:
         events.append({'type': 'done',
                        'mapped': len(branches[0].mapping)})
@@ -733,7 +740,7 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42):
 def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                       graph_floor=0.2, iso_tol=1.0,
                       bond_high=0.5, dwbo_threshold=0.5,
-                      n_seeds=10, max_branches=8,
+                      n_seeds=10, max_branches=1_000_000,
                       chirality=True, return_all=False):
     """Pure-graph entry point: assumes (el, xyz, wbo) for R and P are
     already in hand (e.g. loaded from a pre-computed xtb cache). Runs the
@@ -780,7 +787,7 @@ def analyze_pq(reactant_xyz, product_xyz, workdir,
                charge=0, uhf=0,
                graph_floor=0.2, iso_tol=1.0,
                bond_high=0.5, dwbo_threshold=0.5,
-               n_seeds=10, max_branches=8,
+               n_seeds=10, max_branches=1_000_000,
                chirality=True,
                return_all=False):
     """Run xtb on R and P, build graphs at graph_floor, run PQ search for
