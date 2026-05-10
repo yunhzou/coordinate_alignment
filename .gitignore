@@ -6,6 +6,9 @@ work_pq_compare_old/
 work_pq_compare_new/
 work_pq_smoke/
 
+# Local Claude session state
+.claude/
+
 # Python cache
 __pycache__/
 *.pyc

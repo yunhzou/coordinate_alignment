@@ -1,9 +1,8 @@
 """
-External-dataset version of build_ranked_view_one_step.py.
+rxn_core all-in-one pipeline.
 
-Runs the full pipeline from scratch (no cached payload, no groundtruth
-required) on a directory shaped like the El Agente Pathways "plain"
-mode output:
+Runs the full alignment + Hessian + ranking + visualization pipeline
+on a directory shaped like the El Agente Pathways "plain" mode output:
 
     <step_dir>/
       source/reactant*.xyz       # one (or more) reactant xyz
@@ -49,22 +48,20 @@ The xtb subtree is the cache: re-running the script on the same step
 hits the cache and rebuilds the artifacts in seconds.
 
 Usage:
-  python viewer/build_ranked_view_external.py <step_dir> [step_dir ...]
+  python pipeline.py <step_dir> [step_dir ...]
 
   e.g.
-  python viewer/build_ranked_view_external.py \\
-      /Users/.../run_20260508_202120_plain_parallel/{1a,1b,1c}
+  python pipeline.py /path/to/run_dir/{1a,1b,1c}
 
 Output:
-  out/ranked_views/<workflow_name>.html
+  out/ranked_views/<workflow_name>/      (one folder per step)
 """
 from __future__ import annotations
 import sys as _sys
 from pathlib import Path as _Path
 _HERE = _Path(__file__).resolve().parent
-_sys.path.insert(0, str(_HERE.parent / "src"))
-_sys.path.insert(0, str(_HERE))
-PROJECT_ROOT = _HERE.parent
+_sys.path.insert(0, str(_HERE / "src"))
+PROJECT_ROOT = _HERE
 
 import json
 import os
@@ -85,7 +82,7 @@ from analyze_core_modes import (
     bond_reaction_vector, bond_overlap_per_mode,
     rxn_overlap_per_mode, reaction_coord_delta,
 )
-from align_bgcp_coords import fill_unmapped_greedy
+from align_helpers import fill_unmapped_greedy
 
 
 OUT_DIR = PROJECT_ROOT / "out" / "ranked_views"
