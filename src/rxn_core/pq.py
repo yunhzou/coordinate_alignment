@@ -566,6 +566,146 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
     return branches
 
 
+# -------------------- BFS frontier search --------------------
+
+def grow_island_bfs(g_R, g_P, seed, mapping, inv,
+                    graph_floor=0.2, iso_tol=1.0,
+                    min_lock_size=1, events=None,
+                    islands_R=None, max_branches=1_000_000):
+    """EXPERIMENTAL: BFS frontier search over partial mappings.
+
+    Status: kept for reference, not wired into find_islands_pq because
+    it explodes on real molecules. The naive BFS spawns one child per
+    valid (R_neighbor, P_target) extension; even with mapping-signature
+    dedup, the state space grows multiplicatively because different
+    growth orders can land on different INTERMEDIATE mappings that don't
+    converge until very late.
+
+    The current grow_island_pq avoids this by maintaining ONE shared
+    fragment (deterministic growth order via WBO heap) and tracking
+    multiple bijections of that single fragment as the cands list. The
+    result is the same set of saturation bijections, but with bounded
+    intermediate state count.
+
+    A working BFS replacement would need either:
+      - a canonical fragment-growth order (e.g., always extend the
+        lowest-index frontier atom) so all states share a fragment, OR
+      - a smarter dedup that canonicalizes mappings up to spectator
+        permutations earlier in the search.
+
+    Left here as a starting point for future work.
+    """
+    record = events is not None
+    if seed in mapping:
+        return []
+    seed_el = g_R.nodes[seed]['element']
+
+    init_isos = []
+    for v in g_P.nodes():
+        if v in inv: continue
+        if g_P.nodes[v]['element'] != seed_el: continue
+        init_isos.append({seed: v})
+
+    if not init_isos:
+        if record:
+            events.append({'type': 'seed_start', 'seed': int(seed),
+                           'init_cands': 0, 'fragment': [int(seed)],
+                           'p_atoms': []})
+            events.append({'type': 'seed_end', 'result': 'no_initial_cands',
+                           'final_cands': 0, 'fragment': [int(seed)],
+                           'iso': None})
+        return []
+
+    if record:
+        events.append({'type': 'seed_start', 'seed': int(seed),
+                       'init_cands': len(init_isos),
+                       'fragment': [int(seed)],
+                       'p_atoms': sorted(int(c[seed]) for c in init_isos)})
+
+    # Frontier: set of frozensets of (R, P) pairs. Use frozenset for O(1)
+    # dedup of partial-mapping states.
+    frontier = {frozenset(m.items()) for m in init_isos}
+    saturated = set()
+    bfs_level = 0
+
+    while frontier:
+        bfs_level += 1
+        next_frontier = set()
+        for state in frontier:
+            m = dict(state)
+            mapped_R = set(m.keys())
+            mapped_P = set(m.values())
+            extensions_made = False
+            # Iterate every fragment atom; for each, enumerate every
+            # valid (n, v) extension. The dedup at next_frontier collapses
+            # duplicates from different atom-pick orders.
+            for r in mapped_R:
+                for n in g_R.neighbors(r):
+                    if n in mapped_R: continue
+                    if g_R[r][n]['wbo'] < graph_floor: continue
+                    if n in mapping: continue  # globally locked
+                    n_el = g_R.nodes[n]['element']
+                    bonded_to_n = [u for u in g_R.neighbors(n)
+                                   if u in mapped_R
+                                   and g_R[u][n]['wbo'] >= graph_floor]
+                    if not bonded_to_n: continue
+                    p_cands = set(g_P.neighbors(m[bonded_to_n[0]]))
+                    for u in bonded_to_n[1:]:
+                        p_cands &= set(g_P.neighbors(m[u]))
+                    p_cands -= mapped_P
+                    p_cands -= set(inv.keys())
+                    for v in p_cands:
+                        if g_P.nodes[v]['element'] != n_el: continue
+                        ok = True
+                        for u in bonded_to_n:
+                            wR = g_R[u][n]['wbo']
+                            wP = g_P[m[u]][v]['wbo']
+                            if abs(wR - wP) > iso_tol:
+                                ok = False; break
+                        if not ok: continue
+                        new_m = dict(m); new_m[n] = v
+                        next_frontier.add(frozenset(new_m.items()))
+                        extensions_made = True
+            if not extensions_made:
+                saturated.add(state)
+        frontier = next_frontier
+        if len(saturated) > max_branches:
+            break
+
+    # Saturation can produce many tied bijections (different P targets for
+    # symmetric atoms). The frozenset already deduped by mapping signature,
+    # so just convert back to dicts.
+    result = []
+    for fro in saturated:
+        m = {r: v for r, v in fro}
+        if len(m) >= min_lock_size:
+            result.append(m)
+
+    if record:
+        if not result:
+            events.append({'type': 'seed_end',
+                           'result': 'no_cands' if not saturated else 'too_small',
+                           'final_cands': 0,
+                           'fragment': [int(seed)],
+                           'iso': None})
+        else:
+            ref_frag = sorted(int(x) for x in result[0].keys())
+            iso0 = {int(k): int(v) for k, v in result[0].items()}
+            evt = {
+                'type': 'seed_end',
+                'result': 'success' if len(result) == 1 else 'branched',
+                'final_cands': len(result),
+                'n_branches': len(result),
+                'fragment': ref_frag,
+                'iso': iso0,
+                'all_isos': [{int(k): int(v) for k, v in m.items()}
+                             for m in result],
+                'bfs_levels': bfs_level,
+            }
+            events.append(evt)
+    return result
+
+
 # -------------------- find_islands with branching --------------------
 
 class _Branch:
