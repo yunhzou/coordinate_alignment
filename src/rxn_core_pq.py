@@ -24,12 +24,19 @@ from rxn_core_frag import (
 # -------------------- core grow --------------------
 
 def _set_unique(cands):
+    """True iff there is at most one *distinct mapping* among `cands`.
+
+    Earlier this used `frozenset(c.values())` as the equivalence key,
+    which collapses every full-bijection candidate to one (since they
+    all use the same value-set), silently dropping symmetric variants
+    like (R87->IG87, R88->IG88) vs (R87->IG88, R88->IG87). The right
+    equivalence for our use is the full bijection itself."""
     if not cands:
         return False
     if len(cands) == 1:
         return True
-    s0 = frozenset(cands[0].values())
-    return all(frozenset(c.values()) == s0 for c in cands[1:])
+    sig0 = tuple(sorted(cands[0].items()))
+    return all(tuple(sorted(c.items())) == sig0 for c in cands[1:])
 
 
 def _push_edges_from(heap, used_edges, g_R, atom, fragment, graph_floor):
@@ -533,9 +540,13 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 'iso': {int(k): int(v) for k, v in cands[0].items()},
             })
         return [cands[0]]
+    # Dedup by full bijection signature, NOT by frozenset(values).
+    # Two cands with the same value-set but different mappings are
+    # genuinely different branches (they correspond to permuting
+    # symmetric atoms; cf. the comment on _set_unique above).
     by_set = {}
     for c in cands:
-        key = frozenset(c.values())
+        key = tuple(sorted(c.items()))
         if key not in by_set:
             by_set[key] = c
     branches = list(by_set.values())[:max_branches]
