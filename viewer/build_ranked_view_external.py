@@ -284,21 +284,35 @@ def process_step(step_dir: Path):
             continue
 
         # Try every alignment branch; keep the one whose picked-mode
-        # score is highest. (Different branches differ only in atom-to-
-        # atom correspondence; broken / formed / chir are the same.)
+        # score is highest. Two-level dedup:
+        #   1. full mapping dedup -- collapse exact duplicates from the
+        #      multi-seed sweep
+        #   2. core-only mapping dedup -- branches that differ only in
+        #      non-core (spectator) atom assignments give identical
+        #      beta/rho/kappa, so they're score-equivalent and we only
+        #      need to evaluate one. This is the score-relevant set.
         all_branches = it.get("all_scored", [])
         if not all_branches:
             all_branches = [(None, dict(it["mapping"]), None, None, None)]
-        # De-duplicate equivalent mappings cheaply.
-        seen = set()
+        seen_full = set()
+        seen_core = set()
         best = None  # (score, b, r, c, picked_k, modes_R, ts_xyz_in_R)
         for (_, br_mapping, _, _, _) in all_branches:
-            mkey = tuple(sorted(dict(br_mapping).items()))
-            if mkey in seen:
+            br_d = dict(br_mapping)
+            full_key = tuple(sorted(br_d.items()))
+            if full_key in seen_full:
                 continue
-            seen.add(mkey)
-            mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT,
-                                              dict(br_mapping))
+            seen_full.add(full_key)
+
+            # Score-equivalent core-only signature
+            core_key = tuple(sorted(
+                (c, br_d[c]) for c in core_R if c in br_d
+            ))
+            if core_key in seen_core:
+                continue
+            seen_core.add(core_key)
+
+            mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, br_d)
             modes_R = reindex_modes_to_R(modes_TS, mapping_RT, n_R)
             sq = (modes_R ** 2).sum(axis=2)
             total = sq.sum(axis=1)
@@ -322,8 +336,11 @@ def process_step(step_dir: Path):
                 best = (score, b, r_, c, picked_k, modes_R, ts_xyz_in_R)
 
         score, b, r_, c, picked_k, modes_R, ts_xyz_in_R = best
-        if len(seen) > 1:
-            print(f"    {label}: {len(seen)} branches; best score={score:.3f}",
+        if len(seen_full) > 1:
+            collapsed = (f" (collapsed from {len(seen_full)})"
+                         if len(seen_core) < len(seen_full) else "")
+            print(f"    {label}: {len(seen_core)} core-unique branches"
+                  f"{collapsed}; best score={score:.3f}",
                   flush=True)
         ig_records.append({
             "label": label,
@@ -334,7 +351,8 @@ def process_step(step_dir: Path):
             "picked_disp": modes_R[picked_k].tolist(),
             "xyz_elements": elR,
             "xyz_coords":   ts_xyz_in_R.tolist(),
-            "n_branches": len(seen),
+            "n_branches": len(seen_core),
+            "n_branches_full": len(seen_full),
         })
 
     # 5. Sort by score descending. IGs with no imag mode (score=0) sink
@@ -459,14 +477,17 @@ def write_artifacts(run_dir, workflow_name, charge, mult,
     }
     (run_dir / "alignment.json").write_text(json.dumps(alignment, indent=2))
 
-    csv_lines = ["rank,label,score,beta,rho,kappa,n_imag,picked_freq,n_branches"]
+    csv_lines = ["rank,label,score,beta,rho,kappa,n_imag,picked_freq,"
+                 "n_branches_core,n_branches_full"]
     for rank, ig in enumerate(ig_records, 1):
         freq_str = (f"{ig['picked_freq']:.2f}"
                     if ig.get('picked_freq') is not None else "")
+        nb_core = ig.get('n_branches', 1)
+        nb_full = ig.get('n_branches_full', nb_core)
         csv_lines.append(
             f"{rank},{ig['label']},{ig['score']:.4f},{ig['beta']:.4f},"
             f"{ig['rho']:.4f},{ig['kappa']:.4f},{ig['n_imag']},"
-            f"{freq_str},{ig.get('n_branches', 1)}"
+            f"{freq_str},{nb_core},{nb_full}"
         )
     (run_dir / "scores.csv").write_text("\n".join(csv_lines) + "\n")
 
