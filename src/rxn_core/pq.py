@@ -400,11 +400,13 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
     while heap:
         if _set_unique(cands) and len(cands) == 1 and len(fragment) >= min_lock_size:
             if record:
+                iso = {int(k): int(v) for k, v in cands[0].items()}
                 events.append({
                     'type': 'seed_end', 'result': 'success',
                     'final_cands': 1,
                     'fragment': sorted(int(x) for x in fragment),
-                    'iso': {int(k): int(v) for k, v in cands[0].items()},
+                    'iso': iso,
+                    'all_isos': [iso],
                     'lock_reason': 'set_unique_len1_during_BFS',
                     'heap_remaining': len(heap),
                 })
@@ -533,11 +535,13 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
         return []
     if _set_unique(cands):
         if record:
+            iso = {int(k): int(v) for k, v in cands[0].items()}
             events.append({
                 'type': 'seed_end', 'result': 'success',
                 'final_cands': len(cands),
                 'fragment': sorted(int(x) for x in fragment),
-                'iso': {int(k): int(v) for k, v in cands[0].items()},
+                'iso': iso,
+                'all_isos': [iso],
             })
         return [cands[0]]
     # Dedup by full bijection signature, NOT by frozenset(values).
@@ -556,6 +560,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             'final_cands': len(cands), 'n_branches': len(branches),
             'fragment': sorted(int(x) for x in fragment),
             'iso': {int(k): int(v) for k, v in branches[0].items()},
+            'all_isos': [{int(k): int(v) for k, v in c.items()}
+                         for c in branches],
         })
     return branches
 
@@ -671,7 +677,9 @@ def find_islands_pq(g_R, g_P, seed_order,
             # do, surface it so we know.
             if len(branches) >= 10_000:
                 import sys
-                print(f"  [warn] alignment branch count = {len(branches)}",
+                print(f"  [warn] alignment branch count = {len(branches)}  "
+                      f"max_branches={max_branches}  "
+                      f"new_branches_in={len(new_branches)}",
                       file=sys.stderr, flush=True)
     if events is not None:
         events.append({'type': 'done',
@@ -740,9 +748,24 @@ def _chirality_violations(mapping, coords_R, coords_P,
 # -------------------- multi-seed driver --------------------
 
 def _generate_seed_orders(g_R, n_trials, rng_seed=42):
+    """One order per heavy (non-H) atom, putting that atom first; the
+    remaining nodes follow in a random order. Hydrogens are never used
+    as initial seeds because they have very few connectivity constraints
+    and produce poor island growth.
+
+    If n_trials > n_heavy, pad with full random shuffles. The previous
+    implementation was n_trials random shuffles only, which could miss
+    structurally informative seedings (e.g. a key metal atom never
+    landing first in any of the 10 default trials).
+    """
     nodes = list(g_R.nodes())
+    heavy = [n for n in nodes if g_R.nodes[n].get('element') != 'H']
     rng = random.Random(rng_seed)
     orders = []
+    for h in heavy:
+        rest = [x for x in nodes if x != h]
+        rng.shuffle(rest)
+        orders.append([h] + rest)
     while len(orders) < n_trials:
         perm = list(nodes); rng.shuffle(perm); orders.append(perm)
     return orders
