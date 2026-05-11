@@ -332,6 +332,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    iso_tol=1.0,
                    min_lock_size=1,
                    max_branches=1_000_000,
+                   max_cands=100_000,
                    events=None,
                    islands_R=None):
     """
@@ -560,6 +561,14 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             cands, fragment, n, g_R, g_P, mapping, inv,
             iso_tol, islands_R)
         if new_cands:
+            # Soft cap on cands count to prevent K-factorial spectator-H
+            # explosion on high-symmetry molecules (carboranes, Pt-PMe3
+            # complexes, etc.). At extreme symmetry the iso count grows as
+            # ∏(k_i!) over symmetric atom groups. We random-sample down to
+            # max_cands when exceeded — lossy but bounded. For typical
+            # cases (pr14 max ≈ 9k cands at frag 72) the cap never fires.
+            if len(new_cands) > max_cands:
+                new_cands = random.sample(new_cands, max_cands)
             cands = new_cands
             ref_dist = distance.get(u, 0) + 1
             if n_in_mapping and islands_R is not None and n in islands_R:
