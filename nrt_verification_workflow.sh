@@ -43,6 +43,7 @@ WORK_DIR=$PROJECT/appendix_perparation/xtb_frequency_calculations
 OUT_DIR=$PROJECT/out
 LOG_DIR=$OUT_DIR/slurm_logs
 PARTITION=${PARTITION:-cpu_short}
+ACCOUNT=${ACCOUNT:-nvr_lpr_agentic}  # Slurm account (NRT requires --account)
 N_CPUS=${N_CPUS:-5}                  # cores per step (inner-workers)
 TIME_LIMIT=${TIME_LIMIT:-03:30:00}   # under cpu_short 4:00:00 cap
 ARRAY_CONCURRENCY=${ARRAY_CONCURRENCY:-176}   # max concurrent tasks (876 / 5)
@@ -78,6 +79,7 @@ fi
 N_STEPS=$(wc -l < "$STEPS_FILE")
 echo "Submitting $N_STEPS steps (file: $STEPS_FILE)"
 echo "  Partition:    $PARTITION"
+echo "  Account:      $ACCOUNT"
 echo "  CPUs/step:    $N_CPUS"
 echo "  Concurrency:  $ARRAY_CONCURRENCY"
 echo "  Time limit:   $TIME_LIMIT"
@@ -115,6 +117,7 @@ SBATCH_WRAP=${SBATCH_WRAP//__N_CPUS__/$N_CPUS}
 
 CMD=(sbatch
   --partition="$PARTITION"
+  --account="$ACCOUNT"
   --array="1-${N_STEPS}%${ARRAY_CONCURRENCY}"
   --cpus-per-task="$N_CPUS"
   --time="$TIME_LIMIT"
