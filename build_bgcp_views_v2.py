@@ -54,16 +54,51 @@ def load(d):
     return el, np.asarray(xyz, float), wbo
 
 
-def cut_sweep(elR, wboR, elT, wboT):
-    """Enumerate chemistry classes via (a) single-edge cuts on g_R and
-    (b) post-hoc swap of chemistry-relevant atoms within their equivalence
-    class. The combination explores both topology-level alternatives
-    (cuts) and atom-level alternatives (permutable cores)."""
+# =============================================================================
+# Parallel cut_sweep (work-unit dispatch over multiprocessing.Pool)
+# =============================================================================
+# Each worker rebuilds g_R fresh per call (cheap), with the requested cut
+# applied; g_P is built once per worker via the initializer. Returns chem
+# signatures + full bijections.
+
+_W = {}
+def _cs_winit(elR, wboR, elT, wboT):
+    _W['elR'] = elR; _W['wboR'] = wboR
+    _W['elT'] = elT; _W['wboT'] = wboT
+    _W['g_P'] = build_graph(elT, wboT, bond_cut=0.2)
+    _W['n'] = len(elR)
+
+
+def _cs_wrun(args):
+    cut, order = args
+    g_R = build_graph(_W['elR'], _W['wboR'], bond_cut=0.2)
+    for (i, j) in cut:
+        if g_R.has_edge(i, j): g_R.remove_edge(i, j)
+    try:
+        branches = find_islands_pq(g_R, _W['g_P'], list(order))
+    except Exception:
+        return []
+    out = []
+    for b in branches:
+        mapping = expand_mapping(b.mapping, g_R, _W['g_P'])
+        if len(mapping) < _W['n'] - 2: continue
+        broken, formed, _, _ = classify_bonds(mapping, _W['wboR'], _W['wboT'])
+        inv = {v: k for k, v in mapping.items()}
+        br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
+        fm = tuple(sorted((min(inv.get(a, -1), inv.get(b, -1)),
+                            max(inv.get(a, -1), inv.get(b, -1)))
+                           for (a, b, _, _) in formed if a in inv and b in inv))
+        out.append(((br, fm), tuple(sorted(mapping.items())), cut))
+    return out
+
+
+def _cut_sweep_serial(elR, wboR, elT, wboT):
+    """Single-process cut_sweep (used inside outer-Pool workers to avoid
+    nested daemonic multiprocessing)."""
     strong = [(i, j) for i in range(len(elR)) for j in range(i+1, len(elR))
               if wboR[i, j] >= WBO_STRONG]
     g_P = build_graph(elT, wboT, bond_cut=0.2)
     pool = {}
-
     def chem_signature(mapping_full):
         broken, formed, _, _ = classify_bonds(mapping_full, wboR, wboT)
         inv = {v: k for k, v in mapping_full.items()}
@@ -71,32 +106,12 @@ def cut_sweep(elR, wboR, elT, wboT):
         fm = tuple(sorted((min(inv.get(a, -1), inv.get(b, -1)),
                             max(inv.get(a, -1), inv.get(b, -1)))
                            for (a, b, _, _) in formed if a in inv and b in inv))
-        # R-frame atoms participating in any bond event (= core atoms)
-        core_atoms = set()
-        for a, b in br: core_atoms.update((a, b))
-        for a, b in fm: core_atoms.update((a, b))
-        return (br, fm), core_atoms
-
-    def expand_and_classify(mapping_full, g_R_used, cuts):
-        """For a canonical bijection, run chemistry-relevant-atom expansion
-        and add every distinct chemistry class to pool."""
-        sig0, core = chem_signature(mapping_full)
-        if sig0 not in pool:
-            pool[sig0] = {'mapping': mapping_full, 'cuts': frozenset(cuts)}
-        # Post-hoc expansion on chemistry-relevant atoms (cores)
-        alternatives = expand_chemistry_relevant_atoms(
-            mapping_full, list(core), g_R_used, g_P)
-        for alt_m, _swap_path in alternatives[1:]:  # skip the canonical
-            sig, _ = chem_signature(alt_m)
-            if sig not in pool:
-                pool[sig] = {'mapping': alt_m, 'cuts': frozenset(cuts)}
-
+        return (br, fm)
     def run(cuts):
         g_R = build_graph(elR, wboR, bond_cut=0.2)
         for (i, j) in cuts:
             if g_R.has_edge(i, j): g_R.remove_edge(i, j)
         orders = _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN)
-        seen_chem = set()
         for order in orders:
             try:
                 branches = find_islands_pq(g_R, g_P, order)
@@ -105,19 +120,57 @@ def cut_sweep(elR, wboR, elT, wboT):
             for b in branches:
                 mapping_full = expand_mapping(b.mapping, g_R, g_P)
                 if len(mapping_full) < len(elR) - 2: continue
-                sig, _core = chem_signature(mapping_full)
-                if sig in seen_chem: continue
-                seen_chem.add(sig)
-                expand_and_classify(mapping_full, g_R, cuts)
-
-    # Baseline (no cuts) + single-strong-edge cuts. Cut-sweep produces
-    # topology-level alternative chemistries by removing one strong R-bond
-    # and re-aligning; necessary for cases where the forward bijection is
-    # locally optimal but misses a chemistry-distinct mechanism.
+                sig = chem_signature(mapping_full)
+                pool.setdefault(sig, {'mapping': mapping_full, 'cuts': frozenset(cuts)})
     run(set())
     for (i, j) in strong:
         run({(i, j)})
     return pool
+
+
+def _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers):
+    """Multi-process cut_sweep using `n_workers` workers. Work units are
+    (cut, seed_order) pairs; each unit runs one find_islands_pq call."""
+    import random as _random
+    n = len(elR)
+    strong = [(i, j) for i in range(n) for j in range(i+1, n)
+              if wboR[i, j] >= WBO_STRONG]
+    g_R = build_graph(elR, wboR, bond_cut=0.2)
+    nodes = list(g_R.nodes())
+    rng = _random.Random(42)
+    seed_orders = []
+    for _ in range(N_SEEDS_PER_RUN):
+        order = list(nodes); rng.shuffle(order)
+        seed_orders.append(tuple(order))
+    work = [((), s) for s in seed_orders]
+    for (i, j) in strong:
+        for s in seed_orders: work.append((((i, j),), s))
+    pool = {}
+    with mp.Pool(n_workers, initializer=_cs_winit,
+                  initargs=(elR, wboR, elT, wboT)) as p:
+        for results in p.imap_unordered(_cs_wrun, work, chunksize=4):
+            for chem_sig, mapping_items, cut in results:
+                pool.setdefault(chem_sig, {
+                    'mapping': dict(mapping_items),
+                    'cuts': frozenset(cut),
+                })
+    return pool
+
+
+def cut_sweep(elR, wboR, elT, wboT, n_workers=None):
+    """Enumerate chemistry classes via single-strong-edge cuts on g_R.
+
+    For each (cut ∈ {∅} ∪ strong-R-bonds), seed N_SEEDS_PER_RUN seed
+    orderings, run find_islands_pq, dedup by (broken, formed) chemistry
+    signature.
+
+    n_workers:
+      None or 0 → serial (used inside outer multiprocessing.Pool workers)
+      >= 1      → multiprocessing.Pool with that many workers
+    """
+    if not n_workers or n_workers <= 1:
+        return _cut_sweep_serial(elR, wboR, elT, wboT)
+    return _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers)
 
 
 def select_min(pool):
@@ -149,10 +202,30 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
 
 def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
                                  rt_pool, broken_R, formed_R, core_R, delta_RP):
-    """Score every (already-enumerated) R<->T mapping under one mech."""
+    """Score every R<->T mapping under one mech, with CORE-RESTRICTED DEDUP.
+
+    Two bijections that agree on (r → mapping[r] for r in core_R) produce
+    identical verifier scores under this mechanism: beta, rho, kappa, and
+    the bond-reaction vector V only read TS coords / mode displacements at
+    R-frame *core* indices. Spectator-atom permutations on the TS side
+    don't affect any of those quantities.
+
+    We dedup the pool by per-mechanism core-restricted key and score one
+    rep per equivalence class. Keep highest-S rep. This is option (a)
+    from the design discussion — per-mechanism, not unioned across mechs,
+    because different mechs have different core_R sets.
+    """
+    core_R_set = frozenset(core_R)
+    seen_core = set()
     best = None
     for v in rt_pool.values():
-        mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, v['mapping'])
+        m_full = v['mapping']
+        # Per-mechanism core-restricted key
+        core_key = frozenset((r, m_full[r]) for r in core_R_set if r in m_full)
+        if core_key in seen_core:
+            continue
+        seen_core.add(core_key)
+        mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, m_full)
         s = score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
                       broken_R, formed_R, core_R, delta_RP)
         if s and (best is None or s['S'] > best['S']):
@@ -218,7 +291,11 @@ window.addEventListener('load', render);
 """
 
 
-def process_step(step_name):
+def process_step(step_name, inner_workers=0):
+    """inner_workers: parallelism inside this step's cut_sweeps.
+      0 / 1  → serial cut_sweep (safe when called inside outer mp.Pool worker)
+      >= 2   → parallel cut_sweep on that many workers (use only when there
+               is no outer Pool, i.e. single-step CLI mode)."""
     try:
         sd = WORK / step_name
         if not (sd / "R" / "wbo").exists() or not (sd / "P" / "wbo").exists():
@@ -230,13 +307,13 @@ def process_step(step_name):
         elT_gt, xyzT_gt, wboT_gt = load(sd / "sp_groundtruth")
         freqs_gt, modes_gt = parse_g98_modes(sd / "hess_groundtruth" / "g98.out")
 
-        rp = cut_sweep(elR, wboR, elP, wboP)
+        rp = cut_sweep(elR, wboR, elP, wboP, n_workers=inner_workers)
         rp_min = select_min(rp)
         if not rp_min:
             return {"step": step_name, "error": "no min-bond mechanism"}
 
         # Cache GT's R<->T cut sweep ONCE (independent of mechanism)
-        gt_rt_pool = cut_sweep(elR, wboR, elT_gt, wboT_gt)
+        gt_rt_pool = cut_sweep(elR, wboR, elT_gt, wboT_gt, n_workers=inner_workers)
 
         mechanisms = []
         for mi, ((br_t, fm_t), info) in enumerate(rp_min.items(), 1):
@@ -279,7 +356,7 @@ def process_step(step_name):
             try:
                 elI, xyzI, wboI = load(sp_dir)
                 freqs_i, modes_i = parse_g98_modes(hess_dir / "g98.out")
-                ig_rt_pool = cut_sweep(elR, wboR, elI, wboI)
+                ig_rt_pool = cut_sweep(elR, wboR, elI, wboI, n_workers=inner_workers)
             except Exception:
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
@@ -337,7 +414,14 @@ def process_step(step_name):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workers", type=int, default=max(1, os.cpu_count() - 1))
+    ap.add_argument("--workers", type=int, default=max(1, os.cpu_count() - 1),
+                    help="Outer parallelism: how many steps run concurrently. "
+                         "Ignored when --inner-workers > 1.")
+    ap.add_argument("--inner-workers", type=int, default=0,
+                    help="Inner parallelism: how many workers each step's "
+                         "cut_sweep uses. Default 0 = serial inside step. "
+                         "Setting > 1 disables --workers (outer) to avoid "
+                         "nested daemonic multiprocessing.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
@@ -346,24 +430,43 @@ def main():
     if args.steps: steps = [s for s in all_steps if s in set(args.steps)]
     elif args.limit: steps = all_steps[:args.limit]
     else: steps = all_steps
-    print(f"Processing {len(steps)} steps with {args.workers} workers")
 
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     eval_records = []
     n_ok = n_err = 0
-    with mp.Pool(args.workers) as pool:
-        for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
-            if rec.get("error"):
-                print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  ERROR: {rec['error'][:80]}", flush=True)
-                n_err += 1
-                eval_records.append({'step': rec['step'], 'error': rec['error']})
-            else:
-                slim = rec['slim']
-                gt_best = max((m['gt']['S'] for m in slim['mechanisms'] if m['gt']), default=0)
-                print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  mechs={slim['n_mechs']}  best_GT_S={gt_best:.3f}", flush=True)
-                eval_records.append(slim)
-                n_ok += 1
+
+    def _record(i, rec):
+        nonlocal n_ok, n_err
+        if rec.get("error"):
+            print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  ERROR: {rec['error'][:80]}", flush=True)
+            n_err += 1
+            eval_records.append({'step': rec['step'], 'error': rec['error']})
+        else:
+            slim = rec['slim']
+            gt_best = max((m['gt']['S'] for m in slim['mechanisms'] if m['gt']), default=0)
+            print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  mechs={slim['n_mechs']}  best_GT_S={gt_best:.3f}", flush=True)
+            eval_records.append(slim)
+            n_ok += 1
+
+    if args.inner_workers and args.inner_workers > 1:
+        # Inner-parallel mode: steps run serially in main; each step's
+        # cut_sweep uses inner_workers cores. Best for a single step or a
+        # few large steps where the cut_sweep itself dominates cost.
+        print(f"Processing {len(steps)} steps serially; each step uses "
+              f"{args.inner_workers} inner workers")
+        for i, step in enumerate(steps, 1):
+            rec = process_step(step, inner_workers=args.inner_workers)
+            _record(i, rec)
+    else:
+        # Outer-parallel mode: args.workers steps run concurrently; each
+        # step's cut_sweep is serial (no nested daemonic Pool). Best for
+        # the full 155-step benchmark.
+        print(f"Processing {len(steps)} steps with {args.workers} outer workers")
+        with mp.Pool(args.workers) as pool:
+            for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
+                _record(i, rec)
+
     print(f"\n{n_ok} ok, {n_err} errors in {time.time()-t0:.0f}s")
 
     EVAL_JSON.write_text(json.dumps(eval_records))
