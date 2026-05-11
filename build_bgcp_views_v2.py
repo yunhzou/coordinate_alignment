@@ -63,9 +63,14 @@ def load(d):
 
 _W = {}
 def _cs_winit(elR, wboR, elT, wboT):
+    from rxn_core.pq import _color_refine_orbits
     _W['elR'] = elR; _W['wboR'] = wboR
     _W['elT'] = elT; _W['wboT'] = wboT
     _W['g_P'] = build_graph(elT, wboT, bond_cut=0.2)
+    # Orbit-canonical chem signature: collapse isos that differ only by
+    # permuting orbit-equivalent P-atoms (e.g. pr12-class spectator
+    # explosion that produced 226k branches in the pre-fix run).
+    _W['p_orbits'] = _color_refine_orbits(_W['g_P'])
     _W['n'] = len(elR)
 
 
@@ -79,15 +84,18 @@ def _cs_wrun(args):
     except Exception:
         return []
     out = []
+    p_orbits = _W['p_orbits']
     for b in branches:
         mapping = expand_mapping(b.mapping, g_R, _W['g_P'])
         if len(mapping) < _W['n'] - 2: continue
         broken, formed, _, _ = classify_bonds(mapping, _W['wboR'], _W['wboT'])
-        inv = {v: k for k, v in mapping.items()}
         br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
-        fm = tuple(sorted((min(inv.get(a, -1), inv.get(b, -1)),
-                            max(inv.get(a, -1), inv.get(b, -1)))
-                           for (a, b, _, _) in formed if a in inv and b in inv))
+        # formed encoded in P-orbit space (was R-index space via inv; got
+        # 226k duplicates on pr12 from orbit-equivalent atom permutations)
+        fm = tuple(sorted(
+            (min(p_orbits[a], p_orbits[b]), max(p_orbits[a], p_orbits[b]))
+            for (a, b, _, _) in formed
+        ))
         out.append(((br, fm), tuple(sorted(mapping.items())), cut))
     return out
 
@@ -95,17 +103,25 @@ def _cs_wrun(args):
 def _cut_sweep_serial(elR, wboR, elT, wboT):
     """Single-process cut_sweep (used inside outer-Pool workers to avoid
     nested daemonic multiprocessing)."""
+    from rxn_core.pq import _color_refine_orbits
     strong = [(i, j) for i in range(len(elR)) for j in range(i+1, len(elR))
               if wboR[i, j] >= WBO_STRONG]
     g_P = build_graph(elT, wboT, bond_cut=0.2)
+    # Orbit-canonical form (see comment in _cs_wrun re: pr12-class explosion)
+    p_orbits = _color_refine_orbits(g_P)
     pool = {}
     def chem_signature(mapping_full):
+        # broken bonds in R-frame; formed bonds canonicalized via P-orbits
+        # so isos differing only by orbit-permuted spectator atoms collapse
         broken, formed, _, _ = classify_bonds(mapping_full, wboR, wboT)
         inv = {v: k for k, v in mapping_full.items()}
         br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
-        fm = tuple(sorted((min(inv.get(a, -1), inv.get(b, -1)),
-                            max(inv.get(a, -1), inv.get(b, -1)))
-                           for (a, b, _, _) in formed if a in inv and b in inv))
+        # formed: keys are R-atom indices via inv. For orbit canonicalization
+        # we want to encode the formed P-edge as a pair of P-atom orbits.
+        fm = tuple(sorted(
+            (min(p_orbits[a], p_orbits[b]), max(p_orbits[a], p_orbits[b]))
+            for (a, b, _, _) in formed
+        ))
         return (br, fm)
     def run(cuts):
         g_R = build_graph(elR, wboR, bond_cut=0.2)

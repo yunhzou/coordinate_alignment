@@ -109,6 +109,74 @@ def expand_chemistry_relevant_atoms(mapping, broken_R_atoms, g_R, g_P, iso_tol=1
     return alternatives
 
 
+# -------------------- automorphism-aware orbit dedup --------------------
+
+def _color_refine_orbits(g, iters=20):
+    """Iterated color refinement (1-WL / Morgan extended connectivity) on
+    an UNLABELED graph. Returns dict node -> int orbit_id such that two
+    nodes have the same orbit_id iff they're indistinguishable under
+    iterated neighbor-multiset refinement.
+
+    Used to detect symmetric P-atom orbits: bijections that differ only
+    by swapping P-atoms in the same orbit produce identical chemistry
+    signatures and can be safely collapsed in the cand list.
+
+    For molecules with little symmetry, every atom ends up in its own
+    orbit (no collapse). For benzene rings, methyl Hs, B12 carborane,
+    etc., symmetric atoms share an orbit and the K-factorial cand
+    explosion is avoided.
+
+    Algorithmic correctness: this is the standard 1-WL test used in
+    InChI / RDKit canonical SMILES. It's exact for almost all molecular
+    graphs and known to fail only on a small class of regular graphs
+    (where 2-WL or full automorphism check is needed). For chemistry
+    we're safe.
+    """
+    elements = nx.get_node_attributes(g, 'element')
+    # Initial color: just element
+    colors = {v: elements.get(v, '') for v in g.nodes()}
+    for _ in range(iters):
+        new = {}
+        for v in g.nodes():
+            nbr = tuple(sorted(
+                # 1-decimal WBO precision: tolerates xtb numerical noise
+                # (~0.005) between chemically-equivalent atoms.
+                (colors[w], round(g[v][w].get('wbo', 0.0), 1))
+                for w in g.neighbors(v)
+            ))
+            new[v] = (colors[v], nbr)
+        # Compact to small ints (cheap downstream hashing)
+        unique = {c: i for i, c in
+                  enumerate(sorted(set(new.values()), key=str))}
+        new_int = {v: unique[new[v]] for v in g.nodes()}
+        if new_int == colors:
+            break
+        colors = new_int
+    return colors
+
+
+def _cand_canon_signature(cand, p_orbits):
+    """Canonical signature for a cand under unlabeled-g_P orbits.
+
+    Two cands with the same signature differ only by permuting P-atoms
+    within their unlabeled orbits — they're spectator-equivalent and
+    produce identical chemistry signatures.
+    """
+    return tuple(sorted((r, p_orbits[p]) for r, p in cand.items()))
+
+
+def _dedup_cands_by_orbit(cands, p_orbits):
+    """Collapse cands that differ only by g_P orbit permutations."""
+    if not cands or p_orbits is None or len(cands) == 1:
+        return cands
+    seen = {}
+    for c in cands:
+        sig = _cand_canon_signature(c, p_orbits)
+        if sig not in seen:
+            seen[sig] = c
+    return list(seen.values())
+
+
 # -------------------- core grow --------------------
 
 def _set_unique(cands):
@@ -333,7 +401,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    min_lock_size=1,
                    max_branches=1_000_000,
                    events=None,
-                   islands_R=None):
+                   islands_R=None,
+                   p_orbits=None):
     """
     Grow a fragment from `seed` using priority-queue propagation.
 
@@ -559,6 +628,15 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
         new_cands = _extend_cands_incremental(
             cands, fragment, n, g_R, g_P, mapping, inv,
             iso_tol, islands_R)
+        if new_cands and p_orbits is not None:
+            # Collapse cands that differ only by permuting P-atoms within
+            # the same automorphism orbit of g_P. Orbits are computed via
+            # color refinement (iterated 1-WL / Morgan) on unlabeled g_P
+            # once per find_islands_pq call. This bounds K-factorial
+            # spectator explosion on high-symmetry molecules (carboranes,
+            # PMe3 ligands, etc.) without losing chemistry-distinct
+            # alternatives — different orbits remain separate cands.
+            new_cands = _dedup_cands_by_orbit(new_cands, p_orbits)
         if new_cands:
             cands = new_cands
             ref_dist = distance.get(u, 0) + 1
@@ -857,12 +935,20 @@ class _Branch:
 
 def find_islands_pq(g_R, g_P, seed_order,
                     graph_floor=0.2, iso_tol=1.0,
-                    max_branches=1_000_000, events=None):
+                    max_branches=1_000_000, events=None,
+                    orbit_dedup=True):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
 
     Optional `events` only records the FIRST (best-mapped) branch's
-    trajectory — multi-branch traces would be confusing on a slider."""
+    trajectory — multi-branch traces would be confusing on a slider.
+
+    orbit_dedup: when True (default), pre-computes g_P's automorphism
+    orbits once via iterated 1-WL color refinement and passes them to
+    grow_island_pq so spectator-permutation cands collapse during growth.
+    Prevents K-factorial explosion on high-symmetry molecules.
+    """
+    p_orbits = _color_refine_orbits(g_P) if orbit_dedup else None
     branches = [_Branch()]
     progressed = True
     pass_no = 0
@@ -884,7 +970,8 @@ def find_islands_pq(g_R, g_P, seed_order,
                                       graph_floor=graph_floor, iso_tol=iso_tol,
                                       max_branches=max_branches,
                                       events=ev_arg,
-                                      islands_R=b.islands_R)
+                                      islands_R=b.islands_R,
+                                      p_orbits=p_orbits)
                 if not isos:
                     new_branches.append(b)
                     continue
@@ -892,6 +979,13 @@ def find_islands_pq(g_R, g_P, seed_order,
                 # no P counterpart = broken; P-edges with no R counterpart
                 # = formed). Isos with same signature differ only in
                 # spectator-atom permutations.
+                # Chemistry signature for iso-forking dedup. broken set
+                # is in R-frame (automorphism-invariant by construction).
+                # formed set uses ORBIT-CANONICAL ids on the P-side: two
+                # isos that differ only by permuting orbit-equivalent
+                # P-atoms produce the same canonical formed set. Without
+                # this, pr12-class symmetric ligands generate 50k+ chem
+                # keys that all represent the same mechanism.
                 seen_chem = {}
                 for iso in isos:
                     full_m = dict(b.mapping); full_m.update(iso)
@@ -908,7 +1002,19 @@ def find_islands_pq(g_R, g_P, seed_order,
                         ru, rv = inv[u], inv[v]
                         if not g_R.has_edge(ru, rv):
                             fm_set.append((min(ru,rv), max(ru,rv)))
-                    chem_key = (tuple(sorted(br_set)), tuple(sorted(fm_set)))
+                    if p_orbits is not None:
+                        # Replace P-atom indices in formed bonds with their
+                        # orbit ids (R-frame still uses R-indices). Two
+                        # isos that map symmetric P-atoms to swapped R-
+                        # atoms produce the same orbit-canonical fm_set.
+                        fm_canon = tuple(sorted(
+                            (min(p_orbits[full_m[ru]], p_orbits[full_m[rv]]),
+                             max(p_orbits[full_m[ru]], p_orbits[full_m[rv]]))
+                            for (ru, rv) in fm_set
+                        ))
+                    else:
+                        fm_canon = tuple(sorted(fm_set))
+                    chem_key = (tuple(sorted(br_set)), fm_canon)
                     if chem_key not in seen_chem:
                         seen_chem[chem_key] = iso
                 deduped_isos = list(seen_chem.values())
@@ -919,19 +1025,27 @@ def find_islands_pq(g_R, g_P, seed_order,
                     new_branches.append(b2)
                     progressed = True
             new_branches.sort(key=lambda b: -len(b.mapping))
-            # Dedup by full bijection (R→P items), NOT by value-set. Two
-            # branches with the same P-atom value-set but different
-            # bijections can be chemistry-distinct (e.g. Mech A vs Mech B
-            # on ts910: same atoms, different broken/formed pairs).
-            # Spectator-permutation collapse already happened at iso
-            # forking via the chemistry-signature dedup, so every branch
-            # arriving here has a distinct chemistry; we only need to
-            # collapse identical branches (different seed paths reaching
-            # the same final bijection).
+            # Orbit-canonical cross-branch dedup. Each branch's signature
+            # = sorted ((R_atom, orbit_id_of_image)) under unlabeled g_P
+            # automorphism orbits. Two branches are equivalent iff their
+            # bijections agree on the orbit-class of every R-atom's image
+            # — i.e. they differ only by permuting orbit-equivalent P-
+            # atoms. Chemistry signature (broken/formed edges) is
+            # invariant under such automorphisms, so collapsing them
+            # loses no chemistry. For ts910 Mech A vs Mech B: the two
+            # mechanisms map O atoms into DIFFERENT g_P orbits (one V-
+            # bound vs one water-bound), so their orbit signatures
+            # differ → preserved. For pr12-class spectator-rich
+            # molecules: orbit-equivalent atom swaps collapse, killing
+            # the 226k-branch explosion at iso forking accumulation.
             seen = set()
             uniq = []
             for b in new_branches:
-                sig = tuple(sorted(b.mapping.items()))
+                if p_orbits is not None:
+                    sig = tuple(sorted((r, p_orbits[p])
+                                       for r, p in b.mapping.items()))
+                else:
+                    sig = tuple(sorted(b.mapping.items()))
                 if sig in seen:
                     continue
                 seen.add(sig)
