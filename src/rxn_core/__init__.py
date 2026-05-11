@@ -28,7 +28,7 @@ Public API:
     # End-to-end pipeline (matching the rxn-core-pipeline CLI)
     from rxn_core.pipeline import process_step, main
 """
-from .pq import align_from_arrays, find_islands_pq
+from .pq import align_from_arrays, find_islands_pq, expand_chemistry_relevant_atoms
 from .frag import (
     run_xtb, parse_xyz, write_xyz_str,
     build_graph, classify_bonds, expand_mapping,
@@ -45,7 +45,7 @@ from .align import (
 )
 
 __all__ = [
-    "align_from_arrays", "find_islands_pq",
+    "align_from_arrays", "find_islands_pq", "expand_chemistry_relevant_atoms",
     "run_xtb", "parse_xyz", "write_xyz_str",
     "build_graph", "classify_bonds", "expand_mapping",
     "parse_g98_modes",

@@ -29,8 +29,9 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       core_atoms_in_R_frame, fill_unmapped_greedy,
                       reaction_coord_delta, reindex_modes_to_R,
                       bond_overlap_per_mode, bond_reaction_vector,
-                      rxn_overlap_per_mode)
-from rxn_core.pq import find_islands_pq, build_graph, _generate_seed_orders, expand_mapping
+                      rxn_overlap_per_mode,
+                      expand_chemistry_relevant_atoms)
+from rxn_core.pq import find_islands_pq, grow_island_pq, build_graph, _generate_seed_orders, expand_mapping
 
 PROJECT = _Path(__file__).resolve().parent
 WORK = PROJECT / "appendix_perparation" / "xtb_frequency_calculations"
@@ -54,41 +55,68 @@ def load(d):
 
 
 def cut_sweep(elR, wboR, elT, wboT):
+    """Enumerate chemistry classes via (a) single-edge cuts on g_R and
+    (b) post-hoc swap of chemistry-relevant atoms within their equivalence
+    class. The combination explores both topology-level alternatives
+    (cuts) and atom-level alternatives (permutable cores)."""
     strong = [(i, j) for i in range(len(elR)) for j in range(i+1, len(elR))
               if wboR[i, j] >= WBO_STRONG]
     g_P = build_graph(elT, wboT, bond_cut=0.2)
     pool = {}
+
+    def chem_signature(mapping_full):
+        broken, formed, _, _ = classify_bonds(mapping_full, wboR, wboT)
+        inv = {v: k for k, v in mapping_full.items()}
+        br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
+        fm = tuple(sorted((min(inv.get(a, -1), inv.get(b, -1)),
+                            max(inv.get(a, -1), inv.get(b, -1)))
+                           for (a, b, _, _) in formed if a in inv and b in inv))
+        # R-frame atoms participating in any bond event (= core atoms)
+        core_atoms = set()
+        for a, b in br: core_atoms.update((a, b))
+        for a, b in fm: core_atoms.update((a, b))
+        return (br, fm), core_atoms
+
+    def expand_and_classify(mapping_full, g_R_used, cuts):
+        """For a canonical bijection, run chemistry-relevant-atom expansion
+        and add every distinct chemistry class to pool."""
+        sig0, core = chem_signature(mapping_full)
+        if sig0 not in pool:
+            pool[sig0] = {'mapping': mapping_full, 'cuts': frozenset(cuts)}
+        # Post-hoc expansion on chemistry-relevant atoms (cores)
+        alternatives = expand_chemistry_relevant_atoms(
+            mapping_full, list(core), g_R_used, g_P)
+        for alt_m, _swap_path in alternatives[1:]:  # skip the canonical
+            sig, _ = chem_signature(alt_m)
+            if sig not in pool:
+                pool[sig] = {'mapping': alt_m, 'cuts': frozenset(cuts)}
+
     def run(cuts):
         g_R = build_graph(elR, wboR, bond_cut=0.2)
         for (i, j) in cuts:
             if g_R.has_edge(i, j): g_R.remove_edge(i, j)
         orders = _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN)
-        out = {}; seen = set()
+        seen_chem = set()
         for order in orders:
             try:
-                branches = find_islands_pq(g_R, g_P, order)  # no max_branches cap
+                branches = find_islands_pq(g_R, g_P, order)
             except Exception:
                 continue
             for b in branches:
                 mapping_full = expand_mapping(b.mapping, g_R, g_P)
                 if len(mapping_full) < len(elR) - 2: continue
-                key = tuple(sorted(mapping_full.items()))
-                if key in seen: continue
-                seen.add(key)
-                broken, formed, _, _ = classify_bonds(mapping_full, wboR, wboT)
-                inv = {v: k for k, v in mapping_full.items()}
-                br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
-                fm = tuple(sorted((min(inv.get(a, -1), inv.get(b, -1)),
-                                    max(inv.get(a, -1), inv.get(b, -1)))
-                                   for (a, b, _, _) in formed if a in inv and b in inv))
-                if (br, fm) not in out:
-                    out[(br, fm)] = {'mapping': mapping_full, 'cuts': frozenset(cuts)}
-        return out
-    for k, v in run(set()).items():
-        if k not in pool: pool[k] = v
+                sig, _core = chem_signature(mapping_full)
+                if sig in seen_chem: continue
+                seen_chem.add(sig)
+                expand_and_classify(mapping_full, g_R, cuts)
+
+    # Baseline (no cuts) + single-strong-edge cuts. Cut-sweep produces
+    # topology-level alternative chemistries by removing one strong R-bond
+    # and re-aligning; necessary for cases where the forward bijection is
+    # locally optimal but misses a chemistry-distinct mechanism.
+    run(set())
     for (i, j) in strong:
-        for k, v in run({(i, j)}).items():
-            if k not in pool: pool[k] = v
+        run({(i, j)})
     return pool
 
 
