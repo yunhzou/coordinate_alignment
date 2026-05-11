@@ -405,6 +405,10 @@ def process_step(step_name, inner_workers=0):
                 'igs': [{k: ig.get(k) for k in ['label', 'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'is_top2']}
                         for ig in mech['igs']],
             })
+        # Per-step slim record (so parallel Slurm array tasks don't race on
+        # the global EVAL_JSON). The post-run merge step reads these and
+        # builds the global EVAL_JSON. See nrt_verification_workflow.sh.
+        (run_dir / "_eval_v2_slim.json").write_text(json.dumps(slim))
         return {'step': step_name, 'slim': slim,
                 'top1_label': max(mechanisms, key=lambda m: m['gt']['S'] if m['gt'] else 0)['igs'][0]['label'] if mechanisms[0]['igs'] else "?"}
     except Exception as e:
