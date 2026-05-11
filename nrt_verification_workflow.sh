@@ -45,6 +45,9 @@ LOG_DIR=$OUT_DIR/slurm_logs
 PARTITION=${PARTITION:-cpu_short}
 ACCOUNT=${ACCOUNT:-nvr_lpr_agentic}  # Slurm account (NRT requires --account)
 N_CPUS=${N_CPUS:-5}                  # cores per step (inner-workers)
+MEM_PER_CPU=${MEM_PER_CPU:-2G}       # memory request per CPU — without this,
+                                     # cpu_short defaults to ALL NODE MEM,
+                                     # killing concurrency to 1 task/node
 TIME_LIMIT=${TIME_LIMIT:-03:30:00}   # under cpu_short 4:00:00 cap
 ARRAY_CONCURRENCY=${ARRAY_CONCURRENCY:-176}   # max concurrent tasks (876 / 5)
 JOB_NAME=${JOB_NAME:-bgcp_align}
@@ -76,11 +79,28 @@ if [ ! -f "$STEPS_FILE" ] || [ "$STEPS_FILE" = "$OUT_DIR/_nrt_all_steps.txt" ]; 
   find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d \
     | xargs -n1 basename | sort > "$STEPS_FILE"
 fi
+
+# Optional skip: drop steps whose _eval_v2_slim.json already exists, so
+# resubmits don't redo finished work. Set SKIP_DONE=0 to disable.
+SKIP_DONE=${SKIP_DONE:-1}
+if [ "$SKIP_DONE" = "1" ]; then
+  TODO_FILE="${STEPS_FILE}.todo"
+  : > "$TODO_FILE"
+  while read -r step; do
+    if [ -z "$step" ]; then continue; fi
+    if [ -f "$OUT_DIR/bgcp_views/$step/_eval_v2_slim.json" ]; then continue; fi
+    echo "$step" >> "$TODO_FILE"
+  done < "$STEPS_FILE"
+  n_done=$(($(wc -l < "$STEPS_FILE") - $(wc -l < "$TODO_FILE")))
+  echo "Skipping $n_done already-completed steps (have _eval_v2_slim.json)"
+  STEPS_FILE="$TODO_FILE"
+fi
 N_STEPS=$(wc -l < "$STEPS_FILE")
 echo "Submitting $N_STEPS steps (file: $STEPS_FILE)"
 echo "  Partition:    $PARTITION"
 echo "  Account:      $ACCOUNT"
 echo "  CPUs/step:    $N_CPUS"
+echo "  Mem/CPU:      $MEM_PER_CPU"
 echo "  Concurrency:  $ARRAY_CONCURRENCY"
 echo "  Time limit:   $TIME_LIMIT"
 echo "  Log dir:      $LOG_DIR"
@@ -120,6 +140,7 @@ CMD=(sbatch
   --account="$ACCOUNT"
   --array="1-${N_STEPS}%${ARRAY_CONCURRENCY}"
   --cpus-per-task="$N_CPUS"
+  --mem-per-cpu="$MEM_PER_CPU"
   --time="$TIME_LIMIT"
   --job-name="$JOB_NAME"
   --output="$LOG_DIR/step_%a.out"
