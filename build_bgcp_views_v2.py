@@ -39,6 +39,7 @@ OUT_ROOT = PROJECT / "out" / "bgcp_views"
 EVAL_JSON = PROJECT / "out" / "bgcp_alignment_eval_v2.json"
 WBO_STRONG = 0.5
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
+VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "5000"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -80,7 +81,8 @@ def _cs_wrun(args):
     for (i, j) in cut:
         if g_R.has_edge(i, j): g_R.remove_edge(i, j)
     try:
-        branches = find_islands_pq(g_R, _W['g_P'], list(order))
+        branches = find_islands_pq(g_R, _W['g_P'], list(order),
+                                   max_branches=VIEW_MAX_BRANCHES)
     except Exception:
         return []
     out = []
@@ -130,7 +132,8 @@ def _cut_sweep_serial(elR, wboR, elT, wboT):
         orders = _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN)
         for order in orders:
             try:
-                branches = find_islands_pq(g_R, g_P, order)
+                branches = find_islands_pq(g_R, g_P, order,
+                                           max_branches=VIEW_MAX_BRANCHES)
             except Exception:
                 continue
             for b in branches:

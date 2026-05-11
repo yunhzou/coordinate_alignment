@@ -18,6 +18,7 @@ __pycache__/
 
 # Run logs
 out/*.log
+out/*.csv
 
 # Untracked stale artifacts
 out_initial_posing_mode/
@@ -55,6 +56,8 @@ ts_discovery_paper/
 
 # Per-step ranked viewer outputs (regenerable)
 out/ranked_views/
+out/bgcp_views/
+out/bgcp_alignment_eval*.json
 
 # Python build artifacts
 *.egg-info/
