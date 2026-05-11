@@ -192,6 +192,23 @@ needs multiple possible mechanisms for GT/IG scoring.  `BGCP_VIEW_MAX_BRANCHES`
 caps per-alignment branch materialization in the view builder; default is
 `5000`.
 
+After minimal R<->P mechanisms are scored against the ground-truth TS, the
+view applies a final mechanism dedupe:
+
+```
+key = (
+    broken R bonds canonicalized by R symmetry orbit pairs,
+    formed  R bonds canonicalized by R symmetry orbit pairs,
+)
+```
+
+All concrete alignments with the same key are the same displayed mechanism.
+The view keeps the representative with the highest GT score, records the
+collapsed source mechanism IDs/cuts in the slim JSON, and scores/renders IGs
+only for the deduped mechanism list.  This removes degenerate mechanisms caused
+only by swapping equivalent reactant atoms while preserving different
+bond-change patterns.
+
 ## Bond-Change Core Logic: 1-1, 1-0, 0-1, 0-0
 
 This section is the chemistry core and should stay stable.
@@ -263,4 +280,5 @@ Recent single-process checks after the symmetry-block implementation:
   compressed candidates 10
 - `pr7.V.dodh_ts910`: two full branches preserved
 - `pr14.Pd_hydroamination_JOC2025_TS3_step2_alkene_inserion`: full BGCP view
-  generated with 10 inner workers, four `2/3` mechanisms
+  generated with 10 inner workers; four concrete `2/3` alignments collapse to
+  one symmetry-canonical displayed mechanism

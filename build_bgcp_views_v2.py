@@ -31,7 +31,9 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       bond_overlap_per_mode, bond_reaction_vector,
                       rxn_overlap_per_mode,
                       expand_chemistry_relevant_atoms)
-from rxn_core.pq import find_islands_pq, grow_island_pq, build_graph, _generate_seed_orders, expand_mapping
+from rxn_core.pq import (find_islands_pq, grow_island_pq, build_graph,
+                         _generate_seed_orders, expand_mapping,
+                         _color_refine_orbits)
 
 PROJECT = _Path(__file__).resolve().parent
 WORK = PROJECT / "appendix_perparation" / "xtb_frequency_calculations"
@@ -198,6 +200,60 @@ def select_min(pool):
     return {k: v for k, v in pool.items() if len(k[0]) + len(k[1]) == m}
 
 
+def _bond_key(bonds, orbits=None):
+    pairs = []
+    for a, b in bonds:
+        a = int(a); b = int(b)
+        if orbits is not None:
+            a = int(orbits[a]); b = int(orbits[b])
+        if a > b:
+            a, b = b, a
+        pairs.append((a, b))
+    return tuple(sorted(pairs))
+
+
+def _mechanism_bond_key(mech, r_orbits):
+    return (
+        _bond_key(mech['broken_bonds_R'], r_orbits),
+        _bond_key(mech['formed_bonds_R'], r_orbits),
+    )
+
+
+def _gt_score(mech):
+    gt = mech.get('gt')
+    return float(gt['S']) if gt and gt.get('S') is not None else float('-inf')
+
+
+def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
+    """Collapse final-view mechanisms with the same R-symmetry bond changes.
+
+    The cut sweep may find multiple concrete alignments whose broken/formed
+    R-index bonds differ only by swapping equivalent reactant atoms.  They are
+    the same mechanism for the view, so keep the highest-GT-scoring
+    representative and retain provenance for the slim JSON / button tooltip.
+    """
+    groups = {}
+    for mech in mechanisms:
+        key = _mechanism_bond_key(mech, r_orbits)
+        groups.setdefault(key, []).append(mech)
+
+    deduped = []
+    for group in groups.values():
+        rep = max(group, key=_gt_score)
+        rep['dedup_count'] = len(group)
+        rep['dedup_source_ids'] = [int(m['id']) for m in group]
+        rep['dedup_cuts'] = sorted({m['cut'] for m in group})
+        deduped.append(rep)
+
+    for new_id, mech in enumerate(deduped, 1):
+        suffix = re.sub(r"^#\d+:\s*", "", mech['label'])
+        if mech['dedup_count'] > 1:
+            suffix = f"{suffix} [dedup x{mech['dedup_count']}]"
+        mech['id'] = new_id
+        mech['label'] = f"#{new_id}: {suffix}"
+    return deduped
+
+
 def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
               broken_R, formed_R, core_R, delta_RP):
     modes_R = reindex_modes_to_R(modes_TS, mapping_RT, len(elR))
@@ -303,7 +359,7 @@ function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!
 function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); v.zoomTo(); v.render(); return v; }}
 function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); v.render(); }}, 60); return v; }}
 function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', elements, xyzR_static, mech.broken_bonds_R, []); makeStatic('vw_P', elements, mech.product_xyz_in_R, [], mech.formed_bonds_R); document.getElementById('prod_label').textContent = "static (mech #"+mech.id+")"; if (mech.gt && mech.gt.picked_disp) {{ makeAnimated('vw_GT', elements, mech.gt.xyz_in_R, mech.gt.picked_disp, mech.broken_bonds_R, mech.formed_bonds_R, mech.core_atoms); document.getElementById('gt_S').textContent = "S = "+mech.gt.S.toFixed(3); document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); if (ig.picked_disp) makeAnimated("vw_ig"+idx, elements, ig.xyz_in_R, ig.picked_disp, mech.broken_bonds_R, mech.formed_bonds_R, mech.core_atoms); else if (ig.xyz_in_R) makeStatic("vw_ig"+idx, elements, ig.xyz_in_R, mech.broken_bonds_R, mech.formed_bonds_R); }}); }}
-const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + "  GT S=" + (m.gt ? m.gt.S.toFixed(3) : '?'); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
+const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + "  GT S=" + (m.gt ? m.gt.S.toFixed(3) : '?'); if ((m.dedup_count||1) > 1) b.title = "Collapsed source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 window.addEventListener('load', render);
 </script>
 </body></html>
@@ -364,6 +420,9 @@ def process_step(step_name, inner_workers=0):
             mech['_state'] = (broken_R, formed_R, core_R, delta_RP)
             mechanisms.append(mech)
 
+        r_orbits = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
+        mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
+
         # IGs: cache R<->IG cut-sweep ONCE per IG, then score under each mech
         iter_dirs = sorted([d for d in sd.iterdir()
                             if d.is_dir() and re.match(r"hess_iter(\d+)$", d.name)],
@@ -418,6 +477,9 @@ def process_step(step_name, inner_workers=0):
         for mech in mechanisms:
             slim['mechanisms'].append({
                 'id': mech['id'], 'cut': mech['cut'],
+                'dedup_count': mech.get('dedup_count', 1),
+                'dedup_source_ids': mech.get('dedup_source_ids', [mech['id']]),
+                'dedup_cuts': mech.get('dedup_cuts', [mech['cut']]),
                 'broken_R': mech['broken_bonds_R'], 'formed_R': mech['formed_bonds_R'],
                 'core_R': mech['core_atoms'],
                 'gt': {k: mech['gt'][k] for k in ['S', 'beta', 'rho', 'kappa', 'freq', 'n_imag']} if mech['gt'] else None,
