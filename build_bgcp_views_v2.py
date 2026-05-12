@@ -47,6 +47,7 @@ CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
+TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -278,6 +279,61 @@ def cut_sweep(elR, wboR, elT, wboT, n_workers=None, core_R=None):
                                core_R=core_R)
 
 
+def _core_edges_preserved(mapping, wboR, wboT, core_R):
+    """Validate a TS core mapping against reactant identity.
+
+    R-P discovery intentionally cuts R bonds to expose alternate mechanisms.
+    R-TS/R-IG matching should not do that: atom identity is anchored by the
+    reactant-side core bonds that still have TS support.  This prevents a TS
+    H that is still partially attached to its R donor from being relabeled as
+    a different transferring H just because product-side formed-bond scoring
+    is larger.
+    """
+    core = tuple(sorted(set(core_R or ())))
+    for idx, a in enumerate(core):
+        if a not in mapping:
+            return False
+        for b in core[idx + 1:]:
+            if b not in mapping:
+                return False
+            if wboR[a, b] < 0.2:
+                continue
+            wT = float(wboT[mapping[a], mapping[b]])
+            if wT < TS_CORE_EDGE_FLOOR:
+                return False
+            if abs(float(wboR[a, b]) - wT) > VIEW_ISO_TOL:
+                return False
+    return True
+
+
+def ts_core_pool(elR, wboR, elT, wboT, core_R):
+    """Mechanism-independent R<->TS/IG core matcher.
+
+    Unlike R-P mechanism discovery, this does no strong-bond cut sweep.  It
+    maps the union reaction core against the target with the intact R graph,
+    then validates that every R core edge is still supported in the target.
+    Formed TS contacts are allowed as extra target edges and are handled by
+    the per-mechanism scorer.
+    """
+    core_R = tuple(sorted(set(core_R or ())))
+    if not core_R:
+        return {}
+    g_R = build_graph(elR, wboR, bond_cut=0.2)
+    g_T = build_graph(elT, wboT, bond_cut=TS_CORE_EDGE_FLOOR)
+    pool = {}
+    for order in _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN):
+        try:
+            branches = _run_find_islands_limited(g_R, g_T, order, core_R)
+        except Exception:
+            continue
+        for b in branches:
+            mapping = expand_mapping(b.mapping, g_R, g_T)
+            if not _core_edges_preserved(mapping, wboR, wboT, core_R):
+                continue
+            _pool_add(pool, _core_mapping_key(mapping, core_R), mapping, ())
+    return pool
+
+
 def select_min(pool):
     if not pool: return {}
     m = min(len(k[0]) + len(k[1]) for k in pool)
@@ -359,6 +415,8 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
     return {'S': float(beta[pk]*(1+W_RXN*rho[pk])*(1+W_CORE*kappa[pk])/max(len(imag),1)**IMAG_PEN),
             'beta': float(beta[pk]), 'rho': float(rho[pk]), 'kappa': float(kappa[pk]),
             'freq': float(freqs[pk]), 'k': int(pk), 'n_imag': len(imag),
+            'core_map': {str(int(r)): int(mapping_RT[r])
+                         for r in core_R if r in mapping_RT},
             'picked_disp': modes_R[pk].tolist(),
             'xyz_in_R': ts_in_R.tolist()}
 
@@ -482,6 +540,16 @@ def process_step(step_name, inner_workers=0):
                       flush=True)
             return pool
 
+        def timed_ts_core_pool(label, elT, wboT, core_R):
+            t_match = time.time()
+            pool = ts_core_pool(elR, wboR, elT, wboT, core_R)
+            if BGCP_TIMING:
+                print(f"    {step_name} {label:>12s} core_match: "
+                      f"{len(pool):>4d} sigs core={len(core_R)} "
+                      f"in {time.time()-t_match:.1f}s",
+                      flush=True)
+            return pool
+
         rp = timed_cut_sweep("R-P", elP, wboP)
         rp_min = select_min(rp)
         if not rp_min:
@@ -521,10 +589,10 @@ def process_step(step_name, inner_workers=0):
         mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
         core_union = sorted({r for mech in mechanisms for r in mech['core_atoms']})
 
-        # Cache GT's R<->T core sweep ONCE.  Once the union of mechanism cores
+        # Cache GT's R<->T core match ONCE.  Once the union of mechanism cores
         # is mapped, spectator atoms are irrelevant for ranking and are filled
         # greedily only for visualization.
-        gt_rt_pool = timed_cut_sweep("GT", elT_gt, wboT_gt, core_R=core_union)
+        gt_rt_pool = timed_ts_core_pool("GT", elT_gt, wboT_gt, core_union)
         for mech in mechanisms:
             br_R, fm_R, core_R, dRP = mech['_state']
             mech['gt'] = best_under_mech_using_pool(
@@ -542,8 +610,8 @@ def process_step(step_name, inner_workers=0):
             try:
                 elI, xyzI, wboI = load(sp_dir)
                 freqs_i, modes_i = parse_g98_modes(hess_dir / "g98.out")
-                ig_rt_pool = timed_cut_sweep(label, elI, wboI,
-                                             core_R=core_union)
+                ig_rt_pool = timed_ts_core_pool(label, elI, wboI,
+                                                core_union)
             except Exception:
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
@@ -591,8 +659,8 @@ def process_step(step_name, inner_workers=0):
                 'dedup_cuts': mech.get('dedup_cuts', [mech['cut']]),
                 'broken_R': mech['broken_bonds_R'], 'formed_R': mech['formed_bonds_R'],
                 'core_R': mech['core_atoms'],
-                'gt': {k: mech['gt'][k] for k in ['S', 'beta', 'rho', 'kappa', 'freq', 'n_imag']} if mech['gt'] else None,
-                'igs': [{k: ig.get(k) for k in ['label', 'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'is_top2']}
+                'gt': {k: mech['gt'][k] for k in ['S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'core_map']} if mech['gt'] else None,
+                'igs': [{k: ig.get(k) for k in ['label', 'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'core_map', 'is_top2']}
                         for ig in mech['igs']],
             })
         # Per-step slim record (so parallel Slurm array tasks don't race on
