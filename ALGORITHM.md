@@ -192,6 +192,11 @@ needs multiple possible mechanisms for GT/IG scoring.  `BGCP_VIEW_MAX_BRANCHES`
 caps per-alignment branch materialization in the view builder; default is
 `5000`.
 
+Parallel cut sweeps dispatch `(cut, seed_order)` work units.  Work is ordered
+seed-major and defaults to `BGCP_CUTSWEEP_CHUNKSIZE=1`, so the three seed
+orders for one pathological cut are not bundled onto one worker.  This improves
+tail utilization on high-symmetry cases where a few cuts dominate runtime.
+
 After minimal R<->P mechanisms are scored against the ground-truth TS, the
 view applies a final mechanism dedupe:
 
@@ -267,6 +272,8 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `max_branches` | `1_000_000` | live branch cap in core alignment |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | branch cap used by full BGCP view generation |
+| `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
+| `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
 | `n_seeds` | `10` | seed orders in `align_from_arrays` |
 | `N_SEEDS_PER_RUN` | `3` | seed orders per cut-sweep unit in views |
 

@@ -42,6 +42,8 @@ EVAL_JSON = PROJECT / "out" / "bgcp_alignment_eval_v2.json"
 WBO_STRONG = 0.5
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "5000"))
+CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
+BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -163,13 +165,16 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers):
     for _ in range(N_SEEDS_PER_RUN):
         order = list(nodes); rng.shuffle(order)
         seed_orders.append(tuple(order))
-    work = [((), s) for s in seed_orders]
-    for (i, j) in strong:
-        for s in seed_orders: work.append((((i, j),), s))
+    cuts = [()] + [((i, j),) for (i, j) in strong]
+    # Seed-major ordering plus chunksize=1 keeps the three seed orders for a
+    # pathological cut from landing in the same worker chunk. This matters on
+    # high-symmetry steps where a few cuts dominate the tail of each sweep.
+    work = [(cut, s) for s in seed_orders for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                   initargs=(elR, wboR, elT, wboT)) as p:
-        for results in p.imap_unordered(_cs_wrun, work, chunksize=4):
+        for results in p.imap_unordered(_cs_wrun, work,
+                                        chunksize=max(1, CUTSWEEP_CHUNKSIZE)):
             for chem_sig, mapping_items, cut in results:
                 pool.setdefault(chem_sig, {
                     'mapping': dict(mapping_items),
@@ -382,13 +387,22 @@ def process_step(step_name, inner_workers=0):
         elT_gt, xyzT_gt, wboT_gt = load(sd / "sp_groundtruth")
         freqs_gt, modes_gt = parse_g98_modes(sd / "hess_groundtruth" / "g98.out")
 
-        rp = cut_sweep(elR, wboR, elP, wboP, n_workers=inner_workers)
+        def timed_cut_sweep(label, elT, wboT):
+            t_sweep = time.time()
+            pool = cut_sweep(elR, wboR, elT, wboT, n_workers=inner_workers)
+            if BGCP_TIMING:
+                print(f"    {step_name} {label:>12s} cut_sweep: "
+                      f"{len(pool):>4d} sigs in {time.time()-t_sweep:.1f}s",
+                      flush=True)
+            return pool
+
+        rp = timed_cut_sweep("R-P", elP, wboP)
         rp_min = select_min(rp)
         if not rp_min:
             return {"step": step_name, "error": "no min-bond mechanism"}
 
         # Cache GT's R<->T cut sweep ONCE (independent of mechanism)
-        gt_rt_pool = cut_sweep(elR, wboR, elT_gt, wboT_gt, n_workers=inner_workers)
+        gt_rt_pool = timed_cut_sweep("GT", elT_gt, wboT_gt)
 
         mechanisms = []
         for mi, ((br_t, fm_t), info) in enumerate(rp_min.items(), 1):
@@ -434,7 +448,7 @@ def process_step(step_name, inner_workers=0):
             try:
                 elI, xyzI, wboI = load(sp_dir)
                 freqs_i, modes_i = parse_g98_modes(hess_dir / "g98.out")
-                ig_rt_pool = cut_sweep(elR, wboR, elI, wboI, n_workers=inner_workers)
+                ig_rt_pool = timed_cut_sweep(label, elI, wboI)
             except Exception:
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
@@ -539,7 +553,8 @@ def main():
         # cut_sweep uses inner_workers cores. Best for a single step or a
         # few large steps where the cut_sweep itself dominates cost.
         print(f"Processing {len(steps)} steps serially; each step uses "
-              f"{args.inner_workers} inner workers")
+              f"{args.inner_workers} inner workers "
+              f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE})")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=args.inner_workers)
             _record(i, rec)

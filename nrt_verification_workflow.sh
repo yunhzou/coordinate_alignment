@@ -49,7 +49,11 @@ MEM_PER_CPU=${MEM_PER_CPU:-2G}       # memory request per CPU — without this,
                                      # cpu_short defaults to ALL NODE MEM,
                                      # killing concurrency to 1 task/node
 TIME_LIMIT=${TIME_LIMIT:-03:30:00}   # under cpu_short 4:00:00 cap
-ARRAY_CONCURRENCY=${ARRAY_CONCURRENCY:-176}   # max concurrent tasks (876 / 5)
+TOTAL_CORE_BUDGET=${TOTAL_CORE_BUDGET:-876}
+if [ -z "${ARRAY_CONCURRENCY+x}" ]; then
+  ARRAY_CONCURRENCY=$(( TOTAL_CORE_BUDGET / N_CPUS ))
+  if [ "$ARRAY_CONCURRENCY" -lt 1 ]; then ARRAY_CONCURRENCY=1; fi
+fi
 JOB_NAME=${JOB_NAME:-bgcp_align}
 
 # Optional file listing steps to run, one per line.
@@ -91,11 +95,11 @@ if [ "$SKIP_DONE" = "1" ]; then
     if [ -f "$OUT_DIR/bgcp_views/$step/_eval_v2_slim.json" ]; then continue; fi
     echo "$step" >> "$TODO_FILE"
   done < "$STEPS_FILE"
-  n_done=$(($(wc -l < "$STEPS_FILE") - $(wc -l < "$TODO_FILE")))
+  n_done=$(( $(wc -l < "$STEPS_FILE") - $(wc -l < "$TODO_FILE") ))
   echo "Skipping $n_done already-completed steps (have _eval_v2_slim.json)"
   STEPS_FILE="$TODO_FILE"
 fi
-N_STEPS=$(wc -l < "$STEPS_FILE")
+N_STEPS=$(wc -l < "$STEPS_FILE" | tr -d '[:space:]')
 echo "Submitting $N_STEPS steps (file: $STEPS_FILE)"
 echo "  Partition:    $PARTITION"
 echo "  Account:      $ACCOUNT"
@@ -104,6 +108,10 @@ echo "  Mem/CPU:      $MEM_PER_CPU"
 echo "  Concurrency:  $ARRAY_CONCURRENCY"
 echo "  Time limit:   $TIME_LIMIT"
 echo "  Log dir:      $LOG_DIR"
+if [ "$N_STEPS" -eq 0 ]; then
+  echo "No steps to submit."
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Submit Slurm job array. Each task reads its step name from $STEPS_FILE
@@ -122,7 +130,16 @@ if [ -z "$STEP" ]; then
 fi
 
 echo "[task ${SLURM_ARRAY_TASK_ID}] step=$STEP  cpus=$N_CPUS  host=$(hostname)  start=$(date -Is)"
+echo "[task ${SLURM_ARRAY_TASK_ID}] SLURM_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK:-unset}"
 cd "$PROJECT"
+
+export OMP_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export VECLIB_MAXIMUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+export BGCP_CUTSWEEP_CHUNKSIZE=${BGCP_CUTSWEEP_CHUNKSIZE:-1}
+export BGCP_TIMING=${BGCP_TIMING:-1}
 
 python -u build_bgcp_views_v2.py \
   --steps "$STEP" \
