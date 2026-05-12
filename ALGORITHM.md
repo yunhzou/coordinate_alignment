@@ -197,16 +197,23 @@ seed-major and defaults to `BGCP_CUTSWEEP_CHUNKSIZE=1`, so the three seed
 orders for one pathological cut are not bundled onto one worker.  This improves
 tail utilization on high-symmetry cases where a few cuts dominate runtime.
 
-The BGCP view builder uses `BGCP_ISO_TOL=0.6` for WBO edge matching inside
-cut-sweeps.  The older `1.0` tolerance was too permissive for distorted IG
-geometries: it allowed chemically wrong local neighborhoods to match, producing
-many branch-distinct broken/formed signatures unrelated to the reaction core.
-Each `(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by
-default; timed-out units are skipped so one pathological cut cannot dominate a
-full GT/IG view.
+The BGCP view builder keeps `BGCP_ISO_TOL=1.0`, but the dedupe target depends
+on the alignment purpose:
 
-After minimal R<->P mechanisms are scored against the ground-truth TS, the
-view applies a final mechanism dedupe:
+- R<->P mechanism discovery deduplicates by symmetry-canonical broken/formed
+  bond changes.  Multiple concrete mappings with the same mechanism under R
+  symmetry collapse before GT/IG scoring.
+- R<->GT and R<->IG verification receives the union of the displayed
+  mechanisms' `core_R` atoms.  Seed order is core-first, branch dedup switches
+  to exact core mapping as soon as the core is mapped, and growth stops once
+  all live branches have mapped that core.  Spectator atoms are filled greedily
+  afterward for visualization only.
+
+This makes ranking symmetry/core based instead of full-bijection based.  Each
+`(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by default
+as a safety guard; set it to `0` to disable.
+
+The view still applies a final mechanism dedupe before rendering:
 
 ```
 key = (
@@ -216,11 +223,10 @@ key = (
 ```
 
 All concrete alignments with the same key are the same displayed mechanism.
-The view keeps the representative with the highest GT score, records the
-collapsed source mechanism IDs/cuts in the slim JSON, and scores/renders IGs
-only for the deduped mechanism list.  This removes degenerate mechanisms caused
-only by swapping equivalent reactant atoms while preserving different
-bond-change patterns.
+The view records collapsed source mechanism IDs/cuts in the slim JSON and
+scores/renders IGs only for the deduped mechanism list.  This removes
+degenerate mechanisms caused only by swapping equivalent reactant atoms while
+preserving different bond-change patterns.
 
 ## Bond-Change Core Logic: 1-1, 1-0, 0-1, 0-0
 
@@ -281,7 +287,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `max_branches` | `1_000_000` | live branch cap in core alignment |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | branch cap used by full BGCP view generation |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
-| `BGCP_ISO_TOL` | `0.6` | WBO tolerance used by BGCP view cut-sweeps |
+| `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
 | `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped; set `0` to disable |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
 | `n_seeds` | `10` | seed orders in `align_from_arrays` |

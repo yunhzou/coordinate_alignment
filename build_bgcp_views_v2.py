@@ -44,7 +44,7 @@ WBO_STRONG = 0.5
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "5000"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
-VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "0.6"))
+VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
@@ -79,14 +79,18 @@ def _cs_winit(elR, wboR, elT, wboT):
     # permuting orbit-equivalent P-atoms (e.g. pr12-class spectator
     # explosion that produced 226k branches in the pre-fix run).
     _W['p_orbits'] = _color_refine_orbits(_W['g_P'])
+    _W['r_orbits'] = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
     _W['n'] = len(elR)
 
 
-def _run_find_islands_limited(g_R, g_P, order):
+def _run_find_islands_limited(g_R, g_P, order, core_R=None):
+    stop_on_core = bool(core_R)
     if UNIT_TIMEOUT <= 0 or not hasattr(signal, "SIGALRM"):
         return find_islands_pq(g_R, g_P, list(order),
                                iso_tol=VIEW_ISO_TOL,
-                               max_branches=VIEW_MAX_BRANCHES)
+                               max_branches=VIEW_MAX_BRANCHES,
+                               core_R=core_R,
+                               stop_when_core_mapped=stop_on_core)
 
     def _raise_timeout(signum, frame):
         raise TimeoutError("cut_sweep work unit timed out")
@@ -97,39 +101,97 @@ def _run_find_islands_limited(g_R, g_P, order):
     try:
         return find_islands_pq(g_R, g_P, list(order),
                                iso_tol=VIEW_ISO_TOL,
-                               max_branches=VIEW_MAX_BRANCHES)
+                               max_branches=VIEW_MAX_BRANCHES,
+                               core_R=core_R,
+                               stop_when_core_mapped=stop_on_core)
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0.0)
         signal.signal(signal.SIGALRM, old_handler)
 
 
+def _canon_pair(a, b):
+    return (a, b) if a <= b else (b, a)
+
+
+def _orbit_bond_key(pairs, orbits, tag):
+    return tuple(sorted(
+        (tag, *_canon_pair(int(orbits[a]), int(orbits[b])))
+        for a, b in pairs
+    ))
+
+
+def _core_mapping_key(mapping, core_R):
+    return (
+        tuple((int(r), int(mapping[r])) for r in sorted(core_R)),
+        (),
+    )
+
+
+def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits):
+    """Symmetry-canonical mechanism key for R-P discovery.
+
+    Broken bonds are R-frame bond changes. Formed bonds are converted back to
+    R-frame when both P endpoints are mapped; rare unmapped formed endpoints
+    are retained in P-orbit space so they are not silently lost.
+    """
+    broken, formed, _, _ = classify_bonds(mapping, wboR, wboT)
+    inv = {v: k for k, v in mapping.items()}
+    br_pairs = [(a, b) for (a, b, _, _) in broken]
+    fm_r_pairs = []
+    fm_p_pairs = []
+    for a, b, _, _ in formed:
+        if a in inv and b in inv:
+            fm_r_pairs.append((inv[a], inv[b]))
+        else:
+            fm_p_pairs.append((a, b))
+    br = _orbit_bond_key(br_pairs, r_orbits, 'R')
+    fm = (_orbit_bond_key(fm_r_pairs, r_orbits, 'R') +
+          _orbit_bond_key(fm_p_pairs, p_orbits, 'P'))
+    return br, tuple(sorted(fm))
+
+
+def _pool_add(pool, sig, mapping, cuts):
+    entry = pool.get(sig)
+    cuts = frozenset(cuts)
+    if entry is None:
+        pool[sig] = {
+            'mapping': mapping,
+            'cuts': cuts,
+            'dedup_count': 1,
+        }
+    else:
+        entry['cuts'] = entry['cuts'] | cuts
+        entry['dedup_count'] = entry.get('dedup_count', 1) + 1
+
+
 def _cs_wrun(args):
-    cut, order = args
+    cut, order, core_R = args
     g_R = build_graph(_W['elR'], _W['wboR'], bond_cut=0.2)
     for (i, j) in cut:
         if g_R.has_edge(i, j): g_R.remove_edge(i, j)
     try:
-        branches = _run_find_islands_limited(g_R, _W['g_P'], order)
+        branches = _run_find_islands_limited(g_R, _W['g_P'], order, core_R)
     except Exception:
         return []
     out = []
     p_orbits = _W['p_orbits']
+    r_orbits = _W['r_orbits']
     for b in branches:
         mapping = expand_mapping(b.mapping, g_R, _W['g_P'])
-        if len(mapping) < _W['n'] - 2: continue
-        broken, formed, _, _ = classify_bonds(mapping, _W['wboR'], _W['wboT'])
-        br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
-        # formed encoded in P-orbit space (was R-index space via inv; got
-        # 226k duplicates on pr12 from orbit-equivalent atom permutations)
-        fm = tuple(sorted(
-            (min(p_orbits[a], p_orbits[b]), max(p_orbits[a], p_orbits[b]))
-            for (a, b, _, _) in formed
-        ))
-        out.append(((br, fm), tuple(sorted(mapping.items())), cut))
+        if core_R:
+            if not all(r in mapping for r in core_R):
+                continue
+            sig = _core_mapping_key(mapping, core_R)
+        else:
+            if len(mapping) < _W['n'] - 2:
+                continue
+            sig = _mechanism_signature(mapping, _W['wboR'], _W['wboT'],
+                                       r_orbits, p_orbits)
+        out.append((sig, tuple(sorted(mapping.items())), cut))
     return out
 
 
-def _cut_sweep_serial(elR, wboR, elT, wboT):
+def _cut_sweep_serial(elR, wboR, elT, wboT, core_R=None):
     """Single-process cut_sweep (used inside outer-Pool workers to avoid
     nested daemonic multiprocessing)."""
     from rxn_core.pq import _color_refine_orbits
@@ -138,20 +200,8 @@ def _cut_sweep_serial(elR, wboR, elT, wboT):
     g_P = build_graph(elT, wboT, bond_cut=0.2)
     # Orbit-canonical form (see comment in _cs_wrun re: pr12-class explosion)
     p_orbits = _color_refine_orbits(g_P)
+    r_orbits = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
     pool = {}
-    def chem_signature(mapping_full):
-        # broken bonds in R-frame; formed bonds canonicalized via P-orbits
-        # so isos differing only by orbit-permuted spectator atoms collapse
-        broken, formed, _, _ = classify_bonds(mapping_full, wboR, wboT)
-        inv = {v: k for k, v in mapping_full.items()}
-        br = tuple(sorted((min(a, b), max(a, b)) for (a, b, _, _) in broken))
-        # formed: keys are R-atom indices via inv. For orbit canonicalization
-        # we want to encode the formed P-edge as a pair of P-atom orbits.
-        fm = tuple(sorted(
-            (min(p_orbits[a], p_orbits[b]), max(p_orbits[a], p_orbits[b]))
-            for (a, b, _, _) in formed
-        ))
-        return (br, fm)
     def run(cuts):
         g_R = build_graph(elR, wboR, bond_cut=0.2)
         for (i, j) in cuts:
@@ -159,21 +209,28 @@ def _cut_sweep_serial(elR, wboR, elT, wboT):
         orders = _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN)
         for order in orders:
             try:
-                branches = _run_find_islands_limited(g_R, g_P, order)
+                branches = _run_find_islands_limited(g_R, g_P, order, core_R)
             except Exception:
                 continue
             for b in branches:
                 mapping_full = expand_mapping(b.mapping, g_R, g_P)
-                if len(mapping_full) < len(elR) - 2: continue
-                sig = chem_signature(mapping_full)
-                pool.setdefault(sig, {'mapping': mapping_full, 'cuts': frozenset(cuts)})
+                if core_R:
+                    if not all(r in mapping_full for r in core_R):
+                        continue
+                    sig = _core_mapping_key(mapping_full, core_R)
+                else:
+                    if len(mapping_full) < len(elR) - 2:
+                        continue
+                    sig = _mechanism_signature(mapping_full, wboR, wboT,
+                                               r_orbits, p_orbits)
+                _pool_add(pool, sig, mapping_full, cuts)
     run(set())
     for (i, j) in strong:
         run({(i, j)})
     return pool
 
 
-def _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers):
+def _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers, core_R=None):
     """Multi-process cut_sweep using `n_workers` workers. Work units are
     (cut, seed_order) pairs; each unit runs one find_islands_pq call."""
     import random as _random
@@ -191,34 +248,34 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers):
     # Seed-major ordering plus chunksize=1 keeps the three seed orders for a
     # pathological cut from landing in the same worker chunk. This matters on
     # high-symmetry steps where a few cuts dominate the tail of each sweep.
-    work = [(cut, s) for s in seed_orders for cut in cuts]
+    core_R = tuple(sorted(set(core_R or ())))
+    work = [(cut, s, core_R) for s in seed_orders for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                   initargs=(elR, wboR, elT, wboT)) as p:
         for results in p.imap_unordered(_cs_wrun, work,
                                         chunksize=max(1, CUTSWEEP_CHUNKSIZE)):
             for chem_sig, mapping_items, cut in results:
-                pool.setdefault(chem_sig, {
-                    'mapping': dict(mapping_items),
-                    'cuts': frozenset(cut),
-                })
+                _pool_add(pool, chem_sig, dict(mapping_items), cut)
     return pool
 
 
-def cut_sweep(elR, wboR, elT, wboT, n_workers=None):
+def cut_sweep(elR, wboR, elT, wboT, n_workers=None, core_R=None):
     """Enumerate chemistry classes via single-strong-edge cuts on g_R.
 
     For each (cut ∈ {∅} ∪ strong-R-bonds), seed N_SEEDS_PER_RUN seed
-    orderings, run find_islands_pq, dedup by (broken, formed) chemistry
-    signature.
+    orderings, run find_islands_pq, and dedup either by symmetry-canonical
+    mechanism signature (R-P discovery) or by exact core mapping (R-TS/IG
+    scoring when core_R is supplied).
 
     n_workers:
       None or 0 → serial (used inside outer multiprocessing.Pool workers)
       >= 1      → multiprocessing.Pool with that many workers
     """
     if not n_workers or n_workers <= 1:
-        return _cut_sweep_serial(elR, wboR, elT, wboT)
-    return _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers)
+        return _cut_sweep_serial(elR, wboR, elT, wboT, core_R=core_R)
+    return _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers,
+                               core_R=core_R)
 
 
 def select_min(pool):
@@ -267,9 +324,13 @@ def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
     deduped = []
     for group in groups.values():
         rep = max(group, key=_gt_score)
-        rep['dedup_count'] = len(group)
+        rep['dedup_count'] = sum(m.get('dedup_count', 1) for m in group)
         rep['dedup_source_ids'] = [int(m['id']) for m in group]
-        rep['dedup_cuts'] = sorted({m['cut'] for m in group})
+        rep['dedup_cuts'] = sorted({
+            cut
+            for m in group
+            for cut in m.get('dedup_cuts', [m['cut']])
+        })
         deduped.append(rep)
 
     for new_id, mech in enumerate(deduped, 1):
@@ -386,7 +447,7 @@ function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!
 function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); v.zoomTo(); v.render(); return v; }}
 function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); v.render(); }}, 60); return v; }}
 function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', elements, xyzR_static, mech.broken_bonds_R, []); makeStatic('vw_P', elements, mech.product_xyz_in_R, [], mech.formed_bonds_R); document.getElementById('prod_label').textContent = "static (mech #"+mech.id+")"; if (mech.gt && mech.gt.picked_disp) {{ makeAnimated('vw_GT', elements, mech.gt.xyz_in_R, mech.gt.picked_disp, mech.broken_bonds_R, mech.formed_bonds_R, mech.core_atoms); document.getElementById('gt_S').textContent = "S = "+mech.gt.S.toFixed(3); document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); if (ig.picked_disp) makeAnimated("vw_ig"+idx, elements, ig.xyz_in_R, ig.picked_disp, mech.broken_bonds_R, mech.formed_bonds_R, mech.core_atoms); else if (ig.xyz_in_R) makeStatic("vw_ig"+idx, elements, ig.xyz_in_R, mech.broken_bonds_R, mech.formed_bonds_R); }}); }}
-const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + "  GT S=" + (m.gt ? m.gt.S.toFixed(3) : '?'); if ((m.dedup_count||1) > 1) b.title = "Collapsed source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
+const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + "  GT S=" + (m.gt ? m.gt.S.toFixed(3) : '?'); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 window.addEventListener('load', render);
 </script>
 </body></html>
@@ -409,12 +470,15 @@ def process_step(step_name, inner_workers=0):
         elT_gt, xyzT_gt, wboT_gt = load(sd / "sp_groundtruth")
         freqs_gt, modes_gt = parse_g98_modes(sd / "hess_groundtruth" / "g98.out")
 
-        def timed_cut_sweep(label, elT, wboT):
+        def timed_cut_sweep(label, elT, wboT, core_R=None):
             t_sweep = time.time()
-            pool = cut_sweep(elR, wboR, elT, wboT, n_workers=inner_workers)
+            pool = cut_sweep(elR, wboR, elT, wboT,
+                             n_workers=inner_workers, core_R=core_R)
             if BGCP_TIMING:
+                core_msg = f" core={len(core_R)}" if core_R else ""
                 print(f"    {step_name} {label:>12s} cut_sweep: "
-                      f"{len(pool):>4d} sigs in {time.time()-t_sweep:.1f}s",
+                      f"{len(pool):>4d} sigs{core_msg} "
+                      f"in {time.time()-t_sweep:.1f}s",
                       flush=True)
             return pool
 
@@ -423,11 +487,8 @@ def process_step(step_name, inner_workers=0):
         if not rp_min:
             return {"step": step_name, "error": "no min-bond mechanism"}
 
-        # Cache GT's R<->T cut sweep ONCE (independent of mechanism)
-        gt_rt_pool = timed_cut_sweep("GT", elT_gt, wboT_gt)
-
         mechanisms = []
-        for mi, ((br_t, fm_t), info) in enumerate(rp_min.items(), 1):
+        for mi, (_sig, info) in enumerate(rp_min.items(), 1):
             mapping_RP = info['mapping']
             inv_RP = {v: k for k, v in mapping_RP.items()}
             broken, formed, _, _ = classify_bonds(mapping_RP, wboR, wboP)
@@ -441,23 +502,34 @@ def process_step(step_name, inner_workers=0):
             for i_R, i_P in full_RP.items(): xyzP_in_R[i_R] = xyzP[i_P]
             cut = next(iter(info['cuts']), None)
             cut_name = f"{elR[cut[0]]}{cut[0]}-{elR[cut[1]]}{cut[1]}" if cut else "none"
-            br_label = ",".join(f"{elR[a]}{a}-{elR[b]}{b}" for a, b in br_t)
+            br_label = ",".join(f"{elR[a]}{a}-{elR[b]}{b}" for a, b in broken_R)
             mech = {
                 'id': mi, 'cut': cut_name,
                 'label': f"#{mi}: {br_label} (cut: {cut_name})",
+                'dedup_count': info.get('dedup_count', 1),
+                'dedup_cuts': [
+                    f"{elR[a]}{a}-{elR[b]}{b}" for a, b in sorted(info['cuts'])
+                ] or [cut_name],
                 'broken_bonds_R': broken_R, 'formed_bonds_R': formed_R,
                 'core_atoms': core_R,
                 'product_xyz_in_R': xyzP_in_R.tolist(),
             }
-            gt = best_under_mech_using_pool(elR, xyzR, elT_gt, xyzT_gt,
-                                              freqs_gt, modes_gt, gt_rt_pool,
-                                              broken_R, formed_R, core_R, delta_RP)
-            mech['gt'] = gt
             mech['_state'] = (broken_R, formed_R, core_R, delta_RP)
             mechanisms.append(mech)
 
         r_orbits = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
         mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
+        core_union = sorted({r for mech in mechanisms for r in mech['core_atoms']})
+
+        # Cache GT's R<->T core sweep ONCE.  Once the union of mechanism cores
+        # is mapped, spectator atoms are irrelevant for ranking and are filled
+        # greedily only for visualization.
+        gt_rt_pool = timed_cut_sweep("GT", elT_gt, wboT_gt, core_R=core_union)
+        for mech in mechanisms:
+            br_R, fm_R, core_R, dRP = mech['_state']
+            mech['gt'] = best_under_mech_using_pool(
+                elR, xyzR, elT_gt, xyzT_gt, freqs_gt, modes_gt, gt_rt_pool,
+                br_R, fm_R, core_R, dRP)
 
         # IGs: cache R<->IG cut-sweep ONCE per IG, then score under each mech
         iter_dirs = sorted([d for d in sd.iterdir()
@@ -470,7 +542,8 @@ def process_step(step_name, inner_workers=0):
             try:
                 elI, xyzI, wboI = load(sp_dir)
                 freqs_i, modes_i = parse_g98_modes(hess_dir / "g98.out")
-                ig_rt_pool = timed_cut_sweep(label, elI, wboI)
+                ig_rt_pool = timed_cut_sweep(label, elI, wboI,
+                                             core_R=core_union)
             except Exception:
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue

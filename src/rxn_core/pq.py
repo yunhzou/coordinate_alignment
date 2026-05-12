@@ -1334,7 +1334,8 @@ def _chemistry_orbit_signature(mapping, g_R, g_P, r_orbits=None, p_orbits=None):
 def find_islands_pq(g_R, g_P, seed_order,
                     graph_floor=0.2, iso_tol=1.0,
                     max_branches=1_000_000, events=None,
-                    orbit_dedup=True):
+                    orbit_dedup=True, core_R=None,
+                    stop_when_core_mapped=False):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
 
@@ -1346,12 +1347,39 @@ def find_islands_pq(g_R, g_P, seed_order,
     Used as a CHEAP FILTER for orbit-equivalence; chemistry signature
     in orbit space is the VERIFIER. Prevents K-factorial explosion on
     high-symmetry molecules.
+
+    core_R: optional R atoms that define the scoring-relevant alignment.
+    When supplied, branch dedup switches to exact core mapping as soon as
+    every core atom is mapped.  With stop_when_core_mapped=True the search
+    returns once all live branches have mapped the core, leaving spectators
+    to downstream greedy fill.
     """
     p_orbits = _color_refine_orbits(g_P) if orbit_dedup else None
     r_orbits = _color_refine_orbits(g_R) if orbit_dedup else None
+    core_R = tuple(sorted(set(core_R or ())))
+    core_R_set = set(core_R)
+    seed_order = list(seed_order)
+    if core_R:
+        seed_order = ([s for s in seed_order if s in core_R_set] +
+                      [s for s in seed_order if s not in core_R_set])
     branches = [_Branch()]
     progressed = True
     pass_no = 0
+
+    def _core_complete(mapping):
+        return core_R and all(r in mapping for r in core_R)
+
+    def _branch_signature(mapping):
+        if core_R:
+            core_key = tuple((r, mapping[r]) for r in core_R if r in mapping)
+            if len(core_key) == len(core_R):
+                return ('core', core_key)
+            return ('partial_core', core_key,
+                    _chemistry_orbit_signature(
+                        mapping, g_R, g_P, r_orbits, p_orbits))
+        return ('chem', _chemistry_orbit_signature(
+            mapping, g_R, g_P, r_orbits, p_orbits))
+
     while progressed:
         progressed = False
         pass_no += 1
@@ -1363,8 +1391,7 @@ def find_islands_pq(g_R, g_P, seed_order,
             pending_seen = set()
 
             def _append_pending(branch):
-                sig = _chemistry_orbit_signature(
-                    branch.mapping, g_R, g_P, r_orbits, p_orbits)
+                sig = _branch_signature(branch.mapping)
                 if sig in pending_seen:
                     return False
                 pending_seen.add(sig)
@@ -1374,6 +1401,9 @@ def find_islands_pq(g_R, g_P, seed_order,
             for bi, b in enumerate(branches):
                 if len(new_branches) >= max_branches:
                     break
+                if stop_when_core_mapped and _core_complete(b.mapping):
+                    _append_pending(b)
+                    continue
                 if seed in b.mapping:
                     _append_pending(b)
                     continue
@@ -1412,8 +1442,7 @@ def find_islands_pq(g_R, g_P, seed_order,
                 seen_chem = {}
                 for iso in isos:
                     full_m = dict(b.mapping); full_m.update(iso)
-                    chem_key = _chemistry_orbit_signature(
-                        full_m, g_R, g_P, r_orbits, p_orbits)
+                    chem_key = _branch_signature(full_m)
                     if chem_key not in seen_chem:
                         seen_chem[chem_key] = iso
                 deduped_isos = list(seen_chem.values())
@@ -1441,8 +1470,7 @@ def find_islands_pq(g_R, g_P, seed_order,
             seen = set()
             uniq = []
             for b in new_branches:
-                chem_sig = _chemistry_orbit_signature(
-                    b.mapping, g_R, g_P, r_orbits, p_orbits)
+                chem_sig = _branch_signature(b.mapping)
                 if chem_sig in seen:
                     continue
                 seen.add(chem_sig)
@@ -1459,6 +1487,14 @@ def find_islands_pq(g_R, g_P, seed_order,
                       f"max_branches={max_branches}  "
                       f"new_branches_in={len(new_branches)}",
                       file=sys.stderr, flush=True)
+            if (stop_when_core_mapped and core_R and branches and
+                    all(_core_complete(b.mapping) for b in branches)):
+                if events is not None:
+                    events.append({'type': 'done',
+                                   'mapped': len(branches[0].mapping),
+                                   'stop_reason': 'core_mapped',
+                                   'core_size': len(core_R)})
+                return branches
     if events is not None:
         events.append({'type': 'done',
                        'mapped': len(branches[0].mapping)})
