@@ -306,6 +306,21 @@ function applyEvent(idx) {{
   function fmtCand(c) {{
     return '{{' + Object.keys(c).sort((a,b)=>+a-+b).map(k => `R[${{k}}]→P[${{c[k]}}]`).join(', ') + '}}';
   }}
+  function fmtPatterns(patterns) {{
+    if (!patterns || !patterns.length) return '';
+    let out = '';
+    for (let i = 0; i < patterns.length; i++) {{
+      const p = patterns[i];
+      out += `    [${{i}}] witness ${{fmtCand(p.witness || {{}})}}\n`;
+      if (p.blocks && p.blocks.length) {{
+        for (const b of p.blocks) {{
+          out += `        block R[${{b.r_atoms.join(',')}}] ⇄ P[${{b.p_atoms.join(',')}}]`;
+          out += `  assignments=${{b.assignments}}  extendable=${{b.extendable}}\n`;
+        }}
+      }}
+    }}
+    return out;
+  }}
   function fmtHeapTop(h) {{
     if (!h || !h.length) return '  (heap empty)';
     return h.map(x => `    R[${{x.frag_atom}}]→R[${{x.ext_atom}}]  WBO=${{x.wbo}}  [${{x.ext_status}}]`).join('\n');
@@ -325,7 +340,9 @@ function applyEvent(idx) {{
   }} else if (e.type === 'seed_start') {{
     txt += `  seed = R[${{e.seed}}]\n`;
     txt += `  initial cands = ${{e.init_cands}}\n`;
+    if (e.represented_assignments !== undefined) txt += `  represented concrete assignments = ${{e.represented_assignments}}\n`;
     txt += `  candidate P-atoms (set): [${{(e.p_atoms||[]).join(', ')}}]`;
+    if (e.cand_patterns) txt += `\n  compressed candidate patterns:\n${{fmtPatterns(e.cand_patterns)}}`;
   }} else if (e.type === 'pop') {{
     const ed = e.edge;
     txt += `  POPPED edge: R[${{ed.frag_atom}}] → R[${{ed.ext_atom}}](${{ed.ext_element}})  WBO=${{ed.wbo}}\n`;
@@ -335,11 +352,13 @@ function applyEvent(idx) {{
     const ps = e.pre_state;
     txt += `  fragment (${{ps.fragment_size}} atoms): [${{ps.fragment.join(', ')}}]\n`;
     txt += `  cands count: ${{ps.cands_count}}\n`;
+    if (ps.represented_assignments !== undefined) txt += `  represented concrete assignments: ${{ps.represented_assignments}}\n`;
     txt += `  P-atoms claimed across cands: [${{ps.p_atoms_in_cands.join(', ')}}]\n`;
     txt += `  cand sample (top ${{ps.cands_sample.length}}):\n`;
     for (let i = 0; i < ps.cands_sample.length; i++) {{
       txt += `    [${{i}}] ${{fmtCand(ps.cands_sample[i])}}\n`;
     }}
+    if (ps.cands_pattern_sample) txt += `  compressed patterns:\n${{fmtPatterns(ps.cands_pattern_sample)}}`;
     txt += `  HEAP next ${{e.heap_top_after_pop.length}}:\n${{fmtHeapTop(e.heap_top_after_pop)}}\n`;
     txt += fmtPool(e.pool_by_frag_atom);
   }} else if (e.type === 'pop_skip') {{
@@ -355,6 +374,7 @@ function applyEvent(idx) {{
     }}
     if (e.cands_after !== undefined) {{
       txt += `  cands: ${{e.cands_before}} → ${{e.cands_after}}\n`;
+      if (e.represented_assignments_after !== undefined) txt += `  represented concrete assignments after = ${{e.represented_assignments_after}}\n`;
     }} else if (e.cands !== undefined) {{
       txt += `  cands = ${{e.cands}}\n`;
     }}
@@ -365,6 +385,7 @@ function applyEvent(idx) {{
         txt += `    [${{i}}] ${{fmtCand(e.cands_sample_after[i])}}\n`;
       }}
     }}
+    if (e.cands_pattern_after) txt += `  compressed patterns after:\n${{fmtPatterns(e.cands_pattern_after)}}`;
     if (e.bonds_to_fragment) {{
       txt += `  bonds to fragment: [${{e.bonds_to_fragment.map(([u,w]) => `R[${{u}}]:WBO=${{w}}`).join(', ')}}]\n`;
     }}
@@ -390,6 +411,8 @@ function applyEvent(idx) {{
       txt += `  island_id=${{e.island_id}}, image=P[${{e.island_image}}]\n`;
     }}
     txt += `  fragment (${{e.fragment.length}} atoms) unchanged, cands (${{e.cands_count}}) unchanged\n`;
+    if (e.represented_assignments !== undefined) txt += `  represented concrete assignments = ${{e.represented_assignments}}\n`;
+    if (e.cands_pattern_sample) txt += `  compressed patterns:\n${{fmtPatterns(e.cands_pattern_sample)}}`;
     if (e.why_per_cand) {{
       txt += `  WHY EACH CAND FAILED:\n`;
       for (const w of e.why_per_cand) {{
@@ -423,6 +446,7 @@ function applyEvent(idx) {{
     }} else if (e.iso) {{
       txt += `\n  iso = ${{fmtCand(e.iso)}}`;
     }}
+    if (e.cand_patterns) txt += `\n  final compressed patterns:\n${{fmtPatterns(e.cand_patterns)}}`;
     if (e.heap_remaining !== undefined) txt += `\n  heap remaining at lock = ${{e.heap_remaining}}`;
   }} else if (e.type === 'island_locked') {{
     txt += `  island #${{e.island_idx}} locked\n`;
@@ -467,4 +491,3 @@ applyEvent(0);
 </script>
 </body></html>
 """
-

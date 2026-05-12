@@ -9,6 +9,7 @@ on set-non-unique saturation, and chirality-aware scoring.
 from __future__ import annotations
 
 import heapq
+import itertools
 import random
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -20,6 +21,9 @@ import networkx as nx
 from .frag import (
     run_xtb, build_graph, expand_mapping, classify_bonds,
 )
+
+SYM_SUPPORT_MAX_STATES = 4096
+SYM_REPAIR_MAX_EVALS = 20000
 
 
 # -------------------- chemistry-aware post-hoc expansion --------------------
@@ -229,15 +233,25 @@ class _SymCand:
     def __init__(self, mapping=None, blocks=()):
         blocks = tuple(blocks)
         block_r = {r for b in blocks for r in b.r_atoms}
-        m = {r: p for r, p in (mapping or {}).items() if r not in block_r}
+        raw = dict(mapping or {})
+        m = {r: p for r, p in raw.items() if r not in block_r}
         used = set(m.values())
         for b in blocks:
             if len(b.r_atoms) > len(b.p_atoms):
                 raise ValueError("symmetry block has more R atoms than P atoms")
+            for r in b.r_atoms:
+                if r not in raw:
+                    continue
+                p = raw[r]
+                if p not in b.p_atoms or p in used:
+                    raise ValueError("symmetry block witness conflicts with fixed atoms")
+                m[r] = p
+                used.add(p)
             available = [p for p in b.p_atoms if p not in used]
-            if len(available) < len(b.r_atoms):
+            missing = [r for r in b.r_atoms if r not in m]
+            if len(available) < len(missing):
                 raise ValueError("symmetry block witness conflicts with fixed atoms")
-            for r, p in zip(b.r_atoms, available):
+            for r, p in zip(missing, available):
                 m[r] = p
                 used.add(p)
         self.mapping = m
@@ -301,6 +315,25 @@ class _SymCand:
                                       extendable=b.extendable)
         try:
             return _SymCand(self.mapping, blocks)
+        except ValueError:
+            return None
+
+    def with_witness(self, assignments):
+        r_to_block = {}
+        for idx, block in enumerate(self.blocks):
+            for r in block.r_atoms:
+                r_to_block[r] = idx
+        touched_blocks = {
+            r_to_block[r] for r in assignments
+            if r in r_to_block
+        }
+        m = {
+            r: p for r, p in self.mapping.items()
+            if r not in r_to_block or r_to_block[r] not in touched_blocks
+        }
+        m.update(assignments)
+        try:
+            return _SymCand(m, self.blocks)
         except ValueError:
             return None
 
@@ -403,6 +436,161 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None):
         if sig not in seen:
             seen[sig] = cand
     return list(seen.values())
+
+
+def _sym_block_indexes(cand):
+    r_to_block = {}
+    p_to_block = {}
+    if isinstance(cand, _SymCand):
+        for idx, block in enumerate(cand.blocks):
+            for r in block.r_atoms:
+                r_to_block[r] = idx
+            for p in block.p_atoms:
+                p_to_block[p] = idx
+    return r_to_block, p_to_block
+
+
+def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
+                               g_P, iso_tol, join_block_idx=None,
+                               max_states=SYM_SUPPORT_MAX_STATES):
+    """Find a concrete witness that supports R[n] -> P[v_n].
+
+    `_SymCand` blocks represent a pool of legal P atoms, but the stored
+    mapping is only one witness.  Extension must therefore ask whether some
+    assignment inside each unresolved block can satisfy the new edge pattern,
+    not whether the current witness happens to satisfy it.
+    """
+    if not isinstance(cand, _SymCand):
+        used = set(cand.values())
+        if v_n in used and cand.get(n) != v_n:
+            return None
+        support = {}
+        for u, w in r_wbos:
+            if u not in cand:
+                return None
+            p_u = cand[u]
+            if p_u == v_n:
+                return None
+            if not g_P.has_edge(p_u, v_n):
+                return None
+            if abs(w - g_P[p_u][v_n].get('wbo', 0.0)) > iso_tol:
+                return None
+        return support
+
+    r_to_block, p_to_block = _sym_block_indexes(cand)
+    block_r = set(r_to_block)
+    fixed_used = {p for r, p in cand.mapping.items() if r not in block_r}
+    if v_n in fixed_used and cand.get(n) != v_n:
+        return None
+    value_block = p_to_block.get(v_n)
+    if value_block is not None and value_block != join_block_idx:
+        return None
+    if join_block_idx is not None:
+        block = cand.blocks[join_block_idx]
+        if v_n not in block.p_atoms or not block.open:
+            return None
+
+    by_block = defaultdict(list)
+    support = {}
+    w_by_r = {u: w for u, w in r_wbos}
+    for u in bonded_in_frag:
+        if u not in cand.mapping:
+            return None
+        bidx = r_to_block.get(u)
+        if bidx is None:
+            p_u = cand.mapping[u]
+            if p_u == v_n:
+                return None
+            if not g_P.has_edge(p_u, v_n):
+                return None
+            if abs(w_by_r[u] - g_P[p_u][v_n].get('wbo', 0.0)) > iso_tol:
+                return None
+            continue
+        by_block[bidx].append((u, w_by_r[u]))
+
+    for bidx, items in by_block.items():
+        block = cand.blocks[bidx]
+        reserved = set()
+        if bidx == join_block_idx:
+            reserved.add(v_n)
+        domains = []
+        for u, w in items:
+            vals = []
+            for p in block.p_atoms:
+                if p in reserved:
+                    continue
+                if not g_P.has_edge(p, v_n):
+                    continue
+                if abs(w - g_P[p][v_n].get('wbo', 0.0)) <= iso_tol:
+                    vals.append(p)
+            if not vals:
+                return None
+            domains.append((u, vals))
+        domains.sort(key=lambda item: (len(item[1]), item[0]))
+        chosen = {}
+        used = set(reserved)
+        states = 0
+
+        def backtrack(pos):
+            nonlocal states
+            states += 1
+            if states > max_states:
+                return False
+            if pos == len(domains):
+                return True
+            u, vals = domains[pos]
+            for p in vals:
+                if p in used:
+                    continue
+                used.add(p)
+                chosen[u] = p
+                if backtrack(pos + 1):
+                    return True
+                chosen.pop(u, None)
+                used.remove(p)
+            return False
+
+        if not backtrack(0):
+            return None
+        support.update(chosen)
+    return support
+
+
+def _force_sym_value(cand, r, p, fragment, g_R, r_orbits, p_orbits):
+    if not isinstance(cand, _SymCand):
+        if r in cand:
+            return cand if cand[r] == p else None
+        if p in cand.values():
+            return None
+        nc = dict(cand)
+        nc[r] = p
+        return nc
+    r_to_block, p_to_block = _sym_block_indexes(cand)
+    if r in cand.mapping:
+        current = cand.mapping[r]
+        if current == p:
+            return cand
+        block_idx = r_to_block.get(r)
+        if block_idx is None or p not in cand.blocks[block_idx].p_atoms:
+            return None
+        assignment = {r: p}
+        for other in cand.blocks[block_idx].r_atoms:
+            if other != r and cand.mapping.get(other) == p:
+                assignment[other] = current
+                break
+        return cand.with_witness(assignment)
+    block_idx = p_to_block.get(p)
+    if block_idx is not None:
+        if not _r_compatible_with_block(cand, block_idx, r, fragment,
+                                        g_R, r_orbits):
+            return None
+        nc = cand.with_extended_block(block_idx, r)
+        return nc.with_witness({r: p}) if nc is not None else None
+    block_r = set(r_to_block)
+    fixed_used = {v for rr, v in cand.mapping.items() if rr not in block_r}
+    if p in fixed_used:
+        return None
+    return cand.with_fixed(r, p)
 
 
 # -------------------- core grow --------------------
@@ -594,24 +782,27 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
     new_cands = []
     for raw_cand in cands:
         cand = raw_cand if isinstance(raw_cand, _SymCand) else _SymCand(raw_cand)
-        cm = cand.materialize()
-        if any(u not in cm for u in bonded_in_frag):
+        if any(u not in cand.mapping for u in bonded_in_frag):
             continue
 
         if n in mapping:
             v_n = mapping[n]
-            if v_n in cm.values() and cand.get(n) != v_n:
+            _, p_to_block = _sym_block_indexes(cand)
+            join_idx = p_to_block.get(v_n)
+            if join_idx is not None and not _r_compatible_with_block(
+                    cand, join_idx, n, fragment_old, g_R, r_orbits):
                 continue
-            ok = True
-            for u, w in r_wbos:
-                if not g_P.has_edge(cm[u], v_n):
-                    ok = False; break
-                if abs(w - g_P[cm[u]][v_n]['wbo']) > iso_tol:
-                    ok = False; break
-            if not ok:
+            support = _support_witness_for_value(
+                cand, n, v_n, bonded_in_frag, r_wbos, g_P, iso_tol,
+                join_block_idx=join_idx)
+            if support is None:
                 continue
-
-            nc = cand.with_fixed(n, v_n)
+            nc = _force_sym_value(cand, n, v_n, fragment_old, g_R,
+                                  r_orbits, p_orbits)
+            if nc is None:
+                continue
+            support[n] = v_n
+            nc = nc.with_witness(support) if isinstance(nc, _SymCand) else nc
             if nc is None:
                 continue
             extras_ok = True
@@ -619,7 +810,8 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
                 if r == n:
                     continue
                 p = mapping[r]
-                nc = nc.with_fixed(r, p)
+                nc = _force_sym_value(nc, r, p, fragment_old, g_R,
+                                      r_orbits, p_orbits)
                 if nc is None:
                     extras_ok = False; break
             if not extras_ok:
@@ -646,42 +838,52 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
                 new_cands.append(nc)
             continue
 
-        v_set = set(g_P.neighbors(cm[bonded_in_frag[0]]))
-        for u in bonded_in_frag[1:]:
-            v_set &= set(g_P.neighbors(cm[u]))
-        v_set -= set(cm.values())
-
-        valid = []
-        for v in v_set:
+        block_join = []
+        by_group = defaultdict(list)
+        for v in g_P.nodes():
             if v in inv:
                 continue
             if g_P.nodes[v]['element'] != n_el:
                 continue
-            if all(abs(w - g_P[cm[u]][v]['wbo']) <= iso_tol
-                   for u, w in r_wbos):
-                valid.append(v)
-        if not valid:
-            continue
-
-        for group in _group_nodes_by_signature(
-                valid, lambda v: _p_relation_signature(cand, v, g_P, p_orbits)):
-            gset = set(group)
-            extended = False
-            for idx, block in enumerate(cand.blocks):
-                if gset <= set(block.p_atoms) and _r_compatible_with_block(
-                        cand, idx, n, fragment_old, g_R, r_orbits):
-                    nc = cand.with_extended_block(idx, n)
-                    if nc is not None:
-                        new_cands.append(nc)
-                    extended = True
-                    break
-            if extended:
+            _, p_to_block = _sym_block_indexes(cand)
+            join_idx = p_to_block.get(v)
+            if join_idx is not None and not _r_compatible_with_block(
+                    cand, join_idx, n, fragment_old, g_R, r_orbits):
                 continue
+            support = _support_witness_for_value(
+                cand, n, v, bonded_in_frag, r_wbos, g_P, iso_tol,
+                join_block_idx=join_idx)
+            if support is None:
+                continue
+            if join_idx is not None:
+                block_join.append((join_idx, v, support))
+            else:
+                sig = _p_relation_signature(cand, v, g_P, p_orbits)
+                by_group[sig].append((v, support))
 
+        for join_idx, v, support in block_join:
+            nc = cand.with_extended_block(join_idx, n)
+            if nc is None:
+                continue
+            support = dict(support)
+            support[n] = v
+            nc = nc.with_witness(support)
+            if nc is not None:
+                new_cands.append(nc)
+
+        if not by_group:
+            continue
+        for _, entries in sorted(by_group.items(), key=lambda kv: str(kv[0])):
+            group = tuple(sorted(v for v, _ in entries))
+            witness_v, support = sorted(entries, key=lambda item: item[0])[0]
             if len(group) > 1:
                 nc = cand.with_new_block(n, group, extendable=True)
             else:
-                nc = cand.with_fixed(n, group[0])
+                nc = cand.with_fixed(n, witness_v)
+            if nc is not None and isinstance(nc, _SymCand):
+                support = dict(support)
+                support[n] = witness_v
+                nc = nc.with_witness(support)
             if nc is not None:
                 new_cands.append(nc)
 
@@ -806,14 +1008,92 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
     used_edges = set()
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
+
+    def _cands_sample(cs, k=10):
+        return [{int(a): int(b) for a, b in _cand_map(c).items()}
+                for c in cs[:k]]
+
+    def _cand_possible_p_atoms(c):
+        atoms = set(_cand_map(c).values())
+        if isinstance(c, _SymCand):
+            for block in c.blocks:
+                atoms.update(block.p_atoms)
+        return atoms
+
+    def _cand_possible_values(c, r):
+        if isinstance(c, _SymCand):
+            for block in c.blocks:
+                if r in block.r_atoms:
+                    return set(block.p_atoms)
+        cm = _cand_map(c)
+        return {cm[r]} if r in cm else set()
+
+    def _block_assignment_expr(block):
+        n = len(block.p_atoms)
+        k = len(block.r_atoms)
+        if k <= 0 or n <= 1:
+            return '1'
+        if k == 1:
+            return str(n)
+        if k == n:
+            return f'{n}!'
+        return f'P({n},{k})'
+
+    def _cand_assignment_expr(c):
+        if not isinstance(c, _SymCand):
+            return '1'
+        factors = []
+        for block in c.blocks:
+            expr = _block_assignment_expr(block)
+            if expr != '1':
+                factors.append(expr)
+        return ' * '.join(factors) if factors else '1'
+
+    def _represented_assignment_expr(cs, max_terms=6):
+        counts = Counter(_cand_assignment_expr(c) for c in cs)
+        if not counts:
+            return '0'
+        terms = []
+        for expr, count in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:max_terms]:
+            if expr == '1':
+                terms.append(str(count))
+            elif count == 1:
+                terms.append(expr)
+            else:
+                terms.append(f'{count}*({expr})')
+        remaining = max(0, len(counts) - max_terms)
+        if remaining:
+            terms.append(f'... + {remaining} expression groups')
+        return ' + '.join(terms)
+
+    def _cands_pattern_sample(cs, k=5):
+        out = []
+        for c in cs[:k]:
+            item = {
+                'witness': {int(a): int(b) for a, b in _cand_map(c).items()},
+                'blocks': [],
+            }
+            if isinstance(c, _SymCand):
+                for block in c.blocks:
+                    item['blocks'].append({
+                        'r_atoms': [int(x) for x in block.r_atoms],
+                        'p_atoms': [int(x) for x in block.p_atoms],
+                        'extendable': bool(block.extendable),
+                        'assignments': _block_assignment_expr(block),
+                    })
+            out.append(item)
+        return out
+
     if record:
         events.append({
             'type': 'seed_start',
             'seed': int(seed),
             'init_cands': len(cands),
+            'represented_assignments': _represented_assignment_expr(cands),
             'fragment': [int(seed)],
             'p_atoms': sorted({int(v) for c in cands
-                               for v in _cand_map(c).values()}),
+                               for v in _cand_possible_p_atoms(c)}),
+            'cand_patterns': _cands_pattern_sample(cands, 5),
         })
 
     def _heap_snapshot(k=None):
@@ -850,10 +1130,6 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                  'frag_element': g_R.nodes[u]['element'],
                  'edges': sorted(by_u[u], key=lambda x: -x['wbo'])}
                 for u in sorted(by_u.keys())]
-
-    def _cands_sample(cs, k=10):
-        return [{int(a): int(b) for a, b in _cand_map(c).items()}
-                for c in cs[:k]]
 
     def _why_extend_failed(n_atom):
         """Per-cand explanation of why extension to n_atom failed."""
@@ -944,6 +1220,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'all_isos': [iso],
                     'lock_reason': 'set_unique_len1_during_BFS',
                     'heap_remaining': len(heap),
+                    'cand_patterns': _cands_pattern_sample(cands, 5),
                 })
             return [_cand_map(cands[0])]
 
@@ -976,9 +1253,11 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'fragment_size': len(fragment),
                     'fragment': sorted(int(x) for x in fragment),
                     'cands_count': len(cands),
+                    'represented_assignments': _represented_assignment_expr(cands),
                     'cands_sample': _cands_sample(cands, 5),
+                    'cands_pattern_sample': _cands_pattern_sample(cands, 5),
                     'p_atoms_in_cands': sorted({int(v) for c in cands
-                                                for v in _cand_map(c).values()}),
+                                                for v in _cand_possible_p_atoms(c)}),
                 },
                 'heap_top_after_pop': _heap_snapshot(8),
                 'pool_by_frag_atom': _pool_by_frag_atom(),
@@ -1023,13 +1302,16 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'atoms_added': added_atoms,
                     'island_size_absorbed': len(added_atoms) if n_in_mapping else None,
                     'island_image': int(mapping[n]) if n_in_mapping else None,
-                    'cand_n_value_set': sorted({int(c[n]) for c in cands if n in c}),
+                    'cand_n_value_set': sorted({int(v) for c in cands
+                                                for v in _cand_possible_values(c, n)}),
                     'cands_before': old_count,
                     'cands_after': len(cands),
+                    'represented_assignments_after': _represented_assignment_expr(cands),
                     'cands_sample_after': _cands_sample(cands, 5),
+                    'cands_pattern_after': _cands_pattern_sample(cands, 5),
                     'fragment': sorted(int(x) for x in fragment),
                     'p_atoms': sorted({int(v) for c in cands
-                                       for v in _cand_map(c).values()}),
+                                       for v in _cand_possible_p_atoms(c)}),
                     'distance_from_seed': distance[n],
                     'bonds_to_fragment': [(int(u), round(wbo, 3))],
                     'heap_remaining': len(heap),
@@ -1049,7 +1331,9 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'why_per_cand': (_why_merge_failed(n) if n_in_mapping
                                      else _why_extend_failed(n)),
                     'cands_count': len(cands),
+                    'represented_assignments': _represented_assignment_expr(cands),
                     'cands_sample': _cands_sample(cands, 5),
+                    'cands_pattern_sample': _cands_pattern_sample(cands, 5),
                     'fragment': sorted(int(x) for x in fragment),
                     'heap_remaining': len(heap),
                     'heap_top': _heap_snapshot(8),
@@ -1077,6 +1361,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 'fragment': sorted(int(x) for x in fragment),
                 'iso': iso,
                 'all_isos': [iso],
+                'cand_patterns': _cands_pattern_sample(cands, 5),
             })
         return [_cand_map(cands[0])]
     # Dedup by compressed structural signature.  Open symmetry blocks may
@@ -1101,6 +1386,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
             'iso': {int(k): int(v) for k, v in branches[0].items()},
             'all_isos': [{int(k): int(v) for k, v in c.items()}
                          for c in branches],
+            'cand_patterns': _cands_pattern_sample(cands, 10),
         })
     return branches
 
@@ -1329,6 +1615,182 @@ def _chemistry_orbit_signature(mapping, g_R, g_P, r_orbits=None, p_orbits=None):
                 _orbit_pair(u, v, p_orbits),
             ))
     return tuple(sorted(br_pairs)), tuple(sorted(fm_pairs))
+
+
+def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
+    broken, formed, _, _ = classify_bonds(
+        mapping, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold)
+    delta = 0.0
+    for a, b, wR, wP in broken:
+        delta += abs(float(wR or 0.0) - float(wP or 0.0))
+    for a, b, wR, wP in formed:
+        delta += abs(float(wP or 0.0) - float(wR or 0.0))
+    return (len(broken) + len(formed), round(delta, 12), -len(mapping))
+
+
+def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
+                            dwbo_threshold=0.5, bond_floor=0.2,
+                            min_changes=5, full_permutation_size=6,
+                            max_evals=SYM_REPAIR_MAX_EVALS,
+                            return_stats=False):
+    """Choose the best concrete realization inside product symmetry orbits.
+
+    The PQ matcher intentionally compresses high-symmetry choices and keeps a
+    single witness.  A witness is not chemistry: if changed-bond endpoints sit
+    inside an unresolved P orbit, another realization of the same compressed
+    match may remove fake broken/formed bonds.  This local search swaps
+    only atoms that already occupy the same product orbit and element.
+    """
+    if not mapping or p_orbits is None:
+        return (mapping, {'enabled': False}) if return_stats else mapping
+    mapping0 = dict(mapping)
+    base_broken, base_formed, _, _ = classify_bonds(
+        mapping0, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold)
+    base_changes = len(base_broken) + len(base_formed)
+    stats = {
+        'enabled': True,
+        'base_changes': int(base_changes),
+        'repaired': False,
+        'groups': [],
+        'evaluated': 0,
+        'capped': False,
+    }
+    if base_changes < min_changes:
+        return (mapping0, stats) if return_stats else mapping0
+
+    inv = {v: r for r, v in mapping0.items()}
+    affected = set()
+    for a, b, _, _ in base_broken:
+        affected.add(a); affected.add(b)
+    for a, b, _, _ in base_formed:
+        if a in inv:
+            affected.add(inv[a])
+        if b in inv:
+            affected.add(inv[b])
+    if not affected:
+        return (mapping0, stats) if return_stats else mapping0
+
+    local = set(affected)
+    for r in list(affected):
+        if r not in g_R:
+            continue
+        for nb in g_R.neighbors(r):
+            if g_R[r][nb].get('wbo', 0.0) >= bond_floor:
+                local.add(nb)
+    for p in {x for edge in base_formed for x in edge[:2]}:
+        if p not in g_P:
+            continue
+        for q in g_P.neighbors(p):
+            if q in inv and g_P[p][q].get('wbo', 0.0) >= bond_floor:
+                local.add(inv[q])
+
+    touched_orbits = set()
+    for r in affected:
+        if r in mapping0:
+            p = mapping0[r]
+            touched_orbits.add((g_R.nodes[r].get('element'), p_orbits[p]))
+    groups = defaultdict(list)
+    for r, p in mapping0.items():
+        key = (g_R.nodes[r].get('element'), p_orbits[p])
+        if key in touched_orbits:
+            groups[key].append(r)
+    groups = {
+        key: sorted(rs) for key, rs in groups.items()
+        if len(rs) > 1
+    }
+    if not groups:
+        return (mapping0, stats) if return_stats else mapping0
+
+    local_pairs = []
+    nR = wbo_R.shape[0]
+    for i in range(nR):
+        for j in range(i + 1, nR):
+            if i not in mapping0 or j not in mapping0:
+                continue
+            if i not in local and j not in local:
+                continue
+            local_pairs.append((i, j, float(wbo_R[i, j])))
+
+    def local_score(m):
+        changed = 0
+        delta = 0.0
+        for i, j, wR in local_pairs:
+            wP = float(wbo_P[m[i], m[j]])
+            if wR - wP >= dwbo_threshold:
+                changed += 1
+                delta += wR - wP
+            elif wP - wR >= dwbo_threshold:
+                changed += 1
+                delta += wP - wR
+            elif wR >= bond_floor or wP >= bond_floor:
+                delta += abs(wR - wP) * 0.01
+        return (changed, round(delta, 12), -len(m))
+
+    current = dict(mapping0)
+    current_score = local_score(current)
+    for key, rs in sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])):
+        stats['groups'].append({
+            'element': key[0],
+            'orbit': int(key[1]),
+            'size': len(rs),
+            'atoms': [int(r) for r in rs],
+        })
+    max_passes = max(4, 2 * sum(len(rs) for rs in groups.values()))
+    ordered_groups = [rs for _, rs in sorted(
+        groups.items(), key=lambda item: (-len(item[1]), item[0]))]
+    for _ in range(max_passes):
+        improved = False
+        for rs in ordered_groups:
+            if stats['evaluated'] >= max_evals:
+                stats['capped'] = True
+                break
+            best_score = current_score
+            best_map = None
+            if len(rs) <= full_permutation_size:
+                targets = [current[r] for r in rs]
+                for perm in itertools.permutations(targets):
+                    if stats['evaluated'] >= max_evals:
+                        stats['capped'] = True
+                        break
+                    candidate = dict(current)
+                    for r, p in zip(rs, perm):
+                        candidate[r] = p
+                    score = local_score(candidate)
+                    stats['evaluated'] += 1
+                    if score < best_score:
+                        best_score = score
+                        best_map = candidate
+            else:
+                for a, b in itertools.combinations(rs, 2):
+                    if stats['evaluated'] >= max_evals:
+                        stats['capped'] = True
+                        break
+                    candidate = dict(current)
+                    candidate[a], candidate[b] = candidate[b], candidate[a]
+                    score = local_score(candidate)
+                    stats['evaluated'] += 1
+                    if score < best_score:
+                        best_score = score
+                        best_map = candidate
+            if best_map is not None:
+                current = best_map
+                current_score = best_score
+                improved = True
+        if stats['capped']:
+            break
+        if not improved:
+            break
+
+    best = current
+    best_score = _mapping_change_score(best, wbo_R, wbo_P,
+                                       dwbo_threshold=dwbo_threshold)
+    base_score = _mapping_change_score(mapping0, wbo_R, wbo_P,
+                                       dwbo_threshold=dwbo_threshold)
+    stats['best_changes'] = int(best_score[0])
+    if best_score < base_score:
+        stats['repaired'] = True
+        return (best, stats) if return_stats else best
+    return (mapping0, stats) if return_stats else mapping0
 
 
 def find_islands_pq(g_R, g_P, seed_order,
@@ -1562,21 +2024,19 @@ def _chirality_violations(mapping, coords_R, coords_P,
 # -------------------- multi-seed driver --------------------
 
 def _generate_seed_orders(g_R, n_trials, rng_seed=42):
-    """One order per heavy (non-H) atom, putting that atom first; the
-    remaining nodes follow in a random order. Hydrogens are never used
-    as initial seeds because they have very few connectivity constraints
-    and produce poor island growth.
+    """Generate at most `n_trials` deterministic seed orderings.
 
-    If n_trials > n_heavy, pad with full random shuffles. The previous
-    implementation was n_trials random shuffles only, which could miss
-    structurally informative seedings (e.g. a key metal atom never
-    landing first in any of the 10 default trials).
+    Heavy atoms are used as anchors first in graph order. Hydrogens are never
+    used as explicit first seeds because they have few connectivity
+    constraints. If more trials are requested than there are heavy atoms, pad
+    with full random shuffles.
     """
     nodes = list(g_R.nodes())
     heavy = [n for n in nodes if g_R.nodes[n].get('element') != 'H']
     rng = random.Random(rng_seed)
     orders = []
-    for h in heavy:
+    n_trials = max(0, int(n_trials))
+    for h in heavy[:n_trials]:
         rest = [x for x in nodes if x != h]
         rng.shuffle(rest)
         orders.append([h] + rest)
@@ -1598,6 +2058,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
 
     g_R = build_graph(elR, wboR, bond_cut=graph_floor)
     g_P = build_graph(elP, wboP, bond_cut=graph_floor)
+    p_orbits = _color_refine_orbits(g_P)
 
     orders = _generate_seed_orders(g_R, n_seeds)
     all_results = []
@@ -1607,6 +2068,9 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                                    max_branches=max_branches)
         for b in branches:
             mapping = expand_mapping(b.mapping, g_R, g_P)
+            mapping = symmetry_repair_mapping(
+                mapping, wboR, wboP, g_R, g_P, p_orbits,
+                dwbo_threshold=dwbo_threshold)
             broken, formed, _, _ = classify_bonds(
                 mapping, wboR, wboP, dwbo_threshold=dwbo_threshold)
             chir = (_chirality_violations(mapping, xyzR, xyzP, broken, formed, elR)

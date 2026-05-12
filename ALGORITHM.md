@@ -29,8 +29,10 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
 2. **No concrete symmetry explosion.** Symmetric choices are represented as
    local `_SymBlock(r_atoms, p_atoms)` pools inside `_SymCand`.  A block says:
    these R atoms occupy this P atom pool up to symmetry.  The object keeps a
-   deterministic witness mapping for cheap WBO checks, but branch identity is
-   the block structure, not every possible permutation.
+   deterministic witness mapping, but branch identity is the block structure,
+   not every possible permutation.  Extension is allowed to reshuffle the
+   witness inside a block when another correlated assignment satisfies the
+   same compressed state.
 
 3. **Hierarchical symmetry centers.** `_color_refine_orbits` runs iterated
    1-WL / Morgan color refinement on both graphs using element labels and
@@ -49,7 +51,9 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
 
 6. **Public API stays concrete.** `align_from_arrays` and downstream scoring
    still receive ordinary dict mappings.  Compression is internal to island
-   growth and branch deduplication.
+   growth and branch deduplication.  Before scoring a finished R<->P mapping,
+   a bounded local symmetry repair chooses the lowest bond-change realization
+   inside touched product orbits.
 
 ## Symmetry-Aware Candidate Growth
 
@@ -76,26 +80,40 @@ could this seed be" rather than "these sibling R atoms share one target pool."
 ### Extension
 
 When the heap pops an edge from fragment atom `u` to outside atom `n`,
-`_extend_sym_cands` replaces the old concrete fanout:
+`_extend_sym_cands` replaces the old concrete fanout.  The important point is
+that the deterministic witness is not trusted as the only valid assignment.
+For each possible target `v`, `_support_witness_for_value` asks whether there
+exists a block-internal assignment that supports all WBO constraints from
+`n` to its already-grown R neighbors.
 
 ```
 for each compressed candidate:
-    cm = deterministic witness mapping
     bonded = R-neighbors of n already in the fragment
-    v_set = intersection of P-neighbors of cm[b] for b in bonded
-    filter v_set by:
-        - v not globally used
-        - element(v) == element(n)
-        - every bonded R/P WBO matches within iso_tol
+    for each unused matching-element P target v:
+        test whether some assignment inside every touched symmetry block can
+        make all bonded R/P WBOs match within iso_tol
 ```
 
-The valid `v` targets are grouped before constructing children:
+For fixed atoms the test is direct:
+
+```
+- P edge must exist
+- abs(wR - wP) <= iso_tol
+```
+
+For atoms inside a `_SymBlock`, the test is a small constrained matching over
+that block's P pool.  This handles correlated symmetry: if two core or shell
+atoms sit in the same symmetry block, they are assigned jointly, not shuffled
+independently.  The support search is capped by `SYM_SUPPORT_MAX_STATES`
+(default `4096`) so a pathological block cannot create unbounded backtracking.
+
+Targets that pass the support test are grouped before constructing children:
 
 ```
 group key =
     P element
     P orbit id
-    relation of v to the current witness atoms
+    relation of v to the supported witness atoms
     relation of v to existing symmetry blocks
 ```
 
@@ -109,6 +127,11 @@ For each target group:
 
 This is the main change from concrete matching: a K-way symmetric target group
 creates one compressed candidate, not K dicts.
+
+When a support assignment differs from the current witness, `_SymCand` updates
+only the witness for the touched block.  The compressed block remains intact;
+this prevents arbitrary witness choice from turning a valid symmetric mapping
+into fake broken/formed bonds later.
 
 ### Forced Island Merge
 
@@ -167,8 +190,8 @@ spectator swaps without erasing product-side mechanism distinctions.
 ## Outer Alignment
 
 `align_from_arrays(...)` builds graphs, generates seed orders, runs
-`find_islands_pq`, expands any unmapped spectators greedily, classifies bonds,
-and scores branches by:
+`find_islands_pq`, expands any unmapped spectators greedily, applies final
+symmetry repair for R<->P mappings, classifies bonds, and scores branches by:
 
 ```
 (number of broken + formed bonds,
@@ -178,6 +201,36 @@ and scores branches by:
 
 The best lexicographic score wins.  `return_all=True` returns all scored
 branches for view/ranking workflows.
+
+### Final R<->P Symmetry Repair
+
+Compressed growth may still return one legal witness from a symmetric product
+orbit.  If that witness creates many bond changes, the final repair pass
+searches only the product symmetry orbits touched by current broken/formed
+bond endpoints:
+
+```
+affected atoms = endpoints of current broken bonds
+               + R-frame endpoints of current formed bonds
+touched groups = mapped atoms with same (element, product orbit)
+```
+
+Within each touched group, the repair swaps images already assigned to that
+same `(element, product orbit)` group.  It never introduces a new spectator
+target outside the compressed alignment.  The score is:
+
+```
+(number of broken + formed bonds,
+ total absolute WBO delta on changed bonds,
+ -number of mapped atoms)
+```
+
+Groups of size up to 6 may try full within-group permutations; larger groups
+use improving pair swaps.  The pass is capped by `SYM_REPAIR_MAX_EVALS`
+(default `20000`; `BGCP_SYMMETRY_REPAIR_MAX_EVALS` in the view builder).
+This is the pr17 TS6a fix: the O/C shell can reshuffle within product orbits
+so equivalent O-C pairs stay paired, while the true mechanism-level bond
+breaking/forming remains.
 
 ## BGCP View Cut Sweep
 
@@ -191,6 +244,11 @@ This is intentionally broader than a single R<->P alignment because the view
 needs multiple possible mechanisms for GT/IG scoring.  `BGCP_VIEW_MAX_BRANCHES`
 caps per-alignment branch materialization in the view builder; default is
 `5000`.
+
+Seed generation is capped: `N_SEEDS_PER_RUN=3` means three seed orderings, not
+one ordering per heavy atom.  The chosen anchors are heavy atoms in graph
+order, then random full-order shuffles only if more trials are requested than
+heavy anchors exist.
 
 Parallel cut sweeps dispatch `(cut, seed_order)` work units.  Work is ordered
 seed-major and defaults to `BGCP_CUTSWEEP_CHUNKSIZE=1`, so the three seed
@@ -226,6 +284,11 @@ for elementary steps.
 This makes ranking symmetry/core based instead of full-bijection based.  Each
 R<->P `(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by
 default as a safety guard; set it to `0` to disable.
+
+R<->P work units also apply the bounded final symmetry repair by default
+(`BGCP_SYMMETRY_REPAIR=1`).  It can be disabled for debugging with
+`BGCP_SYMMETRY_REPAIR=0`, and its local search cap is controlled by
+`BGCP_SYMMETRY_REPAIR_MAX_EVALS`.
 
 The view still applies a final mechanism dedupe before rendering:
 

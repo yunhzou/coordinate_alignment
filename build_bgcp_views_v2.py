@@ -34,7 +34,7 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       expand_chemistry_relevant_atoms)
 from rxn_core.pq import (find_islands_pq, grow_island_pq, build_graph,
                          _generate_seed_orders, expand_mapping,
-                         _color_refine_orbits)
+                         _color_refine_orbits, symmetry_repair_mapping)
 
 PROJECT = _Path(__file__).resolve().parent
 WORK = PROJECT / "appendix_perparation" / "xtb_frequency_calculations"
@@ -47,6 +47,9 @@ CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
+SYMMETRY_REPAIR = os.environ.get("BGCP_SYMMETRY_REPAIR", "1") != "0"
+SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANGES", "5"))
+SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS", "20000"))
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
@@ -77,11 +80,12 @@ def _cs_winit(elR, wboR, elT, wboT):
     _W['elR'] = elR; _W['wboR'] = wboR
     _W['elT'] = elT; _W['wboT'] = wboT
     _W['g_P'] = build_graph(elT, wboT, bond_cut=0.2)
+    _W['g_R_full'] = build_graph(elR, wboR, bond_cut=0.2)
     # Orbit-canonical chem signature: collapse isos that differ only by
     # permuting orbit-equivalent P-atoms (e.g. pr12-class spectator
     # explosion that produced 226k branches in the pre-fix run).
     _W['p_orbits'] = _color_refine_orbits(_W['g_P'])
-    _W['r_orbits'] = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
+    _W['r_orbits'] = _color_refine_orbits(_W['g_R_full'])
     _W['n'] = len(elR)
 
 
@@ -187,6 +191,12 @@ def _cs_wrun(args):
         else:
             if len(mapping) < _W['n'] - 2:
                 continue
+            if SYMMETRY_REPAIR:
+                mapping = symmetry_repair_mapping(
+                    mapping, _W['wboR'], _W['wboT'],
+                    _W.get('g_R_full', g_R), _W['g_P'], p_orbits,
+                    min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
+                    max_evals=SYMMETRY_REPAIR_MAX_EVALS)
             sig = _mechanism_signature(mapping, _W['wboR'], _W['wboT'],
                                        r_orbits, p_orbits)
         out.append((sig, tuple(sorted(mapping.items())), cut))
@@ -200,9 +210,10 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, core_R=None):
     strong = [(i, j) for i in range(len(elR)) for j in range(i+1, len(elR))
               if wboR[i, j] >= WBO_STRONG]
     g_P = build_graph(elT, wboT, bond_cut=0.2)
+    g_R_full = build_graph(elR, wboR, bond_cut=0.2)
     # Orbit-canonical form (see comment in _cs_wrun re: pr12-class explosion)
     p_orbits = _color_refine_orbits(g_P)
-    r_orbits = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
+    r_orbits = _color_refine_orbits(g_R_full)
     pool = {}
     def run(cuts):
         g_R = build_graph(elR, wboR, bond_cut=0.2)
@@ -223,6 +234,12 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, core_R=None):
                 else:
                     if len(mapping_full) < len(elR) - 2:
                         continue
+                    if SYMMETRY_REPAIR:
+                        mapping_full = symmetry_repair_mapping(
+                            mapping_full, wboR, wboT, g_R_full, g_P,
+                            p_orbits,
+                            min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
+                            max_evals=SYMMETRY_REPAIR_MAX_EVALS)
                     sig = _mechanism_signature(mapping_full, wboR, wboT,
                                                r_orbits, p_orbits)
                 _pool_add(pool, sig, mapping_full, cuts)
