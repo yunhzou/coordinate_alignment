@@ -19,6 +19,7 @@ import json
 import multiprocessing as mp
 import os
 import re
+import signal
 import sys
 import time
 import traceback
@@ -43,6 +44,8 @@ WBO_STRONG = 0.5
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "5000"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
+VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "0.6"))
+UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
@@ -79,14 +82,34 @@ def _cs_winit(elR, wboR, elT, wboT):
     _W['n'] = len(elR)
 
 
+def _run_find_islands_limited(g_R, g_P, order):
+    if UNIT_TIMEOUT <= 0 or not hasattr(signal, "SIGALRM"):
+        return find_islands_pq(g_R, g_P, list(order),
+                               iso_tol=VIEW_ISO_TOL,
+                               max_branches=VIEW_MAX_BRANCHES)
+
+    def _raise_timeout(signum, frame):
+        raise TimeoutError("cut_sweep work unit timed out")
+
+    old_handler = signal.getsignal(signal.SIGALRM)
+    signal.signal(signal.SIGALRM, _raise_timeout)
+    signal.setitimer(signal.ITIMER_REAL, UNIT_TIMEOUT)
+    try:
+        return find_islands_pq(g_R, g_P, list(order),
+                               iso_tol=VIEW_ISO_TOL,
+                               max_branches=VIEW_MAX_BRANCHES)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+
 def _cs_wrun(args):
     cut, order = args
     g_R = build_graph(_W['elR'], _W['wboR'], bond_cut=0.2)
     for (i, j) in cut:
         if g_R.has_edge(i, j): g_R.remove_edge(i, j)
     try:
-        branches = find_islands_pq(g_R, _W['g_P'], list(order),
-                                   max_branches=VIEW_MAX_BRANCHES)
+        branches = _run_find_islands_limited(g_R, _W['g_P'], order)
     except Exception:
         return []
     out = []
@@ -136,8 +159,7 @@ def _cut_sweep_serial(elR, wboR, elT, wboT):
         orders = _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN)
         for order in orders:
             try:
-                branches = find_islands_pq(g_R, g_P, order,
-                                           max_branches=VIEW_MAX_BRANCHES)
+                branches = _run_find_islands_limited(g_R, g_P, order)
             except Exception:
                 continue
             for b in branches:
@@ -554,7 +576,9 @@ def main():
         # few large steps where the cut_sweep itself dominates cost.
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{args.inner_workers} inner workers "
-              f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE})")
+              f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
+              f"iso_tol={VIEW_ISO_TOL}, "
+              f"unit_timeout={UNIT_TIMEOUT}s)")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=args.inner_workers)
             _record(i, rec)

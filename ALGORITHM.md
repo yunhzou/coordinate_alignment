@@ -197,6 +197,14 @@ seed-major and defaults to `BGCP_CUTSWEEP_CHUNKSIZE=1`, so the three seed
 orders for one pathological cut are not bundled onto one worker.  This improves
 tail utilization on high-symmetry cases where a few cuts dominate runtime.
 
+The BGCP view builder uses `BGCP_ISO_TOL=0.6` for WBO edge matching inside
+cut-sweeps.  The older `1.0` tolerance was too permissive for distorted IG
+geometries: it allowed chemically wrong local neighborhoods to match, producing
+many branch-distinct broken/formed signatures unrelated to the reaction core.
+Each `(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by
+default; timed-out units are skipped so one pathological cut cannot dominate a
+full GT/IG view.
+
 After minimal R<->P mechanisms are scored against the ground-truth TS, the
 view applies a final mechanism dedupe:
 
@@ -273,6 +281,8 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `max_branches` | `1_000_000` | live branch cap in core alignment |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | branch cap used by full BGCP view generation |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
+| `BGCP_ISO_TOL` | `0.6` | WBO tolerance used by BGCP view cut-sweeps |
+| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped; set `0` to disable |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
 | `n_seeds` | `10` | seed orders in `align_from_arrays` |
 | `N_SEEDS_PER_RUN` | `3` | seed orders per cut-sweep unit in views |
