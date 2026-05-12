@@ -3,7 +3,7 @@ Priority-queue alignment algorithm.
 
 See ALGORITHM.md for principles. Reuses xtb / classify_bonds / build_graph
 plumbing from rxn_core_frag, but reimplements grow_island and find_islands
-on top of a per-fragment priority queue with consume semantics, branching
+on top of a per-fragment priority queue with deferred boundary semantics, branching
 on set-non-unique saturation, and chirality-aware scoring.
 """
 from __future__ import annotations
@@ -27,6 +27,36 @@ SYM_REPAIR_MAX_EVALS = 20000
 
 
 # -------------------- chemistry-aware post-hoc expansion --------------------
+
+def _edge_wbo(g, a, b):
+    """WBO for any atom pair in the complete weighted graph."""
+    if a == b:
+        return 0.0
+    mat = g.graph.get("wbo_matrix")
+    if mat is not None:
+        return float(mat[a, b])
+    if g.has_edge(a, b):
+        return float(g[a][b].get("wbo", 0.0))
+    return 0.0
+
+
+def _growth_edge_supported(w_R, w_P, iso_tol):
+    """True when a popped traversal edge has a real weighted counterpart.
+
+    The complete-graph iso tolerance is deliberately permissive so changed
+    bonds can survive as mechanism boundaries.  But the edge used to grow an
+    unchanged island must still be anchored in the target graph; otherwise a
+    terminal atom, especially H, can float to any same-element atom because
+    `abs(~1.0 - 0.0) <= iso_tol` when `iso_tol == 1`.
+    """
+    w_R = float(w_R)
+    w_P = float(w_P)
+    if abs(w_R - w_P) > iso_tol:
+        return False
+    if w_R > 0.0 and w_P <= 0.0:
+        return False
+    return abs(_wbo_bucket(w_R) - _wbo_bucket(w_P)) <= 1
+
 
 def _v_equivalence_class(r, mapping, g_R, g_P, iso_tol=1.0):
     """For an already-mapped atom r with image v = mapping[r], find all
@@ -60,8 +90,8 @@ def _v_equivalence_class(r, mapping, g_R, g_P, iso_tol=1.0):
         # WBO match to mapped fragment neighbors
         ok = True
         for u in bonded_in_frag:
-            if not g_P.has_edge(mapping[u], v): ok = False; break
-            wR = g_R[u][r]['wbo']; wP = g_P[mapping[u]][v]['wbo']
+            wR = _edge_wbo(g_R, u, r)
+            wP = _edge_wbo(g_P, mapping[u], v)
             if abs(wR - wP) > iso_tol: ok = False; break
         if not ok: continue
         if sig_of(v) != sig0: continue
@@ -99,11 +129,9 @@ def expand_chemistry_relevant_atoms(mapping, broken_R_atoms, g_R, g_P, iso_tol=1
             for u in new_m:
                 for w in g_R.neighbors(u):
                     if w not in new_m or u >= w: continue
-                    wR = g_R[u][w]['wbo']
+                    wR = _edge_wbo(g_R, u, w)
                     pu, pw = new_m[u], new_m[w]
-                    if not g_P.has_edge(pu, pw):
-                        valid = False; break
-                    if abs(wR - g_P[pu][pw]['wbo']) > iso_tol:
+                    if abs(wR - _edge_wbo(g_P, pu, pw)) > iso_tol:
                         valid = False; break
                 if not valid: break
             if not valid: continue
@@ -149,8 +177,9 @@ def _color_refine_orbits(g, iters=20):
         new = {}
         for v in g.nodes():
             nbr = tuple(sorted(
-                (colors[w], _bucket(g[v][w].get('wbo', 0.0)))
-                for w in g.neighbors(v)
+                (colors[w], _bucket(_edge_wbo(g, v, w)))
+                for w in g.nodes()
+                if w != v
             ))
             new[v] = (colors[v], nbr)
         # Compact to small ints (cheap downstream hashing)
@@ -228,9 +257,9 @@ class _SymCand:
     produces one candidate instead of K concrete bijections.  `mapping` is the
     deterministic witness used for cheap WBO existence checks.
     """
-    __slots__ = ('mapping', 'blocks')
+    __slots__ = ('mapping', 'blocks', 'exact_fixed')
 
-    def __init__(self, mapping=None, blocks=()):
+    def __init__(self, mapping=None, blocks=(), exact_fixed=()):
         blocks = tuple(blocks)
         block_r = {r for b in blocks for r in b.r_atoms}
         raw = dict(mapping or {})
@@ -256,6 +285,7 @@ class _SymCand:
                 used.add(p)
         self.mapping = m
         self.blocks = blocks
+        self.exact_fixed = frozenset(exact_fixed)
 
     def __contains__(self, r):
         return r in self.mapping
@@ -286,7 +316,7 @@ class _SymCand:
         m = dict(self.mapping)
         m[r] = p
         try:
-            return _SymCand(m, self.blocks)
+            return _SymCand(m, self.blocks, self.exact_fixed)
         except ValueError:
             return None
 
@@ -300,7 +330,8 @@ class _SymCand:
             return None
         b = _SymBlock((r,), p_atoms, extendable=extendable)
         try:
-            return _SymCand(self.mapping, self.blocks + (b,))
+            return _SymCand(self.mapping, self.blocks + (b,),
+                            self.exact_fixed)
         except ValueError:
             return None
 
@@ -314,7 +345,7 @@ class _SymCand:
         blocks[block_idx] = _SymBlock(b.r_atoms + (r,), b.p_atoms,
                                       extendable=b.extendable)
         try:
-            return _SymCand(self.mapping, blocks)
+            return _SymCand(self.mapping, blocks, self.exact_fixed)
         except ValueError:
             return None
 
@@ -333,14 +364,17 @@ class _SymCand:
         }
         m.update(assignments)
         try:
-            return _SymCand(m, self.blocks)
+            return _SymCand(m, self.blocks, self.exact_fixed)
         except ValueError:
             return None
 
     def structural_signature(self, g_R, g_P, r_orbits=None, p_orbits=None):
         block_r = {r for b in self.blocks for r in b.r_atoms}
         fixed = tuple(sorted(
-            (r, _orbit_id(p_orbits, p))
+            (('exact', r) if r in self.exact_fixed
+             else ('orbit', _orbit_id(r_orbits, r)),
+             ('exact', p) if r in self.exact_fixed
+             else ('orbit', _orbit_id(p_orbits, p)))
             for r, p in self.mapping.items()
             if r not in block_r
         ))
@@ -361,6 +395,14 @@ def _cand_map(cand):
     return cand.materialize() if isinstance(cand, _SymCand) else dict(cand)
 
 
+def _cand_possible_p_atoms(cand):
+    atoms = set(_cand_map(cand).values())
+    if isinstance(cand, _SymCand):
+        for block in cand.blocks:
+            atoms.update(block.p_atoms)
+    return atoms
+
+
 def _cand_has_open_choice(cand):
     return isinstance(cand, _SymCand) and cand.has_open_choice()
 
@@ -378,10 +420,7 @@ def _p_relation_signature(cand, v, g_P, p_orbits):
     for r, p in sorted(cm.items()):
         if p == v:
             continue
-        if g_P.has_edge(p, v):
-            rel.append((r, _wbo_bucket(g_P[p][v].get('wbo', 0.0))))
-        else:
-            rel.append((r, None))
+        rel.append((r, _wbo_bucket(_edge_wbo(g_P, p, v))))
     block_rel = []
     if isinstance(cand, _SymCand):
         for i, b in enumerate(cand.blocks):
@@ -389,8 +428,7 @@ def _p_relation_signature(cand, v, g_P, p_orbits):
             for p in b.p_atoms:
                 if p == v:
                     continue
-                if g_P.has_edge(p, v):
-                    edge_wbos.append(_wbo_bucket(g_P[p][v].get('wbo', 0.0)))
+                edge_wbos.append(_wbo_bucket(_edge_wbo(g_P, p, v)))
             block_rel.append((i, v in b.p_atoms, tuple(sorted(edge_wbos))))
     return (g_P.nodes[v].get('element'), _orbit_id(p_orbits, v),
             tuple(rel), tuple(block_rel))
@@ -412,27 +450,79 @@ def _r_compatible_with_block(cand, block_idx, n, fragment, g_R, r_orbits):
     def rel_sig(r):
         out = []
         for x in outside:
-            if g_R.has_edge(r, x):
-                out.append((x, _wbo_bucket(g_R[r][x].get('wbo', 0.0))))
-            else:
-                out.append((x, None))
+            out.append((x, _wbo_bucket(_edge_wbo(g_R, r, x))))
         return tuple(out)
 
     n_sig = rel_sig(n)
     return all(rel_sig(r) == n_sig for r in b.r_atoms)
 
 
-def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None):
+def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
+                        r_orbits=None, p_orbits=None, inv=None):
+    if not fragment or not deferred_edges:
+        return ()
+    fragment = set(fragment)
+    cm = _cand_map(cand)
+    used_possible = _cand_possible_p_atoms(cand)
+    inv_used = set(inv or ())
+
+    boundary = set()
+    deferred_by_outside = defaultdict(list)
+    for raw in deferred_edges or ():
+        edge = tuple(raw)
+        if len(edge) != 2:
+            continue
+        a, b = edge
+        a_in = a in fragment
+        b_in = b in fragment
+        if a_in == b_in:
+            continue
+        inside, outside = (a, b) if a_in else (b, a)
+        boundary.add(outside)
+        deferred_by_outside[outside].append(inside)
+
+    mapped_rs = sorted(r for r in fragment if r in cm)
+    out = []
+    for x in sorted(boundary):
+        r_vec = tuple(
+            (r, _orbit_id(r_orbits, r), _wbo_bucket(_edge_wbo(g_R, x, r)))
+            for r in mapped_rs
+        )
+        target_sigs = []
+        x_el = g_R.nodes[x].get('element')
+        for v in g_P.nodes():
+            if v in inv_used or v in used_possible:
+                continue
+            if g_P.nodes[v].get('element') != x_el:
+                continue
+            target_sigs.append(_p_relation_signature(cand, v, g_P, p_orbits))
+        counts = Counter(target_sigs)
+        p_vec = tuple(sorted(counts.items(), key=lambda item: str(item[0])))
+        deferred = tuple(sorted(
+            (r, _orbit_id(r_orbits, r), _wbo_bucket(_edge_wbo(g_R, x, r)))
+            for r in deferred_by_outside.get(x, [])
+        ))
+        out.append((_orbit_id(r_orbits, x), x_el, r_vec, deferred, p_vec))
+    return tuple(out)
+
+
+def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
+                     fragment=None, deferred_edges=(), inv=None):
     if not cands:
         return cands
     seen = {}
     for cand in cands:
         if isinstance(cand, _SymCand):
-            sig = cand.structural_signature(g_R, g_P, r_orbits, p_orbits)
+            internal = cand.structural_signature(g_R, g_P, r_orbits, p_orbits)
         elif p_orbits is not None:
-            sig = _cand_canon_signature(cand, p_orbits)
+            internal = _cand_canon_signature(cand, p_orbits)
         else:
-            sig = tuple(sorted(cand.items()))
+            internal = tuple(sorted(cand.items()))
+        boundary = _boundary_signature(
+            cand, g_R, g_P, fragment=fragment,
+            deferred_edges=deferred_edges, r_orbits=r_orbits,
+            p_orbits=p_orbits, inv=inv)
+        sig = (internal, boundary)
         if sig not in seen:
             seen[sig] = cand
     return list(seen.values())
@@ -450,8 +540,64 @@ def _sym_block_indexes(cand):
     return r_to_block, p_to_block
 
 
+def _refine_sym_assignments(cand, assignments):
+    """Freeze selected block assignments and shrink the remaining pools.
+
+    This is used when a new atom is valid only under a particular assignment
+    inside an existing symmetry block.  Keeping the old block would imply the
+    new fixed atom is independent of that block, which is false for cases like
+    R37=P38 <=> R104=P119 vs R37=P36 <=> R104=P123.
+    """
+    if not isinstance(cand, _SymCand):
+        m = dict(cand)
+        used = {p for r, p in m.items() if r not in assignments}
+        for r, p in assignments.items():
+            if p in used:
+                return None
+            m[r] = p
+            used.add(p)
+        return m
+
+    assignments = dict(assignments)
+    if len(set(assignments.values())) != len(assignments):
+        return None
+
+    r_to_block, _ = _sym_block_indexes(cand)
+    block_r = set(r_to_block)
+    m = {r: p for r, p in cand.mapping.items() if r not in block_r}
+    used = set(m.values())
+    for r, p in sorted(assignments.items()):
+        if p in used and m.get(r) != p:
+            return None
+        m[r] = p
+        used.add(p)
+
+    new_blocks = []
+    for block in cand.blocks:
+        remaining_r = tuple(r for r in block.r_atoms if r not in assignments)
+        remaining_p = tuple(p for p in block.p_atoms
+                            if p not in assignments.values())
+        if not remaining_r:
+            continue
+        if len(remaining_r) > len(remaining_p):
+            return None
+        for r in remaining_r:
+            p = cand.mapping.get(r)
+            if p in remaining_p and p not in used:
+                m[r] = p
+                used.add(p)
+        new_blocks.append(_SymBlock(remaining_r, remaining_p,
+                                    extendable=block.extendable))
+    exact_fixed = set(cand.exact_fixed)
+    try:
+        return _SymCand(m, tuple(new_blocks), exact_fixed=exact_fixed)
+    except ValueError:
+        return None
+
+
 def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
                                g_P, iso_tol, join_block_idx=None,
+                               strict_r_wbos=None,
                                max_states=SYM_SUPPORT_MAX_STATES):
     """Find a concrete witness that supports R[n] -> P[v_n].
 
@@ -460,6 +606,14 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
     assignment inside each unresolved block can satisfy the new edge pattern,
     not whether the current witness happens to satisfy it.
     """
+    strict_by_r = dict(strict_r_wbos or ())
+
+    def _pair_ok(r_atom, w_R, p_atom):
+        w_P = _edge_wbo(g_P, p_atom, v_n)
+        if r_atom in strict_by_r:
+            return _growth_edge_supported(strict_by_r[r_atom], w_P, iso_tol)
+        return abs(w_R - w_P) <= iso_tol
+
     if not isinstance(cand, _SymCand):
         used = set(cand.values())
         if v_n in used and cand.get(n) != v_n:
@@ -471,9 +625,7 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
             p_u = cand[u]
             if p_u == v_n:
                 return None
-            if not g_P.has_edge(p_u, v_n):
-                return None
-            if abs(w - g_P[p_u][v_n].get('wbo', 0.0)) > iso_tol:
+            if not _pair_ok(u, w, p_u):
                 return None
         return support
 
@@ -501,9 +653,7 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
             p_u = cand.mapping[u]
             if p_u == v_n:
                 return None
-            if not g_P.has_edge(p_u, v_n):
-                return None
-            if abs(w_by_r[u] - g_P[p_u][v_n].get('wbo', 0.0)) > iso_tol:
+            if not _pair_ok(u, w_by_r[u], p_u):
                 return None
             continue
         by_block[bidx].append((u, w_by_r[u]))
@@ -514,18 +664,17 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
         if bidx == join_block_idx:
             reserved.add(v_n)
         domains = []
+        available_pool = [p for p in block.p_atoms if p not in reserved]
         for u, w in items:
             vals = []
-            for p in block.p_atoms:
-                if p in reserved:
-                    continue
-                if not g_P.has_edge(p, v_n):
-                    continue
-                if abs(w - g_P[p][v_n].get('wbo', 0.0)) <= iso_tol:
+            for p in available_pool:
+                if _pair_ok(u, w, p):
                     vals.append(p)
             if not vals:
                 return None
             domains.append((u, vals))
+        if all(set(vals) == set(available_pool) for _, vals in domains):
+            continue
         domains.sort(key=lambda item: (len(item[1]), item[0]))
         chosen = {}
         used = set(reserved)
@@ -578,14 +727,14 @@ def _force_sym_value(cand, r, p, fragment, g_R, r_orbits, p_orbits):
             if other != r and cand.mapping.get(other) == p:
                 assignment[other] = current
                 break
-        return cand.with_witness(assignment)
+        return _refine_sym_assignments(cand, assignment)
     block_idx = p_to_block.get(p)
     if block_idx is not None:
         if not _r_compatible_with_block(cand, block_idx, r, fragment,
                                         g_R, r_orbits):
             return None
         nc = cand.with_extended_block(block_idx, r)
-        return nc.with_witness({r: p}) if nc is not None else None
+        return _refine_sym_assignments(nc, {r: p}) if nc is not None else None
     block_r = set(r_to_block)
     fixed_used = {v for rr, v in cand.mapping.items() if rr not in block_r}
     if p in fixed_used:
@@ -594,6 +743,15 @@ def _force_sym_value(cand, r, p, fragment, g_R, r_orbits, p_orbits):
 
 
 # -------------------- core grow --------------------
+
+class _IsoResult(dict):
+    __slots__ = ('deferred_edges', 'fragment')
+
+    def __init__(self, mapping=None, deferred_edges=(), fragment=()):
+        super().__init__(mapping or {})
+        self.deferred_edges = frozenset(tuple(sorted(e)) for e in deferred_edges)
+        self.fragment = frozenset(fragment)
+
 
 def _set_unique(cands):
     """True iff there is at most one fully resolved distinct mapping.
@@ -616,7 +774,7 @@ def _set_unique(cands):
 
 
 def _push_edges_from(heap, used_edges, g_R, atom, fragment, graph_floor):
-    """Push all not-yet-consumed outgoing edges of `atom` into the heap."""
+    """Push all not-yet-seen outgoing traversal edges of `atom` into the heap."""
     for nb in g_R.neighbors(atom):
         if nb in fragment:
             continue
@@ -754,20 +912,27 @@ def _extend_cands_incremental(cands, fragment_old, n, g_R, g_P, mapping, inv,
 
 
 def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
-                      iso_tol, islands_R, p_orbits=None, r_orbits=None):
+                      iso_tol, islands_R, p_orbits=None, r_orbits=None,
+                      deferred_edges=(), anchor_u=None, anchor_wbo=None):
     """Symmetry-compressed incremental extension.
 
-    This has the same local consistency checks as `_extend_cands_incremental`,
-    but it groups valid target P atoms by their orbit/context signature before
-    constructing children.  A symmetric K-way choice therefore creates one
-    `_SymCand` block instead of K concrete dicts; downstream code receives a
-    deterministic witness only when the island is committed.
+    Validity is the complete WBO vector from n to the current fragment.  Valid
+    target P atoms are grouped by orbit/context signature before constructing
+    children.  A symmetric K-way choice therefore creates one `_SymCand` block
+    instead of K concrete dicts; downstream code receives a deterministic
+    witness only when the island is committed.
     """
     n_el = g_R.nodes[n]['element']
-    bonded_in_frag = [u for u in g_R.neighbors(n) if u in fragment_old]
+    bonded_in_frag = sorted(fragment_old)
     if not bonded_in_frag:
         return None
-    r_wbos = [(u, g_R[u][n]['wbo']) for u in bonded_in_frag]
+    r_wbos = [(u, _edge_wbo(g_R, u, n)) for u in bonded_in_frag]
+    strict_r_wbos = {}
+    if anchor_u is not None and anchor_u in fragment_old:
+        strict_r_wbos[anchor_u] = (
+            _edge_wbo(g_R, anchor_u, n)
+            if anchor_wbo is None else anchor_wbo
+        )
 
     if n in mapping:
         if islands_R is not None and n in islands_R:
@@ -794,7 +959,8 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
                 continue
             support = _support_witness_for_value(
                 cand, n, v_n, bonded_in_frag, r_wbos, g_P, iso_tol,
-                join_block_idx=join_idx)
+                join_block_idx=join_idx,
+                strict_r_wbos=strict_r_wbos)
             if support is None:
                 continue
             nc = _force_sym_value(cand, n, v_n, fragment_old, g_R,
@@ -821,16 +987,16 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
             check_set = set(base.keys())
             ok = True
             for r in island_atoms:
-                for r2 in g_R.neighbors(r):
+                for r2 in sorted(check_set):
+                    if r2 == r:
+                        continue
                     if r2 not in check_set:
                         continue
                     if r >= r2 and r2 in island_atoms:
                         continue
-                    wR = g_R[r][r2]['wbo']
+                    wR = _edge_wbo(g_R, r, r2)
                     p, p2 = base[r], base[r2]
-                    if not g_P.has_edge(p, p2):
-                        ok = False; break
-                    if abs(wR - g_P[p][p2]['wbo']) > iso_tol:
+                    if abs(wR - _edge_wbo(g_P, p, p2)) > iso_tol:
                         ok = False; break
                 if not ok:
                     break
@@ -852,7 +1018,8 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
                 continue
             support = _support_witness_for_value(
                 cand, n, v, bonded_in_frag, r_wbos, g_P, iso_tol,
-                join_block_idx=join_idx)
+                join_block_idx=join_idx,
+                strict_r_wbos=strict_r_wbos)
             if support is None:
                 continue
             if join_idx is not None:
@@ -862,20 +1029,33 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
                 by_group[sig].append((v, support))
 
         for join_idx, v, support in block_join:
-            nc = cand.with_extended_block(join_idx, n)
-            if nc is None:
-                continue
             support = dict(support)
             support[n] = v
-            nc = nc.with_witness(support)
+            if len(support) > 1:
+                nc = _refine_sym_assignments(cand, support)
+            else:
+                nc = cand.with_extended_block(join_idx, n)
+                if nc is not None:
+                    nc = nc.with_witness(support)
             if nc is not None:
                 new_cands.append(nc)
 
         if not by_group:
             continue
         for _, entries in sorted(by_group.items(), key=lambda kv: str(kv[0])):
-            group = tuple(sorted(v for v, _ in entries))
-            witness_v, support = sorted(entries, key=lambda item: item[0])[0]
+            correlated = [(v, support) for v, support in entries if support]
+            for v, support in correlated:
+                fixed = dict(support)
+                fixed[n] = v
+                nc = _refine_sym_assignments(cand, fixed)
+                if nc is not None:
+                    new_cands.append(nc)
+            independent = [(v, support) for v, support in entries
+                           if not support]
+            if not independent:
+                continue
+            group = tuple(sorted(v for v, _ in independent))
+            witness_v, support = sorted(independent, key=lambda item: item[0])[0]
             if len(group) > 1:
                 nc = cand.with_new_block(n, group, extendable=True)
             else:
@@ -887,7 +1067,12 @@ def _extend_sym_cands(cands, fragment_old, n, g_R, g_P, mapping, inv,
             if nc is not None:
                 new_cands.append(nc)
 
-    return _dedup_sym_cands(new_cands, g_R, g_P, r_orbits, p_orbits)
+    sig_fragment = set(fragment_old) | {n}
+    for r in island_atoms:
+        sig_fragment.add(r)
+    return _dedup_sym_cands(
+        new_cands, g_R, g_P, r_orbits, p_orbits,
+        fragment=sig_fragment, deferred_edges=deferred_edges, inv=inv)
 
 
 def _merge_whole_island_LEGACY(cands, fragment, n, mapping, islands_R,
@@ -961,7 +1146,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                    events=None,
                    islands_R=None,
                    p_orbits=None,
-                   r_orbits=None):
+                   r_orbits=None,
+                   prior_deferred_edges=None):
     """
     Grow a fragment from `seed` using priority-queue propagation.
 
@@ -971,7 +1157,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
       [iso_a, ...]  -- non-set-unique saturation; caller branches
 
     Optional `events` list receives diagnostic events (seed_start /
-    commit / consumed / merge / seed_end) compatible with the
+    commit / deferred / merge / seed_end) compatible with the
     existing trace_run.HTML viewer.
     """
     record = events is not None
@@ -1006,6 +1192,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
     fragment = {seed}
     distance = {seed: 0}
     used_edges = set()
+    deferred_edges = {tuple(sorted(e)) for e in (prior_deferred_edges or ())}
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
 
@@ -1098,7 +1285,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
 
     def _heap_snapshot(k=None):
         """Pending heap entries sorted by WBO desc, filtered to live
-        (not yet consumed, not already in fragment). k=None → all."""
+        (not yet popped, not already in fragment). k=None → all."""
         peek = list(heap)
         peek.sort()
         live = [(w, uu, nn) for (w, uu, nn) in peek
@@ -1131,40 +1318,54 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                  'edges': sorted(by_u[u], key=lambda x: -x['wbo'])}
                 for u in sorted(by_u.keys())]
 
-    def _why_extend_failed(n_atom):
+    def _why_extend_failed(n_atom, anchor_atom=None, anchor_wbo=None):
         """Per-cand explanation of why extension to n_atom failed."""
-        bonded = [u for u in g_R.neighbors(n_atom) if u in fragment]
+        bonded = sorted(fragment)
         n_el = g_R.nodes[n_atom]['element']
-        r_wbos = [(u, g_R[u][n_atom]['wbo']) for u in bonded]
+        r_wbos = [(u, _edge_wbo(g_R, u, n_atom)) for u in bonded]
+        strict_r_wbos = {}
+        if anchor_atom is not None and anchor_atom in fragment:
+            strict_r_wbos[anchor_atom] = (
+                _edge_wbo(g_R, anchor_atom, n_atom)
+                if anchor_wbo is None else anchor_wbo
+            )
         out = []
         for ci, cand in enumerate(cands[:5]):
             cm = _cand_map(cand)
-            used_p = set(cm.values())
-            v_set = set(g_P.neighbors(cm[bonded[0]]))
-            for u in bonded[1:]:
-                v_set &= set(g_P.neighbors(cm[u]))
-            v_set -= used_p
+            used_p = _cand_possible_p_atoms(cand)
+            v_set = {
+                v for v in g_P.nodes()
+                if v not in used_p and v not in inv
+                and g_P.nodes[v]['element'] == n_el
+            }
             tried = []
-            for v in sorted(v_set):
+            for v in sorted(v_set)[:30]:
                 why = []
-                if v in inv:
-                    why.append(f'P[{v}] in global inv')
-                elif g_P.nodes[v]['element'] != n_el:
-                    why.append(f'element {g_P.nodes[v]["element"]} != {n_el}')
-                else:
+                _, p_to_block = _sym_block_indexes(cand)
+                join_idx = p_to_block.get(v)
+                support = _support_witness_for_value(
+                    cand, n_atom, v, bonded, r_wbos, g_P, iso_tol,
+                    join_block_idx=join_idx,
+                    strict_r_wbos=strict_r_wbos)
+                if support is None:
                     bad = []
                     for u, w in r_wbos:
-                        wp = g_P[cm[u]][v]['wbo']
-                        if abs(w - wp) > iso_tol:
-                            bad.append(f'|{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}>{iso_tol}')
-                    if bad:
-                        why.append('; '.join(bad))
+                        if u not in cm:
+                            continue
+                        wp = _edge_wbo(g_P, cm[u], v)
+                        if u in strict_r_wbos:
+                            if not _growth_edge_supported(
+                                    strict_r_wbos[u], wp, iso_tol):
+                                bad.append(f'R[{u}]: growth edge |{w:.3f}-{wp:.3f}|={abs(w-wp):.3f} bucket/nonzero fail')
+                        elif abs(w - wp) > iso_tol:
+                            bad.append(f'R[{u}]: |{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}>{iso_tol}')
+                    why.append('; '.join(bad[:5]) if bad else 'no block witness')
                 tried.append({'v': int(v), 'rejected': bool(why),
                               'reason': '; '.join(why) if why else 'OK'})
             out.append({
                 'cand_idx': ci,
                 'cand_at_in_frag_neighbors': {int(u): int(cm[u]) for u in bonded},
-                'common_v_set_size': len(v_set),
+                'candidate_v_count': len(v_set),
                 'tried_v': tried,
             })
         return out
@@ -1194,17 +1395,16 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 nc[r] = p
             check_set = set(island_atoms) | fragment
             for r in island_atoms:
-                for r2 in g_R.neighbors(r):
+                for r2 in sorted(check_set):
+                    if r2 == r:
+                        continue
                     if r2 not in check_set or r2 not in nc: continue
                     if r >= r2 and r2 in island_atoms: continue
-                    wR = g_R[r][r2]['wbo']
+                    wR = _edge_wbo(g_R, r, r2)
                     p, p2 = nc[r], nc[r2]
-                    if not g_P.has_edge(p, p2):
-                        why.append(f'no P-edge P[{p}]-P[{p2}] (R[{r}]-R[{r2}] WBO={wR:.3f})')
-                    else:
-                        wP = g_P[p][p2]['wbo']
-                        if abs(wR - wP) > iso_tol:
-                            why.append(f'R[{r}]-R[{r2}]: |{wR:.3f}-{wP:.3f}|={abs(wR-wP):.3f} (P[{p}]-P[{p2}])')
+                    wP = _edge_wbo(g_P, p, p2)
+                    if abs(wR - wP) > iso_tol:
+                        why.append(f'R[{r}]-R[{r2}]: |{wR:.3f}-{wP:.3f}|={abs(wR-wP):.3f} (P[{p}]-P[{p2}])')
             out.append({'cand_idx': ci, 'reasons': why[:8]})
         return out
 
@@ -1222,7 +1422,9 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'heap_remaining': len(heap),
                     'cand_patterns': _cands_pattern_sample(cands, 5),
                 })
-            return [_cand_map(cands[0])]
+            return [_IsoResult(_cand_map(cands[0]),
+                               deferred_edges=deferred_edges,
+                               fragment=fragment)]
 
         neg_w, u, n = heapq.heappop(heap)
         wbo = -neg_w
@@ -1263,11 +1465,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 'pool_by_frag_atom': _pool_by_frag_atom(),
             })
 
-        # ORDER-INDEPENDENT MATCHING:
-        # tentatively add n to fragment, recompute ALL valid isos from scratch
-        # using subgraph isomorphism on the fragment's R subgraph against g_P.
-        # If any iso survives, the atom is committed and cands is replaced.
-        # If none survives, the edge is consumed and the fragment doesn't grow.
+        # Tentatively add n to the shared fragment. If any weighted extension
+        # survives, commit it; otherwise record this edge as deferred boundary.
         old_count = len(cands)
         old_fragment = set(fragment)
         candidate_fragment = fragment | {n}
@@ -1276,7 +1475,8 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
         # target atoms by local orbit/context before constructing children.
         new_cands = _extend_sym_cands(
             cands, fragment, n, g_R, g_P, mapping, inv,
-            iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits)
+            iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
+            deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo)
         if new_cands:
             cands = new_cands
             ref_dist = distance.get(u, 0) + 1
@@ -1319,9 +1519,11 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'pool_by_frag_atom': _pool_by_frag_atom(),
                 })
         else:
+            deferred_edges.add(tuple(sorted((u, n))))
             if record:
                 events.append({
                     'type': 'consumed',
+                    'deferred': True,
                     'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
                     'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
                              'ext_element': g_R.nodes[n]['element']},
@@ -1329,7 +1531,7 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                     'island_image': int(mapping[n]) if n_in_mapping else None,
                     'island_id': int(islands_R[n]) if islands_R and n in islands_R else None,
                     'why_per_cand': (_why_merge_failed(n) if n_in_mapping
-                                     else _why_extend_failed(n)),
+                                     else _why_extend_failed(n, u, wbo)),
                     'cands_count': len(cands),
                     'represented_assignments': _represented_assignment_expr(cands),
                     'cands_sample': _cands_sample(cands, 5),
@@ -1363,20 +1565,42 @@ def grow_island_pq(g_R, g_P, seed, mapping, inv,
                 'all_isos': [iso],
                 'cand_patterns': _cands_pattern_sample(cands, 5),
             })
-        return [_cand_map(cands[0])]
+        return [_IsoResult(_cand_map(cands[0]),
+                           deferred_edges=deferred_edges,
+                           fragment=fragment)]
     # Dedup by compressed structural signature.  Open symmetry blocks may
     # still contain many concrete witnesses; only one deterministic witness
     # is returned for each orbit/context-distinct saturation.
     by_set = {}
     for c in cands:
         if isinstance(c, _SymCand):
-            key = c.structural_signature(g_R, g_P, r_orbits, p_orbits)
+            key = (
+                c.structural_signature(g_R, g_P, r_orbits, p_orbits),
+                _boundary_signature(
+                    c, g_R, g_P, fragment=fragment,
+                    deferred_edges=deferred_edges, r_orbits=r_orbits,
+                    p_orbits=p_orbits, inv=inv),
+            )
         elif p_orbits is not None:
-            key = _cand_canon_signature(c, p_orbits)
+            key = (
+                _cand_canon_signature(c, p_orbits),
+                _boundary_signature(
+                    c, g_R, g_P, fragment=fragment,
+                    deferred_edges=deferred_edges, r_orbits=r_orbits,
+                    p_orbits=p_orbits, inv=inv),
+            )
         else:
-            key = tuple(sorted(c.items()))
+            key = (
+                tuple(sorted(c.items())),
+                _boundary_signature(
+                    c, g_R, g_P, fragment=fragment,
+                    deferred_edges=deferred_edges, r_orbits=r_orbits,
+                    p_orbits=p_orbits, inv=inv),
+            )
         if key not in by_set:
-            by_set[key] = _cand_map(c)
+            by_set[key] = _IsoResult(
+                _cand_map(c), deferred_edges=deferred_edges,
+                fragment=fragment)
     branches = list(by_set.values())[:max_branches]
     if record:
         events.append({
@@ -1534,13 +1758,15 @@ def grow_island_bfs(g_R, g_P, seed, mapping, inv,
 # -------------------- find_islands with branching --------------------
 
 class _Branch:
-    __slots__ = ('mapping', 'inv', 'islands_R', 'islands_P', 'next_iid')
+    __slots__ = ('mapping', 'inv', 'islands_R', 'islands_P', 'next_iid',
+                 'deferred_edges')
     def __init__(self):
         self.mapping = {}
         self.inv = {}
         self.islands_R = {}
         self.islands_P = {}
         self.next_iid = 1
+        self.deferred_edges = set()
     def fork(self):
         b = _Branch()
         b.mapping = dict(self.mapping)
@@ -1548,6 +1774,7 @@ class _Branch:
         b.islands_R = dict(self.islands_R)
         b.islands_P = dict(self.islands_P)
         b.next_iid = self.next_iid
+        b.deferred_edges = set(self.deferred_edges)
         return b
     def commit(self, iso, g_R, events=None):
         touched = set()
@@ -1570,6 +1797,7 @@ class _Branch:
                 relabeled.append((int(r), int(self.islands_R[r])))
             self.islands_R[r] = iid
             self.islands_P[p] = iid
+        self.deferred_edges.update(getattr(iso, 'deferred_edges', ()))
         for r, k in list(self.islands_R.items()):
             if k in touched and k != iid:
                 relabeled.append((int(r), int(k)))
@@ -1591,30 +1819,59 @@ def _orbit_pair(a, b, orbits):
     return (oa, ob) if oa <= ob else (ob, oa)
 
 
-def _chemistry_orbit_signature(mapping, g_R, g_P, r_orbits=None, p_orbits=None):
+def _chemistry_orbit_signature(mapping, g_R, g_P, r_orbits=None, p_orbits=None,
+                               dwbo_threshold=0.5):
     """Broken/formed bond signature in joint R-orbit/P-orbit space."""
-    inv = {v: k for k, v in mapping.items()}
     br_pairs = []
-    for u, v in g_R.edges():
-        if u not in mapping or v not in mapping:
-            continue
-        pu, pv = mapping[u], mapping[v]
-        if not g_P.has_edge(pu, pv):
-            br_pairs.append((
-                _orbit_pair(u, v, r_orbits),
-                _orbit_pair(pu, pv, p_orbits),
-            ))
     fm_pairs = []
-    for u, v in g_P.edges():
-        if u not in inv or v not in inv:
-            continue
-        ru, rv = inv[u], inv[v]
-        if not g_R.has_edge(ru, rv):
-            fm_pairs.append((
-                _orbit_pair(ru, rv, r_orbits),
-                _orbit_pair(u, v, p_orbits),
-            ))
+    mapped = sorted(mapping)
+    for i, u in enumerate(mapped):
+        for v in mapped[i + 1:]:
+            pu, pv = mapping[u], mapping[v]
+            wR = _edge_wbo(g_R, u, v)
+            wP = _edge_wbo(g_P, pu, pv)
+            if wR - wP >= dwbo_threshold:
+                br_pairs.append((
+                    _orbit_pair(u, v, r_orbits),
+                    _orbit_pair(pu, pv, p_orbits),
+                ))
+            elif wP - wR >= dwbo_threshold:
+                fm_pairs.append((
+                    _orbit_pair(u, v, r_orbits),
+                    _orbit_pair(pu, pv, p_orbits),
+                ))
     return tuple(sorted(br_pairs)), tuple(sorted(fm_pairs))
+
+
+def _alignment_state_signature(mapping, deferred_edges, g_R, g_P,
+                               r_orbits=None, p_orbits=None, core_R=()):
+    core_R = tuple(sorted(core_R or ()))
+    core_set = set(core_R)
+    fixed = []
+    for r, p in sorted(mapping.items()):
+        if r in core_set:
+            fixed.append((('exact', r), ('exact', p)))
+        else:
+            fixed.append((
+                ('orbit', _orbit_id(r_orbits, r)),
+                ('orbit', _orbit_id(p_orbits, p)),
+            ))
+    internal_pairs = []
+    mapped = sorted(mapping)
+    for i, r1 in enumerate(mapped):
+        for r2 in mapped[i + 1:]:
+            p1, p2 = mapping[r1], mapping[r2]
+            internal_pairs.append((
+                _orbit_pair(r1, r2, r_orbits),
+                _orbit_pair(p1, p2, p_orbits),
+                _wbo_bucket(_edge_wbo(g_R, r1, r2)),
+                _wbo_bucket(_edge_wbo(g_P, p1, p2)),
+            ))
+    boundary = _boundary_signature(
+        mapping, g_R, g_P, fragment=set(mapping),
+        deferred_edges=deferred_edges, r_orbits=r_orbits,
+        p_orbits=p_orbits, inv={p: r for r, p in mapping.items()})
+    return tuple(fixed), tuple(sorted(internal_pairs)), boundary
 
 
 def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
@@ -1831,16 +2088,21 @@ def find_islands_pq(g_R, g_P, seed_order,
     def _core_complete(mapping):
         return core_R and all(r in mapping for r in core_R)
 
-    def _branch_signature(mapping):
-        if core_R:
-            core_key = tuple((r, mapping[r]) for r in core_R if r in mapping)
-            if len(core_key) == len(core_R):
-                return ('core', core_key)
-            return ('partial_core', core_key,
-                    _chemistry_orbit_signature(
-                        mapping, g_R, g_P, r_orbits, p_orbits))
-        return ('chem', _chemistry_orbit_signature(
-            mapping, g_R, g_P, r_orbits, p_orbits))
+    def _branch_signature(mapping, deferred_edges=()):
+        core_key = tuple((r, mapping[r]) for r in core_R if r in mapping)
+        if core_R and len(core_key) == len(core_R):
+            return ('core_complete', core_key)
+        deferred_boundary = _boundary_signature(
+            mapping, g_R, g_P, fragment=set(mapping),
+            deferred_edges=deferred_edges, r_orbits=r_orbits,
+            p_orbits=p_orbits, inv={p: r for r, p in mapping.items()})
+        return (
+            'mechanism_state',
+            core_key,
+            _chemistry_orbit_signature(
+                mapping, g_R, g_P, r_orbits, p_orbits),
+            deferred_boundary,
+        )
 
     while progressed:
         progressed = False
@@ -1853,7 +2115,7 @@ def find_islands_pq(g_R, g_P, seed_order,
             pending_seen = set()
 
             def _append_pending(branch):
-                sig = _branch_signature(branch.mapping)
+                sig = _branch_signature(branch.mapping, branch.deferred_edges)
                 if sig in pending_seen:
                     return False
                 pending_seen.add(sig)
@@ -1877,37 +2139,24 @@ def find_islands_pq(g_R, g_P, seed_order,
                                       events=ev_arg,
                                       islands_R=b.islands_R,
                                       p_orbits=p_orbits,
-                                      r_orbits=r_orbits)
+                                      r_orbits=r_orbits,
+                                      prior_deferred_edges=b.deferred_edges)
                 if not isos:
                     _append_pending(b)
                     continue
-                # Dedup K isos by graph chemistry signature (R-edges with
-                # no P counterpart = broken; P-edges with no R counterpart
-                # = formed). Isos with same signature differ only in
-                # spectator-atom permutations.
-                # Chemistry signature for iso-forking dedup. broken set
-                # is in R-frame (automorphism-invariant by construction).
-                # formed set uses ORBIT-CANONICAL ids on the P-side: two
-                # isos that differ only by permuting orbit-equivalent
-                # P-atoms produce the same canonical formed set. Without
-                # this, pr12-class symmetric ligands generate 50k+ chem
-                # keys that all represent the same mechanism.
-                # Iso-forking chem-sig dedup — fully orbit-canonical.
-                # Both broken (R-side) and formed (P-side) edges are
-                # encoded in ORBIT space, so isos that differ only by
-                # swapping R-orbit-equivalent atoms (or P-orbit-equivalent
-                # atoms) collapse to one BEFORE forking. This is the
-                # critical compress-before-multiply step: without it,
-                # K orbit-equivalent isos × N seeds = K^N branches
-                # materialize in memory before any cross-branch dedup
-                # can collapse them.
-                seen_chem = {}
+                # Dedup island results by weighted alignment state before
+                # forking branches.  This is still pre-mechanism dedupe: the
+                # one-hop/deferred boundary is part of the key so future
+                # distinguishability is not erased.
+                seen_state = {}
                 for iso in isos:
                     full_m = dict(b.mapping); full_m.update(iso)
-                    chem_key = _branch_signature(full_m)
-                    if chem_key not in seen_chem:
-                        seen_chem[chem_key] = iso
-                deduped_isos = list(seen_chem.values())
+                    full_deferred = set(b.deferred_edges)
+                    full_deferred.update(getattr(iso, 'deferred_edges', ()))
+                    state_key = _branch_signature(full_m, full_deferred)
+                    if state_key not in seen_state:
+                        seen_state[state_key] = iso
+                deduped_isos = list(seen_state.values())
                 for ii, iso in enumerate(deduped_isos):
                     if len(new_branches) >= max_branches:
                         break
@@ -1917,25 +2166,16 @@ def find_islands_pq(g_R, g_P, seed_order,
                     if _append_pending(b2):
                         progressed = True
             new_branches.sort(key=lambda b: -len(b.mapping))
-            # Option C cross-branch dedup: chemistry-signature key
-            # encoded in JOINT (R-orbit, P-orbit) space.
-            #
-            # Two branches with identical orbit-canonical chemistry
-            # signature ARE chemistry-equivalent (per user's confirmed
-            # observation that orbit-equivalent atom swaps preserve
-            # mechanism). Encoding both R-side broken-pairs AND
-            # P-side formed-pairs in orbit space collapses the K!-many
-            # spectator-permutation siblings into a single
-            # representative, killing the 65k-branch explosion on
-            # pr12-class molecules where many R-atoms are R-orbit-
-            # equivalent AND many P-atoms are P-orbit-equivalent.
+            # Cross-branch dedup uses the same mechanism-state key.  It
+            # collapses orbit-equivalent spectator permutations but keeps
+            # states separated when their deferred one-hop boundary differs.
             seen = set()
             uniq = []
             for b in new_branches:
-                chem_sig = _branch_signature(b.mapping)
-                if chem_sig in seen:
+                state_sig = _branch_signature(b.mapping, b.deferred_edges)
+                if state_sig in seen:
                     continue
-                seen.add(chem_sig)
+                seen.add(state_sig)
                 uniq.append(b)
                 if len(uniq) >= max_branches:
                     break

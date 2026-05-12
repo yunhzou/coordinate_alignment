@@ -1,10 +1,11 @@
 # R<->P Atom Alignment Algorithm
 
-This is a WBO-graph atom mapper for reactant/product and reactant/TS/IG
-alignment.  The current implementation is symmetry-aware during growth: it
-does not enumerate a concrete one-to-one bijection for every symmetric atom
-permutation.  Instead, it carries hierarchical symmetry blocks internally and
-materializes one deterministic witness mapping only at API boundaries.
+This document states the WBO-weighted atom alignment algorithm for
+reactant/product and reactant/TS/IG alignment.  The implementation is
+symmetry-aware during growth: it does not enumerate a concrete one-to-one
+bijection for every symmetric atom permutation.  Instead, it carries
+hierarchical symmetry blocks internally and materializes one deterministic
+witness mapping only at API boundaries.
 
 The implementation lives mainly in `src/rxn_core/pq.py`.
 
@@ -13,7 +14,10 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
 - Element lists, coordinates, and Wiberg bond-order matrices for `R` and `P`
   (or `T` / `IG`).
 - Identical composition: `Counter(elR) == Counter(elP)`.
-- WBO graphs from `build_graph(..., bond_cut=graph_floor)`.
+- The alignment object is the complete weighted WBO graph: every atom pair has
+  a WBO value, including `0.0`.
+- Any sparse adjacency or priority queue edge set is only a traversal
+  accelerator.  It is not part of the matching validity rule.
 
 ## Output
 
@@ -23,10 +27,22 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
 
 ## Core Principles
 
-1. **Graph first.** Candidate growth uses element labels and WBO graph edges.
-   Coordinates are used later for scoring, chirality, and visualization.
+1. **Complete weighted graph first.** Candidate growth matches element labels
+   and WBO values.  Coordinates are used later for scoring, chirality, and
+   visualization.  Thresholded graph edges must never decide whether a mapping
+   is valid.
 
-2. **No concrete symmetry explosion.** Symmetric choices are represented as
+2. **Validity is pairwise WBO consistency.** A partial mapping `m` is valid on
+   its grown fragment when it is injective, element-preserving, and every
+   mapped pair satisfies:
+
+   ```
+   abs(WBO_R[i, j] - WBO_P[m[i], m[j]]) <= iso_tol
+   ```
+
+   Missing sparse edges are just `WBO = 0.0`; they are not hard failures.
+
+3. **No concrete symmetry explosion.** Symmetric choices are represented as
    local `_SymBlock(r_atoms, p_atoms)` pools inside `_SymCand`.  A block says:
    these R atoms occupy this P atom pool up to symmetry.  The object keeps a
    deterministic witness mapping, but branch identity is the block structure,
@@ -34,22 +50,33 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
    witness inside a block when another correlated assignment satisfies the
    same compressed state.
 
-3. **Hierarchical symmetry centers.** `_color_refine_orbits` runs iterated
+4. **Hierarchical symmetry centers.** `_color_refine_orbits` runs iterated
    1-WL / Morgan color refinement on both graphs using element labels and
    0.2-wide WBO buckets.  The resulting orbit IDs are the hierarchy used to
    group seed targets, extension targets, and chemistry signatures.
 
-4. **Lock only when resolved.** `_set_unique(cands)` is false if any candidate
+5. **Lock only when resolved.** `_set_unique(cands)` is false if any candidate
    has an open symmetry block.  A single unresolved block is not treated as a
    unique concrete bijection.  It can lock only after enough context closes the
    ambiguity or after saturation returns a representative witness.
 
-5. **Chemistry, not spectator labels, creates branches.** `find_islands_pq`
-   deduplicates branches by joint `(R orbit pair, P orbit pair)` broken/formed
-   chemistry signatures.  Spectator permutations collapse; chemistry-distinct
-   mechanisms remain separate.
+6. **Growth outcomes are 0/1/many, not arbitrary choices.** A unique candidate
+   can grow to many valid targets when it sits at a symmetry center.  That is a
+   first-class state, not an ambiguity to resolve by picking one target.
 
-6. **Public API stays concrete.** `align_from_arrays` and downstream scoring
+7. **A growth edge must stay anchored.** The complete-graph tolerance can be
+   permissive so changed bonds become mechanism boundaries, but the popped edge
+   used to grow an unchanged island must have a real weighted counterpart in
+   the target candidate.  A terminal atom cannot float to an unrelated
+   same-element target merely because `abs(~1.0 - 0.0) <= iso_tol`.
+
+8. **Dedupe must preserve observed future distinguishability.** Two candidates
+   are true duplicates only if their internal orbit state and their deferred
+   one-hop boundary state are symmetry-equivalent.  A side of a symmetric
+   island that already failed to absorb a boundary atom is not duplicate with
+   the other side.
+
+9. **Public API stays concrete.** `align_from_arrays` and downstream scoring
    still receive ordinary dict mappings.  Compression is internal to island
    growth and branch deduplication.  Before scoring a finished R<->P mapping,
    a bounded local symmetry repair chooses the lowest bond-change realization
@@ -83,29 +110,53 @@ When the heap pops an edge from fragment atom `u` to outside atom `n`,
 `_extend_sym_cands` replaces the old concrete fanout.  The important point is
 that the deterministic witness is not trusted as the only valid assignment.
 For each possible target `v`, `_support_witness_for_value` asks whether there
-exists a block-internal assignment that supports all WBO constraints from
-`n` to its already-grown R neighbors.
+exists a block-internal assignment that supports the WBO vector from `n` to
+the already-grown fragment.
 
 ```
 for each compressed candidate:
-    bonded = R-neighbors of n already in the fragment
     for each unused matching-element P target v:
         test whether some assignment inside every touched symmetry block can
-        make all bonded R/P WBOs match within iso_tol
+        satisfy:
+            abs(WBO_R[n, r] - WBO_P[v, m[r]]) <= iso_tol
+        for every already-grown fragment atom r
 ```
 
 For fixed atoms the test is direct:
 
 ```
-- P edge must exist
-- abs(wR - wP) <= iso_tol
+- v must be unused by this candidate
+- element_R[n] == element_P[v]
+- every pairwise WBO delta from n to the grown fragment is <= iso_tol
+- for the popped growth edge `(u, n)`, the relation from `v` to the current
+  image/state of `u` must be nonzero and WBO-bucket-compatible
 ```
 
 For atoms inside a `_SymBlock`, the test is a small constrained matching over
-that block's P pool.  This handles correlated symmetry: if two core or shell
-atoms sit in the same symmetry block, they are assigned jointly, not shuffled
-independently.  The support search is capped by `SYM_SUPPORT_MAX_STATES`
-(default `4096`) so a pathological block cannot create unbounded backtracking.
+that block's P pool.  The support question is existential:
+
+```
+Does there exist an injective assignment inside the touched symmetry blocks
+such that the WBO-vector test passes?
+```
+
+This handles correlated symmetry: if two core or shell atoms sit in the same
+symmetry block, they are assigned jointly, not shuffled independently.  The
+support search is capped by `SYM_SUPPORT_MAX_STATES` (default `4096`) so a
+pathological block cannot create unbounded backtracking.
+
+The popped edge anchor is included in this same existential support search. If
+`u` is inside a symmetry block, the new atom must attach to one compatible
+member of that block's target pool. This keeps a leaf atom, such as an H on a
+symmetry-related carbon, tied to the parent symmetry state instead of matching
+the H as an isolated same-element atom.
+
+If a new atom is valid only under a particular assignment inside an existing
+block, the candidate witness is refined to a correlated assignment.  The
+assignment is not treated as permanently exact unless a caller explicitly pins
+that atom as core.  If the correlated alternatives are still orbit-equivalent
+and have no deferred boundary difference, they are compressed again; if a
+deferred boundary distinguishes one side, the alternatives remain separate.
 
 Targets that pass the support test are grouped before constructing children:
 
@@ -113,7 +164,7 @@ Targets that pass the support test are grouped before constructing children:
 group key =
     P element
     P orbit id
-    relation of v to the supported witness atoms
+    WBO-vector relation of v to the current fragment/witness
     relation of v to existing symmetry blocks
 ```
 
@@ -133,25 +184,112 @@ only the witness for the touched block.  The compressed block remains intact;
 this prevents arbitrary witness choice from turning a valid symmetric mapping
 into fake broken/formed bonds later.
 
+### Growth Transition Policy
+
+For a popped growth proposal, evaluate every live candidate and every unused
+same-element target by the WBO-vector rule.  Then classify the transition by
+the number of input candidates and valid output states:
+
+- **0 -> 0.** No live candidates exist.  Growth cannot continue.
+
+- **1 -> 0.** The only candidate has no valid extension for this proposed
+  atom.  The proposal is deferred as a boundary constraint; the candidate
+  itself remains live.
+
+- **1 -> 1.** The only candidate has one valid extension.  Commit it.
+
+- **1 -> many.** The only candidate has multiple valid targets.  This is the
+  symmetry-center case.  Do not choose one target.  Compress
+  symmetry-equivalent targets into a `_SymBlock`; branch only on genuinely
+  distinct weighted-symmetry states.
+
+- **many -> 0.** No live candidate can extend through this proposal.  Defer
+  the boundary constraint and keep the candidate set unchanged.
+
+- **many -> 1.** Multiple candidates extend, but the resulting states dedupe
+  to one symmetry-equivalent weighted state.  Keep the compressed state.
+
+- **many -> many.** Multiple distinct valid states remain after symmetry-aware
+  dedupe.  Keep all distinct states, compressed where possible.
+
+The heap chooses which growth proposal to try next.  It does not define
+validity.  Popping edge `(u, n)` means "try adding `n` now"; it does not mean
+only the pair `(u, n)` matters.
+
 ### Forced Island Merge
 
 If `n` is already in the global locked mapping, its image is forced.  If it
 belongs to a prior island, the whole island is folded into the candidate with
-exact images.  The code verifies all cross-bonds between the existing fragment
-and the absorbed island before committing the merge.
+exact images.  The code verifies all pairwise WBO constraints between the
+existing fragment and the absorbed island before committing the merge.
 
-### Commit Or Consume
+### Commit Or Defer
 
 If extension succeeds, the fragment grows and outgoing R edges are pushed into
-the heap.  If every candidate fails, the popped edge is consumed and the
-fragment is unchanged.
+the heap.  If every candidate fails, the popped proposal is not thrown away.
+It is recorded as a deferred boundary constraint and the fragment is unchanged.
+
+A deferred boundary constraint records that this island saw an outside atom
+through a specific weighted relation but could not absorb it under the current
+candidate family.  It is not part of the locked island's internal fragment,
+but it remains part of the candidate's boundary state.
+
+This distinction matters for symmetric islands.  If island A has two
+internally symmetric sides, but side 1 already has a deferred relation toward
+island B, then side 1 and side 2 are no longer interchangeable in that growth
+direction.  Dedupe must see that boundary difference.
 
 At heap exhaustion:
 
 - no candidates or too-small fragment -> fail this seed
 - resolved unique candidate -> return one concrete witness
-- unresolved/non-unique saturation -> deduplicate by compressed structural
-  signature and return one concrete witness per distinct compressed state
+- unresolved/non-unique saturation -> deduplicate by compressed
+  deferred-boundary-aware structural signature and return one concrete witness per
+  distinct compressed state
+
+## Boundary-Aware Dedupe
+
+Dedupe is allowed only when two candidates represent the same orbit state under
+the currently observed constraints.  It is not allowed to collapse candidates
+when a deferred boundary relation distinguishes one side from another.
+
+The dedupe key has two parts.
+
+### Internal Signature
+
+The internal signature describes the grown fragment:
+
+- mapped R atoms and their P images, with exact-fixed assignments preserved
+- `_SymBlock` pools, including R orbit IDs, P orbit IDs, pool sizes, and
+  extendability
+- core mappings kept exact when the caller marks a mechanism core
+
+This signature collapses spectator permutations inside true symmetry blocks
+but keeps core assignments and deferred-boundary-distinguished assignments
+when the exact pairing matters.
+
+### One-Hop Boundary Signature
+
+The boundary signature describes what the candidate can see just outside the
+fragment:
+
+- deferred proposals that failed to extend earlier
+- WBO values from mapped R atoms to those deferred outside R atoms
+- element labels and R orbit IDs of the deferred outside atoms
+- the corresponding WBO possibilities from mapped P atoms or P pools to unused
+  same-element P atoms
+- locked neighboring island IDs, when a boundary points at an already locked
+  island
+
+Two candidates are duplicates only if both the internal signature and this
+one-hop boundary signature are symmetry-equivalent.  This one-hop check catches
+the important case where an internally symmetric island has two sides, but
+only one side is already coupled to another island.
+
+Boundary-aware dedupe is still compression, not enumeration.  If all boundary
+vectors are symmetry-equivalent, the candidates remain compressed.  If a
+boundary vector distinguishes one side, the compressed state is refined or
+branched only as far as needed to preserve that distinction.
 
 ## Multi-Island Branching
 
@@ -170,22 +308,32 @@ for each seed while progress is possible:
             if no isos:
                 carry branch forward
             else:
-                dedup isos by joint orbit chemistry signature
+                dedup isos by mechanism-state plus deferred boundary
                 fork one branch per remaining iso
 
-    dedup live branches by the same chemistry signature
+    dedup live branches by mechanism-state plus deferred boundary
     enforce max_branches
 ```
 
-The joint chemistry signature records:
+This branch dedupe is a mechanism-state dedupe, not a concrete bijection
+dedupe.  It uses the current symmetry-canonical broken/formed WBO-change
+signature plus the deferred one-hop boundary.  During growth, the key must
+preserve future distinguishability already observed through deferred boundary
+constraints, without enumerating spectator permutations that have no mechanism
+effect.
+
+After complete mappings are scored, the mechanism-level signature records:
 
 ```
 broken: ((R orbit pair), (P orbit pair))
 formed: ((R orbit pair), (P orbit pair))
 ```
 
-This is stricter than P-only or R-only orbit dedup: it collapses symmetric
-spectator swaps without erasing product-side mechanism distinctions.
+That final mechanism signature collapses symmetric spectator swaps without
+erasing distinct bond-change patterns.  It is intentionally later than
+boundary-aware growth dedupe: two partial states that might become different
+mechanisms must not be collapsed just because their current internal islands
+look symmetric.
 
 ## Outer Alignment
 
@@ -358,7 +506,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 
 | name | default | meaning |
 |---|---:|---|
-| `graph_floor` | `0.2` | WBO edge threshold for graph construction |
+| `graph_floor` | `0.2` | implementation-only frontier/heap scheduling threshold; not a validity rule |
 | `iso_tol` | `1.0` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `max_branches` | `1_000_000` | live branch cap in core alignment |

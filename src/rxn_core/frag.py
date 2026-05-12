@@ -80,9 +80,10 @@ def run_xtb(xyz_path, workdir, charge=0, uhf=0):
 
 def build_graph(elements, wbo, bond_cut=0.5):
     """Connectivity graph with element on each node and WBO weight on each
-    edge. Bond exists iff WBO >= bond_cut. The PQ algorithm uses
-    bond_cut = graph_floor = 0.2 to admit weak/partial bonds."""
+    edge. Bond exists iff WBO >= bond_cut; the full WBO matrix is retained on
+    the graph so match validity can use complete weighted-pair comparisons."""
     g = nx.Graph()
+    g.graph["wbo_matrix"] = np.asarray(wbo, dtype=float)
     for i, e in enumerate(elements):
         g.add_node(i, element=e)
     n = len(elements)
