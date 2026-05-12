@@ -203,15 +203,29 @@ on the alignment purpose:
 - R<->P mechanism discovery deduplicates by symmetry-canonical broken/formed
   bond changes.  Multiple concrete mappings with the same mechanism under R
   symmetry collapse before GT/IG scoring.
-- R<->GT and R<->IG verification receives the union of the displayed
-  mechanisms' `core_R` atoms.  Seed order is core-first, branch dedup switches
-  to exact core mapping as soon as the core is mapped, and growth stops once
-  all live branches have mapped that core.  Spectator atoms are filled greedily
-  afterward for visualization only.
+- R<->GT and R<->IG verification is mechanism-local.  For each displayed
+  mechanism, the view builder enumerates exact mappings only for that
+  mechanism's `core_R` atoms, preserves every distinct core mapping, scores
+  them all, and keeps the best `S`.  Spectator atoms are never enumerated;
+  they are filled greedily only after a core mapping is chosen.
+
+This matters when symmetry touches a core atom.  If an atom is a spectator,
+one arbitrary representative of a symmetric group is fine.  If that same
+symmetric group contains a core atom, each possible core representative can
+give a different `beta/rho/kappa` because TS coordinates and normal modes live
+on concrete target atoms.  The code therefore enumerates symmetry alternatives
+only on the mechanism core.  A methyl H core in an 18-H symmetric environment
+creates up to 18 core candidates, not 18! full spectator permutations.
+
+Mechanism-local TS/IG core enumeration enforces preserved R-core edges against
+the target WBO graph (`BGCP_TS_CORE_EDGE_FLOOR`, default `0.2`) and allows
+extra TS partial bonds.  The optional cap `BGCP_TS_CORE_MAX_CANDIDATES`
+defaults to `20000`; hitting it is a diagnostic warning, not an expected path
+for elementary steps.
 
 This makes ranking symmetry/core based instead of full-bijection based.  Each
-`(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by default
-as a safety guard; set it to `0` to disable.
+R<->P `(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by
+default as a safety guard; set it to `0` to disable.
 
 The view still applies a final mechanism dedupe before rendering:
 
@@ -290,6 +304,8 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
 | `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped; set `0` to disable |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
+| `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | minimum target WBO for preserving an R-core edge during TS/IG core matching |
+| `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings before spectator fill |
 | `n_seeds` | `10` | seed orders in `align_from_arrays` |
 | `N_SEEDS_PER_RUN` | `3` | seed orders per cut-sweep unit in views |
 

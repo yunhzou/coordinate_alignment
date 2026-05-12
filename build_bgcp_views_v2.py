@@ -48,6 +48,7 @@ VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
+TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -306,31 +307,128 @@ def _core_edges_preserved(mapping, wboR, wboT, core_R):
     return True
 
 
-def ts_core_pool(elR, wboR, elT, wboT, core_R):
-    """Mechanism-independent R<->TS/IG core matcher.
+def _core_edge_match_ok(wboR, wboT, r, t, u, v):
+    if wboR[r, u] < 0.2:
+        return True
+    wT = float(wboT[t, v])
+    return wT >= TS_CORE_EDGE_FLOOR and abs(float(wboR[r, u]) - wT) <= VIEW_ISO_TOL
 
-    Unlike R-P mechanism discovery, this does no strong-bond cut sweep.  It
-    maps the union reaction core against the target with the intact R graph,
-    then validates that every R core edge is still supported in the target.
-    Formed TS contacts are allowed as extra target edges and are handled by
-    the per-mechanism scorer.
+
+def ts_core_pool(elR, wboR, elT, wboT, core_R, broken_R=None, formed_R=None):
+    """Enumerate mechanism-local R<->TS/IG core alternatives.
+
+    This intentionally avoids full bijections and strong-bond cut sweeps.
+    Only mechanism core atoms are assigned.  Exact core mappings are preserved
+    for scoring because a symmetry choice that touches the core can change
+    beta/rho/kappa; spectator choices are left to greedy fill after scoring.
     """
     core_R = tuple(sorted(set(core_R or ())))
     if not core_R:
         return {}
-    g_R = build_graph(elR, wboR, bond_cut=0.2)
-    g_T = build_graph(elT, wboT, bond_cut=TS_CORE_EDGE_FLOOR)
     pool = {}
-    for order in _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN):
-        try:
-            branches = _run_find_islands_limited(g_R, g_T, order, core_R)
-        except Exception:
-            continue
-        for b in branches:
-            mapping = expand_mapping(b.mapping, g_R, g_T)
-            if not _core_edges_preserved(mapping, wboR, wboT, core_R):
+    core_set = set(core_R)
+    core_edges = {
+        r: [u for u in core_R if u != r and wboR[r, u] >= 0.2]
+        for r in core_R
+    }
+    reactive_pairs = {
+        _canon_pair(int(a), int(b))
+        for a, b in list(broken_R or []) + list(formed_R or [])
+        if a in core_set and b in core_set
+    }
+
+    domains = {
+        r: [t for t, e in enumerate(elT) if e == elR[r]]
+        for r in core_R
+    }
+
+    # Cheap arc consistency on preserved R-core edges.  This removes target
+    # atoms that cannot participate in any legal core assignment while still
+    # keeping all symmetry alternatives that can affect core scoring.
+    changed = True
+    while changed:
+        changed = False
+        for r in core_R:
+            kept = []
+            for t in domains[r]:
+                ok = True
+                for u in core_edges[r]:
+                    if not any(
+                        v != t and _core_edge_match_ok(wboR, wboT, r, t, u, v)
+                        for v in domains[u]
+                    ):
+                        ok = False
+                        break
+                if ok:
+                    kept.append(t)
+            if len(kept) != len(domains[r]):
+                domains[r] = kept
+                changed = True
+
+    def reactive_hint(r, t, mapping):
+        score = 0.0
+        for u, v in mapping.items():
+            if _canon_pair(r, u) in reactive_pairs:
+                score += float(wboT[t, v])
+        return score
+
+    def feasible_values(r, mapping, used_T):
+        vals = []
+        for t in domains[r]:
+            if t in used_T:
                 continue
-            _pool_add(pool, _core_mapping_key(mapping, core_R), mapping, ())
+            ok = True
+            for u, v in mapping.items():
+                if not _core_edge_match_ok(wboR, wboT, r, t, u, v):
+                    ok = False
+                    break
+            if not ok:
+                continue
+            for u in core_R:
+                if u in mapping or u == r or wboR[r, u] < 0.2:
+                    continue
+                if not any(
+                    v not in used_T
+                    and v != t
+                    and _core_edge_match_ok(wboR, wboT, r, t, u, v)
+                    for v in domains[u]
+                ):
+                    ok = False
+                    break
+            if ok:
+                vals.append(t)
+        vals.sort(key=lambda t: (-reactive_hint(r, t, mapping), t))
+        return vals
+
+    def backtrack(mapping, used_T):
+        if len(pool) >= TS_CORE_MAX_CANDIDATES:
+            return
+        if len(mapping) == len(core_R):
+            if _core_edges_preserved(mapping, wboR, wboT, core_R):
+                _pool_add(pool, _core_mapping_key(mapping, core_R),
+                          dict(mapping), ())
+            return
+        remaining = [r for r in core_R if r not in mapping]
+        ranked = []
+        for r in remaining:
+            vals = feasible_values(r, mapping, used_T)
+            ranked.append((len(vals), -len(core_edges[r]), r, vals))
+        ranked.sort()
+        n_vals, _, r, vals = ranked[0]
+        if n_vals == 0:
+            return
+        for t in vals:
+            mapping[r] = t
+            used_T.add(t)
+            backtrack(mapping, used_T)
+            used_T.remove(t)
+            del mapping[r]
+
+    backtrack({}, set())
+    if BGCP_TIMING and len(pool) >= TS_CORE_MAX_CANDIDATES:
+        print(f"    [warn] TS core pool hit cap={TS_CORE_MAX_CANDIDATES} "
+              f"core={list(core_R)}",
+              flush=True)
     return pool
 
 
@@ -540,9 +638,11 @@ def process_step(step_name, inner_workers=0):
                       flush=True)
             return pool
 
-        def timed_ts_core_pool(label, elT, wboT, core_R):
+        def timed_ts_core_pool(label, elT, wboT, core_R,
+                               broken_R=None, formed_R=None):
             t_match = time.time()
-            pool = ts_core_pool(elR, wboR, elT, wboT, core_R)
+            pool = ts_core_pool(elR, wboR, elT, wboT, core_R,
+                                broken_R=broken_R, formed_R=formed_R)
             if BGCP_TIMING:
                 print(f"    {step_name} {label:>12s} core_match: "
                       f"{len(pool):>4d} sigs core={len(core_R)} "
@@ -587,19 +687,22 @@ def process_step(step_name, inner_workers=0):
 
         r_orbits = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
         mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
-        core_union = sorted({r for mech in mechanisms for r in mech['core_atoms']})
-
-        # Cache GT's R<->T core match ONCE.  Once the union of mechanism cores
-        # is mapped, spectator atoms are irrelevant for ranking and are filled
-        # greedily only for visualization.
-        gt_rt_pool = timed_ts_core_pool("GT", elT_gt, wboT_gt, core_union)
+        # R<->T core matching is mechanism-local.  A target-side symmetry
+        # representative that is arbitrary for one core can become unique once
+        # a particular mechanism's broken/formed bonds define the scoring core.
+        # Spectator alternatives are not enumerated.
         for mech in mechanisms:
             br_R, fm_R, core_R, dRP = mech['_state']
+            gt_rt_pool = timed_ts_core_pool(
+                f"GT:m{mech['id']}", elT_gt, wboT_gt, core_R,
+                broken_R=br_R, formed_R=fm_R)
             mech['gt'] = best_under_mech_using_pool(
                 elR, xyzR, elT_gt, xyzT_gt, freqs_gt, modes_gt, gt_rt_pool,
                 br_R, fm_R, core_R, dRP)
 
-        # IGs: cache R<->IG cut-sweep ONCE per IG, then score under each mech
+        # IGs: enumerate mechanism-local core alternatives, then score under
+        # each mechanism.  Spectators are greedily filled only after a core map
+        # is chosen for scoring/visualization.
         iter_dirs = sorted([d for d in sd.iterdir()
                             if d.is_dir() and re.match(r"hess_iter(\d+)$", d.name)],
                            key=lambda d: int(re.match(r"hess_iter(\d+)$", d.name).group(1)))
@@ -610,13 +713,14 @@ def process_step(step_name, inner_workers=0):
             try:
                 elI, xyzI, wboI = load(sp_dir)
                 freqs_i, modes_i = parse_g98_modes(hess_dir / "g98.out")
-                ig_rt_pool = timed_ts_core_pool(label, elI, wboI,
-                                                core_union)
             except Exception:
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
             for mech in mechanisms:
                 br_R, fm_R, core_R, dRP = mech['_state']
+                ig_rt_pool = timed_ts_core_pool(
+                    f"{label}:m{mech['id']}", elI, wboI, core_R,
+                    broken_R=br_R, formed_R=fm_R)
                 s = best_under_mech_using_pool(elR, xyzR, elI, xyzI,
                                                  freqs_i, modes_i, ig_rt_pool,
                                                  br_R, fm_R, core_R, dRP)
