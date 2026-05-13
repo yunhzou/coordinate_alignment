@@ -1,0 +1,136 @@
+[
+  {
+    "step": "pr14_alkene",
+    "target": "R-P",
+    "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr14_alkene_R_P_alignment_trace.html",
+    "best_broken": 2,
+    "best_formed": 3,
+    "best_seed": 0,
+    "best_branch": 0,
+    "n_candidates": 6,
+    "elapsed_s": 15.425,
+    "counts": [
+      {
+        "broken": 2,
+        "formed": 3,
+        "count": 6
+      }
+    ],
+    "events": 243
+  },
+  {
+    "step": "pr14_alkene",
+    "target": "R-GT",
+    "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr14_alkene_R_GT_alignment_trace.html",
+    "best_broken": 0,
+    "best_formed": 0,
+    "best_seed": 0,
+    "best_branch": 0,
+    "n_candidates": 3,
+    "elapsed_s": 7.188,
+    "counts": [
+      {
+        "broken": 0,
+        "formed": 0,
+        "count": 3
+      }
+    ],
+    "events": 227
+  },
+  {
+    "step": "pr7_ts910",
+    "target": "R-P",
+    "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr7_ts910_R_P_alignment_trace.html",
+    "best_broken": 2,
+    "best_formed": 2,
+    "best_seed": 0,
+    "best_branch": 0,
+    "n_candidates": 10,
+    "elapsed_s": 0.186,
+    "counts": [
+      {
+        "broken": 2,
+        "formed": 2,
+        "count": 6
+      },
+      {
+        "broken": 3,
+        "formed": 3,
+        "count": 4
+      }
+    ],
+    "events": 80
+  },
+  {
+    "step": "pr7_ts910",
+    "target": "R-GT",
+    "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr7_ts910_R_GT_alignment_trace.html",
+    "best_broken": 2,
+    "best_formed": 2,
+    "best_seed": 1,
+    "best_branch": 1,
+    "n_candidates": 16,
+    "elapsed_s": 0.228,
+    "counts": [
+      {
+        "broken": 2,
+        "formed": 2,
+        "count": 2
+      },
+      {
+        "broken": 3,
+        "formed": 3,
+        "count": 2
+      },
+      {
+        "broken": 9,
+        "formed": 9,
+        "count": 6
+      },
+      {
+        "broken": 10,
+        "formed": 10,
+        "count": 6
+      }
+    ],
+    "events": 85
+  },
+  {
+    "step": "pr17_ts6a",
+    "target": "R-P",
+    "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr17_ts6a_R_P_alignment_trace.html",
+    "best_broken": 1,
+    "best_formed": 1,
+    "best_seed": 0,
+    "best_branch": 0,
+    "n_candidates": 3,
+    "elapsed_s": 5.96,
+    "counts": [
+      {
+        "broken": 1,
+        "formed": 1,
+        "count": 3
+      }
+    ],
+    "events": 310
+  },
+  {
+    "step": "pr17_ts6a",
+    "target": "R-GT",
+    "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr17_ts6a_R_GT_alignment_trace.html",
+    "best_broken": 0,
+    "best_formed": 0,
+    "best_seed": 0,
+    "best_branch": 0,
+    "n_candidates": 3,
+    "elapsed_s": 6.237,
+    "counts": [
+      {
+        "broken": 0,
+        "formed": 0,
+        "count": 3
+      }
+    ],
+    "events": 292
+  }
+]

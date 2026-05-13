@@ -132,12 +132,14 @@ def bond_reaction_vector(xyz_TS_in_R, broken_bonds_R, formed_bonds_R):
     return V
 
 
-def bond_overlap_per_mode(modes_R, V):
+def bond_overlap_per_mode(modes_R, V, mode_norms=None):
     """|mode . V_hat| / ||mode||  in [0, 1].
 
     V is the bond-reaction-direction vector from bond_reaction_vector().
     Numerator captures alignment with the bond-stretch/contract motion;
-    denominator (full mode norm) penalizes amplitude on spectator atoms."""
+    denominator penalizes amplitude on spectator atoms.  When `modes_R` is
+    only a partial witness reindex, pass `mode_norms` from the original full
+    TS modes so unmapped spectators still contribute to the denominator."""
     n_modes = modes_R.shape[0]
     if n_modes == 0:
         return np.zeros(0)
@@ -147,7 +149,10 @@ def bond_overlap_per_mode(modes_R, V):
         return np.zeros(n_modes)
     v_unit = v_flat / v_norm
     m_flat = modes_R.reshape(n_modes, -1)
-    m_norm = np.linalg.norm(m_flat, axis=1)
+    if mode_norms is None:
+        m_norm = np.linalg.norm(m_flat, axis=1)
+    else:
+        m_norm = np.asarray(mode_norms, dtype=float)
     dots = np.abs(m_flat @ v_unit)
     out = np.zeros(n_modes)
     valid = m_norm > 1e-9
@@ -155,14 +160,15 @@ def bond_overlap_per_mode(modes_R, V):
     return out
 
 
-def rxn_overlap_per_mode(modes_R, delta, core_atoms):
+def rxn_overlap_per_mode(modes_R, delta, core_atoms, mode_norms=None):
     """Reaction-mode overlap: projection of each full-molecule mode onto
     the unit reaction-coord vector restricted to core atoms.
 
     Builds Delta_hat_core (zero outside core, normalized over core),
     then q_m = |d_m . Delta_hat_core| / ||d_m|| in [0, 1]. Penalizes
     spectator-atom motion (in denominator) and core motion not aligned
-    with Delta (in numerator)."""
+    with Delta (in numerator).  When `modes_R` is a partial witness reindex,
+    pass `mode_norms` from the original full TS modes."""
     n_modes = modes_R.shape[0]
     if n_modes == 0 or not core_atoms:
         return np.zeros(n_modes)
@@ -175,7 +181,10 @@ def rxn_overlap_per_mode(modes_R, delta, core_atoms):
         return np.zeros(n_modes)
     d_unit = d_flat / d_norm
     m_flat = modes_R.reshape(n_modes, -1)
-    m_norm = np.linalg.norm(m_flat, axis=1)
+    if mode_norms is None:
+        m_norm = np.linalg.norm(m_flat, axis=1)
+    else:
+        m_norm = np.asarray(mode_norms, dtype=float)
     dots = np.abs(m_flat @ d_unit)
     out = np.zeros(n_modes)
     valid = m_norm > 1e-9

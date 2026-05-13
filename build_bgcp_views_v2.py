@@ -2,7 +2,7 @@
 
 For each step:
   1. R<->P cut-sweep -> min-bondcount mechanisms.
-  2. Under each mechanism: cut-sweep GT + each of 20 IGs, pick best R<->T per pair.
+  2. Under each mechanism: core-match GT + each IG, pick best R<->T core witness.
   3. Rank IGs per mech, mark top-2; union across mechs.
   4. Write out/bgcp_views/<step>/view.html with mechanism switcher.
   5. Dump out/bgcp_alignment_eval_v2.json for downstream CSV.
@@ -19,32 +19,29 @@ import json
 import multiprocessing as mp
 import os
 import re
-import signal
-import sys
 import time
 import traceback
 from pathlib import Path
 import numpy as np
 
 from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
-                      core_atoms_in_R_frame, fill_unmapped_greedy,
+                      core_atoms_in_R_frame,
                       reaction_coord_delta, reindex_modes_to_R,
                       bond_overlap_per_mode, bond_reaction_vector,
                       rxn_overlap_per_mode,
-                      expand_chemistry_relevant_atoms)
-from rxn_core.pq import (find_islands_pq, grow_island_pq, build_graph,
-                         _generate_seed_orders, expand_mapping,
-                         _color_refine_orbits, symmetry_repair_mapping)
+                      build_graph, cut_sweep, select_min_mechanisms,
+                      ts_core_pool)
+from rxn_core.matcher import _nauty_orbits
 
 PROJECT = _Path(__file__).resolve().parent
 WORK = PROJECT / "appendix_perparation" / "xtb_frequency_calculations"
 OUT_ROOT = PROJECT / "out" / "bgcp_views"
 EVAL_JSON = PROJECT / "out" / "bgcp_alignment_eval_v2.json"
-WBO_STRONG = 0.5
+CUT_FLOOR = float(os.environ.get("BGCP_CUT_FLOOR", "0.2"))
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "5000"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
-VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
+VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "0.5"))
 UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 SYMMETRY_REPAIR = os.environ.get("BGCP_SYMMETRY_REPAIR", "1") != "0"
@@ -65,394 +62,6 @@ def load(d):
         i, j = int(p[0])-1, int(p[1])-1
         wbo[i, j] = float(p[2]); wbo[j, i] = wbo[i, j]
     return el, np.asarray(xyz, float), wbo
-
-
-# =============================================================================
-# Parallel cut_sweep (work-unit dispatch over multiprocessing.Pool)
-# =============================================================================
-# Each worker rebuilds g_R fresh per call (cheap), with the requested cut
-# applied; g_P is built once per worker via the initializer. Returns chem
-# signatures + full bijections.
-
-_W = {}
-def _cs_winit(elR, wboR, elT, wboT):
-    from rxn_core.pq import _color_refine_orbits
-    _W['elR'] = elR; _W['wboR'] = wboR
-    _W['elT'] = elT; _W['wboT'] = wboT
-    _W['g_P'] = build_graph(elT, wboT, bond_cut=0.2)
-    _W['g_R_full'] = build_graph(elR, wboR, bond_cut=0.2)
-    # Orbit-canonical chem signature: collapse isos that differ only by
-    # permuting orbit-equivalent P-atoms (e.g. pr12-class spectator
-    # explosion that produced 226k branches in the pre-fix run).
-    _W['p_orbits'] = _color_refine_orbits(_W['g_P'])
-    _W['r_orbits'] = _color_refine_orbits(_W['g_R_full'])
-    _W['n'] = len(elR)
-
-
-def _run_find_islands_limited(g_R, g_P, order, core_R=None):
-    stop_on_core = bool(core_R)
-    if UNIT_TIMEOUT <= 0 or not hasattr(signal, "SIGALRM"):
-        return find_islands_pq(g_R, g_P, list(order),
-                               iso_tol=VIEW_ISO_TOL,
-                               max_branches=VIEW_MAX_BRANCHES,
-                               core_R=core_R,
-                               stop_when_core_mapped=stop_on_core)
-
-    def _raise_timeout(signum, frame):
-        raise TimeoutError("cut_sweep work unit timed out")
-
-    old_handler = signal.getsignal(signal.SIGALRM)
-    signal.signal(signal.SIGALRM, _raise_timeout)
-    signal.setitimer(signal.ITIMER_REAL, UNIT_TIMEOUT)
-    try:
-        return find_islands_pq(g_R, g_P, list(order),
-                               iso_tol=VIEW_ISO_TOL,
-                               max_branches=VIEW_MAX_BRANCHES,
-                               core_R=core_R,
-                               stop_when_core_mapped=stop_on_core)
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0.0)
-        signal.signal(signal.SIGALRM, old_handler)
-
-
-def _canon_pair(a, b):
-    return (a, b) if a <= b else (b, a)
-
-
-def _orbit_bond_key(pairs, orbits, tag):
-    return tuple(sorted(
-        (tag, *_canon_pair(int(orbits[a]), int(orbits[b])))
-        for a, b in pairs
-    ))
-
-
-def _core_mapping_key(mapping, core_R):
-    return (
-        tuple((int(r), int(mapping[r])) for r in sorted(core_R)),
-        (),
-    )
-
-
-def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits):
-    """Symmetry-canonical mechanism key for R-P discovery.
-
-    Broken bonds are R-frame bond changes. Formed bonds are converted back to
-    R-frame when both P endpoints are mapped; rare unmapped formed endpoints
-    are retained in P-orbit space so they are not silently lost.
-    """
-    broken, formed, _, _ = classify_bonds(mapping, wboR, wboT)
-    inv = {v: k for k, v in mapping.items()}
-    br_pairs = [(a, b) for (a, b, _, _) in broken]
-    fm_r_pairs = []
-    fm_p_pairs = []
-    for a, b, _, _ in formed:
-        if a in inv and b in inv:
-            fm_r_pairs.append((inv[a], inv[b]))
-        else:
-            fm_p_pairs.append((a, b))
-    br = _orbit_bond_key(br_pairs, r_orbits, 'R')
-    fm = (_orbit_bond_key(fm_r_pairs, r_orbits, 'R') +
-          _orbit_bond_key(fm_p_pairs, p_orbits, 'P'))
-    return br, tuple(sorted(fm))
-
-
-def _pool_add(pool, sig, mapping, cuts):
-    entry = pool.get(sig)
-    cuts = frozenset(cuts)
-    if entry is None:
-        pool[sig] = {
-            'mapping': mapping,
-            'cuts': cuts,
-            'dedup_count': 1,
-        }
-    else:
-        entry['cuts'] = entry['cuts'] | cuts
-        entry['dedup_count'] = entry.get('dedup_count', 1) + 1
-
-
-def _cs_wrun(args):
-    cut, order, core_R = args
-    g_R = build_graph(_W['elR'], _W['wboR'], bond_cut=0.2)
-    for (i, j) in cut:
-        if g_R.has_edge(i, j): g_R.remove_edge(i, j)
-    try:
-        branches = _run_find_islands_limited(g_R, _W['g_P'], order, core_R)
-    except Exception:
-        return []
-    out = []
-    p_orbits = _W['p_orbits']
-    r_orbits = _W['r_orbits']
-    for b in branches:
-        mapping = expand_mapping(b.mapping, g_R, _W['g_P'])
-        if core_R:
-            if not all(r in mapping for r in core_R):
-                continue
-            sig = _core_mapping_key(mapping, core_R)
-        else:
-            if len(mapping) < _W['n'] - 2:
-                continue
-            if SYMMETRY_REPAIR:
-                mapping = symmetry_repair_mapping(
-                    mapping, _W['wboR'], _W['wboT'],
-                    _W.get('g_R_full', g_R), _W['g_P'], p_orbits,
-                    min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
-                    max_evals=SYMMETRY_REPAIR_MAX_EVALS)
-            sig = _mechanism_signature(mapping, _W['wboR'], _W['wboT'],
-                                       r_orbits, p_orbits)
-        out.append((sig, tuple(sorted(mapping.items())), cut))
-    return out
-
-
-def _cut_sweep_serial(elR, wboR, elT, wboT, core_R=None):
-    """Single-process cut_sweep (used inside outer-Pool workers to avoid
-    nested daemonic multiprocessing)."""
-    from rxn_core.pq import _color_refine_orbits
-    strong = [(i, j) for i in range(len(elR)) for j in range(i+1, len(elR))
-              if wboR[i, j] >= WBO_STRONG]
-    g_P = build_graph(elT, wboT, bond_cut=0.2)
-    g_R_full = build_graph(elR, wboR, bond_cut=0.2)
-    # Orbit-canonical form (see comment in _cs_wrun re: pr12-class explosion)
-    p_orbits = _color_refine_orbits(g_P)
-    r_orbits = _color_refine_orbits(g_R_full)
-    pool = {}
-    def run(cuts):
-        g_R = build_graph(elR, wboR, bond_cut=0.2)
-        for (i, j) in cuts:
-            if g_R.has_edge(i, j): g_R.remove_edge(i, j)
-        orders = _generate_seed_orders(g_R, n_trials=N_SEEDS_PER_RUN)
-        for order in orders:
-            try:
-                branches = _run_find_islands_limited(g_R, g_P, order, core_R)
-            except Exception:
-                continue
-            for b in branches:
-                mapping_full = expand_mapping(b.mapping, g_R, g_P)
-                if core_R:
-                    if not all(r in mapping_full for r in core_R):
-                        continue
-                    sig = _core_mapping_key(mapping_full, core_R)
-                else:
-                    if len(mapping_full) < len(elR) - 2:
-                        continue
-                    if SYMMETRY_REPAIR:
-                        mapping_full = symmetry_repair_mapping(
-                            mapping_full, wboR, wboT, g_R_full, g_P,
-                            p_orbits,
-                            min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
-                            max_evals=SYMMETRY_REPAIR_MAX_EVALS)
-                    sig = _mechanism_signature(mapping_full, wboR, wboT,
-                                               r_orbits, p_orbits)
-                _pool_add(pool, sig, mapping_full, cuts)
-    run(set())
-    for (i, j) in strong:
-        run({(i, j)})
-    return pool
-
-
-def _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers, core_R=None):
-    """Multi-process cut_sweep using `n_workers` workers. Work units are
-    (cut, seed_order) pairs; each unit runs one find_islands_pq call."""
-    import random as _random
-    n = len(elR)
-    strong = [(i, j) for i in range(n) for j in range(i+1, n)
-              if wboR[i, j] >= WBO_STRONG]
-    g_R = build_graph(elR, wboR, bond_cut=0.2)
-    nodes = list(g_R.nodes())
-    rng = _random.Random(42)
-    seed_orders = []
-    for _ in range(N_SEEDS_PER_RUN):
-        order = list(nodes); rng.shuffle(order)
-        seed_orders.append(tuple(order))
-    cuts = [()] + [((i, j),) for (i, j) in strong]
-    # Seed-major ordering plus chunksize=1 keeps the three seed orders for a
-    # pathological cut from landing in the same worker chunk. This matters on
-    # high-symmetry steps where a few cuts dominate the tail of each sweep.
-    core_R = tuple(sorted(set(core_R or ())))
-    work = [(cut, s, core_R) for s in seed_orders for cut in cuts]
-    pool = {}
-    with mp.Pool(n_workers, initializer=_cs_winit,
-                  initargs=(elR, wboR, elT, wboT)) as p:
-        for results in p.imap_unordered(_cs_wrun, work,
-                                        chunksize=max(1, CUTSWEEP_CHUNKSIZE)):
-            for chem_sig, mapping_items, cut in results:
-                _pool_add(pool, chem_sig, dict(mapping_items), cut)
-    return pool
-
-
-def cut_sweep(elR, wboR, elT, wboT, n_workers=None, core_R=None):
-    """Enumerate chemistry classes via single-strong-edge cuts on g_R.
-
-    For each (cut ∈ {∅} ∪ strong-R-bonds), seed N_SEEDS_PER_RUN seed
-    orderings, run find_islands_pq, and dedup either by symmetry-canonical
-    mechanism signature (R-P discovery) or by exact core mapping (R-TS/IG
-    scoring when core_R is supplied).
-
-    n_workers:
-      None or 0 → serial (used inside outer multiprocessing.Pool workers)
-      >= 1      → multiprocessing.Pool with that many workers
-    """
-    if not n_workers or n_workers <= 1:
-        return _cut_sweep_serial(elR, wboR, elT, wboT, core_R=core_R)
-    return _cut_sweep_parallel(elR, wboR, elT, wboT, n_workers,
-                               core_R=core_R)
-
-
-def _core_edges_preserved(mapping, wboR, wboT, core_R):
-    """Validate a TS core mapping against reactant identity.
-
-    R-P discovery intentionally cuts R bonds to expose alternate mechanisms.
-    R-TS/R-IG matching should not do that: atom identity is anchored by the
-    reactant-side core bonds that still have TS support.  This prevents a TS
-    H that is still partially attached to its R donor from being relabeled as
-    a different transferring H just because product-side formed-bond scoring
-    is larger.
-    """
-    core = tuple(sorted(set(core_R or ())))
-    for idx, a in enumerate(core):
-        if a not in mapping:
-            return False
-        for b in core[idx + 1:]:
-            if b not in mapping:
-                return False
-            if wboR[a, b] < 0.2:
-                continue
-            wT = float(wboT[mapping[a], mapping[b]])
-            if wT < TS_CORE_EDGE_FLOOR:
-                return False
-            if abs(float(wboR[a, b]) - wT) > VIEW_ISO_TOL:
-                return False
-    return True
-
-
-def _core_edge_match_ok(wboR, wboT, r, t, u, v):
-    if wboR[r, u] < 0.2:
-        return True
-    wT = float(wboT[t, v])
-    return wT >= TS_CORE_EDGE_FLOOR and abs(float(wboR[r, u]) - wT) <= VIEW_ISO_TOL
-
-
-def ts_core_pool(elR, wboR, elT, wboT, core_R, broken_R=None, formed_R=None):
-    """Enumerate mechanism-local R<->TS/IG core alternatives.
-
-    This intentionally avoids full bijections and strong-bond cut sweeps.
-    Only mechanism core atoms are assigned.  Exact core mappings are preserved
-    for scoring because a symmetry choice that touches the core can change
-    beta/rho/kappa; spectator choices are left to greedy fill after scoring.
-    """
-    core_R = tuple(sorted(set(core_R or ())))
-    if not core_R:
-        return {}
-    pool = {}
-    core_set = set(core_R)
-    core_edges = {
-        r: [u for u in core_R if u != r and wboR[r, u] >= 0.2]
-        for r in core_R
-    }
-    reactive_pairs = {
-        _canon_pair(int(a), int(b))
-        for a, b in list(broken_R or []) + list(formed_R or [])
-        if a in core_set and b in core_set
-    }
-
-    domains = {
-        r: [t for t, e in enumerate(elT) if e == elR[r]]
-        for r in core_R
-    }
-
-    # Cheap arc consistency on preserved R-core edges.  This removes target
-    # atoms that cannot participate in any legal core assignment while still
-    # keeping all symmetry alternatives that can affect core scoring.
-    changed = True
-    while changed:
-        changed = False
-        for r in core_R:
-            kept = []
-            for t in domains[r]:
-                ok = True
-                for u in core_edges[r]:
-                    if not any(
-                        v != t and _core_edge_match_ok(wboR, wboT, r, t, u, v)
-                        for v in domains[u]
-                    ):
-                        ok = False
-                        break
-                if ok:
-                    kept.append(t)
-            if len(kept) != len(domains[r]):
-                domains[r] = kept
-                changed = True
-
-    def reactive_hint(r, t, mapping):
-        score = 0.0
-        for u, v in mapping.items():
-            if _canon_pair(r, u) in reactive_pairs:
-                score += float(wboT[t, v])
-        return score
-
-    def feasible_values(r, mapping, used_T):
-        vals = []
-        for t in domains[r]:
-            if t in used_T:
-                continue
-            ok = True
-            for u, v in mapping.items():
-                if not _core_edge_match_ok(wboR, wboT, r, t, u, v):
-                    ok = False
-                    break
-            if not ok:
-                continue
-            for u in core_R:
-                if u in mapping or u == r or wboR[r, u] < 0.2:
-                    continue
-                if not any(
-                    v not in used_T
-                    and v != t
-                    and _core_edge_match_ok(wboR, wboT, r, t, u, v)
-                    for v in domains[u]
-                ):
-                    ok = False
-                    break
-            if ok:
-                vals.append(t)
-        vals.sort(key=lambda t: (-reactive_hint(r, t, mapping), t))
-        return vals
-
-    def backtrack(mapping, used_T):
-        if len(pool) >= TS_CORE_MAX_CANDIDATES:
-            return
-        if len(mapping) == len(core_R):
-            if _core_edges_preserved(mapping, wboR, wboT, core_R):
-                _pool_add(pool, _core_mapping_key(mapping, core_R),
-                          dict(mapping), ())
-            return
-        remaining = [r for r in core_R if r not in mapping]
-        ranked = []
-        for r in remaining:
-            vals = feasible_values(r, mapping, used_T)
-            ranked.append((len(vals), -len(core_edges[r]), r, vals))
-        ranked.sort()
-        n_vals, _, r, vals = ranked[0]
-        if n_vals == 0:
-            return
-        for t in vals:
-            mapping[r] = t
-            used_T.add(t)
-            backtrack(mapping, used_T)
-            used_T.remove(t)
-            del mapping[r]
-
-    backtrack({}, set())
-    if BGCP_TIMING and len(pool) >= TS_CORE_MAX_CANDIDATES:
-        print(f"    [warn] TS core pool hit cap={TS_CORE_MAX_CANDIDATES} "
-              f"core={list(core_R)}",
-              flush=True)
-    return pool
-
-
-def select_min(pool):
-    if not pool: return {}
-    m = min(len(k[0]) + len(k[1]) for k in pool)
-    return {k: v for k, v in pool.items() if len(k[0]) + len(k[1]) == m}
 
 
 def _bond_key(bonds, orbits=None):
@@ -516,14 +125,17 @@ def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
 def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
               broken_R, formed_R, core_R, delta_RP):
     modes_R = reindex_modes_to_R(modes_TS, mapping_RT, len(elR))
-    sq = (modes_R**2).sum(axis=2); total = sq.sum(axis=1)
+    mode_norms = np.linalg.norm(modes_TS.reshape(modes_TS.shape[0], -1), axis=1)
+    sq = (modes_R**2).sum(axis=2)
+    total = mode_norms ** 2
     core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
     kappa = np.where(total > 1e-12, core_e / total, 0.0)
-    rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
-    ts_in_R = np.zeros_like(np.asarray(xyzR, float))
+    rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R,
+                                mode_norms=mode_norms)
+    ts_in_R = np.asarray(xyzR, float).copy()
     for r, t in mapping_RT.items(): ts_in_R[r] = xyzT[t]
     V = bond_reaction_vector(ts_in_R, broken_R, formed_R)
-    beta = bond_overlap_per_mode(modes_R, V)
+    beta = bond_overlap_per_mode(modes_R, V, mode_norms=mode_norms)
     imag = list(np.where(freqs < 0)[0])
     if not imag: return None
     pk = max(imag, key=lambda k: beta[k])
@@ -538,13 +150,14 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
 
 def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
                                  rt_pool, broken_R, formed_R, core_R, delta_RP):
-    """Score every R<->T mapping under one mech, with CORE-RESTRICTED DEDUP.
+    """Score every R<->T witness under one mech, with CORE-RESTRICTED DEDUP.
 
-    Two bijections that agree on (r → mapping[r] for r in core_R) produce
+    Two witnesses that agree on (r -> mapping[r] for r in core_R) produce
     identical verifier scores under this mechanism: beta, rho, kappa, and
     the bond-reaction vector V only read TS coords / mode displacements at
     R-frame *core* indices. Spectator-atom permutations on the TS side
-    don't affect any of those quantities.
+    don't affect those numerators; the denominator uses the full TS mode norm
+    directly, so no spectator mapping is invented.
 
     We dedup the pool by per-mechanism core-restricted key and score one
     rep per equivalence class. Keep highest-S rep. This is option (a)
@@ -555,13 +168,13 @@ def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
     seen_core = set()
     best = None
     for v in rt_pool.values():
-        m_full = v['mapping']
+        witness = v['mapping']
         # Per-mechanism core-restricted key
-        core_key = frozenset((r, m_full[r]) for r in core_R_set if r in m_full)
+        core_key = frozenset((r, witness[r]) for r in core_R_set if r in witness)
         if core_key in seen_core:
             continue
         seen_core.add(core_key)
-        mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, m_full)
+        mapping_RT = dict(witness)
         s = score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
                       broken_R, formed_R, core_R, delta_RP)
         if s and (best is None or s['S'] > best['S']):
@@ -646,7 +259,17 @@ def process_step(step_name, inner_workers=0):
         def timed_cut_sweep(label, elT, wboT, core_R=None):
             t_sweep = time.time()
             pool = cut_sweep(elR, wboR, elT, wboT,
-                             n_workers=inner_workers, core_R=core_R)
+                             n_workers=inner_workers, core_R=core_R,
+                             cut_floor=CUT_FLOOR,
+                             graph_floor=0.2,
+                             iso_tol=VIEW_ISO_TOL,
+                             n_seeds=N_SEEDS_PER_RUN,
+                             max_branches=VIEW_MAX_BRANCHES,
+                             chunksize=CUTSWEEP_CHUNKSIZE,
+                             unit_timeout=UNIT_TIMEOUT,
+                             symmetry_repair=SYMMETRY_REPAIR,
+                             symmetry_repair_min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
+                             symmetry_repair_max_evals=SYMMETRY_REPAIR_MAX_EVALS)
             if BGCP_TIMING:
                 core_msg = f" core={len(core_R)}" if core_R else ""
                 print(f"    {step_name} {label:>12s} cut_sweep: "
@@ -659,8 +282,15 @@ def process_step(step_name, inner_workers=0):
                                broken_R=None, formed_R=None):
             t_match = time.time()
             pool = ts_core_pool(elR, wboR, elT, wboT, core_R,
-                                broken_R=broken_R, formed_R=formed_R)
+                                broken_R=broken_R, formed_R=formed_R,
+                                edge_floor=TS_CORE_EDGE_FLOOR,
+                                iso_tol=VIEW_ISO_TOL,
+                                max_candidates=TS_CORE_MAX_CANDIDATES)
             if BGCP_TIMING:
+                if len(pool) >= TS_CORE_MAX_CANDIDATES:
+                    print(f"    [warn] TS core pool hit cap={TS_CORE_MAX_CANDIDATES} "
+                          f"core={list(core_R)}",
+                          flush=True)
                 print(f"    {step_name} {label:>12s} core_match: "
                       f"{len(pool):>4d} sigs core={len(core_R)} "
                       f"in {time.time()-t_match:.1f}s",
@@ -668,7 +298,7 @@ def process_step(step_name, inner_workers=0):
             return pool
 
         rp = timed_cut_sweep("R-P", elP, wboP)
-        rp_min = select_min(rp)
+        rp_min = select_min_mechanisms(rp)
         if not rp_min:
             return {"step": step_name, "error": "no min-bond mechanism"}
 
@@ -681,10 +311,9 @@ def process_step(step_name, inner_workers=0):
             formed_R = [(int(inv_RP[a]), int(inv_RP[b])) for (a, b, _, _) in formed
                         if a in inv_RP and b in inv_RP]
             core_R = list(core_atoms_in_R_frame(mapping_RP, broken, formed))
-            full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
-            delta_RP = reaction_coord_delta(np.asarray(xyzR), np.asarray(xyzP), full_RP)
-            xyzP_in_R = np.zeros_like(np.asarray(xyzR, float))
-            for i_R, i_P in full_RP.items(): xyzP_in_R[i_R] = xyzP[i_P]
+            delta_RP = reaction_coord_delta(np.asarray(xyzR), np.asarray(xyzP), mapping_RP)
+            xyzP_in_R = np.asarray(xyzR, float).copy()
+            for i_R, i_P in mapping_RP.items(): xyzP_in_R[i_R] = xyzP[i_P]
             cut = next(iter(info['cuts']), None)
             cut_name = f"{elR[cut[0]]}{cut[0]}-{elR[cut[1]]}{cut[1]}" if cut else "none"
             br_label = ",".join(f"{elR[a]}{a}-{elR[b]}{b}" for a, b in broken_R)
@@ -702,7 +331,8 @@ def process_step(step_name, inner_workers=0):
             mech['_state'] = (broken_R, formed_R, core_R, delta_RP)
             mechanisms.append(mech)
 
-        r_orbits = _color_refine_orbits(build_graph(elR, wboR, bond_cut=0.2))
+        r_orbits = _nauty_orbits(build_graph(elR, wboR, bond_cut=0.2),
+                                 wbo_tol=0.2)
         mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
         # R<->T core matching is mechanism-local.  A target-side symmetry
         # representative that is arbitrary for one core can become unique once
@@ -718,8 +348,8 @@ def process_step(step_name, inner_workers=0):
                 br_R, fm_R, core_R, dRP)
 
         # IGs: enumerate mechanism-local core alternatives, then score under
-        # each mechanism.  Spectators are greedily filled only after a core map
-        # is chosen for scoring/visualization.
+        # each mechanism. Spectators are not greedily materialized; unmapped
+        # viewer coordinates remain at the R-frame placeholder.
         iter_dirs = sorted([d for d in sd.iterdir()
                             if d.is_dir() and re.match(r"hess_iter(\d+)$", d.name)],
                            key=lambda d: int(re.match(r"hess_iter(\d+)$", d.name).group(1)))

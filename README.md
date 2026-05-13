@@ -26,8 +26,8 @@ Inputs:                                        Outputs (per step):
 The pipeline:
 
 1. **R/P single-points** — xtb GFN2 on R and P → WBO matrices.
-2. **R↔P alignment** — priority-queue subgraph-iso atom mapper
-   (`src/rxn_core_pq.py`). Returns mapping + broken/formed bond
+2. **R↔P alignment** — symmetry-aware WBO graph alignment.
+   Returns mapping + broken/formed bond
    classification.
 3. **Reactive core** — atoms touching any broken or formed bond.
 4. **xtb hess on each IG** (parallel) — produces normal modes (g98.out)
@@ -60,13 +60,14 @@ rxn_core/
   src/
     rxn_core/
       __init__.py             public API re-exports
-      pq.py                   priority-queue subgraph-iso atom mapper
+      alignment/              molecule-level WBO alignment API and branch scheduler
+      growth/                 connected-fragment growth and trace events
+      matcher/                symmetry-compressed candidate matching
       frag.py                 xtb single-point runner, WBO graph,
                               classify_bonds (broken/formed detector)
       modes.py                per-mode features (beta, rho, kappa) +
                               g98.out parser + mode reindex helpers
-      align.py                load_cached_xtb, fill_unmapped_greedy,
-                              reindex_to_R_frame
+      align.py                load_cached_xtb, reindex_to_R_frame
       pipeline.py             end-to-end pipeline + main()
   out/                        pipeline output (gitignored)
 ```
@@ -150,7 +151,10 @@ These are module-level constants — for now, edit them at the top of
 `src/rxn_core/pipeline.py` if you need to change them. (If you want
 them as CLI flags, easy follow-up.)
 
-### Alignment (`src/rxn_core/pq.py`)
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the alignment module
+boundaries.
+
+### Alignment (`src/rxn_core/alignment/`)
 
 The R↔P and R↔IG aligners are built around `align_from_arrays(...)`;
 key kwargs:
@@ -158,10 +162,10 @@ key kwargs:
 | name | default | meaning |
 |---|---|---|
 | `graph_floor` | `0.2` | min WBO to admit an edge into the alignment graph (lower = more weak/partial bonds survive) |
-| `iso_tol` | `1.0` | per-edge WBO match tolerance during subgraph iso (looser = more permissive matching at the reactive site, where bonds have changed) |
-| `n_seeds` | `10` | number of random seed orderings explored; more = better coverage, linear cost |
+| `iso_tol` | `0.5` | per-edge WBO match tolerance during subgraph iso (looser = more permissive matching at the reactive site, where bonds have changed) |
+| `n_seeds` | `3` | number of seed orderings explored for one match |
 | `max_branches` | `1_000_000` | per-pass branch cap; effectively no cap. A soft `[warn]` fires at ≥ 10 000 distinct branches in a single pass to surface pathologically symmetric inputs. |
-| `min_lock_size` | `1` | minimum fragment size that can be "locked" during PQ growth |
+| `min_lock_size` | `1` | minimum fragment size that can be locked during island growth |
 | `chirality` | `True` | score chirality violations as a tiebreaker between equally-mapped branches |
 | `dwbo_threshold` | `0.5` | (in `classify_bonds`) min |ΔWBO| to classify an edge as broken or formed; also gates "is wR even a real bond" since wP ≥ 0 |
 | `return_all` | `False` | when `True`, returns every distinct mapping in `out['all_scored']` (used internally by the per-IG branch sweep) |
@@ -169,6 +173,12 @@ key kwargs:
 `align_from_arrays` is a pure function — pass any of these as kwargs at
 the call site. `pipeline.process_step` calls it with defaults plus
 `return_all=True` for the per-IG sweep.
+
+R-P mechanism discovery uses the core `cut_sweep(...)` API in
+`src/rxn_core/alignment/sweep.py`: no-cut plus one-edge R cuts above
+`cut_floor`, deduped by symmetry-canonical broken/formed bond signatures.
+Mechanism-local TS/IG core matching lives in
+`src/rxn_core/alignment/ts_core.py`.
 
 ### Score formula
 

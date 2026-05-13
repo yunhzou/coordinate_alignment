@@ -1,79 +1,22 @@
 """
-Low-level utilities used by rxn_core_pq:
+Low-level utilities used by rxn_core:
 
-  parse_xyz / write_xyz_str — xyz IO
-  run_xtb                   — GFN2 single-point with WBO matrix (cached)
   build_graph               — WBO graph (edge iff WBO >= bond_cut)
   expand_mapping            — element-multiset pairing of unmapped neighbors
   classify_bonds            — broken/formed bond classification by ΔWBO
 
-The previous fragment-anchor / find_islands algorithm has been removed;
-rxn_core_pq is the live alignment implementation.
+Alignment logic lives in the `alignment`, `growth`, and `matcher` packages.
+XYZ and xtb helpers live in `chemistry_computations` and are re-exported
+here for compatibility with older scripts and notebooks.
 """
 from __future__ import annotations
 
-import shutil
-import subprocess
 from collections import defaultdict
-from pathlib import Path
 
 import numpy as np
 import networkx as nx
 
-
-# -------------------- xyz IO --------------------
-
-def parse_xyz(path):
-    lines = Path(path).read_text().strip().splitlines()
-    n = int(lines[0])
-    elements, coords = [], []
-    for ln in lines[2:2 + n]:
-        parts = ln.split()
-        elements.append(parts[0])
-        coords.append([float(x) for x in parts[1:4]])
-    return elements, np.array(coords)
-
-
-def write_xyz_str(elements, coords, comment=""):
-    out = [str(len(elements)), comment]
-    for el, (x, y, z) in zip(elements, coords):
-        out.append(f"{el}  {x:.6f}  {y:.6f}  {z:.6f}")
-    return "\n".join(out) + "\n"
-
-
-# -------------------- xtb GFN2 single-point --------------------
-
-def run_xtb(xyz_path, workdir, charge=0, uhf=0):
-    """Run an xtb GFN2 single-point and return (elements, coords, wbo).
-    Cached: re-uses an existing `wbo` file in workdir when the input xyz
-    matches what's already there. xtb is the dominant cost so cache hits
-    make repeated runs near-instant."""
-    workdir = Path(workdir); workdir.mkdir(parents=True, exist_ok=True)
-    local = workdir / Path(xyz_path).name
-    src_text = Path(xyz_path).read_text()
-    cached_text = local.read_text() if local.exists() else None
-    wf = workdir / "wbo"
-    cached = (cached_text == src_text) and wf.exists()
-    if not cached:
-        shutil.copy(xyz_path, local)
-        cmd = ["xtb", local.name, "--gfn", "2", "--sp"]
-        if charge: cmd += ["--chrg", str(charge)]
-        if uhf:    cmd += ["--uhf",  str(uhf)]
-        res = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
-        if res.returncode != 0:
-            raise RuntimeError(f"xtb failed: {res.stderr[-500:]}")
-        if not wf.exists():
-            raise RuntimeError("no wbo file")
-    elements, coords = parse_xyz(local)
-    n = len(elements)
-    wbo = np.zeros((n, n))
-    for ln in wf.read_text().splitlines():
-        parts = ln.split()
-        if len(parts) < 3: continue
-        i, j = int(parts[0]) - 1, int(parts[1]) - 1
-        v = float(parts[2])
-        wbo[i, j] = v; wbo[j, i] = v
-    return elements, coords, wbo
+from .chemistry_computations import parse_xyz, run_xtb, write_xyz_str
 
 
 # -------------------- WBO graph --------------------

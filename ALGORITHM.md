@@ -7,7 +7,9 @@ bijection for every symmetric atom permutation.  Instead, it carries
 hierarchical symmetry blocks internally and materializes one deterministic
 witness mapping only at API boundaries.
 
-The implementation lives mainly in `src/rxn_core/pq.py`.
+The implementation is split by abstraction; see
+`docs/ARCHITECTURE.md`. The main code paths are `src/rxn_core/alignment/`,
+`src/rxn_core/growth/`, and `src/rxn_core/matcher/`.
 
 ## Inputs
 
@@ -21,7 +23,8 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
 
 ## Output
 
-- A mapping `R atom index -> P atom index`.
+- A symmetry-aware witness mapping `R atom index -> P atom index`. This is not
+  a promise to materialize every atom in a total concrete bijection.
 - Broken and formed bonds from `classify_bonds`.
 - For BGCP views, mode scores for GT and IGs under each minimal mechanism.
 
@@ -48,27 +51,34 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
    deterministic witness mapping, but branch identity is the block structure,
    not every possible permutation.  Extension is allowed to reshuffle the
    witness inside a block when another correlated assignment satisfies the
-   same compressed state.
+   same compressed state.  If a child atom resolves an active parent block to
+   one witness while all alternatives remain symmetry-equivalent, `_SymCand`
+   carries their represented count as `multiplicity`; when concrete alternate
+   witnesses are available, they can be re-used if a later frontier atom cannot
+   extend the primary witness.
 
-4. **Hierarchical symmetry centers.** `_color_refine_orbits` runs iterated
-   1-WL / Morgan color refinement on both graphs using element labels and
-   0.2-wide WBO buckets.  The resulting orbit IDs are the hierarchy used to
-   group seed targets, extension targets, and chemistry signatures.
+4. **Hierarchical symmetry centers.** `_nauty_orbits` runs exact pynauty
+   automorphism orbit detection on both graphs after encoding atom elements
+   and 0.2-tolerance WBO buckets as vertex colors.  The resulting orbit IDs
+   are the hierarchy used to group seed targets, extension targets, and
+   chemistry signatures.
 
-5. **Lock only when resolved.** `_set_unique(cands)` is false if any candidate
-   has an open symmetry block.  A single unresolved block is not treated as a
-   unique concrete bijection.  It can lock only after enough context closes the
-   ambiguity or after saturation returns a representative witness.
+5. **Lock only after saturation.** `_set_unique(cands)` is false if any
+   candidate has an open symmetry block.  Even one fully resolved candidate is
+   not allowed to lock while the growth heap still has live edges, because
+   pending edges may still extend the fragment or become deferred one-hop
+   boundary evidence.  `_set_unique` is only a finalization check after heap
+   exhaustion.
 
 6. **Growth outcomes are 0/1/many, not arbitrary choices.** A unique candidate
    can grow to many valid targets when it sits at a symmetry center.  That is a
    first-class state, not an ambiguity to resolve by picking one target.
 
-7. **A growth edge must stay anchored.** The complete-graph tolerance can be
-   permissive so changed bonds become mechanism boundaries, but the popped edge
-   used to grow an unchanged island must have a real weighted counterpart in
-   the target candidate.  A terminal atom cannot float to an unrelated
-   same-element target merely because `abs(~1.0 - 0.0) <= iso_tol`.
+7. **The popped growth edge is not special.** Extension validity is the same
+   complete weighted-vector rule for every already-fragmented atom:
+   `abs(WBO_R[n, r] - WBO_P[v, map[r]]) <= iso_tol`.  The heap only chooses
+   traversal order.  It must not add a bucket test, a nonzero-counterpart test,
+   or any chemistry-specific anchor rule.
 
 8. **Dedupe must preserve observed future distinguishability.** Two candidates
    are true duplicates only if their internal orbit state and their deferred
@@ -76,15 +86,16 @@ The implementation lives mainly in `src/rxn_core/pq.py`.
    island that already failed to absorb a boundary atom is not duplicate with
    the other side.
 
-9. **Public API stays concrete.** `align_from_arrays` and downstream scoring
-   still receive ordinary dict mappings.  Compression is internal to island
-   growth and branch deduplication.  Before scoring a finished R<->P mapping,
-   a bounded local symmetry repair chooses the lowest bond-change realization
+9. **Public API returns witnesses, not total bijections.** `align_from_arrays`
+   and downstream scoring receive ordinary dict witnesses, but those dicts are
+   selected representatives of compressed symmetry states.  Unmapped spectators
+   must not be completed by geometry.  Before scoring a finished R<->P witness,
+   a bounded local symmetry repair may choose a lower bond-change realization
    inside touched product orbits.
 
 ## Symmetry-Aware Candidate Growth
 
-`grow_island_pq(g_R, g_P, seed, mapping, inv, ...)` grows one island from a
+`grow_island(g_R, g_P, seed, mapping, inv, ...)` grows one island from a
 seed using a priority queue of R edges ordered by descending WBO.
 
 ### Initialization
@@ -128,8 +139,8 @@ For fixed atoms the test is direct:
 - v must be unused by this candidate
 - element_R[n] == element_P[v]
 - every pairwise WBO delta from n to the grown fragment is <= iso_tol
-- for the popped growth edge `(u, n)`, the relation from `v` to the current
-  image/state of `u` must be nonzero and WBO-bucket-compatible
+- no sparse-edge existence test is applied; a missing edge is simply
+  `WBO = 0.0` and passes only when the weighted delta is within `iso_tol`
 ```
 
 For atoms inside a `_SymBlock`, the test is a small constrained matching over
@@ -152,11 +163,14 @@ symmetry-related carbon, tied to the parent symmetry state instead of matching
 the H as an isolated same-element atom.
 
 If a new atom is valid only under a particular assignment inside an existing
-block, the candidate witness is refined to a correlated assignment.  The
-assignment is not treated as permanently exact unless a caller explicitly pins
-that atom as core.  If the correlated alternatives are still orbit-equivalent
-and have no deferred boundary difference, they are compressed again; if a
-deferred boundary distinguishes one side, the alternatives remain separate.
+block, the candidate witness is refined to a correlated assignment.  When
+several refined witnesses are the same weighted-symmetry state, dedupe merges
+them and sums their `multiplicity`.  When concrete alternate witnesses are
+retained, they are not display-only: if the primary witness has no extension,
+later growth tries those alternates locally.  This is the hierarchical case:
+for `Pd(CH3)4`, growing `Pd-C` represents four carbon choices; growing `C-H`
+afterward represents `4 * 3 = 12` correlated assignments even though the
+candidate keeps one primary witness mapping.
 
 Targets that pass the support test are grouped before constructing children:
 
@@ -179,10 +193,11 @@ For each target group:
 This is the main change from concrete matching: a K-way symmetric target group
 creates one compressed candidate, not K dicts.
 
-When a support assignment differs from the current witness, `_SymCand` updates
-only the witness for the touched block.  The compressed block remains intact;
-this prevents arbitrary witness choice from turning a valid symmetric mapping
-into fake broken/formed bonds later.
+When a support assignment differs from the current witness but still extends an
+open block, `_SymCand` updates only the witness for the touched block and keeps
+the block.  When the support assignment collapses an open block into a
+correlated child relation, the block may become a concrete witness plus
+`multiplicity`; the represented alternatives are still part of the state.
 
 ### Growth Transition Policy
 
@@ -215,6 +230,11 @@ the number of input candidates and valid output states:
 The heap chooses which growth proposal to try next.  It does not define
 validity.  Popping edge `(u, n)` means "try adding `n` now"; it does not mean
 only the pair `(u, n)` matters.
+
+In traces, `cut_all_cands` is the `1 -> 0` or `many -> 0` case for an
+`extend_free` proposal: every represented candidate variant failed the complete
+WBO-vector test for the popped atom.  The rejection may be caused by any
+already-grown fragment atom, not necessarily by the popped anchor edge.
 
 ### Forced Island Merge
 
@@ -293,10 +313,10 @@ branched only as far as needed to preserve that distinction.
 
 ## Multi-Island Branching
 
-`find_islands_pq` drives `grow_island_pq` across seed orderings.
+`find_islands` drives `grow_island` across seed orderings.
 
 ```
-precompute p_orbits and r_orbits
+precompute p_orbits and r_orbits with `_nauty_orbits(..., wbo_tol=0.2)`
 branches = [empty branch]
 
 for each seed while progress is possible:
@@ -304,7 +324,7 @@ for each seed while progress is possible:
         if seed is already mapped:
             carry branch forward
         else:
-            isos = grow_island_pq(..., p_orbits, r_orbits)
+            isos = grow_island(..., p_orbits, r_orbits)
             if no isos:
                 carry branch forward
             else:
@@ -338,13 +358,13 @@ look symmetric.
 ## Outer Alignment
 
 `align_from_arrays(...)` builds graphs, generates seed orders, runs
-`find_islands_pq`, expands any unmapped spectators greedily, applies final
-symmetry repair for R<->P mappings, classifies bonds, and scores branches by:
+`find_islands`, materializes one justified witness from each compressed branch,
+applies final symmetry repair for R<->P mappings, classifies bonds, and scores
+branches by:
 
 ```
 (number of broken + formed bonds,
- chirality violations,
- -number of mapped atoms)
+ chirality violations)
 ```
 
 The best lexicographic score wins.  `return_all=True` returns all scored
@@ -369,8 +389,7 @@ target outside the compressed alignment.  The score is:
 
 ```
 (number of broken + formed bonds,
- total absolute WBO delta on changed bonds,
- -number of mapped atoms)
+ total absolute WBO delta on changed bonds)
 ```
 
 Groups of size up to 6 may try full within-group permutations; larger groups
@@ -380,20 +399,22 @@ This is the pr17 TS6a fix: the O/C shell can reshuffle within product orbits
 so equivalent O-C pairs stay paired, while the true mechanism-level bond
 breaking/forming remains.
 
-## BGCP View Cut Sweep
+## Sweep-Cut Mechanism Discovery
 
-`build_bgcp_views_v2.py` uses `cut_sweep` to collect mechanisms:
+`rxn_core.alignment.cut_sweep(...)` is the core R-P mechanism discovery API.
+High-level scripts such as `build_bgcp_views_v2.py` pass runtime parameters and
+render results; they do not implement the sweep algorithm.  `cut_sweep`
+collects mechanisms from:
 
 - baseline graph
-- plus one run per strong R bond removed (`WBO >= 0.5`)
-- each with `N_SEEDS_PER_RUN` seed orders
+- plus one run per R edge removed (`WBO >= cut_floor`, default `0.2`)
+- each with `n_seeds` seed orders
 
-This is intentionally broader than a single R<->P alignment because the view
-needs multiple possible mechanisms for GT/IG scoring.  `BGCP_VIEW_MAX_BRANCHES`
-caps per-alignment branch materialization in the view builder; default is
-`5000`.
+This is intentionally broader than a single R<->P alignment because mechanism
+discovery needs multiple possible broken/formed bond patterns for later GT/IG
+scoring.
 
-Seed generation is capped: `N_SEEDS_PER_RUN=3` means three seed orderings, not
+Seed generation is capped: `n_seeds=3` means three seed orderings, not
 one ordering per heavy atom.  The chosen anchors are heavy atoms in graph
 order, then random full-order shuffles only if more trials are requested than
 heavy anchors exist.
@@ -403,17 +424,18 @@ seed-major and defaults to `BGCP_CUTSWEEP_CHUNKSIZE=1`, so the three seed
 orders for one pathological cut are not bundled onto one worker.  This improves
 tail utilization on high-symmetry cases where a few cuts dominate runtime.
 
-The BGCP view builder keeps `BGCP_ISO_TOL=1.0`, but the dedupe target depends
-on the alignment purpose:
+The dedupe target depends on the alignment purpose:
 
 - R<->P mechanism discovery deduplicates by symmetry-canonical broken/formed
   bond changes.  Multiple concrete mappings with the same mechanism under R
   symmetry collapse before GT/IG scoring.
-- R<->GT and R<->IG verification is mechanism-local.  For each displayed
-  mechanism, the view builder enumerates exact mappings only for that
-  mechanism's `core_R` atoms, preserves every distinct core mapping, scores
-  them all, and keeps the best `S`.  Spectator atoms are never enumerated;
-  they are filled greedily only after a core mapping is chosen.
+- R<->GT and R<->IG verification is mechanism-local.  For each mechanism,
+  `rxn_core.alignment.ts_core_pool(...)` enumerates exact mappings only for
+  that mechanism's `core_R` atoms, preserves every distinct core mapping,
+  scores them all, and keeps the best `S`.  Spectator atoms are never
+  enumerated and are not filled by geometry after a core mapping is chosen.
+  Mode-score numerators use the mapped/core atoms; denominators use the full
+  TS mode norm.
 
 This matters when symmetry touches a core atom.  If an atom is a spectator,
 one arbitrary representative of a symmetric group is fine.  If that same
@@ -424,14 +446,14 @@ only on the mechanism core.  A methyl H core in an 18-H symmetric environment
 creates up to 18 core candidates, not 18! full spectator permutations.
 
 Mechanism-local TS/IG core enumeration enforces preserved R-core edges against
-the target WBO graph (`BGCP_TS_CORE_EDGE_FLOOR`, default `0.2`) and allows
-extra TS partial bonds.  The optional cap `BGCP_TS_CORE_MAX_CANDIDATES`
-defaults to `20000`; hitting it is a diagnostic warning, not an expected path
-for elementary steps.
+the target WBO graph (`edge_floor`, default `0.2`) and allows extra TS partial
+bonds.  The optional `max_candidates` cap defaults to `20000` in the BGCP
+script; hitting it is a diagnostic warning, not an expected path for elementary
+steps.
 
-This makes ranking symmetry/core based instead of full-bijection based.  Each
-R<->P `(cut, seed_order)` work unit also has `BGCP_UNIT_TIMEOUT=10` seconds by
-default as a safety guard; set it to `0` to disable.
+This makes ranking symmetry/core based instead of full-bijection based.  The
+core `cut_sweep` default has no work-unit timeout; the BGCP script passes
+`BGCP_UNIT_TIMEOUT=10` seconds as a view-generation safety guard.
 
 R<->P work units also apply the bounded final symmetry repair by default
 (`BGCP_SYMMETRY_REPAIR=1`).  It can be disabled for debugging with
@@ -507,17 +529,18 @@ The mode scorer only needs these chemistry-relevant atoms.
 | name | default | meaning |
 |---|---:|---|
 | `graph_floor` | `0.2` | implementation-only frontier/heap scheduling threshold; not a validity rule |
-| `iso_tol` | `1.0` | WBO tolerance during candidate extension |
+| `iso_tol` | `0.5` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `max_branches` | `1_000_000` | live branch cap in core alignment |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | branch cap used by full BGCP view generation |
+| `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
-| `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
+| `BGCP_ISO_TOL` | `0.5` | WBO tolerance used by BGCP view cut-sweeps |
 | `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped; set `0` to disable |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
 | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | minimum target WBO for preserving an R-core edge during TS/IG core matching |
-| `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings before spectator fill |
-| `n_seeds` | `10` | seed orders in `align_from_arrays` |
+| `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
+| `n_seeds` | `3` | seed orders in `align_from_arrays` |
 | `N_SEEDS_PER_RUN` | `3` | seed orders per cut-sweep unit in views |
 
 ## Verification Notes
@@ -525,7 +548,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 Recent single-process checks after the symmetry-block implementation:
 
 - perfect hexamethylethane: orbit hierarchy `[18, 6, 2]`
-- hexamethylethane PQ growth: one full 26-atom witness, max traced candidates 4
+- hexamethylethane island growth: one full 26-atom witness, max traced candidates 4
 - `pr12.Co_Silylation_JACS2015_TS_B-CStep1`: one full 123-atom branch, peak
   compressed candidates 10
 - `pr7.V.dodh_ts910`: two full branches preserved

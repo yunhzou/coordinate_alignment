@@ -12,7 +12,7 @@ on a directory shaped like the El Agente Pathways "plain" mode output:
 
 Pipeline:
   1. xtb GFN2 single-point on R, P -> WBO matrices
-  2. PQ alignment R <-> P -> atom mapping + broken / formed bonds
+  2. WBO alignment R <-> P -> atom mapping + broken / formed bonds
   3. core_atoms in R-frame; bond-reaction vector V at TS coords
   4. xtb hess on each IG (parallel) -> g98.out -> normal modes
   5. align each IG <-> R (every branch), reindex modes to R-frame,
@@ -57,11 +57,10 @@ Output:
   out/ranked_views/<workflow_name>/      (one folder per step)
 """
 from __future__ import annotations
+from dataclasses import dataclass
 import json
 import os
 import re
-import shutil
-import subprocess
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -69,14 +68,13 @@ from pathlib import Path
 
 import numpy as np
 
-from .pq import align_from_arrays
-from .frag import run_xtb, parse_xyz
+from .alignment import align_from_arrays
+from .chemistry_computations import run_xtb, run_xtb_hess, xyz_block, xyz_with_disp
 from .modes import (
-    parse_g98_modes, core_atoms_in_R_frame, reindex_modes_to_R,
+    core_atoms_in_R_frame, reindex_modes_to_R,
     bond_reaction_vector, bond_overlap_per_mode,
     rxn_overlap_per_mode, reaction_coord_delta,
 )
-from .align import fill_unmapped_greedy
 
 
 # Output root: by default, <cwd>/out/ranked_views/. Caller can override
@@ -95,64 +93,117 @@ N_WORKERS = 4
 OMP_THREADS = 4
 
 
-def parse_xyz_file(path: Path):
-    el, xyz = parse_xyz(path)
-    return el, xyz
+@dataclass
+class StepSpec:
+    workflow_name: str
+    charge: int
+    multiplicity: int
+    uhf: int
 
 
-def read_first_xyz(d: Path):
-    files = sorted(d.glob("*.xyz"))
-    if not files:
-        raise FileNotFoundError(f"no xyz in {d}")
-    return parse_xyz_file(files[0])
+@dataclass
+class RPProcessingResult:
+    elR: list
+    xyzR: np.ndarray
+    wboR: np.ndarray
+    elP: list
+    xyzP: np.ndarray
+    wboP: np.ndarray
+    mapping_RP: dict
+    core_R: list
+    broken_R: list
+    formed_R: list
+    delta_RP: np.ndarray
+    xyzP_in_R: np.ndarray
+    alignment: dict
 
 
-def run_xtb_hess(xyz_path: Path, workdir: Path, charge: int = 0, uhf: int = 0):
-    """Run `xtb input.xyz --gfn 2 --hess`. Cached: skip if g98.out + wbo
-    are already there with a matching xyz copy. Returns (elements,
-    coords, wbo, freqs, modes_TS) where freqs is (n_modes,) and
-    modes_TS is (n_modes, n_atoms, 3)."""
-    workdir.mkdir(parents=True, exist_ok=True)
-    local = workdir / Path(xyz_path).name
-    src_text = Path(xyz_path).read_text()
-    cached_text = local.read_text() if local.exists() else None
-    g98 = workdir / "g98.out"
-    wbo = workdir / "wbo"
-    cached = (cached_text == src_text) and g98.exists() and wbo.exists()
-    if not cached:
-        shutil.copy(xyz_path, local)
-        cmd = ["xtb", local.name, "--gfn", "2", "--hess"]
-        if charge: cmd += ["--chrg", str(charge)]
-        if uhf:    cmd += ["--uhf",  str(uhf)]
-        env = os.environ.copy()
-        env["OMP_NUM_THREADS"] = str(OMP_THREADS)
-        res = subprocess.run(cmd, cwd=workdir, capture_output=True,
-                             text=True, env=env)
-        if res.returncode != 0:
-            raise RuntimeError(f"xtb hess failed in {workdir}: "
-                               f"{res.stderr[-500:]}")
-        if not g98.exists() or not wbo.exists():
-            raise RuntimeError(f"missing g98.out or wbo in {workdir}")
-    elements, coords = parse_xyz(local)
-    n = len(elements)
-    wbo_arr = np.zeros((n, n))
-    for ln in wbo.read_text().splitlines():
-        parts = ln.split()
-        if len(parts) < 3: continue
-        i, j = int(parts[0]) - 1, int(parts[1]) - 1
-        v = float(parts[2])
-        wbo_arr[i, j] = v; wbo_arr[j, i] = v
-    freqs, modes_TS = parse_g98_modes(g98)
-    return elements, coords, wbo_arr, freqs, modes_TS
+def load_step_spec(step_dir: Path) -> StepSpec:
+    rep = json.loads((step_dir / "generation_report.json").read_text())
+    spec = rep["generation_spec"]
+    workflow_name = spec["workflow_name"]
+    charge = int(spec.get("charge", 0))
+    multiplicity = int(spec.get("multiplicity", 1))
+    return StepSpec(
+        workflow_name=workflow_name,
+        charge=charge,
+        multiplicity=multiplicity,
+        uhf=max(0, multiplicity - 1),
+    )
+
+
+def prepare_run_directory(workflow_name: str):
+    run_dir = _default_out_root() / workflow_name
+    cache = run_dir / "xtb"
+    cache.mkdir(parents=True, exist_ok=True)
+    return run_dir, cache
+
+
+def source_xyz_paths(step_dir: Path):
+    source = step_dir / "source"
+    return (
+        sorted(source.glob("reactant*.xyz"))[0],
+        sorted(source.glob("product*.xyz"))[0],
+    )
+
+
+def materialize_product_in_R_frame(xyzR, xyzP, mapping_RP):
+    xyzP_in_R = np.asarray(xyzR, float).copy()
+    xyzP_arr = np.asarray(xyzP, float)
+    for i_R, i_P in mapping_RP.items():
+        xyzP_in_R[i_R] = xyzP_arr[i_P]
+    return xyzP_in_R
+
+
+def process_R_P(step_dir: Path, cache: Path, charge: int, uhf: int) -> RPProcessingResult:
+    """Run R/P single-points, align R->P, and derive the mechanism core."""
+    rxyz_path, pxyz_path = source_xyz_paths(step_dir)
+    print("  xtb sp on R, P ...", flush=True)
+    t0 = time.time()
+    elR, xyzR, wboR = run_xtb(rxyz_path, cache / "R", charge=charge, uhf=uhf)
+    elP, xyzP, wboP = run_xtb(pxyz_path, cache / "P", charge=charge, uhf=uhf)
+    print(f"    sp done in {time.time()-t0:.1f}s ({len(elR)} atoms each)", flush=True)
+
+    print("  WBO alignment R<->P ...", flush=True)
+    rp = align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP)
+    mapping_RP = dict(rp["mapping"])
+    inv_RP = {v: k for k, v in mapping_RP.items()}
+    core_R = core_atoms_in_R_frame(mapping_RP, rp["broken"], rp["formed"])
+    delta_RP = reaction_coord_delta(np.asarray(xyzR, float),
+                                     np.asarray(xyzP, float), mapping_RP)
+    broken_R = [(int(a), int(b)) for (a, b, _, _) in rp["broken"]]
+    formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
+                for (a, b, _, _) in rp["formed"]
+                if a in inv_RP and b in inv_RP]
+    xyzP_in_R = materialize_product_in_R_frame(xyzR, xyzP, mapping_RP)
+    print(f"    mapping={len(mapping_RP)}/{len(elR)}, broken={len(broken_R)}, "
+          f"formed={len(formed_R)}, core_atoms={len(core_R)}", flush=True)
+
+    return RPProcessingResult(
+        elR=elR,
+        xyzR=np.asarray(xyzR, float),
+        wboR=np.asarray(wboR, float),
+        elP=elP,
+        xyzP=np.asarray(xyzP, float),
+        wboP=np.asarray(wboP, float),
+        mapping_RP=mapping_RP,
+        core_R=core_R,
+        broken_R=broken_R,
+        formed_R=formed_R,
+        delta_RP=delta_RP,
+        xyzP_in_R=xyzP_in_R,
+        alignment=rp,
+    )
 
 
 def _hess_worker(args):
     """Standalone for ProcessPoolExecutor."""
-    xyz_path, workdir, charge, uhf = args
+    xyz_path, workdir, charge, uhf, omp_threads = args
     t0 = time.time()
     try:
         elT, xyzT, wboT, freqs, modes_TS = run_xtb_hess(
-            Path(xyz_path), Path(workdir), charge, uhf)
+            Path(xyz_path), Path(workdir),
+            charge=charge, uhf=uhf, omp_threads=omp_threads)
         return {"ok": True, "xyz_path": str(xyz_path),
                 "secs": time.time() - t0,
                 "elT": elT, "xyzT": xyzT.tolist() if hasattr(xyzT, 'tolist') else xyzT,
@@ -168,52 +219,14 @@ def label_for_ig(path: Path):
     return f"iter{m.group(1)}" if m else path.stem
 
 
-def process_step(step_dir: Path):
-    rep = json.loads((step_dir / "generation_report.json").read_text())
-    spec = rep["generation_spec"]
-    workflow_name = spec["workflow_name"]
-    charge = int(spec.get("charge", 0))
-    mult = int(spec.get("multiplicity", 1))
-    uhf = max(0, mult - 1)
-    print(f"\n=== {workflow_name}  charge={charge} mult={mult} ===", flush=True)
-
-    # All artifacts (xtb cache, aligned coords, modes, viewer, JSON, CSV)
-    # live under one self-contained directory.
-    run_dir = _default_out_root() / workflow_name
-    cache = run_dir / "xtb"
-    cache.mkdir(parents=True, exist_ok=True)
-
-    # 1. R, P single-points
-    rxyz_path = sorted((step_dir / "source").glob("reactant*.xyz"))[0]
-    pxyz_path = sorted((step_dir / "source").glob("product*.xyz"))[0]
-    print(f"  xtb sp on R, P ...", flush=True)
-    t0 = time.time()
-    elR, xyzR, wboR = run_xtb(rxyz_path, cache / "R", charge=charge, uhf=uhf)
-    elP, xyzP, wboP = run_xtb(pxyz_path, cache / "P", charge=charge, uhf=uhf)
-    print(f"    sp done in {time.time()-t0:.1f}s ({len(elR)} atoms each)", flush=True)
-
-    # 2. R<->P alignment + core atoms + bond-reaction vector at R-coords
-    print(f"  PQ alignment R<->P ...", flush=True)
-    rp = align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP)
-    mapping_RP = dict(rp["mapping"])
-    inv_RP = {v: k for k, v in mapping_RP.items()}
-    core_R = core_atoms_in_R_frame(mapping_RP, rp["broken"], rp["formed"])
-    full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
-    delta_RP = reaction_coord_delta(np.asarray(xyzR, float),
-                                     np.asarray(xyzP, float), full_RP)
-    broken_R = [(int(a), int(b)) for (a, b, _, _) in rp["broken"]]
-    formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
-                for (a, b, _, _) in rp["formed"]
-                if a in inv_RP and b in inv_RP]
-    print(f"    mapping={len(mapping_RP)}/{len(elR)}, broken={len(broken_R)}, "
-          f"formed={len(formed_R)}, core_atoms={len(core_R)}", flush=True)
-
-    # 3. xtb hess on each IG, in parallel
+def run_ts_hess_jobs(step_dir: Path, cache: Path, charge: int, uhf: int):
+    """Run cached Hessians for every initial TS guess."""
     ig_paths = sorted((step_dir / "initial_ts_guesses").glob("*.xyz"))
     print(f"  xtb hess on {len(ig_paths)} IGs (workers={N_WORKERS}, omp={OMP_THREADS}) ...",
           flush=True)
     t0 = time.time()
-    args = [(str(p), str(cache / f"hess_{label_for_ig(p)}"), charge, uhf)
+    args = [(str(p), str(cache / f"hess_{label_for_ig(p)}"),
+             charge, uhf, OMP_THREADS)
             for p in ig_paths]
     results = []
     with ProcessPoolExecutor(max_workers=N_WORKERS) as ex:
@@ -225,202 +238,240 @@ def process_step(step_dir: Path):
             print(f"    [{r['secs']:>5.1f}s]  {Path(r['xyz_path']).name}  {tag}",
                   flush=True)
     print(f"  all hess done in {time.time()-t0:.1f}s", flush=True)
+    return results
 
-    # 4. Per-IG: align IG<->R, reindex modes, compute features, score
-    n_R = len(elR)
-    bond_V = None  # built per-IG using IG coords in R-frame
-    ig_records = []
-    for r in sorted(results, key=lambda r: r["xyz_path"]):
-        label = label_for_ig(Path(r["xyz_path"]))
-        if not r["ok"]:
-            ig_records.append({
-                "label": label, "score": 0.0,
-                "beta": 0.0, "rho": 0.0, "kappa": 0.0, "n_imag": 0,
-                "picked_freq": None, "picked_disp": None,
-                "xyz_elements": elR, "xyz_coords": xyzR.tolist() if hasattr(xyzR,'tolist') else xyzR,
-                "error": r.get("error", ""),
-            })
+
+def failed_ig_record(label, elements, coords, error):
+    return {
+        "label": label,
+        "score": 0.0,
+        "beta": 0.0,
+        "rho": 0.0,
+        "kappa": 0.0,
+        "n_imag": 0,
+        "picked_freq": None,
+        "picked_disp": None,
+        "xyz_elements": elements,
+        "xyz_coords": coords.tolist() if hasattr(coords, "tolist") else coords,
+        "error": error,
+    }
+
+
+def static_ig_record(label, elements, coords, n_imag=0):
+    return {
+        "label": label,
+        "score": 0.0,
+        "beta": 0.0,
+        "rho": 0.0,
+        "kappa": 0.0,
+        "n_imag": int(n_imag),
+        "picked_freq": None,
+        "picked_disp": None,
+        "xyz_elements": elements,
+        "xyz_coords": coords.tolist() if hasattr(coords, "tolist") else coords,
+    }
+
+
+def alignment_branches(alignment):
+    branches = alignment.get("all_scored", [])
+    if branches:
+        return branches
+    return [(None, dict(alignment["mapping"]), None, None, None)]
+
+
+def materialize_TS_in_R_frame(xyzR, xyzT, mapping_RT):
+    ts_xyz_in_R = np.asarray(xyzR, float).copy()
+    for r_idx, t_idx in mapping_RT.items():
+        ts_xyz_in_R[r_idx] = xyzT[t_idx]
+    return ts_xyz_in_R
+
+
+def core_signature(mapping_RT, core_R):
+    return tuple(sorted((c, mapping_RT[c]) for c in core_R if c in mapping_RT))
+
+
+def branch_mode_features(rp: RPProcessingResult, xyzT, modes_TS, mapping_RT):
+    n_R = len(rp.elR)
+    modes_R = reindex_modes_to_R(modes_TS, mapping_RT, n_R)
+    mode_norms = np.linalg.norm(modes_TS.reshape(modes_TS.shape[0], -1), axis=1)
+    sq = (modes_R ** 2).sum(axis=2)
+    total = mode_norms ** 2
+    core_e = (sq[:, rp.core_R].sum(axis=1)
+              if rp.core_R else np.zeros(modes_R.shape[0]))
+    kappa = np.where(total > 1e-12, core_e / total, 0.0)
+    rho = rxn_overlap_per_mode(modes_R, rp.delta_RP, rp.core_R,
+                                mode_norms=mode_norms)
+    ts_xyz_in_R = materialize_TS_in_R_frame(rp.xyzR, xyzT, mapping_RT)
+    bond_v = bond_reaction_vector(ts_xyz_in_R, rp.broken_R, rp.formed_R)
+    beta = bond_overlap_per_mode(modes_R, bond_v, mode_norms=mode_norms)
+    return modes_R, ts_xyz_in_R, beta, rho, kappa
+
+
+def score_alignment_branch(rp: RPProcessingResult, xyzT, modes_TS,
+                           mapping_RT, imag_idx):
+    modes_R, ts_xyz_in_R, beta, rho, kappa = branch_mode_features(
+        rp, xyzT, modes_TS, mapping_RT)
+    n_imag = len(imag_idx)
+    picked_k = max(imag_idx, key=lambda k: beta[k])
+    b = float(beta[picked_k])
+    r_ = float(rho[picked_k])
+    c = float(kappa[picked_k])
+    score = (b * (1 + W_RXN * r_) * (1 + W_CORE * c)
+             / max(n_imag, 1) ** IMAG_PEN)
+    return score, b, r_, c, picked_k, modes_R, ts_xyz_in_R
+
+
+def score_ts_result(result, rp: RPProcessingResult):
+    """Align one TS guess to R and keep the core-distinct branch with max S."""
+    label = label_for_ig(Path(result["xyz_path"]))
+    if not result["ok"]:
+        return failed_ig_record(label, rp.elR, rp.xyzR, result.get("error", ""))
+
+    elT = result["elT"]
+    xyzT = np.asarray(result["xyzT"], float)
+    wboT = np.asarray(result["wboT"], float)
+    freqs = np.asarray(result["freqs"], float)
+    modes_TS = np.asarray(result["modes_TS"], float)
+
+    try:
+        alignment = align_from_arrays(
+            rp.elR, rp.xyzR, rp.wboR, elT, xyzT, wboT,
+            return_all=True)
+    except Exception as exc:
+        print(f"    align fail for {label}: {exc}")
+        return failed_ig_record(label, elT, xyzT, f"align: {exc}")
+
+    branches = alignment_branches(alignment)
+    first_mapping = dict(branches[0][1])
+    ts_xyz_in_R = materialize_TS_in_R_frame(rp.xyzR, xyzT, first_mapping)
+    imag_idx = list(np.where(freqs < 0)[0])
+    if not imag_idx:
+        return static_ig_record(label, rp.elR, ts_xyz_in_R, n_imag=0)
+
+    seen_witness = set()
+    seen_core = set()
+    best = None
+    for (_, br_mapping, _, _, _) in branches:
+        mapping_RT = dict(br_mapping)
+        witness_key = tuple(sorted(mapping_RT.items()))
+        if witness_key in seen_witness:
             continue
-        elT = r["elT"]
-        xyzT = np.asarray(r["xyzT"], float)
-        wboT = np.asarray(r["wboT"], float)
-        freqs = np.asarray(r["freqs"], float)
-        modes_TS = np.asarray(r["modes_TS"], float)
+        seen_witness.add(witness_key)
 
-        # Align IG<->R, asking for ALL equally-good branches so we can
-        # pick the mapping that maximizes the ranker score (rather than
-        # using whichever branch happened to sort first under the
-        # alignment-only score, which doesn't see chemistry).
-        try:
-            it = align_from_arrays(elR, xyzR, wboR, elT, xyzT, wboT,
-                                   return_all=True)
-        except Exception as e:
-            print(f"    align fail for {label}: {e}")
-            ig_records.append({
-                "label": label, "score": 0.0,
-                "beta": 0.0, "rho": 0.0, "kappa": 0.0, "n_imag": 0,
-                "picked_freq": None, "picked_disp": None,
-                "xyz_elements": elT, "xyz_coords": xyzT.tolist(),
-                "error": f"align: {e}",
-            })
+        core_key = core_signature(mapping_RT, rp.core_R)
+        if core_key in seen_core:
             continue
+        seen_core.add(core_key)
 
-        # Precompute the imag-mode list once (independent of mapping).
-        imag_idx = list(np.where(freqs < 0)[0])
-        n_imag = len(imag_idx)
-        if n_imag == 0:
-            ig_records.append({
-                "label": label, "score": 0.0,
-                "beta": 0.0, "rho": 0.0, "kappa": 0.0, "n_imag": 0,
-                "picked_freq": None, "picked_disp": None,
-                "xyz_elements": elT, "xyz_coords": xyzT.tolist(),
-            })
-            continue
+        scored = score_alignment_branch(
+            rp, xyzT, modes_TS, mapping_RT, imag_idx)
+        if best is None or scored[0] > best[0]:
+            best = scored
 
-        # Try every alignment branch; keep the one whose picked-mode
-        # score is highest. Two-level dedup:
-        #   1. full mapping dedup -- collapse exact duplicates from the
-        #      multi-seed sweep
-        #   2. core-only mapping dedup -- branches that differ only in
-        #      non-core (spectator) atom assignments give identical
-        #      beta/rho/kappa, so they're score-equivalent and we only
-        #      need to evaluate one. This is the score-relevant set.
-        all_branches = it.get("all_scored", [])
-        if not all_branches:
-            all_branches = [(None, dict(it["mapping"]), None, None, None)]
-        seen_full = set()
-        seen_core = set()
-        best = None  # (score, b, r, c, picked_k, modes_R, ts_xyz_in_R)
-        for (_, br_mapping, _, _, _) in all_branches:
-            br_d = dict(br_mapping)
-            full_key = tuple(sorted(br_d.items()))
-            if full_key in seen_full:
-                continue
-            seen_full.add(full_key)
+    if best is None:
+        return failed_ig_record(label, rp.elR, ts_xyz_in_R,
+                                "no scoreable alignment branch")
 
-            # Score-equivalent core-only signature
-            core_key = tuple(sorted(
-                (c, br_d[c]) for c in core_R if c in br_d
-            ))
-            if core_key in seen_core:
-                continue
-            seen_core.add(core_key)
+    score, b, r_, c, picked_k, modes_R, ts_xyz_in_R = best
+    if len(seen_witness) > 1:
+        collapsed = (f" (collapsed from {len(seen_witness)})"
+                     if len(seen_core) < len(seen_witness) else "")
+        print(f"    {label}: {len(seen_core)} core-unique branches"
+              f"{collapsed}; best score={score:.3f}",
+              flush=True)
+    return {
+        "label": label,
+        "score": float(score),
+        "beta": b,
+        "rho": r_,
+        "kappa": c,
+        "n_imag": int(len(imag_idx)),
+        "picked_freq": float(freqs[picked_k]),
+        "picked_disp": modes_R[picked_k].tolist(),
+        "xyz_elements": rp.elR,
+        "xyz_coords": ts_xyz_in_R.tolist(),
+        "n_branches": len(seen_core),
+        "n_branches_full": len(seen_witness),
+    }
 
-            mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, br_d)
-            modes_R = reindex_modes_to_R(modes_TS, mapping_RT, n_R)
-            sq = (modes_R ** 2).sum(axis=2)
-            total = sq.sum(axis=1)
-            core_e = (sq[:, core_R].sum(axis=1)
-                      if core_R else np.zeros(modes_R.shape[0]))
-            kappa = np.where(total > 1e-12, core_e / total, 0.0)
-            rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
-            ts_xyz_in_R = np.zeros_like(np.asarray(xyzR))
-            for r_idx, t_idx in mapping_RT.items():
-                ts_xyz_in_R[r_idx] = xyzT[t_idx]
-            V = bond_reaction_vector(ts_xyz_in_R, broken_R, formed_R)
-            beta = bond_overlap_per_mode(modes_R, V)
 
-            picked_k = max(imag_idx, key=lambda k: beta[k])
-            b  = float(beta[picked_k])
-            r_ = float(rho[picked_k])
-            c  = float(kappa[picked_k])
-            score = (b * (1 + W_RXN * r_) * (1 + W_CORE * c)
-                     / max(n_imag, 1) ** IMAG_PEN)
-            if best is None or score > best[0]:
-                best = (score, b, r_, c, picked_k, modes_R, ts_xyz_in_R)
-
-        score, b, r_, c, picked_k, modes_R, ts_xyz_in_R = best
-        if len(seen_full) > 1:
-            collapsed = (f" (collapsed from {len(seen_full)})"
-                         if len(seen_core) < len(seen_full) else "")
-            print(f"    {label}: {len(seen_core)} core-unique branches"
-                  f"{collapsed}; best score={score:.3f}",
-                  flush=True)
-        ig_records.append({
-            "label": label,
-            "score": float(score),
-            "beta": b, "rho": r_, "kappa": c,
-            "n_imag": int(n_imag),
-            "picked_freq": float(freqs[picked_k]),
-            "picked_disp": modes_R[picked_k].tolist(),
-            "xyz_elements": elR,
-            "xyz_coords":   ts_xyz_in_R.tolist(),
-            "n_branches": len(seen_core),
-            "n_branches_full": len(seen_full),
-        })
-
-    # 5. Sort by score descending. IGs with no imag mode (score=0) sink
-    # to the bottom naturally.
+def process_TS(step_dir: Path, cache: Path, charge: int, uhf: int,
+               rp: RPProcessingResult):
+    """Run and rank all TS guesses against the fixed R/P mechanism."""
+    results = run_ts_hess_jobs(step_dir, cache, charge, uhf)
+    ig_records = [
+        score_ts_result(result, rp)
+        for result in sorted(results, key=lambda r: r["xyz_path"])
+    ]
     ig_records.sort(key=lambda x: -x["score"])
+    return ig_records
 
-    # 6. Reindex P xyz to R-frame so bond pairs (which live in R-frame)
-    # draw on the right atoms in the P panel. full_RP maps every R-index
-    # to a P-index (alignment + greedy fill).
-    xyzP_arr = np.asarray(xyzP, float)
-    xyzP_in_R = np.zeros_like(np.asarray(xyzR, float))
-    for i_R, i_P in full_RP.items():
-        xyzP_in_R[i_R] = xyzP_arr[i_P]
 
+def build_view_data(workflow_name: str, rp: RPProcessingResult, ig_records):
     data = {
         "step": workflow_name,
-        "n_atoms": n_R,
-        "core_atoms": list(core_R),
-        "broken_bonds":  [list(b) for b in broken_R],
-        "formed_bonds_R":[list(b) for b in formed_R],
-        "reactant":  {"xyz_elements": elR,
-                      "xyz_coords":   xyzR.tolist() if hasattr(xyzR,'tolist') else xyzR},
+        "n_atoms": len(rp.elR),
+        "core_atoms": list(rp.core_R),
+        "broken_bonds": [list(b) for b in rp.broken_R],
+        "formed_bonds_R": [list(b) for b in rp.formed_R],
+        "reactant": {"xyz_elements": rp.elR,
+                     "xyz_coords": rp.xyzR.tolist()},
         # P shown in R-frame so atom indices line up with broken/formed pairs
-        "product":   {"xyz_elements": elR,
-                      "xyz_coords":   xyzP_in_R.tolist()},
+        "product": {"xyz_elements": rp.elR,
+                    "xyz_coords": rp.xyzP_in_R.tolist()},
         "igs": ig_records,
     }
-    # 7. Write all artifacts under run_dir (one self-contained folder).
-    out_path = run_dir / "view.html"
-    out_path.write_text(HTML.format(
+    return data
+
+
+def write_view(run_dir: Path, workflow_name: str, rp: RPProcessingResult, ig_records):
+    data = build_view_data(workflow_name, rp, ig_records)
+    (run_dir / "view.html").write_text(HTML.format(
         title=f"Ranked view — {workflow_name}",
-        n_atoms=n_R,
-        n_broken=len(broken_R),
-        n_formed=len(formed_R),
-        n_core=len(core_R),
+        n_atoms=len(rp.elR),
+        n_broken=len(rp.broken_R),
+        n_formed=len(rp.formed_R),
+        n_core=len(rp.core_R),
         data_json=json.dumps(data),
     ))
-    write_artifacts(
-        run_dir=run_dir,
-        workflow_name=workflow_name, charge=charge, mult=mult,
-        elR=elR, xyzR=np.asarray(xyzR, float),
-        xyzP_in_R=xyzP_in_R,
-        mapping_RP=mapping_RP,
-        broken_R=broken_R, formed_R=formed_R, core_R=core_R,
-        ig_records=ig_records,
-    )
 
+
+def print_pipeline_summary(ig_records, run_dir: Path):
     has_mode = sum(1 for ig in ig_records if ig["n_imag"] > 0)
     print(f"  IGs with at least one imag mode: {has_mode}/{len(ig_records)}", flush=True)
-    print(f"  top-3 by score:")
+    print("  top-3 by score:")
     for ig in ig_records[:3]:
         print(f"    {ig['label']:>8s}  S={ig['score']:.3f}  "
               f"beta={ig['beta']:.3f}  rho={ig['rho']:.3f}  "
               f"kappa={ig['kappa']:.3f}  n_imag={ig['n_imag']}", flush=True)
     print(f"  wrote {run_dir}/", flush=True)
+
+
+def process_step(step_dir: Path):
+    spec = load_step_spec(step_dir)
+    print(f"\n=== {spec.workflow_name}  charge={spec.charge} "
+          f"mult={spec.multiplicity} ===", flush=True)
+
+    run_dir, cache = prepare_run_directory(spec.workflow_name)
+    rp = process_R_P(step_dir, cache, spec.charge, spec.uhf)
+    ig_records = process_TS(step_dir, cache, spec.charge, spec.uhf, rp)
+    write_view(run_dir, spec.workflow_name, rp, ig_records)
+    write_artifacts(
+        run_dir=run_dir,
+        workflow_name=spec.workflow_name,
+        charge=spec.charge,
+        mult=spec.multiplicity,
+        elR=rp.elR,
+        xyzR=rp.xyzR,
+        xyzP_in_R=rp.xyzP_in_R,
+        mapping_RP=rp.mapping_RP,
+        broken_R=rp.broken_R,
+        formed_R=rp.formed_R,
+        core_R=rp.core_R,
+        ig_records=ig_records,
+    )
+    print_pipeline_summary(ig_records, run_dir)
     return run_dir
-
-
-def _xyz_block(elements, xyz, comment=""):
-    n = len(elements)
-    lines = [str(n), comment]
-    for el, c in zip(elements, xyz):
-        lines.append(f"{el:<3s}  {c[0]:14.8f}  {c[1]:14.8f}  {c[2]:14.8f}")
-    return "\n".join(lines) + "\n"
-
-
-def _xyz_with_disp(elements, xyz, disp, comment=""):
-    """Extended xyz: element x y z dx dy dz."""
-    n = len(elements)
-    lines = [str(n), comment]
-    for el, c, d in zip(elements, xyz, disp):
-        lines.append(f"{el:<3s}  {c[0]:14.8f}  {c[1]:14.8f}  {c[2]:14.8f}"
-                     f"   {d[0]:10.6f}  {d[1]:10.6f}  {d[2]:10.6f}")
-    return "\n".join(lines) + "\n"
 
 
 def write_artifacts(run_dir, workflow_name, charge, mult,
@@ -432,17 +483,17 @@ def write_artifacts(run_dir, workflow_name, charge, mult,
     modes_d.mkdir(exist_ok=True)
 
     (aligned / "R.xyz").write_text(
-        _xyz_block(elR, xyzR.tolist(),
-                   comment=f"R for {workflow_name} (R-frame)"))
+        xyz_block(elR, xyzR.tolist(),
+                  comment=f"R for {workflow_name} (R-frame)"))
     (aligned / "P_in_R_frame.xyz").write_text(
-        _xyz_block(elR, xyzP_in_R.tolist(),
-                   comment=f"P (reindexed to R-frame) for {workflow_name}"))
+        xyz_block(elR, xyzP_in_R.tolist(),
+                  comment=f"P (reindexed to R-frame) for {workflow_name}"))
 
     for ig in ig_records:
         label = ig["label"]
         (aligned / f"{label}_in_R_frame.xyz").write_text(
-            _xyz_block(elR, ig["xyz_coords"],
-                       comment=f"{label} (reindexed to R-frame) for {workflow_name}"))
+            xyz_block(elR, ig["xyz_coords"],
+                      comment=f"{label} (reindexed to R-frame) for {workflow_name}"))
         if ig.get("picked_disp") is not None:
             freq = ig["picked_freq"]
             comment = (f"{label} picked imag mode  "
@@ -450,8 +501,8 @@ def write_artifacts(run_dir, workflow_name, charge, mult,
                        f"beta={ig['beta']:.3f}  rho={ig['rho']:.3f}  "
                        f"kappa={ig['kappa']:.3f}  score={ig['score']:.3f}")
             (modes_d / f"{label}_picked.xyz").write_text(
-                _xyz_with_disp(elR, ig["xyz_coords"], ig["picked_disp"],
-                               comment=comment))
+                xyz_with_disp(elR, ig["xyz_coords"], ig["picked_disp"],
+                              comment=comment))
 
     alignment = {
         "step": workflow_name,

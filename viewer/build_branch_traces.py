@@ -2,16 +2,16 @@
 Render ONE slider-driven HTML trace for an alignment (R <-> GT or
 R <-> IG), with all unique mappings tabulated in a panel below.
 
-The PQ aligner returns a per-seed branches list; find_islands_pq with
+The WBO aligner returns a per-seed branches list; find_islands with
 events= records the trajectory of branches[0] per seed. We spin many
 random seed orderings to discover all unique mappings the algorithm can
 land on, score them all, and render a single HTML containing:
 
   - Slider trace from the highest-S seed (the one the verifier picks)
   - Static table of every unique mapping found (S, beta, rho, kappa,
-    br/fm count, full bijection R->T)
+    br/fm count, witness mapping R->T)
   - In the event log, seed_end events now list ALL final candidate
-    mappings (via the all_isos field added to pq.py)
+    mappings (via the all_isos field in seed_end events)
 
 Cache layouts supported:
   - BGCP:    appendix_perparation/xtb_frequency_calculations/<step>/
@@ -42,14 +42,13 @@ from pathlib import Path
 import numpy as np
 
 from rxn_core import (
-    align_from_arrays, find_islands_pq,
+    align_from_arrays, find_islands, build_graph,
     bond_overlap_per_mode, bond_reaction_vector,
     classify_bonds, core_atoms_in_R_frame, expand_mapping,
-    fill_unmapped_greedy, load_cached_xtb,
+    load_cached_xtb,
     parse_g98_modes, parse_xyz, reaction_coord_delta,
     reindex_modes_to_R, rxn_overlap_per_mode, write_xyz_str,
 )
-from rxn_core.pq import build_graph
 from trace_html import HTML
 
 
@@ -88,17 +87,19 @@ def score_mapping(elR, xyzR, xyzT, mapping_RT, modes_TS, freqs,
                   broken_R, formed_R, core_R, delta_RP):
     """Compute (score, picked_k, b, r, c) for a given IG<->R mapping."""
     modes_R = reindex_modes_to_R(modes_TS, mapping_RT, len(elR))
+    mode_norms = np.linalg.norm(modes_TS.reshape(modes_TS.shape[0], -1), axis=1)
     sq = (modes_R ** 2).sum(axis=2)
-    total = sq.sum(axis=1)
+    total = mode_norms ** 2
     core_e = (sq[:, core_R].sum(axis=1) if core_R
               else np.zeros(modes_R.shape[0]))
     kappa = np.where(total > 1e-12, core_e / total, 0.0)
-    rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
-    ts_xyz_in_R = np.zeros_like(np.asarray(xyzR))
+    rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R,
+                                mode_norms=mode_norms)
+    ts_xyz_in_R = np.asarray(xyzR, float).copy()
     for r, t in mapping_RT.items():
         ts_xyz_in_R[r] = xyzT[t]
     V = bond_reaction_vector(ts_xyz_in_R, broken_R, formed_R)
-    beta = bond_overlap_per_mode(modes_R, V)
+    beta = bond_overlap_per_mode(modes_R, V, mode_norms=mode_norms)
     imag_idx = list(np.where(freqs < 0)[0])
     if not imag_idx:
         return 0.0, None, 0.0, 0.0, 0.0
@@ -139,18 +140,17 @@ def main():
     rp_all = align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                                return_all=True, max_branches=1_000_000)
     n_rp_raw = 0
-    seen_full = set()
+    seen_witness = set()
     seen_chem = {}  # (broken, formed, core) -> rp_branch dict
     for (_, mapping, broken, formed, _) in rp_all.get("all_scored", []):
-        full_key = tuple(sorted(dict(mapping).items()))
-        if full_key in seen_full: continue
-        seen_full.add(full_key)
+        witness_key = tuple(sorted(dict(mapping).items()))
+        if witness_key in seen_witness: continue
+        seen_witness.add(witness_key)
         n_rp_raw += 1
         mapping_RP = dict(mapping)
         inv_RP = {v: k for k, v in mapping_RP.items()}
-        full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
         delta_RP = reaction_coord_delta(np.asarray(xyzR, float),
-                                         np.asarray(xyzP, float), full_RP)
+                                         np.asarray(xyzP, float), mapping_RP)
         broken_R = [(int(a), int(b)) for (a, b, _, _) in broken]
         formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
                     for (a, b, _, _) in formed if a in inv_RP and b in inv_RP]
@@ -196,7 +196,7 @@ def main():
         order = list(nodes); rng.shuffle(order)
         events = []
         try:
-            branches = find_islands_pq(g_R, g_T, order, events=events)
+            branches = find_islands(g_R, g_T, order, events=events)
         except Exception as e:
             continue
         if not branches:
@@ -234,10 +234,10 @@ def main():
     for rp_idx, rp_b in enumerate(rp_branches, 1):
         for tkey in target_keys:
             target_mapping = dict(tkey)
-            mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, target_mapping)
-            mapping_full = expand_mapping(mapping_RT, g_R, g_T)
-            full_key = tuple(sorted(mapping_full.items()))
-            cap = captured_by_target_key.get(full_key) or captured_by_target_key.get(tkey)
+            mapping_RT = dict(target_mapping)
+            mapping_full = expand_mapping(dict(mapping_RT), g_R, g_T)
+            witness_key = tuple(sorted(mapping_full.items()))
+            cap = captured_by_target_key.get(witness_key) or captured_by_target_key.get(tkey)
             events_t = cap[0] if cap else None
             seed_i = cap[2] if cap else None
             score, picked_k, b, r, c = score_mapping(
@@ -364,7 +364,7 @@ def main():
         "<tr><th>rank</th><th>R&hArr;P</th><th>S</th><th>&beta;</th><th>&rho;</th>"
         "<th>&kappa;</th><th>br/fm(RP)</th><th>R27&rarr;T</th><th>R22&rarr;T</th>"
         "<th>trace?</th><th>events</th>"
-        f"<th>full bijection (R(el) &rarr; {label}(el))</th></tr>"
+        f"<th>witness mapping (R(el) &rarr; {label}(el))</th></tr>"
         f"{mappings_rows}"
         "</table>"
     )

@@ -36,7 +36,7 @@ import numpy as np
 from rxn_core import (
     align_from_arrays,
     bond_overlap_per_mode, bond_reaction_vector,
-    core_atoms_in_R_frame, fill_unmapped_greedy,
+    core_atoms_in_R_frame,
     parse_g98_modes, parse_xyz, reaction_coord_delta,
     reindex_modes_to_R, rxn_overlap_per_mode,
 )
@@ -115,31 +115,33 @@ def best_branch_score(elR, xyzR, wboR, elT, xyzT, wboT, freqs, modes_TS,
     branches = it.get("all_scored", [])
     if not branches:
         branches = [(None, dict(it["mapping"]), None, None, None)]
-    seen_full = set(); seen_core = set()
+    seen_witness = set(); seen_core = set()
     best = None
     for (_, br_mapping, _, _, _) in branches:
         br_d = dict(br_mapping)
-        full_key = tuple(sorted(br_d.items()))
-        if full_key in seen_full: continue
-        seen_full.add(full_key)
+        witness_key = tuple(sorted(br_d.items()))
+        if witness_key in seen_witness: continue
+        seen_witness.add(witness_key)
         # Score-equivalent core-only signature -- spectator-only forks give
         # identical S, so we only need one representative.
         core_key = tuple(sorted((c, br_d[c]) for c in core_R if c in br_d))
         if core_key in seen_core: continue
         seen_core.add(core_key)
 
-        mapping_RT = fill_unmapped_greedy(elR, xyzR, elT, xyzT, br_d)
+        mapping_RT = br_d
         modes_R = reindex_modes_to_R(modes_TS, mapping_RT, len(elR))
+        mode_norms = np.linalg.norm(modes_TS.reshape(modes_TS.shape[0], -1), axis=1)
         sq = (modes_R ** 2).sum(axis=2)
-        total = sq.sum(axis=1)
+        total = mode_norms ** 2
         core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
         kappa = np.where(total > 1e-12, core_e / total, 0.0)
-        rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R)
-        ts_xyz_in_R = np.zeros_like(np.asarray(xyzR))
+        rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R,
+                                    mode_norms=mode_norms)
+        ts_xyz_in_R = np.asarray(xyzR, float).copy()
         for r, t in mapping_RT.items():
             ts_xyz_in_R[r] = xyzT[t]
         V = bond_reaction_vector(ts_xyz_in_R, broken_R, formed_R)
-        beta = bond_overlap_per_mode(modes_R, V)
+        beta = bond_overlap_per_mode(modes_R, V, mode_norms=mode_norms)
         picked_k = max(imag_idx, key=lambda k: beta[k])
         b = float(beta[picked_k]); r = float(rho[picked_k]); c = float(kappa[picked_k])
         score = b * (1 + W_RXN * r) * (1 + W_CORE * c) / max(n_imag, 1) ** IMAG_PEN
@@ -174,9 +176,8 @@ def process_step(args_tuple):
     mapping_RP = dict(rp["mapping"])
     inv_RP = {v: k for k, v in mapping_RP.items()}
     core_R = core_atoms_in_R_frame(mapping_RP, rp["broken"], rp["formed"])
-    full_RP = fill_unmapped_greedy(elR, xyzR, elP, xyzP, mapping_RP)
     delta_RP = reaction_coord_delta(np.asarray(xyzR, float),
-                                     np.asarray(xyzP, float), full_RP)
+                                     np.asarray(xyzP, float), mapping_RP)
     broken_R = [(int(a), int(b)) for (a, b, _, _) in rp["broken"]]
     formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
                 for (a, b, _, _) in rp["formed"]
@@ -249,7 +250,7 @@ def main():
     ap.add_argument("--steps", nargs="+", default=None)
     ap.add_argument("--max-branches", type=int, default=1_000_000,
                     help="cap on alignment branches per pass; default matches "
-                         "the rxn_core pq.py module default (1_000_000). Lower "
+                         "the rxn_core alignment default (1_000_000). Lower "
                          "this only when debugging pathological symmetric systems.")
     args = ap.parse_args()
 

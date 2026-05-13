@@ -1,4 +1,4 @@
-"""HTML template for the slider-driven PQ trace renderer."""
+"""HTML template for the slider-driven alignment trace renderer."""
 
 HTML = r"""<!doctype html>
 <html><head><meta charset="utf-8"><title>Island growth: {title}</title>
@@ -297,7 +297,7 @@ function applyEvent(idx) {{
   }}
   vP.render();
 
-  // ---- Event log ---- (verbose diagnostic for PQ events)
+  // ---- Event log ---- (verbose diagnostic for alignment events)
   const e = lastEvent;
   let txt = `[${{idx + 1}}/${{events.length}}]  ${{e.type.toUpperCase()}}`;
   if (e.scenario) txt += `  (${{e.scenario}})`;
@@ -351,7 +351,7 @@ function applyEvent(idx) {{
     txt += `\n`;
     const ps = e.pre_state;
     txt += `  fragment (${{ps.fragment_size}} atoms): [${{ps.fragment.join(', ')}}]\n`;
-    txt += `  cands count: ${{ps.cands_count}}\n`;
+    txt += `  compressed cands count: ${{ps.cands_count}}\n`;
     if (ps.represented_assignments !== undefined) txt += `  represented concrete assignments: ${{ps.represented_assignments}}\n`;
     txt += `  P-atoms claimed across cands: [${{ps.p_atoms_in_cands.join(', ')}}]\n`;
     txt += `  cand sample (top ${{ps.cands_sample.length}}):\n`;
@@ -373,10 +373,10 @@ function applyEvent(idx) {{
       txt += `  cand[R[${{e.added}}]] possible values: [${{e.cand_n_value_set.join(', ')}}]\n`;
     }}
     if (e.cands_after !== undefined) {{
-      txt += `  cands: ${{e.cands_before}} → ${{e.cands_after}}\n`;
+      txt += `  compressed cands: ${{e.cands_before}} → ${{e.cands_after}}\n`;
       if (e.represented_assignments_after !== undefined) txt += `  represented concrete assignments after = ${{e.represented_assignments_after}}\n`;
     }} else if (e.cands !== undefined) {{
-      txt += `  cands = ${{e.cands}}\n`;
+      txt += `  compressed cands = ${{e.cands}}\n`;
     }}
     txt += `  fragment now ${{e.fragment.length}} atoms\n`;
     if (e.cands_sample_after) {{
@@ -410,16 +410,20 @@ function applyEvent(idx) {{
     if (e.island_image !== undefined) {{
       txt += `  island_id=${{e.island_id}}, image=P[${{e.island_image}}]\n`;
     }}
-    txt += `  fragment (${{e.fragment.length}} atoms) unchanged, cands (${{e.cands_count}}) unchanged\n`;
+    txt += `  fragment (${{e.fragment.length}} atoms) unchanged, compressed cands (${{e.cands_count}}) unchanged\n`;
     if (e.represented_assignments !== undefined) txt += `  represented concrete assignments = ${{e.represented_assignments}}\n`;
     if (e.cands_pattern_sample) txt += `  compressed patterns:\n${{fmtPatterns(e.cands_pattern_sample)}}`;
     if (e.why_per_cand) {{
       txt += `  WHY EACH CAND FAILED:\n`;
       for (const w of e.why_per_cand) {{
-        txt += `    cand[${{w.cand_idx}}]: `;
+        txt += `    cand[${{w.cand_idx}}]`;
+        if (w.variant_idx !== undefined) txt += `.variant[${{w.variant_idx}}]`;
+        if (w.variant_multiplicity !== undefined) txt += ` x${{w.variant_multiplicity}}`;
+        txt += `: `;
         if (w.cand_at_in_frag_neighbors) {{
           txt += `at neighbors: ${{Object.keys(w.cand_at_in_frag_neighbors).map(k => `R[${{k}}]→P[${{w.cand_at_in_frag_neighbors[k]}}]`).join(', ')}}\n`;
-          txt += `             common P-neighbor set size = ${{w.common_v_set_size}}\n`;
+          const vc = w.candidate_v_count !== undefined ? w.candidate_v_count : w.common_v_set_size;
+          txt += `             candidate P-target count = ${{vc}}\n`;
           for (const t of w.tried_v) {{
             txt += `               try v=P[${{t.v}}]: ${{t.rejected ? 'REJECT' : 'OK'}} — ${{t.reason}}\n`;
           }}
@@ -432,7 +436,7 @@ function applyEvent(idx) {{
     txt += `  HEAP remaining = ${{e.heap_remaining}}, next:\n${{fmtHeapTop(e.heap_top)}}\n`;
     txt += fmtPool(e.pool_by_frag_atom);
   }} else if (e.type === 'seed_end') {{
-    txt += `  result = ${{e.result}},  final cands = ${{e.final_cands}}`;
+    txt += `  result = ${{e.result}},  final compressed cands = ${{e.final_cands}}`;
     if (e.n_branches !== undefined) txt += `,  branches = ${{e.n_branches}}`;
     txt += `\n`;
     if (e.lock_reason) txt += `  lock reason = ${{e.lock_reason}}\n`;
