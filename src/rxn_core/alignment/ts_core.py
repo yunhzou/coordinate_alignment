@@ -5,7 +5,7 @@ from .sweep import _canon_pair, _core_mapping_key, _pool_add
 
 
 def _core_edge_match_ok(wboR, wboT, r, t, u, v, *,
-                        edge_floor=0.2, iso_tol=0.5):
+                        edge_floor=0.2, iso_tol=1.0):
     if wboR[r, u] < 0.2:
         return True
     wT = float(wboT[t, v])
@@ -13,7 +13,7 @@ def _core_edge_match_ok(wboR, wboT, r, t, u, v, *,
 
 
 def _core_edges_preserved(mapping, wboR, wboT, core_R, *,
-                          edge_floor=0.2, iso_tol=0.5):
+                          edge_floor=0.2, iso_tol=1.0):
     """Validate a TS/IG core mapping against reactant-side core identity."""
     core = tuple(sorted(set(core_R or ())))
     for idx, a in enumerate(core):
@@ -34,7 +34,7 @@ def _core_edges_preserved(mapping, wboR, wboT, core_R, *,
 
 def ts_core_pool(elR, wboR, elT, wboT, core_R, *,
                  broken_R=None, formed_R=None,
-                 edge_floor=0.2, iso_tol=0.5,
+                 edge_floor=0.2, iso_tol=1.0,
                  max_candidates=20000):
     """Enumerate mechanism-local R->TS/IG core alternatives.
 

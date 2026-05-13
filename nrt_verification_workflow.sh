@@ -1,13 +1,13 @@
 #!/bin/bash
 # nrt_verification_workflow.sh
 #
-# Run the full BGCP verification pipeline (R↔P + R↔GT + 20× R↔IG cut_sweeps
-# per step, score, rank) for all 155 step directories on the NRT cluster's
+# Run the full BGCP verification pipeline (R-P cut-sweep mechanism discovery
+# plus mechanism-local GT/IG core matching, scoring, ranking) for all 155 step directories on the NRT cluster's
 # cpu_short partition. Strategy:
 #
 #   - Slurm job array: ONE array task per step.
 #   - Each task allocates N_CPUS cores and runs the inner-parallel pipeline:
-#       python build_bgcp_views_v2.py --steps <step> --inner-workers $N_CPUS
+#       python pipeline.py --steps <step> --inner-workers $N_CPUS
 #     so cut_sweep inside that step uses all N_CPUS cores.
 #   - Slurm scheduler runs as many tasks concurrently as the partition allows;
 #     the rest queue.
@@ -143,7 +143,7 @@ export BGCP_ISO_TOL=${BGCP_ISO_TOL:-1.0}
 export BGCP_UNIT_TIMEOUT=${BGCP_UNIT_TIMEOUT:-10}
 export BGCP_TIMING=${BGCP_TIMING:-1}
 
-python -u build_bgcp_views_v2.py \
+python -u pipeline.py \
   --steps "$STEP" \
   --inner-workers "$N_CPUS"
 

@@ -27,6 +27,7 @@ def build_graph(elements, wbo, bond_cut=0.5):
     the graph so scoring and trace diagnostics can inspect exact WBO values."""
     g = nx.Graph()
     g.graph["wbo_matrix"] = np.asarray(wbo, dtype=float)
+    g.graph["bond_cut"] = float(bond_cut)
     for i, e in enumerate(elements):
         g.add_node(i, element=e)
     n = len(elements)

@@ -217,7 +217,7 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
 
 def cut_sweep(elR, wboR, elT, wboT, *,
               n_workers=None, core_R=None,
-              cut_floor=0.2, graph_floor=0.2, iso_tol=0.5,
+              cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
               n_seeds=3, max_branches=1_000_000,
               chunksize=1, unit_timeout=0.0,
               symmetry_repair=True,

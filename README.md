@@ -1,55 +1,51 @@
 # rxn_core
 
-End-to-end pipeline that takes a reactant + product geometry plus a set
-of LLM-generated transition-state guesses (IGs) and produces a single
-HTML page where the IGs are sorted by a chemistry-aware score and
-animated on their picked imaginary mode.
+Pipeline and library for symmetry-aware WBO graph alignment.  The current
+default CLI builds BGCP full views from precomputed xtb caches: it discovers
+R-P mechanisms with sweep cut, scores GT/IG transition-state guesses under
+each mechanism, and writes an interactive multi-mechanism HTML view.
 
-The signal throughout is **Wiberg bond order** from xtb GFN2 single-point
-calculations: WBO matrices on R, P, and every IG-TS, plus normal modes
-parsed from xtb Hessians.
+The signal throughout is **Wiberg bond order** from xtb GFN2 outputs: WBO
+matrices on R, P, GT, and every IG-TS, plus normal modes parsed from xtb
+Hessians.
 
 ## Pipeline overview
 
 ```
-Inputs:                                        Outputs (per step):
-                                               out/ranked_views/<step>/
-  source/reactant_*.xyz       ────┐              view.html        (open in any browser)
-  source/product_*.xyz             ├──► pipeline ──►   alignment.json
-  initial_ts_guesses/*.xyz        ┘              scores.csv
-  generation_report.json                         aligned/<...>.xyz
-    (charge / multiplicity)                      modes/<label>_picked.xyz
-                                                 xtb/{R,P,hess_iter<N>}/
-                                                 README.md
+Inputs: cached BGCP xtb step                    Outputs:
+                                                out/bgcp_views/<step>/
+  appendix_perparation/
+    xtb_frequency_calculations/<step>/ ─────►     view.html
+      R/, P/                                      _eval_v2_slim.json
+      sp_groundtruth/, hess_groundtruth/       out/bgcp_alignment_eval_v2.json
+      sp_iter<N>/, hess_iter<N>/
 ```
 
 The pipeline:
 
-1. **R/P single-points** — xtb GFN2 on R and P → WBO matrices.
-2. **R↔P alignment** — symmetry-aware WBO graph alignment.
-   Returns mapping + broken/formed bond
-   classification.
-3. **Reactive core** — atoms touching any broken or formed bond.
-4. **xtb hess on each IG** (parallel) — produces normal modes (g98.out)
-   and a WBO matrix.
-5. **For each IG**: align IG↔R (every alignment branch), reindex modes
-   to R-frame, compute three per-mode features:
+1. **R-P mechanism discovery** — `cut_sweep(...)` runs no-cut plus every
+   one-edge R cut above `BGCP_CUT_FLOOR`, then dedupes by
+   symmetry-canonical broken/formed bond changes.
+2. **Reactive core per mechanism** — atoms touching any broken or formed
+   bond define the mechanism-local core.
+3. **GT/IG core matching** — `ts_core_pool(...)` enumerates distinct core
+   atom mappings from both endpoints: R→TS and P→TS. Product-side candidates
+   are pulled back through the R-P mechanism witness and unioned in R-core
+   indexing. Spectator atoms are not expanded into full bijections.
+4. **Per candidate TS/IG mapping**: reindex modes to R-frame and compute:
    - β (bond_overlap): mode displacement projected on the bond-axis
      stretch/contract direction at TS coordinates
    - ρ (rxn_overlap): mode core-atom motion projected on the R→P
      direction
    - κ (core_fraction): fraction of mode energy on core atoms
-6. **Pick the imaginary mode** with max β.
-7. **Score**:
+5. **Pick the imaginary mode** with max β.
+6. **Score**:
    ```
    S = β · (1 + w_r · ρ) · (1 + w_c · κ) / n_imag^p
        (w_r = 1.0,  w_c = 0.2,  p = 0.3)
    ```
-8. **Choose the alignment branch** that gives the highest S. Branches
-   that differ only on non-core (spectator) atoms are score-equivalent
-   and collapsed.
-9. **Sort IGs by S descending**, render one HTML page with R, P, and
-   all 20 IG panels each animated on its picked mode.
+7. **Choose the core mapping** that gives the highest S for GT and each IG.
+8. **Render** one page per step with mechanism buttons, R/P/GT, and all IGs.
 
 ## Layout
 
@@ -68,7 +64,8 @@ rxn_core/
       modes.py                per-mode features (beta, rho, kappa) +
                               g98.out parser + mode reindex helpers
       align.py                load_cached_xtb, reindex_to_R_frame
-      pipeline.py             end-to-end pipeline + main()
+      pipeline.py             BGCP full-view pipeline + main()
+      plain_pipeline.py       older source-xyz/xtb execution pipeline
   out/                        pipeline output (gitignored)
 ```
 
@@ -84,36 +81,39 @@ After install:
 - `import rxn_core` works from anywhere — re-exports the alignment,
   Hessian, and feature primitives at the top level (see "Public API"
   below).
-- `rxn-core-pipeline <step_dir>...` is on `$PATH` as a console script.
+- `rxn-core-pipeline ...` is on `$PATH` as the BGCP full-view console script.
 
-xtb (GFN2) handles all electronic-structure work — single-points for R,
-P, and every IG, plus Hessians on the IGs.
+The default BGCP pipeline reads existing xtb caches.  The older source-xyz
+pipeline that runs xtb is preserved as `rxn_core.plain_pipeline`.
 https://github.com/grimme-lab/xtb
 
 ## Run the pipeline
 
 ```bash
-# Installed:
-rxn-core-pipeline <step_dir> [step_dir ...]
+# Installed, one or more cached BGCP steps:
+rxn-core-pipeline --steps pr7.V.dodh_ts910 --inner-workers 10
 
 # Or, without install, from a clone:
-python pipeline.py <step_dir> [step_dir ...]
+python pipeline.py --steps pr7.V.dodh_ts910 --inner-workers 10
+
+# Backward-compatible wrapper:
+python build_bgcp_views_v2.py --steps pr7.V.dodh_ts910 --inner-workers 10
 ```
 
-Each `<step_dir>` should contain:
+By default the pipeline reads:
 
 ```
-<step_dir>/
-  source/reactant_*.xyz       at least one reactant xyz
-  source/product_*.xyz        product xyz
-  initial_ts_guesses/*.xyz    one or more IG TS xyz files
-  generation_report.json      JSON with generation_spec.charge
-                              and generation_spec.multiplicity
+appendix_perparation/xtb_frequency_calculations/<step>/
+  R/                    reactant xyz + wbo
+  P/                    product xyz + wbo
+  sp_groundtruth/       GT TS xyz + wbo
+  hess_groundtruth/     GT g98.out
+  sp_iter<N>/           IG xyz + wbo
+  hess_iter<N>/         IG g98.out
 ```
 
-Output lands in `out/ranked_views/<workflow_name>/`. The xtb subtree
-under that folder is the cache, so re-running the pipeline on the same
-step is a sub-second rebuild of the artifacts.
+Override paths with `RXN_CORE_PROJECT`, `BGCP_WORK`, `BGCP_OUT_ROOT`, and
+`BGCP_EVAL_JSON` if needed.  Output lands in `out/bgcp_views/<step>/`.
 
 ## Output viewer
 
@@ -140,29 +140,28 @@ you're doing.
 
 | name | default | meaning |
 |---|---|---|
-| `W_RXN` | `1.0` | weight on ρ in the score formula |
-| `W_CORE` | `0.2` | weight on κ in the score formula |
-| `IMAG_PEN` | `0.3` | exponent on `n_imag` in the score denominator (`/ n_imag^p`) |
-| `N_WORKERS` | `4` | parallel `xtb --hess` worker processes per step |
-| `OMP_THREADS` | `4` | OpenMP threads per xtb worker (so peak CPU ≈ `N_WORKERS × OMP_THREADS`) |
-| `RXN_CORE_OUT` (env var) | `<cwd>/out` | output root override; pipeline writes to `$RXN_CORE_OUT/ranked_views/<step>/` |
-
-These are module-level constants — for now, edit them at the top of
-`src/rxn_core/pipeline.py` if you need to change them. (If you want
-them as CLI flags, easy follow-up.)
+| `--workers` | CPU count - 1 | outer step parallelism |
+| `--inner-workers` | `0` | per-step `cut_sweep` workers; when >1, steps run serially |
+| `--steps` | all cached steps | explicit step names |
+| `--limit` | none | first N cached steps |
+| `BGCP_CUT_FLOOR` | `0.2` | R-P sweep cuts every R edge at or above this WBO |
+| `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP matching |
+| `BGCP_VIEW_MAX_BRANCHES` | `5000` | per-work-unit branch guard for view generation |
+| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped |
+| `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
+| `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the alignment module
 boundaries.
 
 ### Alignment (`src/rxn_core/alignment/`)
 
-The R↔P and R↔IG aligners are built around `align_from_arrays(...)`;
-key kwargs:
+The low-level pair aligner is `align_from_arrays(...)`; key kwargs:
 
 | name | default | meaning |
 |---|---|---|
 | `graph_floor` | `0.2` | min WBO to admit an edge into the alignment graph (lower = more weak/partial bonds survive) |
-| `iso_tol` | `0.5` | per-edge WBO match tolerance during subgraph iso (looser = more permissive matching at the reactive site, where bonds have changed) |
+| `iso_tol` | `1.0` | per-edge WBO match tolerance during subgraph iso (looser = more permissive matching at the reactive site, where bonds have changed) |
 | `n_seeds` | `3` | number of seed orderings explored for one match |
 | `max_branches` | `1_000_000` | per-pass branch cap; effectively no cap. A soft `[warn]` fires at ≥ 10 000 distinct branches in a single pass to surface pathologically symmetric inputs. |
 | `min_lock_size` | `1` | minimum fragment size that can be locked during island growth |
@@ -170,9 +169,9 @@ key kwargs:
 | `dwbo_threshold` | `0.5` | (in `classify_bonds`) min |ΔWBO| to classify an edge as broken or formed; also gates "is wR even a real bond" since wP ≥ 0 |
 | `return_all` | `False` | when `True`, returns every distinct mapping in `out['all_scored']` (used internally by the per-IG branch sweep) |
 
-`align_from_arrays` is a pure function — pass any of these as kwargs at
-the call site. `pipeline.process_step` calls it with defaults plus
-`return_all=True` for the per-IG sweep.
+`align_from_arrays` is still available as a pure low-level function.  The
+BGCP full-view pipeline uses `cut_sweep(...)` for R-P mechanism discovery and
+`ts_core_pool(...)` for mechanism-local GT/IG core matching.
 
 R-P mechanism discovery uses the core `cut_sweep(...)` API in
 `src/rxn_core/alignment/sweep.py`: no-cut plus one-edge R cuts above

@@ -320,7 +320,7 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
 
 
 def find_islands(g_R, g_P, seed_order,
-                 graph_floor=0.2, iso_tol=0.5,
+                 graph_floor=0.2, iso_tol=1.0,
                  max_branches=1_000_000, events=None,
                  orbit_dedup=True, core_R=None,
                  stop_when_core_mapped=False):

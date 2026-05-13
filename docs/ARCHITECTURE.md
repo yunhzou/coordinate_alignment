@@ -31,8 +31,10 @@ Files:
   seed-order generation, and final symmetry repair.
 - `alignment/sweep.py`: R-P sweep-cut mechanism discovery via no-cut plus
   one-edge R cuts, with symmetry-canonical mechanism signatures.
-- `alignment/ts_core.py`: mechanism-local R->TS/IG core mapping used by the
-  ranker after R-P mechanisms are known.
+- `alignment/ts_core.py`: mechanism-local endpoint->TS/IG core mapping used by
+  the ranker after R-P mechanisms are known. The BGCP pipeline runs it from
+  both R and P, pulls P-derived mappings back through the R-P witness, and
+  scores the union in R-core indexing.
 
 This layer owns whole-molecule decisions: seed orders, branch lifecycle,
 mechanism discovery, mechanism-local TS core matching, and final representative
@@ -93,10 +95,13 @@ symmetry state. A block with two R atoms and four P atoms represents
 - `modes.py`: normal-mode parsing and score-feature vectors.
 - `align.py`: compatibility facade for cache loading and coordinate reindex
   helpers now owned by `chemistry_computations`.
-- `pipeline.py`: end-to-end workflow orchestration. The high-level stages are:
-  `process_R_P` for R/P single-points, R-P alignment, and mechanism/core
-  extraction; `process_TS` for TS Hessian jobs and branch ranking; artifact
-  writers for the viewer and cache outputs.
+- `pipeline.py`: BGCP cached full-view orchestration. It runs R-P
+  `cut_sweep`, dedupes mechanisms by symmetry-canonical bond changes, runs
+  mechanism-local R/P endpoint `ts_core_pool` for GT/IG core alternatives,
+  scores normal modes, and writes the multi-mechanism viewer plus slim eval
+  JSON.
+- `plain_pipeline.py`: older source-XYZ workflow that runs xtb itself and
+  writes the single-mechanism ranked viewer.
 
 These modules should not depend on matcher internals unless they are explicitly
 running alignment.

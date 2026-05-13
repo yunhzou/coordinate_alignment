@@ -100,12 +100,14 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
     not whether the current witness happens to satisfy it.
     """
     strict_by_r = dict(strict_r_wbos or ())
+    graph_floor = float(g_P.graph.get("bond_cut", 0.2))
 
     def _pair_ok(r_atom, w_R, p_atom):
         w_P = _edge_wbo(g_P, p_atom, v_n)
         if r_atom in strict_by_r:
-            return _growth_edge_supported(strict_by_r[r_atom], w_P, iso_tol)
-        return abs(w_R - w_P) <= iso_tol
+            return _growth_edge_supported(
+                strict_by_r[r_atom], w_P, iso_tol, graph_floor)
+        return _growth_edge_supported(w_R, w_P, iso_tol, graph_floor)
 
     if not isinstance(cand, _SymCand):
         used = set(cand.values())

@@ -135,6 +135,7 @@ def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
                       g_R, g_P, locked_mapping, iso_tol):
     """Per-candidate explanation of why extension to n_atom failed."""
     locked_p_atoms = set((locked_mapping or {}).values())
+    graph_floor = float(g_P.graph.get("bond_cut", 0.2))
     bonded = sorted(u for u in fragment if g_R.has_edge(u, n_atom))
     n_el = g_R.nodes[n_atom]['element']
     r_wbos = [(u, _edge_wbo(g_R, u, n_atom)) for u in bonded]
@@ -175,10 +176,11 @@ def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
                         wp = _edge_wbo(g_P, cm[u], v)
                         if u in strict_r_wbos:
                             if not _growth_edge_supported(
-                                    strict_r_wbos[u], wp, iso_tol):
-                                bad.append(f'R[{u}]: growth edge |{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}>{iso_tol}')
-                        elif abs(w - wp) > iso_tol:
-                            bad.append(f'R[{u}]: |{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}>{iso_tol}')
+                                    strict_r_wbos[u], wp, iso_tol, graph_floor):
+                                bad.append(f'R[{u}]: active edge needs target WBO>={graph_floor:.3f} and |{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}<={iso_tol}')
+                        elif not _growth_edge_supported(
+                                w, wp, iso_tol, graph_floor):
+                            bad.append(f'R[{u}]: active edge needs target WBO>={graph_floor:.3f} and |{w:.3f}-{wp:.3f}|={abs(w-wp):.3f}<={iso_tol}')
                     why.append('; '.join(bad[:5]) if bad else 'no block witness')
                 tried.append({'v': int(v), 'rejected': bool(why),
                               'reason': '; '.join(why) if why else 'OK'})
@@ -201,6 +203,7 @@ def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
 def why_merge_failed(cands, fragment, n_atom, mapping, islands_R,
                      g_R, g_P, iso_tol):
     """Per-candidate explanation of why whole-island merge failed."""
+    graph_floor = float(g_P.graph.get("bond_cut", 0.2))
     if islands_R is None or n_atom not in islands_R:
         island_atoms = [n_atom]
     else:
@@ -233,7 +236,7 @@ def why_merge_failed(cands, fragment, n_atom, mapping, islands_R,
                 wR = _edge_wbo(g_R, r, r2)
                 p, p2 = nc[r], nc[r2]
                 wP = _edge_wbo(g_P, p, p2)
-                if abs(wR - wP) > iso_tol:
-                    why.append(f'R[{r}]-R[{r2}]: |{wR:.3f}-{wP:.3f}|={abs(wR-wP):.3f} (P[{p}]-P[{p2}])')
+                if not _growth_edge_supported(wR, wP, iso_tol, graph_floor):
+                    why.append(f'R[{r}]-R[{r2}]: target WBO must be >= {graph_floor:.3f}; |{wR:.3f}-{wP:.3f}|={abs(wR-wP):.3f} (P[{p}]-P[{p2}])')
         out.append({'cand_idx': ci, 'reasons': why[:8]})
     return out

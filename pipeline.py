@@ -1,7 +1,8 @@
-"""Thin shim so `python pipeline.py <step_dir>` still works in a clone
-that hasn't been pip-installed. Adds src/ to sys.path then defers to
-rxn_core.pipeline:main. After `pip install -e .`, the same entry point
-is available as the `rxn-core-pipeline` console script."""
+"""Thin shim for the packaged BGCP full-view pipeline.
+
+Adds src/ to sys.path so `python pipeline.py ...` works in a clone that
+hasn't been pip-installed, then defers to `rxn_core.pipeline:main`.
+"""
 from __future__ import annotations
 import sys
 from pathlib import Path

@@ -310,6 +310,25 @@ def test_weighted_tolerance_prevents_free_terminal_match_at_default_iso_tol():
     assert _cand_possible_p_atoms(out[0]) == {0, 1}
 
 
+def test_active_r_edge_requires_active_target_edge_even_with_loose_iso_tol():
+    wbo_r = np.zeros((2, 2))
+    wbo_r[0, 1] = wbo_r[1, 0] = 0.964
+    g_r = build_graph(["C", "H"], wbo_r, bond_cut=0.2)
+
+    wbo_p = np.zeros((3, 3))
+    wbo_p[0, 1] = wbo_p[1, 0] = 0.963
+    g_p = build_graph(["C", "H", "H"], wbo_p, bond_cut=0.2)
+
+    out = _extend_sym_cands(
+        [_SymCand({0: 0})], {0}, 1,
+        g_r, g_p, {}, 1.0, None,
+        anchor_u=0, anchor_wbo=0.964,
+    )
+
+    assert len(out) == 1
+    assert all(2 not in _cand_possible_p_atoms(c) for c in out)
+
+
 def test_deferred_boundary_prevents_false_orbit_dedup():
     wbo_r = np.zeros((3, 3))
     wbo_r[0, 1] = wbo_r[1, 0] = 1.0

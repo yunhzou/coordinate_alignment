@@ -25,7 +25,7 @@ Public API:
         load_cached_xtb, reindex_to_R_frame,
     )
 
-    # End-to-end pipeline (matching the rxn-core-pipeline CLI)
+    # BGCP full-view pipeline (matching the rxn-core-pipeline CLI)
     from rxn_core.pipeline import process_step, main
 """
 from .alignment import (

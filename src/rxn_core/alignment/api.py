@@ -71,7 +71,7 @@ def cut_edges_above_floor(wboR, floor=0.2):
 
 def match_wbo_graphs(elR, wboR, elP, wboP, *,
                      xyzR=None, xyzP=None,
-                     graph_floor=0.2, iso_tol=0.5,
+                     graph_floor=0.2, iso_tol=1.0,
                      dwbo_threshold=0.5,
                      n_seeds=3, max_branches=1_000_000,
                      cut_edges=(), repair_symmetry=True,
@@ -181,7 +181,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
 
 def analyze_alignment(reactant_xyz, product_xyz, workdir,
                       charge=0, uhf=0,
-                      graph_floor=0.2, iso_tol=0.5,
+                      graph_floor=0.2, iso_tol=1.0,
                       dwbo_threshold=0.5,
                       n_seeds=3, max_branches=1_000_000,
                       chirality=True,

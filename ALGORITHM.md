@@ -38,9 +38,11 @@ The implementation is split by abstraction; see
 
 2. **Validity is active-pair WBO consistency.** A partial mapping `m` is valid
    on its grown fragment when it is injective, element-preserving, and every
-   active R-side pair in the grown fragment satisfies:
+   active R-side pair in the grown fragment maps to an active target-side pair
+   and satisfies:
 
    ```
+   WBO_P[m[i], m[j]] >= graph_floor
    abs(WBO_R[i, j] - WBO_P[m[i], m[j]]) <= iso_tol
    for every R graph edge (i, j) in the current island
    ```
@@ -82,6 +84,7 @@ The implementation is split by abstraction; see
 7. **The popped growth edge is not special.** Extension validity uses the same
    active R-pair weighted-vector rule for every already-fragmented atom `r`
    where `(n, r)` is an R graph edge:
+   `WBO_P[v, map[r]] >= graph_floor` and
    `abs(WBO_R[n, r] - WBO_P[v, map[r]]) <= iso_tol`.  The heap only chooses
    traversal order.  It must not add a chemistry-specific anchor rule.
 
@@ -134,6 +137,7 @@ for each compressed candidate:
     for each unused matching-element P target v:
         test whether some assignment inside every touched symmetry block can
         satisfy:
+            WBO_P[v, m[r]] >= graph_floor
             abs(WBO_R[n, r] - WBO_P[v, m[r]]) <= iso_tol
         for every already-grown fragment atom r where R[n,r] is an active edge
 ```
@@ -143,7 +147,8 @@ For fixed atoms the test is direct:
 ```
 - v must be unused by this candidate
 - element_R[n] == element_P[v]
-- every active R-pair WBO delta from n to the grown fragment is <= iso_tol
+- every active R-pair from n to the grown fragment maps to an active target
+  edge and has WBO delta <= iso_tol
 - R-side non-edges are ignored by local extension; they are not interpreted as
   required target non-bonds
 ```
@@ -408,8 +413,9 @@ breaking/forming remains.
 ## Sweep-Cut Mechanism Discovery
 
 `rxn_core.alignment.cut_sweep(...)` is the core R-P mechanism discovery API.
-High-level scripts such as `build_bgcp_views_v2.py` pass runtime parameters and
-render results; they do not implement the sweep algorithm.  `cut_sweep`
+The package pipeline in `rxn_core.pipeline` passes runtime parameters and
+renders results; it does not implement the sweep algorithm.  The root
+`build_bgcp_views_v2.py` file is only a compatibility shim.  `cut_sweep`
 collects mechanisms from:
 
 - baseline graph
@@ -435,13 +441,16 @@ The dedupe target depends on the alignment purpose:
 - R<->P mechanism discovery deduplicates by symmetry-canonical broken/formed
   bond changes.  Multiple concrete mappings with the same mechanism under R
   symmetry collapse before GT/IG scoring.
-- R<->GT and R<->IG verification is mechanism-local.  For each mechanism,
-  `rxn_core.alignment.ts_core_pool(...)` enumerates exact mappings only for
-  that mechanism's `core_R` atoms, preserves every distinct core mapping,
-  scores them all, and keeps the best `S`.  Spectator atoms are never
-  enumerated and are not filled by geometry after a core mapping is chosen.
-  Mode-score numerators use the mapped/core atoms; denominators use the full
-  TS mode norm.
+- R/P<->GT and R/P<->IG verification is mechanism-local.  For each mechanism,
+  `rxn_core.alignment.ts_core_pool(...)` enumerates exact mappings for the
+  same mechanism core from both endpoints: `R -> TS` using R-core WBO context,
+  and `P -> TS` using the R-P witness to pull the same core into product
+  indexing.  Product-derived candidates are converted back to R-core indexing,
+  unioned with the reactant-derived candidates, deduped by the exact
+  `R_core -> TS_core` map, scored, and the best `S` is kept.  Spectator atoms
+  are never enumerated and are not filled by geometry after a core mapping is
+  chosen.  Mode-score numerators use the mapped/core atoms; denominators use
+  the full TS mode norm.
 
 This matters when symmetry touches a core atom.  If an atom is a spectator,
 one arbitrary representative of a symmetric group is fine.  If that same
@@ -451,11 +460,13 @@ on concrete target atoms.  The code therefore enumerates symmetry alternatives
 only on the mechanism core.  A methyl H core in an 18-H symmetric environment
 creates up to 18 core candidates, not 18! full spectator permutations.
 
-Mechanism-local TS/IG core enumeration enforces preserved R-core edges against
-the target WBO graph (`edge_floor`, default `0.2`) and allows extra TS partial
-bonds.  The optional `max_candidates` cap defaults to `20000` in the BGCP
-script; hitting it is a diagnostic warning, not an expected path for elementary
-steps.
+Mechanism-local TS/IG core enumeration enforces preserved endpoint-core edges
+against the target WBO graph (`edge_floor`, default `0.2`) and allows extra TS
+partial bonds.  The R endpoint preserves R-core active edges; the P endpoint
+preserves P-core active edges after the R-P mechanism witness maps the same
+core into product indexing.  The optional `max_candidates` cap defaults to
+`20000` in the BGCP script; hitting it is a diagnostic warning, not an
+expected path for elementary steps.
 
 This makes ranking symmetry/core based instead of full-bijection based.  The
 core `cut_sweep` default has no work-unit timeout; the BGCP script passes
@@ -535,13 +546,13 @@ The mode scorer only needs these chemistry-relevant atoms.
 | name | default | meaning |
 |---|---:|---|
 | `graph_floor` | `0.2` | threshold for active R/P graph edges used by frontier growth and local iso validity |
-| `iso_tol` | `0.5` | WBO tolerance during candidate extension |
+| `iso_tol` | `1.0` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `max_branches` | `1_000_000` | live branch cap in core alignment |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | branch cap used by full BGCP view generation |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
-| `BGCP_ISO_TOL` | `0.5` | WBO tolerance used by BGCP view cut-sweeps |
+| `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
 | `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped; set `0` to disable |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
 | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | minimum target WBO for preserving an R-core edge during TS/IG core matching |

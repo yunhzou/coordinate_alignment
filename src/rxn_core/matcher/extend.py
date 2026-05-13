@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .dedupe import _dedup_sym_cands, _p_relation_signature
-from .primitives import _edge_wbo
+from .primitives import _edge_wbo, _growth_edge_supported
 from .state import _SymCand, _sym_block_indexes, _sym_cand_variants
 from .support import (
     _force_sym_value,
@@ -84,6 +84,7 @@ def _extend_sym_cands(
         Active R-pair WBO tolerance.  For every atom `u` in the old fragment
         with an active R-side graph edge to `n`, a proposed image `n -> v` is
         valid only if some supported witness satisfies
+        `WBO_P[v,image(u)] >= graph_floor` and
         `abs(WBO_R[n,u] - WBO_P[v,image(u)]) <= iso_tol`.
     islands_R
         Locked-island labels for R atoms.  If `n` is already mapped and belongs
@@ -367,6 +368,7 @@ def _island_merge_wbo_consistent(cand: _SymCand, ctx: _ExtensionContext) -> bool
     must be WBO-compatible with every materialized atom already in the candidate.
     """
     base = cand.materialize()
+    graph_floor = float(ctx.g_P.graph.get("bond_cut", 0.2))
     check_set = set(base.keys())
     for r in ctx.island_atoms:
         for r2 in sorted(check_set):
@@ -378,7 +380,9 @@ def _island_merge_wbo_consistent(cand: _SymCand, ctx: _ExtensionContext) -> bool
                 continue
             w_r = _edge_wbo(ctx.g_R, r, r2)
             p, p2 = base[r], base[r2]
-            if abs(w_r - _edge_wbo(ctx.g_P, p, p2)) > ctx.iso_tol:
+            if not _growth_edge_supported(
+                    w_r, _edge_wbo(ctx.g_P, p, p2),
+                    ctx.iso_tol, graph_floor):
                 return False
     return True
 
