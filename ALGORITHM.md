@@ -16,10 +16,10 @@ The implementation is split by abstraction; see
 - Element lists, coordinates, and Wiberg bond-order matrices for `R` and `P`
   (or `T` / `IG`).
 - Identical composition: `Counter(elR) == Counter(elP)`.
-- The alignment object is the complete weighted WBO graph: every atom pair has
-  a WBO value, including `0.0`.
-- Any sparse adjacency or priority queue edge set is only a traversal
-  accelerator.  It is not part of the matching validity rule.
+- The alignment object is a thresholded WBO graph plus the full WBO matrix.
+  Graph edges, by default `WBO >= graph_floor = 0.2`, define which R-side
+  pairs participate in local island matching.  The full matrix is retained for
+  exact WBO values, scoring, traces, and bond-change classification.
 
 ## Output
 
@@ -30,20 +30,25 @@ The implementation is split by abstraction; see
 
 ## Core Principles
 
-1. **Complete weighted graph first.** Candidate growth matches element labels
-   and WBO values.  Coordinates are used later for scoring, chirality, and
-   visualization.  Thresholded graph edges must never decide whether a mapping
-   is valid.
+1. **Weighted active-edge graph first.** Candidate growth matches element
+   labels and WBO values on active R-side graph pairs.  Coordinates are used
+   later for scoring, chirality, and visualization.  Zero/non-frontier R pairs
+   are not local iso constraints during island growth; final chemistry is
+   still scored from the full WBO matrices.
 
-2. **Validity is pairwise WBO consistency.** A partial mapping `m` is valid on
-   its grown fragment when it is injective, element-preserving, and every
-   mapped pair satisfies:
+2. **Validity is active-pair WBO consistency.** A partial mapping `m` is valid
+   on its grown fragment when it is injective, element-preserving, and every
+   active R-side pair in the grown fragment satisfies:
 
    ```
    abs(WBO_R[i, j] - WBO_P[m[i], m[j]]) <= iso_tol
+   for every R graph edge (i, j) in the current island
    ```
 
-   Missing sparse edges are just `WBO = 0.0`; they are not hard failures.
+   Non-edges on the R side are not checked during local extension.  This avoids
+   rejecting a valid local match because the target has an additional bond to a
+   fragment atom that is not connected to the new R atom; such differences are
+   handled later as mechanism-level formed/broken bonds.
 
 3. **No concrete symmetry explosion.** Symmetric choices are represented as
    local `_SymBlock(r_atoms, p_atoms)` pools inside `_SymCand`.  A block says:
@@ -74,11 +79,11 @@ The implementation is split by abstraction; see
    can grow to many valid targets when it sits at a symmetry center.  That is a
    first-class state, not an ambiguity to resolve by picking one target.
 
-7. **The popped growth edge is not special.** Extension validity is the same
-   complete weighted-vector rule for every already-fragmented atom:
+7. **The popped growth edge is not special.** Extension validity uses the same
+   active R-pair weighted-vector rule for every already-fragmented atom `r`
+   where `(n, r)` is an R graph edge:
    `abs(WBO_R[n, r] - WBO_P[v, map[r]]) <= iso_tol`.  The heap only chooses
-   traversal order.  It must not add a bucket test, a nonzero-counterpart test,
-   or any chemistry-specific anchor rule.
+   traversal order.  It must not add a chemistry-specific anchor rule.
 
 8. **Dedupe must preserve observed future distinguishability.** Two candidates
    are true duplicates only if their internal orbit state and their deferred
@@ -130,7 +135,7 @@ for each compressed candidate:
         test whether some assignment inside every touched symmetry block can
         satisfy:
             abs(WBO_R[n, r] - WBO_P[v, m[r]]) <= iso_tol
-        for every already-grown fragment atom r
+        for every already-grown fragment atom r where R[n,r] is an active edge
 ```
 
 For fixed atoms the test is direct:
@@ -138,9 +143,9 @@ For fixed atoms the test is direct:
 ```
 - v must be unused by this candidate
 - element_R[n] == element_P[v]
-- every pairwise WBO delta from n to the grown fragment is <= iso_tol
-- no sparse-edge existence test is applied; a missing edge is simply
-  `WBO = 0.0` and passes only when the weighted delta is within `iso_tol`
+- every active R-pair WBO delta from n to the grown fragment is <= iso_tol
+- R-side non-edges are ignored by local extension; they are not interpreted as
+  required target non-bonds
 ```
 
 For atoms inside a `_SymBlock`, the test is a small constrained matching over
@@ -228,13 +233,14 @@ the number of input candidates and valid output states:
   dedupe.  Keep all distinct states, compressed where possible.
 
 The heap chooses which growth proposal to try next.  It does not define
-validity.  Popping edge `(u, n)` means "try adding `n` now"; it does not mean
-only the pair `(u, n)` matters.
+validity.  Popping edge `(u, n)` means "try adding `n` now"; all active R
+pairs from `n` to the current fragment are checked, not only `(u, n)`.
 
 In traces, `cut_all_cands` is the `1 -> 0` or `many -> 0` case for an
 `extend_free` proposal: every represented candidate variant failed the complete
-WBO-vector test for the popped atom.  The rejection may be caused by any
-already-grown fragment atom, not necessarily by the popped anchor edge.
+active-edge WBO-vector test for the popped atom.  The rejection may be caused
+by any already-grown fragment atom with an active R edge to the popped atom,
+not necessarily by the popped anchor edge.
 
 ### Forced Island Merge
 
@@ -528,7 +534,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 
 | name | default | meaning |
 |---|---:|---|
-| `graph_floor` | `0.2` | implementation-only frontier/heap scheduling threshold; not a validity rule |
+| `graph_floor` | `0.2` | threshold for active R/P graph edges used by frontier growth and local iso validity |
 | `iso_tol` | `0.5` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `max_branches` | `1_000_000` | live branch cap in core alignment |

@@ -96,10 +96,28 @@ def test_extension_collapses_correlated_orbit_duplicate_without_boundary():
     assert mappings == {((0, 1), (1, 3))}
 
 
-def test_extension_checks_full_wbo_vector_not_sparse_edges_only():
+def test_extension_ignores_inactive_r_pairs():
     wbo_r = np.zeros((3, 3))
     wbo_r[1, 2] = wbo_r[2, 1] = 1.0
     wbo_r[0, 2] = wbo_r[2, 0] = 0.4
+    g_r = build_graph(["C", "C", "O"], wbo_r, bond_cut=0.5)
+
+    wbo_p = np.zeros((3, 3))
+    wbo_p[1, 2] = wbo_p[2, 1] = 1.0
+    g_p = build_graph(["C", "C", "O"], wbo_p, bond_cut=0.5)
+
+    out = _extend_sym_cands(
+        [_SymCand({0: 0, 1: 1})], {0, 1}, 2,
+        g_r, g_p, {}, 0.1, None,
+    )
+
+    assert len(out) == 1
+
+
+def test_extension_rejects_active_r_pair_mismatch():
+    wbo_r = np.zeros((3, 3))
+    wbo_r[1, 2] = wbo_r[2, 1] = 1.0
+    wbo_r[0, 2] = wbo_r[2, 0] = 0.6
     g_r = build_graph(["C", "C", "O"], wbo_r, bond_cut=0.5)
 
     wbo_p = np.zeros((3, 3))

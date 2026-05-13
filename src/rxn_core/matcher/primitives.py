@@ -19,9 +19,9 @@ def _edge_wbo(g, a, b):
 def _growth_edge_supported(w_R, w_P, iso_tol):
     """Compatibility for the popped growth edge.
 
-    The popped edge is not special chemically; it is one entry in the same
-    complete weighted WBO vector checked for every fragment atom.  Keep this
-    helper only so trace/debug paths share the exact same tolerance policy.
+    The popped edge is not special chemically; it is one active R-side pair in
+    the weighted WBO vector checked during extension.  Keep this helper only so
+    trace/debug paths share the exact same tolerance policy.
     """
     return abs(float(w_R) - float(w_P)) <= iso_tol
 

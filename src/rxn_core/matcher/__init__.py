@@ -1,7 +1,7 @@
 """Symmetry-aware WBO graph matching internals.
 
 The package is intentionally split by responsibility:
-- primitives: complete-WBO access and tolerance primitives
+- primitives: WBO access and tolerance primitives
 - orbits: exact nauty orbit grouping plus WL fallback/debug helper
 - state: _SymCand/_SymBlock compressed matching state
 - support: witness search inside unresolved symmetry blocks

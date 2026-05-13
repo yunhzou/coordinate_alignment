@@ -81,8 +81,9 @@ def _extend_sym_cands(
         derives the inverse internally only to prevent reusing locked P atoms;
         merge extension checks the pre-locked image of `n`.
     iso_tol
-        Complete-WBO tolerance.  For every atom `u` in the old fragment, a
-        proposed image `n -> v` is valid only if some supported witness satisfies
+        Active R-pair WBO tolerance.  For every atom `u` in the old fragment
+        with an active R-side graph edge to `n`, a proposed image `n -> v` is
+        valid only if some supported witness satisfies
         `abs(WBO_R[n,u] - WBO_P[v,image(u)]) <= iso_tol`.
     islands_R
         Locked-island labels for R atoms.  If `n` is already mapped and belongs
@@ -90,8 +91,8 @@ def _extend_sym_cands(
         island, not just one atom.
     p_orbits, r_orbits
         Symmetry orbit maps, usually from `_nauty_orbits(..., wbo_tol=0.2)`.
-        They are compression keys only; complete-WBO validity is still checked
-        by `iso_tol`.
+        They are compression keys only; active R-pair validity is still checked
+        against exact WBO values by `iso_tol`.
     deferred_edges
         Previously failed frontier edges kept as one-hop boundary evidence for
         dedupe.  They are not chemistry cuts and are not removed from the WBO
@@ -221,8 +222,8 @@ def _strict_growth_wbos(
 ) -> dict[Node, Wbo]:
     """Exact WBO for the heap edge that triggered this extension.
 
-    The heap edge is not a special chemistry rule.  It is still one entry in
-    the complete WBO vector.  Keeping it explicit makes traces and support
+    The heap edge is not a special chemistry rule.  It is one active R-side
+    pair in the extension vector.  Keeping it explicit makes traces and support
     checks use the exact value popped from the heap.
     """
     if anchor_u is None or anchor_u not in fragment_old:
@@ -231,6 +232,20 @@ def _strict_growth_wbos(
         anchor_u: _edge_wbo(g_R, anchor_u, n)
         if anchor_wbo is None else anchor_wbo
     }
+
+
+def _active_fragment_neighbors(
+    fragment_old: set[Node],
+    g_R,
+    n: Node,
+) -> tuple[Node, ...]:
+    """Fragment atoms whose R-side pair to ``n`` is in the active graph.
+
+    Extension growth is local on the R graph.  The validity vector is therefore
+    scoped to active R-side pairs, rather than every zero-WBO pair to the
+    current fragment.
+    """
+    return tuple(sorted(u for u in fragment_old if g_R.has_edge(u, n)))
 
 
 def _make_extension_context(
@@ -249,7 +264,7 @@ def _make_extension_context(
     dedupe_edges: Iterable[EdgeKey] | None,
 ) -> _ExtensionContext | None:
     """Collect repeated extension inputs into one typed context."""
-    bonded_in_frag = tuple(sorted(fragment_old))
+    bonded_in_frag = _active_fragment_neighbors(fragment_old, g_R, n)
     if not bonded_in_frag:
         return None
     locked_p_atoms = frozenset(mapping.values())
@@ -314,9 +329,9 @@ def _supported_value(
 ) -> Support | None:
     """Return support assignments proving ``ctx.n -> v`` is valid.
 
-    This is where complete-WBO validity enters the extension step.  The helper
-    searches inside unresolved symmetry blocks instead of trusting the stored
-    witness, so an arbitrary witness cannot incorrectly reject a valid
+    This is where active R-pair WBO validity enters the extension step.  The
+    helper searches inside unresolved symmetry blocks instead of trusting the
+    stored witness, so an arbitrary witness cannot incorrectly reject a valid
     correlated assignment.
     """
     return _support_witness_for_value(
@@ -358,6 +373,8 @@ def _island_merge_wbo_consistent(cand: _SymCand, ctx: _ExtensionContext) -> bool
             if r2 == r:
                 continue
             if r >= r2 and r2 in ctx.island_atoms:
+                continue
+            if not ctx.g_R.has_edge(r, r2):
                 continue
             w_r = _edge_wbo(ctx.g_R, r, r2)
             p, p2 = base[r], base[r2]

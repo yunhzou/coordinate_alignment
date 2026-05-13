@@ -24,7 +24,7 @@ from .chemistry_computations import parse_xyz, run_xtb, write_xyz_str
 def build_graph(elements, wbo, bond_cut=0.5):
     """Connectivity graph with element on each node and WBO weight on each
     edge. Bond exists iff WBO >= bond_cut; the full WBO matrix is retained on
-    the graph so match validity can use complete weighted-pair comparisons."""
+    the graph so scoring and trace diagnostics can inspect exact WBO values."""
     g = nx.Graph()
     g.graph["wbo_matrix"] = np.asarray(wbo, dtype=float)
     for i, e in enumerate(elements):

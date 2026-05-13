@@ -23,7 +23,8 @@ def _r_compatible_with_block(cand, block_idx, n, fragment, g_R, r_orbits):
     def rel_sig(r):
         out = []
         for x in outside:
-            out.append((x, _wbo_bucket(_edge_wbo(g_R, r, x))))
+            if g_R.has_edge(r, x):
+                out.append((x, _wbo_bucket(_edge_wbo(g_R, r, x))))
         return tuple(out)
 
     n_sig = rel_sig(n)

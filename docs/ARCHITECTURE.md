@@ -69,7 +69,7 @@ Files:
 - `matcher/orbits.py`: exact pynauty orbit grouping on 0.2-tolerance
   WBO-colored graphs, plus the old WL/color-refinement helper for fallback
   and comparison.
-- `matcher/primitives.py`: complete-WBO access and tolerance helpers.
+- `matcher/primitives.py`: WBO access and tolerance helpers.
 - `matcher/chemistry.py`: post-hoc chemistry-relevant symmetry expansion.
 
 This layer owns the central compression model:

@@ -135,7 +135,7 @@ def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
                       g_R, g_P, locked_mapping, iso_tol):
     """Per-candidate explanation of why extension to n_atom failed."""
     locked_p_atoms = set((locked_mapping or {}).values())
-    bonded = sorted(fragment)
+    bonded = sorted(u for u in fragment if g_R.has_edge(u, n_atom))
     n_el = g_R.nodes[n_atom]['element']
     r_wbos = [(u, _edge_wbo(g_R, u, n_atom)) for u in bonded]
     strict_r_wbos = {}

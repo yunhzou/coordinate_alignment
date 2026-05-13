@@ -333,7 +333,7 @@ def find_islands(g_R, g_P, seed_order,
     orbit_dedup: when True (default), pre-computes both g_R's and g_P's exact
     automorphism orbits on a 0.2-tolerance WBO-colored graph via pynauty.
     Used as the compression key for orbit-equivalence. Chemistry signatures
-    and complete-WBO extension checks remain the verifier.
+    and active R-pair extension checks remain the verifier.
 
     core_R: optional R atoms that define the scoring-relevant alignment.
     When supplied, branch dedup switches to exact core mapping as soon as

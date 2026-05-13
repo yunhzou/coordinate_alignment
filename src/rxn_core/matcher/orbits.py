@@ -120,8 +120,8 @@ def _nauty_orbits(g, wbo_tol=0.2):
     represented by absence of a subdivision vertex.
 
     ``pynauty`` does the exact automorphism calculation on that colored graph.
-    The WBO tolerance only controls bucket construction; the matcher still
-    performs its normal complete-WBO ``iso_tol`` validity checks.
+    The WBO tolerance only controls bucket construction; local extension still
+    performs its normal active R-pair ``iso_tol`` validity checks.
     """
     try:
         import pynauty
