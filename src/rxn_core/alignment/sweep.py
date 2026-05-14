@@ -7,7 +7,6 @@ the resulting witnesses by symmetry-canonical broken/formed bond signatures.
 from __future__ import annotations
 
 import multiprocessing as mp
-import signal
 
 from ..frag import build_graph, classify_bonds, expand_mapping
 from ..matcher import _nauty_orbits
@@ -73,8 +72,8 @@ def _pool_add(pool, sig, mapping, cuts):
 def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
                               p_orbits=None, r_orbits=None):
     stop_on_core = bool(core_R)
-    unit_timeout = float(cfg['unit_timeout'])
-    kwargs = dict(
+    return find_islands(
+        g_R, g_P, list(order),
         iso_tol=float(cfg['iso_tol']),
         max_branches=int(cfg['max_branches']),
         core_R=core_R,
@@ -82,20 +81,6 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         p_orbits=p_orbits,
         r_orbits=r_orbits,
     )
-    if unit_timeout <= 0 or not hasattr(signal, "SIGALRM"):
-        return find_islands(g_R, g_P, list(order), **kwargs)
-
-    def _raise_timeout(signum, frame):
-        raise TimeoutError("cut_sweep work unit timed out")
-
-    old_handler = signal.getsignal(signal.SIGALRM)
-    signal.signal(signal.SIGALRM, _raise_timeout)
-    signal.setitimer(signal.ITIMER_REAL, unit_timeout)
-    try:
-        return find_islands(g_R, g_P, list(order), **kwargs)
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0.0)
-        signal.signal(signal.SIGALRM, old_handler)
 
 
 def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
@@ -228,7 +213,7 @@ def cut_sweep(elR, wboR, elT, wboT, *,
               n_workers=None, core_R=None,
               cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
               n_seeds=3, max_branches=1_000_000,
-              chunksize=1, unit_timeout=0.0,
+              chunksize=1,
               symmetry_repair=True,
               symmetry_repair_min_changes=5,
               symmetry_repair_max_evals=20000):
@@ -252,7 +237,6 @@ def cut_sweep(elR, wboR, elT, wboT, *,
         'n_seeds': int(n_seeds),
         'max_branches': int(max_branches),
         'chunksize': int(chunksize),
-        'unit_timeout': float(unit_timeout),
         'symmetry_repair': bool(symmetry_repair),
         'symmetry_repair_min_changes': int(symmetry_repair_min_changes),
         'symmetry_repair_max_evals': int(symmetry_repair_max_evals),

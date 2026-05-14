@@ -52,7 +52,6 @@ N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both mo
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "5000"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
-UNIT_TIMEOUT = float(os.environ.get("BGCP_UNIT_TIMEOUT", "10"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 SYMMETRY_REPAIR = os.environ.get("BGCP_SYMMETRY_REPAIR", "1") != "0"
 SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANGES", "5"))
@@ -411,7 +410,6 @@ def process_step(step_name, inner_workers=0):
                              n_seeds=N_SEEDS_PER_RUN,
                              max_branches=VIEW_MAX_BRANCHES,
                              chunksize=CUTSWEEP_CHUNKSIZE,
-                             unit_timeout=UNIT_TIMEOUT,
                              symmetry_repair=SYMMETRY_REPAIR,
                              symmetry_repair_min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
                              symmetry_repair_max_evals=SYMMETRY_REPAIR_MAX_EVALS)
@@ -723,8 +721,7 @@ def main():
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL}, "
-              f"unit_timeout={UNIT_TIMEOUT}s)")
+              f"iso_tol={VIEW_ISO_TOL})")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=inner_workers)
             _record(i, rec)
@@ -752,8 +749,7 @@ def main():
               f"inner workers "
               f"(total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL}, "
-              f"unit_timeout={UNIT_TIMEOUT}s)")
+              f"iso_tol={VIEW_ISO_TOL})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(process_step, step, inner_workers): step

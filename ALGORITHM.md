@@ -469,9 +469,9 @@ core into product indexing.  The optional `max_candidates` cap defaults to
 `20000` in the BGCP script; hitting it is a diagnostic warning, not an
 expected path for elementary steps.
 
-This makes ranking symmetry/core based instead of full-bijection based.  The
-core `cut_sweep` default has no work-unit timeout; the BGCP script passes
-`BGCP_UNIT_TIMEOUT=10` seconds as a view-generation safety guard.
+This makes ranking symmetry/core based instead of full-bijection based.  R-P
+cut-sweep work is never skipped by a wall-clock timeout; slow cuts must finish
+or be stopped by the caller.
 
 R<->P work units also apply the bounded final symmetry repair by default
 (`BGCP_SYMMETRY_REPAIR=1`).  It can be disabled for debugging with
@@ -554,7 +554,6 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
-| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut/seed alignment attempt is skipped; set `0` to disable |
 | `BGCP_PARALLEL_MODE` | `auto` | pipeline scheduling mode: `auto`, `outer`, or `inner` |
 | `BGCP_AUTO_INNER_WORKERS` | `8` | target inner workers per concurrent step in auto mode |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep and TS endpoint timings |

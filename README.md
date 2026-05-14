@@ -149,7 +149,6 @@ you're doing.
 | `BGCP_CUT_FLOOR` | `0.2` | R-P sweep cuts every R edge at or above this WBO |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | per-work-unit branch guard for view generation |
-| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut/seed alignment attempt is skipped |
 | `BGCP_PARALLEL_MODE` | `auto` | env default for `--parallel-mode` |
 | `BGCP_AUTO_INNER_WORKERS` | `8` | env default for `--auto-inner-workers` |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
