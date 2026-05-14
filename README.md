@@ -148,7 +148,7 @@ you're doing.
 | `--limit` | none | first N cached steps |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P sweep cuts every R edge at or above this WBO |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP matching |
-| `BGCP_VIEW_MAX_BRANCHES` | `5000` | per-work-unit branch guard for view generation |
+| `BGCP_VIEW_MAX_BRANCHES` | `2000` | per-cut branch cap; a cut is discarded if any seed order reaches it |
 | `BGCP_PARALLEL_MODE` | `auto` | env default for `--parallel-mode` |
 | `BGCP_AUTO_INNER_WORKERS` | `8` | env default for `--auto-inner-workers` |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
@@ -171,7 +171,7 @@ The low-level pair aligner is `align_from_arrays(...)`; key kwargs:
 | `graph_floor` | `0.2` | min WBO to admit an edge into the alignment graph (lower = more weak/partial bonds survive) |
 | `iso_tol` | `1.0` | per-edge WBO match tolerance during subgraph iso (looser = more permissive matching at the reactive site, where bonds have changed) |
 | `n_seeds` | `3` | number of seed orderings explored for one match |
-| `max_branches` | `1_000_000` | per-pass branch cap; effectively no cap. A soft `[warn]` fires at ≥ 10 000 distinct branches in a single pass to surface pathologically symmetric inputs. |
+| `max_branches` | `1_000_000` | low-level branch cap for direct matching; R-P cut sweep defaults to `2000` and discards any cut whose seed order reaches the cap |
 | `min_lock_size` | `1` | minimum fragment size that can be locked during island growth |
 | `chirality` | `True` | score chirality violations as a tiebreaker between equally-mapped branches |
 | `dwbo_threshold` | `0.5` | (in `classify_bonds`) min |ΔWBO| to classify an edge as broken or formed; also gates "is wR even a real bond" since wP ≥ 0 |

@@ -20,6 +20,31 @@ from ..matcher import (
 SYM_REPAIR_MAX_EVALS = 20000
 
 
+class BranchLimitExceeded(RuntimeError):
+    """Raised when a seed order hits the live branch cap.
+
+    Sweep-cut uses this as a cut-level abort signal: if any seed order for a
+    cut reaches the cap, that cut is considered pathological and contributes
+    no mechanism witnesses.
+    """
+
+    def __init__(self, max_branches, *, seed=None, pass_no=None,
+                 branch_count=None, stage=None):
+        self.max_branches = int(max_branches)
+        self.seed = seed
+        self.pass_no = pass_no
+        self.branch_count = branch_count
+        self.stage = stage
+        msg = f"alignment branch cap hit: {branch_count}/{max_branches}"
+        if seed is not None:
+            msg += f" seed={seed}"
+        if pass_no is not None:
+            msg += f" pass={pass_no}"
+        if stage:
+            msg += f" stage={stage}"
+        super().__init__(msg)
+
+
 class _Branch:
     __slots__ = ('mapping', 'islands_R', 'islands_P', 'next_iid',
                  'deferred_edges', 'symmetry_fragments')
@@ -324,7 +349,8 @@ def find_islands(g_R, g_P, seed_order,
                  max_branches=1_000_000, events=None,
                  orbit_dedup=True, core_R=None,
                  stop_when_core_mapped=False,
-                 p_orbits=None, r_orbits=None):
+                 p_orbits=None, r_orbits=None,
+                 abort_on_branch_cap=False):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
 
@@ -381,6 +407,27 @@ def find_islands(g_R, g_P, seed_order,
             deferred_boundary,
         )
 
+    def _hit_branch_cap(count, seed, stage):
+        if not abort_on_branch_cap:
+            return
+        if events is not None:
+            events.append({
+                'type': 'done',
+                'mapped': len(branches[0].mapping) if branches else 0,
+                'stop_reason': 'branch_cap',
+                'max_branches': int(max_branches),
+                'branches': int(count),
+                'seed': int(seed) if seed is not None else None,
+                'stage': stage,
+            })
+        raise BranchLimitExceeded(
+            max_branches,
+            seed=int(seed) if seed is not None else None,
+            pass_no=pass_no,
+            branch_count=int(count),
+            stage=stage,
+        )
+
     while progressed:
         progressed = False
         pass_no += 1
@@ -401,6 +448,7 @@ def find_islands(g_R, g_P, seed_order,
 
             for bi, b in enumerate(branches):
                 if len(new_branches) >= max_branches:
+                    _hit_branch_cap(len(new_branches), seed, 'pre_branch_loop')
                     break
                 if stop_when_core_mapped and _core_complete(b.mapping):
                     _append_pending(b)
@@ -436,6 +484,7 @@ def find_islands(g_R, g_P, seed_order,
                 deduped_isos = list(seen_state.values())
                 for ii, iso in enumerate(deduped_isos):
                     if len(new_branches) >= max_branches:
+                        _hit_branch_cap(len(new_branches), seed, 'island_fork')
                         break
                     b2 = b.fork()
                     b2.commit(iso, g_R,
@@ -455,6 +504,7 @@ def find_islands(g_R, g_P, seed_order,
                 seen.add(state_sig)
                 uniq.append(b)
                 if len(uniq) >= max_branches:
+                    _hit_branch_cap(len(uniq), seed, 'cross_branch_dedupe')
                     break
             branches = uniq
             # Soft warning: pathological symmetry can blow this up. Default

@@ -6,17 +6,22 @@
     "best_broken": 2,
     "best_formed": 3,
     "best_seed": 0,
-    "best_branch": 0,
-    "n_candidates": 6,
-    "elapsed_s": 15.218,
+    "best_branch": 1,
+    "n_candidates": 9,
+    "elapsed_s": 7.143,
     "counts": [
       {
         "broken": 2,
         "formed": 3,
         "count": 6
+      },
+      {
+        "broken": 4,
+        "formed": 4,
+        "count": 3
       }
     ],
-    "events": 243
+    "events": 235
   },
   {
     "step": "pr14_alkene",
@@ -27,7 +32,7 @@
     "best_seed": 0,
     "best_branch": 0,
     "n_candidates": 3,
-    "elapsed_s": 7.129,
+    "elapsed_s": 2.408,
     "counts": [
       {
         "broken": 0,
@@ -35,7 +40,7 @@
         "count": 3
       }
     ],
-    "events": 227
+    "events": 235
   },
   {
     "step": "pr7_ts910",
@@ -46,7 +51,7 @@
     "best_seed": 0,
     "best_branch": 0,
     "n_candidates": 6,
-    "elapsed_s": 0.119,
+    "elapsed_s": 0.102,
     "counts": [
       {
         "broken": 2,
@@ -61,29 +66,29 @@
     "target": "R-GT",
     "path": "/Users/yunhengz/codex_AAM/rxn_core/notebooks/alignment_traces/pr7_ts910_R_GT_alignment_trace.html",
     "best_broken": 2,
-    "best_formed": 2,
+    "best_formed": 1,
     "best_seed": 1,
     "best_branch": 0,
-    "n_candidates": 15,
-    "elapsed_s": 0.221,
+    "n_candidates": 4,
+    "elapsed_s": 0.078,
     "counts": [
       {
         "broken": 2,
-        "formed": 2,
+        "formed": 1,
         "count": 2
       },
       {
-        "broken": 3,
-        "formed": 3,
+        "broken": 8,
+        "formed": 7,
         "count": 1
       },
       {
         "broken": 9,
-        "formed": 9,
-        "count": 12
+        "formed": 8,
+        "count": 1
       }
     ],
-    "events": 75
+    "events": 65
   },
   {
     "step": "pr17_ts6a",
@@ -94,7 +99,7 @@
     "best_seed": 0,
     "best_branch": 0,
     "n_candidates": 3,
-    "elapsed_s": 5.919,
+    "elapsed_s": 4.787,
     "counts": [
       {
         "broken": 1,
@@ -102,7 +107,7 @@
         "count": 3
       }
     ],
-    "events": 298
+    "events": 377
   },
   {
     "step": "pr17_ts6a",
@@ -113,7 +118,7 @@
     "best_seed": 0,
     "best_branch": 0,
     "n_candidates": 3,
-    "elapsed_s": 6.36,
+    "elapsed_s": 4.188,
     "counts": [
       {
         "broken": 0,

@@ -10,7 +10,12 @@ import multiprocessing as mp
 
 from ..frag import build_graph, classify_bonds, expand_mapping
 from ..matcher import _nauty_orbits
-from .branch import _generate_seed_orders, find_islands, symmetry_repair_mapping
+from .branch import (
+    BranchLimitExceeded,
+    _generate_seed_orders,
+    find_islands,
+    symmetry_repair_mapping,
+)
 
 
 def _canon_pair(a, b):
@@ -76,6 +81,7 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         g_R, g_P, list(order),
         iso_tol=float(cfg['iso_tol']),
         max_branches=int(cfg['max_branches']),
+        abort_on_branch_cap=bool(cfg.get('abort_on_branch_cap', False)),
         core_R=core_R,
         stop_when_core_mapped=stop_on_core,
         p_orbits=p_orbits,
@@ -130,25 +136,33 @@ def _cs_wrun(args):
     r_orbits_cut = _nauty_orbits(g_R, wbo_tol=0.2)
 
     out = []
-    for order in orders:
-        try:
-            branches = _run_find_islands_limited(
-                g_R, _WORKER['g_P'], order, core_R, cfg,
-                p_orbits=_WORKER['p_orbits'],
-                r_orbits=r_orbits_cut)
-        except Exception:
-            continue
-        for branch in branches:
-            mapping = expand_mapping(dict(branch.mapping), g_R, _WORKER['g_P'])
-            scored = _score_branch_mapping(
-                mapping, g_R, _WORKER['g_P'],
-                _WORKER['wboR'], _WORKER['wboT'],
-                _WORKER['g_R_full'], _WORKER['p_orbits'],
-                _WORKER['r_orbits'], core_R, cfg)
-            if scored is None:
+    try:
+        for order in orders:
+            try:
+                branches = _run_find_islands_limited(
+                    g_R, _WORKER['g_P'], order, core_R, cfg,
+                    p_orbits=_WORKER['p_orbits'],
+                    r_orbits=r_orbits_cut)
+            except BranchLimitExceeded:
+                raise
+            except Exception:
                 continue
-            sig, mapping = scored
-            out.append((sig, tuple(sorted(mapping.items())), cut))
+            for branch in branches:
+                mapping = expand_mapping(dict(branch.mapping), g_R, _WORKER['g_P'])
+                scored = _score_branch_mapping(
+                    mapping, g_R, _WORKER['g_P'],
+                    _WORKER['wboR'], _WORKER['wboT'],
+                    _WORKER['g_R_full'], _WORKER['p_orbits'],
+                    _WORKER['r_orbits'], core_R, cfg)
+                if scored is None:
+                    continue
+                sig, mapping = scored
+                out.append((sig, tuple(sorted(mapping.items())), cut))
+    except BranchLimitExceeded:
+        # Kill the whole cut.  Partial seed-order witnesses from this cut are
+        # deliberately discarded because the cut has entered a pathological
+        # outer-branch multiplication regime.
+        return []
     return out
 
 
@@ -168,22 +182,30 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
                 g_R.remove_edge(i, j)
         r_orbits_cut = _nauty_orbits(g_R, wbo_tol=0.2)
         orders = _generate_seed_orders(g_R, n_trials=int(cfg['n_seeds']))
-        for order in orders:
-            try:
-                branches = _run_find_islands_limited(
-                    g_R, g_P, order, core_R, cfg,
-                    p_orbits=p_orbits, r_orbits=r_orbits_cut)
-            except Exception:
-                continue
-            for branch in branches:
-                mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
-                scored = _score_branch_mapping(
-                    mapping, g_R, g_P, wboR, wboT, g_R_full,
-                    p_orbits, r_orbits, core_R, cfg)
-                if scored is None:
+        cut_hits = []
+        try:
+            for order in orders:
+                try:
+                    branches = _run_find_islands_limited(
+                        g_R, g_P, order, core_R, cfg,
+                        p_orbits=p_orbits, r_orbits=r_orbits_cut)
+                except BranchLimitExceeded:
+                    raise
+                except Exception:
                     continue
-                sig, mapping = scored
-                _pool_add(pool, sig, mapping, cuts)
+                for branch in branches:
+                    mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
+                    scored = _score_branch_mapping(
+                        mapping, g_R, g_P, wboR, wboT, g_R_full,
+                        p_orbits, r_orbits, core_R, cfg)
+                    if scored is None:
+                        continue
+                    sig, mapping = scored
+                    cut_hits.append((sig, mapping))
+        except BranchLimitExceeded:
+            return
+        for sig, mapping in cut_hits:
+            _pool_add(pool, sig, mapping, cuts)
 
     run(())
     for edge in strong:
@@ -212,7 +234,7 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
 def cut_sweep(elR, wboR, elT, wboT, *,
               n_workers=None, core_R=None,
               cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
-              n_seeds=3, max_branches=1_000_000,
+              n_seeds=3, max_branches=2000,
               chunksize=1,
               symmetry_repair=True,
               symmetry_repair_min_changes=5,
@@ -240,6 +262,7 @@ def cut_sweep(elR, wboR, elT, wboT, *,
         'symmetry_repair': bool(symmetry_repair),
         'symmetry_repair_min_changes': int(symmetry_repair_min_changes),
         'symmetry_repair_max_evals': int(symmetry_repair_max_evals),
+        'abort_on_branch_cap': True,
         'n_atoms': len(elR),
     }
     core_R = tuple(sorted(set(core_R or ())))

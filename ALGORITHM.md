@@ -343,7 +343,8 @@ for each seed while progress is possible:
                 fork one branch per remaining iso
 
     dedup live branches by mechanism-state plus deferred boundary
-    enforce max_branches
+    enforce max_branches; in R-P cut sweep, hitting the cap discards the
+    whole cut rather than keeping a truncated branch set
 ```
 
 This branch dedupe is a mechanism-state dedupe, not a concrete bijection
@@ -549,8 +550,8 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `graph_floor` | `0.2` | threshold for active R/P graph edges used by frontier growth and local iso validity |
 | `iso_tol` | `1.0` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
-| `max_branches` | `1_000_000` | live branch cap in core alignment |
-| `BGCP_VIEW_MAX_BRANCHES` | `5000` | branch cap used by full BGCP view generation |
+| `max_branches` | `1_000_000` | live branch cap for direct low-level matching |
+| `BGCP_VIEW_MAX_BRANCHES` | `2000` | R-P cut-sweep branch cap; a cut is discarded if any seed order reaches it |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
