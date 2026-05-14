@@ -67,6 +67,8 @@ AUTO_INNER_WORKERS = int(os.environ.get("BGCP_AUTO_INNER_WORKERS", "8"))
 XTB_CACHE_MODE = os.environ.get("BGCP_XTB_MODE", "auto").lower()
 XTB_OMP_THREADS = os.environ.get("BGCP_XTB_OMP_THREADS", "auto")
 XTB_MAX_THREADS = int(os.environ.get("BGCP_XTB_MAX_THREADS", "8"))
+XTB_CHARGE = int(os.environ.get("BGCP_CHARGE", "0"))
+XTB_MULTIPLICITY = int(os.environ.get("BGCP_MULTIPLICITY", "1"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -81,6 +83,22 @@ def _resolve_xtb_threads(threads=None, max_threads=XTB_MAX_THREADS):
     else:
         requested = int(raw)
     return max(1, min(max(1, requested), max(1, int(max_threads))))
+
+
+def _normal_multiplicity(multiplicity):
+    multiplicity = int(multiplicity)
+    if multiplicity < 1:
+        raise ValueError("multiplicity must be >= 1")
+    return multiplicity
+
+
+def _xtb_charge_uhf(charge=None, multiplicity=None):
+    charge = XTB_CHARGE if charge is None else int(charge)
+    multiplicity = (
+        _normal_multiplicity(XTB_MULTIPLICITY) if multiplicity is None
+        else _normal_multiplicity(multiplicity)
+    )
+    return charge, multiplicity - 1
 
 
 def _xyz_path(d, include_xtbhess=False):
@@ -115,7 +133,8 @@ def _need_xtb(kind, path, xtb_mode=None):
             f"missing {kind} cache at {path}, and xtb is not on PATH")
 
 
-def _ensure_sp_cache(d, label, xyz_fallback=None, xtb_mode=None):
+def _ensure_sp_cache(d, label, xyz_fallback=None, xtb_mode=None,
+                     charge=None, multiplicity=None):
     """Ensure one single-point cache directory has an XYZ and WBO file."""
     d = Path(d)
     local_xyz = _xyz_path(d)
@@ -135,11 +154,14 @@ def _ensure_sp_cache(d, label, xyz_fallback=None, xtb_mode=None):
         raise RuntimeError(f"missing {label} xyz in {d}")
     if not wbo.exists():
         _need_xtb(f"{label} single-point WBO", wbo, xtb_mode)
-        run_xtb(xyz, d, omp_threads=_resolve_xtb_threads())
+        chrg, uhf = _xtb_charge_uhf(charge, multiplicity)
+        run_xtb(xyz, d, charge=chrg, uhf=uhf,
+                omp_threads=_resolve_xtb_threads())
     return d
 
 
-def _ensure_hess_cache(hess_dir, label, xyz_fallback=None, xtb_mode=None):
+def _ensure_hess_cache(hess_dir, label, xyz_fallback=None, xtb_mode=None,
+                       charge=None, multiplicity=None):
     """Ensure one Hessian cache directory has g98.out.
 
     The hessian directory may contain its own XYZ. If not, the matching
@@ -154,8 +176,10 @@ def _ensure_hess_cache(hess_dir, label, xyz_fallback=None, xtb_mode=None):
         if xyz is None:
             raise RuntimeError(f"missing {label} hessian xyz in {hess_dir}")
         _need_xtb(f"{label} Hessian g98.out", g98, xtb_mode)
+        chrg, uhf = _xtb_charge_uhf(charge, multiplicity)
         run_xtb_hess(
-            xyz, hess_dir, omp_threads=_resolve_xtb_threads())
+            xyz, hess_dir, charge=chrg, uhf=uhf,
+            omp_threads=_resolve_xtb_threads())
     return parse_g98_modes(g98)
 
 
@@ -812,6 +836,7 @@ def process_step(step_name, inner_workers=0):
 
 def main():
     global INCLUDE_GT, XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
+    global XTB_CHARGE, XTB_MULTIPLICITY
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=_default_worker_count(),
                     help="Total CPU budget in auto mode, or outer step "
@@ -845,6 +870,14 @@ def main():
                     default=XTB_MAX_THREADS,
                     help="Hard cap for OMP_NUM_THREADS per xtb molecule. "
                          "Default from BGCP_XTB_MAX_THREADS=8.")
+    ap.add_argument("--charge", type=int, default=XTB_CHARGE,
+                    help="Total molecular charge used only when auto-filling "
+                         "missing xtb caches. Default from BGCP_CHARGE=0.")
+    ap.add_argument("--multiplicity", type=int, default=XTB_MULTIPLICITY,
+                    help="Spin multiplicity used only when auto-filling "
+                         "missing xtb caches. Converted internally to "
+                         "xtb --uhf=multiplicity-1. Default from "
+                         "BGCP_MULTIPLICITY=1.")
     ap.add_argument("--include-gt", action="store_true",
                     default=INCLUDE_GT,
                     help="Load and score sp_groundtruth/hess_groundtruth. "
@@ -856,12 +889,16 @@ def main():
     XTB_CACHE_MODE = _normal_xtb_mode(args.xtb_mode)
     INCLUDE_GT = bool(args.include_gt)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
+    XTB_CHARGE = int(args.charge)
+    XTB_MULTIPLICITY = _normal_multiplicity(args.multiplicity)
     XTB_OMP_THREADS = _resolve_xtb_threads(
         args.xtb_omp_threads, XTB_MAX_THREADS)
     os.environ["BGCP_XTB_MODE"] = XTB_CACHE_MODE
     os.environ["BGCP_INCLUDE_GT"] = "1" if INCLUDE_GT else "0"
     os.environ["BGCP_XTB_OMP_THREADS"] = str(XTB_OMP_THREADS)
     os.environ["BGCP_XTB_MAX_THREADS"] = str(XTB_MAX_THREADS)
+    os.environ["BGCP_CHARGE"] = str(XTB_CHARGE)
+    os.environ["BGCP_MULTIPLICITY"] = str(XTB_MULTIPLICITY)
 
     if not WORK.exists():
         print(f"No work directory: {WORK}")
@@ -912,7 +949,8 @@ def main():
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS}, include_gt={INCLUDE_GT})")
+              f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
+              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=inner_workers)
             _record(i, rec)
@@ -923,7 +961,8 @@ def main():
         print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
               f"(legacy serial inner work inside each step, "
               f"xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS}, include_gt={INCLUDE_GT})")
+              f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
+              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         with mp.Pool(worker_budget) as pool:
             for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
                 _record(i, rec)
@@ -943,7 +982,8 @@ def main():
               f"(total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS}, include_gt={INCLUDE_GT})")
+              f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
+              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(process_step, step, inner_workers): step

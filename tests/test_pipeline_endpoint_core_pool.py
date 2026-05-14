@@ -59,8 +59,8 @@ def test_sp_cache_auto_runs_xtb_for_missing_wbo(tmp_path, monkeypatch):
     (cache / "r.xyz").write_text("2\nR\nH 0 0 0\nH 0 0 1\n")
     calls = []
 
-    def fake_run_xtb(xyz_path, workdir, omp_threads=1):
-        calls.append((xyz_path, workdir, omp_threads))
+    def fake_run_xtb(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        calls.append((xyz_path, workdir, charge, uhf, omp_threads))
         (workdir / "wbo").write_text("1 2 0.900\n")
 
     monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
@@ -68,8 +68,53 @@ def test_sp_cache_auto_runs_xtb_for_missing_wbo(tmp_path, monkeypatch):
 
     pipeline._ensure_sp_cache(cache, "R", xtb_mode="auto")
 
-    assert calls == [(cache / "r.xyz", cache, 8)]
+    assert calls == [(cache / "r.xyz", cache, 0, 0, 8)]
     assert (cache / "wbo").exists()
+
+
+def test_sp_cache_auto_uses_charge_and_multiplicity(tmp_path, monkeypatch):
+    cache = tmp_path / "R"
+    cache.mkdir()
+    (cache / "r.xyz").write_text("1\nR\nH 0 0 0\n")
+    calls = []
+
+    def fake_run_xtb(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        calls.append((charge, uhf))
+        (workdir / "wbo").write_text("")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb", fake_run_xtb)
+
+    pipeline._ensure_sp_cache(
+        cache, "R", xtb_mode="auto", charge=-1, multiplicity=4)
+
+    assert calls == [(-1, 3)]
+
+
+def test_hess_cache_auto_uses_charge_and_multiplicity(tmp_path, monkeypatch):
+    hess = tmp_path / "hess_iter1"
+    hess.mkdir()
+    (hess / "ts.xyz").write_text("1\nTS\nH 0 0 0\n")
+    calls = []
+
+    def fake_run_xtb_hess(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        calls.append((charge, uhf))
+        (workdir / "g98.out").write_text("fake")
+        (workdir / "wbo").write_text("")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb_hess", fake_run_xtb_hess)
+    monkeypatch.setattr(pipeline, "parse_g98_modes", lambda path: ([], []))
+
+    pipeline._ensure_hess_cache(
+        hess, "iter1", xtb_mode="auto", charge=2, multiplicity=2)
+
+    assert calls == [(2, 1)]
+
+
+def test_multiplicity_must_be_positive():
+    with pytest.raises(ValueError, match="multiplicity"):
+        pipeline._xtb_charge_uhf(0, 0)
 
 
 def test_sp_cache_can_copy_xyz_fallback_without_xtb(tmp_path):

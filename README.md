@@ -42,6 +42,9 @@ rxn-core-pipeline --steps pr7.V.dodh_ts910 --xtb-mode cache-only
 
 # Include ground-truth TS scoring when GT cache directories are available
 rxn-core-pipeline --steps pr7.V.dodh_ts910 --include-gt
+
+# When auto-filling missing xtb caches for an open-shell/charged system
+rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 ```
 
 ## Inputs
@@ -78,7 +81,9 @@ By default `rxn-core-pipeline` runs in `BGCP_XTB_MODE=auto`: if an expected
 `xtb` on `PATH` and fills the missing cache with `xtb --sp` or `xtb --hess`.
 Use `BGCP_XTB_MODE=cache-only` or `--xtb-mode cache-only` to fail fast instead.
 Each xtb subprocess uses `OMP_NUM_THREADS` capped by `BGCP_XTB_MAX_THREADS=8`
-by default.
+by default. The cache-fill input uses molecular `charge` and spin
+`multiplicity`; the xtb adapter converts multiplicity to
+`--uhf=multiplicity-1` internally.
 
 ## Outputs
 
@@ -141,6 +146,8 @@ ALGORITHM.md              algorithm details
 | `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
 | `BGCP_XTB_OMP_THREADS` | `auto` | requested OMP threads for each xtb molecule |
 | `BGCP_XTB_MAX_THREADS` | `8` | hard cap on OMP threads for each xtb molecule |
+| `BGCP_CHARGE` | `0` | molecular charge used when auto-filling missing xtb caches |
+| `BGCP_MULTIPLICITY` | `1` | spin multiplicity used when auto-filling missing xtb caches |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
 
 CLI scheduling options:
@@ -153,6 +160,8 @@ CLI scheduling options:
 --xtb-mode             auto | cache-only
 --xtb-omp-threads      requested OMP_NUM_THREADS per xtb molecule
 --xtb-max-threads      hard cap on OMP_NUM_THREADS per xtb molecule
+--charge               molecular charge for auto xtb cache-fill
+--multiplicity         spin multiplicity for auto xtb cache-fill
 --include-gt           load and score optional GT cache directories
 --steps                explicit cached step names
 --limit                first N cached steps

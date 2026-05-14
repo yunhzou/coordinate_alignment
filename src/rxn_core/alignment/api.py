@@ -180,16 +180,21 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
 
 
 def analyze_alignment(reactant_xyz, product_xyz, workdir,
-                      charge=0, uhf=0,
+                      charge=0, multiplicity=1,
                       graph_floor=0.2, iso_tol=1.0,
                       dwbo_threshold=0.5,
                       n_seeds=3, max_branches=1_000_000,
                       chirality=True,
                       return_all=False):
     """Run xtb on R and P, build graphs, align, and score by mechanism."""
+    if int(multiplicity) < 1:
+        raise ValueError("multiplicity must be >= 1")
+    xtb_uhf = int(multiplicity) - 1
     workdir = Path(workdir)
-    elR, xyzR, wboR = run_xtb(reactant_xyz, workdir / "R", charge=charge, uhf=uhf)
-    elP, xyzP, wboP = run_xtb(product_xyz, workdir / "P", charge=charge, uhf=uhf)
+    elR, xyzR, wboR = run_xtb(
+        reactant_xyz, workdir / "R", charge=charge, uhf=xtb_uhf)
+    elP, xyzP, wboP = run_xtb(
+        product_xyz, workdir / "P", charge=charge, uhf=xtb_uhf)
     return align_from_arrays(
         elR, xyzR, wboR, elP, xyzP, wboP,
         graph_floor=graph_floor, iso_tol=iso_tol,
