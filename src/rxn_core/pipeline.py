@@ -55,6 +55,9 @@ VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "100"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
+INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
+    "1", "true", "yes", "on"
+}
 SYMMETRY_REPAIR = os.environ.get("BGCP_SYMMETRY_REPAIR", "1") != "0"
 SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANGES", "5"))
 SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS", "20000"))
@@ -443,6 +446,7 @@ def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
 
 HTML = r"""<!doctype html><html><head><meta charset="utf-8"><title>{title}</title>
 <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 html,body{{margin:0;padding:0;font-family:-apple-system,sans-serif;background:#fafafa}}
 body{{padding:14px;box-sizing:border-box}}
@@ -451,6 +455,7 @@ h2{{margin:0 0 4px;font-size:18px}}
 .mech-sel button{{padding:6px 12px;margin-right:6px;border:1px solid #aaa;background:#f0f0f0;border-radius:4px;cursor:pointer;font-family:ui-monospace,monospace;font-size:12px}}
 .mech-sel button.active{{background:#ffd700;border-color:#a90;font-weight:600}}
 .ref-row{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}}
+.ref-row.no-gt{{grid-template-columns:repeat(2,1fr)}}
 .ig-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}
 .panel{{background:white;border:1px solid #ddd;border-radius:6px;padding:6px 8px 8px}}
 .panel.top2{{border:2px solid #d4af37}}
@@ -458,6 +463,8 @@ h2{{margin:0 0 4px;font-size:18px}}
 .ph{{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px}}
 .ph .lbl{{font-weight:600;font-size:13px}}
 .ph .rk{{font-family:ui-monospace,monospace;color:#024}}
+.dl{{padding:3px 7px;margin-left:6px;border:1px solid #aaa;background:#fff;border-radius:4px;cursor:pointer;font-family:ui-monospace,monospace;font-size:11px;color:#024}}
+.dl:hover{{background:#eef}}
 .vw{{position:relative;width:100%;height:230px}}
 .ref-row .vw{{height:300px}}
 .vwbox{{position:absolute;inset:0}}
@@ -466,12 +473,12 @@ h2{{margin:0 0 4px;font-size:18px}}
 </style></head><body>
 <h2>{title}</h2>
 <div class="mech-sel" id="mech-sel"></div>
-<div class="ref-row">
-  <div class="panel"><div class="ph"><span class="lbl">Reactant</span><span class="rk">static</span></div>
+<div class="ref-row" id="ref-row">
+  <div class="panel"><div class="ph"><span class="lbl">Reactant</span><span class="rk">static <button class="dl" onclick="downloadR()">XYZ</button></span></div>
     <div class="vw"><div id="vw_R" class="vwbox"></div></div></div>
-  <div class="panel"><div class="ph"><span class="lbl">Product</span><span class="rk" id="prod_label">static</span></div>
+  <div class="panel"><div class="ph"><span class="lbl">Product</span><span class="rk" id="prod_label">static <button class="dl" onclick="downloadP()">XYZ</button></span></div>
     <div class="vw"><div id="vw_P" class="vwbox"></div></div></div>
-  <div class="panel"><div class="ph"><span class="lbl">Ground-truth TS</span><span class="rk" id="gt_S">S=?</span></div>
+  <div class="panel" id="gt_panel"><div class="ph"><span class="lbl">Ground-truth TS</span><span class="rk" id="gt_S">S=? <button class="dl" onclick="downloadGT()">XYZ</button></span></div>
     <div class="vw"><div id="vw_GT" class="vwbox"></div></div>
     <div class="meta" id="gt_meta"></div></div>
 </div>
@@ -482,17 +489,27 @@ let currentMechId = DATA.default_mech_id;
 const elements = DATA.reactant.elements;
 const xyzR_static = DATA.reactant.coords;
 function findMech(id) {{ return DATA.mechanisms.find(m=>m.id===id); }}
-function buildBody(els, xyz) {{ let s = els.length+"\nframe\n"; for (let i=0;i<xyz.length;i++) s += els[i]+"  "+xyz[i][0].toFixed(6)+"  "+xyz[i][1].toFixed(6)+"  "+xyz[i][2].toFixed(6)+"\n"; return s; }}
-function buildBodyAt(els, xyz, disp, scale) {{ let s = els.length+"\nframe\n"; for (let i=0;i<xyz.length;i++) {{ const x=xyz[i][0]+scale*disp[i][0], y=xyz[i][1]+scale*disp[i][1], z=xyz[i][2]+scale*disp[i][2]; s += els[i]+"  "+x.toFixed(6)+"  "+y.toFixed(6)+"  "+z.toFixed(6)+"\n"; }} return s; }}
+function xyzText(els, xyz, comment) {{ let s = els.length+"\n"+(comment||"frame")+"\n"; for (let i=0;i<xyz.length;i++) s += els[i]+"  "+xyz[i][0].toFixed(6)+"  "+xyz[i][1].toFixed(6)+"  "+xyz[i][2].toFixed(6)+"\n"; return s; }}
+function buildBody(els, xyz) {{ return xyzText(els, xyz, "frame"); }}
+function buildBodyAt(els, xyz, disp, scale) {{ let out = []; for (let i=0;i<xyz.length;i++) {{ const x=xyz[i][0]+scale*disp[i][0], y=xyz[i][1]+scale*disp[i][1], z=xyz[i][2]+scale*disp[i][2]; out.push([x,y,z]); }} return xyzText(els, out, "frame"); }}
 function xyzAt(xyz, disp, scale) {{ return xyz.map((p,i)=>[p[0]+scale*disp[i][0], p[1]+scale*disp[i][1], p[2]+scale*disp[i][2]]); }}
+function safeName(s) {{ return String(s).replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "") || "item"; }}
+function downloadBlob(name, blob) {{ const a = document.createElement("a"); const url = URL.createObjectURL(blob); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000); }}
+function downloadText(name, text) {{ downloadBlob(name, new Blob([text], {{type:"chemical/x-xyz"}})); }}
+function downloadXYZ(name, els, xyz, comment) {{ if (!els || !xyz) return; downloadText(name, xyzText(els, xyz, comment)); }}
+function downloadR() {{ downloadXYZ(safeName(DATA.step)+"_R.xyz", DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R"); }}
+function downloadP() {{ downloadXYZ(safeName(DATA.step)+"_P.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P"); }}
+function downloadGT() {{ const mech = findMech(currentMechId); if (mech.gt) downloadXYZ(safeName(DATA.step)+"_GT_mech"+mech.id+".xyz", mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, DATA.step+" GT mech "+mech.id); }}
+function downloadIG(ig) {{ downloadXYZ(safeName(DATA.step)+"_"+safeName(ig.label)+".xyz", ig.elements || elements, ig.xyz || ig.xyz_in_R, DATA.step+" "+ig.label); }}
+async function downloadZip() {{ const mech = findMech(currentMechId); if (typeof JSZip === "undefined") {{ alert("ZIP library is not loaded"); return; }} const root = safeName(DATA.step)+"_mech"+mech.id; const zip = new JSZip(); zip.file(root+"/R.xyz", xyzText(DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R")); zip.file(root+"/P.xyz", xyzText(DATA.product.elements, DATA.product.coords, DATA.step+" P")); if (mech.gt) zip.file(root+"/GT.xyz", xyzText(mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, DATA.step+" GT mech "+mech.id)); for (const ig of mech.igs || []) {{ const xyz = ig.xyz || ig.xyz_in_R; if (xyz) zip.file(root+"/IG/"+safeName(ig.label)+".xyz", xyzText(ig.elements || elements, xyz, DATA.step+" "+ig.label)); }} zip.file(root+"/mechanism.json", JSON.stringify({{step: DATA.step, mechanism_id: mech.id, label: mech.label, broken_R: mech.broken_bonds_R, formed_R: mech.formed_bonds_R, formed_P: mech.formed_bonds_P, gt: mech.gt ? {{S: mech.gt.S, beta: mech.gt.beta, rho: mech.gt.rho, kappa: mech.gt.kappa, freq: mech.gt.freq, n_imag: mech.gt.n_imag, core_map: mech.gt.core_map}} : null, igs: (mech.igs||[]).map(ig => ({{label: ig.label, S: ig.S, beta: ig.beta, rho: ig.rho, kappa: ig.kappa, freq: ig.freq, n_imag: ig.n_imag, core_map: ig.core_map}}))}}, null, 2)); const blob = await zip.generateAsync({{type:"blob"}}); downloadBlob(root+".zip", blob); }}
 const animTimers = {{}};
 function stopAnim(d) {{ if (animTimers[d]) {{ clearInterval(animTimers[d]); delete animTimers[d]; }} }}
 function drawBonds(v, xyz, pairs, color) {{ for (const [i,j] of pairs) {{ if (i>=xyz.length||j>=xyz.length) continue; v.addCylinder({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[j][0],y:xyz[j][1],z:xyz[j][2]}}, color:color, radius:0.16, dashed:true}}); }} }}
 function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!disp[i]) continue; const d = disp[i]; const len = Math.hypot(d[0],d[1],d[2]); if (len<0.05) continue; v.addArrow({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[i][0]+d[0]*1.5,y:xyz[i][1]+d[1]*1.5,z:xyz[i][2]+d[2]*1.5}}, color:'#0066cc', radius:0.07}}); }} }}
 function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); v.zoomTo(); v.render(); return v; }}
 function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); v.render(); }}, 60); return v; }}
-function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); makeStatic('vw_P', DATA.product.elements, DATA.product.coords, [], mech.formed_bonds_P || []); document.getElementById('prod_label').textContent = "static (mech #"+mech.id+")"; if (mech.gt && mech.gt.picked_disp) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').textContent = "S = "+mech.gt.S.toFixed(3); document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
-const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + "  GT S=" + (m.gt ? m.gt.S.toFixed(3) : '?'); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
+function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); makeStatic('vw_P', DATA.product.elements, DATA.product.coords, [], mech.formed_bonds_P || []); document.getElementById('prod_label').innerHTML = "static (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
+const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span><button class='dl' id='zipBtn'>ZIP</button>"; document.getElementById('zipBtn').onclick = downloadZip; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 window.addEventListener('load', render);
 </script>
 </body></html>
@@ -513,13 +530,16 @@ def process_step(step_name, inner_workers=0):
             return {"step": step_name, "error": f"missing step directory: {sd}"}
         elR, xyzR, wboR = _load_sp(sd / "R", "R")
         elP, xyzP, wboP = _load_sp(sd / "P", "P")
-        gt_sp = sd / "sp_groundtruth"
-        gt_hess = sd / "hess_groundtruth"
-        elT_gt, xyzT_gt, wboT_gt = _load_sp(
-            gt_sp, "GT",
-            xyz_fallback=_xyz_path(gt_hess, include_xtbhess=True))
-        freqs_gt, modes_gt = _load_hess(
-            gt_hess, "GT", xyz_fallback=_xyz_path(gt_sp))
+        if INCLUDE_GT:
+            gt_sp = sd / "sp_groundtruth"
+            gt_hess = sd / "hess_groundtruth"
+            elT_gt, xyzT_gt, wboT_gt = _load_sp(
+                gt_sp, "GT",
+                xyz_fallback=_xyz_path(gt_hess, include_xtbhess=True))
+            freqs_gt, modes_gt = _load_hess(
+                gt_hess, "GT", xyz_fallback=_xyz_path(gt_sp))
+        else:
+            elT_gt = xyzT_gt = wboT_gt = freqs_gt = modes_gt = None
 
         def timed_cut_sweep(label, elT, wboT, core_R=None):
             t_sweep = time.time()
@@ -661,8 +681,9 @@ def process_step(step_name, inner_workers=0):
                     'modes': modes,
                 })
 
-        register_target('gt', -1, 'GT',
-                        elT_gt, xyzT_gt, wboT_gt, freqs_gt, modes_gt)
+        if INCLUDE_GT:
+            register_target('gt', -1, 'GT',
+                            elT_gt, xyzT_gt, wboT_gt, freqs_gt, modes_gt)
 
         # IGs: enumerate mechanism-local core alternatives, then score under
         # each mechanism. Target loading stays serial and cheap; endpoint
@@ -680,7 +701,11 @@ def process_step(step_name, inner_workers=0):
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
             for mech in mechanisms:
-                mech['igs'].append({'label': label})
+                mech['igs'].append({
+                    'label': label,
+                    'elements': list(elI),
+                    'xyz': np.asarray(xyzI, float).tolist(),
+                })
             ig_index = len(mechanisms[0]['igs']) - 1
             register_target('ig', ig_index, label,
                             elI, xyzI, wboI, freqs_i, modes_i)
@@ -741,11 +766,17 @@ def process_step(step_name, inner_workers=0):
                 ig['is_union_top'] = ig['label'] in union_top
             del mech['_state']
 
-        default_id = max(mechanisms, key=lambda m: m['gt']['S'] if m['gt'] else 0)['id']
+        if INCLUDE_GT and any(m.get('gt') for m in mechanisms):
+            default_id = max(
+                mechanisms, key=lambda m: m['gt']['S'] if m['gt'] else 0
+            )['id']
+        else:
+            default_id = mechanisms[0]['id']
         data = {'step': step_name, 'n_atoms': len(elR),
                 'reactant': {'elements': elR, 'coords': np.asarray(xyzR).tolist()},
                 'product': {'elements': elP, 'coords': np.asarray(xyzP).tolist()},
-                'mechanisms': mechanisms, 'default_mech_id': default_id}
+                'mechanisms': mechanisms, 'default_mech_id': default_id,
+                'include_gt': bool(INCLUDE_GT)}
 
         run_dir = OUT_ROOT / step_name
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -755,6 +786,7 @@ def process_step(step_name, inner_workers=0):
         ))
         # stripped down for the eval JSON (no big xyz/disp arrays)
         slim = {'step': step_name, 'n_atoms': len(elR), 'n_mechs': len(mechanisms),
+                'include_gt': bool(INCLUDE_GT),
                 'mechanisms': []}
         for mech in mechanisms:
             slim['mechanisms'].append({
@@ -779,7 +811,7 @@ def process_step(step_name, inner_workers=0):
 
 
 def main():
-    global XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
+    global INCLUDE_GT, XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=_default_worker_count(),
                     help="Total CPU budget in auto mode, or outer step "
@@ -813,15 +845,21 @@ def main():
                     default=XTB_MAX_THREADS,
                     help="Hard cap for OMP_NUM_THREADS per xtb molecule. "
                          "Default from BGCP_XTB_MAX_THREADS=8.")
+    ap.add_argument("--include-gt", action="store_true",
+                    default=INCLUDE_GT,
+                    help="Load and score sp_groundtruth/hess_groundtruth. "
+                         "Default is off for benchmark runs without GT.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
 
     XTB_CACHE_MODE = _normal_xtb_mode(args.xtb_mode)
+    INCLUDE_GT = bool(args.include_gt)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
     XTB_OMP_THREADS = _resolve_xtb_threads(
         args.xtb_omp_threads, XTB_MAX_THREADS)
     os.environ["BGCP_XTB_MODE"] = XTB_CACHE_MODE
+    os.environ["BGCP_INCLUDE_GT"] = "1" if INCLUDE_GT else "0"
     os.environ["BGCP_XTB_OMP_THREADS"] = str(XTB_OMP_THREADS)
     os.environ["BGCP_XTB_MAX_THREADS"] = str(XTB_MAX_THREADS)
 
@@ -850,8 +888,12 @@ def main():
             eval_records.append({'step': rec['step'], 'error': rec['error']})
         else:
             slim = rec['slim']
-            gt_best = max((m['gt']['S'] for m in slim['mechanisms'] if m['gt']), default=0)
-            print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  mechs={slim['n_mechs']}  best_GT_S={gt_best:.3f}", flush=True)
+            gt_scores = [m['gt']['S'] for m in slim['mechanisms'] if m['gt']]
+            if gt_scores:
+                gt_msg = f"best_GT_S={max(gt_scores):.3f}"
+            else:
+                gt_msg = "GT=skipped"
+            print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  mechs={slim['n_mechs']}  {gt_msg}", flush=True)
             eval_records.append(slim)
             n_ok += 1
 
@@ -870,7 +912,7 @@ def main():
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS})")
+              f"xtb_threads={XTB_OMP_THREADS}, include_gt={INCLUDE_GT})")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=inner_workers)
             _record(i, rec)
@@ -881,7 +923,7 @@ def main():
         print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
               f"(legacy serial inner work inside each step, "
               f"xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS})")
+              f"xtb_threads={XTB_OMP_THREADS}, include_gt={INCLUDE_GT})")
         with mp.Pool(worker_budget) as pool:
             for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
                 _record(i, rec)
@@ -901,7 +943,7 @@ def main():
               f"(total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS})")
+              f"xtb_threads={XTB_OMP_THREADS}, include_gt={INCLUDE_GT})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(process_step, step, inner_workers): step

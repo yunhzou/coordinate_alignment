@@ -100,7 +100,7 @@ symmetry state. A block with two R atoms and four P atoms represents
   helpers now owned by `chemistry_computations`.
 - `pipeline.py`: BGCP cached full-view orchestration. It runs R-P
   `cut_sweep`, dedupes mechanisms by symmetry-canonical bond changes, runs
-  mechanism-local R/P endpoint `ts_core_pool` for GT/IG core alternatives,
+  mechanism-local R/P endpoint `ts_core_pool` for IG and optional GT core alternatives,
   scores normal modes, and writes the multi-mechanism viewer plus slim eval
   JSON.  Its default auto scheduler treats `--workers` as a total CPU budget
   and splits it between concurrent steps and each step's inner worker pool.

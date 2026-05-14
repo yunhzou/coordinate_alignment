@@ -2,9 +2,9 @@
 
 Symmetry-aware WBO graph alignment and BGCP transition-state ranking.
 
-The package discovers R-P mechanisms with sweep cut, aligns GT/IG transition
-states through mechanism-local core atoms, scores normal modes, and writes a
-self-contained HTML view per step.
+The package discovers R-P mechanisms with sweep cut, aligns IG transition
+states plus optional GT through mechanism-local core atoms, scores normal
+modes, and writes a self-contained HTML view per step.
 
 ## Install
 
@@ -39,6 +39,9 @@ BGCP_WORK=/path/to/xtb_frequency_calculations \
 
 # Forbid xtb execution and require all caches to already exist
 rxn-core-pipeline --steps pr7.V.dodh_ts910 --xtb-mode cache-only
+
+# Include ground-truth TS scoring when GT cache directories are available
+rxn-core-pipeline --steps pr7.V.dodh_ts910 --include-gt
 ```
 
 ## Inputs
@@ -49,8 +52,8 @@ The pipeline reads precomputed xtb cache directories. By default it looks in:
 data/xtb_frequency_calculations/<step>/
   R/                    reactant xyz + wbo
   P/                    product xyz + wbo
-  sp_groundtruth/       GT TS xyz + wbo
-  hess_groundtruth/     GT g98.out
+  sp_groundtruth/       optional GT TS xyz + wbo
+  hess_groundtruth/     optional GT g98.out
   sp_iter<N>/           IG xyz + wbo
   hess_iter<N>/         IG g98.out
 ```
@@ -65,6 +68,10 @@ pipeline does not merge separate per-fragment xtb outputs. The atom order only
 has to be internally consistent within each XYZ/WBO pair. R, P, GT, and IG
 files do not need to share the same atom order because alignment computes the
 cross-index mapping, but they must contain the same element composition.
+
+GT is optional and disabled by default. Pass `--include-gt` or set
+`BGCP_INCLUDE_GT=1` to load and score `sp_groundtruth/` plus
+`hess_groundtruth/`.
 
 By default `rxn-core-pipeline` runs in `BGCP_XTB_MODE=auto`: if an expected
 `wbo` or `g98.out` file is missing and an XYZ is available, it checks for
@@ -130,6 +137,7 @@ ALGORITHM.md              algorithm details
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `100` | per-cut branch cap; capped cuts are discarded |
 | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
+| `BGCP_INCLUDE_GT` | `0` | set to `1` to score ground-truth TS |
 | `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
 | `BGCP_XTB_OMP_THREADS` | `auto` | requested OMP threads for each xtb molecule |
 | `BGCP_XTB_MAX_THREADS` | `8` | hard cap on OMP threads for each xtb molecule |
@@ -145,6 +153,7 @@ CLI scheduling options:
 --xtb-mode             auto | cache-only
 --xtb-omp-threads      requested OMP_NUM_THREADS per xtb molecule
 --xtb-max-threads      hard cap on OMP_NUM_THREADS per xtb molecule
+--include-gt           load and score optional GT cache directories
 --steps                explicit cached step names
 --limit                first N cached steps
 ```
