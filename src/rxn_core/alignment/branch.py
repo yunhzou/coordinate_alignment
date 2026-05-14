@@ -184,7 +184,7 @@ def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
 
 def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
                             dwbo_threshold=0.5, bond_floor=0.2,
-                            min_changes=5, full_permutation_size=6,
+                            min_changes=1, full_permutation_size=6,
                             max_evals=SYM_REPAIR_MAX_EVALS,
                             return_stats=False):
     """Choose the best concrete realization inside product symmetry orbits.
@@ -209,7 +209,10 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
         'evaluated': 0,
         'capped': False,
     }
-    if base_changes < min_changes:
+    # This is a computational guard only.  Any nonzero changed-bond witness may
+    # be an arbitrary representative artifact, so the default is to attempt
+    # repair for every nonzero case.
+    if base_changes < max(1, int(min_changes)):
         return (mapping0, stats) if return_stats else mapping0
 
     inv = {v: r for r, v in mapping0.items()}

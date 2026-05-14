@@ -410,7 +410,7 @@ current benchmark workflow; expose them when testing sensitivity.
 | none | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | Minimum target WBO for preserving a core edge during TS/IG core matching; mirrors the active graph floor. |
 | none | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | Cap on mechanism-local TS/IG core mappings to prevent runaway core enumeration. |
 | none | `BGCP_SYMMETRY_REPAIR` | `1` | Enables local reshuffling inside product symmetry orbits after R-P matching to remove witness-choice artifacts. |
-| none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `5` | Only run symmetry repair when the initial witness has at least this many changed bonds; avoids unnecessary local search on already-clean mappings. |
+| none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `1` | Computational guard for symmetry repair; the default attempts repair for every nonzero changed-bond witness and skips only already-clean mappings. |
 | none | `BGCP_SYMMETRY_REPAIR_MAX_EVALS` | `20000` | Evaluation cap for the local symmetry-repair search. |
 | `--w-rxn` | `BGCP_W_RXN` | `1.0` | Weight on reaction-coordinate overlap `rho` in the final TS/IG score. |
 | `--w-core` | `BGCP_W_CORE` | `0.2` | Weight on core-mode fraction `kappa`; lower than `W_RXN` so localized core motion helps without dominating bond-axis overlap. |

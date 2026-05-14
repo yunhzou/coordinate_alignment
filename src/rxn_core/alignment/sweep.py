@@ -250,7 +250,7 @@ def cut_sweep(elR, wboR, elT, wboT, *,
               n_seeds=3, max_branches=100,
               chunksize=1,
               symmetry_repair=True,
-              symmetry_repair_min_changes=5,
+              symmetry_repair_min_changes=1,
               symmetry_repair_max_evals=20000):
     """Enumerate mechanism classes via no-cut plus one-edge R cuts.
 
