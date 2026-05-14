@@ -118,6 +118,10 @@ assemble each endpoint into one reaction-complex XYZ before calling Stage 1.
 The tutorial notebook has been executed on this example. Its stored artifacts
 are under `docs/example_runs/pr1.tempo_ts3/`, including the generated
 `view.html`, Stage 1/2 JSON, xtb caches, and aligned coordinate exports.
+The same example is also prepared as a cache-only step folder at
+`docs/example_runs/pr1.tempo_ts3/prepared_steps/pr1.tempo_ts3/` with `R/`,
+`P/`, `sp_iter1/`, `hess_iter1/`, `sp_groundtruth/`, and
+`hess_groundtruth/`.
 
 ### Staged Workflows
 
