@@ -30,6 +30,9 @@ rxn-core-pipeline --help
 
 ## Usage
 
+For a stage-by-stage walkthrough, see
+[`docs/TUTORIAL.md`](docs/TUTORIAL.md).
+
 ```bash
 # Use the default cache root: data/xtb_frequency_calculations
 rxn-core-pipeline --steps pr7.V.dodh_ts910 --workers 8
@@ -239,6 +242,7 @@ src/rxn_core/
   pipeline.py             BGCP full-view pipeline and CLI entry point
 
 tests/                    focused unit tests
+docs/TUTORIAL.md          stage-by-stage usage tutorial
 docs/ARCHITECTURE.md      module boundary notes
 ALGORITHM.md              algorithm details
 ```
