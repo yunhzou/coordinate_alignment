@@ -12,6 +12,7 @@ Parallelized via multiprocessing.
 """
 from __future__ import annotations
 import argparse
+import concurrent.futures as cf
 import json
 import multiprocessing as mp
 import os
@@ -58,6 +59,7 @@ SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANG
 SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS", "20000"))
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
+AUTO_INNER_WORKERS = int(os.environ.get("BGCP_AUTO_INNER_WORKERS", "8"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -71,6 +73,21 @@ def load(d):
         i, j = int(p[0])-1, int(p[1])-1
         wbo[i, j] = float(p[2]); wbo[j, i] = wbo[i, j]
     return el, np.asarray(xyz, float), wbo
+
+
+def _estimate_cut_sweep_units(step_name):
+    """Estimate R-P cut-sweep work units for scheduling.
+
+    The actual work is `(no_cut + strong_R_edges) * N_SEEDS_PER_RUN`.  This is
+    cheap to compute from the cached R WBO and lets auto mode start large
+    steps early instead of discovering them as a slow tail.
+    """
+    try:
+        _, _, wboR = load(WORK / step_name / "R")
+    except Exception:
+        return 1
+    strong_edges = int(np.sum(np.triu(wboR >= CUT_FLOOR, 1)))
+    return max(1, (strong_edges + 1) * N_SEEDS_PER_RUN)
 
 
 def _bond_key(bonds, orbits=None):
@@ -199,6 +216,37 @@ def _pairs_to_product_frame(mapping_RP, pairs_R):
         if a in mapping_RP and b in mapping_RP:
             out.append((int(mapping_RP[a]), int(mapping_RP[b])))
     return out
+
+
+def _ts_endpoint_pool_task(task):
+    """Worker task for one endpoint-side TS core pool.
+
+    A task is one `(target TS, mechanism, endpoint)` alignment.  The caller
+    merges the returned R->TS and P->TS pools and then scores them in the main
+    process so ranking stays deterministic.
+    """
+    t0 = time.time()
+    pool = ts_core_pool(task['elS'], task['wboS'],
+                        task['elT'], task['wboT'],
+                        task['core_S'],
+                        broken_R=task['broken_S'],
+                        formed_R=task['formed_S'],
+                        edge_floor=task['edge_floor'],
+                        iso_tol=task['iso_tol'],
+                        max_candidates=task['max_candidates'])
+    return {
+        'key': task['key'],
+        'target_order': int(task['target_order']),
+        'target_label': task['target_label'],
+        'mech_id': int(task['mech_id']),
+        'mech_pos': int(task['mech_pos']),
+        'endpoint': task['endpoint'],
+        'pool': pool,
+        'n_pool': len(pool),
+        'core_size': len(task['core_S']),
+        'elapsed': time.time() - t0,
+        'hit_cap': len(pool) >= task['max_candidates'],
+    }
 
 
 def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
@@ -335,10 +383,13 @@ window.addEventListener('load', render);
 
 
 def process_step(step_name, inner_workers=0):
-    """inner_workers: parallelism inside this step's cut_sweeps.
-      0 / 1  → serial cut_sweep (safe when called inside outer mp.Pool worker)
-      >= 2   → parallel cut_sweep on that many workers (use only when there
-               is no outer Pool, i.e. single-step CLI mode)."""
+    """inner_workers: parallelism inside one step.
+
+    The same budget is used first for the R-P cut sweep, then for TS/IG
+    endpoint core-matching tasks.
+      0 / 1  -> serial inner work
+      >= 2   -> parallel inner work on that many workers
+    """
     try:
         sd = WORK / step_name
         if not (sd / "R" / "wbo").exists() or not (sd / "P" / "wbo").exists():
@@ -372,46 +423,50 @@ def process_step(step_name, inner_workers=0):
                       flush=True)
             return pool
 
-        def timed_ts_core_pool(label, elS, wboS, elT, wboT, core_S,
-                               broken_R=None, formed_R=None):
-            t_match = time.time()
-            pool = ts_core_pool(elS, wboS, elT, wboT, core_S,
-                                broken_R=broken_R, formed_R=formed_R,
-                                edge_floor=TS_CORE_EDGE_FLOOR,
-                                iso_tol=VIEW_ISO_TOL,
-                                max_candidates=TS_CORE_MAX_CANDIDATES)
-            if BGCP_TIMING:
-                if len(pool) >= TS_CORE_MAX_CANDIDATES:
-                    print(f"    [warn] TS core pool hit cap={TS_CORE_MAX_CANDIDATES} "
-                          f"core={list(core_S)}",
-                          flush=True)
-                print(f"    {step_name} {label:>12s} core_match: "
-                      f"{len(pool):>4d} sigs core={len(core_S)} "
-                      f"in {time.time()-t_match:.1f}s",
-                      flush=True)
-            return pool
+        def run_ts_endpoint_tasks(tasks):
+            ts_workers = max(1, int(inner_workers or 1))
+            if not tasks:
+                return []
+            if ts_workers <= 1 or len(tasks) == 1:
+                return [_ts_endpoint_pool_task(t) for t in tasks]
+            with cf.ProcessPoolExecutor(max_workers=min(ts_workers, len(tasks))) as ex:
+                futs = [ex.submit(_ts_endpoint_pool_task, t) for t in tasks]
+                return [f.result() for f in cf.as_completed(futs)]
 
-        def timed_endpoint_core_pool(label, elT, wboT, mapping_RP,
-                                     broken_R, formed_R, core_R):
-            r_pool = timed_ts_core_pool(
-                f"{label}:R", elR, wboR, elT, wboT, core_R,
-                broken_R=broken_R, formed_R=formed_R)
-
+        def add_ts_endpoint_tasks(tasks, key, target_order, target_label,
+                                  mech_pos, mech, elT, wboT):
+            mapping_RP, br_R, fm_R, core_R, _dRP = mech['_state']
+            common = {
+                'key': key,
+                'target_order': target_order,
+                'target_label': target_label,
+                'mech_id': mech['id'],
+                'mech_pos': mech_pos,
+                'elT': elT,
+                'wboT': wboT,
+                'edge_floor': TS_CORE_EDGE_FLOOR,
+                'iso_tol': VIEW_ISO_TOL,
+                'max_candidates': TS_CORE_MAX_CANDIDATES,
+            }
+            tasks.append({
+                **common,
+                'endpoint': 'R',
+                'elS': elR,
+                'wboS': wboR,
+                'core_S': list(core_R),
+                'broken_S': br_R,
+                'formed_S': fm_R,
+            })
             core_P = [int(mapping_RP[r]) for r in core_R if r in mapping_RP]
-            broken_P = _pairs_to_product_frame(mapping_RP, broken_R)
-            formed_P = _pairs_to_product_frame(mapping_RP, formed_R)
-            p_pool_native = timed_ts_core_pool(
-                f"{label}:P", elP, wboP, elT, wboT, core_P,
-                broken_R=broken_P, formed_R=formed_P)
-            p_pool_as_r = _product_core_pool_to_reactant(
-                p_pool_native, mapping_RP, core_R)
-            merged = _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r)
-            if BGCP_TIMING:
-                print(f"    {step_name} {label:>12s} core_union: "
-                      f"R={len(r_pool)} P={len(p_pool_native)} "
-                      f"merged={len(merged)}",
-                      flush=True)
-            return merged
+            tasks.append({
+                **common,
+                'endpoint': 'P',
+                'elS': elP,
+                'wboS': wboP,
+                'core_S': core_P,
+                'broken_S': _pairs_to_product_frame(mapping_RP, br_R),
+                'formed_S': _pairs_to_product_frame(mapping_RP, fm_R),
+            })
 
         rp = timed_cut_sweep("R-P", elP, wboP)
         rp_min = select_min_mechanisms(rp)
@@ -451,27 +506,51 @@ def process_step(step_name, inner_workers=0):
         r_orbits = _nauty_orbits(build_graph(elR, wboR, bond_cut=0.2),
                                  wbo_tol=0.2)
         mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
-        # Endpoint core matching is mechanism-local.  A target-side symmetry
-        # representative that is arbitrary for one core can become unique once
-        # a particular mechanism's broken/formed bonds define the scoring core.
-        # Run both R->T and P->T, pull P-derived maps back to R indexing, and
-        # score their union. Spectator alternatives are not enumerated.
+        # Endpoint core matching is mechanism-local.  Build one independent
+        # task per (target TS, mechanism, endpoint R/P), run those tasks in
+        # parallel, then merge R- and P-derived core pools before scoring.
+        # Spectator alternatives are not enumerated.
         for mech in mechanisms:
-            mapping_RP, br_R, fm_R, core_R, dRP = mech['_state']
-            gt_rt_pool = timed_endpoint_core_pool(
-                f"GT:m{mech['id']}", elT_gt, wboT_gt, mapping_RP,
-                br_R, fm_R, core_R)
-            mech['gt'] = best_under_mech_using_pool(
-                elR, xyzR, elT_gt, xyzT_gt, freqs_gt, modes_gt, gt_rt_pool,
-                br_R, fm_R, core_R, dRP)
+            mech['gt'] = None
+            mech['igs'] = []
+
+        endpoint_tasks = []
+        score_contexts = []
+        target_order = 0
+
+        def register_target(kind, target_index, label,
+                            elT, xyzT, wboT, freqs, modes):
+            nonlocal target_order
+            order = target_order
+            target_order += 1
+            for mech_pos, mech in enumerate(mechanisms):
+                key = (kind, int(target_index), int(mech_pos))
+                display_label = f"{label}:m{mech['id']}"
+                add_ts_endpoint_tasks(endpoint_tasks, key, order,
+                                      display_label, mech_pos, mech,
+                                      elT, wboT)
+                score_contexts.append({
+                    'key': key,
+                    'kind': kind,
+                    'target_index': int(target_index),
+                    'target_order': order,
+                    'display_label': display_label,
+                    'mech_pos': mech_pos,
+                    'elT': elT,
+                    'xyzT': xyzT,
+                    'freqs': freqs,
+                    'modes': modes,
+                })
+
+        register_target('gt', -1, 'GT',
+                        elT_gt, xyzT_gt, wboT_gt, freqs_gt, modes_gt)
 
         # IGs: enumerate mechanism-local core alternatives, then score under
-        # each mechanism. Spectators are not greedily materialized; unmapped
-        # viewer coordinates remain at the R-frame placeholder.
+        # each mechanism. Target loading stays serial and cheap; endpoint
+        # matching is the expensive part and is parallelized below.
         iter_dirs = sorted([d for d in sd.iterdir()
                             if d.is_dir() and re.match(r"hess_iter(\d+)$", d.name)],
                            key=lambda d: int(re.match(r"hess_iter(\d+)$", d.name).group(1)))
-        for mech in mechanisms: mech['igs'] = []
         for hess_dir in iter_dirs:
             label = hess_dir.name.replace("hess_", "")
             sp_dir = sd / f"sp_{label}"
@@ -482,16 +561,53 @@ def process_step(step_name, inner_workers=0):
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
             for mech in mechanisms:
-                mapping_RP, br_R, fm_R, core_R, dRP = mech['_state']
-                ig_rt_pool = timed_endpoint_core_pool(
-                    f"{label}:m{mech['id']}", elI, wboI, mapping_RP,
-                    br_R, fm_R, core_R)
-                s = best_under_mech_using_pool(elR, xyzR, elI, xyzI,
-                                                 freqs_i, modes_i, ig_rt_pool,
-                                                 br_R, fm_R, core_R, dRP)
-                entry = {'label': label}
-                if s: entry.update(s)
-                mech['igs'].append(entry)
+                mech['igs'].append({'label': label})
+            ig_index = len(mechanisms[0]['igs']) - 1
+            register_target('ig', ig_index, label,
+                            elI, xyzI, wboI, freqs_i, modes_i)
+
+        endpoint_results = run_ts_endpoint_tasks(endpoint_tasks)
+        endpoint_by_key = {}
+        for res in endpoint_results:
+            endpoint_by_key.setdefault(res['key'], {})[res['endpoint']] = res
+
+        if BGCP_TIMING:
+            for res in sorted(endpoint_results,
+                              key=lambda x: (x['target_order'],
+                                             x['mech_id'],
+                                             x['endpoint'])):
+                if res['hit_cap']:
+                    print(f"    [warn] TS core pool hit cap={TS_CORE_MAX_CANDIDATES} "
+                          f"{res['target_label']}:{res['endpoint']} "
+                          f"core={res['core_size']}",
+                          flush=True)
+                print(f"    {step_name} {res['target_label'] + ':' + res['endpoint']:>12s} "
+                      f"core_match: {res['n_pool']:>4d} sigs "
+                      f"core={res['core_size']} in {res['elapsed']:.1f}s",
+                      flush=True)
+
+        for ctx in sorted(score_contexts,
+                          key=lambda x: (x['target_order'], x['mech_pos'])):
+            mech = mechanisms[ctx['mech_pos']]
+            mapping_RP, br_R, fm_R, core_R, dRP = mech['_state']
+            parts = endpoint_by_key.get(ctx['key'], {})
+            r_pool = parts.get('R', {}).get('pool', {})
+            p_pool_native = parts.get('P', {}).get('pool', {})
+            p_pool_as_r = _product_core_pool_to_reactant(
+                p_pool_native, mapping_RP, core_R)
+            merged = _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r)
+            if BGCP_TIMING:
+                print(f"    {step_name} {ctx['display_label']:>12s} core_union: "
+                      f"R={len(r_pool)} P={len(p_pool_native)} "
+                      f"merged={len(merged)}",
+                      flush=True)
+            s = best_under_mech_using_pool(
+                elR, xyzR, ctx['elT'], ctx['xyzT'], ctx['freqs'], ctx['modes'],
+                merged, br_R, fm_R, core_R, dRP)
+            if ctx['kind'] == 'gt':
+                mech['gt'] = s
+            elif s:
+                mech['igs'][ctx['target_index']].update(s)
 
         union_top = set()
         for mech in mechanisms:
@@ -547,13 +663,22 @@ def process_step(step_name, inner_workers=0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=max(1, os.cpu_count() - 1),
-                    help="Outer parallelism: how many steps run concurrently. "
-                         "Ignored when --inner-workers > 1.")
+                    help="Total CPU budget in auto mode, or outer step "
+                         "parallelism in outer mode.")
     ap.add_argument("--inner-workers", type=int, default=0,
-                    help="Inner parallelism: how many workers each step's "
-                         "cut_sweep uses. Default 0 = serial inside step. "
-                         "Setting > 1 disables --workers (outer) to avoid "
-                         "nested daemonic multiprocessing.")
+                    help="Explicit workers per step's inner R-P/TS work. In auto "
+                         "mode, 0 means choose from --workers; >1 switches "
+                         "to inner mode unless --parallel-mode is set.")
+    ap.add_argument("--parallel-mode",
+                    choices=("auto", "outer", "inner"),
+                    default=os.environ.get("BGCP_PARALLEL_MODE", "auto"),
+                    help="auto balances outer steps and inner workers; "
+                         "outer is legacy many-steps/serial-inside-step mode; "
+                         "inner runs steps serially with parallel inner work.")
+    ap.add_argument("--auto-inner-workers", type=int,
+                    default=AUTO_INNER_WORKERS,
+                    help="Target inner workers per concurrent step in "
+                         "auto mode. Default from BGCP_AUTO_INNER_WORKERS=8.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
@@ -585,25 +710,64 @@ def main():
             eval_records.append(slim)
             n_ok += 1
 
-    if args.inner_workers and args.inner_workers > 1:
+    mode = args.parallel_mode
+    if mode == "auto" and args.inner_workers and args.inner_workers > 1:
+        mode = "inner"
+
+    if mode == "inner":
         # Inner-parallel mode: steps run serially in main; each step's
-        # cut_sweep uses inner_workers cores. Best for a single step or a
-        # few large steps where the cut_sweep itself dominates cost.
+        # cut_sweep and TS endpoint matching use inner_workers cores. Best for
+        # a single step or a few large steps where inner work dominates cost.
+        inner_workers = (args.inner_workers if args.inner_workers > 0
+                         else max(1, args.workers))
         print(f"Processing {len(steps)} steps serially; each step uses "
-              f"{args.inner_workers} inner workers "
+              f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, "
               f"unit_timeout={UNIT_TIMEOUT}s)")
         for i, step in enumerate(steps, 1):
-            rec = process_step(step, inner_workers=args.inner_workers)
+            rec = process_step(step, inner_workers=inner_workers)
             _record(i, rec)
-    else:
+    elif mode == "outer":
         # Outer-parallel mode: args.workers steps run concurrently; each
-        # step's cut_sweep is serial (no nested daemonic Pool). Best for
-        # the full 155-step benchmark.
-        print(f"Processing {len(steps)} steps with {args.workers} outer workers")
+        # step's inner work is serial (no nested daemonic Pool). Best for
+        # small/easy steps when nested process pools are undesirable.
+        print(f"Processing {len(steps)} steps with {args.workers} outer workers "
+              f"(legacy serial inner work inside each step)")
         with mp.Pool(args.workers) as pool:
             for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
+                _record(i, rec)
+    else:
+        total_workers = max(1, int(args.workers))
+        target_inner = (
+            int(args.inner_workers) if args.inner_workers and args.inner_workers > 1
+            else max(1, min(int(args.auto_inner_workers), total_workers))
+        )
+        outer_slots = max(1, min(len(steps), max(1, total_workers // target_inner)))
+        inner_workers = max(1, total_workers // outer_slots)
+        scheduled_steps = sorted(
+            steps, key=_estimate_cut_sweep_units, reverse=True)
+        print(f"Processing {len(steps)} steps in auto mode: "
+              f"{outer_slots} concurrent steps x {inner_workers} "
+              f"inner workers "
+              f"(total budget={total_workers}, "
+              f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
+              f"iso_tol={VIEW_ISO_TOL}, "
+              f"unit_timeout={UNIT_TIMEOUT}s)")
+        with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
+            futures = {
+                executor.submit(process_step, step, inner_workers): step
+                for step in scheduled_steps
+            }
+            for i, fut in enumerate(cf.as_completed(futures), 1):
+                step = futures[fut]
+                try:
+                    rec = fut.result()
+                except Exception as e:
+                    rec = {
+                        "step": step,
+                        "error": f"{type(e).__name__}: {e}",
+                    }
                 _record(i, rec)
 
     print(f"\n{n_ok} ok, {n_err} errors in {time.time()-t0:.0f}s")

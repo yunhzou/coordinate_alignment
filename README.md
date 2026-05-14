@@ -140,16 +140,25 @@ you're doing.
 
 | name | default | meaning |
 |---|---|---|
-| `--workers` | CPU count - 1 | outer step parallelism |
-| `--inner-workers` | `0` | per-step `cut_sweep` workers; when >1, steps run serially |
+| `--workers` | CPU count - 1 | total CPU budget in auto mode; outer step workers in outer mode |
+| `--parallel-mode` | `auto` | `auto` balances concurrent steps and inner R-P/TS workers; `outer` is legacy serial-inside-step mode; `inner` runs one step at a time with parallel inner work |
+| `--inner-workers` | `0` | explicit per-step inner workers; `>1` selects inner mode unless `--parallel-mode` is set |
+| `--auto-inner-workers` | `8` | target inner workers per concurrent step in auto mode |
 | `--steps` | all cached steps | explicit step names |
 | `--limit` | none | first N cached steps |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P sweep cuts every R edge at or above this WBO |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `5000` | per-work-unit branch guard for view generation |
-| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped |
+| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut/seed alignment attempt is skipped |
+| `BGCP_PARALLEL_MODE` | `auto` | env default for `--parallel-mode` |
+| `BGCP_AUTO_INNER_WORKERS` | `8` | env default for `--auto-inner-workers` |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
 | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
+
+In `auto` or `inner` mode, the per-step inner worker budget is used for both
+expensive phases: R-P cut sweep and TS/IG endpoint core matching.  The TS/IG
+stage dispatches independent `(target, mechanism, endpoint R/P)` tasks, then
+merges the R-derived and P-derived core pools before scoring.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the alignment module
 boundaries.

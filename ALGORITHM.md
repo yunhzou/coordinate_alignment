@@ -431,10 +431,11 @@ one ordering per heavy atom.  The chosen anchors are heavy atoms in graph
 order, then random full-order shuffles only if more trials are requested than
 heavy anchors exist.
 
-Parallel cut sweeps dispatch `(cut, seed_order)` work units.  Work is ordered
-seed-major and defaults to `BGCP_CUTSWEEP_CHUNKSIZE=1`, so the three seed
-orders for one pathological cut are not bundled onto one worker.  This improves
-tail utilization on high-symmetry cases where a few cuts dominate runtime.
+Parallel cut sweeps dispatch one work unit per cut.  Each work unit runs all
+seed orders for that cut, so the cut-specific R orbit map is computed once and
+reused across seeds.  Product orbits are computed once per worker process
+because they are invariant across every cut and seed.  This avoids the old
+`3 * (E + 1)` exact-orbit recomputation pattern for `E` cuttable R edges.
 
 The dedupe target depends on the alignment purpose:
 
@@ -553,12 +554,22 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
-| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut-sweep work unit is skipped; set `0` to disable |
-| `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep timings |
+| `BGCP_UNIT_TIMEOUT` | `10` | seconds before one cut/seed alignment attempt is skipped; set `0` to disable |
+| `BGCP_PARALLEL_MODE` | `auto` | pipeline scheduling mode: `auto`, `outer`, or `inner` |
+| `BGCP_AUTO_INNER_WORKERS` | `8` | target inner workers per concurrent step in auto mode |
+| `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep and TS endpoint timings |
 | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | minimum target WBO for preserving an R-core edge during TS/IG core matching |
 | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
 | `n_seeds` | `3` | seed orders in `align_from_arrays` |
 | `N_SEEDS_PER_RUN` | `3` | seed orders per cut-sweep unit in views |
+
+The full BGCP pipeline parallelizes two independent stages inside one step.
+R-P mechanism discovery is parallel over cut work units.  GT/IG scoring then
+parallelizes over endpoint core-matching tasks: every `(target TS or IG,
+mechanism, endpoint R/P)` pool is built independently, and the main process
+merges R-derived and P-derived core maps before ranking modes.  There is no
+sweep-cut step for R-TS/P-TS; those endpoint matches use the known R-P
+mechanism core.
 
 ## Verification Notes
 

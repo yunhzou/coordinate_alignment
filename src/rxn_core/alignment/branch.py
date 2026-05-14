@@ -323,17 +323,20 @@ def find_islands(g_R, g_P, seed_order,
                  graph_floor=0.2, iso_tol=1.0,
                  max_branches=1_000_000, events=None,
                  orbit_dedup=True, core_R=None,
-                 stop_when_core_mapped=False):
+                 stop_when_core_mapped=False,
+                 p_orbits=None, r_orbits=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
 
     Optional `events` only records the FIRST (best-mapped) branch's
     trajectory — multi-branch traces would be confusing on a slider.
 
-    orbit_dedup: when True (default), pre-computes both g_R's and g_P's exact
-    automorphism orbits on a 0.2-tolerance WBO-colored graph via pynauty.
-    Used as the compression key for orbit-equivalence. Chemistry signatures
-    and active R-pair extension checks remain the verifier.
+    orbit_dedup: when True (default), uses exact automorphism orbits on a
+    0.2-tolerance WBO-colored graph via pynauty as the compression key for
+    orbit-equivalence. Callers that run many seed orders against the same
+    graph can pass precomputed `p_orbits` / `r_orbits`; missing maps are
+    computed here. Chemistry signatures and active R-pair extension checks
+    remain the verifier.
 
     core_R: optional R atoms that define the scoring-relevant alignment.
     When supplied, branch dedup switches to exact core mapping as soon as
@@ -341,8 +344,14 @@ def find_islands(g_R, g_P, seed_order,
     returns once all live branches have mapped the core; spectators remain
     represented only by the compressed witness state already discovered.
     """
-    p_orbits = _nauty_orbits(g_P, wbo_tol=0.2) if orbit_dedup else None
-    r_orbits = _nauty_orbits(g_R, wbo_tol=0.2) if orbit_dedup else None
+    if orbit_dedup:
+        if p_orbits is None:
+            p_orbits = _nauty_orbits(g_P, wbo_tol=0.2)
+        if r_orbits is None:
+            r_orbits = _nauty_orbits(g_R, wbo_tol=0.2)
+    else:
+        p_orbits = None
+        r_orbits = None
     core_R = tuple(sorted(set(core_R or ())))
     core_R_set = set(core_R)
     seed_order = list(seed_order)

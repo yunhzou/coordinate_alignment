@@ -30,7 +30,10 @@ Files:
 - `alignment/branch.py`: molecule-level branch scheduling, branch dedupe,
   seed-order generation, and final symmetry repair.
 - `alignment/sweep.py`: R-P sweep-cut mechanism discovery via no-cut plus
-  one-edge R cuts, with symmetry-canonical mechanism signatures.
+  one-edge R cuts, with symmetry-canonical mechanism signatures.  Parallel
+  cut-sweep work is grouped by cut, so each worker computes the cut-specific R
+  orbit map once and reuses it for all seed orders; product orbits are
+  invariant and are computed once in the worker initializer.
 - `alignment/ts_core.py`: mechanism-local endpoint->TS/IG core mapping used by
   the ranker after R-P mechanisms are known. The BGCP pipeline runs it from
   both R and P, pulls P-derived mappings back through the R-P witness, and
@@ -99,7 +102,10 @@ symmetry state. A block with two R atoms and four P atoms represents
   `cut_sweep`, dedupes mechanisms by symmetry-canonical bond changes, runs
   mechanism-local R/P endpoint `ts_core_pool` for GT/IG core alternatives,
   scores normal modes, and writes the multi-mechanism viewer plus slim eval
-  JSON.
+  JSON.  Its default auto scheduler treats `--workers` as a total CPU budget
+  and splits it between concurrent steps and each step's inner worker pool.
+  That inner pool is reused after R-P discovery for independent TS/IG endpoint
+  core-matching tasks across targets, mechanisms, and R/P endpoints.
 - `plain_pipeline.py`: older source-XYZ workflow that runs xtb itself and
   writes the single-mechanism ranked viewer.
 

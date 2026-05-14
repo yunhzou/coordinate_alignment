@@ -70,7 +70,8 @@ def _pool_add(pool, sig, mapping, cuts):
         entry['dedup_count'] = entry.get('dedup_count', 1) + 1
 
 
-def _run_find_islands_limited(g_R, g_P, order, core_R, cfg):
+def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
+                              p_orbits=None, r_orbits=None):
     stop_on_core = bool(core_R)
     unit_timeout = float(cfg['unit_timeout'])
     kwargs = dict(
@@ -78,6 +79,8 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg):
         max_branches=int(cfg['max_branches']),
         core_R=core_R,
         stop_when_core_mapped=stop_on_core,
+        p_orbits=p_orbits,
+        r_orbits=r_orbits,
     )
     if unit_timeout <= 0 or not hasattr(signal, "SIGALRM"):
         return find_islands(g_R, g_P, list(order), **kwargs)
@@ -131,7 +134,7 @@ def _cs_winit(elR, wboR, elT, wboT, cfg):
 
 
 def _cs_wrun(args):
-    cut, order, core_R = args
+    cut, orders, core_R = args
     cfg = _WORKER['cfg']
     graph_floor = float(cfg['graph_floor'])
     g_R = build_graph(_WORKER['elR'], _WORKER['wboR'],
@@ -139,24 +142,28 @@ def _cs_wrun(args):
     for i, j in cut:
         if g_R.has_edge(i, j):
             g_R.remove_edge(i, j)
-    try:
-        branches = _run_find_islands_limited(
-            g_R, _WORKER['g_P'], order, core_R, cfg)
-    except Exception:
-        return []
+    r_orbits_cut = _nauty_orbits(g_R, wbo_tol=0.2)
 
     out = []
-    for branch in branches:
-        mapping = expand_mapping(dict(branch.mapping), g_R, _WORKER['g_P'])
-        scored = _score_branch_mapping(
-            mapping, g_R, _WORKER['g_P'],
-            _WORKER['wboR'], _WORKER['wboT'],
-            _WORKER['g_R_full'], _WORKER['p_orbits'],
-            _WORKER['r_orbits'], core_R, cfg)
-        if scored is None:
+    for order in orders:
+        try:
+            branches = _run_find_islands_limited(
+                g_R, _WORKER['g_P'], order, core_R, cfg,
+                p_orbits=_WORKER['p_orbits'],
+                r_orbits=r_orbits_cut)
+        except Exception:
             continue
-        sig, mapping = scored
-        out.append((sig, tuple(sorted(mapping.items())), cut))
+        for branch in branches:
+            mapping = expand_mapping(dict(branch.mapping), g_R, _WORKER['g_P'])
+            scored = _score_branch_mapping(
+                mapping, g_R, _WORKER['g_P'],
+                _WORKER['wboR'], _WORKER['wboT'],
+                _WORKER['g_R_full'], _WORKER['p_orbits'],
+                _WORKER['r_orbits'], core_R, cfg)
+            if scored is None:
+                continue
+            sig, mapping = scored
+            out.append((sig, tuple(sorted(mapping.items())), cut))
     return out
 
 
@@ -174,11 +181,13 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
         for i, j in cuts:
             if g_R.has_edge(i, j):
                 g_R.remove_edge(i, j)
+        r_orbits_cut = _nauty_orbits(g_R, wbo_tol=0.2)
         orders = _generate_seed_orders(g_R, n_trials=int(cfg['n_seeds']))
         for order in orders:
             try:
                 branches = _run_find_islands_limited(
-                    g_R, g_P, order, core_R, cfg)
+                    g_R, g_P, order, core_R, cfg,
+                    p_orbits=p_orbits, r_orbits=r_orbits_cut)
             except Exception:
                 continue
             for branch in branches:
@@ -204,7 +213,7 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
         g_R, n_trials=int(cfg['n_seeds']))]
     cuts = [()] + [((i, j),) for i, j in _strong_edges(
         wboR, float(cfg['cut_floor']))]
-    work = [(cut, order, core_R) for order in orders for cut in cuts]
+    work = [(cut, orders, core_R) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:

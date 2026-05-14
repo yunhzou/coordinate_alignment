@@ -13,6 +13,7 @@ from rxn_core.alignment import (
     _generate_seed_orders,
     symmetry_repair_mapping,
 )
+import rxn_core.alignment.branch as branch_mod
 from rxn_core.matcher import (
     _SymBlock,
     _SymCand,
@@ -412,6 +413,26 @@ def test_match_wbo_graphs_uses_three_seed_contract():
     assert result.best is not None
     assert result.best.score == (0, 0)
     assert (len(result.best.broken), len(result.best.formed)) == (0, 0)
+
+
+def test_find_islands_reuses_precomputed_orbits(monkeypatch):
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    g_r = build_graph(["C", "H"], wbo, bond_cut=0.2)
+    g_p = build_graph(["C", "H"], wbo, bond_cut=0.2)
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("orbits should be supplied by caller")
+
+    monkeypatch.setattr(branch_mod, "_nauty_orbits", fail_if_called)
+    branches = branch_mod.find_islands(
+        g_r, g_p, [0, 1],
+        p_orbits={0: 0, 1: 1},
+        r_orbits={0: 0, 1: 1},
+    )
+
+    assert branches
+    assert branches[0].mapping == {0: 0, 1: 1}
 
 
 def test_partial_witness_mode_scores_use_full_mode_norm():
