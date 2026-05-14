@@ -17,6 +17,7 @@ import json
 import multiprocessing as mp
 import os
 import re
+import shutil
 import time
 import traceback
 from pathlib import Path
@@ -29,6 +30,7 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       rxn_overlap_per_mode,
                       build_graph, cut_sweep, select_min_mechanisms,
                       ts_core_pool)
+from rxn_core.chemistry_computations import run_xtb, run_xtb_hess
 from rxn_core.matcher import _nauty_orbits
 
 PROJECT = Path(os.environ.get(
@@ -59,19 +61,121 @@ SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS",
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
 AUTO_INNER_WORKERS = int(os.environ.get("BGCP_AUTO_INNER_WORKERS", "8"))
+XTB_CACHE_MODE = os.environ.get("BGCP_XTB_MODE", "auto").lower()
+XTB_OMP_THREADS = int(os.environ.get("BGCP_XTB_OMP_THREADS", "1"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
+def _xyz_path(d, include_xtbhess=False):
+    d = Path(d)
+    if not d.exists():
+        return None
+    xyzs = sorted(p for p in d.glob("*.xyz") if "xtbhess" not in p.name)
+    if not xyzs and include_xtbhess:
+        xyzs = sorted(d.glob("*.xyz"))
+    return xyzs[0] if xyzs else None
+
+
+def _xtb_available():
+    return shutil.which("xtb") is not None
+
+
+def _normal_xtb_mode(mode=None):
+    mode = (mode or XTB_CACHE_MODE or "auto").lower()
+    if mode in {"off", "false", "0", "cache", "cache_only"}:
+        return "cache-only"
+    if mode not in {"auto", "cache-only"}:
+        raise ValueError("BGCP_XTB_MODE must be 'auto' or 'cache-only'")
+    return mode
+
+
+def _need_xtb(kind, path, xtb_mode=None):
+    if _normal_xtb_mode(xtb_mode) == "cache-only":
+        raise RuntimeError(
+            f"missing {kind} cache at {path}; BGCP_XTB_MODE=cache-only")
+    if not _xtb_available():
+        raise RuntimeError(
+            f"missing {kind} cache at {path}, and xtb is not on PATH")
+
+
+def _ensure_sp_cache(d, label, xyz_fallback=None, xtb_mode=None):
+    """Ensure one single-point cache directory has an XYZ and WBO file."""
+    d = Path(d)
+    local_xyz = _xyz_path(d)
+    fallback_xyz = Path(xyz_fallback) if xyz_fallback else None
+    if local_xyz is None and fallback_xyz is not None:
+        d.mkdir(parents=True, exist_ok=True)
+        name = fallback_xyz.name
+        if "xtbhess" in name:
+            safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(label))
+            name = f"{safe}.xyz"
+        local_xyz = d / name
+        if fallback_xyz.resolve() != local_xyz.resolve():
+            shutil.copy(fallback_xyz, local_xyz)
+    xyz = local_xyz or fallback_xyz
+    wbo = d / "wbo"
+    if xyz is None:
+        raise RuntimeError(f"missing {label} xyz in {d}")
+    if not wbo.exists():
+        _need_xtb(f"{label} single-point WBO", wbo, xtb_mode)
+        run_xtb(xyz, d)
+    return d
+
+
+def _ensure_hess_cache(hess_dir, label, xyz_fallback=None, xtb_mode=None):
+    """Ensure one Hessian cache directory has g98.out.
+
+    The hessian directory may contain its own XYZ. If not, the matching
+    single-point XYZ is used as the source geometry and copied into the hessian
+    cache before running xtb.
+    """
+    hess_dir = Path(hess_dir)
+    g98 = hess_dir / "g98.out"
+    if not g98.exists():
+        xyz = _xyz_path(hess_dir, include_xtbhess=True) or (
+            Path(xyz_fallback) if xyz_fallback else None)
+        if xyz is None:
+            raise RuntimeError(f"missing {label} hessian xyz in {hess_dir}")
+        _need_xtb(f"{label} Hessian g98.out", g98, xtb_mode)
+        run_xtb_hess(
+            xyz, hess_dir, omp_threads=max(1, int(XTB_OMP_THREADS)))
+    return parse_g98_modes(g98)
+
+
 def load(d):
-    xyz_path = next(p for p in d.glob("*.xyz") if "xtbhess" not in p.name)
+    xyz_path = _xyz_path(d)
+    if xyz_path is None:
+        raise RuntimeError(f"missing xyz in {d}")
     el, xyz = parse_xyz(xyz_path)
     n = len(el); wbo = np.zeros((n, n))
-    for ln in (d / "wbo").read_text().splitlines():
+    for ln in (Path(d) / "wbo").read_text().splitlines():
         p = ln.split()
         if len(p) < 3: continue
         i, j = int(p[0])-1, int(p[1])-1
         wbo[i, j] = float(p[2]); wbo[j, i] = wbo[i, j]
     return el, np.asarray(xyz, float), wbo
+
+
+def _load_sp(d, label, xyz_fallback=None):
+    _ensure_sp_cache(d, label, xyz_fallback=xyz_fallback)
+    return load(d)
+
+
+def _load_hess(hess_dir, label, xyz_fallback=None):
+    return _ensure_hess_cache(hess_dir, label, xyz_fallback=xyz_fallback)
+
+
+def _iter_labels(sd):
+    labels = set()
+    if not Path(sd).exists():
+        return []
+    for d in Path(sd).iterdir():
+        if not d.is_dir():
+            continue
+        m = re.match(r"(?:sp|hess)_iter(\d+)$", d.name)
+        if m:
+            labels.add(int(m.group(1)))
+    return [f"iter{i}" for i in sorted(labels)]
 
 
 def _estimate_cut_sweep_units(step_name):
@@ -391,14 +495,17 @@ def process_step(step_name, inner_workers=0):
     """
     try:
         sd = WORK / step_name
-        if not (sd / "R" / "wbo").exists() or not (sd / "P" / "wbo").exists():
-            return {"step": step_name, "error": "missing R or P xtb cache"}
-        if not (sd / "sp_groundtruth").exists() or not (sd / "hess_groundtruth" / "g98.out").exists():
-            return {"step": step_name, "error": "missing GT"}
-        elR, xyzR, wboR = load(sd / "R")
-        elP, xyzP, wboP = load(sd / "P")
-        elT_gt, xyzT_gt, wboT_gt = load(sd / "sp_groundtruth")
-        freqs_gt, modes_gt = parse_g98_modes(sd / "hess_groundtruth" / "g98.out")
+        if not sd.exists():
+            return {"step": step_name, "error": f"missing step directory: {sd}"}
+        elR, xyzR, wboR = _load_sp(sd / "R", "R")
+        elP, xyzP, wboP = _load_sp(sd / "P", "P")
+        gt_sp = sd / "sp_groundtruth"
+        gt_hess = sd / "hess_groundtruth"
+        elT_gt, xyzT_gt, wboT_gt = _load_sp(
+            gt_sp, "GT",
+            xyz_fallback=_xyz_path(gt_hess, include_xtbhess=True))
+        freqs_gt, modes_gt = _load_hess(
+            gt_hess, "GT", xyz_fallback=_xyz_path(gt_sp))
 
         def timed_cut_sweep(label, elT, wboT, core_R=None):
             t_sweep = time.time()
@@ -546,15 +653,15 @@ def process_step(step_name, inner_workers=0):
         # IGs: enumerate mechanism-local core alternatives, then score under
         # each mechanism. Target loading stays serial and cheap; endpoint
         # matching is the expensive part and is parallelized below.
-        iter_dirs = sorted([d for d in sd.iterdir()
-                            if d.is_dir() and re.match(r"hess_iter(\d+)$", d.name)],
-                           key=lambda d: int(re.match(r"hess_iter(\d+)$", d.name).group(1)))
-        for hess_dir in iter_dirs:
-            label = hess_dir.name.replace("hess_", "")
+        for label in _iter_labels(sd):
+            hess_dir = sd / f"hess_{label}"
             sp_dir = sd / f"sp_{label}"
             try:
-                elI, xyzI, wboI = load(sp_dir)
-                freqs_i, modes_i = parse_g98_modes(hess_dir / "g98.out")
+                elI, xyzI, wboI = _load_sp(
+                    sp_dir, label,
+                    xyz_fallback=_xyz_path(hess_dir, include_xtbhess=True))
+                freqs_i, modes_i = _load_hess(
+                    hess_dir, label, xyz_fallback=_xyz_path(sp_dir))
             except Exception:
                 for mech in mechanisms: mech['igs'].append({'label': label})
                 continue
@@ -658,6 +765,7 @@ def process_step(step_name, inner_workers=0):
 
 
 def main():
+    global XTB_CACHE_MODE, XTB_OMP_THREADS
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=max(1, os.cpu_count() - 1),
                     help="Total CPU budget in auto mode, or outer step "
@@ -676,10 +784,27 @@ def main():
                     default=AUTO_INNER_WORKERS,
                     help="Target inner workers per concurrent step in "
                          "auto mode. Default from BGCP_AUTO_INNER_WORKERS=8.")
+    ap.add_argument("--xtb-mode",
+                    choices=("auto", "cache-only"),
+                    default=_normal_xtb_mode(XTB_CACHE_MODE),
+                    help="auto fills missing WBO/g98 caches by running xtb "
+                         "from available XYZ files; cache-only fails on "
+                         "missing cache files.")
+    ap.add_argument("--xtb-omp-threads", type=int,
+                    default=XTB_OMP_THREADS,
+                    help="OMP_NUM_THREADS used for xtb --hess cache fills.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
 
+    XTB_CACHE_MODE = _normal_xtb_mode(args.xtb_mode)
+    XTB_OMP_THREADS = max(1, int(args.xtb_omp_threads))
+    os.environ["BGCP_XTB_MODE"] = XTB_CACHE_MODE
+    os.environ["BGCP_XTB_OMP_THREADS"] = str(XTB_OMP_THREADS)
+
+    if not WORK.exists():
+        print(f"No work directory: {WORK}")
+        return
     all_steps = sorted(d.name for d in WORK.iterdir() if d.is_dir())
     if args.steps: steps = [s for s in all_steps if s in set(args.steps)]
     elif args.limit: steps = all_steps[:args.limit]
@@ -720,7 +845,7 @@ def main():
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL})")
+              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE})")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=inner_workers)
             _record(i, rec)
@@ -729,7 +854,8 @@ def main():
         # step's inner work is serial (no nested daemonic Pool). Best for
         # small/easy steps when nested process pools are undesirable.
         print(f"Processing {len(steps)} steps with {args.workers} outer workers "
-              f"(legacy serial inner work inside each step)")
+              f"(legacy serial inner work inside each step, "
+              f"xtb_mode={XTB_CACHE_MODE})")
         with mp.Pool(args.workers) as pool:
             for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
                 _record(i, rec)
@@ -748,7 +874,7 @@ def main():
               f"inner workers "
               f"(total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL})")
+              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(process_step, step, inner_workers): step

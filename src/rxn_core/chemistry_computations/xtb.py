@@ -57,7 +57,8 @@ def run_xtb(xyz_path, workdir, charge=0, uhf=0):
     wf = workdir / "wbo"
     cached = (cached_text == src_text) and wf.exists()
     if not cached:
-        shutil.copy(xyz_path, local)
+        if Path(xyz_path).resolve() != local.resolve():
+            shutil.copy(xyz_path, local)
         res = subprocess.run(
             _xtb_command(local.name, "--sp", charge=charge, uhf=uhf),
             cwd=workdir,
@@ -86,7 +87,8 @@ def run_xtb_hess(xyz_path: Path, workdir: Path, charge: int = 0, uhf: int = 0,
     wbo = workdir / "wbo"
     cached = (cached_text == src_text) and g98.exists() and wbo.exists()
     if not cached:
-        shutil.copy(xyz_path, local)
+        if Path(xyz_path).resolve() != local.resolve():
+            shutil.copy(xyz_path, local)
         env = os.environ.copy()
         env["OMP_NUM_THREADS"] = str(omp_threads)
         res = subprocess.run(

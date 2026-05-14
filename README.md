@@ -35,6 +35,12 @@ data/xtb_frequency_calculations/<step>/
 Use `BGCP_WORK=/path/to/xtb_frequency_calculations` when the cache lives
 outside the repo.
 
+By default `rxn-core-pipeline` runs in `BGCP_XTB_MODE=auto`: if an expected
+`wbo` or `g98.out` file is missing and an XYZ is available, it checks for
+`xtb` on `PATH` and fills the missing cache with `xtb --sp` or `xtb --hess`.
+Use `BGCP_XTB_MODE=cache-only` or `--xtb-mode cache-only` to fail fast instead.
+Hessian cache fills use `BGCP_XTB_OMP_THREADS=1` by default.
+
 ## Outputs
 
 ```text
@@ -92,6 +98,8 @@ ALGORITHM.md              algorithm details
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `100` | per-cut branch cap; capped cuts are discarded |
 | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
+| `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
+| `BGCP_XTB_OMP_THREADS` | `1` | OMP threads for xtb Hessian cache fills |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
 
 CLI scheduling options:
@@ -101,6 +109,8 @@ CLI scheduling options:
 --parallel-mode        auto | outer | inner
 --inner-workers        explicit per-step inner worker count
 --auto-inner-workers   target inner workers per concurrent step in auto mode
+--xtb-mode             auto | cache-only
+--xtb-omp-threads      OMP_NUM_THREADS for xtb --hess cache fills
 --steps                explicit cached step names
 --limit                first N cached steps
 ```
