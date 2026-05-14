@@ -9,6 +9,13 @@ work_pq_smoke/
 # Local Claude session state
 .claude/
 
+# Local data and generated analysis artifacts
+data/
+appendix_perparation/
+notebooks/
+ts_discovery_paper/
+*.zip
+
 # Python cache
 __pycache__/
 *.pyc
@@ -28,14 +35,6 @@ my_idea.md
 Benchmark_Guesses_Collective_Package/
 /Benchmark_Guesses_Collective_Package
 
-# Heavy generated viewer payloads + raw xTB frequency outputs
-appendix_perparation/viewer/mode_viewer/
-appendix_perparation/viewer/oracle_view*.html
-appendix_perparation/viewer/alignment_view.html
-appendix_perparation/viewer/midpoint_view.html
-appendix_perparation/viewer/bgcp_pq_viewer.html
-appendix_perparation/xtb_frequency_calculations/
-
 # Aligned coordinate dataset (regenerable from work_modes cache)
 Benchmark_Guesses_Coordinate_Aligned_Version/
 work_align/
@@ -47,12 +46,6 @@ out/mode_analysis/
 # Trace HTMLs (regenerable from build_large_molecule_traces.py / build_pq_regression_traces.py)
 out/large_alignment_traces/
 out/regressions/
-
-# Nested paper repo (own git history)
-ts_discovery_paper/
-
-# Local zip exports
-*.zip
 
 # Per-step ranked viewer outputs (regenerable)
 out/ranked_views/

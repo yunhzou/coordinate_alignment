@@ -6,7 +6,7 @@ For each step:
      then pick best R-frame core witness.
   3. Rank IGs per mech, mark top-2; union across mechs.
   4. Write out/bgcp_views/<step>/view.html with mechanism switcher.
-  5. Dump out/bgcp_alignment_eval_v2.json for downstream CSV.
+  5. Dump out/bgcp_alignment_eval.json for downstream CSV.
 
 Parallelized via multiprocessing.
 """
@@ -37,7 +37,7 @@ PROJECT = Path(os.environ.get(
 ))
 WORK = Path(os.environ.get(
     "BGCP_WORK",
-    PROJECT / "appendix_perparation" / "xtb_frequency_calculations",
+    PROJECT / "data" / "xtb_frequency_calculations",
 ))
 OUT_ROOT = Path(os.environ.get(
     "BGCP_OUT_ROOT",
@@ -45,7 +45,7 @@ OUT_ROOT = Path(os.environ.get(
 ))
 EVAL_JSON = Path(os.environ.get(
     "BGCP_EVAL_JSON",
-    PROJECT / "out" / "bgcp_alignment_eval_v2.json",
+    PROJECT / "out" / "bgcp_alignment_eval.json",
 ))
 CUT_FLOOR = float(os.environ.get("BGCP_CUT_FLOOR", "0.2"))
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
@@ -647,10 +647,9 @@ def process_step(step_name, inner_workers=0):
                 'igs': [{k: ig.get(k) for k in ['label', 'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'core_map', 'core_sources', 'is_top2']}
                         for ig in mech['igs']],
             })
-        # Per-step slim record (so parallel Slurm array tasks don't race on
-        # the global EVAL_JSON). The post-run merge step reads these and
-        # builds the global EVAL_JSON. See nrt_verification_workflow.sh.
-        (run_dir / "_eval_v2_slim.json").write_text(json.dumps(slim))
+        # Per-step slim record; parallel step workers return these to the
+        # parent, which writes the merged EVAL_JSON once.
+        (run_dir / "_eval_slim.json").write_text(json.dumps(slim))
         return {'step': step_name, 'slim': slim,
                 'top1_label': max(mechanisms, key=lambda m: m['gt']['S'] if m['gt'] else 0)['igs'][0]['label'] if mechanisms[0]['igs'] else "?"}
     except Exception as e:

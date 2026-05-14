@@ -7,7 +7,7 @@ Low-level utilities used by rxn_core:
 
 Alignment logic lives in the `alignment`, `growth`, and `matcher` packages.
 XYZ and xtb helpers live in `chemistry_computations` and are re-exported
-here for compatibility with older scripts and notebooks.
+here for compatibility with existing imports.
 """
 from __future__ import annotations
 

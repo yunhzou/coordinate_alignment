@@ -106,8 +106,6 @@ symmetry state. A block with two R atoms and four P atoms represents
   and splits it between concurrent steps and each step's inner worker pool.
   That inner pool is reused after R-P discovery for independent TS/IG endpoint
   core-matching tasks across targets, mechanisms, and R/P endpoints.
-- `plain_pipeline.py`: older source-XYZ workflow that runs xtb itself and
-  writes the single-mechanism ranked viewer.
 
 These modules should not depend on matcher internals unless they are explicitly
 running alignment.

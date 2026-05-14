@@ -415,8 +415,7 @@ breaking/forming remains.
 
 `rxn_core.alignment.cut_sweep(...)` is the core R-P mechanism discovery API.
 The package pipeline in `rxn_core.pipeline` passes runtime parameters and
-renders results; it does not implement the sweep algorithm.  The root
-`build_bgcp_views_v2.py` file is only a compatibility shim.  `cut_sweep`
+renders results; it does not implement the sweep algorithm. `cut_sweep`
 collects mechanisms from:
 
 - baseline graph
