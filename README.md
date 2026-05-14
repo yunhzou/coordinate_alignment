@@ -59,6 +59,9 @@ The pipeline is split into three resumable stages.
 # Stage 1: R-P alignment and mechanism discovery only
 rxn-core --stage rp --steps pr7.V.dodh_ts910 --workers 8
 
+# Stage 1 plus clean mechanism-specific aligned R/P files for NEB/path setup
+rxn-core --stage rp --steps pr7.V.dodh_ts910 --save-alignment-files
+
 # Stage 2: verify GT/IG/TS targets from the saved Stage 1 mechanisms
 rxn-core --stage ts --steps pr7.V.dodh_ts910 --mechanism 2 --include-gt
 
@@ -76,11 +79,13 @@ from rxn_core.pipeline import (
     load_step_inputs, load_ts_targets,
     step_inputs_from_arrays, ts_target_from_arrays,
     discover_mechanisms_from_arrays,
-    run_rp_stage, run_ts_stage, write_view_stage,
+    run_rp_stage, write_rp_alignment_files,
+    run_ts_stage, write_view_stage,
 )
 
 inputs = load_step_inputs("pr7.V.dodh_ts910")
 rp = run_rp_stage(inputs, inner_workers=8)
+write_rp_alignment_files(inputs, rp)
 targets = load_ts_targets(inputs, include_gt=True)
 ts = run_ts_stage(inputs, rp, targets, mechanism_ids=[2], inner_workers=8)
 view = write_view_stage(inputs, rp, ts, include_gt=True)
@@ -153,6 +158,10 @@ out/bgcp_views/<step>/_eval_slim.json
 out/bgcp_alignment_eval.json
 out/bgcp_stages/<step>/rp_stage.json
 out/bgcp_stages/<step>/ts_stage.json
+out/bgcp_alignments/<step>/manifest.json
+out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/R.xyz
+out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/P_aligned.xyz
+out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/neb_endpoints.xyz
 ```
 
 Each `view.html` has a step-level `Download` button. The downloaded archive
@@ -160,6 +169,13 @@ contains `R.xyz`, `P.xyz`, unique `IG/<label>.xyz` files, optional
 `GT/GT.xyz`, a root `mechanism.json` manifest with per-mechanism IG/GT scores
 and score decomposition, one `mechanisms/mechanism_<id>.json` file per
 mechanism, and `viewer_data.json` with the full data used by the HTML view.
+
+When `--save-alignment-files` is set, Stage 1 also writes a clean aligned
+coordinate package under `out/bgcp_alignments/<step>/`. Each mechanism
+directory is self-contained and includes `R.xyz`, `P_aligned.xyz`, a
+two-frame `neb_endpoints.xyz`, `mapping_R_to_P.csv`, and `mechanism.json`.
+`P_aligned.xyz` is product geometry reindexed into the R atom order; no
+Kabsch or spatial fitting is applied.
 
 Generated caches, views, and paper artifacts are intentionally not part of the
 main repository.
@@ -220,9 +236,11 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | none | `BGCP_WORK` | `data/xtb_frequency_calculations` | xtb cache root containing step directories |
 | none | `BGCP_OUT_ROOT` | `out/bgcp_views` | per-step HTML/eval output root |
 | `--stage-root` | `BGCP_STAGE_ROOT` | `out/bgcp_stages` | resumable `rp_stage.json` and `ts_stage.json` artifact root |
+| `--alignment-out-root` | `BGCP_ALIGNMENT_OUT_ROOT` | `out/bgcp_alignments` | output root for optional clean Stage 1 aligned-coordinate exports |
 | none | `BGCP_EVAL_JSON` | `out/bgcp_alignment_eval.json` | merged JSON summary output |
 | `--stage` | `BGCP_STAGE` | `full` | run `rp`, `ts`, `view`, or composed `full` stage |
 | `--mechanism` | none | all | restrict Stage 2 verification to one mechanism id; repeat for multiple ids |
+| `--save-alignment-files` | `BGCP_SAVE_ALIGNMENT_FILES` | `0` | write mechanism-specific aligned R/P files during Stage 1 or full runs |
 | `--steps` | none | all steps | explicit cached step names to process |
 | `--limit` | none | none | process first N step directories after sorting |
 | `--include-gt` | `BGCP_INCLUDE_GT` | `0` | load and score optional GT cache directories |

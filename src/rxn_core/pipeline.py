@@ -31,7 +31,9 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       rxn_overlap_per_mode,
                       build_graph, cut_sweep, select_min_mechanisms,
                       ts_core_pool)
-from rxn_core.chemistry_computations import run_xtb, run_xtb_hess
+from rxn_core.chemistry_computations import (
+    run_xtb, run_xtb_hess, write_xyz_str,
+)
 from rxn_core.matcher import _nauty_orbits
 
 PROJECT = Path(os.environ.get(
@@ -49,6 +51,10 @@ OUT_ROOT = Path(os.environ.get(
 STAGE_ROOT = Path(os.environ.get(
     "BGCP_STAGE_ROOT",
     PROJECT / "out" / "bgcp_stages",
+))
+ALIGNMENT_OUT_ROOT = Path(os.environ.get(
+    "BGCP_ALIGNMENT_OUT_ROOT",
+    PROJECT / "out" / "bgcp_alignments",
 ))
 EVAL_JSON = Path(os.environ.get(
     "BGCP_EVAL_JSON",
@@ -141,6 +147,11 @@ def pipeline_stage_paths(step_name, stage_root=None, out_root=None):
         view_html=view_dir / "view.html",
         eval_slim_json=view_dir / "_eval_slim.json",
     )
+
+
+def alignment_output_dir(step_name, alignment_out_root=None):
+    """Directory for clean Stage 1 aligned-coordinate exports."""
+    return Path(alignment_out_root or ALIGNMENT_OUT_ROOT) / step_name
 
 
 def rp_stage_config():
@@ -739,6 +750,119 @@ def _mechanism_for_view(mech):
     return out
 
 
+def write_rp_alignment_files(inputs, rp_result, out_dir=None):
+    """Write clean Stage 1 alignment files for NEB/path-building use.
+
+    Coordinates are only reindexed into the R atom frame.  No Kabsch or other
+    spatial fitting is applied.  Each mechanism directory is self-contained and
+    contains an R endpoint, the mechanism-specific aligned P endpoint, a
+    two-frame XYZ, a mapping CSV, and a JSON metadata file.
+    """
+    out_dir = Path(out_dir) if out_dir is not None else alignment_output_dir(
+        inputs.step_name)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    mech_root = out_dir / "mechanisms"
+    mech_root.mkdir(exist_ok=True)
+
+    (out_dir / "R.xyz").write_text(write_xyz_str(
+        inputs.elR, inputs.xyzR, f"{inputs.step_name} reactant R frame"))
+    (out_dir / "P_original.xyz").write_text(write_xyz_str(
+        inputs.elP, inputs.xyzP, f"{inputs.step_name} product original order"))
+
+    manifest_mechs = []
+    for mech in rp_result.get('mechanisms', []):
+        mech_id = int(mech['id'])
+        name = f"mechanism_{mech_id:03d}"
+        mdir = mech_root / name
+        mdir.mkdir(exist_ok=True)
+        mapping_RP = _int_mapping(mech['mapping_RP'])
+        p_aligned = np.asarray(mech.get('product_xyz_in_R'), float)
+        if p_aligned.shape != np.asarray(inputs.xyzR).shape:
+            p_aligned = np.asarray(inputs.xyzR, float).copy()
+            for i_R, i_P in mapping_RP.items():
+                p_aligned[i_R] = inputs.xyzP[i_P]
+
+        r_xyz = write_xyz_str(
+            inputs.elR, inputs.xyzR,
+            f"{inputs.step_name} {name} R endpoint")
+        p_xyz = write_xyz_str(
+            inputs.elR, p_aligned,
+            f"{inputs.step_name} {name} P aligned to R atom order")
+        (mdir / "R.xyz").write_text(r_xyz)
+        (mdir / "P_aligned.xyz").write_text(p_xyz)
+        (mdir / "neb_endpoints.xyz").write_text(r_xyz + p_xyz)
+
+        rows = ["R_index,R_element,P_index,P_element"]
+        for r in sorted(mapping_RP):
+            p = mapping_RP[r]
+            rows.append(f"{r},{inputs.elR[r]},{p},{inputs.elP[p]}")
+        (mdir / "mapping_R_to_P.csv").write_text("\n".join(rows) + "\n")
+
+        meta = {
+            'step': inputs.step_name,
+            'mechanism_id': mech_id,
+            'label': mech.get('label'),
+            'cut': mech.get('cut'),
+            'mapping_RP': mapping_RP,
+            'broken_bonds_R': mech.get('broken_bonds_R', []),
+            'formed_bonds_R': mech.get('formed_bonds_R', []),
+            'formed_bonds_P': mech.get('formed_bonds_P', []),
+            'core_atoms_R': mech.get('core_atoms', []),
+            'dedup_count': mech.get('dedup_count', 1),
+            'dedup_source_ids': mech.get('dedup_source_ids', [mech_id]),
+            'dedup_cuts': mech.get('dedup_cuts', [mech.get('cut')]),
+            'files': {
+                'reactant': 'R.xyz',
+                'product_aligned': 'P_aligned.xyz',
+                'neb_endpoints': 'neb_endpoints.xyz',
+                'mapping_csv': 'mapping_R_to_P.csv',
+            },
+            'coordinate_policy': (
+                'P_aligned.xyz is product geometry reindexed into R atom '
+                'order using mapping_RP; no spatial/Kabsch alignment is used.'
+            ),
+        }
+        write_stage_json(mdir / "mechanism.json", meta)
+        manifest_mechs.append({
+            'id': mech_id,
+            'label': mech.get('label'),
+            'directory': f"mechanisms/{name}",
+            'reactant': f"mechanisms/{name}/R.xyz",
+            'product_aligned': f"mechanisms/{name}/P_aligned.xyz",
+            'neb_endpoints': f"mechanisms/{name}/neb_endpoints.xyz",
+            'metadata': f"mechanisms/{name}/mechanism.json",
+            'mapping_csv': f"mechanisms/{name}/mapping_R_to_P.csv",
+            'broken_bonds_R': mech.get('broken_bonds_R', []),
+            'formed_bonds_R': mech.get('formed_bonds_R', []),
+            'core_atoms_R': mech.get('core_atoms', []),
+        })
+
+    manifest = {
+        'stage': 'rp_alignment_files',
+        'step': inputs.step_name,
+        'n_atoms': len(inputs.elR),
+        'source_stage': 'rp_stage.json',
+        'root_files': {
+            'reactant': 'R.xyz',
+            'product_original_order': 'P_original.xyz',
+        },
+        'mechanisms': manifest_mechs,
+        'coordinate_policy': (
+            'All mechanism P endpoints are reindexed into the R atom frame. '
+            'The files are intended for downstream path/NEB setup that needs '
+            'matching atom order.'
+        ),
+    }
+    write_stage_json(out_dir / "manifest.json", manifest)
+    return {
+        'stage': 'rp_alignment_files',
+        'step': inputs.step_name,
+        'out_dir': str(out_dir),
+        'manifest': str(out_dir / "manifest.json"),
+        'n_mechanisms': len(manifest_mechs),
+    }
+
+
 def run_rp_stage(inputs, config=None, inner_workers=0):
     """Stage 1: discover mechanism-dependent R-P alignments.
 
@@ -1175,7 +1299,8 @@ window.addEventListener('load', render);
 
 
 def run_full_pipeline_stage(step_name, inner_workers=0, mechanism_ids=None,
-                            write_artifacts=True):
+                            write_artifacts=True,
+                            save_alignment_files=False):
     """Compose Stage 1, Stage 2, and Stage 3 for one step."""
     inputs = load_step_inputs(step_name)
     rp_result = run_rp_stage(inputs, inner_workers=inner_workers)
@@ -1189,16 +1314,21 @@ def run_full_pipeline_stage(step_name, inner_workers=0, mechanism_ids=None,
         paths = pipeline_stage_paths(step_name)
         write_stage_json(paths.rp_json, rp_result)
         write_stage_json(paths.ts_json, ts_result)
+    alignment_files = None
+    if save_alignment_files:
+        alignment_files = write_rp_alignment_files(inputs, rp_result)
     return {
         'step': step_name,
         'rp': rp_result,
         'ts': ts_result,
         'view': view_result,
+        'alignment_files': alignment_files,
         'slim': view_result['slim'],
     }
 
 
-def process_rp_step(step_name, inner_workers=0, write_view=True):
+def process_rp_step(step_name, inner_workers=0, write_view=True,
+                    save_alignment_files=False):
     """Run only Stage 1 and write `rp_stage.json`.
 
     The optional view is an alignment/mechanism view: R/P only, no TS scores.
@@ -1211,10 +1341,14 @@ def process_rp_step(step_name, inner_workers=0, write_view=True):
     if write_view:
         view_result = write_view_stage(
             inputs, rp_result, ts_result=None, include_gt=False)
+    alignment_files = None
+    if save_alignment_files:
+        alignment_files = write_rp_alignment_files(inputs, rp_result)
     return {
         'step': step_name,
         'rp': rp_result,
         'view': view_result,
+        'alignment_files': alignment_files,
         'slim': view_result['slim'] if view_result else {
             'step': step_name,
             'n_mechs': len(rp_result.get('mechanisms', [])),
@@ -1273,11 +1407,13 @@ def process_view_step(step_name):
 
 
 def process_step_stage(step_name, stage='full', inner_workers=0,
-                       mechanism_ids=None):
+                       mechanism_ids=None, save_alignment_files=False):
     """CLI-safe wrapper for one explicit stage."""
     try:
         if stage == 'rp':
-            return process_rp_step(step_name, inner_workers=inner_workers)
+            return process_rp_step(
+                step_name, inner_workers=inner_workers,
+                save_alignment_files=save_alignment_files)
         if stage == 'ts':
             return process_ts_step(
                 step_name, inner_workers=inner_workers,
@@ -1287,7 +1423,8 @@ def process_step_stage(step_name, stage='full', inner_workers=0,
         if stage == 'full':
             return run_full_pipeline_stage(
                 step_name, inner_workers=inner_workers,
-                mechanism_ids=mechanism_ids)
+                mechanism_ids=mechanism_ids,
+                save_alignment_files=save_alignment_files)
         raise ValueError(f"unknown stage: {stage}")
     except Exception as e:
         return {"step": step_name, "error": f"{type(e).__name__}: {e}",
@@ -1309,7 +1446,7 @@ def main():
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, SYMMETRY_WBO_TOL
     global W_RXN, W_CORE, IMAG_PEN
-    global STAGE_ROOT
+    global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage",
                     choices=("full", "rp", "ts", "view"),
@@ -1321,6 +1458,17 @@ def main():
                     help="Directory for resumable rp_stage.json and "
                          "ts_stage.json artifacts. Default from "
                          "BGCP_STAGE_ROOT=out/bgcp_stages.")
+    ap.add_argument("--alignment-out-root", default=str(ALIGNMENT_OUT_ROOT),
+                    help="Directory for optional Stage 1 clean aligned "
+                         "coordinate exports. Default from "
+                         "BGCP_ALIGNMENT_OUT_ROOT=out/bgcp_alignments.")
+    ap.add_argument("--save-alignment-files", action="store_true",
+                    default=os.environ.get(
+                        "BGCP_SAVE_ALIGNMENT_FILES", "0").lower() in {
+                            "1", "true", "yes", "on"
+                        },
+                    help="Write clean mechanism-specific R/P-aligned XYZ "
+                         "files during --stage rp or --stage full.")
     ap.add_argument("--mechanism", type=int, action="append",
                     help="Restrict Stage 2 verification to a mechanism id. "
                          "Can be repeated. Default verifies all mechanisms.")
@@ -1401,6 +1549,7 @@ def main():
     W_CORE = float(args.w_core)
     IMAG_PEN = float(args.imag_pen)
     STAGE_ROOT = Path(args.stage_root)
+    ALIGNMENT_OUT_ROOT = Path(args.alignment_out_root)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
     XTB_CHARGE = int(args.charge)
     XTB_MULTIPLICITY = _normal_multiplicity(args.multiplicity)
@@ -1419,6 +1568,9 @@ def main():
     os.environ["BGCP_W_CORE"] = str(W_CORE)
     os.environ["BGCP_IMAG_PEN"] = str(IMAG_PEN)
     os.environ["BGCP_STAGE_ROOT"] = str(STAGE_ROOT)
+    os.environ["BGCP_ALIGNMENT_OUT_ROOT"] = str(ALIGNMENT_OUT_ROOT)
+    os.environ["BGCP_SAVE_ALIGNMENT_FILES"] = (
+        "1" if args.save_alignment_files else "0")
 
     if not WORK.exists():
         print(f"No work directory: {WORK}")
@@ -1434,6 +1586,8 @@ def main():
 
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
     STAGE_ROOT.mkdir(parents=True, exist_ok=True)
+    if args.save_alignment_files:
+        ALIGNMENT_OUT_ROOT.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     eval_records = []
     n_ok = n_err = 0
@@ -1480,11 +1634,13 @@ def main():
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
-              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
+              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
+              f"save_alignment_files={args.save_alignment_files})")
         for i, step in enumerate(steps, 1):
             rec = process_step_stage(
                 step, stage=args.stage, inner_workers=inner_workers,
-                mechanism_ids=args.mechanism)
+                mechanism_ids=args.mechanism,
+                save_alignment_files=args.save_alignment_files)
             _record(i, rec)
     elif mode == "outer":
         # Outer-parallel mode: args.workers steps run concurrently; each
@@ -1497,9 +1653,14 @@ def main():
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
-              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
+              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
+              f"save_alignment_files={args.save_alignment_files})")
         with mp.Pool(worker_budget) as pool:
-            work = [(step, args.stage, 0, args.mechanism) for step in steps]
+            work = [
+                (step, args.stage, 0, args.mechanism,
+                 args.save_alignment_files)
+                for step in steps
+            ]
             for i, rec in enumerate(pool.imap_unordered(
                     _process_step_stage_star, work), 1):
                 _record(i, rec)
@@ -1523,12 +1684,13 @@ def main():
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
-              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
+              f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
+              f"save_alignment_files={args.save_alignment_files})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(
                     process_step_stage, step, args.stage, inner_workers,
-                    args.mechanism): step
+                    args.mechanism, args.save_alignment_files): step
                 for step in scheduled_steps
             }
             for i, fut in enumerate(cf.as_completed(futures), 1):

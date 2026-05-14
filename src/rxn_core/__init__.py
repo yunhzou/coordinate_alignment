@@ -30,7 +30,8 @@ Public API:
         load_step_inputs, step_inputs_from_arrays,
         ts_target_from_arrays, load_ts_targets,
         discover_mechanisms_from_arrays,
-        run_rp_stage, run_ts_stage, write_view_stage,
+        run_rp_stage, write_rp_alignment_files,
+        run_ts_stage, write_view_stage,
         run_full_pipeline_stage, process_step, main,
     )
 """
@@ -57,7 +58,8 @@ _PIPELINE_EXPORTS = {
     "load_step_inputs", "step_inputs_from_arrays",
     "ts_target_from_arrays", "load_ts_targets",
     "discover_mechanisms_from_arrays",
-    "run_rp_stage", "run_ts_stage", "write_view_stage",
+    "run_rp_stage", "write_rp_alignment_files",
+    "run_ts_stage", "write_view_stage",
     "run_full_pipeline_stage", "process_step",
 }
 
@@ -85,7 +87,8 @@ __all__ = [
     "load_step_inputs", "step_inputs_from_arrays",
     "ts_target_from_arrays", "load_ts_targets",
     "discover_mechanisms_from_arrays",
-    "run_rp_stage", "run_ts_stage", "write_view_stage",
+    "run_rp_stage", "write_rp_alignment_files",
+    "run_ts_stage", "write_view_stage",
     "run_full_pipeline_stage", "process_step",
 ]
 

@@ -104,7 +104,10 @@ symmetry state. A block with two R atoms and four P atoms represents
   mechanisms plus GT/IG/TS targets, runs mechanism-local R/P endpoint
   `ts_core_pool`, and writes `ts_stage.json`. `write_view_stage` is
   presentation-only: it writes the multi-mechanism viewer plus slim eval JSON
-  from stage records. The compatibility `process_step` composes all three.
+  from stage records. `write_rp_alignment_files` is a Stage 1 export helper
+  for downstream NEB/path setup: it writes per-mechanism `R.xyz`,
+  `P_aligned.xyz`, `neb_endpoints.xyz`, mapping CSV, and metadata without
+  doing any spatial/Kabsch fitting. The compatibility `process_step` composes all three.
   The CLI exposes the same split through `--stage rp|ts|view|full`, and
   `--mechanism` restricts Stage 2 verification to selected mechanism IDs.
   The default auto scheduler treats `--workers` as a total CPU budget and

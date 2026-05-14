@@ -184,3 +184,28 @@ def test_array_based_mechanism_discovery_returns_aligned_product():
     mech = result["mechanisms"][0]
     assert set(mech["mapping_RP"]) == {0, 1}
     assert len(mech["product_xyz_in_R"]) == 2
+
+
+def test_rp_alignment_file_export_is_neb_ready(tmp_path):
+    el = ["H", "H"]
+    xyz_r = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]])
+    xyz_p = np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.75]])
+    wbo = np.array([[0.0, 0.9], [0.9, 0.0]])
+    inputs = pipeline.step_inputs_from_arrays(
+        "h2", el, xyz_r, wbo, el, xyz_p, wbo)
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+    rp = pipeline.run_rp_stage(inputs, config=cfg)
+
+    out = pipeline.write_rp_alignment_files(inputs, rp, tmp_path)
+
+    assert out["n_mechanisms"] == len(rp["mechanisms"])
+    assert (tmp_path / "manifest.json").exists()
+    assert (tmp_path / "R.xyz").exists()
+    assert (tmp_path / "P_original.xyz").exists()
+    mdir = tmp_path / "mechanisms" / "mechanism_001"
+    assert (mdir / "R.xyz").exists()
+    assert (mdir / "P_aligned.xyz").exists()
+    assert (mdir / "neb_endpoints.xyz").read_text().count("\n2\n") == 1
+    assert "R_index,R_element,P_index,P_element" in (
+        mdir / "mapping_R_to_P.csv").read_text()
