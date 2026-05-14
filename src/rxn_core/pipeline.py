@@ -49,7 +49,7 @@ EVAL_JSON = Path(os.environ.get(
 ))
 CUT_FLOOR = float(os.environ.get("BGCP_CUT_FLOOR", "0.2"))
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
-VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "2000"))
+VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "100"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"

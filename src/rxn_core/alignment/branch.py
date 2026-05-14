@@ -47,7 +47,7 @@ class BranchLimitExceeded(RuntimeError):
 
 class _Branch:
     __slots__ = ('mapping', 'islands_R', 'islands_P', 'next_iid',
-                 'deferred_edges', 'symmetry_fragments')
+                 'deferred_edges', 'symmetry_fragments', '_signature_cache')
     def __init__(self):
         self.mapping = {}
         self.islands_R = {}
@@ -55,6 +55,7 @@ class _Branch:
         self.next_iid = 1
         self.deferred_edges = set()
         self.symmetry_fragments = []
+        self._signature_cache = None
     def fork(self):
         b = _Branch()
         b.mapping = dict(self.mapping)
@@ -63,8 +64,10 @@ class _Branch:
         b.next_iid = self.next_iid
         b.deferred_edges = set(self.deferred_edges)
         b.symmetry_fragments = list(self.symmetry_fragments)
+        b._signature_cache = self._signature_cache
         return b
     def commit(self, iso, g_R, events=None):
+        self._signature_cache = None
         touched = set()
         for r in iso:
             if r in self.islands_R:
@@ -391,21 +394,47 @@ def find_islands(g_R, g_P, seed_order,
     def _core_complete(mapping):
         return core_R and all(r in mapping for r in core_R)
 
-    def _branch_signature(mapping, deferred_edges=()):
+    signature_cache = {}
+
+    def _deferred_key(deferred_edges):
+        return tuple(sorted(tuple(sorted(e)) for e in deferred_edges))
+
+    def _mapping_signature(mapping, deferred_edges=()):
+        # Full chemistry signatures are expensive for large near-complete
+        # mappings.  The same branch state is checked repeatedly while seeds
+        # are carried forward and cross-branch dedupe runs, so cache by exact
+        # mapping/deferred state inside this find_islands invocation.
+        cache_key = (
+            tuple(sorted(mapping.items())),
+            _deferred_key(deferred_edges),
+        )
+        cached = signature_cache.get(cache_key)
+        if cached is not None:
+            return cached
         core_key = tuple((r, mapping[r]) for r in core_R if r in mapping)
         if core_R and len(core_key) == len(core_R):
-            return ('core_complete', core_key)
+            sig = ('core_complete', core_key)
+            signature_cache[cache_key] = sig
+            return sig
         deferred_boundary = _boundary_signature(
             mapping, g_R, g_P, fragment=set(mapping),
             deferred_edges=deferred_edges, r_orbits=r_orbits,
             p_orbits=p_orbits, locked_mapping=mapping)
-        return (
+        sig = (
             'mechanism_state',
             core_key,
             _chemistry_orbit_signature(
                 mapping, g_R, g_P, r_orbits, p_orbits),
             deferred_boundary,
         )
+        signature_cache[cache_key] = sig
+        return sig
+
+    def _branch_signature(branch):
+        if branch._signature_cache is None:
+            branch._signature_cache = _mapping_signature(
+                branch.mapping, branch.deferred_edges)
+        return branch._signature_cache
 
     def _hit_branch_cap(count, seed, stage):
         if not abort_on_branch_cap:
@@ -439,7 +468,7 @@ def find_islands(g_R, g_P, seed_order,
             pending_seen = set()
 
             def _append_pending(branch):
-                sig = _branch_signature(branch.mapping, branch.deferred_edges)
+                sig = _branch_signature(branch)
                 if sig in pending_seen:
                     return False
                 pending_seen.add(sig)
@@ -478,7 +507,7 @@ def find_islands(g_R, g_P, seed_order,
                     full_m = dict(b.mapping); full_m.update(iso)
                     full_deferred = set(b.deferred_edges)
                     full_deferred.update(getattr(iso, 'deferred_edges', ()))
-                    state_key = _branch_signature(full_m, full_deferred)
+                    state_key = _mapping_signature(full_m, full_deferred)
                     if state_key not in seen_state:
                         seen_state[state_key] = iso
                 deduped_isos = list(seen_state.values())
@@ -498,7 +527,7 @@ def find_islands(g_R, g_P, seed_order,
             seen = set()
             uniq = []
             for b in new_branches:
-                state_sig = _branch_signature(b.mapping, b.deferred_edges)
+                state_sig = _branch_signature(b)
                 if state_sig in seen:
                     continue
                 seen.add(state_sig)

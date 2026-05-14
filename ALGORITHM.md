@@ -551,7 +551,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `iso_tol` | `1.0` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `max_branches` | `1_000_000` | live branch cap for direct low-level matching |
-| `BGCP_VIEW_MAX_BRANCHES` | `2000` | R-P cut-sweep branch cap; a cut is discarded if any seed order reaches it |
+| `BGCP_VIEW_MAX_BRANCHES` | `100` | R-P cut-sweep branch cap; a cut is discarded if any seed order reaches it |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
