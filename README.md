@@ -98,29 +98,30 @@ ALGORITHM.md              algorithm details
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `100` | per-cut branch cap; capped cuts are discarded |
 | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
-| `BGCP_AUTO_MAX_WORKERS` | `8` | hard cap on total workers in auto mode |
 | `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
-| `BGCP_XTB_OMP_THREADS` | `1` | OMP threads for xtb Hessian cache fills |
+| `BGCP_XTB_OMP_THREADS` | `auto` | requested OMP threads for each xtb molecule |
+| `BGCP_XTB_MAX_THREADS` | `8` | hard cap on OMP threads for each xtb molecule |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
 
 CLI scheduling options:
 
 ```text
---workers              requested CPU budget
+--workers              total CPU budget in auto mode
 --parallel-mode        auto | outer | inner
 --inner-workers        explicit per-step inner worker count
 --auto-inner-workers   target inner workers per concurrent step in auto mode
---auto-max-workers     hard cap on total workers in auto mode
 --xtb-mode             auto | cache-only
---xtb-omp-threads      OMP_NUM_THREADS for xtb --hess cache fills
+--xtb-omp-threads      requested OMP_NUM_THREADS per xtb molecule
+--xtb-max-threads      hard cap on OMP_NUM_THREADS per xtb molecule
 --steps                explicit cached step names
 --limit                first N cached steps
 ```
 
-In default `auto` mode, the total worker budget is capped at 8 unless
-`--auto-max-workers` or `BGCP_AUTO_MAX_WORKERS` is changed. In `auto` or
-`inner` mode, the per-step inner worker pool is used for both expensive
-phases: R-P cut sweep and independent TS/IG endpoint core matching.
+In `auto` or `inner` mode, the per-step inner worker pool is used for both
+expensive phases: R-P cut sweep and independent TS/IG endpoint core matching.
+If missing caches trigger xtb, each individual xtb subprocess gets
+`OMP_NUM_THREADS=min(requested, BGCP_XTB_MAX_THREADS)`, with the default cap at
+8 per molecule.
 
 ## Public API
 

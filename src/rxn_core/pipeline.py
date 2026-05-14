@@ -61,9 +61,9 @@ SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS",
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
 AUTO_INNER_WORKERS = int(os.environ.get("BGCP_AUTO_INNER_WORKERS", "8"))
-AUTO_MAX_WORKERS = int(os.environ.get("BGCP_AUTO_MAX_WORKERS", "8"))
 XTB_CACHE_MODE = os.environ.get("BGCP_XTB_MODE", "auto").lower()
-XTB_OMP_THREADS = int(os.environ.get("BGCP_XTB_OMP_THREADS", "1"))
+XTB_OMP_THREADS = os.environ.get("BGCP_XTB_OMP_THREADS", "auto")
+XTB_MAX_THREADS = int(os.environ.get("BGCP_XTB_MAX_THREADS", "8"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
 
 
@@ -71,12 +71,13 @@ def _default_worker_count():
     return max(1, int(os.cpu_count() or 2) - 1)
 
 
-def _resolve_worker_count(mode, workers, auto_max_workers=AUTO_MAX_WORKERS):
-    requested = _default_worker_count() if workers is None else int(workers)
-    requested = max(1, requested)
-    if mode == "auto":
-        return min(requested, max(1, int(auto_max_workers)))
-    return requested
+def _resolve_xtb_threads(threads=None, max_threads=XTB_MAX_THREADS):
+    raw = XTB_OMP_THREADS if threads is None else threads
+    if isinstance(raw, str) and raw.lower() == "auto":
+        requested = int(os.cpu_count() or 1)
+    else:
+        requested = int(raw)
+    return max(1, min(max(1, requested), max(1, int(max_threads))))
 
 
 def _xyz_path(d, include_xtbhess=False):
@@ -131,7 +132,7 @@ def _ensure_sp_cache(d, label, xyz_fallback=None, xtb_mode=None):
         raise RuntimeError(f"missing {label} xyz in {d}")
     if not wbo.exists():
         _need_xtb(f"{label} single-point WBO", wbo, xtb_mode)
-        run_xtb(xyz, d)
+        run_xtb(xyz, d, omp_threads=_resolve_xtb_threads())
     return d
 
 
@@ -151,7 +152,7 @@ def _ensure_hess_cache(hess_dir, label, xyz_fallback=None, xtb_mode=None):
             raise RuntimeError(f"missing {label} hessian xyz in {hess_dir}")
         _need_xtb(f"{label} Hessian g98.out", g98, xtb_mode)
         run_xtb_hess(
-            xyz, hess_dir, omp_threads=max(1, int(XTB_OMP_THREADS)))
+            xyz, hess_dir, omp_threads=_resolve_xtb_threads())
     return parse_g98_modes(g98)
 
 
@@ -778,12 +779,11 @@ def process_step(step_name, inner_workers=0):
 
 
 def main():
-    global XTB_CACHE_MODE, XTB_OMP_THREADS
+    global XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workers", type=int, default=None,
-                    help="Requested CPU budget. In auto mode this is capped "
-                         "by --auto-max-workers; other modes use it directly. "
-                         "Default is CPU count - 1.")
+    ap.add_argument("--workers", type=int, default=_default_worker_count(),
+                    help="Total CPU budget in auto mode, or outer step "
+                         "parallelism in outer mode.")
     ap.add_argument("--inner-workers", type=int, default=0,
                     help="Explicit workers per step's inner R-P/TS work. In auto "
                          "mode, 0 means choose from --workers; >1 switches "
@@ -798,27 +798,32 @@ def main():
                     default=AUTO_INNER_WORKERS,
                     help="Target inner workers per concurrent step in "
                          "auto mode. Default from BGCP_AUTO_INNER_WORKERS=8.")
-    ap.add_argument("--auto-max-workers", type=int,
-                    default=AUTO_MAX_WORKERS,
-                    help="Hard cap on total workers in auto mode. Default "
-                         "from BGCP_AUTO_MAX_WORKERS=8.")
     ap.add_argument("--xtb-mode",
                     choices=("auto", "cache-only"),
                     default=_normal_xtb_mode(XTB_CACHE_MODE),
                     help="auto fills missing WBO/g98 caches by running xtb "
                          "from available XYZ files; cache-only fails on "
                          "missing cache files.")
-    ap.add_argument("--xtb-omp-threads", type=int,
+    ap.add_argument("--xtb-omp-threads",
                     default=XTB_OMP_THREADS,
-                    help="OMP_NUM_THREADS used for xtb --hess cache fills.")
+                    help="Requested OMP_NUM_THREADS per xtb molecule. "
+                         "Default 'auto' uses available CPUs capped by "
+                         "--xtb-max-threads.")
+    ap.add_argument("--xtb-max-threads", type=int,
+                    default=XTB_MAX_THREADS,
+                    help="Hard cap for OMP_NUM_THREADS per xtb molecule. "
+                         "Default from BGCP_XTB_MAX_THREADS=8.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
 
     XTB_CACHE_MODE = _normal_xtb_mode(args.xtb_mode)
-    XTB_OMP_THREADS = max(1, int(args.xtb_omp_threads))
+    XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
+    XTB_OMP_THREADS = _resolve_xtb_threads(
+        args.xtb_omp_threads, XTB_MAX_THREADS)
     os.environ["BGCP_XTB_MODE"] = XTB_CACHE_MODE
     os.environ["BGCP_XTB_OMP_THREADS"] = str(XTB_OMP_THREADS)
+    os.environ["BGCP_XTB_MAX_THREADS"] = str(XTB_MAX_THREADS)
 
     if not WORK.exists():
         print(f"No work directory: {WORK}")
@@ -853,8 +858,7 @@ def main():
     mode = args.parallel_mode
     if mode == "auto" and args.inner_workers and args.inner_workers > 1:
         mode = "inner"
-    worker_budget = _resolve_worker_count(
-        mode, args.workers, args.auto_max_workers)
+    worker_budget = max(1, int(args.workers))
 
     if mode == "inner":
         # Inner-parallel mode: steps run serially in main; each step's
@@ -865,7 +869,8 @@ def main():
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE})")
+              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
+              f"xtb_threads={XTB_OMP_THREADS})")
         for i, step in enumerate(steps, 1):
             rec = process_step(step, inner_workers=inner_workers)
             _record(i, rec)
@@ -875,7 +880,8 @@ def main():
         # small/easy steps when nested process pools are undesirable.
         print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
               f"(legacy serial inner work inside each step, "
-              f"xtb_mode={XTB_CACHE_MODE})")
+              f"xtb_mode={XTB_CACHE_MODE}, "
+              f"xtb_threads={XTB_OMP_THREADS})")
         with mp.Pool(worker_budget) as pool:
             for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
                 _record(i, rec)
@@ -893,9 +899,9 @@ def main():
               f"{outer_slots} concurrent steps x {inner_workers} "
               f"inner workers "
               f"(total budget={total_workers}, "
-              f"auto cap={max(1, int(args.auto_max_workers))}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE})")
+              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
+              f"xtb_threads={XTB_OMP_THREADS})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(process_step, step, inner_workers): step

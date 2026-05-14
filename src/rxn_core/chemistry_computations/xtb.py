@@ -47,7 +47,7 @@ def _xtb_command(local_name, mode, charge=0, uhf=0):
     return cmd
 
 
-def run_xtb(xyz_path, workdir, charge=0, uhf=0):
+def run_xtb(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
     """Run cached xtb GFN2 single-point and return ``(elements, coords, wbo)``."""
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
@@ -59,11 +59,14 @@ def run_xtb(xyz_path, workdir, charge=0, uhf=0):
     if not cached:
         if Path(xyz_path).resolve() != local.resolve():
             shutil.copy(xyz_path, local)
+        env = os.environ.copy()
+        env["OMP_NUM_THREADS"] = str(max(1, int(omp_threads)))
         res = subprocess.run(
             _xtb_command(local.name, "--sp", charge=charge, uhf=uhf),
             cwd=workdir,
             capture_output=True,
             text=True,
+            env=env,
         )
         if res.returncode != 0:
             raise RuntimeError(f"xtb failed: {res.stderr[-500:]}")
@@ -90,7 +93,7 @@ def run_xtb_hess(xyz_path: Path, workdir: Path, charge: int = 0, uhf: int = 0,
         if Path(xyz_path).resolve() != local.resolve():
             shutil.copy(xyz_path, local)
         env = os.environ.copy()
-        env["OMP_NUM_THREADS"] = str(omp_threads)
+        env["OMP_NUM_THREADS"] = str(max(1, int(omp_threads)))
         res = subprocess.run(
             _xtb_command(local.name, "--hess", charge=charge, uhf=uhf),
             cwd=workdir,

@@ -59,8 +59,8 @@ def test_sp_cache_auto_runs_xtb_for_missing_wbo(tmp_path, monkeypatch):
     (cache / "r.xyz").write_text("2\nR\nH 0 0 0\nH 0 0 1\n")
     calls = []
 
-    def fake_run_xtb(xyz_path, workdir):
-        calls.append((xyz_path, workdir))
+    def fake_run_xtb(xyz_path, workdir, omp_threads=1):
+        calls.append((xyz_path, workdir, omp_threads))
         (workdir / "wbo").write_text("1 2 0.900\n")
 
     monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
@@ -68,7 +68,7 @@ def test_sp_cache_auto_runs_xtb_for_missing_wbo(tmp_path, monkeypatch):
 
     pipeline._ensure_sp_cache(cache, "R", xtb_mode="auto")
 
-    assert calls == [(cache / "r.xyz", cache)]
+    assert calls == [(cache / "r.xyz", cache, 8)]
     assert (cache / "wbo").exists()
 
 
@@ -87,14 +87,16 @@ def test_sp_cache_can_copy_xyz_fallback_without_xtb(tmp_path):
     assert (sp / "iter1.xyz").read_text() == fallback.read_text()
 
 
-def test_auto_worker_budget_is_capped_by_default(monkeypatch):
-    monkeypatch.setattr(pipeline, "_default_worker_count", lambda: 64)
+def test_xtb_threads_auto_is_capped_per_molecule(monkeypatch):
+    monkeypatch.setattr(pipeline.os, "cpu_count", lambda: 64)
 
-    assert pipeline._resolve_worker_count("auto", None) == 8
-    assert pipeline._resolve_worker_count("auto", 64) == 8
-    assert pipeline._resolve_worker_count("auto", 64, auto_max_workers=12) == 12
+    assert pipeline._resolve_xtb_threads("auto") == 8
+    assert pipeline._resolve_xtb_threads("32") == 8
+    assert pipeline._resolve_xtb_threads("4") == 4
+    assert pipeline._resolve_xtb_threads("32", max_threads=12) == 12
 
 
-def test_non_auto_worker_budget_uses_requested_count():
-    assert pipeline._resolve_worker_count("inner", 16) == 16
-    assert pipeline._resolve_worker_count("outer", 16) == 16
+def test_default_worker_count_is_not_the_xtb_thread_cap(monkeypatch):
+    monkeypatch.setattr(pipeline.os, "cpu_count", lambda: 64)
+
+    assert pipeline._default_worker_count() == 63
