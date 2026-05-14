@@ -2945,22 +2945,6 @@
   "endpoint_results": [
     {
       "key": [
-        "gt",
-        -2,
-        0
-      ],
-      "target_order": 1,
-      "target_label": "GT:m1",
-      "mech_id": 1,
-      "mech_pos": 0,
-      "endpoint": "P",
-      "n_pool": 6,
-      "core_size": 3,
-      "elapsed": 9.012222290039062e-05,
-      "hit_cap": false
-    },
-    {
-      "key": [
         "ig",
         0,
         0
@@ -2972,7 +2956,7 @@
       "endpoint": "P",
       "n_pool": 6,
       "core_size": 3,
-      "elapsed": 8.916854858398438e-05,
+      "elapsed": 7.82012939453125e-05,
       "hit_cap": false
     },
     {
@@ -2988,7 +2972,7 @@
       "endpoint": "R",
       "n_pool": 1,
       "core_size": 3,
-      "elapsed": 9.393692016601562e-05,
+      "elapsed": 8.320808410644531e-05,
       "hit_cap": false
     },
     {
@@ -3004,7 +2988,23 @@
       "endpoint": "R",
       "n_pool": 1,
       "core_size": 3,
-      "elapsed": 8.916854858398438e-05,
+      "elapsed": 8.106231689453125e-05,
+      "hit_cap": false
+    },
+    {
+      "key": [
+        "gt",
+        -2,
+        0
+      ],
+      "target_order": 1,
+      "target_label": "GT:m1",
+      "mech_id": 1,
+      "mech_pos": 0,
+      "endpoint": "P",
+      "n_pool": 6,
+      "core_size": 3,
+      "elapsed": 8.511543273925781e-05,
       "hit_cap": false
     }
   ],

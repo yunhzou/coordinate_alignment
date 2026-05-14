@@ -40,8 +40,8 @@ rxn-core --stage rp --name my_reaction \
   --workdir work/my_reaction \
   --charge 0 --multiplicity 1 --xtb-mode auto
 
-# Direct Stage 2 target verification after direct Stage 1 has written rp_stage.json
-rxn-core --stage ts --name my_reaction \
+# Post-Stage-1 collective validation after Stage 1 has written rp_stage.json
+rxn-core --stage post-rp --name my_reaction \
   --reactant-xyz R.xyz --product-xyz P.xyz \
   --target-xyz guess_1.xyz --target-label guess_1 --target-kind ig \
   --workdir work/my_reaction --save-alignment-files
@@ -112,6 +112,25 @@ result = rxnp.process_xyz_stage(
 )
 ```
 
+If Stage 1 has already run and IGs were generated from its mechanisms, resume
+from the saved `rp_stage.json` instead of rerunning R-P discovery:
+
+```python
+post_rp = rxnp.process_xyz_stage(
+    name,
+    reactant_xyz,
+    product_xyz,
+    workdir=workdir,
+    stage="post-rp",
+    target_specs=target_specs,
+    charge=0,
+    multiplicity=1,
+    xtb_mode="cache-only",
+    inner_workers=8,
+    save_alignment_files=True,
+)
+```
+
 For raw benchmark steps with multiple separate reactant/product fragments, first
 assemble each endpoint into one reaction-complex XYZ before calling Stage 1.
 
@@ -134,18 +153,21 @@ rxn-core --stage rp --steps pr7.V.dodh_ts910 --workers 8
 # Stage 1 plus clean mechanism-specific aligned R/P files for NEB/path setup
 rxn-core --stage rp --steps pr7.V.dodh_ts910 --save-alignment-files
 
-# Stage 2 plus selected best-S TS core-aligned files
-rxn-core --stage ts --steps pr7.V.dodh_ts910 \
+# Post-Stage-1 collective validation plus selected best-S TS core-aligned files
+rxn-core --stage post-rp --steps pr7.V.dodh_ts910 \
   --mechanism 2 --include-gt --save-alignment-files
 
-# Stage 2: verify GT/IG/TS targets from the saved Stage 1 mechanisms
-rxn-core --stage ts --steps pr7.V.dodh_ts910 --mechanism 2 --include-gt
+# Post-Stage-1: verify GT/IG/TS targets from saved Stage 1 mechanisms
+rxn-core --stage post-rp --steps pr7.V.dodh_ts910 --mechanism 2 --include-gt
 
 # Stage 3: regenerate only the HTML/eval view from saved stage artifacts
 rxn-core --stage view --steps pr7.V.dodh_ts910 --include-gt
 
 # Full pipeline: compose rp + ts + view in one run
 rxn-core --stage full --steps pr7.V.dodh_ts910 --workers 8
+
+# Full validation/view/export, but reuse existing rp_stage.json
+rxn-core --stage full --resume-rp --steps pr7.V.dodh_ts910 --workers 8
 ```
 
 The same pieces are importable:

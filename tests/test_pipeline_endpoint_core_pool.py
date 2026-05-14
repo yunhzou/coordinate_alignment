@@ -197,6 +197,45 @@ def test_process_xyz_stage_runs_rp_without_step_schema(tmp_path, monkeypatch):
     assert (tmp_path / "views" / "h2_direct" / "view.html").exists()
 
 
+def test_process_xyz_stage_can_resume_rp_for_collective_validation(
+        tmp_path, monkeypatch):
+    r_xyz = tmp_path / "R.xyz"
+    p_xyz = tmp_path / "P.xyz"
+    r_xyz.write_text("2\nR\nH 0 0 0\nH 0 0 0.75\n")
+    p_xyz.write_text("2\nP\nH 1 0 0\nH 1 0 0.75\n")
+
+    def fake_run_xtb(_xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        (workdir / "wbo").write_text("1 2 0.900\n")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb", fake_run_xtb)
+    monkeypatch.setattr(pipeline, "OUT_ROOT", tmp_path / "views")
+    monkeypatch.setattr(pipeline, "STAGE_ROOT", tmp_path / "stages")
+    monkeypatch.setattr(pipeline, "ALIGNMENT_OUT_ROOT", tmp_path / "alignments")
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+
+    pipeline.process_xyz_stage(
+        "h2_direct", r_xyz, p_xyz,
+        workdir=tmp_path / "work", stage="rp",
+        inner_workers=0, charge=0, multiplicity=1, xtb_mode="auto",
+        rp_config=cfg)
+
+    def fail_run_rp_stage(*_args, **_kwargs):
+        raise AssertionError("R-P stage should not rerun")
+
+    monkeypatch.setattr(pipeline, "run_rp_stage", fail_run_rp_stage)
+    rec = pipeline.process_xyz_stage(
+        "h2_direct", r_xyz, p_xyz,
+        workdir=tmp_path / "work", stage="full", resume_rp=True,
+        target_specs=[], inner_workers=0, charge=0, multiplicity=1,
+        xtb_mode="auto")
+
+    assert rec["ts"]["stage"] == "ts"
+    assert rec["slim"]["n_mechs"] >= 1
+    assert (tmp_path / "stages" / "h2_direct" / "ts_stage.json").exists()
+
+
 def test_ts_target_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):
     ts_xyz = tmp_path / "guess.xyz"
     ts_xyz.write_text("1\nTS\nH 0 0 0\n")

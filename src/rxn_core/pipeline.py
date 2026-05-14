@@ -1524,10 +1524,22 @@ window.addEventListener('load', render);
 
 def run_full_pipeline_stage(step_name, inner_workers=0, mechanism_ids=None,
                             write_artifacts=True,
-                            save_alignment_files=False):
-    """Compose Stage 1, Stage 2, and Stage 3 for one step."""
+                            save_alignment_files=False, resume_rp=False):
+    """Compose Stage 1, Stage 2, and Stage 3 for one step.
+
+    If `resume_rp=True`, the R-P mechanism-discovery artifact is loaded from
+    `rp_stage.json` and only the collective TS/IG validation plus view/export
+    stages are run.  Missing Stage 1 artifacts are an error in resume mode.
+    """
     inputs = load_step_inputs(step_name)
-    rp_result = run_rp_stage(inputs, inner_workers=inner_workers)
+    paths = pipeline_stage_paths(step_name)
+    if resume_rp:
+        if not paths.rp_json.exists():
+            raise RuntimeError(
+                f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+        rp_result = read_stage_json(paths.rp_json)
+    else:
+        rp_result = run_rp_stage(inputs, inner_workers=inner_workers)
     targets = load_ts_targets(inputs, include_gt=INCLUDE_GT)
     ts_result = run_ts_stage(
         inputs, rp_result, targets, inner_workers=inner_workers,
@@ -1535,8 +1547,8 @@ def run_full_pipeline_stage(step_name, inner_workers=0, mechanism_ids=None,
     view_result = write_view_stage(
         inputs, rp_result, ts_result, include_gt=INCLUDE_GT)
     if write_artifacts:
-        paths = pipeline_stage_paths(step_name)
-        write_stage_json(paths.rp_json, rp_result)
+        if not resume_rp:
+            write_stage_json(paths.rp_json, rp_result)
         write_stage_json(paths.ts_json, ts_result)
     alignment_files = None
     ts_alignment_files = None
@@ -1684,7 +1696,7 @@ def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
                       target_specs=None, stage='full', inner_workers=0,
                       mechanism_ids=None, save_alignment_files=False,
                       charge=None, multiplicity=None, xtb_mode=None,
-                      rp_config=None, ts_config=None):
+                      rp_config=None, ts_config=None, resume_rp=False):
     """Run pipeline stages for arbitrary XYZ files, without a step schema."""
     workdir = Path(workdir or (PROJECT / "out" / "xyz_work" / name))
     inputs = alignment_inputs_from_xyz(
@@ -1729,7 +1741,7 @@ def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
             'slim': view_result['slim'],
         }
 
-    if stage == 'ts':
+    if stage in {'ts', 'post-rp'} or (stage == 'full' and resume_rp):
         if not paths.rp_json.exists():
             raise RuntimeError(
                 f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
@@ -1752,7 +1764,7 @@ def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
         inputs, rp_result, ts_result, include_gt=include_gt)
     alignment_files = ts_alignment_files = None
     if save_alignment_files:
-        if stage == 'full':
+        if stage == 'full' and not resume_rp:
             alignment_files = write_rp_alignment_files(inputs, rp_result)
         ts_alignment_files = write_ts_alignment_files(inputs, ts_result)
     return {
@@ -1767,14 +1779,15 @@ def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
 
 
 def process_step_stage(step_name, stage='full', inner_workers=0,
-                       mechanism_ids=None, save_alignment_files=False):
+                       mechanism_ids=None, save_alignment_files=False,
+                       resume_rp=False):
     """CLI-safe wrapper for one explicit stage."""
     try:
         if stage == 'rp':
             return process_rp_step(
                 step_name, inner_workers=inner_workers,
                 save_alignment_files=save_alignment_files)
-        if stage == 'ts':
+        if stage in {'ts', 'post-rp'}:
             return process_ts_step(
                 step_name, inner_workers=inner_workers,
                 mechanism_ids=mechanism_ids,
@@ -1785,7 +1798,8 @@ def process_step_stage(step_name, stage='full', inner_workers=0,
             return run_full_pipeline_stage(
                 step_name, inner_workers=inner_workers,
                 mechanism_ids=mechanism_ids,
-                save_alignment_files=save_alignment_files)
+                save_alignment_files=save_alignment_files,
+                resume_rp=resume_rp)
         raise ValueError(f"unknown stage: {stage}")
     except Exception as e:
         return {"step": step_name, "error": f"{type(e).__name__}: {e}",
@@ -1810,11 +1824,12 @@ def main():
     global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage",
-                    choices=("full", "rp", "ts", "view"),
+                    choices=("full", "rp", "ts", "post-rp", "view"),
                     default=os.environ.get("BGCP_STAGE", "full"),
                     help="Pipeline stage to run. full composes rp+ts+view; "
-                         "rp writes rp_stage.json; ts resumes from "
-                         "rp_stage.json; view only rewrites HTML/eval.")
+                         "rp writes rp_stage.json; ts/post-rp resume from "
+                         "rp_stage.json and run collective TS/IG validation; "
+                         "view only rewrites HTML/eval.")
     ap.add_argument("--stage-root", default=str(STAGE_ROOT),
                     help="Directory for resumable rp_stage.json and "
                          "ts_stage.json artifacts. Default from "
@@ -1830,8 +1845,16 @@ def main():
                         },
                     help="Write clean mechanism-specific R/P-aligned XYZ "
                          "files during --stage rp or --stage full, and "
-                         "best-S TS core-aligned files during --stage ts or "
-                         "--stage full.")
+                         "best-S TS core-aligned files during --stage "
+                         "ts/post-rp or --stage full.")
+    ap.add_argument("--resume-rp", action="store_true",
+                    default=os.environ.get(
+                        "BGCP_RESUME_RP", "0").lower() in {
+                            "1", "true", "yes", "on"
+                        },
+                    help="For --stage full, reuse existing rp_stage.json and "
+                         "run only post-Stage-1 collective TS/IG validation "
+                         "plus view/export. Missing rp_stage.json is an error.")
     ap.add_argument("--mechanism", type=int, action="append",
                     help="Restrict Stage 2 verification to a mechanism id. "
                          "Can be repeated. Default verifies all mechanisms.")
@@ -1953,6 +1976,7 @@ def main():
     os.environ["BGCP_ALIGNMENT_OUT_ROOT"] = str(ALIGNMENT_OUT_ROOT)
     os.environ["BGCP_SAVE_ALIGNMENT_FILES"] = (
         "1" if args.save_alignment_files else "0")
+    os.environ["BGCP_RESUME_RP"] = "1" if args.resume_rp else "0"
 
     direct_mode = bool(args.reactant_xyz or args.product_xyz)
     if direct_mode:
@@ -1988,6 +2012,7 @@ def main():
                 charge=XTB_CHARGE,
                 multiplicity=XTB_MULTIPLICITY,
                 xtb_mode=XTB_CACHE_MODE,
+                resume_rp=args.resume_rp,
             )
         except Exception as e:
             rec = {
@@ -2072,12 +2097,14 @@ def main():
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
-              f"save_alignment_files={args.save_alignment_files})")
+              f"save_alignment_files={args.save_alignment_files}, "
+              f"resume_rp={args.resume_rp})")
         for i, step in enumerate(steps, 1):
             rec = process_step_stage(
                 step, stage=args.stage, inner_workers=inner_workers,
                 mechanism_ids=args.mechanism,
-                save_alignment_files=args.save_alignment_files)
+                save_alignment_files=args.save_alignment_files,
+                resume_rp=args.resume_rp)
             _record(i, rec)
     elif mode == "outer":
         # Outer-parallel mode: args.workers steps run concurrently; each
@@ -2091,11 +2118,12 @@ def main():
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
-              f"save_alignment_files={args.save_alignment_files})")
+              f"save_alignment_files={args.save_alignment_files}, "
+              f"resume_rp={args.resume_rp})")
         with mp.Pool(worker_budget) as pool:
             work = [
                 (step, args.stage, 0, args.mechanism,
-                 args.save_alignment_files)
+                 args.save_alignment_files, args.resume_rp)
                 for step in steps
             ]
             for i, rec in enumerate(pool.imap_unordered(
@@ -2122,12 +2150,14 @@ def main():
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
-              f"save_alignment_files={args.save_alignment_files})")
+              f"save_alignment_files={args.save_alignment_files}, "
+              f"resume_rp={args.resume_rp})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
                 executor.submit(
                     process_step_stage, step, args.stage, inner_workers,
-                    args.mechanism, args.save_alignment_files): step
+                    args.mechanism, args.save_alignment_files,
+                    args.resume_rp): step
                 for step in scheduled_steps
             }
             for i, fut in enumerate(cf.as_completed(futures), 1):
