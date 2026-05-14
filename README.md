@@ -30,8 +30,8 @@ rxn-core-pipeline --help
 
 ## Usage
 
-For a stage-by-stage walkthrough, see
-[`docs/TUTORIAL.md`](docs/TUTORIAL.md).
+For a stage-by-stage walkthrough, open
+[`docs/TUTORIAL.ipynb`](docs/TUTORIAL.ipynb).
 
 ```bash
 # Use the default cache root: data/xtb_frequency_calculations
@@ -242,7 +242,7 @@ src/rxn_core/
   pipeline.py             BGCP full-view pipeline and CLI entry point
 
 tests/                    focused unit tests
-docs/TUTORIAL.md          stage-by-stage usage tutorial
+docs/TUTORIAL.ipynb       stage-by-stage usage tutorial notebook
 docs/ARCHITECTURE.md      module boundary notes
 ALGORITHM.md              algorithm details
 ```
