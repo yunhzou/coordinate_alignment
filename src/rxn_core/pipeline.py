@@ -20,6 +20,7 @@ import re
 import shutil
 import time
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
@@ -44,6 +45,10 @@ WORK = Path(os.environ.get(
 OUT_ROOT = Path(os.environ.get(
     "BGCP_OUT_ROOT",
     PROJECT / "out" / "bgcp_views",
+))
+STAGE_ROOT = Path(os.environ.get(
+    "BGCP_STAGE_ROOT",
+    PROJECT / "out" / "bgcp_stages",
 ))
 EVAL_JSON = Path(os.environ.get(
     "BGCP_EVAL_JSON",
@@ -76,8 +81,101 @@ W_CORE = float(os.environ.get("BGCP_W_CORE", "0.2"))
 IMAG_PEN = float(os.environ.get("BGCP_IMAG_PEN", "0.3"))
 
 
+@dataclass
+class StepInputs:
+    """Loaded endpoint data for one cached step.
+
+    All downstream stages operate on this object instead of reading R/P from
+    disk again.  TS/IG targets are loaded separately because Stage 1 should be
+    usable as pure mechanism discovery.
+    """
+    step_name: str
+    step_dir: Path
+    elR: list
+    xyzR: np.ndarray
+    wboR: np.ndarray
+    elP: list
+    xyzP: np.ndarray
+    wboP: np.ndarray
+
+
+@dataclass
+class TSTarget:
+    """One GT/IG/TS candidate to verify under discovered mechanisms."""
+    kind: str
+    target_index: int
+    label: str
+    el: list
+    xyz: np.ndarray
+    wbo: np.ndarray
+    freqs: np.ndarray
+    modes: np.ndarray
+
+
+@dataclass
+class StagePaths:
+    """On-disk artifacts for separately runnable stages."""
+    root: Path
+    rp_json: Path
+    ts_json: Path
+    view_dir: Path
+    view_html: Path
+    eval_slim_json: Path
+
+
 def _default_worker_count():
     return max(1, int(os.cpu_count() or 2) - 1)
+
+
+def pipeline_stage_paths(step_name, stage_root=None, out_root=None):
+    """Return the standard artifact paths for one step."""
+    stage_root = Path(stage_root or STAGE_ROOT)
+    out_root = Path(out_root or OUT_ROOT)
+    stage_dir = stage_root / step_name
+    view_dir = out_root / step_name
+    return StagePaths(
+        root=stage_dir,
+        rp_json=stage_dir / "rp_stage.json",
+        ts_json=stage_dir / "ts_stage.json",
+        view_dir=view_dir,
+        view_html=view_dir / "view.html",
+        eval_slim_json=view_dir / "_eval_slim.json",
+    )
+
+
+def rp_stage_config():
+    """Current R-P mechanism-discovery hypotheses as a serializable dict."""
+    return {
+        'cut_floor': CUT_FLOOR,
+        'graph_floor': 0.2,
+        'iso_tol': VIEW_ISO_TOL,
+        'dwbo_threshold': DWBO_THRESHOLD,
+        'symmetry_wbo_tol': SYMMETRY_WBO_TOL,
+        'n_seeds': N_SEEDS_PER_RUN,
+        'max_branches': VIEW_MAX_BRANCHES,
+        'chunksize': CUTSWEEP_CHUNKSIZE,
+        'symmetry_repair': SYMMETRY_REPAIR,
+        'symmetry_repair_min_changes': SYMMETRY_REPAIR_MIN_CHANGES,
+        'symmetry_repair_max_evals': SYMMETRY_REPAIR_MAX_EVALS,
+    }
+
+
+def ts_stage_config():
+    """Current TS/IG verification hypotheses as a serializable dict."""
+    return {
+        'iso_tol': VIEW_ISO_TOL,
+        'edge_floor': TS_CORE_EDGE_FLOOR,
+        'max_candidates': TS_CORE_MAX_CANDIDATES,
+        'score': score_config(),
+    }
+
+
+def score_config():
+    return {
+        'W_RXN': W_RXN,
+        'W_CORE': W_CORE,
+        'IMAG_PEN': IMAG_PEN,
+    }
 
 
 def _resolve_xtb_threads(threads=None, max_threads=XTB_MAX_THREADS):
@@ -221,6 +319,115 @@ def _iter_labels(sd):
         if m:
             labels.add(int(m.group(1)))
     return [f"iter{i}" for i in sorted(labels)]
+
+
+def load_step_inputs(step_name):
+    """Load/cache-fill the R and P endpoints for one step."""
+    sd = WORK / step_name
+    if not sd.exists():
+        raise RuntimeError(f"missing step directory: {sd}")
+    elR, xyzR, wboR = _load_sp(sd / "R", "R")
+    elP, xyzP, wboP = _load_sp(sd / "P", "P")
+    return StepInputs(
+        step_name=step_name,
+        step_dir=sd,
+        elR=list(elR),
+        xyzR=np.asarray(xyzR, float),
+        wboR=np.asarray(wboR, float),
+        elP=list(elP),
+        xyzP=np.asarray(xyzP, float),
+        wboP=np.asarray(wboP, float),
+    )
+
+
+def step_inputs_from_arrays(step_name, elR, xyzR, wboR, elP, xyzP, wboP):
+    """Build Stage 1 inputs directly from arrays, without a cache directory."""
+    return StepInputs(
+        step_name=str(step_name),
+        step_dir=Path("."),
+        elR=list(elR),
+        xyzR=np.asarray(xyzR, float),
+        wboR=np.asarray(wboR, float),
+        elP=list(elP),
+        xyzP=np.asarray(xyzP, float),
+        wboP=np.asarray(wboP, float),
+    )
+
+
+def ts_target_from_arrays(kind, label, el, xyz, wbo, freqs, modes,
+                          target_index=0):
+    """Build a Stage 2 verification target directly from arrays."""
+    return TSTarget(
+        kind=str(kind),
+        target_index=int(target_index),
+        label=str(label),
+        el=list(el),
+        xyz=np.asarray(xyz, float),
+        wbo=np.asarray(wbo, float),
+        freqs=np.asarray(freqs, float),
+        modes=np.asarray(modes, float),
+    )
+
+
+def discover_mechanisms_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
+                                    *, step_name="alignment",
+                                    config=None, inner_workers=0):
+    """Array-based R-P alignment / mechanism discovery entry point."""
+    inputs = step_inputs_from_arrays(
+        step_name, elR, xyzR, wboR, elP, xyzP, wboP)
+    return run_rp_stage(inputs, config=config, inner_workers=inner_workers)
+
+
+def load_ts_targets(inputs, include_gt=None):
+    """Load/cache-fill GT and IG targets for Stage 2 verification.
+
+    GT is optional and controlled separately from IG loading.  IGs are loaded
+    from the conventional `sp_iter<N>` / `hess_iter<N>` cache pairs.
+    """
+    include_gt = INCLUDE_GT if include_gt is None else bool(include_gt)
+    sd = inputs.step_dir
+    targets = []
+    if include_gt:
+        gt_sp = sd / "sp_groundtruth"
+        gt_hess = sd / "hess_groundtruth"
+        elT_gt, xyzT_gt, wboT_gt = _load_sp(
+            gt_sp, "GT",
+            xyz_fallback=_xyz_path(gt_hess, include_xtbhess=True))
+        freqs_gt, modes_gt = _load_hess(
+            gt_hess, "GT", xyz_fallback=_xyz_path(gt_sp))
+        targets.append(TSTarget(
+            kind='gt',
+            target_index=-1,
+            label='GT',
+            el=list(elT_gt),
+            xyz=np.asarray(xyzT_gt, float),
+            wbo=np.asarray(wboT_gt, float),
+            freqs=np.asarray(freqs_gt, float),
+            modes=np.asarray(modes_gt, float),
+        ))
+
+    for label in _iter_labels(sd):
+        hess_dir = sd / f"hess_{label}"
+        sp_dir = sd / f"sp_{label}"
+        try:
+            elI, xyzI, wboI = _load_sp(
+                sp_dir, label,
+                xyz_fallback=_xyz_path(hess_dir, include_xtbhess=True))
+            freqs_i, modes_i = _load_hess(
+                hess_dir, label, xyz_fallback=_xyz_path(sp_dir))
+        except Exception:
+            continue
+        targets.append(TSTarget(
+            kind='ig',
+            target_index=len([t for t in targets if t.kind == 'ig']),
+            label=label,
+            el=list(elI),
+            xyz=np.asarray(xyzI, float),
+            wbo=np.asarray(wboI, float),
+            freqs=np.asarray(freqs_i, float),
+            modes=np.asarray(modes_i, float),
+        ))
+    return targets
 
 
 def _estimate_cut_sweep_units(step_name):
@@ -398,7 +605,11 @@ def _ts_endpoint_pool_task(task):
 
 
 def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
-              broken_R, formed_R, core_R, delta_RP):
+              broken_R, formed_R, core_R, delta_RP, score_weights=None):
+    weights = dict(score_config() if score_weights is None else score_weights)
+    w_rxn = float(weights.get('W_RXN', W_RXN))
+    w_core = float(weights.get('W_CORE', W_CORE))
+    imag_pen = float(weights.get('IMAG_PEN', IMAG_PEN))
     mapping_RT = {int(r): int(t) for r, t in mapping_RT.items()}
     modes_R = reindex_modes_to_R(modes_TS, mapping_RT, len(elR))
     mode_norms = np.linalg.norm(modes_TS.reshape(modes_TS.shape[0], -1), axis=1)
@@ -423,7 +634,7 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
                 out.append([int(mapping_RT[a]), int(mapping_RT[b])])
         return out
 
-    return {'S': float(beta[pk]*(1+W_RXN*rho[pk])*(1+W_CORE*kappa[pk])/max(len(imag),1)**IMAG_PEN),
+    return {'S': float(beta[pk]*(1+w_rxn*rho[pk])*(1+w_core*kappa[pk])/max(len(imag),1)**imag_pen),
             'beta': float(beta[pk]), 'rho': float(rho[pk]), 'kappa': float(kappa[pk]),
             'freq': float(freqs[pk]), 'k': int(pk), 'n_imag': len(imag),
             'core_map': {str(int(r)): int(mapping_RT[r])
@@ -443,7 +654,8 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
 
 
 def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
-                                 rt_pool, broken_R, formed_R, core_R, delta_RP):
+                                 rt_pool, broken_R, formed_R, core_R, delta_RP,
+                                 score_weights=None):
     """Score every R-frame core witness under one mech.
 
     `rt_pool` may contain native R->TS candidates and P->TS candidates that
@@ -463,13 +675,422 @@ def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
         seen_core.add(core_key)
         mapping_RT = dict(witness)
         s = score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
-                      broken_R, formed_R, core_R, delta_RP)
+                      broken_R, formed_R, core_R, delta_RP,
+                      score_weights=score_weights)
         if s:
             s['core_sources'] = sorted(v.get('sources', {'R'}))
             s['core_pool_dedup_count'] = int(v.get('dedup_count', 1))
         if s and (best is None or s['S'] > best['S']):
             best = s
     return best
+
+
+def _json_ready(value):
+    """Convert numpy/path/set-heavy stage records to plain JSON values."""
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(k): _json_ready(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(v) for v in value]
+    if isinstance(value, (set, frozenset)):
+        return [_json_ready(v) for v in sorted(value)]
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (np.floating,)):
+        return float(value)
+    return value
+
+
+def write_stage_json(path, record):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_json_ready(record), indent=2))
+    return path
+
+
+def read_stage_json(path):
+    return json.loads(Path(path).read_text())
+
+
+def _int_mapping(mapping):
+    return {int(k): int(v) for k, v in dict(mapping).items()}
+
+
+def _int_pairs(pairs):
+    return [(int(a), int(b)) for a, b in pairs]
+
+
+def _mechanism_state(inputs, mech):
+    mapping_RP = _int_mapping(mech['mapping_RP'])
+    broken_R = _int_pairs(mech.get('broken_bonds_R', ()))
+    formed_R = _int_pairs(mech.get('formed_bonds_R', ()))
+    core_R = [int(r) for r in mech.get('core_atoms', ())]
+    delta_RP = reaction_coord_delta(inputs.xyzR, inputs.xyzP, mapping_RP)
+    return mapping_RP, broken_R, formed_R, core_R, delta_RP
+
+
+def _mechanism_for_view(mech):
+    """Return a mechanism dict without private runtime-only fields."""
+    out = dict(mech)
+    out.pop('_state', None)
+    return out
+
+
+def run_rp_stage(inputs, config=None, inner_workers=0):
+    """Stage 1: discover mechanism-dependent R-P alignments.
+
+    This is the reusable alignment/mechanism-discovery entry point.  It runs
+    the no-cut plus one-edge cut sweep on R->P, selects minimum bond-change
+    mechanisms, classifies broken/forming bonds, and stores the R-P witness
+    needed for later TS verification.
+    """
+    cfg = dict(rp_stage_config() if config is None else config)
+    t0 = time.time()
+    pool = cut_sweep(
+        inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
+        n_workers=inner_workers,
+        cut_floor=cfg.get('cut_floor', CUT_FLOOR),
+        graph_floor=cfg.get('graph_floor', 0.2),
+        iso_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
+        dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        symmetry_wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+        n_seeds=cfg.get('n_seeds', N_SEEDS_PER_RUN),
+        max_branches=cfg.get('max_branches', VIEW_MAX_BRANCHES),
+        chunksize=cfg.get('chunksize', CUTSWEEP_CHUNKSIZE),
+        symmetry_repair=cfg.get('symmetry_repair', SYMMETRY_REPAIR),
+        symmetry_repair_min_changes=cfg.get(
+            'symmetry_repair_min_changes', SYMMETRY_REPAIR_MIN_CHANGES),
+        symmetry_repair_max_evals=cfg.get(
+            'symmetry_repair_max_evals', SYMMETRY_REPAIR_MAX_EVALS),
+    )
+    if BGCP_TIMING:
+        print(f"    {inputs.step_name} {'R-P':>12s} cut_sweep: "
+              f"{len(pool):>4d} sigs in {time.time()-t0:.1f}s",
+              flush=True)
+    rp_min = select_min_mechanisms(pool)
+    if not rp_min:
+        raise RuntimeError("no min-bond mechanism")
+
+    mechanisms = []
+    for mi, (_sig, info) in enumerate(rp_min.items(), 1):
+        mapping_RP = _int_mapping(info['mapping'])
+        inv_RP = {v: k for k, v in mapping_RP.items()}
+        broken, formed, _, _ = classify_bonds(
+            mapping_RP, inputs.wboR, inputs.wboP,
+            dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD))
+        broken_R = [(int(a), int(b)) for (a, b, _, _) in broken]
+        formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
+                    for (a, b, _, _) in formed
+                    if a in inv_RP and b in inv_RP]
+        core_R = list(core_atoms_in_R_frame(mapping_RP, broken, formed))
+        xyzP_in_R = np.asarray(inputs.xyzR, float).copy()
+        for i_R, i_P in mapping_RP.items():
+            xyzP_in_R[i_R] = inputs.xyzP[i_P]
+        cut = next(iter(info['cuts']), None)
+        cut_name = (
+            f"{inputs.elR[cut[0]]}{cut[0]}-{inputs.elR[cut[1]]}{cut[1]}"
+            if cut else "none"
+        )
+        br_label = ",".join(
+            f"{inputs.elR[a]}{a}-{inputs.elR[b]}{b}" for a, b in broken_R)
+        mechanisms.append({
+            'id': mi,
+            'cut': cut_name,
+            'label': f"#{mi}: {br_label} (cut: {cut_name})",
+            'dedup_count': int(info.get('dedup_count', 1)),
+            'dedup_cuts': [
+                f"{inputs.elR[a]}{a}-{inputs.elR[b]}{b}"
+                for a, b in sorted(info['cuts'])
+            ] or [cut_name],
+            'mapping_RP': mapping_RP,
+            'broken_bonds_R': broken_R,
+            'formed_bonds_R': formed_R,
+            'formed_bonds_P': [[int(a), int(b)] for (a, b, _, _) in formed],
+            'core_atoms': [int(r) for r in core_R],
+            'product_xyz_in_R': xyzP_in_R.tolist(),
+        })
+
+    r_orbits = _nauty_orbits(
+        build_graph(inputs.elR, inputs.wboR, bond_cut=0.2),
+        wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL))
+    mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
+    return {
+        'stage': 'rp',
+        'step': inputs.step_name,
+        'n_atoms': len(inputs.elR),
+        'config': cfg,
+        'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
+        'timing': {'rp_seconds': time.time() - t0},
+    }
+
+
+def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
+                           mech_pos, mech, target, config):
+    mapping_RP, br_R, fm_R, core_R, _dRP = _mechanism_state(inputs, mech)
+    common = {
+        'key': key,
+        'target_order': target_order,
+        'target_label': target_label,
+        'mech_id': int(mech['id']),
+        'mech_pos': int(mech_pos),
+        'elT': target.el,
+        'wboT': target.wbo,
+        'edge_floor': config.get('edge_floor', TS_CORE_EDGE_FLOOR),
+        'iso_tol': config.get('iso_tol', VIEW_ISO_TOL),
+        'max_candidates': config.get(
+            'max_candidates', TS_CORE_MAX_CANDIDATES),
+    }
+    tasks.append({
+        **common,
+        'endpoint': 'R',
+        'elS': inputs.elR,
+        'wboS': inputs.wboR,
+        'core_S': list(core_R),
+        'broken_S': br_R,
+        'formed_S': fm_R,
+    })
+    core_P = [int(mapping_RP[r]) for r in core_R if r in mapping_RP]
+    tasks.append({
+        **common,
+        'endpoint': 'P',
+        'elS': inputs.elP,
+        'wboS': inputs.wboP,
+        'core_S': core_P,
+        'broken_S': _pairs_to_product_frame(mapping_RP, br_R),
+        'formed_S': _pairs_to_product_frame(mapping_RP, fm_R),
+    })
+
+
+def run_ts_endpoint_tasks(tasks, inner_workers=0):
+    """Run the Stage 2 endpoint core-matching task list."""
+    ts_workers = max(1, int(inner_workers or 1))
+    if not tasks:
+        return []
+    if ts_workers <= 1 or len(tasks) == 1:
+        return [_ts_endpoint_pool_task(t) for t in tasks]
+    with cf.ProcessPoolExecutor(max_workers=min(ts_workers, len(tasks))) as ex:
+        futs = [ex.submit(_ts_endpoint_pool_task, t) for t in tasks]
+        return [f.result() for f in cf.as_completed(futs)]
+
+
+def _selected_mechanisms(rp_result, mechanism_ids=None):
+    mechanisms = [dict(m) for m in rp_result.get('mechanisms', [])]
+    if mechanism_ids is None:
+        return mechanisms
+    wanted = {int(i) for i in mechanism_ids}
+    return [m for m in mechanisms if int(m['id']) in wanted]
+
+
+def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
+                 mechanism_ids=None):
+    """Stage 2: verify GT/IG/TS targets under selected mechanisms."""
+    cfg = dict(ts_stage_config() if config is None else config)
+    mechanisms = _selected_mechanisms(rp_result, mechanism_ids)
+    for mech in mechanisms:
+        mech['gt'] = None
+        mech['igs'] = []
+
+    endpoint_tasks = []
+    score_contexts = []
+    target_order = 0
+
+    for target in targets:
+        if target.kind != 'gt':
+            ig_index = len(mechanisms[0]['igs']) if mechanisms else 0
+            for mech in mechanisms:
+                mech['igs'].append({
+                    'label': target.label,
+                    'elements': list(target.el),
+                    'xyz': np.asarray(target.xyz, float).tolist(),
+                })
+        else:
+            ig_index = -1
+        order = target_order
+        target_order += 1
+        for mech_pos, mech in enumerate(mechanisms):
+            key = (target.kind, int(ig_index if target.kind != 'gt'
+                                    else target.target_index), int(mech_pos))
+            display_label = f"{target.label}:m{mech['id']}"
+            _add_ts_endpoint_tasks(endpoint_tasks, inputs, key, order,
+                                   display_label, mech_pos, mech, target, cfg)
+            score_contexts.append({
+                'key': key,
+                'kind': target.kind,
+                'target_index': int(ig_index if target.kind != 'gt'
+                                    else target.target_index),
+                'target_order': order,
+                'display_label': display_label,
+                'mech_pos': mech_pos,
+                'target': target,
+            })
+
+    endpoint_results = run_ts_endpoint_tasks(
+        endpoint_tasks, inner_workers=inner_workers)
+    endpoint_by_key = {}
+    for res in endpoint_results:
+        endpoint_by_key.setdefault(res['key'], {})[res['endpoint']] = res
+
+    if BGCP_TIMING:
+        for res in sorted(endpoint_results,
+                          key=lambda x: (x['target_order'],
+                                         x['mech_id'],
+                                         x['endpoint'])):
+            if res['hit_cap']:
+                print(f"    [warn] TS core pool hit cap={cfg.get('max_candidates')} "
+                      f"{res['target_label']}:{res['endpoint']} "
+                      f"core={res['core_size']}",
+                      flush=True)
+            print(f"    {inputs.step_name} {res['target_label'] + ':' + res['endpoint']:>12s} "
+                  f"core_match: {res['n_pool']:>4d} sigs "
+                  f"core={res['core_size']} in {res['elapsed']:.1f}s",
+                  flush=True)
+
+    for ctx in sorted(score_contexts,
+                      key=lambda x: (x['target_order'], x['mech_pos'])):
+        mech = mechanisms[ctx['mech_pos']]
+        target = ctx['target']
+        mapping_RP, br_R, fm_R, core_R, dRP = _mechanism_state(inputs, mech)
+        parts = endpoint_by_key.get(ctx['key'], {})
+        r_pool = parts.get('R', {}).get('pool', {})
+        p_pool_native = parts.get('P', {}).get('pool', {})
+        p_pool_as_r = _product_core_pool_to_reactant(
+            p_pool_native, mapping_RP, core_R)
+        merged = _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r)
+        if BGCP_TIMING:
+            print(f"    {inputs.step_name} {ctx['display_label']:>12s} core_union: "
+                  f"R={len(r_pool)} P={len(p_pool_native)} "
+                  f"merged={len(merged)}",
+                  flush=True)
+        s = best_under_mech_using_pool(
+            inputs.elR, inputs.xyzR, target.el, target.xyz,
+            target.freqs, target.modes, merged, br_R, fm_R, core_R, dRP,
+            score_weights=cfg.get('score', score_config()))
+        if ctx['kind'] == 'gt':
+            mech['gt'] = s
+        elif s:
+            mech['igs'][ctx['target_index']].update(s)
+
+    union_top = set()
+    for mech in mechanisms:
+        ranked = sorted(
+            [(i, ig) for i, ig in enumerate(mech['igs'])
+             if ig.get('S') is not None],
+            key=lambda x: -x[1]['S'])
+        top2 = {i for i, _ in ranked[:2]}
+        for i, ig in enumerate(mech['igs']):
+            ig['is_top2'] = (i in top2)
+            if i in top2:
+                union_top.add(ig['label'])
+    for mech in mechanisms:
+        for ig in mech['igs']:
+            ig['is_union_top'] = ig['label'] in union_top
+
+    return {
+        'stage': 'ts',
+        'step': inputs.step_name,
+        'config': cfg,
+        'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
+        'endpoint_results': [
+            {k: v for k, v in res.items() if k != 'pool'}
+            for res in endpoint_results
+        ],
+        'union_top_labels': sorted(union_top),
+    }
+
+
+def build_view_data(inputs, rp_result, ts_result=None, include_gt=None):
+    """Build the JSON object consumed by the HTML viewer."""
+    include_gt = INCLUDE_GT if include_gt is None else bool(include_gt)
+    view_score_config = score_config()
+    if ts_result is not None:
+        view_score_config = (
+            ts_result.get('config', {}).get('score') or view_score_config)
+    mechanisms = (
+        [dict(m) for m in ts_result.get('mechanisms', [])]
+        if ts_result is not None
+        else [dict(m, gt=None, igs=[]) for m in rp_result.get('mechanisms', [])]
+    )
+    if include_gt and any(m.get('gt') for m in mechanisms):
+        default_id = max(
+            mechanisms, key=lambda m: m['gt']['S'] if m.get('gt') else 0
+        )['id']
+    else:
+        default_id = mechanisms[0]['id'] if mechanisms else None
+    return {
+        'step': inputs.step_name,
+        'n_atoms': len(inputs.elR),
+        'reactant': {
+            'elements': inputs.elR,
+            'coords': np.asarray(inputs.xyzR).tolist(),
+        },
+        'product': {
+            'elements': inputs.elP,
+            'coords': np.asarray(inputs.xyzP).tolist(),
+        },
+        'mechanisms': mechanisms,
+        'default_mech_id': default_id,
+        'include_gt': bool(include_gt),
+        'score_config': view_score_config,
+    }
+
+
+def build_eval_slim(view_data):
+    slim = {
+        'step': view_data['step'],
+        'n_atoms': view_data['n_atoms'],
+        'n_mechs': len(view_data.get('mechanisms', [])),
+        'include_gt': bool(view_data.get('include_gt')),
+        'score_config': view_data.get('score_config', score_config()),
+        'mechanisms': [],
+    }
+    for mech in view_data.get('mechanisms', []):
+        slim['mechanisms'].append({
+            'id': mech['id'],
+            'cut': mech['cut'],
+            'dedup_count': mech.get('dedup_count', 1),
+            'dedup_source_ids': mech.get('dedup_source_ids', [mech['id']]),
+            'dedup_cuts': mech.get('dedup_cuts', [mech['cut']]),
+            'broken_R': mech['broken_bonds_R'],
+            'formed_R': mech['formed_bonds_R'],
+            'core_R': mech['core_atoms'],
+            'gt': ({k: mech['gt'].get(k) for k in [
+                'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag',
+                'core_map', 'core_sources',
+            ]} if mech.get('gt') else None),
+            'igs': [
+                {k: ig.get(k) for k in [
+                    'label', 'S', 'beta', 'rho', 'kappa', 'freq',
+                    'n_imag', 'core_map', 'core_sources', 'is_top2',
+                ]}
+                for ig in mech.get('igs', [])
+            ],
+        })
+    return slim
+
+
+def write_view_stage(inputs, rp_result, ts_result=None, out_root=None,
+                     include_gt=None):
+    """Stage 3: write viewer and slim eval artifacts."""
+    data = build_view_data(inputs, rp_result, ts_result, include_gt=include_gt)
+    slim = build_eval_slim(data)
+    paths = pipeline_stage_paths(inputs.step_name, out_root=out_root)
+    paths.view_dir.mkdir(parents=True, exist_ok=True)
+    paths.view_html.write_text(HTML.format(
+        title=f"BGCP &mdash; {inputs.step_name}  "
+              f"({len(data['mechanisms'])} mechanisms)",
+        data_json=json.dumps(_json_ready(data)),
+    ))
+    paths.eval_slim_json.write_text(json.dumps(_json_ready(slim)))
+    return {
+        'stage': 'view',
+        'step': inputs.step_name,
+        'view_html': str(paths.view_html),
+        'eval_slim_json': str(paths.eval_slim_json),
+        'slim': slim,
+    }
 
 
 HTML = r"""<!doctype html><html><head><meta charset="utf-8"><title>{title}</title>
@@ -553,312 +1174,134 @@ window.addEventListener('load', render);
 """
 
 
-def process_step(step_name, inner_workers=0):
-    """inner_workers: parallelism inside one step.
+def run_full_pipeline_stage(step_name, inner_workers=0, mechanism_ids=None,
+                            write_artifacts=True):
+    """Compose Stage 1, Stage 2, and Stage 3 for one step."""
+    inputs = load_step_inputs(step_name)
+    rp_result = run_rp_stage(inputs, inner_workers=inner_workers)
+    targets = load_ts_targets(inputs, include_gt=INCLUDE_GT)
+    ts_result = run_ts_stage(
+        inputs, rp_result, targets, inner_workers=inner_workers,
+        mechanism_ids=mechanism_ids)
+    view_result = write_view_stage(
+        inputs, rp_result, ts_result, include_gt=INCLUDE_GT)
+    if write_artifacts:
+        paths = pipeline_stage_paths(step_name)
+        write_stage_json(paths.rp_json, rp_result)
+        write_stage_json(paths.ts_json, ts_result)
+    return {
+        'step': step_name,
+        'rp': rp_result,
+        'ts': ts_result,
+        'view': view_result,
+        'slim': view_result['slim'],
+    }
 
-    The same budget is used first for the R-P cut sweep, then for TS/IG
-    endpoint core-matching tasks.
-      0 / 1  -> serial inner work
-      >= 2   -> parallel inner work on that many workers
+
+def process_rp_step(step_name, inner_workers=0, write_view=True):
+    """Run only Stage 1 and write `rp_stage.json`.
+
+    The optional view is an alignment/mechanism view: R/P only, no TS scores.
     """
+    inputs = load_step_inputs(step_name)
+    rp_result = run_rp_stage(inputs, inner_workers=inner_workers)
+    paths = pipeline_stage_paths(step_name)
+    write_stage_json(paths.rp_json, rp_result)
+    view_result = None
+    if write_view:
+        view_result = write_view_stage(
+            inputs, rp_result, ts_result=None, include_gt=False)
+    return {
+        'step': step_name,
+        'rp': rp_result,
+        'view': view_result,
+        'slim': view_result['slim'] if view_result else {
+            'step': step_name,
+            'n_mechs': len(rp_result.get('mechanisms', [])),
+            'mechanisms': rp_result.get('mechanisms', []),
+        },
+    }
+
+
+def process_ts_step(step_name, inner_workers=0, mechanism_ids=None,
+                    write_view=True):
+    """Run Stage 2 from a previously written `rp_stage.json`."""
+    inputs = load_step_inputs(step_name)
+    paths = pipeline_stage_paths(step_name)
+    if not paths.rp_json.exists():
+        raise RuntimeError(
+            f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+    rp_result = read_stage_json(paths.rp_json)
+    targets = load_ts_targets(inputs, include_gt=INCLUDE_GT)
+    ts_result = run_ts_stage(
+        inputs, rp_result, targets, inner_workers=inner_workers,
+        mechanism_ids=mechanism_ids)
+    write_stage_json(paths.ts_json, ts_result)
+    view_result = None
+    if write_view:
+        view_result = write_view_stage(
+            inputs, rp_result, ts_result, include_gt=INCLUDE_GT)
+    return {
+        'step': step_name,
+        'rp': rp_result,
+        'ts': ts_result,
+        'view': view_result,
+        'slim': view_result['slim'] if view_result else build_eval_slim(
+            build_view_data(inputs, rp_result, ts_result,
+                            include_gt=INCLUDE_GT)),
+    }
+
+
+def process_view_step(step_name):
+    """Run only Stage 3 from previously written stage artifacts."""
+    inputs = load_step_inputs(step_name)
+    paths = pipeline_stage_paths(step_name)
+    if not paths.rp_json.exists():
+        raise RuntimeError(
+            f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+    rp_result = read_stage_json(paths.rp_json)
+    ts_result = read_stage_json(paths.ts_json) if paths.ts_json.exists() else None
+    view_result = write_view_stage(
+        inputs, rp_result, ts_result, include_gt=INCLUDE_GT)
+    return {
+        'step': step_name,
+        'rp': rp_result,
+        'ts': ts_result,
+        'view': view_result,
+        'slim': view_result['slim'],
+    }
+
+
+def process_step_stage(step_name, stage='full', inner_workers=0,
+                       mechanism_ids=None):
+    """CLI-safe wrapper for one explicit stage."""
     try:
-        sd = WORK / step_name
-        if not sd.exists():
-            return {"step": step_name, "error": f"missing step directory: {sd}"}
-        elR, xyzR, wboR = _load_sp(sd / "R", "R")
-        elP, xyzP, wboP = _load_sp(sd / "P", "P")
-        if INCLUDE_GT:
-            gt_sp = sd / "sp_groundtruth"
-            gt_hess = sd / "hess_groundtruth"
-            elT_gt, xyzT_gt, wboT_gt = _load_sp(
-                gt_sp, "GT",
-                xyz_fallback=_xyz_path(gt_hess, include_xtbhess=True))
-            freqs_gt, modes_gt = _load_hess(
-                gt_hess, "GT", xyz_fallback=_xyz_path(gt_sp))
-        else:
-            elT_gt = xyzT_gt = wboT_gt = freqs_gt = modes_gt = None
-
-        def timed_cut_sweep(label, elT, wboT, core_R=None):
-            t_sweep = time.time()
-            pool = cut_sweep(elR, wboR, elT, wboT,
-                             n_workers=inner_workers, core_R=core_R,
-                             cut_floor=CUT_FLOOR,
-                             graph_floor=0.2,
-                             iso_tol=VIEW_ISO_TOL,
-                             dwbo_threshold=DWBO_THRESHOLD,
-                             symmetry_wbo_tol=SYMMETRY_WBO_TOL,
-                             n_seeds=N_SEEDS_PER_RUN,
-                             max_branches=VIEW_MAX_BRANCHES,
-                             chunksize=CUTSWEEP_CHUNKSIZE,
-                             symmetry_repair=SYMMETRY_REPAIR,
-                             symmetry_repair_min_changes=SYMMETRY_REPAIR_MIN_CHANGES,
-                             symmetry_repair_max_evals=SYMMETRY_REPAIR_MAX_EVALS)
-            if BGCP_TIMING:
-                core_msg = f" core={len(core_R)}" if core_R else ""
-                print(f"    {step_name} {label:>12s} cut_sweep: "
-                      f"{len(pool):>4d} sigs{core_msg} "
-                      f"in {time.time()-t_sweep:.1f}s",
-                      flush=True)
-            return pool
-
-        def run_ts_endpoint_tasks(tasks):
-            ts_workers = max(1, int(inner_workers or 1))
-            if not tasks:
-                return []
-            if ts_workers <= 1 or len(tasks) == 1:
-                return [_ts_endpoint_pool_task(t) for t in tasks]
-            with cf.ProcessPoolExecutor(max_workers=min(ts_workers, len(tasks))) as ex:
-                futs = [ex.submit(_ts_endpoint_pool_task, t) for t in tasks]
-                return [f.result() for f in cf.as_completed(futs)]
-
-        def add_ts_endpoint_tasks(tasks, key, target_order, target_label,
-                                  mech_pos, mech, elT, wboT):
-            mapping_RP, br_R, fm_R, core_R, _dRP = mech['_state']
-            common = {
-                'key': key,
-                'target_order': target_order,
-                'target_label': target_label,
-                'mech_id': mech['id'],
-                'mech_pos': mech_pos,
-                'elT': elT,
-                'wboT': wboT,
-                'edge_floor': TS_CORE_EDGE_FLOOR,
-                'iso_tol': VIEW_ISO_TOL,
-                'max_candidates': TS_CORE_MAX_CANDIDATES,
-            }
-            tasks.append({
-                **common,
-                'endpoint': 'R',
-                'elS': elR,
-                'wboS': wboR,
-                'core_S': list(core_R),
-                'broken_S': br_R,
-                'formed_S': fm_R,
-            })
-            core_P = [int(mapping_RP[r]) for r in core_R if r in mapping_RP]
-            tasks.append({
-                **common,
-                'endpoint': 'P',
-                'elS': elP,
-                'wboS': wboP,
-                'core_S': core_P,
-                'broken_S': _pairs_to_product_frame(mapping_RP, br_R),
-                'formed_S': _pairs_to_product_frame(mapping_RP, fm_R),
-            })
-
-        rp = timed_cut_sweep("R-P", elP, wboP)
-        rp_min = select_min_mechanisms(rp)
-        if not rp_min:
-            return {"step": step_name, "error": "no min-bond mechanism"}
-
-        mechanisms = []
-        for mi, (_sig, info) in enumerate(rp_min.items(), 1):
-            mapping_RP = {int(r): int(p) for r, p in info['mapping'].items()}
-            inv_RP = {v: k for k, v in mapping_RP.items()}
-            broken, formed, _, _ = classify_bonds(
-                mapping_RP, wboR, wboP,
-                dwbo_threshold=DWBO_THRESHOLD)
-            broken_R = [(int(a), int(b)) for (a, b, _, _) in broken]
-            formed_R = [(int(inv_RP[a]), int(inv_RP[b])) for (a, b, _, _) in formed
-                        if a in inv_RP and b in inv_RP]
-            core_R = list(core_atoms_in_R_frame(mapping_RP, broken, formed))
-            delta_RP = reaction_coord_delta(np.asarray(xyzR), np.asarray(xyzP), mapping_RP)
-            xyzP_in_R = np.asarray(xyzR, float).copy()
-            for i_R, i_P in mapping_RP.items(): xyzP_in_R[i_R] = xyzP[i_P]
-            cut = next(iter(info['cuts']), None)
-            cut_name = f"{elR[cut[0]]}{cut[0]}-{elR[cut[1]]}{cut[1]}" if cut else "none"
-            br_label = ",".join(f"{elR[a]}{a}-{elR[b]}{b}" for a, b in broken_R)
-            mech = {
-                'id': mi, 'cut': cut_name,
-                'label': f"#{mi}: {br_label} (cut: {cut_name})",
-                'dedup_count': info.get('dedup_count', 1),
-                'dedup_cuts': [
-                    f"{elR[a]}{a}-{elR[b]}{b}" for a, b in sorted(info['cuts'])
-                ] or [cut_name],
-                'broken_bonds_R': broken_R, 'formed_bonds_R': formed_R,
-                'formed_bonds_P': [[int(a), int(b)] for (a, b, _, _) in formed],
-                'core_atoms': core_R,
-                'product_xyz_in_R': xyzP_in_R.tolist(),
-            }
-            mech['_state'] = (mapping_RP, broken_R, formed_R, core_R, delta_RP)
-            mechanisms.append(mech)
-
-        r_orbits = _nauty_orbits(build_graph(elR, wboR, bond_cut=0.2),
-                                 wbo_tol=SYMMETRY_WBO_TOL)
-        mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
-        # Endpoint core matching is mechanism-local.  Build one independent
-        # task per (target TS, mechanism, endpoint R/P), run those tasks in
-        # parallel, then merge R- and P-derived core pools before scoring.
-        # Spectator alternatives are not enumerated.
-        for mech in mechanisms:
-            mech['gt'] = None
-            mech['igs'] = []
-
-        endpoint_tasks = []
-        score_contexts = []
-        target_order = 0
-
-        def register_target(kind, target_index, label,
-                            elT, xyzT, wboT, freqs, modes):
-            nonlocal target_order
-            order = target_order
-            target_order += 1
-            for mech_pos, mech in enumerate(mechanisms):
-                key = (kind, int(target_index), int(mech_pos))
-                display_label = f"{label}:m{mech['id']}"
-                add_ts_endpoint_tasks(endpoint_tasks, key, order,
-                                      display_label, mech_pos, mech,
-                                      elT, wboT)
-                score_contexts.append({
-                    'key': key,
-                    'kind': kind,
-                    'target_index': int(target_index),
-                    'target_order': order,
-                    'display_label': display_label,
-                    'mech_pos': mech_pos,
-                    'elT': elT,
-                    'xyzT': xyzT,
-                    'freqs': freqs,
-                    'modes': modes,
-                })
-
-        if INCLUDE_GT:
-            register_target('gt', -1, 'GT',
-                            elT_gt, xyzT_gt, wboT_gt, freqs_gt, modes_gt)
-
-        # IGs: enumerate mechanism-local core alternatives, then score under
-        # each mechanism. Target loading stays serial and cheap; endpoint
-        # matching is the expensive part and is parallelized below.
-        for label in _iter_labels(sd):
-            hess_dir = sd / f"hess_{label}"
-            sp_dir = sd / f"sp_{label}"
-            try:
-                elI, xyzI, wboI = _load_sp(
-                    sp_dir, label,
-                    xyz_fallback=_xyz_path(hess_dir, include_xtbhess=True))
-                freqs_i, modes_i = _load_hess(
-                    hess_dir, label, xyz_fallback=_xyz_path(sp_dir))
-            except Exception:
-                for mech in mechanisms: mech['igs'].append({'label': label})
-                continue
-            for mech in mechanisms:
-                mech['igs'].append({
-                    'label': label,
-                    'elements': list(elI),
-                    'xyz': np.asarray(xyzI, float).tolist(),
-                })
-            ig_index = len(mechanisms[0]['igs']) - 1
-            register_target('ig', ig_index, label,
-                            elI, xyzI, wboI, freqs_i, modes_i)
-
-        endpoint_results = run_ts_endpoint_tasks(endpoint_tasks)
-        endpoint_by_key = {}
-        for res in endpoint_results:
-            endpoint_by_key.setdefault(res['key'], {})[res['endpoint']] = res
-
-        if BGCP_TIMING:
-            for res in sorted(endpoint_results,
-                              key=lambda x: (x['target_order'],
-                                             x['mech_id'],
-                                             x['endpoint'])):
-                if res['hit_cap']:
-                    print(f"    [warn] TS core pool hit cap={TS_CORE_MAX_CANDIDATES} "
-                          f"{res['target_label']}:{res['endpoint']} "
-                          f"core={res['core_size']}",
-                          flush=True)
-                print(f"    {step_name} {res['target_label'] + ':' + res['endpoint']:>12s} "
-                      f"core_match: {res['n_pool']:>4d} sigs "
-                      f"core={res['core_size']} in {res['elapsed']:.1f}s",
-                      flush=True)
-
-        for ctx in sorted(score_contexts,
-                          key=lambda x: (x['target_order'], x['mech_pos'])):
-            mech = mechanisms[ctx['mech_pos']]
-            mapping_RP, br_R, fm_R, core_R, dRP = mech['_state']
-            parts = endpoint_by_key.get(ctx['key'], {})
-            r_pool = parts.get('R', {}).get('pool', {})
-            p_pool_native = parts.get('P', {}).get('pool', {})
-            p_pool_as_r = _product_core_pool_to_reactant(
-                p_pool_native, mapping_RP, core_R)
-            merged = _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r)
-            if BGCP_TIMING:
-                print(f"    {step_name} {ctx['display_label']:>12s} core_union: "
-                      f"R={len(r_pool)} P={len(p_pool_native)} "
-                      f"merged={len(merged)}",
-                      flush=True)
-            s = best_under_mech_using_pool(
-                elR, xyzR, ctx['elT'], ctx['xyzT'], ctx['freqs'], ctx['modes'],
-                merged, br_R, fm_R, core_R, dRP)
-            if ctx['kind'] == 'gt':
-                mech['gt'] = s
-            elif s:
-                mech['igs'][ctx['target_index']].update(s)
-
-        union_top = set()
-        for mech in mechanisms:
-            ranked = sorted([(i, ig) for i, ig in enumerate(mech['igs']) if ig.get('S') is not None],
-                            key=lambda x: -x[1]['S'])
-            top2 = {i for i, _ in ranked[:2]}
-            for i, ig in enumerate(mech['igs']):
-                ig['is_top2'] = (i in top2)
-                if i in top2: union_top.add(ig['label'])
-        for mech in mechanisms:
-            for ig in mech['igs']:
-                ig['is_union_top'] = ig['label'] in union_top
-            del mech['_state']
-
-        if INCLUDE_GT and any(m.get('gt') for m in mechanisms):
-            default_id = max(
-                mechanisms, key=lambda m: m['gt']['S'] if m['gt'] else 0
-            )['id']
-        else:
-            default_id = mechanisms[0]['id']
-        data = {'step': step_name, 'n_atoms': len(elR),
-                'reactant': {'elements': elR, 'coords': np.asarray(xyzR).tolist()},
-                'product': {'elements': elP, 'coords': np.asarray(xyzP).tolist()},
-                'mechanisms': mechanisms, 'default_mech_id': default_id,
-                'include_gt': bool(INCLUDE_GT),
-                'score_config': {
-                    'W_RXN': W_RXN,
-                    'W_CORE': W_CORE,
-                    'IMAG_PEN': IMAG_PEN,
-                }}
-
-        run_dir = OUT_ROOT / step_name
-        run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "view.html").write_text(HTML.format(
-            title=f"BGCP &mdash; {step_name}  ({len(mechanisms)} mechanisms)",
-            data_json=json.dumps(data),
-        ))
-        # stripped down for the eval JSON (no big xyz/disp arrays)
-        slim = {'step': step_name, 'n_atoms': len(elR), 'n_mechs': len(mechanisms),
-                'include_gt': bool(INCLUDE_GT),
-                'score_config': {
-                    'W_RXN': W_RXN,
-                    'W_CORE': W_CORE,
-                    'IMAG_PEN': IMAG_PEN,
-                },
-                'mechanisms': []}
-        for mech in mechanisms:
-            slim['mechanisms'].append({
-                'id': mech['id'], 'cut': mech['cut'],
-                'dedup_count': mech.get('dedup_count', 1),
-                'dedup_source_ids': mech.get('dedup_source_ids', [mech['id']]),
-                'dedup_cuts': mech.get('dedup_cuts', [mech['cut']]),
-                'broken_R': mech['broken_bonds_R'], 'formed_R': mech['formed_bonds_R'],
-                'core_R': mech['core_atoms'],
-                'gt': {k: mech['gt'].get(k) for k in ['S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'core_map', 'core_sources']} if mech['gt'] else None,
-                'igs': [{k: ig.get(k) for k in ['label', 'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag', 'core_map', 'core_sources', 'is_top2']}
-                        for ig in mech['igs']],
-            })
-        # Per-step slim record; parallel step workers return these to the
-        # parent, which writes the merged EVAL_JSON once.
-        (run_dir / "_eval_slim.json").write_text(json.dumps(slim))
-        return {'step': step_name, 'slim': slim,
-                'top1_label': max(mechanisms, key=lambda m: m['gt']['S'] if m['gt'] else 0)['igs'][0]['label'] if mechanisms[0]['igs'] else "?"}
+        if stage == 'rp':
+            return process_rp_step(step_name, inner_workers=inner_workers)
+        if stage == 'ts':
+            return process_ts_step(
+                step_name, inner_workers=inner_workers,
+                mechanism_ids=mechanism_ids)
+        if stage == 'view':
+            return process_view_step(step_name)
+        if stage == 'full':
+            return run_full_pipeline_stage(
+                step_name, inner_workers=inner_workers,
+                mechanism_ids=mechanism_ids)
+        raise ValueError(f"unknown stage: {stage}")
     except Exception as e:
         return {"step": step_name, "error": f"{type(e).__name__}: {e}",
                 "trace": traceback.format_exc()}
+
+
+def _process_step_stage_star(args):
+    return process_step_stage(*args)
+
+
+def process_step(step_name, inner_workers=0):
+    """Compatibility wrapper for the historical full pipeline."""
+    return process_step_stage(
+        step_name, stage='full', inner_workers=inner_workers)
 
 
 def main():
@@ -866,7 +1309,21 @@ def main():
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, SYMMETRY_WBO_TOL
     global W_RXN, W_CORE, IMAG_PEN
+    global STAGE_ROOT
     ap = argparse.ArgumentParser()
+    ap.add_argument("--stage",
+                    choices=("full", "rp", "ts", "view"),
+                    default=os.environ.get("BGCP_STAGE", "full"),
+                    help="Pipeline stage to run. full composes rp+ts+view; "
+                         "rp writes rp_stage.json; ts resumes from "
+                         "rp_stage.json; view only rewrites HTML/eval.")
+    ap.add_argument("--stage-root", default=str(STAGE_ROOT),
+                    help="Directory for resumable rp_stage.json and "
+                         "ts_stage.json artifacts. Default from "
+                         "BGCP_STAGE_ROOT=out/bgcp_stages.")
+    ap.add_argument("--mechanism", type=int, action="append",
+                    help="Restrict Stage 2 verification to a mechanism id. "
+                         "Can be repeated. Default verifies all mechanisms.")
     ap.add_argument("--workers", type=int, default=_default_worker_count(),
                     help="Total CPU budget in auto mode, or outer step "
                          "parallelism in outer mode.")
@@ -943,6 +1400,7 @@ def main():
     W_RXN = float(args.w_rxn)
     W_CORE = float(args.w_core)
     IMAG_PEN = float(args.imag_pen)
+    STAGE_ROOT = Path(args.stage_root)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
     XTB_CHARGE = int(args.charge)
     XTB_MULTIPLICITY = _normal_multiplicity(args.multiplicity)
@@ -960,6 +1418,7 @@ def main():
     os.environ["BGCP_W_RXN"] = str(W_RXN)
     os.environ["BGCP_W_CORE"] = str(W_CORE)
     os.environ["BGCP_IMAG_PEN"] = str(IMAG_PEN)
+    os.environ["BGCP_STAGE_ROOT"] = str(STAGE_ROOT)
 
     if not WORK.exists():
         print(f"No work directory: {WORK}")
@@ -974,6 +1433,7 @@ def main():
         return
 
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
+    STAGE_ROOT.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     eval_records = []
     n_ok = n_err = 0
@@ -986,12 +1446,17 @@ def main():
             eval_records.append({'step': rec['step'], 'error': rec['error']})
         else:
             slim = rec['slim']
-            gt_scores = [m['gt']['S'] for m in slim['mechanisms'] if m['gt']]
+            gt_scores = [
+                m['gt']['S'] for m in slim.get('mechanisms', [])
+                if m.get('gt')
+            ]
             if gt_scores:
                 gt_msg = f"best_GT_S={max(gt_scores):.3f}"
             else:
                 gt_msg = "GT=skipped"
-            print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  mechs={slim['n_mechs']}  {gt_msg}", flush=True)
+            print(f"  [{i:>3d}/{len(steps)}] {rec['step']:60s}  "
+                  f"mechs={slim.get('n_mechs', len(slim.get('mechanisms', [])))}  "
+                  f"{gt_msg}", flush=True)
             eval_records.append(slim)
             n_ok += 1
 
@@ -1008,7 +1473,8 @@ def main():
                          else worker_budget)
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{inner_workers} inner workers "
-              f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
+              f"(stage={args.stage}, "
+              f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
@@ -1016,14 +1482,16 @@ def main():
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         for i, step in enumerate(steps, 1):
-            rec = process_step(step, inner_workers=inner_workers)
+            rec = process_step_stage(
+                step, stage=args.stage, inner_workers=inner_workers,
+                mechanism_ids=args.mechanism)
             _record(i, rec)
     elif mode == "outer":
         # Outer-parallel mode: args.workers steps run concurrently; each
         # step's inner work is serial (no nested daemonic Pool). Best for
         # small/easy steps when nested process pools are undesirable.
         print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
-              f"(legacy serial inner work inside each step, "
+              f"(stage={args.stage}, legacy serial inner work inside each step, "
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
@@ -1031,7 +1499,9 @@ def main():
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         with mp.Pool(worker_budget) as pool:
-            for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
+            work = [(step, args.stage, 0, args.mechanism) for step in steps]
+            for i, rec in enumerate(pool.imap_unordered(
+                    _process_step_stage_star, work), 1):
                 _record(i, rec)
     else:
         total_workers = worker_budget
@@ -1046,7 +1516,7 @@ def main():
         print(f"Processing {len(steps)} steps in auto mode: "
               f"{outer_slots} concurrent steps x {inner_workers} "
               f"inner workers "
-              f"(total budget={total_workers}, "
+              f"(stage={args.stage}, total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
@@ -1056,7 +1526,9 @@ def main():
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
             futures = {
-                executor.submit(process_step, step, inner_workers): step
+                executor.submit(
+                    process_step_stage, step, args.stage, inner_workers,
+                    args.mechanism): step
                 for step in scheduled_steps
             }
             for i, fut in enumerate(cf.as_completed(futures), 1):

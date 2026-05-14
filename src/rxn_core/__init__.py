@@ -25,8 +25,14 @@ Public API:
         load_cached_xtb, reindex_to_R_frame,
     )
 
-    # BGCP full-view pipeline (matching the rxn-core-pipeline CLI)
-    from rxn_core.pipeline import process_step, main
+    # Reusable pipeline stages and BGCP full-view pipeline
+    from rxn_core.pipeline import (
+        load_step_inputs, step_inputs_from_arrays,
+        ts_target_from_arrays, load_ts_targets,
+        discover_mechanisms_from_arrays,
+        run_rp_stage, run_ts_stage, write_view_stage,
+        run_full_pipeline_stage, process_step, main,
+    )
 """
 from .alignment import (
     align_from_arrays, find_islands, match_wbo_graphs,
@@ -46,6 +52,23 @@ from .modes import (
     bond_overlap_per_mode, rxn_overlap_per_mode,
     kabsch,
 )
+
+_PIPELINE_EXPORTS = {
+    "load_step_inputs", "step_inputs_from_arrays",
+    "ts_target_from_arrays", "load_ts_targets",
+    "discover_mechanisms_from_arrays",
+    "run_rp_stage", "run_ts_stage", "write_view_stage",
+    "run_full_pipeline_stage", "process_step",
+}
+
+
+def __getattr__(name):
+    if name in _PIPELINE_EXPORTS:
+        from . import pipeline
+        return getattr(pipeline, name)
+    raise AttributeError(name)
+
+
 __all__ = [
     "align_from_arrays", "find_islands", "expand_chemistry_relevant_atoms",
     "match_wbo_graphs", "MatchCandidate", "MatchResult",
@@ -59,6 +82,11 @@ __all__ = [
     "bond_overlap_per_mode", "rxn_overlap_per_mode",
     "kabsch",
     "load_cached_xtb", "reindex_to_R_frame",
+    "load_step_inputs", "step_inputs_from_arrays",
+    "ts_target_from_arrays", "load_ts_targets",
+    "discover_mechanisms_from_arrays",
+    "run_rp_stage", "run_ts_stage", "write_view_stage",
+    "run_full_pipeline_stage", "process_step",
 ]
 
 __version__ = "0.1.0"

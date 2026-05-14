@@ -27,6 +27,7 @@ dependencies = [
 dev = ["pytest"]
 
 [project.scripts]
+rxn-core = "rxn_core.pipeline:main"
 rxn-core-pipeline = "rxn_core.pipeline:main"
 
 [project.urls]

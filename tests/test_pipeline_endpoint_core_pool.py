@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 
 import rxn_core.pipeline as pipeline
 from rxn_core.pipeline import (
@@ -164,3 +165,22 @@ def test_viewer_uses_step_level_download_button():
     assert 'mechanism.json' in html
     assert 'viewer_data.json' in html
     assert 'mechanisms/mechanism_' in html
+
+
+def test_array_based_mechanism_discovery_returns_aligned_product():
+    el = ["H", "H"]
+    xyz_r = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]])
+    xyz_p = np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.75]])
+    wbo = np.array([[0.0, 0.9], [0.9, 0.0]])
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+
+    result = pipeline.discover_mechanisms_from_arrays(
+        el, xyz_r, wbo, el, xyz_p, wbo,
+        step_name="h2", config=cfg, inner_workers=0)
+
+    assert result["stage"] == "rp"
+    assert result["mechanisms"]
+    mech = result["mechanisms"][0]
+    assert set(mech["mapping_RP"]) == {0, 1}
+    assert len(mech["product_xyz_in_R"]) == 2

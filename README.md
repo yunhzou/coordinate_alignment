@@ -24,6 +24,7 @@ Verify the installed import and command line:
 
 ```bash
 python -c "import rxn_core; print(rxn_core.__file__)"
+rxn-core --help
 rxn-core-pipeline --help
 ```
 
@@ -46,6 +47,50 @@ rxn-core-pipeline --steps pr7.V.dodh_ts910 --include-gt
 # When auto-filling missing xtb caches for an open-shell/charged system
 rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 ```
+
+`rxn-core` and `rxn-core-pipeline` are the same command.  The shorter
+`rxn-core` name is intended for new workflows.
+
+### Staged Workflows
+
+The pipeline is split into three resumable stages.
+
+```bash
+# Stage 1: R-P alignment and mechanism discovery only
+rxn-core --stage rp --steps pr7.V.dodh_ts910 --workers 8
+
+# Stage 2: verify GT/IG/TS targets from the saved Stage 1 mechanisms
+rxn-core --stage ts --steps pr7.V.dodh_ts910 --mechanism 2 --include-gt
+
+# Stage 3: regenerate only the HTML/eval view from saved stage artifacts
+rxn-core --stage view --steps pr7.V.dodh_ts910 --include-gt
+
+# Full pipeline: compose rp + ts + view in one run
+rxn-core --stage full --steps pr7.V.dodh_ts910 --workers 8
+```
+
+The same pieces are importable:
+
+```python
+from rxn_core.pipeline import (
+    load_step_inputs, load_ts_targets,
+    step_inputs_from_arrays, ts_target_from_arrays,
+    discover_mechanisms_from_arrays,
+    run_rp_stage, run_ts_stage, write_view_stage,
+)
+
+inputs = load_step_inputs("pr7.V.dodh_ts910")
+rp = run_rp_stage(inputs, inner_workers=8)
+targets = load_ts_targets(inputs, include_gt=True)
+ts = run_ts_stage(inputs, rp, targets, mechanism_ids=[2], inner_workers=8)
+view = write_view_stage(inputs, rp, ts, include_gt=True)
+```
+
+For non-BGCP callers, `step_inputs_from_arrays(...)` and
+`discover_mechanisms_from_arrays(...)` expose the same R-P mechanism discovery
+from in-memory `(elements, xyz, wbo)` arrays. The resulting mechanisms include
+`mapping_RP` and `product_xyz_in_R`, so each mechanism has its own aligned
+product coordinate frame.
 
 ## Inputs
 
@@ -106,6 +151,8 @@ by default. The cache-fill input uses molecular `charge` and spin
 out/bgcp_views/<step>/view.html
 out/bgcp_views/<step>/_eval_slim.json
 out/bgcp_alignment_eval.json
+out/bgcp_stages/<step>/rp_stage.json
+out/bgcp_stages/<step>/ts_stage.json
 ```
 
 Each `view.html` has a step-level `Download` button. The downloaded archive
@@ -119,11 +166,21 @@ main repository.
 
 ## Pipeline
 
-1. `cut_sweep(...)` runs R-P mechanism discovery: no-cut plus one-edge R cuts
-   above `BGCP_CUT_FLOOR`.
+The public full pipeline is:
+
+```text
+process_step(...)
+  run_rp_stage(...)
+  run_ts_stage(...)
+  write_view_stage(...)
+```
+
+1. `run_rp_stage(...)` / `cut_sweep(...)` runs R-P mechanism discovery:
+   no-cut plus one-edge R cuts above `BGCP_CUT_FLOOR`.
 2. Mechanisms are deduped by symmetry-canonical broken/formed bond changes.
 3. The reactive core is the atoms touching any broken or formed bond.
-4. `ts_core_pool(...)` runs endpoint-to-TS matching from both R and P. P-side
+4. `run_ts_stage(...)` / `ts_core_pool(...)` runs endpoint-to-TS matching from
+   both R and P. P-side
    core mappings are pulled back through the R-P mechanism witness, then merged
    with R-side mappings in R-core indexing.
 5. Each GT/IG candidate mapping is scored on the selected imaginary mode:
@@ -162,7 +219,10 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | none | `RXN_CORE_PROJECT` | package root | base path used to resolve default data/output paths |
 | none | `BGCP_WORK` | `data/xtb_frequency_calculations` | xtb cache root containing step directories |
 | none | `BGCP_OUT_ROOT` | `out/bgcp_views` | per-step HTML/eval output root |
+| `--stage-root` | `BGCP_STAGE_ROOT` | `out/bgcp_stages` | resumable `rp_stage.json` and `ts_stage.json` artifact root |
 | none | `BGCP_EVAL_JSON` | `out/bgcp_alignment_eval.json` | merged JSON summary output |
+| `--stage` | `BGCP_STAGE` | `full` | run `rp`, `ts`, `view`, or composed `full` stage |
+| `--mechanism` | none | all | restrict Stage 2 verification to one mechanism id; repeat for multiple ids |
 | `--steps` | none | all steps | explicit cached step names to process |
 | `--limit` | none | none | process first N step directories after sorting |
 | `--include-gt` | `BGCP_INCLUDE_GT` | `0` | load and score optional GT cache directories |

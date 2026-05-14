@@ -98,21 +98,26 @@ symmetry state. A block with two R atoms and four P atoms represents
 - `modes.py`: normal-mode parsing and score-feature vectors.
 - `align.py`: compatibility facade for cache loading and coordinate reindex
   helpers now owned by `chemistry_computations`.
-- `pipeline.py`: BGCP cached full-view orchestration. It runs R-P
-  `cut_sweep`, dedupes mechanisms by symmetry-canonical bond changes, runs
-  mechanism-local R/P endpoint `ts_core_pool` for IG and optional GT core alternatives,
-  scores normal modes, and writes the multi-mechanism viewer plus slim eval
-  JSON.  Its default auto scheduler treats `--workers` as a total CPU budget
-  and splits it between concurrent steps and each step's inner worker pool.
-  That inner pool is reused after R-P discovery for independent TS/IG endpoint
-  core-matching tasks across targets, mechanisms, and R/P endpoints.  The
+- `pipeline.py`: BGCP cached orchestration, split into explicit resumable
+  stages. `run_rp_stage` is the reusable R-P alignment / mechanism-discovery
+  entry point and writes `rp_stage.json`. `run_ts_stage` consumes those
+  mechanisms plus GT/IG/TS targets, runs mechanism-local R/P endpoint
+  `ts_core_pool`, and writes `ts_stage.json`. `write_view_stage` is
+  presentation-only: it writes the multi-mechanism viewer plus slim eval JSON
+  from stage records. The compatibility `process_step` composes all three.
+  The CLI exposes the same split through `--stage rp|ts|view|full`, and
+  `--mechanism` restricts Stage 2 verification to selected mechanism IDs.
+  The default auto scheduler treats `--workers` as a total CPU budget and
+  splits it between concurrent steps and each step's inner worker pool. That
+  inner pool is reused after R-P discovery for independent TS/IG endpoint
+  core-matching tasks across targets, mechanisms, and R/P endpoints. The
   pipeline prefers existing xtb caches but, in `BGCP_XTB_MODE=auto`, can fill
-  missing `wbo` and `g98.out` files from available XYZ inputs before alignment.
-  Each individual xtb subprocess is capped by `BGCP_XTB_MAX_THREADS=8` through
-  `OMP_NUM_THREADS`; this is separate from the pipeline worker budget.
-  Each cache endpoint is loaded as one complete molecule/complex graph; the
-  pipeline does not assemble separate reactant/product fragments or merge
-  independent WBO matrices.
+  missing `wbo` and `g98.out` files from available XYZ inputs before
+  alignment. Each individual xtb subprocess is capped by
+  `BGCP_XTB_MAX_THREADS=8` through `OMP_NUM_THREADS`; this is separate from
+  the pipeline worker budget. Each cache endpoint is loaded as one complete
+  molecule/complex graph; the pipeline does not assemble separate
+  reactant/product fragments or merge independent WBO matrices.
 
 These modules should not depend on matcher internals unless they are explicitly
 running alignment.
