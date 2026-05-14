@@ -15,7 +15,7 @@ pip install -e .
 The installed CLI is:
 
 ```bash
-rxn-core-pipeline --steps pr7.V.dodh_ts910 --inner-workers 10
+rxn-core-pipeline --steps pr7.V.dodh_ts910
 ```
 
 ## Inputs
@@ -98,6 +98,7 @@ ALGORITHM.md              algorithm details
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `100` | per-cut branch cap; capped cuts are discarded |
 | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
+| `BGCP_AUTO_MAX_WORKERS` | `8` | hard cap on total workers in auto mode |
 | `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
 | `BGCP_XTB_OMP_THREADS` | `1` | OMP threads for xtb Hessian cache fills |
 | `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
@@ -105,18 +106,21 @@ ALGORITHM.md              algorithm details
 CLI scheduling options:
 
 ```text
---workers              total CPU budget in auto mode
+--workers              requested CPU budget
 --parallel-mode        auto | outer | inner
 --inner-workers        explicit per-step inner worker count
 --auto-inner-workers   target inner workers per concurrent step in auto mode
+--auto-max-workers     hard cap on total workers in auto mode
 --xtb-mode             auto | cache-only
 --xtb-omp-threads      OMP_NUM_THREADS for xtb --hess cache fills
 --steps                explicit cached step names
 --limit                first N cached steps
 ```
 
-In `auto` or `inner` mode, the per-step inner worker pool is used for both
-expensive phases: R-P cut sweep and independent TS/IG endpoint core matching.
+In default `auto` mode, the total worker budget is capped at 8 unless
+`--auto-max-workers` or `BGCP_AUTO_MAX_WORKERS` is changed. In `auto` or
+`inner` mode, the per-step inner worker pool is used for both expensive
+phases: R-P cut sweep and independent TS/IG endpoint core matching.
 
 ## Public API
 

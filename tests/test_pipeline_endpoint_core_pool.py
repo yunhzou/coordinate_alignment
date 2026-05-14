@@ -85,3 +85,16 @@ def test_sp_cache_can_copy_xyz_fallback_without_xtb(tmp_path):
         sp, "iter1", xyz_fallback=fallback, xtb_mode="cache-only")
 
     assert (sp / "iter1.xyz").read_text() == fallback.read_text()
+
+
+def test_auto_worker_budget_is_capped_by_default(monkeypatch):
+    monkeypatch.setattr(pipeline, "_default_worker_count", lambda: 64)
+
+    assert pipeline._resolve_worker_count("auto", None) == 8
+    assert pipeline._resolve_worker_count("auto", 64) == 8
+    assert pipeline._resolve_worker_count("auto", 64, auto_max_workers=12) == 12
+
+
+def test_non_auto_worker_budget_uses_requested_count():
+    assert pipeline._resolve_worker_count("inner", 16) == 16
+    assert pipeline._resolve_worker_count("outer", 16) == 16

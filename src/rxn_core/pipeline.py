@@ -61,9 +61,22 @@ SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS",
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
 AUTO_INNER_WORKERS = int(os.environ.get("BGCP_AUTO_INNER_WORKERS", "8"))
+AUTO_MAX_WORKERS = int(os.environ.get("BGCP_AUTO_MAX_WORKERS", "8"))
 XTB_CACHE_MODE = os.environ.get("BGCP_XTB_MODE", "auto").lower()
 XTB_OMP_THREADS = int(os.environ.get("BGCP_XTB_OMP_THREADS", "1"))
 W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
+
+
+def _default_worker_count():
+    return max(1, int(os.cpu_count() or 2) - 1)
+
+
+def _resolve_worker_count(mode, workers, auto_max_workers=AUTO_MAX_WORKERS):
+    requested = _default_worker_count() if workers is None else int(workers)
+    requested = max(1, requested)
+    if mode == "auto":
+        return min(requested, max(1, int(auto_max_workers)))
+    return requested
 
 
 def _xyz_path(d, include_xtbhess=False):
@@ -767,9 +780,10 @@ def process_step(step_name, inner_workers=0):
 def main():
     global XTB_CACHE_MODE, XTB_OMP_THREADS
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workers", type=int, default=max(1, os.cpu_count() - 1),
-                    help="Total CPU budget in auto mode, or outer step "
-                         "parallelism in outer mode.")
+    ap.add_argument("--workers", type=int, default=None,
+                    help="Requested CPU budget. In auto mode this is capped "
+                         "by --auto-max-workers; other modes use it directly. "
+                         "Default is CPU count - 1.")
     ap.add_argument("--inner-workers", type=int, default=0,
                     help="Explicit workers per step's inner R-P/TS work. In auto "
                          "mode, 0 means choose from --workers; >1 switches "
@@ -784,6 +798,10 @@ def main():
                     default=AUTO_INNER_WORKERS,
                     help="Target inner workers per concurrent step in "
                          "auto mode. Default from BGCP_AUTO_INNER_WORKERS=8.")
+    ap.add_argument("--auto-max-workers", type=int,
+                    default=AUTO_MAX_WORKERS,
+                    help="Hard cap on total workers in auto mode. Default "
+                         "from BGCP_AUTO_MAX_WORKERS=8.")
     ap.add_argument("--xtb-mode",
                     choices=("auto", "cache-only"),
                     default=_normal_xtb_mode(XTB_CACHE_MODE),
@@ -835,13 +853,15 @@ def main():
     mode = args.parallel_mode
     if mode == "auto" and args.inner_workers and args.inner_workers > 1:
         mode = "inner"
+    worker_budget = _resolve_worker_count(
+        mode, args.workers, args.auto_max_workers)
 
     if mode == "inner":
         # Inner-parallel mode: steps run serially in main; each step's
         # cut_sweep and TS endpoint matching use inner_workers cores. Best for
         # a single step or a few large steps where inner work dominates cost.
         inner_workers = (args.inner_workers if args.inner_workers > 0
-                         else max(1, args.workers))
+                         else worker_budget)
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
@@ -853,14 +873,14 @@ def main():
         # Outer-parallel mode: args.workers steps run concurrently; each
         # step's inner work is serial (no nested daemonic Pool). Best for
         # small/easy steps when nested process pools are undesirable.
-        print(f"Processing {len(steps)} steps with {args.workers} outer workers "
+        print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
               f"(legacy serial inner work inside each step, "
               f"xtb_mode={XTB_CACHE_MODE})")
-        with mp.Pool(args.workers) as pool:
+        with mp.Pool(worker_budget) as pool:
             for i, rec in enumerate(pool.imap_unordered(process_step, steps), 1):
                 _record(i, rec)
     else:
-        total_workers = max(1, int(args.workers))
+        total_workers = worker_budget
         target_inner = (
             int(args.inner_workers) if args.inner_workers and args.inner_workers > 1
             else max(1, min(int(args.auto_inner_workers), total_workers))
@@ -873,6 +893,7 @@ def main():
               f"{outer_slots} concurrent steps x {inner_workers} "
               f"inner workers "
               f"(total budget={total_workers}, "
+              f"auto cap={max(1, int(args.auto_max_workers))}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:

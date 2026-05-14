@@ -103,7 +103,8 @@ symmetry state. A block with two R atoms and four P atoms represents
   mechanism-local R/P endpoint `ts_core_pool` for GT/IG core alternatives,
   scores normal modes, and writes the multi-mechanism viewer plus slim eval
   JSON.  Its default auto scheduler treats `--workers` as a total CPU budget
-  and splits it between concurrent steps and each step's inner worker pool.
+  and caps it at `BGCP_AUTO_MAX_WORKERS=8` unless that cap is changed, then
+  splits the budget between concurrent steps and each step's inner worker pool.
   That inner pool is reused after R-P discovery for independent TS/IG endpoint
   core-matching tasks across targets, mechanisms, and R/P endpoints.  The
   pipeline prefers existing xtb caches but, in `BGCP_XTB_MODE=auto`, can fill
