@@ -110,6 +110,9 @@ symmetry state. A block with two R atoms and four P atoms represents
   missing `wbo` and `g98.out` files from available XYZ inputs before alignment.
   Each individual xtb subprocess is capped by `BGCP_XTB_MAX_THREADS=8` through
   `OMP_NUM_THREADS`; this is separate from the pipeline worker budget.
+  Each cache endpoint is loaded as one complete molecule/complex graph; the
+  pipeline does not assemble separate reactant/product fragments or merge
+  independent WBO matrices.
 
 These modules should not depend on matcher internals unless they are explicitly
 running alignment.

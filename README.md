@@ -35,6 +35,14 @@ data/xtb_frequency_calculations/<step>/
 Use `BGCP_WORK=/path/to/xtb_frequency_calculations` when the cache lives
 outside the repo.
 
+Each endpoint directory is one complete molecule/complex graph. For
+multi-reactant or multi-product cases, the fragments must already be present
+in the single XYZ under `R/`, `P/`, `sp_groundtruth/`, or `sp_iter<N>/`; the
+pipeline does not merge separate per-fragment xtb outputs. The atom order only
+has to be internally consistent within each XYZ/WBO pair. R, P, GT, and IG
+files do not need to share the same atom order because alignment computes the
+cross-index mapping, but they must contain the same element composition.
+
 By default `rxn-core-pipeline` runs in `BGCP_XTB_MODE=auto`: if an expected
 `wbo` or `g98.out` file is missing and an XYZ is available, it checks for
 `xtb` on `PATH` and fills the missing cache with `xtb --sp` or `xtb --hess`.
