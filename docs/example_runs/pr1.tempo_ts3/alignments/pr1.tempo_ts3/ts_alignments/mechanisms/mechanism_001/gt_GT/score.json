@@ -1,0 +1,56 @@
+{
+  "step": "pr1.tempo_ts3",
+  "mechanism_id": 1,
+  "mechanism_label": "#1: H12-O49 (cut: C16-C20) [dedup x176]",
+  "kind": "gt",
+  "label": "GT",
+  "S": 1.608575941081719,
+  "decomposition": {
+    "beta": 0.8061165763425091,
+    "rho": 0.6805105704977038,
+    "kappa": 0.9370741482965931,
+    "n_imag": 1,
+    "freq": -824.1619,
+    "mode_index": 0
+  },
+  "core_map_R_to_target": {
+    "12": 12,
+    "14": 14,
+    "49": 49
+  },
+  "core_sources": [
+    "P",
+    "R"
+  ],
+  "core_pool_dedup_count": 2,
+  "broken_bonds_R": [
+    [
+      12,
+      49
+    ]
+  ],
+  "formed_bonds_R": [
+    [
+      12,
+      14
+    ]
+  ],
+  "broken_bonds_T": [
+    [
+      12,
+      49
+    ]
+  ],
+  "formed_bonds_T": [
+    [
+      12,
+      14
+    ]
+  ],
+  "files": {
+    "target_native": "TS_native.xyz",
+    "core_aligned_R_frame": "TS_core_aligned_R_frame.xyz",
+    "picked_mode_R_frame": "picked_mode_R_frame.xyz"
+  },
+  "coordinate_policy": "TS_core_aligned_R_frame.xyz is the selected best-S core mapping materialized in R atom order. Only mapped core atoms are replaced by target coordinates; spectators remain at the reactant endpoint because Stage 2 does not enumerate spectator bijections."
+}

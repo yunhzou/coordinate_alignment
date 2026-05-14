@@ -1,0 +1,40 @@
+{
+  "stage": "rp_alignment_files",
+  "step": "pr1.tempo_ts3",
+  "n_atoms": 57,
+  "source_stage": "rp_stage.json",
+  "root_files": {
+    "reactant": "R.xyz",
+    "product_original_order": "P_original.xyz"
+  },
+  "mechanisms": [
+    {
+      "id": 1,
+      "label": "#1: H12-O49 (cut: C16-C20) [dedup x176]",
+      "directory": "mechanisms/mechanism_001",
+      "reactant": "mechanisms/mechanism_001/R.xyz",
+      "product_aligned": "mechanisms/mechanism_001/P_aligned.xyz",
+      "neb_endpoints": "mechanisms/mechanism_001/neb_endpoints.xyz",
+      "metadata": "mechanisms/mechanism_001/mechanism.json",
+      "mapping_csv": "mechanisms/mechanism_001/mapping_R_to_P.csv",
+      "broken_bonds_R": [
+        [
+          12,
+          49
+        ]
+      ],
+      "formed_bonds_R": [
+        [
+          12,
+          14
+        ]
+      ],
+      "core_atoms_R": [
+        12,
+        14,
+        49
+      ]
+    }
+  ],
+  "coordinate_policy": "All mechanism P endpoints are reindexed into the R atom frame. The files are intended for downstream path/NEB setup that needs matching atom order."
+}

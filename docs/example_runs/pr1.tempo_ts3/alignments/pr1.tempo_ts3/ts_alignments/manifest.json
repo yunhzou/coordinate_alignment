@@ -1,0 +1,36 @@
+{
+  "stage": "ts_alignment_files",
+  "step": "pr1.tempo_ts3",
+  "n_atoms": 57,
+  "source_stage": "ts_stage.json",
+  "mechanisms": [
+    {
+      "id": 1,
+      "label": "#1: H12-O49 (cut: C16-C20) [dedup x176]",
+      "directory": "mechanisms/mechanism_001",
+      "targets": [
+        {
+          "kind": "gt",
+          "label": "GT",
+          "S": 1.608575941081719,
+          "directory": "mechanisms/mechanism_001/gt_GT",
+          "target_native": "mechanisms/mechanism_001/gt_GT/TS_native.xyz",
+          "core_aligned_R_frame": "mechanisms/mechanism_001/gt_GT/TS_core_aligned_R_frame.xyz",
+          "picked_mode_R_frame": "mechanisms/mechanism_001/gt_GT/picked_mode_R_frame.xyz",
+          "score_json": "mechanisms/mechanism_001/gt_GT/score.json"
+        },
+        {
+          "kind": "ig",
+          "label": "iter1",
+          "S": 1.76895599877841,
+          "directory": "mechanisms/mechanism_001/ig_iter1",
+          "target_native": "mechanisms/mechanism_001/ig_iter1/TS_native.xyz",
+          "core_aligned_R_frame": "mechanisms/mechanism_001/ig_iter1/TS_core_aligned_R_frame.xyz",
+          "picked_mode_R_frame": "mechanisms/mechanism_001/ig_iter1/picked_mode_R_frame.xyz",
+          "score_json": "mechanisms/mechanism_001/ig_iter1/score.json"
+        }
+      ]
+    }
+  ],
+  "coordinate_policy": "Stage 2 exports native target coordinates plus selected best-S core-aligned R-frame materializations. These are score/debug artifacts, not full spectator atom bijections."
+}

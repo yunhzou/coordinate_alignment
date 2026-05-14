@@ -34,6 +34,18 @@ For a stage-by-stage walkthrough, open
 [`docs/TUTORIAL.ipynb`](docs/TUTORIAL.ipynb).
 
 ```bash
+# Direct XYZ mode: no benchmark step schema required
+rxn-core --stage rp --name my_reaction \
+  --reactant-xyz R.xyz --product-xyz P.xyz \
+  --workdir work/my_reaction \
+  --charge 0 --multiplicity 1 --xtb-mode auto
+
+# Direct Stage 2 target verification after direct Stage 1 has written rp_stage.json
+rxn-core --stage ts --name my_reaction \
+  --reactant-xyz R.xyz --product-xyz P.xyz \
+  --target-xyz guess_1.xyz --target-label guess_1 --target-kind ig \
+  --workdir work/my_reaction --save-alignment-files
+
 # Use the default cache root: data/xtb_frequency_calculations
 rxn-core-pipeline --steps pr7.V.dodh_ts910 --workers 8
 
@@ -53,6 +65,59 @@ rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 
 `rxn-core` and `rxn-core-pipeline` are the same command.  The shorter
 `rxn-core` name is intended for new workflows.
+
+### Real Example
+
+This direct-XYZ example uses `pr1.tempo_ts3` from the appendix benchmark. That
+step has one complete reactant-complex XYZ and one complete product-complex XYZ,
+so it can be passed directly to Stage 1.
+
+```python
+from pathlib import Path
+import rxn_core.pipeline as rxnp
+
+benchmark_root = Path("~/Downloads/appendix_final 2/benchmark").expanduser()
+step_dir = benchmark_root / "pr1.tempo_ts3"
+
+name = "pr1.tempo_ts3"
+reactant_xyz = step_dir / "reactants/reactant_01_reactant_01_5.xyz"
+product_xyz = step_dir / "products/product_01_product_01_6.xyz"
+workdir = f"work/{name}"
+
+target_specs = [
+    {
+        "kind": "ig",
+        "label": "iter1",
+        "xyz": step_dir / "initial_guess/pr1.tempo_ts3_benchmark_plain_iter1_87ea3b8f.xyz",
+    },
+    {
+        "kind": "gt",
+        "label": "GT",
+        "xyz": step_dir / "groundtruth/ts_groundtruth_01_reference_ts_01_TS3.xyz",
+    },
+]
+
+result = rxnp.process_xyz_stage(
+    name,
+    reactant_xyz,
+    product_xyz,
+    workdir=workdir,
+    stage="full",
+    target_specs=target_specs,
+    charge=0,
+    multiplicity=1,
+    xtb_mode="auto",
+    inner_workers=8,
+    save_alignment_files=True,
+)
+```
+
+For raw benchmark steps with multiple separate reactant/product fragments, first
+assemble each endpoint into one reaction-complex XYZ before calling Stage 1.
+
+The tutorial notebook has been executed on this example. Its stored artifacts
+are under `docs/example_runs/pr1.tempo_ts3/`, including the generated
+`view.html`, Stage 1/2 JSON, xtb caches, and aligned coordinate exports.
 
 ### Staged Workflows
 
@@ -82,32 +147,57 @@ rxn-core --stage full --steps pr7.V.dodh_ts910 --workers 8
 The same pieces are importable:
 
 ```python
-from rxn_core.pipeline import (
-    load_step_inputs, load_ts_targets,
-    step_inputs_from_arrays, ts_target_from_arrays,
-    discover_mechanisms_from_arrays,
-    run_rp_stage, write_rp_alignment_files, write_ts_alignment_files,
-    run_ts_stage, write_view_stage,
-)
+import rxn_core.pipeline as rxnp
 
-inputs = load_step_inputs("pr7.V.dodh_ts910")
-rp = run_rp_stage(inputs, inner_workers=8)
-write_rp_alignment_files(inputs, rp)
-targets = load_ts_targets(inputs, include_gt=True)
-ts = run_ts_stage(inputs, rp, targets, mechanism_ids=[2], inner_workers=8)
-write_ts_alignment_files(inputs, ts)
-view = write_view_stage(inputs, rp, ts, include_gt=True)
+# Preferred Stage 1 API: arbitrary endpoint XYZ files plus charge/multiplicity.
+inputs = rxnp.alignment_inputs_from_xyz(
+    "R.xyz", "P.xyz",
+    workdir="work/my_reaction",
+    name="my_reaction",
+    charge=0,
+    multiplicity=1,
+    xtb_mode="auto",
+)
+rp = rxnp.run_rp_stage(inputs, inner_workers=8)
+rxnp.write_rp_alignment_files(inputs, rp)
+
+# Preferred Stage 2 API: arbitrary TS/IG/GT XYZ files plus the same molecular
+# charge/multiplicity.  The explicit cache directories are optional; they are
+# shown here to make the data ownership clear.
+targets = [
+    rxnp.ts_target_from_xyz(
+        "ig", "guess_1", "guess_1.xyz",
+        sp_workdir="work/my_reaction/guess_1_sp",
+        hess_workdir="work/my_reaction/guess_1_hess",
+        charge=0,
+        multiplicity=1,
+        xtb_mode="auto",
+    ),
+]
+ts = rxnp.run_ts_stage(inputs, rp, targets, mechanism_ids=[2], inner_workers=8)
+rxnp.write_ts_alignment_files(inputs, ts)
+view = rxnp.write_view_stage(inputs, rp, ts, include_gt=True)
 ```
 
-For non-BGCP callers, `step_inputs_from_arrays(...)` and
-`discover_mechanisms_from_arrays(...)` expose the same R-P mechanism discovery
-from in-memory `(elements, xyz, wbo)` arrays. The resulting mechanisms include
+`load_step_inputs(...)` and `load_ts_targets(...)` are benchmark adapters over
+the same file-based API. For callers that already have WBO matrices and
+normal modes in memory, `step_inputs_from_arrays(...)`,
+`ts_target_from_arrays(...)`, and `discover_mechanisms_from_arrays(...)`
+avoid filesystem cache loading entirely. The resulting mechanisms include
 `mapping_RP` and `product_xyz_in_R`, so each mechanism has its own aligned
 product coordinate frame.
 
 ## Inputs
 
-The pipeline input is a directory of cached BGCP steps. By default it looks in:
+The principal API input is:
+
+| stage | required molecule data | cache-fill inputs |
+|---|---|---|
+| Stage 1 R-P mechanism discovery | R endpoint XYZ, P endpoint XYZ, charge, multiplicity | per-endpoint cache directory containing or receiving `wbo` |
+| Stage 2 TS/IG/GT verification | TS/IG/GT XYZ, charge, multiplicity, Stage 1 mechanisms | one single-point cache directory containing or receiving `wbo`; one Hessian cache directory containing or receiving `g98.out` |
+| Stage 3 view/export | Stage 1 result, optional Stage 2 result, original loaded molecules | no new chemistry calculation |
+
+The benchmark step schema is a convenience wrapper. By default it looks in:
 
 ```text
 data/xtb_frequency_calculations/<step>/

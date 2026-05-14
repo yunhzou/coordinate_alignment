@@ -27,11 +27,13 @@ Public API:
 
     # Reusable pipeline stages and BGCP full-view pipeline
     from rxn_core.pipeline import (
+        load_endpoint_from_xyz, alignment_inputs_from_xyz,
         load_step_inputs, step_inputs_from_arrays,
-        ts_target_from_arrays, load_ts_targets,
-        discover_mechanisms_from_arrays,
+        ts_target_from_xyz, ts_target_from_arrays, load_ts_targets,
+        discover_mechanisms_from_xyz, discover_mechanisms_from_arrays,
         run_rp_stage, write_rp_alignment_files, write_ts_alignment_files,
         run_ts_stage, write_view_stage,
+        load_ts_targets_from_specs, process_xyz_stage,
         run_full_pipeline_stage, process_step, main,
     )
 """
@@ -55,11 +57,13 @@ from .modes import (
 )
 
 _PIPELINE_EXPORTS = {
+    "load_endpoint_from_xyz", "alignment_inputs_from_xyz",
     "load_step_inputs", "step_inputs_from_arrays",
-    "ts_target_from_arrays", "load_ts_targets",
-    "discover_mechanisms_from_arrays",
+    "ts_target_from_xyz", "ts_target_from_arrays", "load_ts_targets",
+    "discover_mechanisms_from_xyz", "discover_mechanisms_from_arrays",
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
     "run_ts_stage", "write_view_stage",
+    "load_ts_targets_from_specs", "process_xyz_stage",
     "run_full_pipeline_stage", "process_step",
 }
 
@@ -84,11 +88,13 @@ __all__ = [
     "bond_overlap_per_mode", "rxn_overlap_per_mode",
     "kabsch",
     "load_cached_xtb", "reindex_to_R_frame",
+    "load_endpoint_from_xyz", "alignment_inputs_from_xyz",
     "load_step_inputs", "step_inputs_from_arrays",
-    "ts_target_from_arrays", "load_ts_targets",
-    "discover_mechanisms_from_arrays",
+    "ts_target_from_xyz", "ts_target_from_arrays", "load_ts_targets",
+    "discover_mechanisms_from_xyz", "discover_mechanisms_from_arrays",
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
     "run_ts_stage", "write_view_stage",
+    "load_ts_targets_from_specs", "process_xyz_stage",
     "run_full_pipeline_stage", "process_step",
 ]
 

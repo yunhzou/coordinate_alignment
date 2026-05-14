@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from pathlib import Path
 
 import rxn_core.pipeline as pipeline
 from rxn_core.pipeline import (
@@ -111,6 +112,125 @@ def test_hess_cache_auto_uses_charge_and_multiplicity(tmp_path, monkeypatch):
         hess, "iter1", xtb_mode="auto", charge=2, multiplicity=2)
 
     assert calls == [(2, 1)]
+
+
+def test_alignment_inputs_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):
+    r_xyz = tmp_path / "reactant.xyz"
+    p_xyz = tmp_path / "product.xyz"
+    r_xyz.write_text("1\nR\nH 0 0 0\n")
+    p_xyz.write_text("1\nP\nH 1 0 0\n")
+    r_cache = tmp_path / "cache_a"
+    p_cache = tmp_path / "cache_b"
+    calls = []
+
+    def fake_run_xtb(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        calls.append((Path(xyz_path).name, workdir.name, charge, uhf))
+        (workdir / "wbo").write_text("")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb", fake_run_xtb)
+
+    inputs = pipeline.alignment_inputs_from_xyz(
+        r_xyz, p_xyz, name="direct",
+        reactant_workdir=r_cache, product_workdir=p_cache,
+        charge=-1, multiplicity=3, xtb_mode="auto")
+
+    assert inputs.step_name == "direct"
+    assert inputs.elR == ["H"]
+    assert inputs.elP == ["H"]
+    assert calls == [
+        ("reactant.xyz", "cache_a", -1, 2),
+        ("product.xyz", "cache_b", -1, 2),
+    ]
+
+
+def test_discover_mechanisms_from_xyz_can_return_inputs(tmp_path, monkeypatch):
+    r_xyz = tmp_path / "R.xyz"
+    p_xyz = tmp_path / "P.xyz"
+    r_xyz.write_text("2\nR\nH 0 0 0\nH 0 0 0.75\n")
+    p_xyz.write_text("2\nP\nH 1 0 0\nH 1 0 0.75\n")
+
+    def fake_run_xtb(_xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        (workdir / "wbo").write_text("1 2 0.900\n")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb", fake_run_xtb)
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+
+    inputs, result = pipeline.discover_mechanisms_from_xyz(
+        r_xyz, p_xyz, workdir=tmp_path / "cache", name="h2",
+        xtb_mode="auto", config=cfg, return_inputs=True)
+
+    assert inputs.step_name == "h2"
+    assert result["stage"] == "rp"
+    assert result["mechanisms"]
+
+
+def test_process_xyz_stage_runs_rp_without_step_schema(tmp_path, monkeypatch):
+    r_xyz = tmp_path / "R.xyz"
+    p_xyz = tmp_path / "P.xyz"
+    r_xyz.write_text("2\nR\nH 0 0 0\nH 0 0 0.75\n")
+    p_xyz.write_text("2\nP\nH 1 0 0\nH 1 0 0.75\n")
+
+    def fake_run_xtb(_xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        (workdir / "wbo").write_text("1 2 0.900\n")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb", fake_run_xtb)
+    monkeypatch.setattr(pipeline, "OUT_ROOT", tmp_path / "views")
+    monkeypatch.setattr(pipeline, "STAGE_ROOT", tmp_path / "stages")
+    monkeypatch.setattr(pipeline, "ALIGNMENT_OUT_ROOT", tmp_path / "alignments")
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+    cfg["dwbo_threshold"] = 0.7
+
+    rec = pipeline.process_xyz_stage(
+        "h2_direct", r_xyz, p_xyz,
+        workdir=tmp_path / "work", stage="rp",
+        inner_workers=0, charge=0, multiplicity=1, xtb_mode="auto",
+        rp_config=cfg)
+
+    assert rec["slim"]["n_mechs"] >= 1
+    assert rec["rp"]["config"]["dwbo_threshold"] == 0.7
+    assert (tmp_path / "stages" / "h2_direct" / "rp_stage.json").exists()
+    assert (tmp_path / "views" / "h2_direct" / "view.html").exists()
+
+
+def test_ts_target_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):
+    ts_xyz = tmp_path / "guess.xyz"
+    ts_xyz.write_text("1\nTS\nH 0 0 0\n")
+    sp_cache = tmp_path / "single_point"
+    hess_cache = tmp_path / "hessian"
+    calls = []
+
+    def fake_run_xtb(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        calls.append(("sp", Path(xyz_path).name, workdir.name, charge, uhf))
+        (workdir / "wbo").write_text("")
+
+    def fake_run_xtb_hess(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
+        calls.append(("hess", Path(xyz_path).name, workdir.name, charge, uhf))
+        (workdir / "g98.out").write_text("fake")
+
+    monkeypatch.setattr(pipeline, "_xtb_available", lambda: True)
+    monkeypatch.setattr(pipeline, "run_xtb", fake_run_xtb)
+    monkeypatch.setattr(pipeline, "run_xtb_hess", fake_run_xtb_hess)
+    monkeypatch.setattr(
+        pipeline, "parse_g98_modes",
+        lambda _path: (np.array([-500.0]), np.zeros((1, 1, 3))))
+
+    target = pipeline.ts_target_from_xyz(
+        "ig", "guess", ts_xyz,
+        sp_workdir=sp_cache, hess_workdir=hess_cache,
+        charge=1, multiplicity=2, xtb_mode="auto")
+
+    assert target.kind == "ig"
+    assert target.label == "guess"
+    assert target.freqs.tolist() == [-500.0]
+    assert calls == [
+        ("sp", "guess.xyz", "single_point", 1, 1),
+        ("hess", "guess.xyz", "hessian", 1, 1),
+    ]
 
 
 def test_multiplicity_must_be_positive():

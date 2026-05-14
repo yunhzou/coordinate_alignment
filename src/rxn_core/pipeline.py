@@ -89,11 +89,11 @@ IMAG_PEN = float(os.environ.get("BGCP_IMAG_PEN", "0.3"))
 
 @dataclass
 class StepInputs:
-    """Loaded endpoint data for one cached step.
+    """Loaded endpoint data for one R/P alignment problem.
 
-    All downstream stages operate on this object instead of reading R/P from
-    disk again.  TS/IG targets are loaded separately because Stage 1 should be
-    usable as pure mechanism discovery.
+    The name and directory fields are artifact labels, not a required input
+    schema.  Build this object from arrays, direct XYZ files, or a benchmark
+    step adapter; downstream stages only depend on the molecule data here.
     """
     step_name: str
     step_dir: Path
@@ -284,6 +284,7 @@ def _ensure_hess_cache(hess_dir, label, xyz_fallback=None, xtb_mode=None,
     hess_dir = Path(hess_dir)
     g98 = hess_dir / "g98.out"
     if not g98.exists():
+        hess_dir.mkdir(parents=True, exist_ok=True)
         xyz = _xyz_path(hess_dir, include_xtbhess=True) or (
             Path(xyz_fallback) if xyz_fallback else None)
         if xyz is None:
@@ -310,13 +311,19 @@ def load(d):
     return el, np.asarray(xyz, float), wbo
 
 
-def _load_sp(d, label, xyz_fallback=None):
-    _ensure_sp_cache(d, label, xyz_fallback=xyz_fallback)
+def _load_sp(d, label, xyz_fallback=None, xtb_mode=None,
+             charge=None, multiplicity=None):
+    _ensure_sp_cache(d, label, xyz_fallback=xyz_fallback,
+                     xtb_mode=xtb_mode,
+                     charge=charge, multiplicity=multiplicity)
     return load(d)
 
 
-def _load_hess(hess_dir, label, xyz_fallback=None):
-    return _ensure_hess_cache(hess_dir, label, xyz_fallback=xyz_fallback)
+def _load_hess(hess_dir, label, xyz_fallback=None, xtb_mode=None,
+               charge=None, multiplicity=None):
+    return _ensure_hess_cache(hess_dir, label, xyz_fallback=xyz_fallback,
+                              xtb_mode=xtb_mode,
+                              charge=charge, multiplicity=multiplicity)
 
 
 def _iter_labels(sd):
@@ -332,37 +339,78 @@ def _iter_labels(sd):
     return [f"iter{i}" for i in sorted(labels)]
 
 
-def load_step_inputs(step_name):
-    """Load/cache-fill the R and P endpoints for one step."""
+def load_endpoint_from_xyz(xyz_path, workdir, label, *, charge=None,
+                           multiplicity=None, xtb_mode=None):
+    """Load one molecule from XYZ plus charge/multiplicity-backed WBO cache.
+
+    `workdir` is caller-owned cache space.  If `workdir/wbo` is missing and
+    `xtb_mode='auto'`, xtb is run from `xyz_path`; otherwise the existing cache
+    is used.  This is the file-level primitive underneath Stage 1 and Stage 2.
+    """
+    cache = _ensure_sp_cache(
+        workdir, label, xyz_fallback=xyz_path, xtb_mode=xtb_mode,
+        charge=charge, multiplicity=multiplicity)
+    return load(cache)
+
+
+def step_inputs_from_arrays(step_name, elR, xyzR, wboR, elP, xyzP, wboP,
+                            step_dir=None):
+    """Build Stage 1 inputs directly from in-memory molecule arrays."""
+    return StepInputs(
+        step_name=str(step_name),
+        step_dir=Path("." if step_dir is None else step_dir),
+        elR=list(elR),
+        xyzR=np.asarray(xyzR, float),
+        wboR=np.asarray(wboR, float),
+        elP=list(elP),
+        xyzP=np.asarray(xyzP, float),
+        wboP=np.asarray(wboP, float),
+    )
+
+
+def alignment_inputs_from_xyz(reactant_xyz, product_xyz, workdir=None, *,
+                              name="alignment", charge=None,
+                              multiplicity=None, xtb_mode=None,
+                              reactant_workdir=None, product_workdir=None,
+                              reactant_label="R", product_label="P"):
+    """Build Stage 1 inputs from R/P XYZ files.
+
+    This is the preferred file API for arbitrary molecules.  Pass explicit
+    `reactant_workdir` and `product_workdir` to avoid any imposed directory
+    layout, or pass `workdir` for the conventional `workdir/R` and `workdir/P`
+    cache locations.
+    """
+    if reactant_workdir is None or product_workdir is None:
+        if workdir is None:
+            raise ValueError(
+                "provide either workdir or both reactant_workdir/product_workdir")
+        base = Path(workdir)
+        reactant_workdir = base / reactant_label
+        product_workdir = base / product_label
+    elR, xyzR, wboR = load_endpoint_from_xyz(
+        reactant_xyz, reactant_workdir, reactant_label,
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
+    elP, xyzP, wboP = load_endpoint_from_xyz(
+        product_xyz, product_workdir, product_label,
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
+    step_dir = (
+        Path(workdir) if workdir is not None
+        else Path(reactant_workdir).parent
+    )
+    return step_inputs_from_arrays(
+        name, elR, xyzR, wboR, elP, xyzP, wboP, step_dir=step_dir)
+
+
+def load_step_inputs(step_name, *, charge=None, multiplicity=None,
+                     xtb_mode=None):
+    """Adapter: load/cache-fill R and P endpoints for one benchmark step."""
     sd = WORK / step_name
     if not sd.exists():
         raise RuntimeError(f"missing step directory: {sd}")
-    elR, xyzR, wboR = _load_sp(sd / "R", "R")
-    elP, xyzP, wboP = _load_sp(sd / "P", "P")
-    return StepInputs(
-        step_name=step_name,
-        step_dir=sd,
-        elR=list(elR),
-        xyzR=np.asarray(xyzR, float),
-        wboR=np.asarray(wboR, float),
-        elP=list(elP),
-        xyzP=np.asarray(xyzP, float),
-        wboP=np.asarray(wboP, float),
-    )
-
-
-def step_inputs_from_arrays(step_name, elR, xyzR, wboR, elP, xyzP, wboP):
-    """Build Stage 1 inputs directly from arrays, without a cache directory."""
-    return StepInputs(
-        step_name=str(step_name),
-        step_dir=Path("."),
-        elR=list(elR),
-        xyzR=np.asarray(xyzR, float),
-        wboR=np.asarray(wboR, float),
-        elP=list(elP),
-        xyzP=np.asarray(xyzP, float),
-        wboP=np.asarray(wboP, float),
-    )
+    return alignment_inputs_from_xyz(
+        _xyz_path(sd / "R"), _xyz_path(sd / "P"),
+        name=step_name, reactant_workdir=sd / "R", product_workdir=sd / "P",
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
 
 
 def ts_target_from_arrays(kind, label, el, xyz, wbo, freqs, modes,
@@ -380,6 +428,37 @@ def ts_target_from_arrays(kind, label, el, xyz, wbo, freqs, modes,
     )
 
 
+def _safe_cache_name(label):
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(label)).strip("_") or "target"
+
+
+def ts_target_from_xyz(kind, label, xyz_path, workdir=None, *,
+                       charge=None, multiplicity=None, xtb_mode=None,
+                       target_index=0, sp_workdir=None, hess_workdir=None):
+    """Build one Stage 2 target from TS/IG/GT XYZ plus charge/multiplicity.
+
+    Pass explicit `sp_workdir` and `hess_workdir` when the caller owns the
+    cache layout.  Passing `workdir` is just a convenience wrapper that creates
+    `<workdir>/<label>_sp` and `<workdir>/<label>_hess`.
+    """
+    if sp_workdir is None or hess_workdir is None:
+        if workdir is None:
+            raise ValueError(
+                "provide either workdir or both sp_workdir/hess_workdir")
+        base = Path(workdir)
+        safe = _safe_cache_name(label)
+        sp_workdir = base / f"{safe}_sp"
+        hess_workdir = base / f"{safe}_hess"
+    el, xyz, wbo = load_endpoint_from_xyz(
+        xyz_path, sp_workdir, label,
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
+    freqs, modes = _load_hess(
+        hess_workdir, label, xyz_fallback=_xyz_path(sp_workdir) or xyz_path,
+        xtb_mode=xtb_mode, charge=charge, multiplicity=multiplicity)
+    return ts_target_from_arrays(
+        kind, label, el, xyz, wbo, freqs, modes, target_index=target_index)
+
+
 def discover_mechanisms_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                                     *, step_name="alignment",
                                     config=None, inner_workers=0):
@@ -389,8 +468,25 @@ def discover_mechanisms_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
     return run_rp_stage(inputs, config=config, inner_workers=inner_workers)
 
 
+def discover_mechanisms_from_xyz(reactant_xyz, product_xyz, workdir=None, *,
+                                 name="alignment", charge=None,
+                                 multiplicity=None, xtb_mode=None,
+                                 config=None, inner_workers=0,
+                                 return_inputs=False,
+                                 reactant_workdir=None,
+                                 product_workdir=None):
+    """File-based R-P alignment / mechanism discovery entry point."""
+    inputs = alignment_inputs_from_xyz(
+        reactant_xyz, product_xyz, workdir=workdir, name=name,
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode,
+        reactant_workdir=reactant_workdir,
+        product_workdir=product_workdir)
+    result = run_rp_stage(inputs, config=config, inner_workers=inner_workers)
+    return (inputs, result) if return_inputs else result
+
+
 def load_ts_targets(inputs, include_gt=None):
-    """Load/cache-fill GT and IG targets for Stage 2 verification.
+    """Adapter: load/cache-fill GT and IG targets for one benchmark step.
 
     GT is optional and controlled separately from IG loading.  IGs are loaded
     from the conventional `sp_iter<N>` / `hess_iter<N>` cache pairs.
@@ -401,43 +497,24 @@ def load_ts_targets(inputs, include_gt=None):
     if include_gt:
         gt_sp = sd / "sp_groundtruth"
         gt_hess = sd / "hess_groundtruth"
-        elT_gt, xyzT_gt, wboT_gt = _load_sp(
-            gt_sp, "GT",
-            xyz_fallback=_xyz_path(gt_hess, include_xtbhess=True))
-        freqs_gt, modes_gt = _load_hess(
-            gt_hess, "GT", xyz_fallback=_xyz_path(gt_sp))
-        targets.append(TSTarget(
-            kind='gt',
-            target_index=-1,
-            label='GT',
-            el=list(elT_gt),
-            xyz=np.asarray(xyzT_gt, float),
-            wbo=np.asarray(wboT_gt, float),
-            freqs=np.asarray(freqs_gt, float),
-            modes=np.asarray(modes_gt, float),
-        ))
+        xyz = _xyz_path(gt_sp) or _xyz_path(gt_hess, include_xtbhess=True)
+        targets.append(ts_target_from_xyz(
+            'gt', 'GT', xyz, target_index=-1,
+            sp_workdir=gt_sp, hess_workdir=gt_hess))
 
     for label in _iter_labels(sd):
         hess_dir = sd / f"hess_{label}"
         sp_dir = sd / f"sp_{label}"
         try:
-            elI, xyzI, wboI = _load_sp(
-                sp_dir, label,
-                xyz_fallback=_xyz_path(hess_dir, include_xtbhess=True))
-            freqs_i, modes_i = _load_hess(
-                hess_dir, label, xyz_fallback=_xyz_path(sp_dir))
+            xyz = _xyz_path(sp_dir) or _xyz_path(
+                hess_dir, include_xtbhess=True)
+            target = ts_target_from_xyz(
+                'ig', label, xyz,
+                target_index=len([t for t in targets if t.kind == 'ig']),
+                sp_workdir=sp_dir, hess_workdir=hess_dir)
         except Exception:
             continue
-        targets.append(TSTarget(
-            kind='ig',
-            target_index=len([t for t in targets if t.kind == 'ig']),
-            label=label,
-            el=list(elI),
-            xyz=np.asarray(xyzI, float),
-            wbo=np.asarray(wboI, float),
-            freqs=np.asarray(freqs_i, float),
-            modes=np.asarray(modes_i, float),
-        ))
+        targets.append(target)
     return targets
 
 
@@ -1560,6 +1637,135 @@ def process_view_step(step_name):
     }
 
 
+def _target_specs_from_cli(target_xyzs, target_labels=None, target_kinds=None):
+    specs = []
+    target_labels = list(target_labels or [])
+    target_kinds = list(target_kinds or [])
+    for i, xyz in enumerate(target_xyzs or []):
+        path = Path(xyz)
+        specs.append({
+            'xyz': path,
+            'label': (
+                target_labels[i] if i < len(target_labels)
+                else path.stem
+            ),
+            'kind': (
+                target_kinds[i] if i < len(target_kinds)
+                else 'ig'
+            ),
+        })
+    return specs
+
+
+def load_ts_targets_from_specs(target_specs, workdir, *, charge=None,
+                               multiplicity=None, xtb_mode=None):
+    """Load arbitrary Stage 2 targets from XYZ specs.
+
+    Each spec is a dict with `xyz`, optional `label`, and optional `kind`
+    (`ig` or `gt`).  Cache directories live under `workdir` unless the caller
+    builds targets directly with `ts_target_from_xyz(..., sp_workdir=..., ...)`.
+    """
+    targets = []
+    for i, spec in enumerate(target_specs or []):
+        label = spec.get('label') or Path(spec['xyz']).stem
+        kind = str(spec.get('kind', 'ig')).lower()
+        targets.append(ts_target_from_xyz(
+            kind, label, spec['xyz'],
+            workdir=Path(workdir),
+            target_index=-(i + 1) if kind == 'gt' else i,
+            charge=spec.get('charge', charge),
+            multiplicity=spec.get('multiplicity', multiplicity),
+            xtb_mode=spec.get('xtb_mode', xtb_mode),
+        ))
+    return targets
+
+
+def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
+                      target_specs=None, stage='full', inner_workers=0,
+                      mechanism_ids=None, save_alignment_files=False,
+                      charge=None, multiplicity=None, xtb_mode=None,
+                      rp_config=None, ts_config=None):
+    """Run pipeline stages for arbitrary XYZ files, without a step schema."""
+    workdir = Path(workdir or (PROJECT / "out" / "xyz_work" / name))
+    inputs = alignment_inputs_from_xyz(
+        reactant_xyz, product_xyz, workdir=workdir / "endpoints",
+        name=name, charge=charge, multiplicity=multiplicity,
+        xtb_mode=xtb_mode)
+    paths = pipeline_stage_paths(name)
+    include_gt = INCLUDE_GT or any(
+        str(s.get('kind', '')).lower() == 'gt' for s in (target_specs or []))
+
+    if stage == 'rp':
+        rp_result = run_rp_stage(
+            inputs, config=rp_config, inner_workers=inner_workers)
+        write_stage_json(paths.rp_json, rp_result)
+        view_result = write_view_stage(
+            inputs, rp_result, ts_result=None, include_gt=False)
+        alignment_files = (
+            write_rp_alignment_files(inputs, rp_result)
+            if save_alignment_files else None
+        )
+        return {
+            'step': name,
+            'rp': rp_result,
+            'view': view_result,
+            'alignment_files': alignment_files,
+            'slim': view_result['slim'],
+        }
+
+    if stage == 'view':
+        if not paths.rp_json.exists():
+            raise RuntimeError(
+                f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+        rp_result = read_stage_json(paths.rp_json)
+        ts_result = read_stage_json(paths.ts_json) if paths.ts_json.exists() else None
+        view_result = write_view_stage(
+            inputs, rp_result, ts_result, include_gt=include_gt)
+        return {
+            'step': name,
+            'rp': rp_result,
+            'ts': ts_result,
+            'view': view_result,
+            'slim': view_result['slim'],
+        }
+
+    if stage == 'ts':
+        if not paths.rp_json.exists():
+            raise RuntimeError(
+                f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+        rp_result = read_stage_json(paths.rp_json)
+    elif stage == 'full':
+        rp_result = run_rp_stage(
+            inputs, config=rp_config, inner_workers=inner_workers)
+        write_stage_json(paths.rp_json, rp_result)
+    else:
+        raise ValueError(f"unknown stage: {stage}")
+
+    targets = load_ts_targets_from_specs(
+        target_specs or [], workdir / "targets",
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
+    ts_result = run_ts_stage(
+        inputs, rp_result, targets, config=ts_config,
+        inner_workers=inner_workers, mechanism_ids=mechanism_ids)
+    write_stage_json(paths.ts_json, ts_result)
+    view_result = write_view_stage(
+        inputs, rp_result, ts_result, include_gt=include_gt)
+    alignment_files = ts_alignment_files = None
+    if save_alignment_files:
+        if stage == 'full':
+            alignment_files = write_rp_alignment_files(inputs, rp_result)
+        ts_alignment_files = write_ts_alignment_files(inputs, ts_result)
+    return {
+        'step': name,
+        'rp': rp_result,
+        'ts': ts_result,
+        'view': view_result,
+        'alignment_files': alignment_files,
+        'ts_alignment_files': ts_alignment_files,
+        'slim': view_result['slim'],
+    }
+
+
 def process_step_stage(step_name, stage='full', inner_workers=0,
                        mechanism_ids=None, save_alignment_files=False):
     """CLI-safe wrapper for one explicit stage."""
@@ -1693,6 +1899,25 @@ def main():
                     default=INCLUDE_GT,
                     help="Load and score sp_groundtruth/hess_groundtruth. "
                          "Default is off for benchmark runs without GT.")
+    ap.add_argument("--name", default=None,
+                    help="Name for direct XYZ mode. Defaults to "
+                         "<reactant-stem>_to_<product-stem>.")
+    ap.add_argument("--reactant-xyz", default=None,
+                    help="Direct Stage 1 reactant endpoint XYZ. Use with "
+                         "--product-xyz instead of --steps.")
+    ap.add_argument("--product-xyz", default=None,
+                    help="Direct Stage 1 product endpoint XYZ. Use with "
+                         "--reactant-xyz instead of --steps.")
+    ap.add_argument("--workdir", default=None,
+                    help="Direct XYZ mode cache work directory. Holds "
+                         "endpoint, TS single-point, and TS Hessian caches.")
+    ap.add_argument("--target-xyz", action="append", default=None,
+                    help="Direct Stage 2 TS/IG/GT XYZ. Can be repeated.")
+    ap.add_argument("--target-label", action="append", default=None,
+                    help="Label for each --target-xyz. Defaults to file stem.")
+    ap.add_argument("--target-kind", action="append",
+                    choices=("ig", "gt"), default=None,
+                    help="Kind for each --target-xyz. Defaults to ig.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
@@ -1728,6 +1953,61 @@ def main():
     os.environ["BGCP_ALIGNMENT_OUT_ROOT"] = str(ALIGNMENT_OUT_ROOT)
     os.environ["BGCP_SAVE_ALIGNMENT_FILES"] = (
         "1" if args.save_alignment_files else "0")
+
+    direct_mode = bool(args.reactant_xyz or args.product_xyz)
+    if direct_mode:
+        if args.steps:
+            ap.error("use either --steps or --reactant-xyz/--product-xyz, not both")
+        if not (args.reactant_xyz and args.product_xyz):
+            ap.error("--reactant-xyz and --product-xyz must be provided together")
+        n_targets = len(args.target_xyz or [])
+        if args.target_label and len(args.target_label) > n_targets:
+            ap.error("--target-label cannot be provided more times than --target-xyz")
+        if args.target_kind and len(args.target_kind) > n_targets:
+            ap.error("--target-kind cannot be provided more times than --target-xyz")
+        name = args.name or (
+            f"{Path(args.reactant_xyz).stem}_to_{Path(args.product_xyz).stem}")
+        OUT_ROOT.mkdir(parents=True, exist_ok=True)
+        STAGE_ROOT.mkdir(parents=True, exist_ok=True)
+        if args.save_alignment_files:
+            ALIGNMENT_OUT_ROOT.mkdir(parents=True, exist_ok=True)
+        try:
+            rec = process_xyz_stage(
+                name,
+                Path(args.reactant_xyz),
+                Path(args.product_xyz),
+                workdir=Path(args.workdir) if args.workdir else None,
+                target_specs=_target_specs_from_cli(
+                    args.target_xyz, args.target_label, args.target_kind),
+                stage=args.stage,
+                inner_workers=(
+                    args.inner_workers if args.inner_workers > 0
+                    else max(1, int(args.workers))),
+                mechanism_ids=args.mechanism,
+                save_alignment_files=args.save_alignment_files,
+                charge=XTB_CHARGE,
+                multiplicity=XTB_MULTIPLICITY,
+                xtb_mode=XTB_CACHE_MODE,
+            )
+        except Exception as e:
+            rec = {
+                'step': name,
+                'error': f"{type(e).__name__}: {e}",
+                'trace': traceback.format_exc(),
+            }
+        if rec.get('error'):
+            print(f"{name}: ERROR: {rec['error']}")
+            EVAL_JSON.write_text(json.dumps([{
+                'step': name,
+                'error': rec['error'],
+            }]))
+        else:
+            slim = rec['slim']
+            print(f"{name}: mechs={slim.get('n_mechs', 0)} "
+                  f"view={rec.get('view', {}).get('view_html')}")
+            EVAL_JSON.write_text(json.dumps([slim]))
+        print(f"wrote {EVAL_JSON}")
+        return
 
     if not WORK.exists():
         print(f"No work directory: {WORK}")
