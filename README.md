@@ -62,6 +62,10 @@ rxn-core --stage rp --steps pr7.V.dodh_ts910 --workers 8
 # Stage 1 plus clean mechanism-specific aligned R/P files for NEB/path setup
 rxn-core --stage rp --steps pr7.V.dodh_ts910 --save-alignment-files
 
+# Stage 2 plus selected best-S TS core-aligned files
+rxn-core --stage ts --steps pr7.V.dodh_ts910 \
+  --mechanism 2 --include-gt --save-alignment-files
+
 # Stage 2: verify GT/IG/TS targets from the saved Stage 1 mechanisms
 rxn-core --stage ts --steps pr7.V.dodh_ts910 --mechanism 2 --include-gt
 
@@ -79,7 +83,7 @@ from rxn_core.pipeline import (
     load_step_inputs, load_ts_targets,
     step_inputs_from_arrays, ts_target_from_arrays,
     discover_mechanisms_from_arrays,
-    run_rp_stage, write_rp_alignment_files,
+    run_rp_stage, write_rp_alignment_files, write_ts_alignment_files,
     run_ts_stage, write_view_stage,
 )
 
@@ -88,6 +92,7 @@ rp = run_rp_stage(inputs, inner_workers=8)
 write_rp_alignment_files(inputs, rp)
 targets = load_ts_targets(inputs, include_gt=True)
 ts = run_ts_stage(inputs, rp, targets, mechanism_ids=[2], inner_workers=8)
+write_ts_alignment_files(inputs, ts)
 view = write_view_stage(inputs, rp, ts, include_gt=True)
 ```
 
@@ -162,6 +167,10 @@ out/bgcp_alignments/<step>/manifest.json
 out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/R.xyz
 out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/P_aligned.xyz
 out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/neb_endpoints.xyz
+out/bgcp_alignments/<step>/ts_alignments/manifest.json
+out/bgcp_alignments/<step>/ts_alignments/mechanisms/mechanism_<id>/<target>/TS_native.xyz
+out/bgcp_alignments/<step>/ts_alignments/mechanisms/mechanism_<id>/<target>/TS_core_aligned_R_frame.xyz
+out/bgcp_alignments/<step>/ts_alignments/mechanisms/mechanism_<id>/<target>/picked_mode_R_frame.xyz
 ```
 
 Each `view.html` has a step-level `Download` button. The downloaded archive
@@ -176,6 +185,14 @@ directory is self-contained and includes `R.xyz`, `P_aligned.xyz`, a
 two-frame `neb_endpoints.xyz`, `mapping_R_to_P.csv`, and `mechanism.json`.
 `P_aligned.xyz` is product geometry reindexed into the R atom order; no
 Kabsch or spatial fitting is applied.
+
+When Stage 2 is run with `--save-alignment-files`, the same output root gets
+`ts_alignments/`. Each scored GT/IG/TS target has native target coordinates,
+the selected best-S core-aligned R-frame materialization, the picked mode in
+R-frame extended XYZ, and `score.json`. The Stage 2 aligned file is core-only:
+mapped core atoms use the target coordinates, while spectator atoms remain at
+the reactant endpoint because spectator bijections are intentionally not
+enumerated.
 
 Generated caches, views, and paper artifacts are intentionally not part of the
 main repository.

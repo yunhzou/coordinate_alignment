@@ -209,3 +209,51 @@ def test_rp_alignment_file_export_is_neb_ready(tmp_path):
     assert (mdir / "neb_endpoints.xyz").read_text().count("\n2\n") == 1
     assert "R_index,R_element,P_index,P_element" in (
         mdir / "mapping_R_to_P.csv").read_text()
+
+
+def test_ts_alignment_file_export_writes_best_score_core_frame(tmp_path):
+    el = ["H", "H"]
+    xyz_r = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]])
+    xyz_p = np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.75]])
+    wbo = np.array([[0.0, 0.9], [0.9, 0.0]])
+    inputs = pipeline.step_inputs_from_arrays(
+        "h2", el, xyz_r, wbo, el, xyz_p, wbo)
+    ts_result = {
+        "stage": "ts",
+        "step": "h2",
+        "mechanisms": [{
+            "id": 1,
+            "label": "#1",
+            "broken_bonds_R": [[0, 1]],
+            "formed_bonds_R": [],
+            "core_atoms": [0, 1],
+            "gt": {
+                "S": 1.2,
+                "beta": 0.8,
+                "rho": 0.3,
+                "kappa": 0.2,
+                "freq": -500.0,
+                "k": 0,
+                "n_imag": 1,
+                "core_map": {"0": 1, "1": 0},
+                "core_sources": ["R"],
+                "core_pool_dedup_count": 1,
+                "elements": el,
+                "xyz": xyz_p.tolist(),
+                "xyz_in_R": [[1.0, 0.0, 0.75], [1.0, 0.0, 0.0]],
+                "picked_disp_R": [[0.1, 0.0, 0.0], [-0.1, 0.0, 0.0]],
+                "broken_bonds_T": [[1, 0]],
+                "formed_bonds_T": [],
+            },
+            "igs": [],
+        }],
+    }
+
+    out = pipeline.write_ts_alignment_files(inputs, ts_result, tmp_path)
+
+    assert out["n_targets"] == 1
+    tdir = tmp_path / "mechanisms" / "mechanism_001" / "gt_GT"
+    assert (tdir / "TS_native.xyz").exists()
+    assert (tdir / "TS_core_aligned_R_frame.xyz").exists()
+    assert (tdir / "picked_mode_R_frame.xyz").exists()
+    assert "spectator bijections" in (tdir / "score.json").read_text()

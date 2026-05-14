@@ -32,7 +32,7 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       build_graph, cut_sweep, select_min_mechanisms,
                       ts_core_pool)
 from rxn_core.chemistry_computations import (
-    run_xtb, run_xtb_hess, write_xyz_str,
+    run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
 )
 from rxn_core.matcher import _nauty_orbits
 
@@ -750,6 +750,11 @@ def _mechanism_for_view(mech):
     return out
 
 
+def _safe_file_stem(value):
+    stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value)).strip("_")
+    return stem or "item"
+
+
 def write_rp_alignment_files(inputs, rp_result, out_dir=None):
     """Write clean Stage 1 alignment files for NEB/path-building use.
 
@@ -860,6 +865,148 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
         'out_dir': str(out_dir),
         'manifest': str(out_dir / "manifest.json"),
         'n_mechanisms': len(manifest_mechs),
+    }
+
+
+def _ts_score_records_for_export(mech):
+    records = []
+    if mech.get('gt') and mech['gt'].get('S') is not None:
+        records.append(('gt', 'GT', mech['gt']))
+    for item in mech.get('igs', []):
+        if item.get('S') is not None:
+            records.append(('ig', item.get('label', 'target'), item))
+    return records
+
+
+def write_ts_alignment_files(inputs, ts_result, out_dir=None):
+    """Write selected best-S TS/IG/GT alignment files from Stage 2.
+
+    Stage 2 scores mechanism-local core mappings.  The exported R-frame file is
+    therefore a core-aligned materialization: mapped core atoms use the selected
+    target coordinates, while unmapped spectator atoms remain at the reactant
+    endpoint coordinates.  The native target coordinates are exported alongside
+    it so downstream users can choose the representation they need.
+    """
+    out_dir = Path(out_dir) if out_dir is not None else (
+        alignment_output_dir(inputs.step_name) / "ts_alignments")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    mech_root = out_dir / "mechanisms"
+    mech_root.mkdir(exist_ok=True)
+
+    manifest_mechs = []
+    for mech in ts_result.get('mechanisms', []):
+        mech_id = int(mech['id'])
+        mech_name = f"mechanism_{mech_id:03d}"
+        mech_dir = mech_root / mech_name
+        mech_dir.mkdir(exist_ok=True)
+        target_entries = []
+
+        for kind, label, score in _ts_score_records_for_export(mech):
+            target_name = f"{kind}_{_safe_file_stem(label)}"
+            tdir = mech_dir / target_name
+            tdir.mkdir(exist_ok=True)
+            native_elements = score.get('elements') or inputs.elR
+            native_xyz = score.get('xyz')
+            r_xyz = score.get('xyz_in_R')
+            disp_R = score.get('picked_disp_R')
+
+            if native_xyz is not None:
+                (tdir / "TS_native.xyz").write_text(write_xyz_str(
+                    native_elements, native_xyz,
+                    f"{inputs.step_name} {mech_name} {label} native target"))
+            if r_xyz is not None:
+                (tdir / "TS_core_aligned_R_frame.xyz").write_text(
+                    write_xyz_str(
+                        inputs.elR, r_xyz,
+                        f"{inputs.step_name} {mech_name} {label} "
+                        "best-S core-aligned R frame"))
+            if r_xyz is not None and disp_R is not None:
+                (tdir / "picked_mode_R_frame.xyz").write_text(
+                    xyz_with_disp(
+                        inputs.elR, r_xyz, disp_R,
+                        f"{inputs.step_name} {mech_name} {label} "
+                        f"mode {score.get('k')} freq={score.get('freq')}"))
+
+            score_doc = {
+                'step': inputs.step_name,
+                'mechanism_id': mech_id,
+                'mechanism_label': mech.get('label'),
+                'kind': kind,
+                'label': label,
+                'S': score.get('S'),
+                'decomposition': {
+                    'beta': score.get('beta'),
+                    'rho': score.get('rho'),
+                    'kappa': score.get('kappa'),
+                    'n_imag': score.get('n_imag'),
+                    'freq': score.get('freq'),
+                    'mode_index': score.get('k'),
+                },
+                'core_map_R_to_target': score.get('core_map', {}),
+                'core_sources': score.get('core_sources', []),
+                'core_pool_dedup_count': score.get('core_pool_dedup_count'),
+                'broken_bonds_R': mech.get('broken_bonds_R', []),
+                'formed_bonds_R': mech.get('formed_bonds_R', []),
+                'broken_bonds_T': score.get('broken_bonds_T', []),
+                'formed_bonds_T': score.get('formed_bonds_T', []),
+                'files': {
+                    'target_native': 'TS_native.xyz',
+                    'core_aligned_R_frame': 'TS_core_aligned_R_frame.xyz',
+                    'picked_mode_R_frame': 'picked_mode_R_frame.xyz',
+                },
+                'coordinate_policy': (
+                    'TS_core_aligned_R_frame.xyz is the selected best-S core '
+                    'mapping materialized in R atom order. Only mapped core '
+                    'atoms are replaced by target coordinates; spectators '
+                    'remain at the reactant endpoint because Stage 2 does not '
+                    'enumerate spectator bijections.'
+                ),
+            }
+            write_stage_json(tdir / "score.json", score_doc)
+            target_entries.append({
+                'kind': kind,
+                'label': label,
+                'S': score.get('S'),
+                'directory': f"mechanisms/{mech_name}/{target_name}",
+                'target_native': (
+                    f"mechanisms/{mech_name}/{target_name}/TS_native.xyz"),
+                'core_aligned_R_frame': (
+                    f"mechanisms/{mech_name}/{target_name}/"
+                    "TS_core_aligned_R_frame.xyz"),
+                'picked_mode_R_frame': (
+                    f"mechanisms/{mech_name}/{target_name}/"
+                    "picked_mode_R_frame.xyz"),
+                'score_json': (
+                    f"mechanisms/{mech_name}/{target_name}/score.json"),
+            })
+
+        manifest_mechs.append({
+            'id': mech_id,
+            'label': mech.get('label'),
+            'directory': f"mechanisms/{mech_name}",
+            'targets': target_entries,
+        })
+
+    manifest = {
+        'stage': 'ts_alignment_files',
+        'step': inputs.step_name,
+        'n_atoms': len(inputs.elR),
+        'source_stage': 'ts_stage.json',
+        'mechanisms': manifest_mechs,
+        'coordinate_policy': (
+            'Stage 2 exports native target coordinates plus selected best-S '
+            'core-aligned R-frame materializations. These are score/debug '
+            'artifacts, not full spectator atom bijections.'
+        ),
+    }
+    write_stage_json(out_dir / "manifest.json", manifest)
+    return {
+        'stage': 'ts_alignment_files',
+        'step': inputs.step_name,
+        'out_dir': str(out_dir),
+        'manifest': str(out_dir / "manifest.json"),
+        'n_mechanisms': len(manifest_mechs),
+        'n_targets': sum(len(m['targets']) for m in manifest_mechs),
     }
 
 
@@ -1315,14 +1462,17 @@ def run_full_pipeline_stage(step_name, inner_workers=0, mechanism_ids=None,
         write_stage_json(paths.rp_json, rp_result)
         write_stage_json(paths.ts_json, ts_result)
     alignment_files = None
+    ts_alignment_files = None
     if save_alignment_files:
         alignment_files = write_rp_alignment_files(inputs, rp_result)
+        ts_alignment_files = write_ts_alignment_files(inputs, ts_result)
     return {
         'step': step_name,
         'rp': rp_result,
         'ts': ts_result,
         'view': view_result,
         'alignment_files': alignment_files,
+        'ts_alignment_files': ts_alignment_files,
         'slim': view_result['slim'],
     }
 
@@ -1358,7 +1508,7 @@ def process_rp_step(step_name, inner_workers=0, write_view=True,
 
 
 def process_ts_step(step_name, inner_workers=0, mechanism_ids=None,
-                    write_view=True):
+                    write_view=True, save_alignment_files=False):
     """Run Stage 2 from a previously written `rp_stage.json`."""
     inputs = load_step_inputs(step_name)
     paths = pipeline_stage_paths(step_name)
@@ -1375,11 +1525,15 @@ def process_ts_step(step_name, inner_workers=0, mechanism_ids=None,
     if write_view:
         view_result = write_view_stage(
             inputs, rp_result, ts_result, include_gt=INCLUDE_GT)
+    ts_alignment_files = None
+    if save_alignment_files:
+        ts_alignment_files = write_ts_alignment_files(inputs, ts_result)
     return {
         'step': step_name,
         'rp': rp_result,
         'ts': ts_result,
         'view': view_result,
+        'ts_alignment_files': ts_alignment_files,
         'slim': view_result['slim'] if view_result else build_eval_slim(
             build_view_data(inputs, rp_result, ts_result,
                             include_gt=INCLUDE_GT)),
@@ -1417,7 +1571,8 @@ def process_step_stage(step_name, stage='full', inner_workers=0,
         if stage == 'ts':
             return process_ts_step(
                 step_name, inner_workers=inner_workers,
-                mechanism_ids=mechanism_ids)
+                mechanism_ids=mechanism_ids,
+                save_alignment_files=save_alignment_files)
         if stage == 'view':
             return process_view_step(step_name)
         if stage == 'full':
@@ -1459,7 +1614,7 @@ def main():
                          "ts_stage.json artifacts. Default from "
                          "BGCP_STAGE_ROOT=out/bgcp_stages.")
     ap.add_argument("--alignment-out-root", default=str(ALIGNMENT_OUT_ROOT),
-                    help="Directory for optional Stage 1 clean aligned "
+                    help="Directory for optional clean aligned "
                          "coordinate exports. Default from "
                          "BGCP_ALIGNMENT_OUT_ROOT=out/bgcp_alignments.")
     ap.add_argument("--save-alignment-files", action="store_true",
@@ -1468,7 +1623,9 @@ def main():
                             "1", "true", "yes", "on"
                         },
                     help="Write clean mechanism-specific R/P-aligned XYZ "
-                         "files during --stage rp or --stage full.")
+                         "files during --stage rp or --stage full, and "
+                         "best-S TS core-aligned files during --stage ts or "
+                         "--stage full.")
     ap.add_argument("--mechanism", type=int, action="append",
                     help="Restrict Stage 2 verification to a mechanism id. "
                          "Can be repeated. Default verifies all mechanisms.")

@@ -107,7 +107,10 @@ symmetry state. A block with two R atoms and four P atoms represents
   from stage records. `write_rp_alignment_files` is a Stage 1 export helper
   for downstream NEB/path setup: it writes per-mechanism `R.xyz`,
   `P_aligned.xyz`, `neb_endpoints.xyz`, mapping CSV, and metadata without
-  doing any spatial/Kabsch fitting. The compatibility `process_step` composes all three.
+  doing any spatial/Kabsch fitting. `write_ts_alignment_files` exports the
+  Stage 2 selected best-S GT/IG/TS core mapping as native target XYZ plus an
+  R-frame core-aligned materialization and picked-mode extended XYZ. The
+  compatibility `process_step` composes all three.
   The CLI exposes the same split through `--stage rp|ts|view|full`, and
   `--mechanism` restricts Stage 2 verification to selected mechanism IDs.
   The default auto scheduler treats `--workers` as a total CPU budget and
