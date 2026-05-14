@@ -8,14 +8,37 @@ self-contained HTML view per step.
 
 ## Install
 
+In a conda environment:
+
 ```bash
-pip install -e .
+conda create -n rxn-core python=3.12 -y
+conda activate rxn-core
+conda install -c conda-forge xtb -y
+python -m pip install -e .
 ```
 
-The installed CLI is:
+`xtb` is only needed when `BGCP_XTB_MODE=auto` fills missing `wbo` or
+`g98.out` cache files. Fully cached runs can use `--xtb-mode cache-only`.
+
+Verify the installed import and command line:
 
 ```bash
-rxn-core-pipeline --steps pr7.V.dodh_ts910
+python -c "import rxn_core; print(rxn_core.__file__)"
+rxn-core-pipeline --help
+```
+
+## Usage
+
+```bash
+# Use the default cache root: data/xtb_frequency_calculations
+rxn-core-pipeline --steps pr7.V.dodh_ts910 --workers 8
+
+# Use an external cache root
+BGCP_WORK=/path/to/xtb_frequency_calculations \
+  rxn-core-pipeline --steps pr7.V.dodh_ts910 --workers 64
+
+# Forbid xtb execution and require all caches to already exist
+rxn-core-pipeline --steps pr7.V.dodh_ts910 --xtb-mode cache-only
 ```
 
 ## Inputs
@@ -47,7 +70,8 @@ By default `rxn-core-pipeline` runs in `BGCP_XTB_MODE=auto`: if an expected
 `wbo` or `g98.out` file is missing and an XYZ is available, it checks for
 `xtb` on `PATH` and fills the missing cache with `xtb --sp` or `xtb --hess`.
 Use `BGCP_XTB_MODE=cache-only` or `--xtb-mode cache-only` to fail fast instead.
-Hessian cache fills use `BGCP_XTB_OMP_THREADS=1` by default.
+Each xtb subprocess uses `OMP_NUM_THREADS` capped by `BGCP_XTB_MAX_THREADS=8`
+by default.
 
 ## Outputs
 
