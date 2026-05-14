@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "numpy>=1.23",
     "networkx>=2.8",
+    "pynauty>=2.8",
 ]
 
 [project.optional-dependencies]
