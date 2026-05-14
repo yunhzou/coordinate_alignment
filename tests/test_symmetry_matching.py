@@ -13,6 +13,7 @@ from rxn_core.alignment import (
     _generate_seed_orders,
     symmetry_repair_mapping,
 )
+from rxn_core.alignment.sweep import _pool_add
 import rxn_core.alignment.branch as branch_mod
 from rxn_core.matcher import (
     _SymBlock,
@@ -403,6 +404,19 @@ def test_classify_bonds_uses_lower_metal_event_threshold():
 
     assert organic[1] == []
     assert metal[1] == [(0, 1, 0.0, 0.35)]
+
+
+def test_cut_sweep_pool_prefers_no_cut_representative():
+    pool = {}
+    sig = (("broken",), ("formed",))
+
+    _pool_add(pool, sig, {0: 1}, ((0, 1),))
+    _pool_add(pool, sig, {0: 0}, ())
+
+    assert pool[sig]["mapping"] == {0: 0}
+    assert pool[sig]["has_no_cut"] is True
+    assert pool[sig]["cuts"] == frozenset({(0, 1)})
+    assert pool[sig]["dedup_count"] == 2
 
 
 def test_generate_seed_orders_honors_trial_cap():

@@ -1145,7 +1145,8 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
         xyzP_in_R = np.asarray(inputs.xyzR, float).copy()
         for i_R, i_P in mapping_RP.items():
             xyzP_in_R[i_R] = inputs.xyzP[i_P]
-        cut = next(iter(info['cuts']), None)
+        has_no_cut = bool(info.get('has_no_cut', False))
+        cut = None if has_no_cut else next(iter(info['cuts']), None)
         cut_name = (
             f"{inputs.elR[cut[0]]}{cut[0]}-{inputs.elR[cut[1]]}{cut[1]}"
             if cut else "none"
@@ -1157,7 +1158,7 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
             'cut': cut_name,
             'label': f"#{mi}: {br_label} (cut: {cut_name})",
             'dedup_count': int(info.get('dedup_count', 1)),
-            'dedup_cuts': [
+            'dedup_cuts': (["none"] if has_no_cut else []) + [
                 f"{inputs.elR[a]}{a}-{inputs.elR[b]}{b}"
                 for a, b in sorted(info['cuts'])
             ] or [cut_name],

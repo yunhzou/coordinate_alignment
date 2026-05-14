@@ -68,14 +68,19 @@ def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
 
 def _pool_add(pool, sig, mapping, cuts):
     cuts = frozenset(cuts)
+    no_cut = not cuts
     entry = pool.get(sig)
     if entry is None:
         pool[sig] = {
             'mapping': dict(mapping),
             'cuts': cuts,
+            'has_no_cut': bool(no_cut),
             'dedup_count': 1,
         }
     else:
+        if no_cut and not entry.get('has_no_cut', False):
+            entry['mapping'] = dict(mapping)
+        entry['has_no_cut'] = bool(entry.get('has_no_cut', False) or no_cut)
         entry['cuts'] = entry['cuts'] | cuts
         entry['dedup_count'] = entry.get('dedup_count', 1) + 1
 
