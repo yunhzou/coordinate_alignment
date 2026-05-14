@@ -68,32 +68,32 @@ rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 
 ### Real Example
 
-This direct-XYZ example uses `pr1.tempo_ts3` from the appendix benchmark. That
-step has one complete reactant-complex XYZ and one complete product-complex XYZ,
-so it can be passed directly to Stage 1.
+This direct-XYZ example uses `pr1.tempo_ts3` from the stored docs example. The
+repo includes the source XYZ files and cache files under
+`docs/example_runs/pr1.tempo_ts3/`, so it is self-contained.
 
 ```python
 from pathlib import Path
 import rxn_core.pipeline as rxnp
 
-benchmark_root = Path("~/Downloads/appendix_final 2/benchmark").expanduser()
-step_dir = benchmark_root / "pr1.tempo_ts3"
-
 name = "pr1.tempo_ts3"
-reactant_xyz = step_dir / "reactants/reactant_01_reactant_01_5.xyz"
-product_xyz = step_dir / "products/product_01_product_01_6.xyz"
-workdir = f"work/{name}"
+example_root = Path("docs/example_runs") / name
+prepared_step = example_root / "prepared_steps" / name
+
+reactant_xyz = prepared_step / "R/reactant_01_reactant_01_5.xyz"
+product_xyz = prepared_step / "P/product_01_product_01_6.xyz"
+workdir = example_root / "work"
 
 target_specs = [
     {
         "kind": "ig",
         "label": "iter1",
-        "xyz": step_dir / "initial_guess/pr1.tempo_ts3_benchmark_plain_iter1_87ea3b8f.xyz",
+        "xyz": prepared_step / "sp_iter1/pr1.tempo_ts3_benchmark_plain_iter1_87ea3b8f.xyz",
     },
     {
         "kind": "gt",
         "label": "GT",
-        "xyz": step_dir / "groundtruth/ts_groundtruth_01_reference_ts_01_TS3.xyz",
+        "xyz": prepared_step / "sp_groundtruth/ts_groundtruth_01_reference_ts_01_TS3.xyz",
     },
 ]
 
@@ -106,7 +106,7 @@ result = rxnp.process_xyz_stage(
     target_specs=target_specs,
     charge=0,
     multiplicity=1,
-    xtb_mode="auto",
+    xtb_mode="cache-only",
     inner_workers=8,
     save_alignment_files=True,
 )

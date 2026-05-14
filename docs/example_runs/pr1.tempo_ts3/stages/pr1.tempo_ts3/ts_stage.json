@@ -2945,22 +2945,6 @@
   "endpoint_results": [
     {
       "key": [
-        "ig",
-        0,
-        0
-      ],
-      "target_order": 0,
-      "target_label": "iter1:m1",
-      "mech_id": 1,
-      "mech_pos": 0,
-      "endpoint": "R",
-      "n_pool": 1,
-      "core_size": 3,
-      "elapsed": 0.00011706352233886719,
-      "hit_cap": false
-    },
-    {
-      "key": [
         "gt",
         -2,
         0
@@ -2972,7 +2956,7 @@
       "endpoint": "P",
       "n_pool": 6,
       "core_size": 3,
-      "elapsed": 0.00011920928955078125,
+      "elapsed": 9.012222290039062e-05,
       "hit_cap": false
     },
     {
@@ -2988,7 +2972,23 @@
       "endpoint": "P",
       "n_pool": 6,
       "core_size": 3,
-      "elapsed": 9.226799011230469e-05,
+      "elapsed": 8.916854858398438e-05,
+      "hit_cap": false
+    },
+    {
+      "key": [
+        "ig",
+        0,
+        0
+      ],
+      "target_order": 0,
+      "target_label": "iter1:m1",
+      "mech_id": 1,
+      "mech_pos": 0,
+      "endpoint": "R",
+      "n_pool": 1,
+      "core_size": 3,
+      "elapsed": 9.393692016601562e-05,
       "hit_cap": false
     },
     {
@@ -3004,7 +3004,7 @@
       "endpoint": "R",
       "n_pool": 1,
       "core_size": 3,
-      "elapsed": 0.00011181831359863281,
+      "elapsed": 8.916854858398438e-05,
       "hit_cap": false
     }
   ],
