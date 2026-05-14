@@ -145,3 +145,22 @@ def test_default_worker_count_is_not_the_xtb_thread_cap(monkeypatch):
     monkeypatch.setattr(pipeline.os, "cpu_count", lambda: 64)
 
     assert pipeline._default_worker_count() == 63
+
+
+def test_viewer_uses_step_level_download_button():
+    html = pipeline.HTML.format(
+        title="x",
+        data_json=(
+            '{"step":"s","n_atoms":1,'
+            '"reactant":{"elements":["H"],"coords":[[0,0,0]]},'
+            '"product":{"elements":["H"],"coords":[[0,0,0]]},'
+            '"mechanisms":[],"default_mech_id":null,'
+            '"include_gt":false,"score_config":{"W_RXN":1,"W_CORE":0.2,"IMAG_PEN":0.3}}'
+        ),
+    )
+
+    assert 'id="downloadAllBtn">Download</button>' in html
+    assert 'id="zipBtn"' not in html
+    assert 'mechanism.json' in html
+    assert 'viewer_data.json' in html
+    assert 'mechanisms/mechanism_' in html

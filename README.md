@@ -108,6 +108,12 @@ out/bgcp_views/<step>/_eval_slim.json
 out/bgcp_alignment_eval.json
 ```
 
+Each `view.html` has a step-level `Download` button. The downloaded archive
+contains `R.xyz`, `P.xyz`, unique `IG/<label>.xyz` files, optional
+`GT/GT.xyz`, a root `mechanism.json` manifest with per-mechanism IG/GT scores
+and score decomposition, one `mechanisms/mechanism_<id>.json` file per
+mechanism, and `viewer_data.json` with the full data used by the HTML view.
+
 Generated caches, views, and paper artifacts are intentionally not part of the
 main repository.
 

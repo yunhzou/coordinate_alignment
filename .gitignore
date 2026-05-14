@@ -11,6 +11,7 @@ work_pq_smoke/
 
 # Local data and generated analysis artifacts
 data/
+out/
 appendix_perparation/
 notebooks/
 ts_discovery_paper/
