@@ -91,7 +91,8 @@ def _extend_sym_cands(
         to an island, extension merges the whole not-yet-fragment part of that
         island, not just one atom.
     p_orbits, r_orbits
-        Symmetry orbit maps, usually from `_nauty_orbits(..., wbo_tol=0.2)`.
+        Symmetry orbit maps, usually from `_nauty_orbits(...)` with the
+        configured symmetry WBO tolerance.
         They are compression keys only; active R-pair validity is still checked
         against exact WBO values by `iso_tol`.
     deferred_edges

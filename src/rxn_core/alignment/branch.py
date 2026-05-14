@@ -349,6 +349,7 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
 
 def find_islands(g_R, g_P, seed_order,
                  graph_floor=0.2, iso_tol=1.0,
+                 dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
                  max_branches=1_000_000, events=None,
                  orbit_dedup=True, core_R=None,
                  stop_when_core_mapped=False,
@@ -361,8 +362,8 @@ def find_islands(g_R, g_P, seed_order,
     trajectory — multi-branch traces would be confusing on a slider.
 
     orbit_dedup: when True (default), uses exact automorphism orbits on a
-    0.2-tolerance WBO-colored graph via pynauty as the compression key for
-    orbit-equivalence. Callers that run many seed orders against the same
+    tolerance-bucketed WBO-colored graph via pynauty as the compression key
+    for orbit-equivalence. Callers that run many seed orders against the same
     graph can pass precomputed `p_orbits` / `r_orbits`; missing maps are
     computed here. Chemistry signatures and active R-pair extension checks
     remain the verifier.
@@ -375,9 +376,9 @@ def find_islands(g_R, g_P, seed_order,
     """
     if orbit_dedup:
         if p_orbits is None:
-            p_orbits = _nauty_orbits(g_P, wbo_tol=0.2)
+            p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
         if r_orbits is None:
-            r_orbits = _nauty_orbits(g_R, wbo_tol=0.2)
+            r_orbits = _nauty_orbits(g_R, wbo_tol=symmetry_wbo_tol)
     else:
         p_orbits = None
         r_orbits = None
@@ -424,7 +425,8 @@ def find_islands(g_R, g_P, seed_order,
             'mechanism_state',
             core_key,
             _chemistry_orbit_signature(
-                mapping, g_R, g_P, r_orbits, p_orbits),
+                mapping, g_R, g_P, r_orbits, p_orbits,
+                dwbo_threshold=dwbo_threshold),
             deferred_boundary,
         )
         signature_cache[cache_key] = sig

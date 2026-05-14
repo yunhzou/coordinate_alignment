@@ -42,9 +42,11 @@ def _core_mapping_key(mapping, core_R):
     )
 
 
-def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits):
+def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
+                         dwbo_threshold=0.5):
     """Symmetry-canonical mechanism key for R-P discovery."""
-    broken, formed, _, _ = classify_bonds(mapping, wboR, wboT)
+    broken, formed, _, _ = classify_bonds(
+        mapping, wboR, wboT, dwbo_threshold=dwbo_threshold)
     inv = {v: k for k, v in mapping.items()}
     br_pairs = [(a, b) for (a, b, _, _) in broken]
     fm_r_pairs = []
@@ -82,6 +84,8 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         iso_tol=float(cfg['iso_tol']),
         max_branches=int(cfg['max_branches']),
         abort_on_branch_cap=bool(cfg.get('abort_on_branch_cap', False)),
+        dwbo_threshold=float(cfg['dwbo_threshold']),
+        symmetry_wbo_tol=float(cfg['symmetry_wbo_tol']),
         core_R=core_R,
         stop_when_core_mapped=stop_on_core,
         p_orbits=p_orbits,
@@ -101,10 +105,13 @@ def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
     if cfg['symmetry_repair']:
         mapping = symmetry_repair_mapping(
             mapping, wboR, wboT, g_R_full, g_P, p_orbits,
+            dwbo_threshold=float(cfg['dwbo_threshold']),
             min_changes=int(cfg['symmetry_repair_min_changes']),
             max_evals=int(cfg['symmetry_repair_max_evals']),
         )
-    sig = _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits)
+    sig = _mechanism_signature(
+        mapping, wboR, wboT, r_orbits, p_orbits,
+        dwbo_threshold=float(cfg['dwbo_threshold']))
     return sig, mapping
 
 
@@ -120,8 +127,11 @@ def _cs_winit(elR, wboR, elT, wboT, cfg):
     _WORKER['cfg'] = dict(cfg)
     _WORKER['g_P'] = build_graph(elT, wboT, bond_cut=graph_floor)
     _WORKER['g_R_full'] = build_graph(elR, wboR, bond_cut=graph_floor)
-    _WORKER['p_orbits'] = _nauty_orbits(_WORKER['g_P'], wbo_tol=0.2)
-    _WORKER['r_orbits'] = _nauty_orbits(_WORKER['g_R_full'], wbo_tol=0.2)
+    symmetry_wbo_tol = float(cfg['symmetry_wbo_tol'])
+    _WORKER['p_orbits'] = _nauty_orbits(
+        _WORKER['g_P'], wbo_tol=symmetry_wbo_tol)
+    _WORKER['r_orbits'] = _nauty_orbits(
+        _WORKER['g_R_full'], wbo_tol=symmetry_wbo_tol)
 
 
 def _cs_wrun(args):
@@ -133,7 +143,8 @@ def _cs_wrun(args):
     for i, j in cut:
         if g_R.has_edge(i, j):
             g_R.remove_edge(i, j)
-    r_orbits_cut = _nauty_orbits(g_R, wbo_tol=0.2)
+    r_orbits_cut = _nauty_orbits(
+        g_R, wbo_tol=float(cfg['symmetry_wbo_tol']))
 
     out = []
     try:
@@ -170,8 +181,9 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
     graph_floor = float(cfg['graph_floor'])
     g_P = build_graph(elT, wboT, bond_cut=graph_floor)
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
-    p_orbits = _nauty_orbits(g_P, wbo_tol=0.2)
-    r_orbits = _nauty_orbits(g_R_full, wbo_tol=0.2)
+    symmetry_wbo_tol = float(cfg['symmetry_wbo_tol'])
+    p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
+    r_orbits = _nauty_orbits(g_R_full, wbo_tol=symmetry_wbo_tol)
     strong = _strong_edges(wboR, float(cfg['cut_floor']))
     pool = {}
 
@@ -180,7 +192,7 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
         for i, j in cuts:
             if g_R.has_edge(i, j):
                 g_R.remove_edge(i, j)
-        r_orbits_cut = _nauty_orbits(g_R, wbo_tol=0.2)
+        r_orbits_cut = _nauty_orbits(g_R, wbo_tol=symmetry_wbo_tol)
         orders = _generate_seed_orders(g_R, n_trials=int(cfg['n_seeds']))
         cut_hits = []
         try:
@@ -234,6 +246,7 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
 def cut_sweep(elR, wboR, elT, wboT, *,
               n_workers=None, core_R=None,
               cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
+              dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
               n_seeds=3, max_branches=100,
               chunksize=1,
               symmetry_repair=True,
@@ -256,6 +269,8 @@ def cut_sweep(elR, wboR, elT, wboT, *,
         'cut_floor': float(cut_floor),
         'graph_floor': float(graph_floor),
         'iso_tol': float(iso_tol),
+        'dwbo_threshold': float(dwbo_threshold),
+        'symmetry_wbo_tol': float(symmetry_wbo_tol),
         'n_seeds': int(n_seeds),
         'max_branches': int(max_branches),
         'chunksize': int(chunksize),

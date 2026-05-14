@@ -49,20 +49,31 @@ rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 
 ## Inputs
 
-The pipeline reads precomputed xtb cache directories. By default it looks in:
+The pipeline input is a directory of cached BGCP steps. By default it looks in:
 
 ```text
 data/xtb_frequency_calculations/<step>/
   R/                    reactant xyz + wbo
   P/                    product xyz + wbo
-  sp_groundtruth/       optional GT TS xyz + wbo
-  hess_groundtruth/     optional GT g98.out
   sp_iter<N>/           IG xyz + wbo
   hess_iter<N>/         IG g98.out
+  sp_groundtruth/       optional GT TS xyz + wbo
+  hess_groundtruth/     optional GT g98.out
 ```
 
 Use `BGCP_WORK=/path/to/xtb_frequency_calculations` when the cache lives
 outside the repo.
+
+Required inputs for IG ranking are:
+
+| path | required | contents | used for |
+|---|---:|---|---|
+| `R/` | yes | one reactant-complex XYZ and `wbo` | R-P mechanism discovery and R-frame indexing |
+| `P/` | yes | one product-complex XYZ and `wbo` | R-P mechanism discovery |
+| `sp_iter<N>/` | yes for IG ranking | one IG TS XYZ and `wbo` | TS/IG core matching |
+| `hess_iter<N>/` | yes for IG ranking | `g98.out` plus optional/copyable XYZ | imaginary-mode scoring |
+| `sp_groundtruth/` | optional | GT TS XYZ and `wbo` | GT score/view when `--include-gt` is set |
+| `hess_groundtruth/` | optional | GT `g98.out` plus optional/copyable XYZ | GT mode scoring when `--include-gt` is set |
 
 Each endpoint directory is one complete molecule/complex graph. For
 multi-reactant or multi-product cases, the fragments must already be present
@@ -71,6 +82,10 @@ pipeline does not merge separate per-fragment xtb outputs. The atom order only
 has to be internally consistent within each XYZ/WBO pair. R, P, GT, and IG
 files do not need to share the same atom order because alignment computes the
 cross-index mapping, but they must contain the same element composition.
+
+Without `sp_iter<N>/` and `hess_iter<N>/`, the pipeline can still discover R-P
+mechanisms and optionally score GT, but it is not validating or ranking initial
+guesses.
 
 GT is optional and disabled by default. Pass `--include-gt` or set
 `BGCP_INCLUDE_GT=1` to load and score `sp_groundtruth/` plus
@@ -112,7 +127,8 @@ S = beta * (1 + W_RXN * rho) * (1 + W_CORE * kappa) / n_imag^IMAG_PEN
 ```
 
 where `beta` is bond-axis overlap, `rho` is reaction-coordinate overlap, and
-`kappa` is the core-mode fraction.
+`kappa` is the core-mode fraction. `W_RXN`, `W_CORE`, and `IMAG_PEN` are
+exposed as hypothesis knobs with defaults preserved.
 
 ## Repository Layout
 
@@ -131,32 +147,68 @@ docs/ARCHITECTURE.md      module boundary notes
 ALGORITHM.md              algorithm details
 ```
 
-## Key Configuration
+## Runtime Inputs
 
-| name | default | meaning |
-|---|---:|---|
-| `BGCP_WORK` | `data/xtb_frequency_calculations` | xtb cache root |
-| `BGCP_OUT_ROOT` | `out/bgcp_views` | per-step HTML/eval output |
-| `BGCP_EVAL_JSON` | `out/bgcp_alignment_eval.json` | merged eval JSON |
-| `BGCP_CUT_FLOOR` | `0.2` | R-P sweep cuts every R edge at or above this WBO |
-| `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by matching |
-| `BGCP_VIEW_MAX_BRANCHES` | `100` | per-cut branch cap; capped cuts are discarded |
-| `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
-| `BGCP_INCLUDE_GT` | `0` | set to `1` to score ground-truth TS |
-| `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
-| `BGCP_XTB_OMP_THREADS` | `auto` | requested OMP threads for each xtb molecule |
-| `BGCP_XTB_MAX_THREADS` | `8` | hard cap on OMP threads for each xtb molecule |
-| `BGCP_CHARGE` | `0` | molecular charge used when auto-filling missing xtb caches |
-| `BGCP_MULTIPLICITY` | `1` | spin multiplicity used when auto-filling missing xtb caches |
-| `BGCP_TIMING` | `0` | set to `1` for per-target timing prints |
+These controls select files, outputs, cache-fill behavior, and parallelism.
 
-CLI scheduling options:
+| CLI | environment | default | meaning |
+|---|---|---:|---|
+| none | `RXN_CORE_PROJECT` | package root | base path used to resolve default data/output paths |
+| none | `BGCP_WORK` | `data/xtb_frequency_calculations` | xtb cache root containing step directories |
+| none | `BGCP_OUT_ROOT` | `out/bgcp_views` | per-step HTML/eval output root |
+| none | `BGCP_EVAL_JSON` | `out/bgcp_alignment_eval.json` | merged JSON summary output |
+| `--steps` | none | all steps | explicit cached step names to process |
+| `--limit` | none | none | process first N step directories after sorting |
+| `--include-gt` | `BGCP_INCLUDE_GT` | `0` | load and score optional GT cache directories |
+| `--xtb-mode` | `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
+| `--xtb-omp-threads` | `BGCP_XTB_OMP_THREADS` | `auto` | requested OMP threads for each xtb molecule |
+| `--xtb-max-threads` | `BGCP_XTB_MAX_THREADS` | `8` | hard cap on OMP threads for each xtb molecule |
+| `--charge` | `BGCP_CHARGE` | `0` | molecular charge used only when auto-filling missing xtb caches |
+| `--multiplicity` | `BGCP_MULTIPLICITY` | `1` | spin multiplicity for auto xtb cache-fill; converted to `--uhf=multiplicity-1` |
+| `--workers` | none | `os.cpu_count()-1` | total CPU budget in auto mode, or outer workers in outer mode |
+| `--parallel-mode` | `BGCP_PARALLEL_MODE` | `auto` | `auto`, `outer`, or `inner` scheduling |
+| `--inner-workers` | none | `0` | explicit inner workers per step; `0` lets the mode choose |
+| `--auto-inner-workers` | `BGCP_AUTO_INNER_WORKERS` | `8` | target inner workers per concurrent step in auto mode |
+| none | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for R-P cut-sweep work units |
+| none | `BGCP_TIMING` | `0` | print per-target timing diagnostics |
+
+## Hypothesis Defaults
+
+These parameters define the algorithmic hypotheses used for mechanism
+discovery and TS/IG scoring. Defaults are conservative values used by the
+current benchmark workflow; expose them when testing sensitivity.
+
+| CLI | environment/API name | default | rationale |
+|---|---|---:|---|
+| none | `graph_floor` | `0.2` | Active WBO graph edge floor used by fragment growth and TS core-edge preservation; it is fixed in the BGCP pipeline and available in lower-level APIs. |
+| none | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery sweeps cuts over every R edge at or above this WBO; `0.2` includes weak but chemically relevant WBO graph edges while excluding near-zero pairs. |
+| `--iso-tol` | `BGCP_ISO_TOL` / `iso_tol` | `1.0` | Active R-side growth edges must have a P-side active edge with `abs(WBO_R-WBO_P) <= iso_tol`; the loose default tolerates endpoint/TS distortion while bond-change ranking decides the mechanism. |
+| `--dwbo-threshold` | `BGCP_DWBO_THRESHOLD` / `dwbo_threshold` | `0.5` | Broken/forming events require `abs(delta WBO) >= 0.5`; smaller WBO differences are treated as spectator variation. |
+| `--symmetry-wbo-tol` | `BGCP_SYMMETRY_WBO_TOL` / `symmetry_wbo_tol` | `0.2` | Nauty orbit detection buckets WBO values within this tolerance; this collapses xtb/noise-level symmetry without changing exact active-edge validity checks. |
+| none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Per-cut branch cap for R-P sweep; cuts that exceed it are discarded as pathological branch multipliers. |
+| none | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | Minimum target WBO for preserving a core edge during TS/IG core matching; mirrors the active graph floor. |
+| none | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | Cap on mechanism-local TS/IG core mappings to prevent runaway core enumeration. |
+| none | `BGCP_SYMMETRY_REPAIR` | `1` | Enables local reshuffling inside product symmetry orbits after R-P matching to remove witness-choice artifacts. |
+| none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `5` | Only run symmetry repair when the initial witness has at least this many changed bonds; avoids unnecessary local search on already-clean mappings. |
+| none | `BGCP_SYMMETRY_REPAIR_MAX_EVALS` | `20000` | Evaluation cap for the local symmetry-repair search. |
+| `--w-rxn` | `BGCP_W_RXN` | `1.0` | Weight on reaction-coordinate overlap `rho` in the final TS/IG score. |
+| `--w-core` | `BGCP_W_CORE` | `0.2` | Weight on core-mode fraction `kappa`; lower than `W_RXN` so localized core motion helps without dominating bond-axis overlap. |
+| `--imag-pen` | `BGCP_IMAG_PEN` | `0.3` | Penalty exponent for multiple imaginary modes; soft penalty because IG Hessians may not be optimized TSs. |
+| none | `N_SEEDS_PER_RUN` | `3` | Fixed seed-order count per cut-sweep run; cut diversity plus three seeds has been enough for the benchmark while keeping runtime bounded. |
+
+CLI options:
 
 ```text
 --workers              total CPU budget in auto mode
 --parallel-mode        auto | outer | inner
 --inner-workers        explicit per-step inner worker count
 --auto-inner-workers   target inner workers per concurrent step in auto mode
+--iso-tol              WBO tolerance for active graph matching
+--dwbo-threshold       WBO delta for broken/formed bond classification
+--symmetry-wbo-tol     WBO tolerance for symmetry-orbit bucketing
+--w-rxn                reaction-coordinate score weight
+--w-core               core-mode score weight
+--imag-pen             imaginary-mode count penalty exponent
 --xtb-mode             auto | cache-only
 --xtb-omp-threads      requested OMP_NUM_THREADS per xtb molecule
 --xtb-max-threads      hard cap on OMP_NUM_THREADS per xtb molecule

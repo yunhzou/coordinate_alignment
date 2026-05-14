@@ -72,7 +72,7 @@ def cut_edges_above_floor(wboR, floor=0.2):
 def match_wbo_graphs(elR, wboR, elP, wboP, *,
                      xyzR=None, xyzP=None,
                      graph_floor=0.2, iso_tol=1.0,
-                     dwbo_threshold=0.5,
+                     dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
                      n_seeds=3, max_branches=1_000_000,
                      cut_edges=(), repair_symmetry=True,
                      chirality=False, capture_events=False):
@@ -93,7 +93,7 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
     g_R = _apply_cut_edges(g_R_full, tuple(tuple(e) for e in cut_edges or ()))
     g_P = build_graph(elP, wboP, bond_cut=graph_floor)
-    p_orbits = _nauty_orbits(g_P, wbo_tol=0.2)
+    p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
 
     candidates = []
     orders = _generate_seed_orders(g_R, n_seeds)
@@ -102,6 +102,8 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
         branches = find_islands(
             g_R, g_P, order,
             graph_floor=graph_floor, iso_tol=iso_tol,
+            dwbo_threshold=dwbo_threshold,
+            symmetry_wbo_tol=symmetry_wbo_tol,
             max_branches=max_branches, events=events)
         for branch_index, branch in enumerate(branches):
             raw_mapping = expand_mapping(branch.mapping, g_R, g_P)
@@ -143,7 +145,7 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
 
 def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                       graph_floor=0.2, iso_tol=1,
-                      dwbo_threshold=0.5,
+                      dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
                       n_seeds=3, max_branches=1_000_000,
                       chirality=True, return_all=False):
     """Pure-graph entry point: assumes (el, xyz, wbo) for R and P are
@@ -154,6 +156,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
         xyzR=xyzR, xyzP=xyzP,
         graph_floor=graph_floor, iso_tol=iso_tol,
         dwbo_threshold=dwbo_threshold,
+        symmetry_wbo_tol=symmetry_wbo_tol,
         n_seeds=n_seeds, max_branches=max_branches,
         repair_symmetry=True, chirality=chirality)
     if result.best is None:
@@ -182,7 +185,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
 def analyze_alignment(reactant_xyz, product_xyz, workdir,
                       charge=0, multiplicity=1,
                       graph_floor=0.2, iso_tol=1.0,
-                      dwbo_threshold=0.5,
+                      dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
                       n_seeds=3, max_branches=1_000_000,
                       chirality=True,
                       return_all=False):
@@ -199,5 +202,6 @@ def analyze_alignment(reactant_xyz, product_xyz, workdir,
         elR, xyzR, wboR, elP, xyzP, wboP,
         graph_floor=graph_floor, iso_tol=iso_tol,
         dwbo_threshold=dwbo_threshold,
+        symmetry_wbo_tol=symmetry_wbo_tol,
         n_seeds=n_seeds, max_branches=max_branches,
         chirality=chirality, return_all=return_all)

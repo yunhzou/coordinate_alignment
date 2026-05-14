@@ -327,7 +327,7 @@ branched only as far as needed to preserve that distinction.
 `find_islands` drives `grow_island` across seed orderings.
 
 ```
-precompute p_orbits and r_orbits with `_nauty_orbits(..., wbo_tol=0.2)`
+precompute p_orbits and r_orbits with `_nauty_orbits(..., wbo_tol=symmetry_wbo_tol)`
 branches = [empty branch]
 
 for each seed while progress is possible:
@@ -549,11 +549,17 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `graph_floor` | `0.2` | threshold for active R/P graph edges used by frontier growth and local iso validity |
 | `iso_tol` | `1.0` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
+| `symmetry_wbo_tol` | `0.2` | WBO tolerance for exact automorphism orbit bucketing |
 | `max_branches` | `1_000_000` | live branch cap for direct low-level matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `100` | R-P cut-sweep branch cap; a cut is discarded if any seed order reaches it |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
+| `BGCP_DWBO_THRESHOLD` | `0.5` | WBO delta threshold for BGCP broken/formed bond classification |
+| `BGCP_SYMMETRY_WBO_TOL` | `0.2` | WBO tolerance for BGCP symmetry-orbit bucketing |
+| `BGCP_W_RXN` | `1.0` | reaction-coordinate overlap score weight |
+| `BGCP_W_CORE` | `0.2` | core-mode fraction score weight |
+| `BGCP_IMAG_PEN` | `0.3` | imaginary-mode count penalty exponent |
 | `BGCP_PARALLEL_MODE` | `auto` | pipeline scheduling mode: `auto`, `outer`, or `inner` |
 | `BGCP_AUTO_INNER_WORKERS` | `8` | target inner workers per concurrent step in auto mode |
 | `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep and TS endpoint timings |

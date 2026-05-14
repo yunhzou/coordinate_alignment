@@ -54,6 +54,8 @@ N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both mo
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "100"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
+DWBO_THRESHOLD = float(os.environ.get("BGCP_DWBO_THRESHOLD", "0.5"))
+SYMMETRY_WBO_TOL = float(os.environ.get("BGCP_SYMMETRY_WBO_TOL", "0.2"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
     "1", "true", "yes", "on"
@@ -69,7 +71,9 @@ XTB_OMP_THREADS = os.environ.get("BGCP_XTB_OMP_THREADS", "auto")
 XTB_MAX_THREADS = int(os.environ.get("BGCP_XTB_MAX_THREADS", "8"))
 XTB_CHARGE = int(os.environ.get("BGCP_CHARGE", "0"))
 XTB_MULTIPLICITY = int(os.environ.get("BGCP_MULTIPLICITY", "1"))
-W_RXN, W_CORE, IMAG_PEN = 1.0, 0.2, 0.3
+W_RXN = float(os.environ.get("BGCP_W_RXN", "1.0"))
+W_CORE = float(os.environ.get("BGCP_W_CORE", "0.2"))
+IMAG_PEN = float(os.environ.get("BGCP_IMAG_PEN", "0.3"))
 
 
 def _default_worker_count():
@@ -572,6 +576,8 @@ def process_step(step_name, inner_workers=0):
                              cut_floor=CUT_FLOOR,
                              graph_floor=0.2,
                              iso_tol=VIEW_ISO_TOL,
+                             dwbo_threshold=DWBO_THRESHOLD,
+                             symmetry_wbo_tol=SYMMETRY_WBO_TOL,
                              n_seeds=N_SEEDS_PER_RUN,
                              max_branches=VIEW_MAX_BRANCHES,
                              chunksize=CUTSWEEP_CHUNKSIZE,
@@ -640,7 +646,9 @@ def process_step(step_name, inner_workers=0):
         for mi, (_sig, info) in enumerate(rp_min.items(), 1):
             mapping_RP = {int(r): int(p) for r, p in info['mapping'].items()}
             inv_RP = {v: k for k, v in mapping_RP.items()}
-            broken, formed, _, _ = classify_bonds(mapping_RP, wboR, wboP)
+            broken, formed, _, _ = classify_bonds(
+                mapping_RP, wboR, wboP,
+                dwbo_threshold=DWBO_THRESHOLD)
             broken_R = [(int(a), int(b)) for (a, b, _, _) in broken]
             formed_R = [(int(inv_RP[a]), int(inv_RP[b])) for (a, b, _, _) in formed
                         if a in inv_RP and b in inv_RP]
@@ -667,7 +675,7 @@ def process_step(step_name, inner_workers=0):
             mechanisms.append(mech)
 
         r_orbits = _nauty_orbits(build_graph(elR, wboR, bond_cut=0.2),
-                                 wbo_tol=0.2)
+                                 wbo_tol=SYMMETRY_WBO_TOL)
         mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
         # Endpoint core matching is mechanism-local.  Build one independent
         # task per (target TS, mechanism, endpoint R/P), run those tasks in
@@ -837,6 +845,8 @@ def process_step(step_name, inner_workers=0):
 def main():
     global INCLUDE_GT, XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
     global XTB_CHARGE, XTB_MULTIPLICITY
+    global VIEW_ISO_TOL, DWBO_THRESHOLD, SYMMETRY_WBO_TOL
+    global W_RXN, W_CORE, IMAG_PEN
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=_default_worker_count(),
                     help="Total CPU budget in auto mode, or outer step "
@@ -855,6 +865,26 @@ def main():
                     default=AUTO_INNER_WORKERS,
                     help="Target inner workers per concurrent step in "
                          "auto mode. Default from BGCP_AUTO_INNER_WORKERS=8.")
+    ap.add_argument("--iso-tol", type=float, default=VIEW_ISO_TOL,
+                    help="WBO tolerance for active graph matching. "
+                         "Default from BGCP_ISO_TOL=1.0.")
+    ap.add_argument("--dwbo-threshold", type=float, default=DWBO_THRESHOLD,
+                    help="Delta-WBO threshold for broken/formed bond "
+                         "classification. Default from "
+                         "BGCP_DWBO_THRESHOLD=0.5.")
+    ap.add_argument("--symmetry-wbo-tol", type=float,
+                    default=SYMMETRY_WBO_TOL,
+                    help="WBO tolerance for symmetry-orbit bucketing. "
+                         "Default from BGCP_SYMMETRY_WBO_TOL=0.2.")
+    ap.add_argument("--w-rxn", type=float, default=W_RXN,
+                    help="Reaction-coordinate overlap score weight. "
+                         "Default from BGCP_W_RXN=1.0.")
+    ap.add_argument("--w-core", type=float, default=W_CORE,
+                    help="Core-mode fraction score weight. "
+                         "Default from BGCP_W_CORE=0.2.")
+    ap.add_argument("--imag-pen", type=float, default=IMAG_PEN,
+                    help="Imaginary-mode count score penalty exponent. "
+                         "Default from BGCP_IMAG_PEN=0.3.")
     ap.add_argument("--xtb-mode",
                     choices=("auto", "cache-only"),
                     default=_normal_xtb_mode(XTB_CACHE_MODE),
@@ -888,6 +918,12 @@ def main():
 
     XTB_CACHE_MODE = _normal_xtb_mode(args.xtb_mode)
     INCLUDE_GT = bool(args.include_gt)
+    VIEW_ISO_TOL = float(args.iso_tol)
+    DWBO_THRESHOLD = float(args.dwbo_threshold)
+    SYMMETRY_WBO_TOL = float(args.symmetry_wbo_tol)
+    W_RXN = float(args.w_rxn)
+    W_CORE = float(args.w_core)
+    IMAG_PEN = float(args.imag_pen)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
     XTB_CHARGE = int(args.charge)
     XTB_MULTIPLICITY = _normal_multiplicity(args.multiplicity)
@@ -899,6 +935,12 @@ def main():
     os.environ["BGCP_XTB_MAX_THREADS"] = str(XTB_MAX_THREADS)
     os.environ["BGCP_CHARGE"] = str(XTB_CHARGE)
     os.environ["BGCP_MULTIPLICITY"] = str(XTB_MULTIPLICITY)
+    os.environ["BGCP_ISO_TOL"] = str(VIEW_ISO_TOL)
+    os.environ["BGCP_DWBO_THRESHOLD"] = str(DWBO_THRESHOLD)
+    os.environ["BGCP_SYMMETRY_WBO_TOL"] = str(SYMMETRY_WBO_TOL)
+    os.environ["BGCP_W_RXN"] = str(W_RXN)
+    os.environ["BGCP_W_CORE"] = str(W_CORE)
+    os.environ["BGCP_IMAG_PEN"] = str(IMAG_PEN)
 
     if not WORK.exists():
         print(f"No work directory: {WORK}")
@@ -948,7 +990,10 @@ def main():
         print(f"Processing {len(steps)} steps serially; each step uses "
               f"{inner_workers} inner workers "
               f"(cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
+              f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
+              f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
+              f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
+              f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         for i, step in enumerate(steps, 1):
@@ -960,6 +1005,9 @@ def main():
         # small/easy steps when nested process pools are undesirable.
         print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
               f"(legacy serial inner work inside each step, "
+              f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
+              f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
+              f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
@@ -981,7 +1029,10 @@ def main():
               f"inner workers "
               f"(total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
-              f"iso_tol={VIEW_ISO_TOL}, xtb_mode={XTB_CACHE_MODE}, "
+              f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
+              f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
+              f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
+              f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT})")
         with cf.ProcessPoolExecutor(max_workers=outer_slots) as executor:
