@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from ..frag import classify_bonds
+from ..frag import bond_event_threshold, classify_bonds
 from ..growth import grow_island
 from ..matcher import (
     _boundary_signature,
@@ -117,22 +117,28 @@ def _orbit_pair(a, b, orbits):
 
 
 def _chemistry_orbit_signature(mapping, g_R, g_P, r_orbits=None, p_orbits=None,
-                               dwbo_threshold=0.5):
+                               dwbo_threshold=0.5,
+                               metal_dwbo_threshold=None):
     """Broken/formed bond signature in joint R-orbit/P-orbit space."""
     br_pairs = []
     fm_pairs = []
     mapped = sorted(mapping)
+    elements_R = [g_R.nodes[x].get('element') for x in range(len(g_R.nodes))]
     for i, u in enumerate(mapped):
         for v in mapped[i + 1:]:
             pu, pv = mapping[u], mapping[v]
+            threshold = bond_event_threshold(
+                elements_R, u, v,
+                default_threshold=dwbo_threshold,
+                metal_threshold=metal_dwbo_threshold)
             wR = _edge_wbo(g_R, u, v)
             wP = _edge_wbo(g_P, pu, pv)
-            if wR - wP >= dwbo_threshold:
+            if wR - wP >= threshold:
                 br_pairs.append((
                     _orbit_pair(u, v, r_orbits),
                     _orbit_pair(pu, pv, p_orbits),
                 ))
-            elif wP - wR >= dwbo_threshold:
+            elif wP - wR >= threshold:
                 fm_pairs.append((
                     _orbit_pair(u, v, r_orbits),
                     _orbit_pair(pu, pv, p_orbits),
@@ -171,9 +177,13 @@ def _alignment_state_signature(mapping, deferred_edges, g_R, g_P,
     return tuple(fixed), tuple(sorted(internal_pairs)), boundary
 
 
-def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
+def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
+                          elements_R=None, elements_P=None,
+                          metal_dwbo_threshold=None):
     broken, formed, _, _ = classify_bonds(
-        mapping, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold)
+        mapping, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold,
+        elements_R=elements_R, elements_P=elements_P,
+        metal_dwbo_threshold=metal_dwbo_threshold)
     delta = 0.0
     for a, b, wR, wP in broken:
         delta += abs(float(wR or 0.0) - float(wP or 0.0))
@@ -184,6 +194,7 @@ def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
 
 def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
                             dwbo_threshold=0.5, bond_floor=0.2,
+                            metal_dwbo_threshold=None,
                             min_changes=1, full_permutation_size=6,
                             max_evals=SYM_REPAIR_MAX_EVALS,
                             return_stats=False):
@@ -198,8 +209,12 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
     if not mapping or p_orbits is None:
         return (mapping, {'enabled': False}) if return_stats else mapping
     mapping0 = dict(mapping)
+    elements_R = [g_R.nodes[i].get('element') for i in range(wbo_R.shape[0])]
+    elements_P = [g_P.nodes[i].get('element') for i in range(wbo_P.shape[0])]
     base_broken, base_formed, _, _ = classify_bonds(
-        mapping0, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold)
+        mapping0, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold,
+        elements_R=elements_R, elements_P=elements_P,
+        metal_dwbo_threshold=metal_dwbo_threshold)
     base_changes = len(base_broken) + len(base_formed)
     stats = {
         'enabled': True,
@@ -273,10 +288,14 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
         delta = 0.0
         for i, j, wR in local_pairs:
             wP = float(wbo_P[m[i], m[j]])
-            if wR - wP >= dwbo_threshold:
+            threshold = bond_event_threshold(
+                elements_R, i, j,
+                default_threshold=dwbo_threshold,
+                metal_threshold=metal_dwbo_threshold)
+            if wR - wP >= threshold:
                 changed += 1
                 delta += wR - wP
-            elif wP - wR >= dwbo_threshold:
+            elif wP - wR >= threshold:
                 changed += 1
                 delta += wP - wR
             elif wR >= bond_floor or wP >= bond_floor:
@@ -340,9 +359,15 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
 
     best = current
     best_score = _mapping_change_score(best, wbo_R, wbo_P,
-                                       dwbo_threshold=dwbo_threshold)
+                                       dwbo_threshold=dwbo_threshold,
+                                       elements_R=elements_R,
+                                       elements_P=elements_P,
+                                       metal_dwbo_threshold=metal_dwbo_threshold)
     base_score = _mapping_change_score(mapping0, wbo_R, wbo_P,
-                                       dwbo_threshold=dwbo_threshold)
+                                       dwbo_threshold=dwbo_threshold,
+                                       elements_R=elements_R,
+                                       elements_P=elements_P,
+                                       metal_dwbo_threshold=metal_dwbo_threshold)
     stats['best_changes'] = int(best_score[0])
     if best_score < base_score:
         stats['repaired'] = True
@@ -353,6 +378,7 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
 def find_islands(g_R, g_P, seed_order,
                  graph_floor=0.2, iso_tol=1.0,
                  dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
+                 metal_dwbo_threshold=None,
                  max_branches=1_000_000, events=None,
                  orbit_dedup=True, core_R=None,
                  stop_when_core_mapped=False,
@@ -429,7 +455,8 @@ def find_islands(g_R, g_P, seed_order,
             core_key,
             _chemistry_orbit_signature(
                 mapping, g_R, g_P, r_orbits, p_orbits,
-                dwbo_threshold=dwbo_threshold),
+                dwbo_threshold=dwbo_threshold,
+                metal_dwbo_threshold=metal_dwbo_threshold),
             deferred_boundary,
         )
         signature_cache[cache_key] = sig

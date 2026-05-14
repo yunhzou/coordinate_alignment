@@ -43,10 +43,14 @@ def _core_mapping_key(mapping, core_R):
 
 
 def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
-                         dwbo_threshold=0.5):
+                         dwbo_threshold=0.5,
+                         elements_R=None, elements_P=None,
+                         metal_dwbo_threshold=None):
     """Symmetry-canonical mechanism key for R-P discovery."""
     broken, formed, _, _ = classify_bonds(
-        mapping, wboR, wboT, dwbo_threshold=dwbo_threshold)
+        mapping, wboR, wboT, dwbo_threshold=dwbo_threshold,
+        elements_R=elements_R, elements_P=elements_P,
+        metal_dwbo_threshold=metal_dwbo_threshold)
     inv = {v: k for k, v in mapping.items()}
     br_pairs = [(a, b) for (a, b, _, _) in broken]
     fm_r_pairs = []
@@ -85,6 +89,7 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         max_branches=int(cfg['max_branches']),
         abort_on_branch_cap=bool(cfg.get('abort_on_branch_cap', False)),
         dwbo_threshold=float(cfg['dwbo_threshold']),
+        metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
         symmetry_wbo_tol=float(cfg['symmetry_wbo_tol']),
         core_R=core_R,
         stop_when_core_mapped=stop_on_core,
@@ -94,7 +99,8 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
 
 
 def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
-                          g_R_full, p_orbits, r_orbits, core_R, cfg):
+                          g_R_full, p_orbits, r_orbits, core_R, cfg,
+                          elR=None, elT=None):
     if core_R:
         if not all(r in mapping for r in core_R):
             return None
@@ -106,12 +112,16 @@ def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
         mapping = symmetry_repair_mapping(
             mapping, wboR, wboT, g_R_full, g_P, p_orbits,
             dwbo_threshold=float(cfg['dwbo_threshold']),
+            metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
             min_changes=int(cfg['symmetry_repair_min_changes']),
             max_evals=int(cfg['symmetry_repair_max_evals']),
         )
     sig = _mechanism_signature(
         mapping, wboR, wboT, r_orbits, p_orbits,
-        dwbo_threshold=float(cfg['dwbo_threshold']))
+        dwbo_threshold=float(cfg['dwbo_threshold']),
+        elements_R=elR,
+        elements_P=elT,
+        metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'))
     return sig, mapping
 
 
@@ -164,7 +174,8 @@ def _cs_wrun(args):
                     mapping, g_R, _WORKER['g_P'],
                     _WORKER['wboR'], _WORKER['wboT'],
                     _WORKER['g_R_full'], _WORKER['p_orbits'],
-                    _WORKER['r_orbits'], core_R, cfg)
+                    _WORKER['r_orbits'], core_R, cfg,
+                    _WORKER['elR'], _WORKER['elT'])
                 if scored is None:
                     continue
                 sig, mapping = scored
@@ -209,7 +220,7 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
                     mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
                     scored = _score_branch_mapping(
                         mapping, g_R, g_P, wboR, wboT, g_R_full,
-                        p_orbits, r_orbits, core_R, cfg)
+                        p_orbits, r_orbits, core_R, cfg, elR, elT)
                     if scored is None:
                         continue
                     sig, mapping = scored
@@ -246,7 +257,8 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
 def cut_sweep(elR, wboR, elT, wboT, *,
               n_workers=None, core_R=None,
               cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
-              dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
+              dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+              symmetry_wbo_tol=0.2,
               n_seeds=3, max_branches=100,
               chunksize=1,
               symmetry_repair=True,
@@ -270,6 +282,10 @@ def cut_sweep(elR, wboR, elT, wboT, *,
         'graph_floor': float(graph_floor),
         'iso_tol': float(iso_tol),
         'dwbo_threshold': float(dwbo_threshold),
+        'metal_dwbo_threshold': (
+            None if metal_dwbo_threshold is None
+            else float(metal_dwbo_threshold)
+        ),
         'symmetry_wbo_tol': float(symmetry_wbo_tol),
         'n_seeds': int(n_seeds),
         'max_branches': int(max_branches),

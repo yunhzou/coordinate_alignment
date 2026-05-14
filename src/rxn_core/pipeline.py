@@ -66,6 +66,7 @@ VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "100"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 DWBO_THRESHOLD = float(os.environ.get("BGCP_DWBO_THRESHOLD", "0.5"))
+METAL_DWBO_THRESHOLD = float(os.environ.get("BGCP_METAL_DWBO_THRESHOLD", "0.3"))
 SYMMETRY_WBO_TOL = float(os.environ.get("BGCP_SYMMETRY_WBO_TOL", "0.2"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
@@ -161,6 +162,7 @@ def rp_stage_config():
         'graph_floor': 0.2,
         'iso_tol': VIEW_ISO_TOL,
         'dwbo_threshold': DWBO_THRESHOLD,
+        'metal_dwbo_threshold': METAL_DWBO_THRESHOLD,
         'symmetry_wbo_tol': SYMMETRY_WBO_TOL,
         'n_seeds': N_SEEDS_PER_RUN,
         'max_branches': VIEW_MAX_BRANCHES,
@@ -1104,6 +1106,8 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
         graph_floor=cfg.get('graph_floor', 0.2),
         iso_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
         dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        metal_dwbo_threshold=cfg.get(
+            'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
         symmetry_wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL),
         n_seeds=cfg.get('n_seeds', N_SEEDS_PER_RUN),
         max_branches=cfg.get('max_branches', VIEW_MAX_BRANCHES),
@@ -1128,7 +1132,11 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
         inv_RP = {v: k for k, v in mapping_RP.items()}
         broken, formed, _, _ = classify_bonds(
             mapping_RP, inputs.wboR, inputs.wboP,
-            dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD))
+            dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+            elements_R=inputs.elR,
+            elements_P=inputs.elP,
+            metal_dwbo_threshold=cfg.get(
+                'metal_dwbo_threshold', METAL_DWBO_THRESHOLD))
         broken_R = [(int(a), int(b)) for (a, b, _, _) in broken]
         formed_R = [(int(inv_RP[a]), int(inv_RP[b]))
                     for (a, b, _, _) in formed
@@ -1454,6 +1462,8 @@ h2{{margin:0 0 4px;font-size:18px}}
 .mech-sel button.active{{background:#ffd700;border-color:#a90;font-weight:600}}
 .download-all{{padding:0 16px;border:1px solid #888;background:white;border-radius:6px;cursor:pointer;font-family:ui-monospace,monospace;font-size:12px;color:#024}}
 .download-all:hover{{background:#eef}}
+.index-toggle{{display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid #aaa;background:white;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;color:#024;white-space:nowrap}}
+.index-toggle input{{margin:0}}
 .ref-row{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}}
 .ref-row.no-gt{{grid-template-columns:repeat(2,1fr)}}
 .ig-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}
@@ -1474,6 +1484,7 @@ h2{{margin:0 0 4px;font-size:18px}}
 <h2>{title}</h2>
 <div class="topbar">
   <div class="mech-sel" id="mech-sel"></div>
+  <label class="index-toggle"><input type="checkbox" id="showAtomIndices"> Aligned indices</label>
   <button class="download-all" id="downloadAllBtn">Download</button>
 </div>
 <div class="ref-row" id="ref-row">
@@ -1489,6 +1500,7 @@ h2{{margin:0 0 4px;font-size:18px}}
 <script>
 const DATA = {data_json};
 let currentMechId = DATA.default_mech_id;
+let showAtomIndices = false;
 const elements = DATA.reactant.elements;
 const xyzR_static = DATA.reactant.coords;
 function findMech(id) {{ return DATA.mechanisms.find(m=>m.id===id); }}
@@ -1501,7 +1513,7 @@ function downloadBlob(name, blob) {{ const a = document.createElement("a"); cons
 function downloadText(name, text) {{ downloadBlob(name, new Blob([text], {{type:"chemical/x-xyz"}})); }}
 function downloadXYZ(name, els, xyz, comment) {{ if (!els || !xyz) return; downloadText(name, xyzText(els, xyz, comment)); }}
 function downloadR() {{ downloadXYZ(safeName(DATA.step)+"_R.xyz", DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R"); }}
-function downloadP() {{ downloadXYZ(safeName(DATA.step)+"_P.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P"); }}
+function downloadP() {{ const mech = findMech(currentMechId); if (mech && mech.product_xyz_in_R) downloadXYZ(safeName(DATA.step)+"_P_aligned_mech"+mech.id+".xyz", DATA.reactant.elements, mech.product_xyz_in_R, DATA.step+" P aligned to R mech "+mech.id); else downloadXYZ(safeName(DATA.step)+"_P.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P"); }}
 function downloadGT() {{ const mech = findMech(currentMechId); if (mech.gt) downloadXYZ(safeName(DATA.step)+"_GT_mech"+mech.id+".xyz", mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, DATA.step+" GT mech "+mech.id); }}
 function downloadIG(ig) {{ downloadXYZ(safeName(DATA.step)+"_"+safeName(ig.label)+".xyz", ig.elements || elements, ig.xyz || ig.xyz_in_R, DATA.step+" "+ig.label); }}
 function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, decomposition:{{beta:item.beta, rho:item.rho, kappa:item.kappa, n_imag:item.n_imag, freq:item.freq}}, core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count}}; }}
@@ -1510,12 +1522,14 @@ function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms
 async function downloadAll() {{ if (typeof JSZip === "undefined") {{ alert("Download library is not loaded"); return; }} const root = safeName(DATA.step); const zip = new JSZip(); zip.file(root+"/R.xyz", xyzText(DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R")); zip.file(root+"/P.xyz", xyzText(DATA.product.elements, DATA.product.coords, DATA.step+" P")); const firstGT = (DATA.mechanisms || []).map(m => m.gt).find(gt => gt && (gt.xyz || gt.xyz_in_R)); if (firstGT) zip.file(root+"/GT/GT.xyz", xyzText(firstGT.elements || elements, firstGT.xyz || firstGT.xyz_in_R, DATA.step+" GT")); const seenIG = new Set(); for (const mech of DATA.mechanisms || []) {{ for (const ig of mech.igs || []) {{ if (seenIG.has(ig.label)) continue; const xyz = ig.xyz || ig.xyz_in_R; if (!xyz) continue; seenIG.add(ig.label); zip.file(root+"/IG/"+safeName(ig.label)+".xyz", xyzText(ig.elements || elements, xyz, DATA.step+" "+ig.label)); }} }} const manifest = buildArchiveManifest(); zip.file(root+"/mechanism.json", JSON.stringify(manifest, null, 2)); for (const mech of DATA.mechanisms || []) {{ zip.file(root+"/mechanisms/mechanism_"+String(mech.id).padStart(3,"0")+".json", JSON.stringify(mechanismRecord(mech), null, 2)); }} zip.file(root+"/viewer_data.json", JSON.stringify(DATA, null, 2)); const blob = await zip.generateAsync({{type:"blob"}}); downloadBlob(root+".zip", blob); }}
 const animTimers = {{}};
 function stopAnim(d) {{ if (animTimers[d]) {{ clearInterval(animTimers[d]); delete animTimers[d]; }} }}
+function clearLabels(v) {{ if (v.removeAllLabels) v.removeAllLabels(); }}
+function addAtomLabels(v, els, xyz) {{ if (!showAtomIndices || !els || !xyz) return; for (let i=0;i<xyz.length;i++) {{ v.addLabel(String(i), {{position:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, fontSize:10, fontColor:'black', backgroundColor:'white', backgroundOpacity:0.72, borderColor:'#666', borderThickness:0.5, inFront:true}}); }} }}
 function drawBonds(v, xyz, pairs, color) {{ for (const [i,j] of pairs) {{ if (i>=xyz.length||j>=xyz.length) continue; v.addCylinder({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[j][0],y:xyz[j][1],z:xyz[j][2]}}, color:color, radius:0.16, dashed:true}}); }} }}
 function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!disp[i]) continue; const d = disp[i]; const len = Math.hypot(d[0],d[1],d[2]); if (len<0.05) continue; v.addArrow({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[i][0]+d[0]*1.5,y:xyz[i][1]+d[1]*1.5,z:xyz[i][2]+d[2]*1.5}}, color:'#0066cc', radius:0.07}}); }} }}
-function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); v.zoomTo(); v.render(); return v; }}
-function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); v.render(); }}, 60); return v; }}
-function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); makeStatic('vw_P', DATA.product.elements, DATA.product.coords, [], mech.formed_bonds_P || []); document.getElementById('prod_label').innerHTML = "static (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
-const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
+function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); addAtomLabels(v, els, xyz); v.zoomTo(); v.render(); return v; }}
+function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); addAtomLabels(v, els, xyz); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); clearLabels(v); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); addAtomLabels(v, els, cur); v.render(); }}, 60); return v; }}
+function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); const pAligned = !!mech.product_xyz_in_R; const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? mech.product_xyz_in_R : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed); document.getElementById('prod_label').innerHTML = (pAligned ? "aligned to R" : "static")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
+const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => {{ showAtomIndices = !!e.target.checked; render(); }}; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 window.addEventListener('load', render);
 </script>
 </body></html>
@@ -1819,7 +1833,7 @@ def process_step(step_name, inner_workers=0):
 def main():
     global INCLUDE_GT, XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
     global XTB_CHARGE, XTB_MULTIPLICITY
-    global VIEW_ISO_TOL, DWBO_THRESHOLD, SYMMETRY_WBO_TOL
+    global VIEW_ISO_TOL, DWBO_THRESHOLD, METAL_DWBO_THRESHOLD, SYMMETRY_WBO_TOL
     global W_RXN, W_CORE, IMAG_PEN
     global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
@@ -1880,8 +1894,13 @@ def main():
                          "Default from BGCP_ISO_TOL=1.0.")
     ap.add_argument("--dwbo-threshold", type=float, default=DWBO_THRESHOLD,
                     help="Delta-WBO threshold for broken/formed bond "
-                         "classification. Default from "
+                         "classification for non-metal pairs. Default from "
                          "BGCP_DWBO_THRESHOLD=0.5.")
+    ap.add_argument("--metal-dwbo-threshold", type=float,
+                    default=METAL_DWBO_THRESHOLD,
+                    help="Delta-WBO threshold for broken/formed events where "
+                         "either endpoint is a metal. Default from "
+                         "BGCP_METAL_DWBO_THRESHOLD=0.3.")
     ap.add_argument("--symmetry-wbo-tol", type=float,
                     default=SYMMETRY_WBO_TOL,
                     help="WBO tolerance for symmetry-orbit bucketing. "
@@ -1949,6 +1968,7 @@ def main():
     INCLUDE_GT = bool(args.include_gt)
     VIEW_ISO_TOL = float(args.iso_tol)
     DWBO_THRESHOLD = float(args.dwbo_threshold)
+    METAL_DWBO_THRESHOLD = float(args.metal_dwbo_threshold)
     SYMMETRY_WBO_TOL = float(args.symmetry_wbo_tol)
     W_RXN = float(args.w_rxn)
     W_CORE = float(args.w_core)
@@ -1968,6 +1988,7 @@ def main():
     os.environ["BGCP_MULTIPLICITY"] = str(XTB_MULTIPLICITY)
     os.environ["BGCP_ISO_TOL"] = str(VIEW_ISO_TOL)
     os.environ["BGCP_DWBO_THRESHOLD"] = str(DWBO_THRESHOLD)
+    os.environ["BGCP_METAL_DWBO_THRESHOLD"] = str(METAL_DWBO_THRESHOLD)
     os.environ["BGCP_SYMMETRY_WBO_TOL"] = str(SYMMETRY_WBO_TOL)
     os.environ["BGCP_W_RXN"] = str(W_RXN)
     os.environ["BGCP_W_CORE"] = str(W_CORE)
@@ -2092,6 +2113,7 @@ def main():
               f"(stage={args.stage}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
+              f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "
@@ -2113,6 +2135,7 @@ def main():
         print(f"Processing {len(steps)} steps with {worker_budget} outer workers "
               f"(stage={args.stage}, legacy serial inner work inside each step, "
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
+              f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "
@@ -2145,6 +2168,7 @@ def main():
               f"(stage={args.stage}, total budget={total_workers}, "
               f"cut_sweep chunksize={CUTSWEEP_CHUNKSIZE}, "
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
+              f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
               f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
               f"xtb_mode={XTB_CACHE_MODE}, "

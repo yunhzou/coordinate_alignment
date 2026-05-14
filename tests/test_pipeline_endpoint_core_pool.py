@@ -320,6 +320,8 @@ def test_viewer_uses_step_level_download_button():
     )
 
     assert 'id="downloadAllBtn">Download</button>' in html
+    assert 'id="showAtomIndices"' in html
+    assert 'addAtomLabels' in html
     assert 'id="zipBtn"' not in html
     assert 'mechanism.json' in html
     assert 'viewer_data.json' in html

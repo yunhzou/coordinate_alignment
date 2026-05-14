@@ -19,6 +19,45 @@ import networkx as nx
 from .chemistry_computations import parse_xyz, run_xtb, write_xyz_str
 
 
+METAL_ELEMENTS = frozenset({
+    "Li", "Be", "Na", "Mg", "Al", "K", "Ca", "Sc", "Ti", "V", "Cr",
+    "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Rb", "Sr", "Y", "Zr",
+    "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Cs",
+    "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy",
+    "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir",
+    "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "Fr", "Ra", "Ac", "Th",
+    "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md",
+    "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn",
+    "Nh", "Fl", "Mc", "Lv",
+})
+
+
+def is_metal_element(element):
+    """Return True for elements treated with the metal WBO-event cutoff."""
+    if element is None:
+        return False
+    s = str(element).strip()
+    if not s:
+        return False
+    return s[0].upper() + s[1:].lower() in METAL_ELEMENTS
+
+
+def bond_event_threshold(elements, i, j, *,
+                         default_threshold=0.5,
+                         metal_threshold=None):
+    """Pair-specific delta-WBO threshold for mechanism events.
+
+    The default threshold is used for ordinary covalent/organic pairs.  If a
+    metal threshold is supplied and either endpoint is a metal, the lower
+    metal-aware cutoff is used.
+    """
+    if elements is None or metal_threshold is None:
+        return float(default_threshold)
+    if is_metal_element(elements[i]) or is_metal_element(elements[j]):
+        return float(metal_threshold)
+    return float(default_threshold)
+
+
 # -------------------- WBO graph --------------------
 
 def build_graph(elements, wbo, bond_cut=0.5):
@@ -74,14 +113,19 @@ def expand_mapping(mapping, g_R, g_P):
     return mapping
 
 
-def classify_bonds(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
+def classify_bonds(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
+                   elements_R=None, elements_P=None,
+                   metal_dwbo_threshold=None):
     """Bond classification by WBO change.
 
-        broken iff (WBO_R - WBO_P) >= dwbo_threshold
-        formed iff (WBO_P - WBO_R) >= dwbo_threshold
+        broken iff (WBO_R - WBO_P) >= pair_threshold
+        formed iff (WBO_P - WBO_R) >= pair_threshold
 
-    Since WBO is non-negative, requiring (wR - wP) >= dwbo_threshold
-    automatically implies wR >= dwbo_threshold (wP ≥ 0), so a single
+    `pair_threshold` is normally `dwbo_threshold`.  If element lists and
+    `metal_dwbo_threshold` are supplied, any pair containing a metal uses the
+    metal threshold instead.  Since WBO is non-negative, requiring
+    (wR - wP) >= pair_threshold automatically implies wR >= pair_threshold
+    (wP >= 0), so a single
     threshold both gates "is this a bond worth considering" and "did
     its order change enough." For pairs with one or both endpoints
     unmapped (no image bond defined) we treat the missing wP as 0 and
@@ -94,21 +138,29 @@ def classify_bonds(mapping, wbo_R, wbo_P, dwbo_threshold=0.5):
     broken, formed = [], []
     for i in range(nR):
         for j in range(i + 1, nR):
+            threshold = bond_event_threshold(
+                elements_R, i, j,
+                default_threshold=dwbo_threshold,
+                metal_threshold=metal_dwbo_threshold)
             wR = wbo_R[i, j]
-            if wR < dwbo_threshold: continue
+            if wR < threshold: continue
             if i not in mapping or j not in mapping:
                 broken.append((i, j, float(wR), None)); continue
             wP = wbo_P[mapping[i], mapping[j]]
-            if wR - wP >= dwbo_threshold:
+            if wR - wP >= threshold:
                 broken.append((i, j, float(wR), float(wP)))
     for ip in range(nP):
         for jp in range(ip + 1, nP):
+            threshold = bond_event_threshold(
+                elements_P, ip, jp,
+                default_threshold=dwbo_threshold,
+                metal_threshold=metal_dwbo_threshold)
             wP = wbo_P[ip, jp]
-            if wP < dwbo_threshold: continue
+            if wP < threshold: continue
             if ip not in inv or jp not in inv:
                 formed.append((ip, jp, None, float(wP))); continue
             wR = wbo_R[inv[ip], inv[jp]]
-            if wP - wR >= dwbo_threshold:
+            if wP - wR >= threshold:
                 formed.append((ip, jp, float(wR), float(wP)))
     core_R = sorted({i for (i, j, _, _) in broken}
                     | {j for (i, j, _, _) in broken})

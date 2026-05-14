@@ -384,6 +384,27 @@ def test_symmetry_repair_removes_false_orbit_swap_changes():
     assert stats["evaluated"] <= 4
 
 
+def test_classify_bonds_uses_lower_metal_event_threshold():
+    wbo_r = np.zeros((2, 2))
+    wbo_p = np.zeros((2, 2))
+    wbo_p[0, 1] = wbo_p[1, 0] = 0.35
+    mapping = {0: 0, 1: 1}
+
+    organic = classify_bonds(
+        mapping, wbo_r, wbo_p,
+        dwbo_threshold=0.5,
+        elements_R=["C", "O"], elements_P=["C", "O"],
+        metal_dwbo_threshold=0.3)
+    metal = classify_bonds(
+        mapping, wbo_r, wbo_p,
+        dwbo_threshold=0.5,
+        elements_R=["Pd", "O"], elements_P=["Pd", "O"],
+        metal_dwbo_threshold=0.3)
+
+    assert organic[1] == []
+    assert metal[1] == [(0, 1, 0.0, 0.35)]
+
+
 def test_generate_seed_orders_honors_trial_cap():
     elements = ["C", "C", "C", "C", "H", "H"]
     wbo = np.zeros((6, 6))

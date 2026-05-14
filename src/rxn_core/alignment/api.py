@@ -72,7 +72,8 @@ def cut_edges_above_floor(wboR, floor=0.2):
 def match_wbo_graphs(elR, wboR, elP, wboP, *,
                      xyzR=None, xyzP=None,
                      graph_floor=0.2, iso_tol=1.0,
-                     dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
+                     dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+                     symmetry_wbo_tol=0.2,
                      n_seeds=3, max_branches=1_000_000,
                      cut_edges=(), repair_symmetry=True,
                      chirality=False, capture_events=False):
@@ -103,6 +104,7 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
             g_R, g_P, order,
             graph_floor=graph_floor, iso_tol=iso_tol,
             dwbo_threshold=dwbo_threshold,
+            metal_dwbo_threshold=metal_dwbo_threshold,
             symmetry_wbo_tol=symmetry_wbo_tol,
             max_branches=max_branches, events=events)
         for branch_index, branch in enumerate(branches):
@@ -111,9 +113,12 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
             if repair_symmetry:
                 mapping = symmetry_repair_mapping(
                     mapping, wboR, wboP, g_R_full, g_P, p_orbits,
-                    dwbo_threshold=dwbo_threshold)
+                    dwbo_threshold=dwbo_threshold,
+                    metal_dwbo_threshold=metal_dwbo_threshold)
             broken, formed, _, _ = classify_bonds(
-                mapping, wboR, wboP, dwbo_threshold=dwbo_threshold)
+                mapping, wboR, wboP, dwbo_threshold=dwbo_threshold,
+                elements_R=elR, elements_P=elP,
+                metal_dwbo_threshold=metal_dwbo_threshold)
             chir = 0
             if chirality and xyzR is not None and xyzP is not None:
                 chir = _chirality_violations(
@@ -145,7 +150,8 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
 
 def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
                       graph_floor=0.2, iso_tol=1,
-                      dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
+                      dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+                      symmetry_wbo_tol=0.2,
                       n_seeds=3, max_branches=1_000_000,
                       chirality=True, return_all=False):
     """Pure-graph entry point: assumes (el, xyz, wbo) for R and P are
@@ -156,6 +162,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
         xyzR=xyzR, xyzP=xyzP,
         graph_floor=graph_floor, iso_tol=iso_tol,
         dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold,
         symmetry_wbo_tol=symmetry_wbo_tol,
         n_seeds=n_seeds, max_branches=max_branches,
         repair_symmetry=True, chirality=chirality)
@@ -185,7 +192,8 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
 def analyze_alignment(reactant_xyz, product_xyz, workdir,
                       charge=0, multiplicity=1,
                       graph_floor=0.2, iso_tol=1.0,
-                      dwbo_threshold=0.5, symmetry_wbo_tol=0.2,
+                      dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+                      symmetry_wbo_tol=0.2,
                       n_seeds=3, max_branches=1_000_000,
                       chirality=True,
                       return_all=False):
@@ -202,6 +210,7 @@ def analyze_alignment(reactant_xyz, product_xyz, workdir,
         elR, xyzR, wboR, elP, xyzP, wboP,
         graph_floor=graph_floor, iso_tol=iso_tol,
         dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold,
         symmetry_wbo_tol=symmetry_wbo_tol,
         n_seeds=n_seeds, max_branches=max_branches,
         chirality=chirality, return_all=return_all)
