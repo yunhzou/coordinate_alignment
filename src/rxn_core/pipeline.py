@@ -26,9 +26,7 @@ import numpy as np
 
 from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       core_atoms_in_R_frame,
-                      reaction_coord_delta, reindex_modes_to_R,
-                      bond_overlap_per_mode, bond_reaction_vector,
-                      rxn_overlap_per_mode,
+                      reindex_modes_to_R, bond_overlap_per_mode,
                       build_graph, cut_sweep, select_min_mechanisms,
                       ts_core_pool)
 from rxn_core.chemistry_computations import (
@@ -83,9 +81,8 @@ XTB_OMP_THREADS = os.environ.get("BGCP_XTB_OMP_THREADS", "auto")
 XTB_MAX_THREADS = int(os.environ.get("BGCP_XTB_MAX_THREADS", "8"))
 XTB_CHARGE = int(os.environ.get("BGCP_CHARGE", "0"))
 XTB_MULTIPLICITY = int(os.environ.get("BGCP_MULTIPLICITY", "1"))
-W_RXN = float(os.environ.get("BGCP_W_RXN", "1.0"))
-W_CORE = float(os.environ.get("BGCP_W_CORE", "0.2"))
-IMAG_PEN = float(os.environ.get("BGCP_IMAG_PEN", "0.3"))
+EVENT_WEIGHT_POWER = float(os.environ.get("BGCP_EVENT_WEIGHT_POWER", "1.0"))
+WBO_PROGRESS_POWER = float(os.environ.get("BGCP_WBO_PROGRESS_POWER", "1.0"))
 
 
 @dataclass
@@ -185,9 +182,9 @@ def ts_stage_config():
 
 def score_config():
     return {
-        'W_RXN': W_RXN,
-        'W_CORE': W_CORE,
-        'IMAG_PEN': IMAG_PEN,
+        'formula': 'S = beta * wbo_progress^WBO_PROGRESS_POWER',
+        'EVENT_WEIGHT_POWER': EVENT_WEIGHT_POWER,
+        'WBO_PROGRESS_POWER': WBO_PROGRESS_POWER,
     }
 
 
@@ -694,28 +691,108 @@ def _ts_endpoint_pool_task(task):
     }
 
 
+def _clip01(value):
+    return max(0.0, min(1.0, float(value)))
+
+
+def _event_progress(kind, wR, wP, wT):
+    """How far the TS WBO has moved in the detected R->P event direction."""
+    delta = abs(float(wP) - float(wR))
+    if delta < 1e-12:
+        return 1.0
+    if kind == 'formed':
+        return _clip01((float(wT) - float(wR)) / delta)
+    return _clip01((float(wR) - float(wT)) / delta)
+
+
+def _ranker_event_terms(wboR, wboP, wboT, mapping_RP, mapping_RT,
+                        broken_R, formed_R, event_weight_power=1.0):
+    """Per-event WBO terms used by the TS ranker.
+
+    Event strength is the detected endpoint change |WBO_P - WBO_R|.  Progress
+    is the mapped TS WBO's movement in the same direction: forming events
+    require WBO_TS > WBO_R, broken events require WBO_TS < WBO_R.
+    """
+    terms = []
+    for kind, pairs in (('broken', broken_R), ('formed', formed_R)):
+        for a, b in pairs:
+            if (a not in mapping_RP or b not in mapping_RP or
+                    a not in mapping_RT or b not in mapping_RT):
+                continue
+            pa, pb = int(mapping_RP[a]), int(mapping_RP[b])
+            ta, tb = int(mapping_RT[a]), int(mapping_RT[b])
+            wR = float(wboR[a, b])
+            wP = float(wboP[pa, pb])
+            wT = float(wboT[ta, tb])
+            delta = abs(wP - wR)
+            weight = float(delta ** float(event_weight_power))
+            terms.append({
+                'kind': kind,
+                'R_pair': [int(a), int(b)],
+                'P_pair': [pa, pb],
+                'T_pair': [ta, tb],
+                'wbo_R': wR,
+                'wbo_P': wP,
+                'wbo_T': wT,
+                'delta_wbo_RP': delta,
+                'event_weight': weight,
+                'ts_progress': _event_progress(kind, wR, wP, wT),
+            })
+    return terms
+
+
+def _weighted_wbo_progress(event_terms):
+    total = sum(float(t['event_weight']) for t in event_terms)
+    if total < 1e-12:
+        return 1.0
+    return sum(float(t['event_weight']) * float(t['ts_progress'])
+               for t in event_terms) / total
+
+
+def _bond_reaction_vector_from_terms(xyz_TS_in_R, event_terms, *,
+                                     weighted=True):
+    xyz = np.asarray(xyz_TS_in_R, dtype=float)
+    V = np.zeros_like(xyz)
+    for term in event_terms:
+        i, j = term['R_pair']
+        v = xyz[j] - xyz[i]
+        n = float(np.linalg.norm(v))
+        if n < 1e-9:
+            continue
+        scale = float(term['event_weight']) if weighted else 1.0
+        u = scale * (v / n)
+        if term['kind'] == 'broken':
+            V[i] -= u
+            V[j] += u
+        else:
+            V[i] += u
+            V[j] -= u
+    return V
+
+
 def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
-              broken_R, formed_R, core_R, delta_RP, score_weights=None):
+              broken_R, formed_R, core_R, *,
+              wboR, wboP, wboT, mapping_RP, score_weights=None):
     weights = dict(score_config() if score_weights is None else score_weights)
-    w_rxn = float(weights.get('W_RXN', W_RXN))
-    w_core = float(weights.get('W_CORE', W_CORE))
-    imag_pen = float(weights.get('IMAG_PEN', IMAG_PEN))
+    event_weight_power = float(weights.get(
+        'EVENT_WEIGHT_POWER', EVENT_WEIGHT_POWER))
+    wbo_progress_power = float(weights.get(
+        'WBO_PROGRESS_POWER', WBO_PROGRESS_POWER))
     mapping_RT = {int(r): int(t) for r, t in mapping_RT.items()}
     modes_R = reindex_modes_to_R(modes_TS, mapping_RT, len(elR))
     mode_norms = np.linalg.norm(modes_TS.reshape(modes_TS.shape[0], -1), axis=1)
-    sq = (modes_R**2).sum(axis=2)
-    total = mode_norms ** 2
-    core_e = sq[:, core_R].sum(axis=1) if core_R else np.zeros(modes_R.shape[0])
-    kappa = np.where(total > 1e-12, core_e / total, 0.0)
-    rho = rxn_overlap_per_mode(modes_R, delta_RP, core_R,
-                                mode_norms=mode_norms)
     ts_in_R = np.asarray(xyzR, float).copy()
     for r, t in mapping_RT.items(): ts_in_R[r] = xyzT[t]
-    V = bond_reaction_vector(ts_in_R, broken_R, formed_R)
+    event_terms = _ranker_event_terms(
+        wboR, wboP, wboT, mapping_RP, mapping_RT, broken_R, formed_R,
+        event_weight_power=event_weight_power)
+    V = _bond_reaction_vector_from_terms(ts_in_R, event_terms, weighted=True)
+    wbo_progress = _weighted_wbo_progress(event_terms)
     beta = bond_overlap_per_mode(modes_R, V, mode_norms=mode_norms)
     imag = list(np.where(freqs < 0)[0])
     if not imag: return None
     pk = max(imag, key=lambda k: beta[k])
+    progress_factor = float(wbo_progress) ** wbo_progress_power
 
     def target_pairs(r_pairs):
         out = []
@@ -724,9 +801,29 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
                 out.append([int(mapping_RT[a]), int(mapping_RT[b])])
         return out
 
-    return {'S': float(beta[pk]*(1+w_rxn*rho[pk])*(1+w_core*kappa[pk])/max(len(imag),1)**imag_pen),
-            'beta': float(beta[pk]), 'rho': float(rho[pk]), 'kappa': float(kappa[pk]),
-            'freq': float(freqs[pk]), 'k': int(pk), 'n_imag': len(imag),
+    if event_terms:
+        v_flat = np.asarray(V).reshape(-1)
+        v_norm = float(np.linalg.norm(v_flat))
+        mode = modes_R[pk]
+        mode_norm = float(mode_norms[pk])
+        for term in event_terms:
+            part = _bond_reaction_vector_from_terms(
+                ts_in_R, [term], weighted=True)
+            signed = 0.0
+            if v_norm > 1e-12 and mode_norm > 1e-12:
+                signed = float(mode.reshape(-1) @
+                               (part.reshape(-1) / v_norm)) / mode_norm
+            term['beta_contribution_signed'] = signed
+
+    return {'S': float(beta[pk] * progress_factor),
+            'beta': float(beta[pk]),
+            'wbo_progress': float(wbo_progress),
+            'wbo_progress_factor': progress_factor,
+            'freq': float(freqs[pk]), 'k': int(pk),
+            'score_formula': weights.get(
+                'formula',
+                'S = beta * wbo_progress^WBO_PROGRESS_POWER'),
+            'event_terms': event_terms,
             'core_map': {str(int(r)): int(mapping_RT[r])
                          for r in core_R if r in mapping_RT},
             # Viewer fields stay in native target indexing.  Only annotations
@@ -743,8 +840,10 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
             'picked_disp_R': modes_R[pk].tolist()}
 
 
-def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
-                                 rt_pool, broken_R, formed_R, core_R, delta_RP,
+def best_under_mech_using_pool(elR, xyzR, wboR, wboP,
+                                 elT, xyzT, wboT, freqs, modes_TS,
+                                 rt_pool, mapping_RP,
+                                 broken_R, formed_R, core_R,
                                  score_weights=None):
     """Score every R-frame core witness under one mech.
 
@@ -765,7 +864,9 @@ def best_under_mech_using_pool(elR, xyzR, elT, xyzT, freqs, modes_TS,
         seen_core.add(core_key)
         mapping_RT = dict(witness)
         s = score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
-                      broken_R, formed_R, core_R, delta_RP,
+                      broken_R, formed_R, core_R,
+                      wboR=wboR, wboP=wboP, wboT=wboT,
+                      mapping_RP=mapping_RP,
                       score_weights=score_weights)
         if s:
             s['core_sources'] = sorted(v.get('sources', {'R'}))
@@ -818,8 +919,7 @@ def _mechanism_state(inputs, mech):
     broken_R = _int_pairs(mech.get('broken_bonds_R', ()))
     formed_R = _int_pairs(mech.get('formed_bonds_R', ()))
     core_R = [int(r) for r in mech.get('core_atoms', ())]
-    delta_RP = reaction_coord_delta(inputs.xyzR, inputs.xyzP, mapping_RP)
-    return mapping_RP, broken_R, formed_R, core_R, delta_RP
+    return mapping_RP, broken_R, formed_R, core_R
 
 
 def _mechanism_for_view(mech):
@@ -1015,12 +1115,13 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
                 'S': score.get('S'),
                 'decomposition': {
                     'beta': score.get('beta'),
-                    'rho': score.get('rho'),
-                    'kappa': score.get('kappa'),
-                    'n_imag': score.get('n_imag'),
+                    'wbo_progress': score.get('wbo_progress'),
+                    'wbo_progress_factor': score.get('wbo_progress_factor'),
                     'freq': score.get('freq'),
                     'mode_index': score.get('k'),
                 },
+                'score_formula': score.get('score_formula'),
+                'event_terms': score.get('event_terms', []),
                 'core_map_R_to_target': score.get('core_map', {}),
                 'core_sources': score.get('core_sources', []),
                 'core_pool_dedup_count': score.get('core_pool_dedup_count'),
@@ -1186,7 +1287,7 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
 
 def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
                            mech_pos, mech, target, config):
-    mapping_RP, br_R, fm_R, core_R, _dRP = _mechanism_state(inputs, mech)
+    mapping_RP, br_R, fm_R, core_R = _mechanism_state(inputs, mech)
     common = {
         'key': key,
         'target_order': target_order,
@@ -1309,7 +1410,7 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
                       key=lambda x: (x['target_order'], x['mech_pos'])):
         mech = mechanisms[ctx['mech_pos']]
         target = ctx['target']
-        mapping_RP, br_R, fm_R, core_R, dRP = _mechanism_state(inputs, mech)
+        mapping_RP, br_R, fm_R, core_R = _mechanism_state(inputs, mech)
         parts = endpoint_by_key.get(ctx['key'], {})
         r_pool = parts.get('R', {}).get('pool', {})
         p_pool_native = parts.get('P', {}).get('pool', {})
@@ -1322,8 +1423,9 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
                   f"merged={len(merged)}",
                   flush=True)
         s = best_under_mech_using_pool(
-            inputs.elR, inputs.xyzR, target.el, target.xyz,
-            target.freqs, target.modes, merged, br_R, fm_R, core_R, dRP,
+            inputs.elR, inputs.xyzR, inputs.wboR, inputs.wboP,
+            target.el, target.xyz, target.wbo, target.freqs, target.modes,
+            merged, mapping_RP, br_R, fm_R, core_R,
             score_weights=cfg.get('score', score_config()))
         if ctx['kind'] == 'gt':
             mech['gt'] = s
@@ -1414,13 +1516,14 @@ def build_eval_slim(view_data):
             'formed_R': mech['formed_bonds_R'],
             'core_R': mech['core_atoms'],
             'gt': ({k: mech['gt'].get(k) for k in [
-                'S', 'beta', 'rho', 'kappa', 'freq', 'n_imag',
-                'core_map', 'core_sources',
+                'S', 'beta', 'wbo_progress', 'wbo_progress_factor',
+                'freq', 'core_map', 'core_sources',
             ]} if mech.get('gt') else None),
             'igs': [
                 {k: ig.get(k) for k in [
-                    'label', 'S', 'beta', 'rho', 'kappa', 'freq',
-                    'n_imag', 'core_map', 'core_sources', 'is_top2',
+                    'label', 'S', 'beta', 'wbo_progress',
+                    'wbo_progress_factor', 'freq', 'core_map',
+                    'core_sources', 'is_top2',
                 ]}
                 for ig in mech.get('igs', [])
             ],
@@ -1517,9 +1620,10 @@ function downloadR() {{ downloadXYZ(safeName(DATA.step)+"_R.xyz", DATA.reactant.
 function downloadP() {{ const mech = findMech(currentMechId); if (mech && mech.product_xyz_in_R) downloadXYZ(safeName(DATA.step)+"_P_aligned_mech"+mech.id+".xyz", DATA.reactant.elements, mech.product_xyz_in_R, DATA.step+" P aligned to R mech "+mech.id); else downloadXYZ(safeName(DATA.step)+"_P.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P"); }}
 function downloadGT() {{ const mech = findMech(currentMechId); if (mech.gt) downloadXYZ(safeName(DATA.step)+"_GT_mech"+mech.id+".xyz", mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, DATA.step+" GT mech "+mech.id); }}
 function downloadIG(ig) {{ downloadXYZ(safeName(DATA.step)+"_"+safeName(ig.label)+".xyz", ig.elements || elements, ig.xyz || ig.xyz_in_R, DATA.step+" "+ig.label); }}
-function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, decomposition:{{beta:item.beta, rho:item.rho, kappa:item.kappa, n_imag:item.n_imag, freq:item.freq}}, core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count}}; }}
+function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, decomposition:{{beta:item.beta, wbo_progress:item.wbo_progress, wbo_progress_factor:item.wbo_progress_factor, freq:item.freq, mode_index:item.k}}, event_terms:item.event_terms || [], core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count}}; }}
 function mechanismRecord(mech) {{ return {{id:mech.id, label:mech.label, cut:mech.cut, dedup_count:mech.dedup_count || 1, dedup_source_ids:mech.dedup_source_ids || [mech.id], dedup_cuts:mech.dedup_cuts || [mech.cut], broken_bonds_R:mech.broken_bonds_R, formed_bonds_R:mech.formed_bonds_R, formed_bonds_P:mech.formed_bonds_P || [], core_atoms_R:mech.core_atoms || [], gt:scoreRecord(mech.gt), igs:(mech.igs || []).map(ig => ({{label:ig.label, is_top2:!!ig.is_top2, is_union_top:!!ig.is_union_top, score:scoreRecord(ig)}}))}}; }}
-function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms, include_gt:!!DATA.include_gt, default_mech_id:DATA.default_mech_id, score_formula:"S = beta * (1 + W_RXN * rho) * (1 + W_CORE * kappa) / n_imag^IMAG_PEN", score_config:DATA.score_config || null, mechanisms:(DATA.mechanisms || []).map(mechanismRecord), files:{{reactant:"R.xyz", product:"P.xyz", gt:"GT/GT.xyz if available", ig:"IG/<label>.xyz", per_mechanism:"mechanisms/mechanism_<id>.json", full_viewer_data:"viewer_data.json"}}}}; }}
+function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms, include_gt:!!DATA.include_gt, default_mech_id:DATA.default_mech_id, score_formula:"S = beta * wbo_progress^WBO_PROGRESS_POWER", score_config:DATA.score_config || null, mechanisms:(DATA.mechanisms || []).map(mechanismRecord), files:{{reactant:"R.xyz", product:"P.xyz", gt:"GT/GT.xyz if available", ig:"IG/<label>.xyz", per_mechanism:"mechanisms/mechanism_<id>.json", full_viewer_data:"viewer_data.json"}}}}; }}
+function scoreMeta(item) {{ if (!item || item.beta === undefined) return "(no data)"; return "<b>&beta;</b>="+item.beta.toFixed(3)+" <b>wbo</b>="+item.wbo_progress.toFixed(3)+" <b>freq</b>="+item.freq.toFixed(0)+"i"; }}
 async function downloadAll() {{ if (typeof JSZip === "undefined") {{ alert("Download library is not loaded"); return; }} const root = safeName(DATA.step); const zip = new JSZip(); zip.file(root+"/R.xyz", xyzText(DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R")); zip.file(root+"/P.xyz", xyzText(DATA.product.elements, DATA.product.coords, DATA.step+" P")); const firstGT = (DATA.mechanisms || []).map(m => m.gt).find(gt => gt && (gt.xyz || gt.xyz_in_R)); if (firstGT) zip.file(root+"/GT/GT.xyz", xyzText(firstGT.elements || elements, firstGT.xyz || firstGT.xyz_in_R, DATA.step+" GT")); const seenIG = new Set(); for (const mech of DATA.mechanisms || []) {{ for (const ig of mech.igs || []) {{ if (seenIG.has(ig.label)) continue; const xyz = ig.xyz || ig.xyz_in_R; if (!xyz) continue; seenIG.add(ig.label); zip.file(root+"/IG/"+safeName(ig.label)+".xyz", xyzText(ig.elements || elements, xyz, DATA.step+" "+ig.label)); }} }} const manifest = buildArchiveManifest(); zip.file(root+"/mechanism.json", JSON.stringify(manifest, null, 2)); for (const mech of DATA.mechanisms || []) {{ zip.file(root+"/mechanisms/mechanism_"+String(mech.id).padStart(3,"0")+".json", JSON.stringify(mechanismRecord(mech), null, 2)); }} zip.file(root+"/viewer_data.json", JSON.stringify(DATA, null, 2)); const blob = await zip.generateAsync({{type:"blob"}}); downloadBlob(root+".zip", blob); }}
 const animTimers = {{}};
 function stopAnim(d) {{ if (animTimers[d]) {{ clearInterval(animTimers[d]); delete animTimers[d]; }} }}
@@ -1529,7 +1633,7 @@ function drawBonds(v, xyz, pairs, color) {{ for (const [i,j] of pairs) {{ if (i>
 function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!disp[i]) continue; const d = disp[i]; const len = Math.hypot(d[0],d[1],d[2]); if (len<0.05) continue; v.addArrow({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[i][0]+d[0]*1.5,y:xyz[i][1]+d[1]*1.5,z:xyz[i][2]+d[2]*1.5}}, color:'#0066cc', radius:0.07}}); }} }}
 function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); addAtomLabels(v, els, xyz); v.zoomTo(); v.render(); return v; }}
 function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); addAtomLabels(v, els, xyz); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); clearLabels(v); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); addAtomLabels(v, els, cur); v.render(); }}, 60); return v; }}
-function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); const pAligned = !!mech.product_xyz_in_R; const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? mech.product_xyz_in_R : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed); document.getElementById('prod_label').innerHTML = (pAligned ? "aligned to R" : "static")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = "<b>&beta;</b>="+mech.gt.beta.toFixed(3)+" &nbsp; <b>&rho;</b>="+mech.gt.rho.toFixed(3)+" &nbsp; <b>&kappa;</b>="+mech.gt.kappa.toFixed(3)+" &nbsp; <b>n_imag</b>="+mech.gt.n_imag+" &nbsp; <b>freq</b>="+mech.gt.freq.toFixed(0)+"i cm&#x207B;&#xB9;"; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+(ig.beta!==undefined ? "<b>&beta;</b>="+ig.beta.toFixed(3)+" <b>&rho;</b>="+ig.rho.toFixed(3)+" <b>&kappa;</b>="+ig.kappa.toFixed(3)+" <b>n_imag</b>="+ig.n_imag+" <b>freq</b>="+ig.freq.toFixed(0)+"i" : "(no data)")+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
+function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); const pAligned = !!mech.product_xyz_in_R; const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? mech.product_xyz_in_R : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed); document.getElementById('prod_label').innerHTML = (pAligned ? "aligned to R" : "static")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt); }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
 const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => {{ showAtomIndices = !!e.target.checked; render(); }}; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 window.addEventListener('load', render);
 </script>
@@ -1864,7 +1968,7 @@ def main():
     global INCLUDE_GT, XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, METAL_DWBO_THRESHOLD, SYMMETRY_WBO_TOL
-    global W_RXN, W_CORE, IMAG_PEN
+    global EVENT_WEIGHT_POWER, WBO_PROGRESS_POWER
     global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage",
@@ -1935,15 +2039,15 @@ def main():
                     default=SYMMETRY_WBO_TOL,
                     help="WBO tolerance for symmetry-orbit bucketing. "
                          "Default from BGCP_SYMMETRY_WBO_TOL=0.2.")
-    ap.add_argument("--w-rxn", type=float, default=W_RXN,
-                    help="Reaction-coordinate overlap score weight. "
-                         "Default from BGCP_W_RXN=1.0.")
-    ap.add_argument("--w-core", type=float, default=W_CORE,
-                    help="Core-mode fraction score weight. "
-                         "Default from BGCP_W_CORE=0.2.")
-    ap.add_argument("--imag-pen", type=float, default=IMAG_PEN,
-                    help="Imaginary-mode count score penalty exponent. "
-                         "Default from BGCP_IMAG_PEN=0.3.")
+    ap.add_argument("--event-weight-power", type=float,
+                    default=EVENT_WEIGHT_POWER,
+                    help="Exponent on each detected R-P event's |delta WBO| "
+                         "when building the beta vector. Default from "
+                         "BGCP_EVENT_WEIGHT_POWER=1.0.")
+    ap.add_argument("--wbo-progress-power", type=float,
+                    default=WBO_PROGRESS_POWER,
+                    help="Exponent on the TS WBO progress factor in the "
+                         "ranker. Default from BGCP_WBO_PROGRESS_POWER=1.0.")
     ap.add_argument("--xtb-mode",
                     choices=("auto", "cache-only"),
                     default=_normal_xtb_mode(XTB_CACHE_MODE),
@@ -2000,9 +2104,8 @@ def main():
     DWBO_THRESHOLD = float(args.dwbo_threshold)
     METAL_DWBO_THRESHOLD = float(args.metal_dwbo_threshold)
     SYMMETRY_WBO_TOL = float(args.symmetry_wbo_tol)
-    W_RXN = float(args.w_rxn)
-    W_CORE = float(args.w_core)
-    IMAG_PEN = float(args.imag_pen)
+    EVENT_WEIGHT_POWER = float(args.event_weight_power)
+    WBO_PROGRESS_POWER = float(args.wbo_progress_power)
     STAGE_ROOT = Path(args.stage_root)
     ALIGNMENT_OUT_ROOT = Path(args.alignment_out_root)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
@@ -2020,9 +2123,8 @@ def main():
     os.environ["BGCP_DWBO_THRESHOLD"] = str(DWBO_THRESHOLD)
     os.environ["BGCP_METAL_DWBO_THRESHOLD"] = str(METAL_DWBO_THRESHOLD)
     os.environ["BGCP_SYMMETRY_WBO_TOL"] = str(SYMMETRY_WBO_TOL)
-    os.environ["BGCP_W_RXN"] = str(W_RXN)
-    os.environ["BGCP_W_CORE"] = str(W_CORE)
-    os.environ["BGCP_IMAG_PEN"] = str(IMAG_PEN)
+    os.environ["BGCP_EVENT_WEIGHT_POWER"] = str(EVENT_WEIGHT_POWER)
+    os.environ["BGCP_WBO_PROGRESS_POWER"] = str(WBO_PROGRESS_POWER)
     os.environ["BGCP_STAGE_ROOT"] = str(STAGE_ROOT)
     os.environ["BGCP_ALIGNMENT_OUT_ROOT"] = str(ALIGNMENT_OUT_ROOT)
     os.environ["BGCP_SAVE_ALIGNMENT_FILES"] = (
@@ -2145,7 +2247,8 @@ def main():
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
-              f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
+              f"event_weight_power={EVENT_WEIGHT_POWER}, "
+              f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
@@ -2167,7 +2270,8 @@ def main():
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
-              f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
+              f"event_weight_power={EVENT_WEIGHT_POWER}, "
+              f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
@@ -2200,7 +2304,8 @@ def main():
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
-              f"score=({W_RXN},{W_CORE},{IMAG_PEN}), "
+              f"event_weight_power={EVENT_WEIGHT_POWER}, "
+              f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
               f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "

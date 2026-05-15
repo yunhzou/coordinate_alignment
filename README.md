@@ -338,12 +338,15 @@ process_step(...)
 5. Each GT/IG candidate mapping is scored on the selected imaginary mode:
 
 ```text
-S = beta * (1 + W_RXN * rho) * (1 + W_CORE * kappa) / n_imag^IMAG_PEN
+S = beta * wbo_progress^WBO_PROGRESS_POWER
 ```
 
-where `beta` is bond-axis overlap, `rho` is reaction-coordinate overlap, and
-`kappa` is the core-mode fraction. `W_RXN`, `W_CORE`, and `IMAG_PEN` are
-exposed as hypothesis knobs with defaults preserved.
+`beta` is the normal-mode overlap with the broken/formed bond-axis vector,
+where each event is weighted by its detected R-P `abs(delta WBO)`.
+`wbo_progress` is the event-weighted TS WBO progress in the same direction:
+forming events require `WBO_TS > WBO_R`, while broken events require
+`WBO_TS < WBO_R`. Multiple imaginary modes are not penalized because IG
+Hessians are not optimized transition states.
 
 ## Repository Layout
 
@@ -412,9 +415,8 @@ current benchmark workflow; expose them when testing sensitivity.
 | none | `BGCP_SYMMETRY_REPAIR` | `1` | Enables local reshuffling inside product symmetry orbits after R-P matching to remove witness-choice artifacts. |
 | none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `1` | Computational guard for symmetry repair; the default attempts repair for every nonzero changed-bond witness and skips only already-clean mappings. |
 | none | `BGCP_SYMMETRY_REPAIR_MAX_EVALS` | `20000` | Evaluation cap for the local symmetry-repair search. |
-| `--w-rxn` | `BGCP_W_RXN` | `1.0` | Weight on reaction-coordinate overlap `rho` in the final TS/IG score. |
-| `--w-core` | `BGCP_W_CORE` | `0.2` | Weight on core-mode fraction `kappa`; lower than `W_RXN` so localized core motion helps without dominating bond-axis overlap. |
-| `--imag-pen` | `BGCP_IMAG_PEN` | `0.3` | Penalty exponent for multiple imaginary modes; soft penalty because IG Hessians may not be optimized TSs. |
+| `--event-weight-power` | `BGCP_EVENT_WEIGHT_POWER` | `1.0` | Exponent on each detected event's R-P `abs(delta WBO)` when building the weighted bond-motion vector for `beta`. |
+| `--wbo-progress-power` | `BGCP_WBO_PROGRESS_POWER` | `1.0` | Exponent on the TS WBO progress factor in the final TS/IG score. |
 | none | `N_SEEDS_PER_RUN` | `3` | Fixed seed-order count per cut-sweep run; cut diversity plus three seeds has been enough for the benchmark while keeping runtime bounded. |
 
 CLI options:
@@ -427,9 +429,8 @@ CLI options:
 --iso-tol              WBO tolerance for active graph matching
 --dwbo-threshold       WBO delta for broken/formed bond classification
 --symmetry-wbo-tol     WBO tolerance for symmetry-orbit bucketing
---w-rxn                reaction-coordinate score weight
---w-core               core-mode score weight
---imag-pen             imaginary-mode count penalty exponent
+--event-weight-power   exponent on R-P event delta-WBO weights
+--wbo-progress-power   exponent on TS WBO progress factor
 --xtb-mode             auto | cache-only
 --xtb-omp-threads      requested OMP_NUM_THREADS per xtb molecule
 --xtb-max-threads      hard cap on OMP_NUM_THREADS per xtb molecule

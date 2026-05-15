@@ -315,7 +315,8 @@ def test_viewer_uses_step_level_download_button():
             '"reactant":{"elements":["H"],"coords":[[0,0,0]]},'
             '"product":{"elements":["H"],"coords":[[0,0,0]]},'
             '"mechanisms":[],"default_mech_id":null,'
-            '"include_gt":false,"score_config":{"W_RXN":1,"W_CORE":0.2,"IMAG_PEN":0.3}}'
+            '"include_gt":false,'
+            '"score_config":{"EVENT_WEIGHT_POWER":1,"WBO_PROGRESS_POWER":1}}'
         ),
     )
 
@@ -391,11 +392,10 @@ def test_ts_alignment_file_export_writes_best_score_core_frame(tmp_path):
             "gt": {
                 "S": 1.2,
                 "beta": 0.8,
-                "rho": 0.3,
-                "kappa": 0.2,
+                "wbo_progress": 0.9,
+                "wbo_progress_factor": 0.9,
                 "freq": -500.0,
                 "k": 0,
-                "n_imag": 1,
                 "core_map": {"0": 1, "1": 0},
                 "core_sources": ["R"],
                 "core_pool_dedup_count": 1,
