@@ -40,7 +40,8 @@ Public API:
 from .alignment import (
     align_from_arrays, find_islands, match_wbo_graphs,
     MatchCandidate, MatchResult, cut_edges_above_floor,
-    cut_sweep, select_min_mechanisms, ts_core_pool,
+    cut_sweep, cut_sweep_items, merge_cut_sweep_pools,
+    run_cut_sweep_chunk, select_min_mechanisms, ts_core_pool,
 )
 from .matcher import expand_chemistry_relevant_atoms
 from .chemistry_computations import (
@@ -61,8 +62,9 @@ _PIPELINE_EXPORTS = {
     "load_step_inputs", "step_inputs_from_arrays",
     "ts_target_from_xyz", "ts_target_from_arrays", "load_ts_targets",
     "discover_mechanisms_from_xyz", "discover_mechanisms_from_arrays",
+    "rp_cut_work_items", "run_rp_cut_chunk", "merge_rp_cut_chunks",
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
-    "run_ts_stage", "write_view_stage",
+    "run_ts_stage", "merge_ts_stage_chunks", "write_view_stage",
     "load_ts_targets_from_specs", "process_xyz_stage",
     "run_full_pipeline_stage", "process_step",
 }
@@ -78,7 +80,9 @@ def __getattr__(name):
 __all__ = [
     "align_from_arrays", "find_islands", "expand_chemistry_relevant_atoms",
     "match_wbo_graphs", "MatchCandidate", "MatchResult",
-    "cut_edges_above_floor", "cut_sweep", "select_min_mechanisms",
+    "cut_edges_above_floor", "cut_sweep", "cut_sweep_items",
+    "merge_cut_sweep_pools", "run_cut_sweep_chunk",
+    "select_min_mechanisms",
     "ts_core_pool",
     "run_xtb", "parse_xyz", "write_xyz_str",
     "build_graph", "classify_bonds", "expand_mapping",
@@ -92,8 +96,9 @@ __all__ = [
     "load_step_inputs", "step_inputs_from_arrays",
     "ts_target_from_xyz", "ts_target_from_arrays", "load_ts_targets",
     "discover_mechanisms_from_xyz", "discover_mechanisms_from_arrays",
+    "rp_cut_work_items", "run_rp_cut_chunk", "merge_rp_cut_chunks",
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
-    "run_ts_stage", "write_view_stage",
+    "run_ts_stage", "merge_ts_stage_chunks", "write_view_stage",
     "load_ts_targets_from_specs", "process_xyz_stage",
     "run_full_pipeline_stage", "process_step",
 ]

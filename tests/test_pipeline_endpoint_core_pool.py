@@ -46,6 +46,66 @@ def test_product_core_pool_pulls_back_and_merges_with_reactant_pool():
     assert second["dedup_count"] == 2
 
 
+def test_rp_cut_chunks_merge_matches_direct_stage():
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 0.9
+    inputs = pipeline.step_inputs_from_arrays(
+        "h2",
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]]),
+        wbo,
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]]),
+        wbo,
+    )
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+
+    direct = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=1)
+    chunks = [
+        pipeline.run_rp_cut_chunk(inputs, [cut], config=cfg)
+        for cut in pipeline.rp_cut_work_items(inputs, config=cfg)
+    ]
+    merged = pipeline.merge_rp_cut_chunks(inputs, chunks, config=cfg)
+
+    assert len(merged["mechanisms"]) == len(direct["mechanisms"])
+    assert merged["mechanisms"][0]["mapping_RP"] == direct["mechanisms"][0]["mapping_RP"]
+
+
+def test_merge_ts_stage_chunks_recomputes_global_top_flags():
+    chunk_a = {
+        "stage": "ts",
+        "step": "toy",
+        "config": {},
+        "mechanisms": [
+            {"id": 1, "gt": None, "igs": [
+                {"label": "a", "S": 1.0},
+                {"label": "b", "S": 5.0},
+            ]},
+        ],
+        "endpoint_results": [{"target_label": "a"}],
+    }
+    chunk_b = {
+        "stage": "ts",
+        "step": "toy",
+        "config": {},
+        "mechanisms": [
+            {"id": 1, "gt": None, "igs": [
+                {"label": "c", "S": 4.0},
+            ]},
+        ],
+        "endpoint_results": [{"target_label": "c"}],
+    }
+
+    merged = pipeline.merge_ts_stage_chunks([chunk_a, chunk_b])
+
+    igs = merged["mechanisms"][0]["igs"]
+    assert [ig["label"] for ig in igs] == ["a", "b", "c"]
+    assert [ig["is_top2"] for ig in igs] == [False, True, True]
+    assert merged["union_top_labels"] == ["b", "c"]
+    assert len(merged["endpoint_results"]) == 2
+
+
 def test_best_under_mech_prefers_endpoint_consensus(monkeypatch):
     rt_pool = {
         "r_only": {

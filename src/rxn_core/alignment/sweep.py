@@ -193,14 +193,49 @@ def _cs_wrun(args):
     return out
 
 
-def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
+def cut_sweep_items(wboR, cut_floor=0.2):
+    """Return the independent no-cut plus one-edge cut work items."""
+    return [()] + [((int(i), int(j)),) for i, j in _strong_edges(
+        wboR, float(cut_floor))]
+
+
+def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
+                   dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+                   symmetry_wbo_tol=0.2,
+                   n_seeds=3, max_branches=100,
+                   chunksize=1,
+                   symmetry_repair=True,
+                   symmetry_repair_min_changes=1,
+                   symmetry_repair_max_evals=20000,
+                   n_atoms=0):
+    return {
+        'cut_floor': float(cut_floor),
+        'graph_floor': float(graph_floor),
+        'iso_tol': float(iso_tol),
+        'dwbo_threshold': float(dwbo_threshold),
+        'metal_dwbo_threshold': (
+            None if metal_dwbo_threshold is None
+            else float(metal_dwbo_threshold)
+        ),
+        'symmetry_wbo_tol': float(symmetry_wbo_tol),
+        'n_seeds': int(n_seeds),
+        'max_branches': int(max_branches),
+        'chunksize': int(chunksize),
+        'symmetry_repair': bool(symmetry_repair),
+        'symmetry_repair_min_changes': int(symmetry_repair_min_changes),
+        'symmetry_repair_max_evals': int(symmetry_repair_max_evals),
+        'abort_on_branch_cap': True,
+        'n_atoms': int(n_atoms),
+    }
+
+
+def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts):
     graph_floor = float(cfg['graph_floor'])
     g_P = build_graph(elT, wboT, bond_cut=graph_floor)
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
     symmetry_wbo_tol = float(cfg['symmetry_wbo_tol'])
     p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
     r_orbits = _nauty_orbits(g_R_full, wbo_tol=symmetry_wbo_tol)
-    strong = _strong_edges(wboR, float(cfg['cut_floor']))
     pool = {}
 
     def run(cuts):
@@ -235,10 +270,15 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
         for sig, mapping in cut_hits:
             _pool_add(pool, sig, mapping, cuts)
 
-    run(())
-    for edge in strong:
-        run((edge,))
+    for cut in cuts:
+        run(tuple(tuple(pair) for pair in cut))
     return pool
+
+
+def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
+    return _cut_sweep_chunk_serial(
+        elR, wboR, elT, wboT, cfg, core_R,
+        cut_sweep_items(wboR, cfg['cut_floor']))
 
 
 def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
@@ -246,8 +286,7 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
     g_R = build_graph(elR, wboR, bond_cut=graph_floor)
     orders = [tuple(order) for order in _generate_seed_orders(
         g_R, n_trials=int(cfg['n_seeds']))]
-    cuts = [()] + [((i, j),) for i, j in _strong_edges(
-        wboR, float(cfg['cut_floor']))]
+    cuts = cut_sweep_items(wboR, cfg['cut_floor'])
     work = [(cut, orders, core_R) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
@@ -257,6 +296,98 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
             for sig, mapping_items, cut in results:
                 _pool_add(pool, sig, dict(mapping_items), cut)
     return pool
+
+
+def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
+                              cuts):
+    graph_floor = float(cfg['graph_floor'])
+    g_R = build_graph(elR, wboR, bond_cut=graph_floor)
+    orders = [tuple(order) for order in _generate_seed_orders(
+        g_R, n_trials=int(cfg['n_seeds']))]
+    work = [(cut, orders, core_R) for cut in cuts]
+    pool = {}
+    with mp.Pool(n_workers, initializer=_cs_winit,
+                 initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
+        for results in proc_pool.imap_unordered(
+                _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
+            for sig, mapping_items, cut in results:
+                _pool_add(pool, sig, dict(mapping_items), cut)
+    return pool
+
+
+def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
+                        core_R=None,
+                        n_workers=None,
+                        cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
+                        dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+                        symmetry_wbo_tol=0.2,
+                        n_seeds=3, max_branches=100,
+                        chunksize=1,
+                        symmetry_repair=True,
+                        symmetry_repair_min_changes=1,
+                        symmetry_repair_max_evals=20000):
+    """Run a chunk of independent cut-sweep work items.
+
+    This is the Slurm-array friendly primitive.  The caller chooses which cut
+    work items belong to the chunk; the merge step combines the returned pools.
+    """
+    cfg = _cut_sweep_cfg(
+        cut_floor=cut_floor,
+        graph_floor=graph_floor,
+        iso_tol=iso_tol,
+        dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold,
+        symmetry_wbo_tol=symmetry_wbo_tol,
+        n_seeds=n_seeds,
+        max_branches=max_branches,
+        chunksize=chunksize,
+        symmetry_repair=symmetry_repair,
+        symmetry_repair_min_changes=symmetry_repair_min_changes,
+        symmetry_repair_max_evals=symmetry_repair_max_evals,
+        n_atoms=len(elR),
+    )
+    core_R = tuple(sorted(set(core_R or ())))
+    normalized_cuts = [
+        tuple(tuple(int(v) for v in pair) for pair in cut)
+        for cut in cuts
+    ]
+    if n_workers and int(n_workers) > 1 and len(normalized_cuts) > 1:
+        return _cut_sweep_chunk_parallel(
+            elR, wboR, elT, wboT, cfg,
+            min(int(n_workers), len(normalized_cuts)),
+            core_R, normalized_cuts)
+    return _cut_sweep_chunk_serial(
+        elR, wboR, elT, wboT, cfg, core_R, normalized_cuts)
+
+
+def merge_cut_sweep_pools(pools):
+    """Merge partial cut-sweep pools produced by chunk tasks."""
+    merged = {}
+    for pool in pools:
+        for sig, info in dict(pool or {}).items():
+            cuts = frozenset(info.get('cuts', ()))
+            no_cut = bool(info.get('has_no_cut', False))
+            entry = merged.get(sig)
+            if entry is None:
+                merged[sig] = {
+                    'mapping': dict(info['mapping']),
+                    'cuts': cuts,
+                    'has_no_cut': no_cut,
+                    'dedup_count': int(info.get('dedup_count', 1)),
+                }
+                continue
+            if no_cut and not entry.get('has_no_cut', False):
+                entry['mapping'] = dict(info['mapping'])
+            entry['cuts'] = frozenset(entry.get('cuts', ())) | cuts
+            entry['has_no_cut'] = bool(
+                entry.get('has_no_cut', False)
+                or no_cut
+            )
+            entry['dedup_count'] = (
+                int(entry.get('dedup_count', 1))
+                + int(info.get('dedup_count', 1))
+            )
+    return merged
 
 
 def cut_sweep(elR, wboR, elT, wboT, *,
@@ -282,25 +413,21 @@ def cut_sweep(elR, wboR, elT, wboT, *,
     mechanism-local TS/IG scoring, but R-P mechanism discovery is the primary
     use.
     """
-    cfg = {
-        'cut_floor': float(cut_floor),
-        'graph_floor': float(graph_floor),
-        'iso_tol': float(iso_tol),
-        'dwbo_threshold': float(dwbo_threshold),
-        'metal_dwbo_threshold': (
-            None if metal_dwbo_threshold is None
-            else float(metal_dwbo_threshold)
-        ),
-        'symmetry_wbo_tol': float(symmetry_wbo_tol),
-        'n_seeds': int(n_seeds),
-        'max_branches': int(max_branches),
-        'chunksize': int(chunksize),
-        'symmetry_repair': bool(symmetry_repair),
-        'symmetry_repair_min_changes': int(symmetry_repair_min_changes),
-        'symmetry_repair_max_evals': int(symmetry_repair_max_evals),
-        'abort_on_branch_cap': True,
-        'n_atoms': len(elR),
-    }
+    cfg = _cut_sweep_cfg(
+        cut_floor=cut_floor,
+        graph_floor=graph_floor,
+        iso_tol=iso_tol,
+        dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold,
+        symmetry_wbo_tol=symmetry_wbo_tol,
+        n_seeds=n_seeds,
+        max_branches=max_branches,
+        chunksize=chunksize,
+        symmetry_repair=symmetry_repair,
+        symmetry_repair_min_changes=symmetry_repair_min_changes,
+        symmetry_repair_max_evals=symmetry_repair_max_evals,
+        n_atoms=len(elR),
+    )
     core_R = tuple(sorted(set(core_R or ())))
     if not n_workers or n_workers <= 1:
         return _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R)

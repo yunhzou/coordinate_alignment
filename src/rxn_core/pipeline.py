@@ -27,7 +27,9 @@ import numpy as np
 from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       core_atoms_in_R_frame,
                       reindex_modes_to_R, bond_overlap_per_mode,
-                      build_graph, cut_sweep, select_min_mechanisms,
+                      build_graph, cut_sweep, cut_sweep_items,
+                      merge_cut_sweep_pools, run_cut_sweep_chunk,
+                      select_min_mechanisms,
                       ts_core_pool)
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
@@ -1236,39 +1238,57 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
     }
 
 
-def run_rp_stage(inputs, config=None, inner_workers=0):
-    """Stage 1: discover mechanism-dependent R-P alignments.
+def _rp_cfg(config=None):
+    return dict(rp_stage_config() if config is None else config)
 
-    This is the reusable alignment/mechanism-discovery entry point.  It runs
-    the no-cut plus one-edge cut sweep on R->P, selects minimum bond-change
-    mechanisms, classifies broken/forming bonds, and stores the R-P witness
-    needed for later TS verification.
-    """
-    cfg = dict(rp_stage_config() if config is None else config)
-    t0 = time.time()
-    pool = cut_sweep(
-        inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
-        n_workers=inner_workers,
-        cut_floor=cfg.get('cut_floor', CUT_FLOOR),
-        graph_floor=cfg.get('graph_floor', 0.2),
-        iso_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
-        dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
-        metal_dwbo_threshold=cfg.get(
+
+def _rp_cut_kwargs(cfg):
+    return {
+        'cut_floor': cfg.get('cut_floor', CUT_FLOOR),
+        'graph_floor': cfg.get('graph_floor', 0.2),
+        'iso_tol': cfg.get('iso_tol', VIEW_ISO_TOL),
+        'dwbo_threshold': cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        'metal_dwbo_threshold': cfg.get(
             'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
-        symmetry_wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL),
-        n_seeds=cfg.get('n_seeds', N_SEEDS_PER_RUN),
-        max_branches=cfg.get('max_branches', VIEW_MAX_BRANCHES),
-        chunksize=cfg.get('chunksize', CUTSWEEP_CHUNKSIZE),
-        symmetry_repair=cfg.get('symmetry_repair', SYMMETRY_REPAIR),
-        symmetry_repair_min_changes=cfg.get(
+        'symmetry_wbo_tol': cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+        'n_seeds': cfg.get('n_seeds', N_SEEDS_PER_RUN),
+        'max_branches': cfg.get('max_branches', VIEW_MAX_BRANCHES),
+        'chunksize': cfg.get('chunksize', CUTSWEEP_CHUNKSIZE),
+        'symmetry_repair': cfg.get('symmetry_repair', SYMMETRY_REPAIR),
+        'symmetry_repair_min_changes': cfg.get(
             'symmetry_repair_min_changes', SYMMETRY_REPAIR_MIN_CHANGES),
-        symmetry_repair_max_evals=cfg.get(
+        'symmetry_repair_max_evals': cfg.get(
             'symmetry_repair_max_evals', SYMMETRY_REPAIR_MAX_EVALS),
-    )
-    if BGCP_TIMING:
-        print(f"    {inputs.step_name} {'R-P':>12s} cut_sweep: "
-              f"{len(pool):>4d} sigs in {time.time()-t0:.1f}s",
-              flush=True)
+    }
+
+
+def rp_cut_work_items(inputs, config=None):
+    """Return independent R-P no-cut/one-edge cut work items."""
+    cfg = _rp_cfg(config)
+    return cut_sweep_items(inputs.wboR, cfg.get('cut_floor', CUT_FLOOR))
+
+
+def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0):
+    """Run one R-P cut chunk and return a partial mechanism pool."""
+    cfg = _rp_cfg(config)
+    t0 = time.time()
+    pool = run_cut_sweep_chunk(
+        inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
+        cuts, n_workers=max(1, int(inner_workers or 1)),
+        **_rp_cut_kwargs(cfg))
+    return {
+        'stage': 'rp_cut_chunk',
+        'step': inputs.step_name,
+        'config': cfg,
+        'cuts': cuts,
+        'pool': pool,
+        'timing': {'rp_cut_chunk_seconds': time.time() - t0},
+    }
+
+
+def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
+    """Finalize Stage 1 from a full or merged cut-sweep pool."""
+    cfg = _rp_cfg(config)
     rp_min = select_min_mechanisms(pool)
     if not rp_min:
         raise RuntimeError("no min-bond mechanism")
@@ -1327,8 +1347,41 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
         'n_atoms': len(inputs.elR),
         'config': cfg,
         'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
-        'timing': {'rp_seconds': time.time() - t0},
+        'timing': {'rp_seconds': elapsed},
     }
+
+
+def merge_rp_cut_chunks(inputs, chunks, config=None):
+    """Merge partial R-P cut chunks and finalize the Stage 1 result."""
+    t0 = time.time()
+    pool = merge_cut_sweep_pools([chunk.get('pool', {}) for chunk in chunks])
+    elapsed = sum(
+        float((chunk.get('timing') or {}).get('rp_cut_chunk_seconds', 0.0))
+        for chunk in chunks
+    ) or (time.time() - t0)
+    return run_rp_stage_from_pool(
+        inputs, pool, config=config, elapsed=elapsed)
+
+
+def run_rp_stage(inputs, config=None, inner_workers=0):
+    """Stage 1: discover mechanism-dependent R-P alignments.
+
+    This is the reusable alignment/mechanism-discovery entry point.  It runs
+    the no-cut plus one-edge cut sweep on R->P, selects minimum bond-change
+    mechanisms, classifies broken/forming bonds, and stores the R-P witness
+    needed for later TS verification.
+    """
+    cfg = _rp_cfg(config)
+    t0 = time.time()
+    pool = cut_sweep(
+        inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
+        n_workers=inner_workers, **_rp_cut_kwargs(cfg))
+    if BGCP_TIMING:
+        print(f"    {inputs.step_name} {'R-P':>12s} cut_sweep: "
+              f"{len(pool):>4d} sigs in {time.time()-t0:.1f}s",
+              flush=True)
+    return run_rp_stage_from_pool(
+        inputs, pool, config=cfg, elapsed=time.time() - t0)
 
 
 def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
@@ -1505,6 +1558,58 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
             for res in endpoint_results
         ],
         'union_top_labels': sorted(union_top),
+    }
+
+
+def _recompute_ts_top_flags(mechanisms):
+    union_top = set()
+    for mech in mechanisms:
+        ranked = sorted(
+            [(i, ig) for i, ig in enumerate(mech.get('igs', []))
+             if ig.get('S') is not None],
+            key=lambda x: -x[1]['S'])
+        top2 = {i for i, _ in ranked[:2]}
+        for i, ig in enumerate(mech.get('igs', [])):
+            ig['is_top2'] = i in top2
+            if i in top2:
+                union_top.add(ig['label'])
+    for mech in mechanisms:
+        for ig in mech.get('igs', []):
+            ig['is_union_top'] = ig.get('label') in union_top
+    return sorted(union_top)
+
+
+def merge_ts_stage_chunks(chunks):
+    """Merge independent target/candidate TS chunks into one Stage 2 result."""
+    chunks = [chunk for chunk in chunks if chunk]
+    if not chunks:
+        raise RuntimeError("no TS chunks to merge")
+    merged_by_id = {}
+    endpoint_results = []
+    for chunk in chunks:
+        endpoint_results.extend(chunk.get('endpoint_results', []))
+        for mech in chunk.get('mechanisms', []):
+            mech_id = int(mech['id'])
+            current = merged_by_id.get(mech_id)
+            if current is None:
+                current = dict(mech)
+                current['igs'] = []
+                current['gt'] = None
+                merged_by_id[mech_id] = current
+            if mech.get('gt') and current.get('gt') is None:
+                current['gt'] = mech.get('gt')
+            current['igs'].extend(dict(ig) for ig in mech.get('igs', []))
+    mechanisms = [
+        merged_by_id[key] for key in sorted(merged_by_id)
+    ]
+    union_top = _recompute_ts_top_flags(mechanisms)
+    return {
+        'stage': 'ts',
+        'step': chunks[0].get('step'),
+        'config': chunks[0].get('config', ts_stage_config()),
+        'mechanisms': mechanisms,
+        'endpoint_results': endpoint_results,
+        'union_top_labels': union_top,
     }
 
 
