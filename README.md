@@ -270,7 +270,9 @@ By default `rxn-core-pipeline` runs in `BGCP_XTB_MODE=auto`: if an expected
 `xtb` on `PATH` and fills the missing cache with `xtb --sp` or `xtb --hess`.
 Use `BGCP_XTB_MODE=cache-only` or `--xtb-mode cache-only` to fail fast instead.
 Each xtb subprocess uses `OMP_NUM_THREADS` capped by `BGCP_XTB_MAX_THREADS=8`
-by default. The cache-fill input uses molecular `charge` and spin
+by default. Target cache filling uses a separate `BGCP_XTB_WORKERS` pool, so
+multi-threaded xtb jobs do not share the alignment worker count directly. The
+cache-fill input uses molecular `charge` and spin
 `multiplicity`; the xtb adapter converts multiplicity to
 `--uhf=multiplicity-1` internally.
 
@@ -387,6 +389,7 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | `--xtb-mode` | `BGCP_XTB_MODE` | `auto` | `auto` fills missing xtb caches; `cache-only` never runs xtb |
 | `--xtb-omp-threads` | `BGCP_XTB_OMP_THREADS` | `auto` | requested OMP threads for each xtb molecule |
 | `--xtb-max-threads` | `BGCP_XTB_MAX_THREADS` | `8` | hard cap on OMP threads for each xtb molecule |
+| `--xtb-workers` | `BGCP_XTB_WORKERS` | `auto` | concurrent xtb target-cache jobs; `auto` uses available CPUs divided by xtb threads, capped by inner workers |
 | `--charge` | `BGCP_CHARGE` | `0` | molecular charge used only when auto-filling missing xtb caches |
 | `--multiplicity` | `BGCP_MULTIPLICITY` | `1` | spin multiplicity for auto xtb cache-fill; converted to `--uhf=multiplicity-1` |
 | `--workers` | none | `os.cpu_count()-1` | total CPU budget in auto mode, or outer workers in outer mode |
@@ -412,6 +415,7 @@ current benchmark workflow; expose them when testing sensitivity.
 | none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Per-cut branch cap for R-P sweep; cuts that exceed it are discarded as pathological branch multipliers. |
 | none | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | Minimum target WBO for preserving a core edge during TS/IG core matching; mirrors the active graph floor. |
 | none | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | Cap on mechanism-local TS/IG core mappings to prevent runaway core enumeration. |
+| none | `BGCP_PREFER_ENDPOINT_CONSENSUS` / `prefer_endpoint_consensus` | `1` | When an exact R-core to TS mapping is recovered from both R-side and P-side endpoint matching, prefer the best such consensus mapping over a one-endpoint symmetry alternative. |
 | none | `BGCP_SYMMETRY_REPAIR` | `1` | Enables local reshuffling inside product symmetry orbits after R-P matching to remove witness-choice artifacts. |
 | none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `1` | Computational guard for symmetry repair; the default attempts repair for every nonzero changed-bond witness and skips only already-clean mappings. |
 | none | `BGCP_SYMMETRY_REPAIR_MAX_EVALS` | `20000` | Evaluation cap for the local symmetry-repair search. |
@@ -445,7 +449,9 @@ In `auto` or `inner` mode, the per-step inner worker pool is used for both
 expensive phases: R-P cut sweep and independent TS/IG endpoint core matching.
 If missing caches trigger xtb, each individual xtb subprocess gets
 `OMP_NUM_THREADS=min(requested, BGCP_XTB_MAX_THREADS)`, with the default cap at
-8 per molecule.
+8 per molecule. Target cache filling uses `BGCP_XTB_WORKERS` instead of the
+alignment worker pool directly, which lets runs use fewer concurrent xtb
+processes with more OMP threads per process.
 
 ## Public API
 

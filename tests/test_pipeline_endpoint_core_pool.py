@@ -46,6 +46,50 @@ def test_product_core_pool_pulls_back_and_merges_with_reactant_pool():
     assert second["dedup_count"] == 2
 
 
+def test_best_under_mech_prefers_endpoint_consensus(monkeypatch):
+    rt_pool = {
+        "r_only": {
+            "mapping": {0: 0, 1: 1},
+            "sources": {"R"},
+            "dedup_count": 1,
+        },
+        "both": {
+            "mapping": {0: 1, 1: 0},
+            "sources": {"R", "P"},
+            "dedup_count": 2,
+        },
+    }
+
+    def fake_score_one(*args, **kwargs):
+        mapping = args[4]
+        if mapping == {0: 0, 1: 1}:
+            return {"S": 10.0, "core_map": {"0": 0, "1": 1}}
+        return {"S": 5.0, "core_map": {"0": 1, "1": 0}}
+
+    monkeypatch.setattr(pipeline, "score_one", fake_score_one)
+
+    best = pipeline.best_under_mech_using_pool(
+        ["H", "H"],
+        np.zeros((2, 3)),
+        np.zeros((2, 2)),
+        np.zeros((2, 2)),
+        ["H", "H"],
+        np.zeros((2, 3)),
+        np.zeros((2, 2)),
+        np.zeros(1),
+        np.zeros((1, 2, 3)),
+        rt_pool,
+        {0: 0, 1: 1},
+        [],
+        [],
+        [0, 1],
+    )
+
+    assert best["core_map"] == {"0": 1, "1": 0}
+    assert best["core_sources"] == ["P", "R"]
+    assert best["endpoint_consensus"] is True
+
+
 def test_sp_cache_cache_only_rejects_missing_wbo(tmp_path):
     cache = tmp_path / "R"
     cache.mkdir()
@@ -112,6 +156,23 @@ def test_hess_cache_auto_uses_charge_and_multiplicity(tmp_path, monkeypatch):
         hess, "iter1", xtb_mode="auto", charge=2, multiplicity=2)
 
     assert calls == [(2, 1)]
+
+
+def test_xtb_worker_auto_respects_thread_budget(monkeypatch):
+    monkeypatch.setenv("TSDISCO_SLURM_CPUS", "48")
+    monkeypatch.setattr(pipeline, "XTB_OMP_THREADS", "4")
+    monkeypatch.setattr(pipeline, "XTB_MAX_THREADS", 4)
+    monkeypatch.setattr(pipeline, "XTB_WORKERS", "auto")
+
+    assert pipeline._resolve_xtb_workers(inner_workers=24) == 12
+
+
+def test_xtb_worker_explicit_override(monkeypatch):
+    monkeypatch.setenv("TSDISCO_SLURM_CPUS", "48")
+    monkeypatch.setattr(pipeline, "XTB_OMP_THREADS", "4")
+    monkeypatch.setattr(pipeline, "XTB_MAX_THREADS", 4)
+
+    assert pipeline._resolve_xtb_workers(inner_workers=24, workers="8") == 8
 
 
 def test_alignment_inputs_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):

@@ -110,6 +110,9 @@ symmetry state. A block with two R atoms and four P atoms represents
   doing any spatial/Kabsch fitting. `write_ts_alignment_files` exports the
   Stage 2 selected best-S GT/IG/TS core mapping as native target XYZ plus an
   R-frame core-aligned materialization and picked-mode extended XYZ. The
+  TS selector prefers exact core mappings seen from both R and P endpoints
+  when such endpoint-consensus candidates exist, then falls back to score-only
+  selection for one-endpoint pools.
   compatibility `process_step` composes all three.
   The CLI exposes the same split through `--stage rp|ts|view|full`, and
   `--mechanism` restricts Stage 2 verification to selected mechanism IDs.
@@ -120,8 +123,9 @@ symmetry state. A block with two R atoms and four P atoms represents
   pipeline prefers existing xtb caches but, in `BGCP_XTB_MODE=auto`, can fill
   missing `wbo` and `g98.out` files from available XYZ inputs before
   alignment. Each individual xtb subprocess is capped by
-  `BGCP_XTB_MAX_THREADS=8` through `OMP_NUM_THREADS`; this is separate from
-  the pipeline worker budget. Each cache endpoint is loaded as one complete
+  `BGCP_XTB_MAX_THREADS=8` through `OMP_NUM_THREADS`; target cache filling has
+  its own `BGCP_XTB_WORKERS` pool so multi-threaded xtb jobs can be balanced
+  separately from R-P/TS alignment workers. Each cache endpoint is loaded as one complete
   molecule/complex graph; the pipeline does not assemble separate
   reactant/product fragments or merge independent WBO matrices.
 

@@ -75,10 +75,15 @@ SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANG
 SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS", "20000"))
 TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
 TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
+PREFER_ENDPOINT_CONSENSUS = (
+    os.environ.get("BGCP_PREFER_ENDPOINT_CONSENSUS", "1").lower()
+    in {"1", "true", "yes", "on"}
+)
 AUTO_INNER_WORKERS = int(os.environ.get("BGCP_AUTO_INNER_WORKERS", "8"))
 XTB_CACHE_MODE = os.environ.get("BGCP_XTB_MODE", "auto").lower()
 XTB_OMP_THREADS = os.environ.get("BGCP_XTB_OMP_THREADS", "auto")
 XTB_MAX_THREADS = int(os.environ.get("BGCP_XTB_MAX_THREADS", "8"))
+XTB_WORKERS = os.environ.get("BGCP_XTB_WORKERS", "auto")
 XTB_CHARGE = int(os.environ.get("BGCP_CHARGE", "0"))
 XTB_MULTIPLICITY = int(os.environ.get("BGCP_MULTIPLICITY", "1"))
 EVENT_WEIGHT_POWER = float(os.environ.get("BGCP_EVENT_WEIGHT_POWER", "1.0"))
@@ -176,6 +181,7 @@ def ts_stage_config():
         'iso_tol': VIEW_ISO_TOL,
         'edge_floor': TS_CORE_EDGE_FLOOR,
         'max_candidates': TS_CORE_MAX_CANDIDATES,
+        'prefer_endpoint_consensus': PREFER_ENDPOINT_CONSENSUS,
         'score': score_config(),
     }
 
@@ -195,6 +201,29 @@ def _resolve_xtb_threads(threads=None, max_threads=XTB_MAX_THREADS):
     else:
         requested = int(raw)
     return max(1, min(max(1, requested), max(1, int(max_threads))))
+
+
+def _available_cpus(default=1):
+    for name in ("TSDISCO_SLURM_CPUS", "SLURM_CPUS_PER_TASK",
+                 "SLURM_CPUS_ON_NODE"):
+        value = os.environ.get(name)
+        if value:
+            try:
+                return max(1, int(value))
+            except ValueError:
+                pass
+    return max(1, int(default or os.cpu_count() or 1))
+
+
+def _resolve_xtb_workers(inner_workers=0, workers=None):
+    raw = XTB_WORKERS if workers is None else workers
+    if isinstance(raw, str) and raw.lower() == "auto":
+        threads = _resolve_xtb_threads()
+        cpus = _available_cpus(default=inner_workers or os.cpu_count() or 1)
+        cap_by_threads = max(1, cpus // max(1, threads))
+        requested = int(inner_workers or cap_by_threads)
+        return max(1, min(requested, cap_by_threads))
+    return max(1, int(raw))
 
 
 def _normal_multiplicity(multiplicity):
@@ -840,21 +869,33 @@ def score_one(elR, xyzR, elT, xyzT, mapping_RT, freqs, modes_TS,
             'picked_disp_R': modes_R[pk].tolist()}
 
 
+def _has_endpoint_consensus(score):
+    return set(score.get('core_sources') or ()) >= {'R', 'P'}
+
+
+def _better_score(candidate, incumbent):
+    return incumbent is None or candidate['S'] > incumbent['S']
+
+
 def best_under_mech_using_pool(elR, xyzR, wboR, wboP,
                                  elT, xyzT, wboT, freqs, modes_TS,
                                  rt_pool, mapping_RP,
                                  broken_R, formed_R, core_R,
-                                 score_weights=None):
+                                 score_weights=None,
+                                 prefer_endpoint_consensus=True):
     """Score every R-frame core witness under one mech.
 
     `rt_pool` may contain native R->TS candidates and P->TS candidates that
     were pulled back through the R-P mechanism witness.  Two witnesses that
     agree on `core_R -> TS` are score-equivalent for this mechanism, so score
-    one representative per exact core map and keep the highest S.
+    one representative per exact core map.  When configured, prefer the best
+    map confirmed by both R and P endpoint matching; otherwise keep the
+    highest S.
     """
     core_R_set = frozenset(core_R)
     seen_core = set()
     best = None
+    best_consensus = None
     for v in rt_pool.values():
         witness = v['mapping']
         # Per-mechanism core-restricted key
@@ -871,9 +912,13 @@ def best_under_mech_using_pool(elR, xyzR, wboR, wboP,
         if s:
             s['core_sources'] = sorted(v.get('sources', {'R'}))
             s['core_pool_dedup_count'] = int(v.get('dedup_count', 1))
-        if s and (best is None or s['S'] > best['S']):
+            s['endpoint_consensus'] = _has_endpoint_consensus(s)
+        if s and _better_score(s, best):
             best = s
-    return best
+        if (s and prefer_endpoint_consensus and s['endpoint_consensus']
+                and _better_score(s, best_consensus)):
+            best_consensus = s
+    return best_consensus or best
 
 
 def _json_ready(value):
@@ -1124,6 +1169,7 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
                 'event_terms': score.get('event_terms', []),
                 'core_map_R_to_target': score.get('core_map', {}),
                 'core_sources': score.get('core_sources', []),
+                'endpoint_consensus': score.get('endpoint_consensus'),
                 'core_pool_dedup_count': score.get('core_pool_dedup_count'),
                 'broken_bonds_R': mech.get('broken_bonds_R', []),
                 'formed_bonds_R': mech.get('formed_bonds_R', []),
@@ -1426,7 +1472,9 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
             inputs.elR, inputs.xyzR, inputs.wboR, inputs.wboP,
             target.el, target.xyz, target.wbo, target.freqs, target.modes,
             merged, mapping_RP, br_R, fm_R, core_R,
-            score_weights=cfg.get('score', score_config()))
+            score_weights=cfg.get('score', score_config()),
+            prefer_endpoint_consensus=cfg.get(
+                'prefer_endpoint_consensus', True))
         if ctx['kind'] == 'gt':
             mech['gt'] = s
         elif s:
@@ -1517,13 +1565,13 @@ def build_eval_slim(view_data):
             'core_R': mech['core_atoms'],
             'gt': ({k: mech['gt'].get(k) for k in [
                 'S', 'beta', 'wbo_progress', 'wbo_progress_factor',
-                'freq', 'core_map', 'core_sources',
+                'freq', 'core_map', 'core_sources', 'endpoint_consensus',
             ]} if mech.get('gt') else None),
             'igs': [
                 {k: ig.get(k) for k in [
                     'label', 'S', 'beta', 'wbo_progress',
                     'wbo_progress_factor', 'freq', 'core_map',
-                    'core_sources', 'is_top2',
+                    'core_sources', 'endpoint_consensus', 'is_top2',
                 ]}
                 for ig in mech.get('igs', [])
             ],
@@ -1620,7 +1668,7 @@ function downloadR() {{ downloadXYZ(safeName(DATA.step)+"_R.xyz", DATA.reactant.
 function downloadP() {{ const mech = findMech(currentMechId); if (mech && mech.product_xyz_in_R) downloadXYZ(safeName(DATA.step)+"_P_aligned_mech"+mech.id+".xyz", DATA.reactant.elements, mech.product_xyz_in_R, DATA.step+" P aligned to R mech "+mech.id); else downloadXYZ(safeName(DATA.step)+"_P.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P"); }}
 function downloadGT() {{ const mech = findMech(currentMechId); if (mech.gt) downloadXYZ(safeName(DATA.step)+"_GT_mech"+mech.id+".xyz", mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, DATA.step+" GT mech "+mech.id); }}
 function downloadIG(ig) {{ downloadXYZ(safeName(DATA.step)+"_"+safeName(ig.label)+".xyz", ig.elements || elements, ig.xyz || ig.xyz_in_R, DATA.step+" "+ig.label); }}
-function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, decomposition:{{beta:item.beta, wbo_progress:item.wbo_progress, wbo_progress_factor:item.wbo_progress_factor, freq:item.freq, mode_index:item.k}}, event_terms:item.event_terms || [], core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count}}; }}
+function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, decomposition:{{beta:item.beta, wbo_progress:item.wbo_progress, wbo_progress_factor:item.wbo_progress_factor, freq:item.freq, mode_index:item.k}}, event_terms:item.event_terms || [], core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count, endpoint_consensus:item.endpoint_consensus}}; }}
 function mechanismRecord(mech) {{ return {{id:mech.id, label:mech.label, cut:mech.cut, dedup_count:mech.dedup_count || 1, dedup_source_ids:mech.dedup_source_ids || [mech.id], dedup_cuts:mech.dedup_cuts || [mech.cut], broken_bonds_R:mech.broken_bonds_R, formed_bonds_R:mech.formed_bonds_R, formed_bonds_P:mech.formed_bonds_P || [], core_atoms_R:mech.core_atoms || [], gt:scoreRecord(mech.gt), igs:(mech.igs || []).map(ig => ({{label:ig.label, is_top2:!!ig.is_top2, is_union_top:!!ig.is_union_top, score:scoreRecord(ig)}}))}}; }}
 function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms, include_gt:!!DATA.include_gt, default_mech_id:DATA.default_mech_id, score_formula:"S = beta * wbo_progress^WBO_PROGRESS_POWER", score_config:DATA.score_config || null, mechanisms:(DATA.mechanisms || []).map(mechanismRecord), files:{{reactant:"R.xyz", product:"P.xyz", gt:"GT/GT.xyz if available", ig:"IG/<label>.xyz", per_mechanism:"mechanisms/mechanism_<id>.json", full_viewer_data:"viewer_data.json"}}}}; }}
 function scoreMeta(item) {{ if (!item || item.beta === undefined) return "(no data)"; return "<b>&beta;</b>="+item.beta.toFixed(3)+" <b>wbo</b>="+item.wbo_progress.toFixed(3)+" <b>freq</b>="+item.freq.toFixed(0)+"i"; }}
@@ -1820,7 +1868,7 @@ def load_ts_targets_from_specs(target_specs, workdir, *, charge=None,
         (i, spec, Path(workdir), charge, multiplicity, xtb_mode)
         for i, spec in enumerate(specs)
     ]
-    workers = max(1, int(inner_workers or 1))
+    workers = _resolve_xtb_workers(inner_workers)
     if workers <= 1 or len(tasks) == 1:
         return [
             target
@@ -1966,6 +2014,7 @@ def process_step(step_name, inner_workers=0):
 
 def main():
     global INCLUDE_GT, XTB_CACHE_MODE, XTB_OMP_THREADS, XTB_MAX_THREADS
+    global XTB_WORKERS
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, METAL_DWBO_THRESHOLD, SYMMETRY_WBO_TOL
     global EVENT_WEIGHT_POWER, WBO_PROGRESS_POWER
@@ -2063,6 +2112,10 @@ def main():
                     default=XTB_MAX_THREADS,
                     help="Hard cap for OMP_NUM_THREADS per xtb molecule. "
                          "Default from BGCP_XTB_MAX_THREADS=8.")
+    ap.add_argument("--xtb-workers", default=XTB_WORKERS,
+                    help="Concurrent xtb target-cache jobs. Default 'auto' "
+                         "uses available CPUs divided by xtb OMP threads, "
+                         "capped by inner workers.")
     ap.add_argument("--charge", type=int, default=XTB_CHARGE,
                     help="Total molecular charge used only when auto-filling "
                          "missing xtb caches. Default from BGCP_CHARGE=0.")
@@ -2109,6 +2162,7 @@ def main():
     STAGE_ROOT = Path(args.stage_root)
     ALIGNMENT_OUT_ROOT = Path(args.alignment_out_root)
     XTB_MAX_THREADS = max(1, int(args.xtb_max_threads))
+    XTB_WORKERS = args.xtb_workers
     XTB_CHARGE = int(args.charge)
     XTB_MULTIPLICITY = _normal_multiplicity(args.multiplicity)
     XTB_OMP_THREADS = _resolve_xtb_threads(
@@ -2117,6 +2171,7 @@ def main():
     os.environ["BGCP_INCLUDE_GT"] = "1" if INCLUDE_GT else "0"
     os.environ["BGCP_XTB_OMP_THREADS"] = str(XTB_OMP_THREADS)
     os.environ["BGCP_XTB_MAX_THREADS"] = str(XTB_MAX_THREADS)
+    os.environ["BGCP_XTB_WORKERS"] = str(XTB_WORKERS)
     os.environ["BGCP_CHARGE"] = str(XTB_CHARGE)
     os.environ["BGCP_MULTIPLICITY"] = str(XTB_MULTIPLICITY)
     os.environ["BGCP_ISO_TOL"] = str(VIEW_ISO_TOL)
@@ -2250,7 +2305,9 @@ def main():
               f"event_weight_power={EVENT_WEIGHT_POWER}, "
               f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
+              f"xtb_threads={XTB_OMP_THREADS}, "
+              f"xtb_workers={_resolve_xtb_workers(inner_workers)}, "
+              f"charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
               f"save_alignment_files={args.save_alignment_files}, "
               f"resume_rp={args.resume_rp})")
@@ -2273,7 +2330,9 @@ def main():
               f"event_weight_power={EVENT_WEIGHT_POWER}, "
               f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
+              f"xtb_threads={XTB_OMP_THREADS}, "
+              f"xtb_workers={_resolve_xtb_workers(0)}, "
+              f"charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
               f"save_alignment_files={args.save_alignment_files}, "
               f"resume_rp={args.resume_rp})")
@@ -2307,7 +2366,9 @@ def main():
               f"event_weight_power={EVENT_WEIGHT_POWER}, "
               f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
-              f"xtb_threads={XTB_OMP_THREADS}, charge={XTB_CHARGE}, "
+              f"xtb_threads={XTB_OMP_THREADS}, "
+              f"xtb_workers={_resolve_xtb_workers(inner_workers)}, "
+              f"charge={XTB_CHARGE}, "
               f"multiplicity={XTB_MULTIPLICITY}, include_gt={INCLUDE_GT}, "
               f"save_alignment_files={args.save_alignment_files}, "
               f"resume_rp={args.resume_rp})")
