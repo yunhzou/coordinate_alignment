@@ -1684,27 +1684,55 @@ def _target_specs_from_cli(target_xyzs, target_labels=None, target_kinds=None):
     return specs
 
 
+def _load_ts_target_from_spec_task(task):
+    i, spec, workdir, charge, multiplicity, xtb_mode = task
+    label = spec.get('label') or Path(spec['xyz']).stem
+    kind = str(spec.get('kind', 'ig')).lower()
+    target = ts_target_from_xyz(
+        kind, label, spec['xyz'],
+        workdir=Path(workdir),
+        target_index=-(i + 1) if kind == 'gt' else i,
+        charge=spec.get('charge', charge),
+        multiplicity=spec.get('multiplicity', multiplicity),
+        xtb_mode=spec.get('xtb_mode', xtb_mode),
+    )
+    return i, target
+
+
 def load_ts_targets_from_specs(target_specs, workdir, *, charge=None,
-                               multiplicity=None, xtb_mode=None):
+                               multiplicity=None, xtb_mode=None,
+                               inner_workers=0):
     """Load arbitrary Stage 2 targets from XYZ specs.
 
     Each spec is a dict with `xyz`, optional `label`, and optional `kind`
     (`ig` or `gt`).  Cache directories live under `workdir` unless the caller
     builds targets directly with `ts_target_from_xyz(..., sp_workdir=..., ...)`.
     """
-    targets = []
-    for i, spec in enumerate(target_specs or []):
-        label = spec.get('label') or Path(spec['xyz']).stem
-        kind = str(spec.get('kind', 'ig')).lower()
-        targets.append(ts_target_from_xyz(
-            kind, label, spec['xyz'],
-            workdir=Path(workdir),
-            target_index=-(i + 1) if kind == 'gt' else i,
-            charge=spec.get('charge', charge),
-            multiplicity=spec.get('multiplicity', multiplicity),
-            xtb_mode=spec.get('xtb_mode', xtb_mode),
-        ))
-    return targets
+    specs = list(target_specs or [])
+    if not specs:
+        return []
+
+    tasks = [
+        (i, spec, Path(workdir), charge, multiplicity, xtb_mode)
+        for i, spec in enumerate(specs)
+    ]
+    workers = max(1, int(inner_workers or 1))
+    if workers <= 1 or len(tasks) == 1:
+        return [
+            target
+            for _i, target in (
+                _load_ts_target_from_spec_task(task) for task in tasks
+            )
+        ]
+
+    max_workers = min(workers, len(tasks))
+    with cf.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = [
+            executor.submit(_load_ts_target_from_spec_task, task)
+            for task in tasks
+        ]
+        results = [future.result() for future in cf.as_completed(futures)]
+    return [target for _i, target in sorted(results, key=lambda item: item[0])]
 
 
 def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
@@ -1770,7 +1798,8 @@ def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
 
     targets = load_ts_targets_from_specs(
         target_specs or [], workdir / "targets",
-        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
+        charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode,
+        inner_workers=inner_workers)
     ts_result = run_ts_stage(
         inputs, rp_result, targets, config=ts_config,
         inner_workers=inner_workers, mechanism_ids=mechanism_ids)
