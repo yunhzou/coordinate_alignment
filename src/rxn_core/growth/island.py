@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import heapq
+import time
 
 from ..matcher import (
     _SymBlock,
@@ -38,7 +39,9 @@ def grow_island(g_R, g_P, seed, mapping,
                 islands_R=None,
                 p_orbits=None,
                 r_orbits=None,
-                prior_deferred_edges=None):
+                prior_deferred_edges=None,
+                profile=None,
+                profile_context=None):
     """
     Grow a fragment from `seed` using priority-queue propagation.
 
@@ -52,8 +55,48 @@ def grow_island(g_R, g_P, seed, mapping,
     existing trace_run.HTML viewer.
     """
     record = events is not None
+    prof = None
+    profile_t0 = None
+    if profile is not None:
+        profile_t0 = time.perf_counter()
+        prof = {
+            'seed': int(seed),
+            'seed_targets': 0,
+            'seed_groups': 0,
+            'init_cands': 0,
+            'initial_heap': 0,
+            'heap_pops': 0,
+            'stale_pops': 0,
+            'fragment_skip_pops': 0,
+            'extend_calls': 0,
+            'extend_elapsed_sec': 0.0,
+            'max_extend_elapsed_sec': 0.0,
+            'max_cands_before': 0,
+            'max_cands_after': 0,
+            'max_fragment_size': 0,
+            'max_heap_len': 0,
+            'commits': 0,
+            'deferred': 0,
+            'merge_calls': 0,
+            'free_extend_calls': 0,
+            'slowest_extend': None,
+        }
+        if profile_context:
+            prof.update(profile_context)
+
+    def _finish_profile(result, cands_count=0, fragment_set=None, branches=0):
+        if prof is None:
+            return
+        prof['result'] = result
+        prof['final_cands'] = int(cands_count)
+        prof['final_fragment_size'] = int(len(fragment_set or ()))
+        prof['branches'] = int(branches)
+        prof['elapsed_sec'] = time.perf_counter() - profile_t0
+        profile.append(prof)
+
     locked_p_atoms = set(mapping.values())
     if seed in mapping:
+        _finish_profile('already_mapped')
         return []
     seed_el = g_R.nodes[seed]['element']
     seed_targets = [v for v in g_P.nodes()
@@ -64,6 +107,9 @@ def grow_island(g_R, g_P, seed, mapping,
                                      _orbit_id(p_orbits, v)))
     else:
         seed_groups = [(v,) for v in sorted(seed_targets)]
+    if prof is not None:
+        prof['seed_targets'] = int(len(seed_targets))
+        prof['seed_groups'] = int(len(seed_groups))
     cands = []
     for group in seed_groups:
         if len(group) > 1:
@@ -73,6 +119,7 @@ def grow_island(g_R, g_P, seed, mapping,
         else:
             cands.append(_SymCand({seed: group[0]}))
     if not cands:
+        _finish_profile('no_initial_cands')
         if record:
             events.append({'type': 'seed_start', 'seed': int(seed),
                            'init_cands': 0, 'fragment': [int(seed)],
@@ -87,6 +134,13 @@ def grow_island(g_R, g_P, seed, mapping,
     deferred_edges = {tuple(sorted(e)) for e in (prior_deferred_edges or ())}
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
+    if prof is not None:
+        prof['init_cands'] = int(len(cands))
+        prof['initial_heap'] = int(len(heap))
+        prof['max_cands_before'] = int(len(cands))
+        prof['max_cands_after'] = int(len(cands))
+        prof['max_fragment_size'] = int(len(fragment))
+        prof['max_heap_len'] = int(len(heap))
 
     if record:
         events.append({
@@ -102,12 +156,18 @@ def grow_island(g_R, g_P, seed, mapping,
 
     while heap:
         neg_w, u, n = heapq.heappop(heap)
+        if prof is not None:
+            prof['heap_pops'] += 1
         wbo = -neg_w
         edge = frozenset({u, n})
         if edge in used_edges:
+            if prof is not None:
+                prof['stale_pops'] += 1
             continue
         used_edges.add(edge)
         if n in fragment:
+            if prof is not None:
+                prof['fragment_skip_pops'] += 1
             if record:
                 events.append({
                     'type': 'pop_skip',
@@ -117,6 +177,12 @@ def grow_island(g_R, g_P, seed, mapping,
             continue
 
         n_in_mapping = n in mapping
+        if prof is not None:
+            prof['extend_calls'] += 1
+            if n_in_mapping:
+                prof['merge_calls'] += 1
+            else:
+                prof['free_extend_calls'] += 1
         if record:
             events.append({
                 'type': 'pop',
@@ -143,6 +209,9 @@ def grow_island(g_R, g_P, seed, mapping,
         # Tentatively add n to the shared fragment. If any weighted extension
         # survives, commit it; otherwise record this edge as deferred boundary.
         old_count = len(cands)
+        if prof is not None:
+            prof['max_cands_before'] = max(
+                int(prof['max_cands_before']), int(old_count))
         old_fragment = set(fragment)
         candidate_fragment = fragment | {n}
         dedupe_fragment = set(candidate_fragment)
@@ -158,12 +227,35 @@ def grow_island(g_R, g_P, seed, mapping,
         # Symmetry-compressed incremental extension.  It applies the same
         # element/WBO checks as the concrete incremental matcher, but groups
         # target atoms by local orbit/context before constructing children.
+        extend_t0 = time.perf_counter() if prof is not None else None
         new_cands = _extend_sym_cands(
             cands, fragment, n, g_R, g_P, mapping,
             iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
             deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo,
             dedupe_edges=dedupe_edges)
+        if prof is not None:
+            extend_elapsed = time.perf_counter() - extend_t0
+            prof['extend_elapsed_sec'] += extend_elapsed
+            if extend_elapsed > prof['max_extend_elapsed_sec']:
+                prof['max_extend_elapsed_sec'] = extend_elapsed
+                prof['slowest_extend'] = {
+                    'frag_atom': int(u),
+                    'ext_atom': int(n),
+                    'wbo': float(wbo),
+                    'scenario': (
+                        'merge_island' if n_in_mapping else 'extend_free'
+                    ),
+                    'elapsed_sec': extend_elapsed,
+                    'cands_before': int(old_count),
+                    'cands_after': int(len(new_cands or ())),
+                    'fragment_size_before': int(len(fragment)),
+                    'candidate_fragment_size': int(len(candidate_fragment)),
+                }
         if new_cands:
+            if prof is not None:
+                prof['commits'] += 1
+                prof['max_cands_after'] = max(
+                    int(prof['max_cands_after']), int(len(new_cands)))
             cands = new_cands
             ref_dist = distance.get(u, 0) + 1
             if n_in_mapping and islands_R is not None and n in islands_R:
@@ -178,6 +270,11 @@ def grow_island(g_R, g_P, seed, mapping,
                 if r not in distance:
                     distance[r] = ref_dist
                 _push_edges_from(heap, used_edges, g_R, r, fragment, graph_floor)
+            if prof is not None:
+                prof['max_fragment_size'] = max(
+                    int(prof['max_fragment_size']), int(len(fragment)))
+                prof['max_heap_len'] = max(
+                    int(prof['max_heap_len']), int(len(heap)))
             if record:
                 added_atoms = sorted(int(r) for r in fragment - old_fragment)
                 events.append({
@@ -205,6 +302,8 @@ def grow_island(g_R, g_P, seed, mapping,
                     'pool_by_frag_atom': pool_by_frag_atom(heap, used_edges, fragment, mapping, g_R),
                 })
         else:
+            if prof is not None:
+                prof['deferred'] += 1
             deferred_edges.add(tuple(sorted((u, n))))
             if record:
                 events.append({
@@ -230,6 +329,9 @@ def grow_island(g_R, g_P, seed, mapping,
 
     # heap empty
     if not cands or len(fragment) < min_lock_size:
+        _finish_profile(
+            'no_cands' if not cands else 'too_small',
+            len(cands), fragment)
         if record:
             events.append({
                 'type': 'seed_end',
@@ -240,6 +342,7 @@ def grow_island(g_R, g_P, seed, mapping,
             })
         return []
     if _set_unique(cands):
+        _finish_profile('success', len(cands), fragment, 1)
         if record:
             iso_map = _cand_map(cands[0])
             iso = {int(k): int(v) for k, v in iso_map.items()}
@@ -289,6 +392,7 @@ def grow_island(g_R, g_P, seed, mapping,
                 _cand_map(c), deferred_edges=deferred_edges,
                 fragment=fragment, symmetry=_symmetry_state(c))
     branches = list(by_set.values())[:max_branches]
+    _finish_profile('branched', len(cands), fragment, len(branches))
     if record:
         events.append({
             'type': 'seed_end', 'result': 'branched',

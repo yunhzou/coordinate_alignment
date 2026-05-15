@@ -6,7 +6,10 @@ the resulting witnesses by symmetry-canonical broken/formed bond signatures.
 """
 from __future__ import annotations
 
+import json
 import multiprocessing as mp
+import time
+from pathlib import Path
 
 from ..frag import build_graph, classify_bonds, expand_mapping
 from ..matcher import _nauty_orbits
@@ -86,7 +89,8 @@ def _pool_add(pool, sig, mapping, cuts):
 
 
 def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
-                              p_orbits=None, r_orbits=None):
+                              p_orbits=None, r_orbits=None,
+                              profile=None):
     stop_on_core = bool(core_R)
     return find_islands(
         g_R, g_P, list(order),
@@ -100,34 +104,339 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         stop_when_core_mapped=stop_on_core,
         p_orbits=p_orbits,
         r_orbits=r_orbits,
+        profile=profile,
     )
 
 
 def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
                           g_R_full, p_orbits, r_orbits, core_R, cfg,
-                          elR=None, elT=None):
+                          elR=None, elT=None,
+                          return_repair_stats=False):
     if core_R:
         if not all(r in mapping for r in core_R):
             return None
-        return _core_mapping_key(mapping, core_R), mapping
+        scored = (_core_mapping_key(mapping, core_R), mapping)
+        return (*scored, None) if return_repair_stats else scored
 
     if len(mapping) < int(cfg['n_atoms']) - 2:
         return None
+    repair_stats = None
     if cfg['symmetry_repair']:
-        mapping = symmetry_repair_mapping(
-            mapping, wboR, wboT, g_R_full, g_P, p_orbits,
-            dwbo_threshold=float(cfg['dwbo_threshold']),
-            metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
-            min_changes=int(cfg['symmetry_repair_min_changes']),
-            max_evals=int(cfg['symmetry_repair_max_evals']),
-        )
+        if return_repair_stats:
+            mapping, repair_stats = symmetry_repair_mapping(
+                mapping, wboR, wboT, g_R_full, g_P, p_orbits,
+                dwbo_threshold=float(cfg['dwbo_threshold']),
+                metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
+                min_changes=int(cfg['symmetry_repair_min_changes']),
+                max_evals=int(cfg['symmetry_repair_max_evals']),
+                return_stats=True,
+            )
+        else:
+            mapping = symmetry_repair_mapping(
+                mapping, wboR, wboT, g_R_full, g_P, p_orbits,
+                dwbo_threshold=float(cfg['dwbo_threshold']),
+                metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
+                min_changes=int(cfg['symmetry_repair_min_changes']),
+                max_evals=int(cfg['symmetry_repair_max_evals']),
+            )
     sig = _mechanism_signature(
         mapping, wboR, wboT, r_orbits, p_orbits,
         dwbo_threshold=float(cfg['dwbo_threshold']),
         elements_R=elR,
         elements_P=elT,
         metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'))
-    return sig, mapping
+    scored = (sig, mapping)
+    return (*scored, repair_stats) if return_repair_stats else scored
+
+
+def _cut_json(cut):
+    return [list(map(int, pair)) for pair in cut]
+
+
+def _repair_trace_stats(stats):
+    if not stats:
+        return None
+    groups = stats.get('groups') or []
+    return {
+        'enabled': bool(stats.get('enabled', False)),
+        'base_changes': stats.get('base_changes'),
+        'best_changes': stats.get('best_changes'),
+        'repaired': bool(stats.get('repaired', False)),
+        'evaluated': int(stats.get('evaluated', 0) or 0),
+        'capped': bool(stats.get('capped', False)),
+        'n_groups': len(groups),
+        'group_sizes': [int(group.get('size', 0) or 0)
+                        for group in groups],
+    }
+
+
+def _growth_trace_summary(profile):
+    if not profile:
+        return {
+            'calls': 0,
+            'elapsed_sec': 0.0,
+            'extend_elapsed_sec': 0.0,
+            'heap_pops': 0,
+            'extend_calls': 0,
+            'commits': 0,
+            'deferred': 0,
+            'max_cands_before': 0,
+            'max_cands_after': 0,
+            'max_heap_len': 0,
+            'max_fragment_size': 0,
+            'slowest': [],
+        }
+    slowest = sorted(
+        profile,
+        key=lambda item: float(item.get('elapsed_sec', 0.0) or 0.0),
+        reverse=True,
+    )[:5]
+    return {
+        'calls': len(profile),
+        'elapsed_sec': sum(float(item.get('elapsed_sec', 0.0) or 0.0)
+                           for item in profile),
+        'extend_elapsed_sec': sum(float(item.get('extend_elapsed_sec', 0.0) or 0.0)
+                                  for item in profile),
+        'heap_pops': sum(int(item.get('heap_pops', 0) or 0)
+                         for item in profile),
+        'extend_calls': sum(int(item.get('extend_calls', 0) or 0)
+                            for item in profile),
+        'commits': sum(int(item.get('commits', 0) or 0)
+                       for item in profile),
+        'deferred': sum(int(item.get('deferred', 0) or 0)
+                        for item in profile),
+        'max_cands_before': max(int(item.get('max_cands_before', 0) or 0)
+                                for item in profile),
+        'max_cands_after': max(int(item.get('max_cands_after', 0) or 0)
+                               for item in profile),
+        'max_heap_len': max(int(item.get('max_heap_len', 0) or 0)
+                            for item in profile),
+        'max_fragment_size': max(int(item.get('max_fragment_size', 0) or 0)
+                                 for item in profile),
+        'slowest': [
+            {
+                'seed': int(item.get('seed')),
+                'pass': int(item.get('pass', 0) or 0),
+                'branch_index': int(item.get('branch_index', 0) or 0),
+                'mapped_before': int(item.get('mapped_before', 0) or 0),
+                'result': item.get('result'),
+                'elapsed_sec': float(item.get('elapsed_sec', 0.0) or 0.0),
+                'extend_elapsed_sec': float(
+                    item.get('extend_elapsed_sec', 0.0) or 0.0),
+                'heap_pops': int(item.get('heap_pops', 0) or 0),
+                'extend_calls': int(item.get('extend_calls', 0) or 0),
+                'commits': int(item.get('commits', 0) or 0),
+                'deferred': int(item.get('deferred', 0) or 0),
+                'max_cands_before': int(item.get('max_cands_before', 0) or 0),
+                'max_cands_after': int(item.get('max_cands_after', 0) or 0),
+                'slowest_extend': item.get('slowest_extend'),
+            }
+            for item in slowest
+        ],
+    }
+
+
+def _emit_trace(trace_path, events):
+    if not trace_path or not events:
+        return
+    path = Path(trace_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('a', encoding='utf-8') as handle:
+        for event in events:
+            handle.write(json.dumps(event, sort_keys=True) + '\n')
+
+
+def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
+                  g_P, g_R_full, p_orbits, r_orbits_full,
+                  *, return_trace=False):
+    cut = tuple(tuple(int(v) for v in pair) for pair in cut)
+    events = []
+    out = []
+    cut_t0 = time.perf_counter()
+    if return_trace:
+        events.append({
+            'event': 'cut_start',
+            'cut': _cut_json(cut),
+            'n_orders': len(orders),
+            'max_branches': int(cfg['max_branches']),
+            'symmetry_repair': bool(cfg['symmetry_repair']),
+            'symmetry_repair_max_evals': int(
+                cfg['symmetry_repair_max_evals']),
+        })
+
+    graph_t0 = time.perf_counter()
+    graph_floor = float(cfg['graph_floor'])
+    g_R = build_graph(elR, wboR, bond_cut=graph_floor)
+    for i, j in cut:
+        if g_R.has_edge(i, j):
+            g_R.remove_edge(i, j)
+    r_orbits_cut = _nauty_orbits(
+        g_R, wbo_tol=float(cfg['symmetry_wbo_tol']))
+    graph_elapsed = time.perf_counter() - graph_t0
+
+    cut_status = 'completed'
+    total_search_elapsed = 0.0
+    total_score_elapsed = 0.0
+    total_expand_elapsed = 0.0
+    total_branches = 0
+    total_accepted = 0
+    total_repair_evals = 0
+    total_repair_capped = 0
+    try:
+        for order_index, order in enumerate(orders):
+            seed_t0 = time.perf_counter()
+            seed_growth_profile = [] if return_trace else None
+            try:
+                branches = _run_find_islands_limited(
+                    g_R, g_P, order, core_R, cfg,
+                    p_orbits=p_orbits,
+                    r_orbits=r_orbits_cut,
+                    profile=seed_growth_profile)
+            except BranchLimitExceeded as exc:
+                cut_status = 'branch_cap'
+                if return_trace:
+                    for item in seed_growth_profile:
+                        growth_event = dict(item)
+                        growth_event['event'] = 'growth_call'
+                        growth_event['cut'] = _cut_json(cut)
+                        growth_event['seed_index'] = int(order_index)
+                        events.append(growth_event)
+                    events.append({
+                        'event': 'seed_branch_cap',
+                        'cut': _cut_json(cut),
+                        'seed_index': int(order_index),
+                        'elapsed_sec': time.perf_counter() - seed_t0,
+                        'branch_count': exc.branch_count,
+                        'max_branches': exc.max_branches,
+                        'stage': exc.stage,
+                        'growth': _growth_trace_summary(seed_growth_profile),
+                    })
+                raise
+            except Exception as exc:
+                if return_trace:
+                    for item in seed_growth_profile:
+                        growth_event = dict(item)
+                        growth_event['event'] = 'growth_call'
+                        growth_event['cut'] = _cut_json(cut)
+                        growth_event['seed_index'] = int(order_index)
+                        events.append(growth_event)
+                    events.append({
+                        'event': 'seed_error',
+                        'cut': _cut_json(cut),
+                        'seed_index': int(order_index),
+                        'elapsed_sec': time.perf_counter() - seed_t0,
+                        'error_type': type(exc).__name__,
+                        'error': str(exc),
+                        'growth': _growth_trace_summary(seed_growth_profile),
+                    })
+                continue
+
+            search_elapsed = time.perf_counter() - seed_t0
+            growth_summary = _growth_trace_summary(seed_growth_profile)
+            total_search_elapsed += search_elapsed
+            seed_score_elapsed = 0.0
+            seed_expand_elapsed = 0.0
+            seed_accepted = 0
+            seed_repair_evals = 0
+            seed_repair_capped = 0
+            max_mapped = 0
+            for branch_index, branch in enumerate(branches):
+                branch_t0 = time.perf_counter()
+                expand_t0 = time.perf_counter()
+                mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
+                expand_elapsed = time.perf_counter() - expand_t0
+                score_t0 = time.perf_counter()
+                scored = _score_branch_mapping(
+                    mapping, g_R, g_P, wboR, wboT, g_R_full,
+                    p_orbits, r_orbits_full, core_R, cfg, elR, elT,
+                    return_repair_stats=return_trace)
+                score_elapsed = time.perf_counter() - score_t0
+                branch_elapsed = time.perf_counter() - branch_t0
+                seed_expand_elapsed += expand_elapsed
+                seed_score_elapsed += score_elapsed
+                max_mapped = max(max_mapped, len(mapping))
+                accepted = scored is not None
+                repair_stats = None
+                if accepted:
+                    if return_trace:
+                        sig, mapping, repair_stats = scored
+                    else:
+                        sig, mapping = scored
+                    out.append((sig, tuple(sorted(mapping.items())), cut))
+                    seed_accepted += 1
+                repair_summary = _repair_trace_stats(repair_stats)
+                if repair_summary:
+                    seed_repair_evals += repair_summary['evaluated']
+                    seed_repair_capped += int(repair_summary['capped'])
+                if return_trace:
+                    events.append({
+                        'event': 'branch',
+                        'cut': _cut_json(cut),
+                        'seed_index': int(order_index),
+                        'branch_index': int(branch_index),
+                        'elapsed_sec': branch_elapsed,
+                        'expand_elapsed_sec': expand_elapsed,
+                        'score_elapsed_sec': score_elapsed,
+                        'mapped_atoms': len(mapping),
+                        'accepted': bool(accepted),
+                        'repair': repair_summary,
+                    })
+            n_branches = len(branches)
+            total_branches += n_branches
+            total_accepted += seed_accepted
+            total_expand_elapsed += seed_expand_elapsed
+            total_score_elapsed += seed_score_elapsed
+            total_repair_evals += seed_repair_evals
+            total_repair_capped += seed_repair_capped
+            if return_trace:
+                for item in seed_growth_profile:
+                    growth_event = dict(item)
+                    growth_event['event'] = 'growth_call'
+                    growth_event['cut'] = _cut_json(cut)
+                    growth_event['seed_index'] = int(order_index)
+                    events.append(growth_event)
+                events.append({
+                    'event': 'seed_end',
+                    'cut': _cut_json(cut),
+                    'seed_index': int(order_index),
+                    'search_elapsed_sec': search_elapsed,
+                    'expand_elapsed_sec': seed_expand_elapsed,
+                    'score_elapsed_sec': seed_score_elapsed,
+                    'branches': n_branches,
+                    'accepted': seed_accepted,
+                    'max_mapped_atoms': max_mapped,
+                    'repair_evals': seed_repair_evals,
+                    'repair_capped_count': seed_repair_capped,
+                    'growth': growth_summary,
+                })
+    except BranchLimitExceeded:
+        # Kill the whole cut.  Partial seed-order witnesses from this cut are
+        # deliberately discarded because the cut has entered a pathological
+        # outer-branch multiplication regime.
+        out = []
+
+    elapsed = time.perf_counter() - cut_t0
+    if return_trace:
+        events.append({
+            'event': 'cut_end',
+            'cut': _cut_json(cut),
+            'status': cut_status,
+            'elapsed_sec': elapsed,
+            'graph_elapsed_sec': graph_elapsed,
+            'search_elapsed_sec': total_search_elapsed,
+            'expand_elapsed_sec': total_expand_elapsed,
+            'score_elapsed_sec': total_score_elapsed,
+            'branches': total_branches,
+            'accepted': total_accepted,
+            'repair_evals': total_repair_evals,
+            'repair_capped_count': total_repair_capped,
+            'hits': len(out),
+            'avg_branch_elapsed_sec': (
+                (total_expand_elapsed + total_score_elapsed) / total_branches
+                if total_branches else 0.0
+            ),
+        })
+    return out, events
 
 
 _WORKER = {}
@@ -150,47 +459,16 @@ def _cs_winit(elR, wboR, elT, wboT, cfg):
 
 
 def _cs_wrun(args):
-    cut, orders, core_R = args
+    cut, orders, core_R, trace_enabled = args
     cfg = _WORKER['cfg']
-    graph_floor = float(cfg['graph_floor'])
-    g_R = build_graph(_WORKER['elR'], _WORKER['wboR'],
-                      bond_cut=graph_floor)
-    for i, j in cut:
-        if g_R.has_edge(i, j):
-            g_R.remove_edge(i, j)
-    r_orbits_cut = _nauty_orbits(
-        g_R, wbo_tol=float(cfg['symmetry_wbo_tol']))
-
-    out = []
-    try:
-        for order in orders:
-            try:
-                branches = _run_find_islands_limited(
-                    g_R, _WORKER['g_P'], order, core_R, cfg,
-                    p_orbits=_WORKER['p_orbits'],
-                    r_orbits=r_orbits_cut)
-            except BranchLimitExceeded:
-                raise
-            except Exception:
-                continue
-            for branch in branches:
-                mapping = expand_mapping(dict(branch.mapping), g_R, _WORKER['g_P'])
-                scored = _score_branch_mapping(
-                    mapping, g_R, _WORKER['g_P'],
-                    _WORKER['wboR'], _WORKER['wboT'],
-                    _WORKER['g_R_full'], _WORKER['p_orbits'],
-                    _WORKER['r_orbits'], core_R, cfg,
-                    _WORKER['elR'], _WORKER['elT'])
-                if scored is None:
-                    continue
-                sig, mapping = scored
-                out.append((sig, tuple(sorted(mapping.items())), cut))
-    except BranchLimitExceeded:
-        # Kill the whole cut.  Partial seed-order witnesses from this cut are
-        # deliberately discarded because the cut has entered a pathological
-        # outer-branch multiplication regime.
-        return []
-    return out
+    out, events = _run_cut_work(
+        _WORKER['elR'], _WORKER['wboR'],
+        _WORKER['elT'], _WORKER['wboT'],
+        cfg, cut, orders, core_R,
+        _WORKER['g_P'], _WORKER['g_R_full'],
+        _WORKER['p_orbits'], _WORKER['r_orbits'],
+        return_trace=trace_enabled)
+    return {'results': out, 'events': events}
 
 
 def cut_sweep_items(wboR, cut_floor=0.2):
@@ -229,7 +507,8 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
     }
 
 
-def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts):
+def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
+                            trace_path=None):
     graph_floor = float(cfg['graph_floor'])
     g_P = build_graph(elT, wboT, bond_cut=graph_floor)
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
@@ -238,40 +517,22 @@ def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts):
     r_orbits = _nauty_orbits(g_R_full, wbo_tol=symmetry_wbo_tol)
     pool = {}
 
-    def run(cuts):
-        g_R = build_graph(elR, wboR, bond_cut=graph_floor)
-        for i, j in cuts:
-            if g_R.has_edge(i, j):
-                g_R.remove_edge(i, j)
-        r_orbits_cut = _nauty_orbits(g_R, wbo_tol=symmetry_wbo_tol)
-        orders = _generate_seed_orders(g_R, n_trials=int(cfg['n_seeds']))
-        cut_hits = []
-        try:
-            for order in orders:
-                try:
-                    branches = _run_find_islands_limited(
-                        g_R, g_P, order, core_R, cfg,
-                        p_orbits=p_orbits, r_orbits=r_orbits_cut)
-                except BranchLimitExceeded:
-                    raise
-                except Exception:
-                    continue
-                for branch in branches:
-                    mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
-                    scored = _score_branch_mapping(
-                        mapping, g_R, g_P, wboR, wboT, g_R_full,
-                        p_orbits, r_orbits, core_R, cfg, elR, elT)
-                    if scored is None:
-                        continue
-                    sig, mapping = scored
-                    cut_hits.append((sig, mapping))
-        except BranchLimitExceeded:
-            return
-        for sig, mapping in cut_hits:
-            _pool_add(pool, sig, mapping, cuts)
-
     for cut in cuts:
-        run(tuple(tuple(pair) for pair in cut))
+        cut = tuple(tuple(pair) for pair in cut)
+        g_R_seed = build_graph(elR, wboR, bond_cut=graph_floor)
+        for i, j in cut:
+            if g_R_seed.has_edge(i, j):
+                g_R_seed.remove_edge(i, j)
+        orders = _generate_seed_orders(
+            g_R_seed, n_trials=int(cfg['n_seeds']))
+        results, events = _run_cut_work(
+            elR, wboR, elT, wboT, cfg, cut, orders, core_R,
+            g_P, g_R_full, p_orbits, r_orbits,
+            return_trace=bool(trace_path))
+        _emit_trace(trace_path, events)
+        for sig, mapping_items, _cut in results:
+            mapping = dict(mapping_items)
+            _pool_add(pool, sig, mapping, _cut)
     return pool
 
 
@@ -287,30 +548,31 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
     orders = [tuple(order) for order in _generate_seed_orders(
         g_R, n_trials=int(cfg['n_seeds']))]
     cuts = cut_sweep_items(wboR, cfg['cut_floor'])
-    work = [(cut, orders, core_R) for cut in cuts]
+    work = [(cut, orders, core_R, False) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
-        for results in proc_pool.imap_unordered(
+        for payload in proc_pool.imap_unordered(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
-            for sig, mapping_items, cut in results:
+            for sig, mapping_items, cut in payload['results']:
                 _pool_add(pool, sig, dict(mapping_items), cut)
     return pool
 
 
 def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
-                              cuts):
+                              cuts, trace_path=None):
     graph_floor = float(cfg['graph_floor'])
     g_R = build_graph(elR, wboR, bond_cut=graph_floor)
     orders = [tuple(order) for order in _generate_seed_orders(
         g_R, n_trials=int(cfg['n_seeds']))]
-    work = [(cut, orders, core_R) for cut in cuts]
+    work = [(cut, orders, core_R, bool(trace_path)) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
-        for results in proc_pool.imap_unordered(
+        for payload in proc_pool.imap_unordered(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
-            for sig, mapping_items, cut in results:
+            _emit_trace(trace_path, payload.get('events', []))
+            for sig, mapping_items, cut in payload['results']:
                 _pool_add(pool, sig, dict(mapping_items), cut)
     return pool
 
@@ -318,6 +580,7 @@ def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
 def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
                         core_R=None,
                         n_workers=None,
+                        trace_path=None,
                         cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
                         dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
                         symmetry_wbo_tol=0.2,
@@ -355,9 +618,10 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
         return _cut_sweep_chunk_parallel(
             elR, wboR, elT, wboT, cfg,
             min(int(n_workers), len(normalized_cuts)),
-            core_R, normalized_cuts)
+            core_R, normalized_cuts, trace_path=trace_path)
     return _cut_sweep_chunk_serial(
-        elR, wboR, elT, wboT, cfg, core_R, normalized_cuts)
+        elR, wboR, elT, wboT, cfg, core_R, normalized_cuts,
+        trace_path=trace_path)
 
 
 def merge_cut_sweep_pools(pools):

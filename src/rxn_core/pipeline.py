@@ -1268,13 +1268,15 @@ def rp_cut_work_items(inputs, config=None):
     return cut_sweep_items(inputs.wboR, cfg.get('cut_floor', CUT_FLOOR))
 
 
-def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0):
+def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0,
+                     trace_path=None):
     """Run one R-P cut chunk and return a partial mechanism pool."""
     cfg = _rp_cfg(config)
     t0 = time.time()
     pool = run_cut_sweep_chunk(
         inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
         cuts, n_workers=max(1, int(inner_workers or 1)),
+        trace_path=trace_path,
         **_rp_cut_kwargs(cfg))
     return {
         'stage': 'rp_cut_chunk',
@@ -1282,6 +1284,7 @@ def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0):
         'config': cfg,
         'cuts': cuts,
         'pool': pool,
+        'trace_path': str(trace_path) if trace_path else None,
         'timing': {'rp_cut_chunk_seconds': time.time() - t0},
     }
 

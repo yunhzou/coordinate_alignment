@@ -383,7 +383,8 @@ def find_islands(g_R, g_P, seed_order,
                  orbit_dedup=True, core_R=None,
                  stop_when_core_mapped=False,
                  p_orbits=None, r_orbits=None,
-                 abort_on_branch_cap=False):
+                 abort_on_branch_cap=False,
+                 profile=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
 
@@ -526,7 +527,13 @@ def find_islands(g_R, g_P, seed_order,
                                     islands_R=b.islands_R,
                                     p_orbits=p_orbits,
                                     r_orbits=r_orbits,
-                                    prior_deferred_edges=b.deferred_edges)
+                                    prior_deferred_edges=b.deferred_edges,
+                                    profile=profile,
+                                    profile_context={
+                                        'pass': int(pass_no),
+                                        'branch_index': int(bi),
+                                        'mapped_before': len(b.mapping),
+                                    })
                 if not isos:
                     _append_pending(b)
                     continue
