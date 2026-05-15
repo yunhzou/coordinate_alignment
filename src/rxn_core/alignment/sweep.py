@@ -253,16 +253,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
     events = []
     out = []
     cut_t0 = time.perf_counter()
-    if return_trace:
-        events.append({
-            'event': 'cut_start',
-            'cut': _cut_json(cut),
-            'n_orders': len(orders),
-            'max_branches': int(cfg['max_branches']),
-            'symmetry_repair': bool(cfg['symmetry_repair']),
-            'symmetry_repair_max_evals': int(
-                cfg['symmetry_repair_max_evals']),
-        })
 
     graph_t0 = time.perf_counter()
     graph_floor = float(cfg['graph_floor'])
@@ -273,6 +263,21 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
     r_orbits_cut = _nauty_orbits(
         g_R, wbo_tol=float(cfg['symmetry_wbo_tol']))
     graph_elapsed = time.perf_counter() - graph_t0
+    if orders is None:
+        orders = _generate_seed_orders(
+            g_R, n_trials=int(cfg['n_seeds']))
+    else:
+        orders = list(orders)
+    if return_trace:
+        events.append({
+            'event': 'cut_start',
+            'cut': _cut_json(cut),
+            'n_orders': len(orders),
+            'max_branches': int(cfg['max_branches']),
+            'symmetry_repair': bool(cfg['symmetry_repair']),
+            'symmetry_repair_max_evals': int(
+                cfg['symmetry_repair_max_evals']),
+        })
 
     cut_status = 'completed'
     total_search_elapsed = 0.0
@@ -519,14 +524,8 @@ def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
 
     for cut in cuts:
         cut = tuple(tuple(pair) for pair in cut)
-        g_R_seed = build_graph(elR, wboR, bond_cut=graph_floor)
-        for i, j in cut:
-            if g_R_seed.has_edge(i, j):
-                g_R_seed.remove_edge(i, j)
-        orders = _generate_seed_orders(
-            g_R_seed, n_trials=int(cfg['n_seeds']))
         results, events = _run_cut_work(
-            elR, wboR, elT, wboT, cfg, cut, orders, core_R,
+            elR, wboR, elT, wboT, cfg, cut, None, core_R,
             g_P, g_R_full, p_orbits, r_orbits,
             return_trace=bool(trace_path))
         _emit_trace(trace_path, events)
@@ -543,12 +542,8 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
 
 
 def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
-    graph_floor = float(cfg['graph_floor'])
-    g_R = build_graph(elR, wboR, bond_cut=graph_floor)
-    orders = [tuple(order) for order in _generate_seed_orders(
-        g_R, n_trials=int(cfg['n_seeds']))]
     cuts = cut_sweep_items(wboR, cfg['cut_floor'])
-    work = [(cut, orders, core_R, False) for cut in cuts]
+    work = [(cut, None, core_R, False) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
@@ -561,11 +556,7 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
 
 def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
                               cuts, trace_path=None):
-    graph_floor = float(cfg['graph_floor'])
-    g_R = build_graph(elR, wboR, bond_cut=graph_floor)
-    orders = [tuple(order) for order in _generate_seed_orders(
-        g_R, n_trials=int(cfg['n_seeds']))]
-    work = [(cut, orders, core_R, bool(trace_path)) for cut in cuts]
+    work = [(cut, None, core_R, bool(trace_path)) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:

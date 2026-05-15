@@ -432,6 +432,22 @@ def test_generate_seed_orders_honors_trial_cap():
     assert all(g.nodes[order[0]]["element"] != "H" for order in orders)
 
 
+def test_generate_seed_orders_deprioritizes_common_isolated_atoms():
+    elements = ["C", "C", "C", "H", "H", "H", "H"]
+    wbo = np.zeros((7, 7))
+    for i, j in [(0, 1), (1, 2), (2, 3)]:
+        wbo[i, j] = wbo[j, i] = 1.0
+    g = build_graph(elements, wbo, bond_cut=0.2)
+
+    order = _generate_seed_orders(g, n_trials=1)[0]
+
+    connected = {0, 1, 2, 3}
+    isolated_common = {4, 5, 6}
+    assert max(order.index(atom) for atom in connected) < min(
+        order.index(atom) for atom in isolated_common)
+    assert set(order) == set(range(7))
+
+
 def test_match_wbo_graphs_uses_three_seed_contract():
     elements = ["C", "C", "H"]
     wbo = np.zeros((3, 3))

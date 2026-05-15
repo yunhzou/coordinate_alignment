@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import itertools
 import random
-from collections import defaultdict
+from collections import Counter, defaultdict
 
+import networkx as nx
 import numpy as np
 
 from ..frag import bond_event_threshold, classify_bonds
@@ -654,23 +655,86 @@ def _chirality_violations(mapping, coords_R, coords_P,
     return violations
 
 
-def _generate_seed_orders(g_R, n_trials, rng_seed=42):
+def _seed_priority_groups(g_R, common_element_threshold=3):
+    nodes = list(g_R.nodes())
+    element_counts = Counter(g_R.nodes[n].get('element') for n in nodes)
+    component_sizes = {}
+    for component in nx.connected_components(g_R):
+        size = len(component)
+        for n in component:
+            component_sizes[n] = size
+
+    groups = defaultdict(list)
+    for n in nodes:
+        element = g_R.nodes[n].get('element')
+        degree = int(g_R.degree[n])
+        isolated = degree == 0
+        common = element_counts[element] > int(common_element_threshold)
+        hydrogen = element == 'H'
+        if not isolated and not hydrogen:
+            category = 0
+        elif not isolated and not common:
+            category = 1
+        elif isolated and not common:
+            category = 2
+        elif not isolated:
+            category = 3
+        else:
+            category = 4
+        groups[(
+            category,
+            -int(component_sizes.get(n, 1)),
+            -degree,
+            int(element_counts[element]),
+        )].append(n)
+    return groups
+
+
+def _ordered_seed_nodes(g_R, rng, common_element_threshold=3):
+    ordered = []
+    for key, group in sorted(_seed_priority_groups(
+            g_R, common_element_threshold).items()):
+        group = list(group)
+        rng.shuffle(group)
+        ordered.extend(group)
+    return ordered
+
+
+def _generate_seed_orders(g_R, n_trials, rng_seed=42,
+                          common_element_threshold=3):
     """Generate at most `n_trials` deterministic seed orderings.
 
-    Heavy atoms are used as anchors first in graph order. Hydrogens are never
-    used as explicit first seeds because they have few connectivity
-    constraints. If more trials are requested than there are heavy atoms, pad
-    with full random shuffles.
+    Growth seeds are ordered by how much constrained island context they are
+    likely to add.  Connected heavy atoms are tried first.  Isolated atoms are
+    retained, but isolated atoms whose element is common are pushed to the end
+    because they otherwise create many unconstrained placements before a useful
+    island has locked context.
     """
-    nodes = list(g_R.nodes())
-    heavy = [n for n in nodes if g_R.nodes[n].get('element') != 'H']
-    rng = random.Random(rng_seed)
+    nodes = _ordered_seed_nodes(
+        g_R,
+        random.Random(rng_seed),
+        common_element_threshold=common_element_threshold,
+    )
+    connected_heavy = [
+        n for n in nodes
+        if g_R.nodes[n].get('element') != 'H' and int(g_R.degree[n]) > 0
+    ]
+    connected_heavy_set = set(connected_heavy)
+    fallback = [n for n in nodes if n not in connected_heavy_set]
+    anchors = connected_heavy + fallback
     orders = []
     n_trials = max(0, int(n_trials))
-    for h in heavy[:n_trials]:
-        rest = [x for x in nodes if x != h]
-        rng.shuffle(rest)
-        orders.append([h] + rest)
-    while len(orders) < n_trials:
-        perm = list(nodes); rng.shuffle(perm); orders.append(perm)
+    if not anchors:
+        return orders
+    for idx in range(n_trials):
+        anchor = anchors[idx % len(anchors)]
+        rest = [
+            n for n in _ordered_seed_nodes(
+                g_R,
+                random.Random(rng_seed + idx + 1),
+                common_element_threshold=common_element_threshold,
+            )
+            if n != anchor
+        ]
+        orders.append([anchor] + rest)
     return orders
