@@ -106,7 +106,7 @@ def test_merge_ts_stage_chunks_recomputes_global_top_flags():
     assert len(merged["endpoint_results"]) == 2
 
 
-def test_best_under_mech_prefers_endpoint_consensus(monkeypatch):
+def test_best_under_mech_scores_all_endpoint_allowed_core_maps(monkeypatch):
     rt_pool = {
         "r_only": {
             "mapping": {0: 0, 1: 1},
@@ -143,6 +143,52 @@ def test_best_under_mech_prefers_endpoint_consensus(monkeypatch):
         [],
         [],
         [0, 1],
+        prefer_endpoint_consensus=False,
+    )
+
+    assert best["core_map"] == {"0": 0, "1": 1}
+    assert best["core_sources"] == ["R"]
+    assert best["endpoint_consensus"] is False
+
+
+def test_best_under_mech_can_prefer_endpoint_consensus(monkeypatch):
+    rt_pool = {
+        "r_only": {
+            "mapping": {0: 0, 1: 1},
+            "sources": {"R"},
+            "dedup_count": 1,
+        },
+        "both": {
+            "mapping": {0: 1, 1: 0},
+            "sources": {"R", "P"},
+            "dedup_count": 2,
+        },
+    }
+
+    def fake_score_one(*args, **kwargs):
+        mapping = args[4]
+        if mapping == {0: 0, 1: 1}:
+            return {"S": 10.0, "core_map": {"0": 0, "1": 1}}
+        return {"S": 5.0, "core_map": {"0": 1, "1": 0}}
+
+    monkeypatch.setattr(pipeline, "score_one", fake_score_one)
+
+    best = pipeline.best_under_mech_using_pool(
+        ["H", "H"],
+        np.zeros((2, 3)),
+        np.zeros((2, 2)),
+        np.zeros((2, 2)),
+        ["H", "H"],
+        np.zeros((2, 3)),
+        np.zeros((2, 2)),
+        np.zeros(1),
+        np.zeros((1, 2, 3)),
+        rt_pool,
+        {0: 0, 1: 1},
+        [],
+        [],
+        [0, 1],
+        prefer_endpoint_consensus=True,
     )
 
     assert best["core_map"] == {"0": 1, "1": 0}

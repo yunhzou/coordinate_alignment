@@ -9,9 +9,8 @@ Given a normal-mode displacement matrix in R-frame indexing, computes:
 All features are sign-blind, in [0, 1], and zero on spectator atoms by construction
 (V_hat is sparse on non-core; Delta_hat_core is sparse on non-core).
 
-Helpers also include the g98.out parser, Kabsch alignment, the reaction-coord
-delta builder, the bond-reaction-vector builder, and mode reindexing into
-R-frame.
+Helpers also include the g98.out parser, the bond-reaction-vector builder, and
+mode reindexing into R-frame.
 """
 from __future__ import annotations
 import re
@@ -66,40 +65,6 @@ def parse_g98_modes(path):
     freqs = np.asarray(freqs_all, dtype=float)
     modes = np.stack(blocks, axis=0)  # (n_modes, n_atoms, 3)
     return freqs, modes
-
-
-def kabsch(P, Q):
-    """Rigid alignment of Q onto P. Returns (R, t) so that aligned = (Q - <Q>) @ R + <P>.
-    Both P, Q are (n, 3) arrays."""
-    P = np.asarray(P, dtype=float); Q = np.asarray(Q, dtype=float)
-    Pc = P.mean(0); Qc = Q.mean(0)
-    H = (Q - Qc).T @ (P - Pc)
-    U, _, Vt = np.linalg.svd(H)
-    d = np.sign(np.linalg.det(Vt.T @ U.T))
-    R = Vt.T @ np.diag([1, 1, d]) @ U.T
-    t = Pc - Qc @ R.T
-    return R, t
-
-
-def reaction_coord_delta(xyzR, xyzP, mapping_RP):
-    """Per-atom reaction-coordinate displacement Delta_i = P[m(i)] - R[i]
-    after Kabsch-aligning P (in R-atom order) to R. Mapped atoms only;
-    unmapped get 0. Returns (n_R, 3) array."""
-    n_R = len(xyzR)
-    p_in_R_order = np.zeros((n_R, 3))
-    mapped = []
-    for r, p in mapping_RP.items():
-        p_in_R_order[r] = xyzP[p]
-        mapped.append(r)
-    if not mapped:
-        return np.zeros((n_R, 3))
-    idx = np.array(mapped)
-    R, t = kabsch(np.asarray(xyzR)[idx], p_in_R_order[idx])
-    p_aligned = (p_in_R_order @ R.T) + t
-    delta = p_aligned - np.asarray(xyzR)
-    in_map = np.zeros(n_R, dtype=bool); in_map[idx] = True
-    delta[~in_map] = 0
-    return delta
 
 
 def bond_reaction_vector(xyz_TS_in_R, broken_bonds_R, formed_bonds_R):

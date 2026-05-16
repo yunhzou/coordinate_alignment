@@ -1,18 +1,64 @@
 {
   "step": "pr1.tempo_ts3",
   "mechanism_id": 1,
-  "mechanism_label": "#1: H12-O49 (cut: C16-C20) [dedup x176]",
+  "mechanism_label": "#1: H12-O49 (cut: none) [dedup x166]",
   "kind": "gt",
   "label": "GT",
-  "S": 1.608575941081719,
+  "S": 0.4903787233040985,
   "decomposition": {
-    "beta": 0.8061165763425091,
-    "rho": 0.6805105704977038,
-    "kappa": 0.9370741482965931,
-    "n_imag": 1,
+    "beta": 0.8006387782099947,
+    "wbo_progress": 0.6124843520575517,
+    "wbo_progress_factor": 0.6124843520575517,
     "freq": -824.1619,
     "mode_index": 0
   },
+  "score_formula": "S = beta * wbo_progress^WBO_PROGRESS_POWER",
+  "event_terms": [
+    {
+      "kind": "broken",
+      "R_pair": [
+        12,
+        49
+      ],
+      "P_pair": [
+        12,
+        49
+      ],
+      "T_pair": [
+        12,
+        49
+      ],
+      "wbo_R": 0.7369359454038491,
+      "wbo_P": 0.1263926825142374,
+      "wbo_T": 0.3609698423609367,
+      "delta_wbo_RP": 0.6105432628896117,
+      "event_weight": 0.6105432628896117,
+      "ts_progress": 0.6157894548922217,
+      "beta_contribution_signed": -0.44825121609569085
+    },
+    {
+      "kind": "formed",
+      "R_pair": [
+        12,
+        14
+      ],
+      "P_pair": [
+        12,
+        14
+      ],
+      "T_pair": [
+        12,
+        14
+      ],
+      "wbo_R": 0.10400156975039934,
+      "wbo_P": 0.7661939906851943,
+      "wbo_T": 0.5075661573552037,
+      "delta_wbo_RP": 0.662192420934795,
+      "event_weight": 0.662192420934795,
+      "ts_progress": 0.6094370380064237,
+      "beta_contribution_signed": -0.35238756211430383
+    }
+  ],
   "core_map_R_to_target": {
     "12": 12,
     "14": 14,
@@ -22,7 +68,8 @@
     "P",
     "R"
   ],
-  "core_pool_dedup_count": 2,
+  "endpoint_consensus": true,
+  "core_pool_dedup_count": 6,
   "broken_bonds_R": [
     [
       12,

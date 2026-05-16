@@ -5,7 +5,6 @@ import itertools
 import random
 from collections import Counter, defaultdict
 
-import networkx as nx
 import numpy as np
 
 from ..frag import bond_event_threshold, classify_bonds
@@ -414,11 +413,7 @@ def find_islands(g_R, g_P, seed_order,
         p_orbits = None
         r_orbits = None
     core_R = tuple(sorted(set(core_R or ())))
-    core_R_set = set(core_R)
     seed_order = list(seed_order)
-    if core_R:
-        seed_order = ([s for s in seed_order if s in core_R_set] +
-                      [s for s in seed_order if s not in core_R_set])
     branches = [_Branch()]
     progressed = True
     pass_no = 0
@@ -655,73 +650,45 @@ def _chirality_violations(mapping, coords_R, coords_P,
     return violations
 
 
-def _seed_priority_groups(g_R, common_element_threshold=3):
+def _ordered_seed_nodes(g_R, rng, common_element_threshold=3):
     nodes = list(g_R.nodes())
     element_counts = Counter(g_R.nodes[n].get('element') for n in nodes)
-    component_sizes = {}
-    for component in nx.connected_components(g_R):
-        size = len(component)
-        for n in component:
-            component_sizes[n] = size
+    threshold = max(1, int(common_element_threshold))
 
-    groups = defaultdict(list)
-    for n in nodes:
+    def ambiguous_isolated(n):
         element = g_R.nodes[n].get('element')
-        degree = int(g_R.degree[n])
-        isolated = degree == 0
-        common = element_counts[element] > int(common_element_threshold)
-        hydrogen = element == 'H'
-        if not isolated and not hydrogen:
-            category = 0
-        elif not isolated and not common:
-            category = 1
-        elif isolated and not common:
-            category = 2
-        elif not isolated:
-            category = 3
-        else:
-            category = 4
-        groups[(
-            category,
-            -int(component_sizes.get(n, 1)),
-            -degree,
-            int(element_counts[element]),
-        )].append(n)
-    return groups
+        return int(g_R.degree[n]) == 0 and element_counts[element] > threshold
 
-
-def _ordered_seed_nodes(g_R, rng, common_element_threshold=3):
-    ordered = []
-    for key, group in sorted(_seed_priority_groups(
-            g_R, common_element_threshold).items()):
-        group = list(group)
-        rng.shuffle(group)
-        ordered.extend(group)
-    return ordered
+    contextual = [n for n in nodes if not ambiguous_isolated(n)]
+    ambiguous = [n for n in nodes if ambiguous_isolated(n)]
+    rng.shuffle(contextual)
+    rng.shuffle(ambiguous)
+    return contextual + ambiguous
 
 
 def _generate_seed_orders(g_R, n_trials, rng_seed=42,
-                          common_element_threshold=3):
+                          common_element_threshold=1):
     """Generate at most `n_trials` deterministic seed orderings.
 
-    Growth seeds are ordered by how much constrained island context they are
-    likely to add.  Connected heavy atoms are tried first.  Isolated atoms are
-    retained, but isolated atoms whose element is common are pushed to the end
-    because they otherwise create many unconstrained placements before a useful
-    island has locked context.
+    Seeds are deterministic random orderings, not chemistry/core-prioritized
+    rankings.  The only special case is an isolated atom whose element occurs
+    multiple times: that atom has no graph context, so it is retained but kept
+    behind contextual atoms and is not used as an anchor unless no contextual
+    anchor exists.
     """
     nodes = _ordered_seed_nodes(
         g_R,
         random.Random(rng_seed),
         common_element_threshold=common_element_threshold,
     )
-    connected_heavy = [
-        n for n in nodes
-        if g_R.nodes[n].get('element') != 'H' and int(g_R.degree[n]) > 0
-    ]
-    connected_heavy_set = set(connected_heavy)
-    fallback = [n for n in nodes if n not in connected_heavy_set]
-    anchors = connected_heavy + fallback
+    element_counts = Counter(g_R.nodes[n].get('element') for n in g_R.nodes())
+    threshold = max(1, int(common_element_threshold))
+
+    def ambiguous_isolated(n):
+        element = g_R.nodes[n].get('element')
+        return int(g_R.degree[n]) == 0 and element_counts[element] > threshold
+
+    anchors = [n for n in nodes if not ambiguous_isolated(n)] or nodes
     orders = []
     n_trials = max(0, int(n_trials))
     if not anchors:

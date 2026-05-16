@@ -305,7 +305,7 @@ coordinate package under `out/bgcp_alignments/<step>/`. Each mechanism
 directory is self-contained and includes `R.xyz`, `P_aligned.xyz`, a
 two-frame `neb_endpoints.xyz`, `mapping_R_to_P.csv`, and `mechanism.json`.
 `P_aligned.xyz` is product geometry reindexed into the R atom order; no
-Kabsch or spatial fitting is applied.
+spatial fitting is applied.
 
 When Stage 2 is run with `--save-alignment-files`, the same output root gets
 `ts_alignments/`. Each scored GT/IG/TS target has native target coordinates,
@@ -333,10 +333,11 @@ process_step(...)
    no-cut plus one-edge R cuts above `BGCP_CUT_FLOOR`.
 2. Mechanisms are deduped by symmetry-canonical broken/formed bond changes.
 3. The reactive core is the atoms touching any broken or formed bond.
-4. `run_ts_stage(...)` / `ts_core_pool(...)` runs endpoint-to-TS matching from
-   both R and P. P-side
-   core mappings are pulled back through the R-P mechanism witness, then merged
-   with R-side mappings in R-core indexing.
+4. `run_ts_stage(...)` runs no-cut endpoint-to-TS realignment from both R and
+   P using the same symmetry-aware fragment-growth matcher as R-P alignment.
+   P-side core mappings are pulled back through the R-P mechanism witness,
+   then merged with R-side mappings in R-core indexing. Compressed branch
+   degeneracy is expanded only for mechanism core atoms before scoring.
 5. Each GT/IG candidate mapping is scored on the selected imaginary mode:
 
 ```text
@@ -413,9 +414,9 @@ current benchmark workflow; expose them when testing sensitivity.
 | `--dwbo-threshold` | `BGCP_DWBO_THRESHOLD` / `dwbo_threshold` | `0.5` | Broken/forming events require `abs(delta WBO) >= 0.5`; smaller WBO differences are treated as spectator variation. |
 | `--symmetry-wbo-tol` | `BGCP_SYMMETRY_WBO_TOL` / `symmetry_wbo_tol` | `0.2` | Nauty orbit detection buckets WBO values within this tolerance; this collapses xtb/noise-level symmetry without changing exact active-edge validity checks. |
 | none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Per-cut branch cap for R-P sweep; cuts that exceed it are discarded as pathological branch multipliers. |
-| none | `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | Minimum target WBO for preserving a core edge during TS/IG core matching; mirrors the active graph floor. |
-| none | `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | Cap on mechanism-local TS/IG core mappings to prevent runaway core enumeration. |
-| none | `BGCP_PREFER_ENDPOINT_CONSENSUS` / `prefer_endpoint_consensus` | `1` | When an exact R-core to TS mapping is recovered from both R-side and P-side endpoint matching, prefer the best such consensus mapping over a one-endpoint symmetry alternative. |
+| none | `BGCP_TS_ALIGN_GRAPH_FLOOR` / `graph_floor` | `0.2` | Active WBO graph edge floor for no-cut R/P-to-TS fragment growth. |
+| none | `BGCP_TS_ALIGN_MAX_CORE_MAPS` / `max_core_maps` | `20000` | Cap on mechanism-local TS/IG core maps after expanding compressed core degeneracy. |
+| none | `BGCP_PREFER_ENDPOINT_CONSENSUS` / `prefer_endpoint_consensus` | `1` | Prefer the highest-S exact core map recovered from both R-side and P-side endpoint matching; if no consensus map exists, fall back to the highest-S endpoint-union map. |
 | none | `BGCP_SYMMETRY_REPAIR` | `1` | Enables local reshuffling inside product symmetry orbits after R-P matching to remove witness-choice artifacts. |
 | none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `1` | Computational guard for symmetry repair; the default attempts repair for every nonzero changed-bond witness and skips only already-clean mappings. |
 | none | `BGCP_SYMMETRY_REPAIR_MAX_EVALS` | `20000` | Evaluation cap for the local symmetry-repair search. |
@@ -458,7 +459,7 @@ processes with more OMP threads per process.
 Use top-level imports for stable pieces:
 
 ```python
-from rxn_core import align_from_arrays, cut_sweep, ts_core_pool
+from rxn_core import align_from_arrays, cut_sweep, run_cut_sweep_chunk
 from rxn_core import build_graph, classify_bonds
 from rxn_core import parse_g98_modes, bond_overlap_per_mode
 ```

@@ -45,6 +45,88 @@ def _core_mapping_key(mapping, core_R):
     )
 
 
+def _core_mapping_variants(branch, core_R, max_variants, *,
+                           g_P=None, p_orbits=None):
+    """Enumerate exact core maps represented by one compressed branch.
+
+    Fragment growth stores one concrete witness plus symmetry blocks.  For
+    TS/IG verification the spectator witness is irrelevant, but core atoms
+    inside those blocks must be shuffled before scoring.  This function does
+    not impose any core-core WBO validity rule; normal island growth already
+    decided what can be aligned, including separate islands and deferred
+    nonmatching edges.
+    """
+    core_R = tuple(sorted(set(int(r) for r in core_R)))
+    core_set = set(core_R)
+    base = {
+        int(r): int(branch.mapping[r])
+        for r in core_R
+        if r in branch.mapping
+    }
+    if len(base) != len(core_R):
+        return []
+
+    options = {r: {p} for r, p in base.items()}
+    for fragment in getattr(branch, 'symmetry_fragments', ()):
+        symmetry = fragment.get('symmetry') or {}
+        for block in symmetry.get('blocks') or ():
+            r_atoms = tuple(sorted(
+                int(r) for r in block.get('r_atoms', ())
+                if int(r) in core_set
+            ))
+            if not r_atoms:
+                continue
+            p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
+            if len(p_atoms) < len(r_atoms):
+                continue
+            for r in r_atoms:
+                options.setdefault(r, set()).update(p_atoms)
+
+    if p_orbits is not None and g_P is not None:
+        orbit_nodes = {}
+        for node, orbit in p_orbits.items():
+            orbit_nodes.setdefault(int(orbit), []).append(int(node))
+        for r in core_R:
+            p0 = base[r]
+            element = g_P.nodes[p0].get('element')
+            for p in orbit_nodes.get(int(p_orbits[p0]), ()):
+                if g_P.nodes[p].get('element') == element:
+                    options.setdefault(r, set()).add(int(p))
+
+    order = sorted(core_R, key=lambda r: (len(options.get(r, ())), r))
+    out = {}
+
+    def rec(i, state, used):
+        if len(out) > max_variants:
+            raise BranchLimitExceeded(
+                max_variants,
+                branch_count=len(out),
+                stage='core_symmetry_expansion',
+            )
+        if i == len(order):
+            mapping = {int(r): int(state[r]) for r in core_R}
+            out[_core_mapping_key(mapping, core_R)] = mapping
+            if len(out) > max_variants:
+                raise BranchLimitExceeded(
+                    max_variants,
+                    branch_count=len(out),
+                    stage='core_symmetry_expansion',
+                )
+            return
+        r = order[i]
+        for p in sorted(options.get(r, {base[r]})):
+            if p in used:
+                continue
+            state[r] = p
+            used.add(p)
+            rec(i + 1, state, used)
+            used.remove(p)
+            del state[r]
+
+    rec(0, {}, set())
+    return list(out.values())
+
+
 def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
                          dwbo_threshold=0.5,
                          elements_R=None, elements_P=None,
@@ -347,28 +429,46 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
             max_mapped = 0
             for branch_index, branch in enumerate(branches):
                 branch_t0 = time.perf_counter()
-                expand_t0 = time.perf_counter()
-                mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
-                expand_elapsed = time.perf_counter() - expand_t0
+                expand_elapsed = 0.0
                 score_t0 = time.perf_counter()
-                scored = _score_branch_mapping(
-                    mapping, g_R, g_P, wboR, wboT, g_R_full,
-                    p_orbits, r_orbits_full, core_R, cfg, elR, elT,
-                    return_repair_stats=return_trace)
+                if core_R:
+                    scored_items = []
+                    for core_map in _core_mapping_variants(
+                            branch, core_R, int(cfg['max_branches']),
+                            g_P=g_P, p_orbits=p_orbits):
+                        scored_items.append((
+                            _core_mapping_key(core_map, core_R),
+                            core_map,
+                            None,
+                        ))
+                    mapping_for_stats = dict(branch.mapping)
+                else:
+                    expand_t0 = time.perf_counter()
+                    mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
+                    expand_elapsed = time.perf_counter() - expand_t0
+                    scored = _score_branch_mapping(
+                        mapping, g_R, g_P, wboR, wboT, g_R_full,
+                        p_orbits, r_orbits_full, core_R, cfg, elR, elT,
+                        return_repair_stats=return_trace)
+                    if scored is None:
+                        scored_items = []
+                    elif return_trace:
+                        sig, repaired_mapping, repair_stats = scored
+                        scored_items = [(sig, repaired_mapping, repair_stats)]
+                    else:
+                        sig, repaired_mapping = scored
+                        scored_items = [(sig, repaired_mapping, None)]
+                    mapping_for_stats = mapping
                 score_elapsed = time.perf_counter() - score_t0
                 branch_elapsed = time.perf_counter() - branch_t0
                 seed_expand_elapsed += expand_elapsed
                 seed_score_elapsed += score_elapsed
-                max_mapped = max(max_mapped, len(mapping))
-                accepted = scored is not None
-                repair_stats = None
-                if accepted:
-                    if return_trace:
-                        sig, mapping, repair_stats = scored
-                    else:
-                        sig, mapping = scored
-                    out.append((sig, tuple(sorted(mapping.items())), cut))
+                max_mapped = max(max_mapped, len(mapping_for_stats))
+                accepted = bool(scored_items)
+                for sig, accepted_mapping, _repair_stats in scored_items:
+                    out.append((sig, tuple(sorted(accepted_mapping.items())), cut))
                     seed_accepted += 1
+                repair_stats = scored_items[0][2] if scored_items else None
                 repair_summary = _repair_trace_stats(repair_stats)
                 if repair_summary:
                     seed_repair_evals += repair_summary['evaluated']
@@ -382,8 +482,9 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                         'elapsed_sec': branch_elapsed,
                         'expand_elapsed_sec': expand_elapsed,
                         'score_elapsed_sec': score_elapsed,
-                        'mapped_atoms': len(mapping),
+                        'mapped_atoms': len(mapping_for_stats),
                         'accepted': bool(accepted),
+                        'accepted_core_variants': len(scored_items),
                         'repair': repair_summary,
                     })
             n_branches = len(branches)
@@ -418,6 +519,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
         # Kill the whole cut.  Partial seed-order witnesses from this cut are
         # deliberately discarded because the cut has entered a pathological
         # outer-branch multiplication regime.
+        cut_status = 'branch_cap'
         out = []
 
     elapsed = time.perf_counter() - cut_t0

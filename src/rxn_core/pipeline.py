@@ -29,8 +29,7 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       reindex_modes_to_R, bond_overlap_per_mode,
                       build_graph, cut_sweep, cut_sweep_items,
                       merge_cut_sweep_pools, run_cut_sweep_chunk,
-                      select_min_mechanisms,
-                      ts_core_pool)
+                      select_min_mechanisms)
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
 )
@@ -75,8 +74,8 @@ INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
 SYMMETRY_REPAIR = os.environ.get("BGCP_SYMMETRY_REPAIR", "1") != "0"
 SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANGES", "1"))
 SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS", "20000"))
-TS_CORE_EDGE_FLOOR = float(os.environ.get("BGCP_TS_CORE_EDGE_FLOOR", "0.2"))
-TS_CORE_MAX_CANDIDATES = int(os.environ.get("BGCP_TS_CORE_MAX_CANDIDATES", "20000"))
+TS_ALIGN_GRAPH_FLOOR = float(os.environ.get("BGCP_TS_ALIGN_GRAPH_FLOOR", "0.2"))
+TS_ALIGN_MAX_CORE_MAPS = int(os.environ.get("BGCP_TS_ALIGN_MAX_CORE_MAPS", "20000"))
 PREFER_ENDPOINT_CONSENSUS = (
     os.environ.get("BGCP_PREFER_ENDPOINT_CONSENSUS", "1").lower()
     in {"1", "true", "yes", "on"}
@@ -181,8 +180,12 @@ def ts_stage_config():
     """Current TS/IG verification hypotheses as a serializable dict."""
     return {
         'iso_tol': VIEW_ISO_TOL,
-        'edge_floor': TS_CORE_EDGE_FLOOR,
-        'max_candidates': TS_CORE_MAX_CANDIDATES,
+        'graph_floor': TS_ALIGN_GRAPH_FLOOR,
+        'dwbo_threshold': DWBO_THRESHOLD,
+        'metal_dwbo_threshold': METAL_DWBO_THRESHOLD,
+        'symmetry_wbo_tol': SYMMETRY_WBO_TOL,
+        'n_seeds': N_SEEDS_PER_RUN,
+        'max_core_maps': TS_ALIGN_MAX_CORE_MAPS,
         'prefer_endpoint_consensus': PREFER_ENDPOINT_CONSENSUS,
         'score': score_config(),
     }
@@ -683,30 +686,32 @@ def _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r):
     return merged
 
 
-def _pairs_to_product_frame(mapping_RP, pairs_R):
-    out = []
-    for a, b in pairs_R:
-        if a in mapping_RP and b in mapping_RP:
-            out.append((int(mapping_RP[a]), int(mapping_RP[b])))
-    return out
-
-
 def _ts_endpoint_pool_task(task):
-    """Worker task for one endpoint-side TS core pool.
+    """Worker task for one endpoint-side TS no-cut core alignment.
 
     A task is one `(target TS, mechanism, endpoint)` alignment.  The caller
     merges the returned R->TS and P->TS pools and then scores them in the main
     process so ranking stays deterministic.
     """
     t0 = time.time()
-    pool = ts_core_pool(task['elS'], task['wboS'],
-                        task['elT'], task['wboT'],
-                        task['core_S'],
-                        broken_R=task['broken_S'],
-                        formed_R=task['formed_S'],
-                        edge_floor=task['edge_floor'],
-                        iso_tol=task['iso_tol'],
-                        max_candidates=task['max_candidates'])
+    pool = run_cut_sweep_chunk(
+        task['elS'], task['wboS'],
+        task['elT'], task['wboT'],
+        [()],
+        core_R=task['core_S'],
+        n_workers=1,
+        trace_path=None,
+        cut_floor=task['graph_floor'],
+        graph_floor=task['graph_floor'],
+        iso_tol=task['iso_tol'],
+        dwbo_threshold=task['dwbo_threshold'],
+        metal_dwbo_threshold=task['metal_dwbo_threshold'],
+        symmetry_wbo_tol=task['symmetry_wbo_tol'],
+        n_seeds=task['n_seeds'],
+        max_branches=task['max_core_maps'],
+        chunksize=1,
+        symmetry_repair=False,
+    )
     return {
         'key': task['key'],
         'target_order': int(task['target_order']),
@@ -718,7 +723,7 @@ def _ts_endpoint_pool_task(task):
         'n_pool': len(pool),
         'core_size': len(task['core_S']),
         'elapsed': time.time() - t0,
-        'hit_cap': len(pool) >= task['max_candidates'],
+        'hit_cap': len(pool) >= task['max_core_maps'],
     }
 
 
@@ -891,8 +896,8 @@ def best_under_mech_using_pool(elR, xyzR, wboR, wboP,
     were pulled back through the R-P mechanism witness.  Two witnesses that
     agree on `core_R -> TS` are score-equivalent for this mechanism, so score
     one representative per exact core map.  When configured, prefer the best
-    map confirmed by both R and P endpoint matching; otherwise keep the
-    highest S.
+    consensus map first; if no consensus map exists, fall back to the highest
+    S over the endpoint-union pool.
     """
     core_R_set = frozenset(core_R)
     seen_core = set()
@@ -984,8 +989,8 @@ def _safe_file_stem(value):
 def write_rp_alignment_files(inputs, rp_result, out_dir=None):
     """Write clean Stage 1 alignment files for NEB/path-building use.
 
-    Coordinates are only reindexed into the R atom frame.  No Kabsch or other
-    spatial fitting is applied.  Each mechanism directory is self-contained and
+    Coordinates are only reindexed into the R atom frame.  No spatial fitting
+    is applied.  Each mechanism directory is self-contained and
     contains an R endpoint, the mechanism-specific aligned P endpoint, a
     two-frame XYZ, a mapping CSV, and a JSON metadata file.
     """
@@ -1050,7 +1055,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
             },
             'coordinate_policy': (
                 'P_aligned.xyz is product geometry reindexed into R atom '
-                'order using mapping_RP; no spatial/Kabsch alignment is used.'
+                'order using mapping_RP; no spatial fitting is used.'
             ),
         }
         write_stage_json(mdir / "mechanism.json", meta)
@@ -1389,7 +1394,7 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
 
 def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
                            mech_pos, mech, target, config):
-    mapping_RP, br_R, fm_R, core_R = _mechanism_state(inputs, mech)
+    mapping_RP, _br_R, _fm_R, core_R = _mechanism_state(inputs, mech)
     common = {
         'key': key,
         'target_order': target_order,
@@ -1398,10 +1403,15 @@ def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
         'mech_pos': int(mech_pos),
         'elT': target.el,
         'wboT': target.wbo,
-        'edge_floor': config.get('edge_floor', TS_CORE_EDGE_FLOOR),
+        'graph_floor': config.get('graph_floor', TS_ALIGN_GRAPH_FLOOR),
         'iso_tol': config.get('iso_tol', VIEW_ISO_TOL),
-        'max_candidates': config.get(
-            'max_candidates', TS_CORE_MAX_CANDIDATES),
+        'dwbo_threshold': config.get('dwbo_threshold', DWBO_THRESHOLD),
+        'metal_dwbo_threshold': config.get(
+            'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+        'symmetry_wbo_tol': config.get(
+            'symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+        'n_seeds': config.get('n_seeds', N_SEEDS_PER_RUN),
+        'max_core_maps': config.get('max_core_maps', TS_ALIGN_MAX_CORE_MAPS),
     }
     tasks.append({
         **common,
@@ -1409,8 +1419,6 @@ def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
         'elS': inputs.elR,
         'wboS': inputs.wboR,
         'core_S': list(core_R),
-        'broken_S': br_R,
-        'formed_S': fm_R,
     })
     core_P = [int(mapping_RP[r]) for r in core_R if r in mapping_RP]
     tasks.append({
@@ -1419,8 +1427,6 @@ def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
         'elS': inputs.elP,
         'wboS': inputs.wboP,
         'core_S': core_P,
-        'broken_S': _pairs_to_product_frame(mapping_RP, br_R),
-        'formed_S': _pairs_to_product_frame(mapping_RP, fm_R),
     })
 
 
@@ -1499,12 +1505,12 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
                                          x['mech_id'],
                                          x['endpoint'])):
             if res['hit_cap']:
-                print(f"    [warn] TS core pool hit cap={cfg.get('max_candidates')} "
+                print(f"    [warn] TS core alignment hit cap={cfg.get('max_core_maps')} "
                       f"{res['target_label']}:{res['endpoint']} "
                       f"core={res['core_size']}",
                       flush=True)
             print(f"    {inputs.step_name} {res['target_label'] + ':' + res['endpoint']:>12s} "
-                  f"core_match: {res['n_pool']:>4d} sigs "
+                  f"core_align: {res['n_pool']:>4d} sigs "
                   f"core={res['core_size']} in {res['elapsed']:.1f}s",
                   flush=True)
 

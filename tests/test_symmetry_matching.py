@@ -9,6 +9,7 @@ from rxn_core import bond_overlap_per_mode, rxn_overlap_per_mode
 from rxn_core.alignment import (
     cut_sweep,
     match_wbo_graphs,
+    run_cut_sweep_chunk,
     select_min_mechanisms,
     _generate_seed_orders,
     symmetry_repair_mapping,
@@ -174,6 +175,51 @@ def test_planar_metal_tetramethyl_metal_carbon_branch_is_fourfold():
     assert _represented_count(out[0]) == 4
     assert out[0].blocks[0].r_atoms == (1,)
     assert out[0].blocks[0].p_atoms == (1, 5, 9, 13)
+
+
+def test_core_alignment_expands_internal_branch_degeneracy():
+    elements, wbo = _tetramethyl_metal_graph()
+
+    pool = run_cut_sweep_chunk(
+        elements, wbo, elements, wbo, [()],
+        core_R=[1, 5], n_workers=1, n_seeds=1,
+        max_branches=100, iso_tol=0.5, symmetry_wbo_tol=0.2)
+
+    mappings = {
+        tuple(sorted(info["mapping"].items()))
+        for info in pool.values()
+    }
+    expected_targets = {1, 5, 9, 13}
+
+    assert len(mappings) == 12
+    assert mappings == {
+        ((1, a), (5, b))
+        for a in expected_targets
+        for b in expected_targets
+        if a != b
+    }
+
+
+def test_core_alignment_does_not_filter_nonmatching_core_edges():
+    el_r = ["N", "C", "O"]
+    wbo_r = np.zeros((3, 3))
+    wbo_r[0, 1] = wbo_r[1, 0] = 0.79
+    wbo_r[1, 2] = wbo_r[2, 1] = 1.10
+
+    el_t = ["N", "C", "O"]
+    wbo_t = np.zeros((3, 3))
+    wbo_t[0, 1] = wbo_t[1, 0] = 0.0
+    wbo_t[1, 2] = wbo_t[2, 1] = 1.67
+
+    pool = run_cut_sweep_chunk(
+        el_r, wbo_r, el_t, wbo_t, [()],
+        core_R=[0, 1, 2], n_workers=1, n_seeds=1,
+        graph_floor=0.2, iso_tol=0.1, max_branches=100)
+
+    assert {
+        tuple(sorted(info["mapping"].items()))
+        for info in pool.values()
+    } == {((0, 0), (1, 1), (2, 2))}
 
 
 def test_nauty_orbits_group_near_wbo_by_tolerance():
@@ -429,7 +475,7 @@ def test_generate_seed_orders_honors_trial_cap():
     orders = _generate_seed_orders(g, n_trials=2)
 
     assert len(orders) == 2
-    assert all(g.nodes[order[0]]["element"] != "H" for order in orders)
+    assert all(g.degree[order[0]] > 0 for order in orders)
 
 
 def test_generate_seed_orders_deprioritizes_common_isolated_atoms():
@@ -446,6 +492,31 @@ def test_generate_seed_orders_deprioritizes_common_isolated_atoms():
     assert max(order.index(atom) for atom in connected) < min(
         order.index(atom) for atom in isolated_common)
     assert set(order) == set(range(7))
+
+
+def test_core_atoms_do_not_reorder_seed_sequence(monkeypatch):
+    elements = ["C", "C", "O"]
+    wbo = np.zeros((3, 3))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[1, 2] = wbo[2, 1] = 1.0
+    g = build_graph(elements, wbo, bond_cut=0.2)
+    seen = []
+
+    def fake_grow_island(_g_R, _g_P, seed, *_args, **_kwargs):
+        seen.append(seed)
+        return []
+
+    monkeypatch.setattr(branch_mod, "grow_island", fake_grow_island)
+
+    branch_mod.find_islands(
+        g, g, [0, 1, 2],
+        core_R=[2],
+        stop_when_core_mapped=True,
+        p_orbits={0: 0, 1: 1, 2: 2},
+        r_orbits={0: 0, 1: 1, 2: 2},
+    )
+
+    assert seen == [0, 1, 2]
 
 
 def test_match_wbo_graphs_uses_three_seed_contract():

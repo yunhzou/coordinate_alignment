@@ -7,11 +7,9 @@ The package is intentionally split by responsibility:
 - support: witness search inside unresolved symmetry blocks
 - dedupe: one-hop boundary-aware state dedupe
 - extend: one-atom candidate extension
-- chemistry: post-hoc chemistry-relevant symmetry expansion
 """
 from __future__ import annotations
 
-from .chemistry import _v_equivalence_class, expand_chemistry_relevant_atoms
 from .dedupe import _boundary_signature, _dedup_sym_cands, _p_relation_signature
 from .extend import _extend_sym_cands
 from .orbits import (

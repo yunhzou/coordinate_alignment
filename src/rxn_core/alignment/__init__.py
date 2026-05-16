@@ -21,7 +21,6 @@ from .sweep import (
     run_cut_sweep_chunk,
     select_min_mechanisms,
 )
-from .ts_core import ts_core_pool
 from .branch import (
     SYM_REPAIR_MAX_EVALS,
     _Branch,

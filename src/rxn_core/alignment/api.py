@@ -13,7 +13,7 @@ from .branch import (
     find_islands,
     symmetry_repair_mapping,
 )
-from ..matcher import _nauty_orbits, expand_chemistry_relevant_atoms
+from ..matcher import _nauty_orbits
 
 
 @dataclass

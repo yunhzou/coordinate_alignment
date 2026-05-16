@@ -101,13 +101,14 @@ symmetry state. A block with two R atoms and four P atoms represents
 - `pipeline.py`: BGCP cached orchestration, split into explicit resumable
   stages. `run_rp_stage` is the reusable R-P alignment / mechanism-discovery
   entry point and writes `rp_stage.json`. `run_ts_stage` consumes those
-  mechanisms plus GT/IG/TS targets, runs mechanism-local R/P endpoint
-  `ts_core_pool`, and writes `ts_stage.json`. `write_view_stage` is
+  mechanisms plus GT/IG/TS targets, runs mechanism-local no-cut R/P endpoint
+  realignment through the same symmetry-aware fragment-growth matcher, expands
+  only core-atom degeneracy, and writes `ts_stage.json`. `write_view_stage` is
   presentation-only: it writes the multi-mechanism viewer plus slim eval JSON
   from stage records. `write_rp_alignment_files` is a Stage 1 export helper
   for downstream NEB/path setup: it writes per-mechanism `R.xyz`,
   `P_aligned.xyz`, `neb_endpoints.xyz`, mapping CSV, and metadata without
-  doing any spatial/Kabsch fitting. `write_ts_alignment_files` exports the
+  doing any spatial fitting. `write_ts_alignment_files` exports the
   Stage 2 selected best-S GT/IG/TS core mapping as native target XYZ plus an
   R-frame core-aligned materialization and picked-mode extended XYZ. The
   TS selector prefers exact core mappings seen from both R and P endpoints

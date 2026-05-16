@@ -10,7 +10,7 @@
   "mechanisms": [
     {
       "id": 1,
-      "label": "#1: H12-O49 (cut: C16-C20) [dedup x176]",
+      "label": "#1: H12-O49 (cut: none) [dedup x166]",
       "directory": "mechanisms/mechanism_001",
       "reactant": "mechanisms/mechanism_001/R.xyz",
       "product_aligned": "mechanisms/mechanism_001/P_aligned.xyz",
