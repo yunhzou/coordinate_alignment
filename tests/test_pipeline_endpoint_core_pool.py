@@ -493,6 +493,8 @@ def test_viewer_uses_step_level_download_button():
     assert 'id="zipBtn"' not in html
     assert 'mechanism.json' in html
     assert 'viewer_data.json' in html
+    assert 'view_html:"view.html"' in html
+    assert 'root+"/view.html"' in html
     assert 'mechanisms/mechanism_' in html
 
 
