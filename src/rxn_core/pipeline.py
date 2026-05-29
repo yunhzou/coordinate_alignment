@@ -30,10 +30,15 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       build_graph, cut_sweep, cut_sweep_items,
                       merge_cut_sweep_pools, run_cut_sweep_chunk,
                       select_min_mechanisms)
+from rxn_core.alignment.sweep import run_no_cut_core_branch_records
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
 )
-from rxn_core.matcher import _nauty_orbits
+from rxn_core.matcher import (
+    _atom_tuple_orbit,
+    _nauty_atom_generators,
+    _nauty_orbits,
+)
 
 PROJECT = Path(os.environ.get(
     "RXN_CORE_PROJECT",
@@ -686,6 +691,129 @@ def _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r):
     return merged
 
 
+def _core_branch_record_signature(record, core_R):
+    """Branch-state key for TS core records after conversion to R indexing."""
+    core_R = tuple(sorted(int(r) for r in core_R))
+    mapping = {int(r): int(t) for r, t in record.get('mapping', {}).items()}
+    blocks = []
+    block_r = set()
+    for block in record.get('blocks', ()):
+        r_atoms = tuple(sorted(
+            int(r) for r in block.get('r_atoms', ())
+            if int(r) in set(core_R)
+        ))
+        p_atoms = tuple(sorted(int(t) for t in block.get('p_atoms', ())))
+        if not r_atoms:
+            continue
+        blocks.append((r_atoms, p_atoms))
+        block_r.update(r_atoms)
+    fixed = tuple(
+        (int(r), int(mapping[r]))
+        for r in core_R
+        if r in mapping and r not in block_r
+    )
+    return fixed, tuple(sorted(blocks))
+
+
+def _add_core_branch_record_entry(pool, core_R, record, source):
+    core_R = tuple(sorted(int(r) for r in core_R))
+    mapping = {int(r): int(t) for r, t in record.get('mapping', {}).items()
+               if int(r) in set(core_R)}
+    if len(mapping) != len(core_R):
+        return
+    blocks = []
+    for block in record.get('blocks', ()):
+        r_atoms = sorted(
+            int(r) for r in block.get('r_atoms', ())
+            if int(r) in set(core_R)
+        )
+        p_atoms = sorted(int(t) for t in block.get('p_atoms', ()))
+        if r_atoms and len(p_atoms) >= len(r_atoms):
+            blocks.append({'r_atoms': r_atoms, 'p_atoms': p_atoms})
+    normalized = {
+        'mapping': mapping,
+        'blocks': blocks,
+        'source': source,
+        'dedup_count': int(record.get('dedup_count', 1)),
+    }
+    sig = _core_branch_record_signature(normalized, core_R)
+    entry = pool.get(sig)
+    if entry is None:
+        pool[sig] = {
+            'records': [normalized],
+            'sources': {source},
+            'dedup_count': int(normalized['dedup_count']),
+        }
+        return
+    entry['sources'].add(source)
+    entry['dedup_count'] = (
+        int(entry.get('dedup_count', 1)) + int(normalized['dedup_count'])
+    )
+    record_key = (
+        tuple(sorted(normalized['mapping'].items())),
+        tuple(sorted(
+            (tuple(block['r_atoms']), tuple(block['p_atoms']))
+            for block in normalized['blocks']
+        )),
+        source,
+    )
+    existing_keys = {
+        (
+            tuple(sorted(rec.get('mapping', {}).items())),
+            tuple(sorted(
+                (tuple(block.get('r_atoms', ())),
+                 tuple(block.get('p_atoms', ())))
+                for block in rec.get('blocks', ())
+            )),
+            rec.get('source'),
+        )
+        for rec in entry['records']
+    }
+    if record_key not in existing_keys:
+        entry['records'].append(normalized)
+
+
+def _product_core_branch_records_to_reactant(records_PT, mapping_RP, core_R):
+    """Convert P-indexed branch records to R-indexed core branch records."""
+    inv_RP = {int(p): int(r) for r, p in mapping_RP.items()}
+    core_set = {int(r) for r in core_R}
+    converted = []
+    for record in records_PT or ():
+        pulled = {}
+        for p, t in record.get('mapping', {}).items():
+            r = inv_RP.get(int(p))
+            if r in core_set:
+                pulled[r] = int(t)
+        if len(pulled) != len(core_set):
+            continue
+        blocks = []
+        for block in record.get('blocks', ()):
+            r_atoms = sorted({
+                inv_RP[int(p)]
+                for p in block.get('r_atoms', ())
+                if int(p) in inv_RP and inv_RP[int(p)] in core_set
+            })
+            p_atoms = sorted(int(t) for t in block.get('p_atoms', ()))
+            if r_atoms and len(p_atoms) >= len(r_atoms):
+                blocks.append({'r_atoms': r_atoms, 'p_atoms': p_atoms})
+        converted.append({
+            'mapping': pulled,
+            'blocks': blocks,
+            'dedup_count': int(record.get('dedup_count', 1)),
+        })
+    return converted
+
+
+def _merge_endpoint_core_branch_records(core_R, r_records, p_records_as_r):
+    """Merge R-TS and pulled-back P-TS branch states before shuffling."""
+    merged = {}
+    for record in r_records or ():
+        _add_core_branch_record_entry(merged, core_R, record, 'R')
+    for record in p_records_as_r or ():
+        _add_core_branch_record_entry(merged, core_R, record, 'P')
+    return merged
+
+
 def _ts_endpoint_pool_task(task):
     """Worker task for one endpoint-side TS no-cut core alignment.
 
@@ -694,14 +822,10 @@ def _ts_endpoint_pool_task(task):
     process so ranking stays deterministic.
     """
     t0 = time.time()
-    pool = run_cut_sweep_chunk(
+    branch_records = run_no_cut_core_branch_records(
         task['elS'], task['wboS'],
         task['elT'], task['wboT'],
-        [()],
-        core_R=task['core_S'],
-        n_workers=1,
-        trace_path=None,
-        cut_floor=task['graph_floor'],
+        task['core_S'],
         graph_floor=task['graph_floor'],
         iso_tol=task['iso_tol'],
         dwbo_threshold=task['dwbo_threshold'],
@@ -709,8 +833,6 @@ def _ts_endpoint_pool_task(task):
         symmetry_wbo_tol=task['symmetry_wbo_tol'],
         n_seeds=task['n_seeds'],
         max_branches=task['max_core_maps'],
-        chunksize=1,
-        symmetry_repair=False,
     )
     return {
         'key': task['key'],
@@ -719,11 +841,11 @@ def _ts_endpoint_pool_task(task):
         'mech_id': int(task['mech_id']),
         'mech_pos': int(task['mech_pos']),
         'endpoint': task['endpoint'],
-        'pool': pool,
-        'n_pool': len(pool),
+        'branch_records': branch_records,
+        'n_pool': len(branch_records),
         'core_size': len(task['core_S']),
         'elapsed': time.time() - t0,
-        'hit_cap': len(pool) >= task['max_core_maps'],
+        'hit_cap': len(branch_records) >= task['max_core_maps'],
     }
 
 
@@ -882,6 +1004,126 @@ def _has_endpoint_consensus(score):
 
 def _better_score(candidate, incumbent):
     return incumbent is None or candidate['S'] > incumbent['S']
+
+
+def _core_branch_record_automorphism_variants(
+        record, core_R, g_T, symmetry_wbo_tol, generator_cache):
+    """Materialize exact core maps by strict TS automorphism action.
+
+    Fixed core images are singleton-colored.  Each explicit branch block's
+    target pool gets a branch-local color, so nauty gives the subgroup that
+    preserves this branch state.  The resulting tuple orbit can only move core
+    atoms through valid automorphisms inside those branch pools.
+    """
+    core_R = tuple(sorted(int(r) for r in core_R))
+    core_set = set(core_R)
+    base = {int(r): int(t) for r, t in record.get('mapping', {}).items()
+            if int(r) in core_set}
+    if len(base) != len(core_R):
+        return []
+
+    blocks = []
+    covered = set()
+    for block in record.get('blocks', ()):
+        r_atoms = tuple(sorted(
+            int(r) for r in block.get('r_atoms', ())
+            if int(r) in core_set and int(r) not in covered
+        ))
+        if not r_atoms:
+            continue
+        p_atoms = tuple(sorted(int(t) for t in block.get('p_atoms', ())))
+        if len(p_atoms) < len(r_atoms):
+            continue
+        blocks.append((r_atoms, p_atoms))
+        covered.update(r_atoms)
+
+    fixed = {r: base[r] for r in core_R if r not in covered}
+    if not blocks:
+        return [base]
+
+    tag_parts = {}
+
+    def add_tag(atom, tag):
+        tag_parts.setdefault(int(atom), []).append(tag)
+
+    for r, t in fixed.items():
+        add_tag(t, ('fixed', int(r), int(t)))
+    block_sets = []
+    for idx, (r_atoms, p_atoms) in enumerate(blocks):
+        p_set = frozenset(int(t) for t in p_atoms)
+        block_sets.append((tuple(r_atoms), p_set))
+        for t in p_atoms:
+            add_tag(t, ('block', int(idx)))
+
+    atom_color_tags = {
+        atom: tuple(parts)
+        for atom, parts in tag_parts.items()
+    }
+    tag_key = tuple(sorted(atom_color_tags.items()))
+    generators = generator_cache.get(tag_key)
+    if generators is None:
+        generators = _nauty_atom_generators(
+            g_T, wbo_tol=float(symmetry_wbo_tol),
+            atom_color_tags=atom_color_tags)
+        generator_cache[tag_key] = generators
+
+    seed = tuple(base[r] for r in core_R)
+    out = {}
+    for values in _atom_tuple_orbit(seed, generators):
+        if len(set(values)) != len(values):
+            continue
+        mapping = {r: int(t) for r, t in zip(core_R, values)}
+        if any(mapping[r] != t for r, t in fixed.items()):
+            continue
+        ok = True
+        for r_atoms, p_set in block_sets:
+            if any(mapping[r] not in p_set for r in r_atoms):
+                ok = False
+                break
+        if not ok:
+            continue
+        out[_core_pool_key(mapping, core_R)] = mapping
+    return list(out.values())
+
+
+def best_under_mech_using_branch_pool(elR, xyzR, wboR, wboP,
+                                      elT, xyzT, wboT, freqs, modes_TS,
+                                      branch_pool, mapping_RP,
+                                      broken_R, formed_R, core_R,
+                                      score_weights=None,
+                                      prefer_endpoint_consensus=True,
+                                      symmetry_wbo_tol=0.2):
+    """Score exact core maps after endpoint branch-state merge."""
+    g_T = build_graph(elT, wboT, bond_cut=0.2)
+    generator_cache = {}
+    exact_pool = {}
+    for entry in branch_pool.values():
+        for record in entry.get('records', ()):
+            source = record.get('source', 'R')
+            variants = _core_branch_record_automorphism_variants(
+                record, core_R, g_T, symmetry_wbo_tol, generator_cache)
+            for mapping in variants:
+                key = _core_pool_key(mapping, core_R)
+                item = exact_pool.get(key)
+                if item is None:
+                    exact_pool[key] = {
+                        'mapping': mapping,
+                        'sources': {source},
+                        'dedup_count': int(record.get('dedup_count', 1)),
+                    }
+                else:
+                    item['sources'].add(source)
+                    item['dedup_count'] = (
+                        int(item.get('dedup_count', 1))
+                        + int(record.get('dedup_count', 1))
+                    )
+
+    return best_under_mech_using_pool(
+        elR, xyzR, wboR, wboP,
+        elT, xyzT, wboT, freqs, modes_TS,
+        exact_pool, mapping_RP, broken_R, formed_R, core_R,
+        score_weights=score_weights,
+        prefer_endpoint_consensus=prefer_endpoint_consensus)
 
 
 def best_under_mech_using_pool(elR, xyzR, wboR, wboP,
@@ -1520,23 +1762,25 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
         target = ctx['target']
         mapping_RP, br_R, fm_R, core_R = _mechanism_state(inputs, mech)
         parts = endpoint_by_key.get(ctx['key'], {})
-        r_pool = parts.get('R', {}).get('pool', {})
-        p_pool_native = parts.get('P', {}).get('pool', {})
-        p_pool_as_r = _product_core_pool_to_reactant(
-            p_pool_native, mapping_RP, core_R)
-        merged = _merge_endpoint_core_pools(core_R, r_pool, p_pool_as_r)
+        r_records = parts.get('R', {}).get('branch_records', [])
+        p_records_native = parts.get('P', {}).get('branch_records', [])
+        p_records_as_r = _product_core_branch_records_to_reactant(
+            p_records_native, mapping_RP, core_R)
+        merged = _merge_endpoint_core_branch_records(
+            core_R, r_records, p_records_as_r)
         if BGCP_TIMING:
             print(f"    {inputs.step_name} {ctx['display_label']:>12s} core_union: "
-                  f"R={len(r_pool)} P={len(p_pool_native)} "
+                  f"R={len(r_records)} P={len(p_records_native)} "
                   f"merged={len(merged)}",
                   flush=True)
-        s = best_under_mech_using_pool(
+        s = best_under_mech_using_branch_pool(
             inputs.elR, inputs.xyzR, inputs.wboR, inputs.wboP,
             target.el, target.xyz, target.wbo, target.freqs, target.modes,
             merged, mapping_RP, br_R, fm_R, core_R,
             score_weights=cfg.get('score', score_config()),
             prefer_endpoint_consensus=cfg.get(
-                'prefer_endpoint_consensus', True))
+                'prefer_endpoint_consensus', True),
+            symmetry_wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL))
         if ctx['kind'] == 'gt':
             mech['gt'] = s
         elif s:
@@ -1563,7 +1807,8 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
         'config': cfg,
         'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
         'endpoint_results': [
-            {k: v for k, v in res.items() if k != 'pool'}
+            {k: v for k, v in res.items()
+             if k not in {'pool', 'branch_records'}}
             for res in endpoint_results
         ],
         'union_top_labels': sorted(union_top),

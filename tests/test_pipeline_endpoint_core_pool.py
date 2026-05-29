@@ -196,6 +196,72 @@ def test_best_under_mech_can_prefer_endpoint_consensus(monkeypatch):
     assert best["endpoint_consensus"] is True
 
 
+def test_branch_pool_variants_use_strict_ts_automorphisms(monkeypatch):
+    branch_pool = {
+        "state": {
+            "sources": {"R", "P"},
+            "dedup_count": 1,
+            "records": [
+                {
+                    "mapping": {0: 0, 1: 1},
+                    "blocks": [{"r_atoms": [0, 1], "p_atoms": [0, 1, 2]}],
+                    "source": "R",
+                    "dedup_count": 1,
+                },
+                {
+                    "mapping": {0: 0, 1: 1},
+                    "blocks": [{"r_atoms": [0, 1], "p_atoms": [0, 1, 2]}],
+                    "source": "P",
+                    "dedup_count": 1,
+                },
+            ],
+        },
+    }
+    wbo_r = np.zeros((2, 2))
+    wbo_r[0, 1] = wbo_r[1, 0] = 1.0
+    wbo_p = np.zeros((2, 2))
+    wbo_t = np.zeros((3, 3))
+    wbo_t[0, 1] = wbo_t[1, 0] = 1.0
+
+    scored = []
+
+    def fake_score_one(*args, **kwargs):
+        mapping = args[4]
+        scored.append(dict(mapping))
+        # This would win if raw block permutation were still allowed.
+        if mapping == {0: 0, 1: 2}:
+            return {"S": 100.0, "core_map": {"0": 0, "1": 2}}
+        return {
+            "S": 10.0 if mapping == {0: 0, 1: 1} else 1.0,
+            "core_map": {str(k): v for k, v in mapping.items()},
+        }
+
+    monkeypatch.setattr(pipeline, "score_one", fake_score_one)
+
+    best = pipeline.best_under_mech_using_branch_pool(
+        ["C", "H"],
+        np.zeros((2, 3)),
+        wbo_r,
+        wbo_p,
+        ["C", "H", "H"],
+        np.zeros((3, 3)),
+        wbo_t,
+        np.zeros(1),
+        np.zeros((1, 3, 3)),
+        branch_pool,
+        {0: 0, 1: 1},
+        [],
+        [],
+        [0, 1],
+        prefer_endpoint_consensus=True,
+        symmetry_wbo_tol=0.2,
+    )
+
+    assert {0: 0, 1: 2} not in scored
+    assert best["core_map"] == {"0": 0, "1": 1}
+    assert best["endpoint_consensus"] is True
+
+
 def test_sp_cache_cache_only_rejects_missing_wbo(tmp_path):
     cache = tmp_path / "R"
     cache.mkdir()

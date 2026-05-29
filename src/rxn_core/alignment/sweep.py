@@ -45,6 +45,68 @@ def _core_mapping_key(mapping, core_R):
     )
 
 
+def _core_branch_record(branch, core_R):
+    """Return the core-restricted compressed state for one aligned branch.
+
+    This is intentionally not an exact core-map expansion.  It keeps the
+    branch's set-to-set symmetry pools so TS/IG scoring can merge endpoint
+    support before materializing automorphism variants.
+    """
+    core_R = tuple(sorted(set(int(r) for r in core_R)))
+    core_set = set(core_R)
+    mapping = {
+        int(r): int(branch.mapping[r])
+        for r in core_R
+        if r in branch.mapping
+    }
+    if len(mapping) != len(core_R):
+        return None
+
+    blocks = {}
+    for fragment in getattr(branch, 'symmetry_fragments', ()):
+        symmetry = fragment.get('symmetry') or {}
+        for block in symmetry.get('blocks') or ():
+            r_atoms = tuple(sorted(
+                int(r) for r in block.get('r_atoms', ())
+                if int(r) in core_set
+            ))
+            if not r_atoms:
+                continue
+            p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
+            if len(p_atoms) < len(r_atoms):
+                continue
+            blocks[(r_atoms, p_atoms)] = {
+                'r_atoms': list(r_atoms),
+                'p_atoms': list(p_atoms),
+            }
+
+    return {
+        'mapping': mapping,
+        'blocks': [blocks[key] for key in sorted(blocks)],
+        'dedup_count': 1,
+    }
+
+
+def _core_branch_record_key(record, core_R):
+    core_R = tuple(sorted(set(int(r) for r in core_R)))
+    mapping = {int(r): int(t) for r, t in record.get('mapping', {}).items()}
+    blocks = []
+    block_r = set()
+    for block in record.get('blocks', ()):
+        r_atoms = tuple(sorted(int(r) for r in block.get('r_atoms', ())))
+        p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
+        if not r_atoms:
+            continue
+        blocks.append((r_atoms, p_atoms))
+        block_r.update(r_atoms)
+    fixed = tuple(
+        (int(r), int(mapping[r]))
+        for r in core_R
+        if r in mapping and r not in block_r
+    )
+    return fixed, tuple(sorted(blocks))
+
+
 def _core_mapping_variants(branch, core_R, max_variants, *,
                            g_P=None, p_orbits=None):
     """Enumerate exact core maps represented by one compressed branch.
@@ -715,6 +777,64 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
     return _cut_sweep_chunk_serial(
         elR, wboR, elT, wboT, cfg, core_R, normalized_cuts,
         trace_path=trace_path)
+
+
+def run_no_cut_core_branch_records(elS, wboS, elT, wboT, core_S, *,
+                                   graph_floor=0.2, iso_tol=1.0,
+                                   dwbo_threshold=0.5,
+                                   metal_dwbo_threshold=0.3,
+                                   symmetry_wbo_tol=0.2,
+                                   n_seeds=3, max_branches=20000):
+    """Return no-cut endpoint->target branch states for a mechanism core.
+
+    Unlike ``run_cut_sweep_chunk(..., core_R=...)``, this keeps branch-level
+    compressed symmetry records.  Callers can merge R-derived and P-derived
+    endpoint support first, then expand only the automorphism variants inside
+    each merged branch state for TS/IG scoring.
+    """
+    core_S = tuple(sorted(set(int(r) for r in core_S or ())))
+    if not core_S:
+        return []
+
+    g_S = build_graph(elS, wboS, bond_cut=float(graph_floor))
+    g_T = build_graph(elT, wboT, bond_cut=float(graph_floor))
+    p_orbits = _nauty_orbits(g_T, wbo_tol=float(symmetry_wbo_tol))
+    r_orbits = _nauty_orbits(g_S, wbo_tol=float(symmetry_wbo_tol))
+    orders = _generate_seed_orders(g_S, n_trials=int(n_seeds))
+    records = {}
+
+    try:
+        for order in orders:
+            branches = find_islands(
+                g_S, g_T, list(order),
+                iso_tol=float(iso_tol),
+                max_branches=int(max_branches),
+                abort_on_branch_cap=True,
+                dwbo_threshold=float(dwbo_threshold),
+                metal_dwbo_threshold=metal_dwbo_threshold,
+                symmetry_wbo_tol=float(symmetry_wbo_tol),
+                core_R=core_S,
+                stop_when_core_mapped=True,
+                p_orbits=p_orbits,
+                r_orbits=r_orbits,
+            )
+            for branch in branches:
+                record = _core_branch_record(branch, core_S)
+                if record is None:
+                    continue
+                key = _core_branch_record_key(record, core_S)
+                existing = records.get(key)
+                if existing is None:
+                    records[key] = record
+                else:
+                    existing['dedup_count'] = (
+                        int(existing.get('dedup_count', 1))
+                        + int(record.get('dedup_count', 1))
+                    )
+    except BranchLimitExceeded:
+        return []
+
+    return list(records.values())
 
 
 def merge_cut_sweep_pools(pools):

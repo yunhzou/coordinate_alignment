@@ -1,7 +1,7 @@
 """Orbit grouping for WBO graphs."""
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import networkx as nx
 
@@ -111,26 +111,16 @@ def _wbo_tolerance_bucket_lookup(g, tolerance):
             for pair, value in pair_values.items()}, value_to_bucket[0.0]
 
 
-def _nauty_orbits(g, wbo_tol=0.2):
-    """Exact automorphism orbits for a tolerance-bucketed WBO graph.
-
-    Returns the same shape as :func:`_color_refine_orbits`: ``dict[node] ->
-    orbit_id``.  Atom elements are vertex colors.  WBO edge colors are encoded
-    by subdivision vertices colored by WBO bucket; the baseline 0-WBO bucket is
-    represented by absence of a subdivision vertex.
-
-    ``pynauty`` does the exact automorphism calculation on that colored graph.
-    The WBO tolerance only controls bucket construction; local extension still
-    performs its normal active R-pair ``iso_tol`` validity checks.
-    """
+def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None):
     try:
         import pynauty
     except ImportError as exc:
         raise RuntimeError(
-            "pynauty is required for _nauty_orbits; install pynauty or use "
-            "_color_refine_orbits"
+            "pynauty is required for nauty symmetry operations; install "
+            "pynauty or use _color_refine_orbits"
         ) from exc
 
+    atom_color_tags = dict(atom_color_tags or {})
     nodes = sorted(g.nodes())
     atom_index = {node: idx for idx, node in enumerate(nodes)}
     pair_buckets, zero_bucket = _wbo_tolerance_bucket_lookup(g, wbo_tol)
@@ -139,7 +129,8 @@ def _nauty_orbits(g, wbo_tol=0.2):
     vertex_colors = defaultdict(set)
     elements = nx.get_node_attributes(g, 'element')
     for node, idx in atom_index.items():
-        vertex_colors[('atom', elements.get(node, ''))].add(idx)
+        tag = atom_color_tags.get(node)
+        vertex_colors[('atom', elements.get(node, ''), tag)].add(idx)
 
     next_idx = len(nodes)
     for (a, b), bucket in sorted(pair_buckets.items()):
@@ -166,6 +157,24 @@ def _nauty_orbits(g, wbo_tol=0.2):
         next_idx, directed=False,
         adjacency_dict=adjacency_dict,
         vertex_coloring=coloring)
+    return nodes, atom_index, nauty_graph, pair_buckets, zero_bucket
+
+
+def _nauty_orbits(g, wbo_tol=0.2):
+    """Exact automorphism orbits for a tolerance-bucketed WBO graph.
+
+    Returns the same shape as :func:`_color_refine_orbits`: ``dict[node] ->
+    orbit_id``.  Atom elements are vertex colors.  WBO edge colors are encoded
+    by subdivision vertices colored by WBO bucket; the baseline 0-WBO bucket is
+    represented by absence of a subdivision vertex.
+
+    ``pynauty`` does the exact automorphism calculation on that colored graph.
+    The WBO tolerance only controls bucket construction; local extension still
+    performs its normal active R-pair ``iso_tol`` validity checks.
+    """
+    nodes, atom_index, nauty_graph, pair_buckets, zero_bucket = (
+        _nauty_colored_wbo_graph(g, wbo_tol))
+    import pynauty
     _, _, _, raw_orbits, _ = pynauty.autgrp(nauty_graph)
 
     atom_orbit_groups = defaultdict(list)
@@ -179,6 +188,57 @@ def _nauty_orbits(g, wbo_tol=0.2):
     return _OrbitMap(
         compact, wbo_buckets=pair_buckets,
         zero_bucket=zero_bucket, wbo_tol=wbo_tol)
+
+
+def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None):
+    """Atom-level automorphism generators for a colored WBO graph.
+
+    ``atom_color_tags`` refines the atom coloring before nauty is run.  This
+    lets callers ask for the subgroup that fixes branch-specific atoms or
+    preserves branch-specific target pools, then generate only strict
+    automorphism variants for that branch.
+    """
+    nodes, atom_index, nauty_graph, _pair_buckets, _zero_bucket = (
+        _nauty_colored_wbo_graph(
+            g, wbo_tol, atom_color_tags=atom_color_tags))
+    import pynauty
+    generators, _grpsize1, _grpsize2, _raw_orbits, _numorbits = (
+        pynauty.autgrp(nauty_graph))
+    index_to_node = {idx: node for node, idx in atom_index.items()}
+    atom_count = len(nodes)
+    out = []
+    seen = set()
+    for gen in generators:
+        perm = {}
+        for node, idx in atom_index.items():
+            image_idx = int(gen[idx])
+            if image_idx >= atom_count:
+                raise RuntimeError(
+                    "nauty automorphism mapped atom vertex to non-atom vertex")
+            perm[int(node)] = int(index_to_node[image_idx])
+        key = tuple((node, perm[node]) for node in sorted(perm))
+        if key not in seen and any(node != image for node, image in key):
+            seen.add(key)
+            out.append(perm)
+    return tuple(out)
+
+
+def _atom_tuple_orbit(seed, generators):
+    """Unique tuple states reachable by applying atom automorphism generators."""
+    seed = tuple(int(x) for x in seed)
+    if not generators:
+        return (seed,)
+    seen = {seed}
+    q = deque([seed])
+    while q:
+        state = q.popleft()
+        for gen in generators:
+            nxt = tuple(int(gen.get(atom, atom)) for atom in state)
+            if nxt in seen:
+                continue
+            seen.add(nxt)
+            q.append(nxt)
+    return tuple(sorted(seen))
 
 
 def _cand_canon_signature(cand, p_orbits):

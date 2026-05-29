@@ -13,10 +13,12 @@ from __future__ import annotations
 from .dedupe import _boundary_signature, _dedup_sym_cands, _p_relation_signature
 from .extend import _extend_sym_cands
 from .orbits import (
+    _atom_tuple_orbit,
     _cand_canon_signature,
     _color_refine_orbits,
     _dedup_cands_by_orbit,
     _group_nodes_by_signature,
+    _nauty_atom_generators,
     _nauty_orbits,
     _orbit_wbo_bucket,
 )
