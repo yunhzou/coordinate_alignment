@@ -471,7 +471,7 @@ def test_process_xyz_stage_can_resume_rp_for_collective_validation(
 
 def test_ts_target_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):
     ts_xyz = tmp_path / "guess.xyz"
-    ts_xyz.write_text("1\nTS\nH 0 0 0\n")
+    ts_xyz.write_text("1\nenergy: -1.234567 gnorm: 0.0\nH 0 0 0\n")
     sp_cache = tmp_path / "single_point"
     hess_cache = tmp_path / "hessian"
     calls = []
@@ -499,6 +499,7 @@ def test_ts_target_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):
     assert target.kind == "ig"
     assert target.label == "guess"
     assert target.freqs.tolist() == [-500.0]
+    assert target.energy == -1.234567
     assert calls == [
         ("sp", "guess.xyz", "single_point", 1, 1),
         ("hess", "guess.xyz", "hessian", 1, 1),
@@ -554,14 +555,37 @@ def test_viewer_uses_step_level_download_button():
     )
 
     assert 'id="downloadAllBtn">Download</button>' in html
+    assert 'id="r_meta"' in html
+    assert 'id="p_meta"' in html
     assert 'id="showAtomIndices"' in html
     assert 'addAtomLabels' in html
     assert 'id="zipBtn"' not in html
     assert 'mechanism.json' in html
+    assert 'energies_frequencies.json' in html
+    assert 'buildEnergyFrequencySummary' in html
     assert 'viewer_data.json' in html
     assert 'view_html:"view.html"' in html
     assert 'root+"/view.html"' in html
     assert 'mechanisms/mechanism_' in html
+
+
+def test_view_data_carries_endpoint_energy_metadata():
+    wbo = np.zeros((1, 1))
+    inputs = pipeline.step_inputs_from_arrays(
+        "h",
+        ["H"], np.array([[0.0, 0.0, 0.0]]), wbo,
+        ["H"], np.array([[1.0, 0.0, 0.0]]), wbo,
+        energy_R=-1.0, energy_P=-0.9,
+    )
+
+    data = pipeline.build_view_data(inputs, {"mechanisms": []})
+
+    assert data["reactant"]["metadata"]["energy_hartree"] == -1.0
+    assert data["product"]["metadata"]["energy_hartree"] == -0.9
+    assert data["metadata_units"] == {
+        "energy": "hartree",
+        "frequency": "cm^-1",
+    }
 
 
 def test_array_based_mechanism_discovery_returns_aligned_product():
@@ -631,6 +655,16 @@ def test_ts_alignment_file_export_writes_best_score_core_frame(tmp_path):
                 "wbo_progress_factor": 0.9,
                 "freq": -500.0,
                 "k": 0,
+                "energy_hartree": -2.5,
+                "frequency_units": "cm^-1",
+                "frequencies_cm1": [-500.0, 100.0],
+                "frequency_summary": {
+                    "n_modes": 2,
+                    "n_imaginary": 1,
+                    "imaginary_cm1": [-500.0],
+                    "lowest_cm1": -500.0,
+                    "highest_cm1": 100.0,
+                },
                 "core_map": {"0": 1, "1": 0},
                 "core_sources": ["R"],
                 "core_pool_dedup_count": 1,
@@ -652,4 +686,8 @@ def test_ts_alignment_file_export_writes_best_score_core_frame(tmp_path):
     assert (tdir / "TS_native.xyz").exists()
     assert (tdir / "TS_core_aligned_R_frame.xyz").exists()
     assert (tdir / "picked_mode_R_frame.xyz").exists()
+    score_doc = pipeline.read_stage_json(tdir / "score.json")
+    assert score_doc["energy_hartree"] == -2.5
+    assert score_doc["frequencies_cm1"] == [-500.0, 100.0]
+    assert score_doc["frequency_summary"]["n_imaginary"] == 1
     assert "spectator bijections" in (tdir / "score.json").read_text()

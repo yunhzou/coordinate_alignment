@@ -68,6 +68,8 @@ def run_xtb(xyz_path, workdir, charge=0, uhf=0, omp_threads=1):
             text=True,
             env=env,
         )
+        (workdir / "xtb.stdout").write_text(res.stdout or "")
+        (workdir / "xtb.stderr").write_text(res.stderr or "")
         if res.returncode != 0:
             raise RuntimeError(f"xtb failed: {res.stderr[-500:]}")
         if not wf.exists():
@@ -101,6 +103,8 @@ def run_xtb_hess(xyz_path: Path, workdir: Path, charge: int = 0, uhf: int = 0,
             text=True,
             env=env,
         )
+        (workdir / "xtbhess.stdout").write_text(res.stdout or "")
+        (workdir / "xtbhess.stderr").write_text(res.stderr or "")
         if res.returncode != 0:
             raise RuntimeError(
                 f"xtb hess failed in {workdir}: {res.stderr[-500:]}"

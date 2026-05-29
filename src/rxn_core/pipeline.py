@@ -112,6 +112,8 @@ class StepInputs:
     elP: list
     xyzP: np.ndarray
     wboP: np.ndarray
+    energy_R: float | None = None
+    energy_P: float | None = None
 
 
 @dataclass
@@ -125,6 +127,7 @@ class TSTarget:
     wbo: np.ndarray
     freqs: np.ndarray
     modes: np.ndarray
+    energy: float | None = None
 
 
 @dataclass
@@ -262,6 +265,131 @@ def _xyz_path(d, include_xtbhess=False):
     return xyzs[0] if xyzs else None
 
 
+def _finite_float(value):
+    if value is None:
+        return None
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    return out if np.isfinite(out) else None
+
+
+_FLOAT_RE = r"([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?)"
+_ENERGY_PATTERNS = [
+    re.compile(rf"\benergy\s*:\s*{_FLOAT_RE}", re.IGNORECASE),
+    re.compile(rf"\btotal\s+energy\b\s*[:=]?\s*{_FLOAT_RE}", re.IGNORECASE),
+    re.compile(rf"\bTOTAL\s+ENERGY\b\s*{_FLOAT_RE}"),
+]
+
+
+def _parse_energy_from_text(text):
+    """Best-effort extraction of an xtb/XYZ energy in Hartree."""
+    for pattern in _ENERGY_PATTERNS:
+        match = pattern.search(text or "")
+        if match:
+            return _finite_float(match.group(1))
+    return None
+
+
+def _read_xyz_comment(path):
+    try:
+        with Path(path).open() as handle:
+            handle.readline()
+            return handle.readline().strip()
+    except OSError:
+        return ""
+
+
+def _read_cache_energy(cache_dir):
+    """Read cached xtb energy from XYZ comments or saved xtb output logs."""
+    cache_dir = Path(cache_dir)
+    if not cache_dir.exists():
+        return None
+    for xyz in sorted(cache_dir.glob("*.xyz")):
+        energy = _parse_energy_from_text(_read_xyz_comment(xyz))
+        if energy is not None:
+            return energy
+    preferred = [
+        "xtb.stdout", "xtb.out", "xtb.log", "output.log",
+        "xtbhess.stdout", "xtbhess.out", "g98.out",
+    ]
+    seen = set()
+    candidates = []
+    for name in preferred:
+        path = cache_dir / name
+        if path.exists():
+            candidates.append(path)
+            seen.add(path)
+    for pattern in ("*.out", "*.log", "*.stdout"):
+        for path in sorted(cache_dir.glob(pattern)):
+            if path not in seen:
+                candidates.append(path)
+                seen.add(path)
+    for path in candidates:
+        try:
+            energy = _parse_energy_from_text(path.read_text(errors="ignore"))
+        except OSError:
+            energy = None
+        if energy is not None:
+            return energy
+    return None
+
+
+def _frequency_list(freqs):
+    if freqs is None:
+        return None
+    arr = np.asarray(freqs, float).reshape(-1)
+    return [float(v) for v in arr if np.isfinite(v)]
+
+
+def _frequency_summary(freqs):
+    values = _frequency_list(freqs)
+    if values is None:
+        return None
+    if not values:
+        return {
+            'n_modes': 0,
+            'n_imaginary': 0,
+            'imaginary_cm1': [],
+            'lowest_cm1': None,
+            'highest_cm1': None,
+        }
+    imaginary = [v for v in values if v < 0]
+    return {
+        'n_modes': len(values),
+        'n_imaginary': len(imaginary),
+        'imaginary_cm1': imaginary,
+        'lowest_cm1': min(values),
+        'highest_cm1': max(values),
+    }
+
+
+def _endpoint_metadata(label, energy):
+    return {
+        'label': label,
+        'energy_hartree': _finite_float(energy),
+        'energy_units': 'hartree',
+    }
+
+
+def _target_metadata(target):
+    return {
+        'energy_hartree': _finite_float(target.energy),
+        'energy_units': 'hartree',
+        'frequencies_cm1': _frequency_list(target.freqs),
+        'frequency_summary': _frequency_summary(target.freqs),
+        'frequency_units': 'cm^-1',
+    }
+
+
+def _attach_target_metadata(record, target):
+    if record is None:
+        return None
+    record.update(_target_metadata(target))
+    return record
+
+
 def _xtb_available():
     return shutil.which("xtb") is not None
 
@@ -392,7 +520,7 @@ def load_endpoint_from_xyz(xyz_path, workdir, label, *, charge=None,
 
 
 def step_inputs_from_arrays(step_name, elR, xyzR, wboR, elP, xyzP, wboP,
-                            step_dir=None):
+                            step_dir=None, energy_R=None, energy_P=None):
     """Build Stage 1 inputs directly from in-memory molecule arrays."""
     return StepInputs(
         step_name=str(step_name),
@@ -403,6 +531,8 @@ def step_inputs_from_arrays(step_name, elR, xyzR, wboR, elP, xyzP, wboP,
         elP=list(elP),
         xyzP=np.asarray(xyzP, float),
         wboP=np.asarray(wboP, float),
+        energy_R=_finite_float(energy_R),
+        energy_P=_finite_float(energy_P),
     )
 
 
@@ -431,12 +561,15 @@ def alignment_inputs_from_xyz(reactant_xyz, product_xyz, workdir=None, *,
     elP, xyzP, wboP = load_endpoint_from_xyz(
         product_xyz, product_workdir, product_label,
         charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode)
+    energy_R = _read_cache_energy(reactant_workdir)
+    energy_P = _read_cache_energy(product_workdir)
     step_dir = (
         Path(workdir) if workdir is not None
         else Path(reactant_workdir).parent
     )
     return step_inputs_from_arrays(
-        name, elR, xyzR, wboR, elP, xyzP, wboP, step_dir=step_dir)
+        name, elR, xyzR, wboR, elP, xyzP, wboP, step_dir=step_dir,
+        energy_R=energy_R, energy_P=energy_P)
 
 
 def load_step_inputs(step_name, *, charge=None, multiplicity=None,
@@ -452,7 +585,7 @@ def load_step_inputs(step_name, *, charge=None, multiplicity=None,
 
 
 def ts_target_from_arrays(kind, label, el, xyz, wbo, freqs, modes,
-                          target_index=0):
+                          target_index=0, energy=None):
     """Build a Stage 2 verification target directly from arrays."""
     return TSTarget(
         kind=str(kind),
@@ -463,6 +596,7 @@ def ts_target_from_arrays(kind, label, el, xyz, wbo, freqs, modes,
         wbo=np.asarray(wbo, float),
         freqs=np.asarray(freqs, float),
         modes=np.asarray(modes, float),
+        energy=_finite_float(energy),
     )
 
 
@@ -493,8 +627,12 @@ def ts_target_from_xyz(kind, label, xyz_path, workdir=None, *,
     freqs, modes = _load_hess(
         hess_workdir, label, xyz_fallback=_xyz_path(sp_workdir) or xyz_path,
         xtb_mode=xtb_mode, charge=charge, multiplicity=multiplicity)
+    energy = _read_cache_energy(sp_workdir)
+    if energy is None:
+        energy = _read_cache_energy(hess_workdir)
     return ts_target_from_arrays(
-        kind, label, el, xyz, wbo, freqs, modes, target_index=target_index)
+        kind, label, el, xyz, wbo, freqs, modes, target_index=target_index,
+        energy=energy)
 
 
 def discover_mechanisms_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
@@ -1241,6 +1379,10 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
     out_dir.mkdir(parents=True, exist_ok=True)
     mech_root = out_dir / "mechanisms"
     mech_root.mkdir(exist_ok=True)
+    endpoint_metadata = {
+        'reactant': _endpoint_metadata('R', inputs.energy_R),
+        'product': _endpoint_metadata('P', inputs.energy_P),
+    }
 
     (out_dir / "R.xyz").write_text(write_xyz_str(
         inputs.elR, inputs.xyzR, f"{inputs.step_name} reactant R frame"))
@@ -1286,6 +1428,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
             'formed_bonds_R': mech.get('formed_bonds_R', []),
             'formed_bonds_P': mech.get('formed_bonds_P', []),
             'core_atoms_R': mech.get('core_atoms', []),
+            'endpoint_metadata': endpoint_metadata,
             'dedup_count': mech.get('dedup_count', 1),
             'dedup_source_ids': mech.get('dedup_source_ids', [mech_id]),
             'dedup_cuts': mech.get('dedup_cuts', [mech.get('cut')]),
@@ -1320,6 +1463,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
         'step': inputs.step_name,
         'n_atoms': len(inputs.elR),
         'source_stage': 'rp_stage.json',
+        'endpoint_metadata': endpoint_metadata,
         'root_files': {
             'reactant': 'R.xyz',
             'product_original_order': 'P_original.xyz',
@@ -1365,6 +1509,10 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
     out_dir.mkdir(parents=True, exist_ok=True)
     mech_root = out_dir / "mechanisms"
     mech_root.mkdir(exist_ok=True)
+    endpoint_metadata = {
+        'reactant': _endpoint_metadata('R', inputs.energy_R),
+        'product': _endpoint_metadata('P', inputs.energy_P),
+    }
 
     manifest_mechs = []
     for mech in ts_result.get('mechanisms', []):
@@ -1415,6 +1563,11 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
                     'mode_index': score.get('k'),
                 },
                 'score_formula': score.get('score_formula'),
+                'energy_hartree': score.get('energy_hartree'),
+                'energy_units': score.get('energy_units', 'hartree'),
+                'frequency_units': score.get('frequency_units', 'cm^-1'),
+                'frequencies_cm1': score.get('frequencies_cm1'),
+                'frequency_summary': score.get('frequency_summary'),
                 'event_terms': score.get('event_terms', []),
                 'core_map_R_to_target': score.get('core_map', {}),
                 'core_sources': score.get('core_sources', []),
@@ -1442,6 +1595,8 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
                 'kind': kind,
                 'label': label,
                 'S': score.get('S'),
+                'energy_hartree': score.get('energy_hartree'),
+                'frequency_summary': score.get('frequency_summary'),
                 'directory': f"mechanisms/{mech_name}/{target_name}",
                 'target_native': (
                     f"mechanisms/{mech_name}/{target_name}/TS_native.xyz"),
@@ -1467,6 +1622,7 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
         'step': inputs.step_name,
         'n_atoms': len(inputs.elR),
         'source_stage': 'ts_stage.json',
+        'endpoint_metadata': endpoint_metadata,
         'mechanisms': manifest_mechs,
         'coordinate_policy': (
             'Stage 2 exports native target coordinates plus selected best-S '
@@ -1706,14 +1862,16 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
     target_order = 0
 
     for target in targets:
+        target_view = {
+            'label': target.label,
+            'elements': list(target.el),
+            'xyz': np.asarray(target.xyz, float).tolist(),
+        }
+        target_view.update(_target_metadata(target))
         if target.kind != 'gt':
             ig_index = len(mechanisms[0]['igs']) if mechanisms else 0
             for mech in mechanisms:
-                mech['igs'].append({
-                    'label': target.label,
-                    'elements': list(target.el),
-                    'xyz': np.asarray(target.xyz, float).tolist(),
-                })
+                mech['igs'].append(dict(target_view))
         else:
             ig_index = -1
         order = target_order
@@ -1781,6 +1939,7 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
             prefer_endpoint_consensus=cfg.get(
                 'prefer_endpoint_consensus', True),
             symmetry_wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL))
+        _attach_target_metadata(s, target)
         if ctx['kind'] == 'gt':
             mech['gt'] = s
         elif s:
@@ -1891,15 +2050,21 @@ def build_view_data(inputs, rp_result, ts_result=None, include_gt=None):
         'reactant': {
             'elements': inputs.elR,
             'coords': np.asarray(inputs.xyzR).tolist(),
+            'metadata': _endpoint_metadata('R', inputs.energy_R),
         },
         'product': {
             'elements': inputs.elP,
             'coords': np.asarray(inputs.xyzP).tolist(),
+            'metadata': _endpoint_metadata('P', inputs.energy_P),
         },
         'mechanisms': mechanisms,
         'default_mech_id': default_id,
         'include_gt': bool(include_gt),
         'score_config': view_score_config,
+        'metadata_units': {
+            'energy': 'hartree',
+            'frequency': 'cm^-1',
+        },
     }
 
 
@@ -1910,6 +2075,12 @@ def build_eval_slim(view_data):
         'n_mechs': len(view_data.get('mechanisms', [])),
         'include_gt': bool(view_data.get('include_gt')),
         'score_config': view_data.get('score_config', score_config()),
+        'reactant': {
+            'metadata': view_data.get('reactant', {}).get('metadata', {}),
+        },
+        'product': {
+            'metadata': view_data.get('product', {}).get('metadata', {}),
+        },
         'mechanisms': [],
     }
     for mech in view_data.get('mechanisms', []):
@@ -1925,12 +2096,14 @@ def build_eval_slim(view_data):
             'gt': ({k: mech['gt'].get(k) for k in [
                 'S', 'beta', 'wbo_progress', 'wbo_progress_factor',
                 'freq', 'core_map', 'core_sources', 'endpoint_consensus',
+                'energy_hartree', 'frequency_summary',
             ]} if mech.get('gt') else None),
             'igs': [
                 {k: ig.get(k) for k in [
                     'label', 'S', 'beta', 'wbo_progress',
                     'wbo_progress_factor', 'freq', 'core_map',
                     'core_sources', 'endpoint_consensus', 'is_top2',
+                    'energy_hartree', 'frequency_summary',
                 ]}
                 for ig in mech.get('igs', [])
             ],
@@ -2000,9 +2173,11 @@ h2{{margin:0 0 4px;font-size:18px}}
 </div>
 <div class="ref-row" id="ref-row">
   <div class="panel"><div class="ph"><span class="lbl">Reactant</span><span class="rk">static <button class="dl" onclick="downloadR()">XYZ</button></span></div>
-    <div class="vw"><div id="vw_R" class="vwbox"></div></div></div>
+    <div class="vw"><div id="vw_R" class="vwbox"></div></div>
+    <div class="meta" id="r_meta"></div></div>
   <div class="panel"><div class="ph"><span class="lbl">Product</span><span class="rk" id="prod_label">static <button class="dl" onclick="downloadP()">XYZ</button></span></div>
-    <div class="vw"><div id="vw_P" class="vwbox"></div></div></div>
+    <div class="vw"><div id="vw_P" class="vwbox"></div></div>
+    <div class="meta" id="p_meta"></div></div>
   <div class="panel" id="gt_panel"><div class="ph"><span class="lbl">Ground-truth TS</span><span class="rk" id="gt_S">S=? <button class="dl" onclick="downloadGT()">XYZ</button></span></div>
     <div class="vw"><div id="vw_GT" class="vwbox"></div></div>
     <div class="meta" id="gt_meta"></div></div>
@@ -2027,12 +2202,19 @@ function downloadR() {{ downloadXYZ(safeName(DATA.step)+"_R.xyz", DATA.reactant.
 function downloadP() {{ const mech = findMech(currentMechId); if (mech && mech.product_xyz_in_R) downloadXYZ(safeName(DATA.step)+"_P_aligned_mech"+mech.id+".xyz", DATA.reactant.elements, mech.product_xyz_in_R, DATA.step+" P aligned to R mech "+mech.id); else downloadXYZ(safeName(DATA.step)+"_P.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P"); }}
 function downloadGT() {{ const mech = findMech(currentMechId); if (mech.gt) downloadXYZ(safeName(DATA.step)+"_GT_mech"+mech.id+".xyz", mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, DATA.step+" GT mech "+mech.id); }}
 function downloadIG(ig) {{ downloadXYZ(safeName(DATA.step)+"_"+safeName(ig.label)+".xyz", ig.elements || elements, ig.xyz || ig.xyz_in_R, DATA.step+" "+ig.label); }}
-function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, decomposition:{{beta:item.beta, wbo_progress:item.wbo_progress, wbo_progress_factor:item.wbo_progress_factor, freq:item.freq, mode_index:item.k}}, event_terms:item.event_terms || [], core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count, endpoint_consensus:item.endpoint_consensus}}; }}
-function mechanismRecord(mech) {{ return {{id:mech.id, label:mech.label, cut:mech.cut, dedup_count:mech.dedup_count || 1, dedup_source_ids:mech.dedup_source_ids || [mech.id], dedup_cuts:mech.dedup_cuts || [mech.cut], broken_bonds_R:mech.broken_bonds_R, formed_bonds_R:mech.formed_bonds_R, formed_bonds_P:mech.formed_bonds_P || [], core_atoms_R:mech.core_atoms || [], gt:scoreRecord(mech.gt), igs:(mech.igs || []).map(ig => ({{label:ig.label, is_top2:!!ig.is_top2, is_union_top:!!ig.is_union_top, score:scoreRecord(ig)}}))}}; }}
-function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms, include_gt:!!DATA.include_gt, default_mech_id:DATA.default_mech_id, score_formula:"S = beta * wbo_progress^WBO_PROGRESS_POWER", score_config:DATA.score_config || null, mechanisms:(DATA.mechanisms || []).map(mechanismRecord), files:{{reactant:"R.xyz", product:"P.xyz", gt:"GT/GT.xyz if available", ig:"IG/<label>.xyz", per_mechanism:"mechanisms/mechanism_<id>.json", full_viewer_data:"viewer_data.json", view_html:"view.html"}}}}; }}
-function scoreMeta(item) {{ if (!item || item.beta === undefined) return "(no data)"; return "<b>&beta;</b>="+item.beta.toFixed(3)+" <b>wbo</b>="+item.wbo_progress.toFixed(3)+" <b>freq</b>="+item.freq.toFixed(0)+"i"; }}
+function isFiniteNumber(v) {{ return typeof v === "number" && isFinite(v); }}
+function formatEnergy(v) {{ return isFiniteNumber(v) ? v.toFixed(8)+" Eh" : "n/a"; }}
+function formatFreq(v) {{ return isFiniteNumber(v) ? v.toFixed(0)+" cm^-1" : "n/a"; }}
+function structureMeta(item) {{ const meta = (item && item.metadata) ? item.metadata : item; if (!meta) return "<b>E</b>=n/a"; return "<b>E</b>="+formatEnergy(meta.energy_hartree); }}
+function freqSummaryText(item) {{ if (!item || !item.frequency_summary) return ""; const fs = item.frequency_summary; const imag = fs.imaginary_cm1 || []; if (imag.length) return imag.map(formatFreq).join(", "); if (isFiniteNumber(fs.lowest_cm1)) return "min "+formatFreq(fs.lowest_cm1); return ""; }}
+function targetAnalysisRecord(item) {{ if (!item) return null; return {{label:item.label || null, energy_hartree:item.energy_hartree ?? null, energy_units:item.energy_units || "hartree", frequency_units:item.frequency_units || "cm^-1", frequencies_cm1:item.frequencies_cm1 || null, frequency_summary:item.frequency_summary || null, picked_mode:{{index:item.k ?? null, frequency_cm1:item.freq ?? null}}}}; }}
+function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, energy_hartree:item.energy_hartree ?? null, energy_units:item.energy_units || "hartree", frequency_units:item.frequency_units || "cm^-1", frequencies_cm1:item.frequencies_cm1 || null, frequency_summary:item.frequency_summary || null, decomposition:{{beta:item.beta, wbo_progress:item.wbo_progress, wbo_progress_factor:item.wbo_progress_factor, freq:item.freq, mode_index:item.k}}, event_terms:item.event_terms || [], core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count, endpoint_consensus:item.endpoint_consensus}}; }}
+function mechanismRecord(mech) {{ return {{id:mech.id, label:mech.label, cut:mech.cut, dedup_count:mech.dedup_count || 1, dedup_source_ids:mech.dedup_source_ids || [mech.id], dedup_cuts:mech.dedup_cuts || [mech.cut], broken_bonds_R:mech.broken_bonds_R, formed_bonds_R:mech.formed_bonds_R, formed_bonds_P:mech.formed_bonds_P || [], core_atoms_R:mech.core_atoms || [], gt:scoreRecord(mech.gt), igs:(mech.igs || []).map(ig => ({{label:ig.label, energy_hartree:ig.energy_hartree ?? null, frequency_summary:ig.frequency_summary || null, is_top2:!!ig.is_top2, is_union_top:!!ig.is_union_top, score:scoreRecord(ig)}}))}}; }}
+function buildEnergyFrequencySummary() {{ return {{step:DATA.step, units:{{energy:"hartree", frequency:"cm^-1"}}, reactant:(DATA.reactant && DATA.reactant.metadata) || null, product:(DATA.product && DATA.product.metadata) || null, mechanisms:(DATA.mechanisms || []).map(mech => ({{id:mech.id, label:mech.label, gt:targetAnalysisRecord(mech.gt), igs:(mech.igs || []).map(targetAnalysisRecord)}}))}}; }}
+function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms, include_gt:!!DATA.include_gt, default_mech_id:DATA.default_mech_id, score_formula:"S = beta * wbo_progress^WBO_PROGRESS_POWER", score_config:DATA.score_config || null, endpoint_metadata:{{reactant:(DATA.reactant && DATA.reactant.metadata) || null, product:(DATA.product && DATA.product.metadata) || null}}, mechanisms:(DATA.mechanisms || []).map(mechanismRecord), files:{{reactant:"R.xyz", product:"P.xyz", gt:"GT/GT.xyz if available", ig:"IG/<label>.xyz", energy_frequency_summary:"energies_frequencies.json", per_mechanism:"mechanisms/mechanism_<id>.json", full_viewer_data:"viewer_data.json", view_html:"view.html"}}}}; }}
+function scoreMeta(item) {{ if (!item) return "(no data)"; const parts = []; if (item.energy_hartree !== undefined && item.energy_hartree !== null) parts.push("<b>E</b>="+formatEnergy(item.energy_hartree)); if (item.beta !== undefined) parts.push("<b>&beta;</b>="+item.beta.toFixed(3)); if (item.wbo_progress !== undefined) parts.push("<b>wbo</b>="+item.wbo_progress.toFixed(3)); if (item.freq !== undefined && item.freq !== null) parts.push("<b>mode</b>="+formatFreq(item.freq)); const fs = freqSummaryText(item); if (fs) parts.push("<b>freqs</b>="+fs); return parts.length ? parts.join(" ") : "(no data)"; }}
 function viewerHtmlForArchive() {{ return "<!doctype html>\n" + document.documentElement.outerHTML; }}
-async function downloadAll() {{ if (typeof JSZip === "undefined") {{ alert("Download library is not loaded"); return; }} const root = safeName(DATA.step); const zip = new JSZip(); zip.file(root+"/R.xyz", xyzText(DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R")); zip.file(root+"/P.xyz", xyzText(DATA.product.elements, DATA.product.coords, DATA.step+" P")); const firstGT = (DATA.mechanisms || []).map(m => m.gt).find(gt => gt && (gt.xyz || gt.xyz_in_R)); if (firstGT) zip.file(root+"/GT/GT.xyz", xyzText(firstGT.elements || elements, firstGT.xyz || firstGT.xyz_in_R, DATA.step+" GT")); const seenIG = new Set(); for (const mech of DATA.mechanisms || []) {{ for (const ig of mech.igs || []) {{ if (seenIG.has(ig.label)) continue; const xyz = ig.xyz || ig.xyz_in_R; if (!xyz) continue; seenIG.add(ig.label); zip.file(root+"/IG/"+safeName(ig.label)+".xyz", xyzText(ig.elements || elements, xyz, DATA.step+" "+ig.label)); }} }} const manifest = buildArchiveManifest(); zip.file(root+"/mechanism.json", JSON.stringify(manifest, null, 2)); for (const mech of DATA.mechanisms || []) {{ zip.file(root+"/mechanisms/mechanism_"+String(mech.id).padStart(3,"0")+".json", JSON.stringify(mechanismRecord(mech), null, 2)); }} zip.file(root+"/viewer_data.json", JSON.stringify(DATA, null, 2)); zip.file(root+"/view.html", viewerHtmlForArchive()); const blob = await zip.generateAsync({{type:"blob"}}); downloadBlob(root+".zip", blob); }}
+async function downloadAll() {{ if (typeof JSZip === "undefined") {{ alert("Download library is not loaded"); return; }} const root = safeName(DATA.step); const zip = new JSZip(); zip.file(root+"/R.xyz", xyzText(DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R")); zip.file(root+"/P.xyz", xyzText(DATA.product.elements, DATA.product.coords, DATA.step+" P")); const firstGT = (DATA.mechanisms || []).map(m => m.gt).find(gt => gt && (gt.xyz || gt.xyz_in_R)); if (firstGT) zip.file(root+"/GT/GT.xyz", xyzText(firstGT.elements || elements, firstGT.xyz || firstGT.xyz_in_R, DATA.step+" GT")); const seenIG = new Set(); for (const mech of DATA.mechanisms || []) {{ for (const ig of mech.igs || []) {{ if (seenIG.has(ig.label)) continue; const xyz = ig.xyz || ig.xyz_in_R; if (!xyz) continue; seenIG.add(ig.label); zip.file(root+"/IG/"+safeName(ig.label)+".xyz", xyzText(ig.elements || elements, xyz, DATA.step+" "+ig.label)); }} }} const manifest = buildArchiveManifest(); zip.file(root+"/mechanism.json", JSON.stringify(manifest, null, 2)); zip.file(root+"/energies_frequencies.json", JSON.stringify(buildEnergyFrequencySummary(), null, 2)); for (const mech of DATA.mechanisms || []) {{ zip.file(root+"/mechanisms/mechanism_"+String(mech.id).padStart(3,"0")+".json", JSON.stringify(mechanismRecord(mech), null, 2)); }} zip.file(root+"/viewer_data.json", JSON.stringify(DATA, null, 2)); zip.file(root+"/view.html", viewerHtmlForArchive()); const blob = await zip.generateAsync({{type:"blob"}}); downloadBlob(root+".zip", blob); }}
 const animTimers = {{}};
 function stopAnim(d) {{ if (animTimers[d]) {{ clearInterval(animTimers[d]); delete animTimers[d]; }} }}
 function clearLabels(v) {{ if (v.removeAllLabels) v.removeAllLabels(); }}
@@ -2041,7 +2223,7 @@ function drawBonds(v, xyz, pairs, color) {{ for (const [i,j] of pairs) {{ if (i>
 function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!disp[i]) continue; const d = disp[i]; const len = Math.hypot(d[0],d[1],d[2]); if (len<0.05) continue; v.addArrow({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[i][0]+d[0]*1.5,y:xyz[i][1]+d[1]*1.5,z:xyz[i][2]+d[2]*1.5}}, color:'#0066cc', radius:0.07}}); }} }}
 function makeStatic(divId, els, xyz, broken, formed) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); addAtomLabels(v, els, xyz); v.zoomTo(); v.render(); return v; }}
 function makeAnimated(divId, els, xyz, disp, broken, formed, core) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); addAtomLabels(v, els, xyz); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); clearLabels(v); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); addAtomLabels(v, els, cur); v.render(); }}, 60); return v; }}
-function render() {{ const mech = findMech(currentMechId); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); const pAligned = !!mech.product_xyz_in_R; const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? mech.product_xyz_in_R : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed); document.getElementById('prod_label').innerHTML = (pAligned ? "aligned to R" : "static")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt); }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
+function render() {{ const mech = findMech(currentMechId); document.getElementById('r_meta').innerHTML = structureMeta(DATA.reactant); document.getElementById('p_meta').innerHTML = structureMeta(DATA.product); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, []); const pAligned = !!mech.product_xyz_in_R; const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? mech.product_xyz_in_R : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed); document.getElementById('prod_label').innerHTML = (pAligned ? "aligned to R" : "static")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const showGT = !!(mech.gt && mech.gt.picked_disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', mech.gt.elements || elements, mech.gt.xyz || mech.gt.xyz_in_R, mech.gt.picked_disp, mech.gt.broken_bonds_T || mech.broken_bonds_R, mech.gt.formed_bonds_T || mech.formed_bonds_R, mech.gt.core_atoms_T || mech.core_atoms); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt); }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = (ig.xyz || ig.xyz_in_R) ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (ig.picked_disp) makeAnimated("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.picked_disp, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R, ig.core_atoms_T || mech.core_atoms); else if (ig.xyz || ig.xyz_in_R) makeStatic("vw_ig"+idx, ig.elements || elements, ig.xyz || ig.xyz_in_R, ig.broken_bonds_T || mech.broken_bonds_R, ig.formed_bonds_T || mech.formed_bonds_R); }}); }}
 const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => {{ showAtomIndices = !!e.target.checked; render(); }}; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 window.addEventListener('load', render);
 </script>
