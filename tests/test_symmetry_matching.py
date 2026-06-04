@@ -338,6 +338,45 @@ def test_hidden_alternate_witness_can_extend_later_frontier_atom():
     assert _cand_map(out[0]) == {0: 1, 1: 0, 2: 2}
 
 
+def test_block_join_refines_bucket_mismatch_before_later_frontier():
+    wbo_r = np.zeros((4, 4))
+    wbo_r[0, 1] = wbo_r[1, 0] = 1.907
+    wbo_r[0, 2] = wbo_r[2, 0] = 1.869
+    wbo_r[0, 3] = wbo_r[3, 0] = 1.138
+    g_r = build_graph(["W", "O", "O", "O"], wbo_r, bond_cut=0.2)
+
+    wbo_p = np.zeros((4, 4))
+    wbo_p[0, 1] = wbo_p[1, 0] = 1.910
+    wbo_p[0, 2] = wbo_p[2, 0] = 1.875
+    wbo_p[0, 3] = wbo_p[3, 0] = 1.127
+    g_p = build_graph(["W", "O", "O", "O"], wbo_p, bond_cut=0.2)
+
+    r_orbits = {0: 0, 1: 1, 2: 1, 3: 2}
+    p_orbits = {0: 0, 1: 1, 2: 1, 3: 2}
+    cand = _SymCand(
+        {0: 0, 1: 1},
+        (_SymBlock((1,), (1, 2), extendable=True),),
+    )
+
+    strong = _extend_sym_cands(
+        [cand], {0, 1}, 2,
+        g_r, g_p, {}, 1.0, None,
+        p_orbits=p_orbits, r_orbits=r_orbits,
+        anchor_u=0, anchor_wbo=1.869,
+    )
+    later = _extend_sym_cands(
+        strong, {0, 1, 2}, 3,
+        g_r, g_p, {}, 1.0, None,
+        p_orbits=p_orbits, r_orbits=r_orbits,
+        anchor_u=0, anchor_wbo=1.138,
+    )
+
+    assert any(
+        _cand_map(c).get(2) in {1, 2} and _cand_map(c).get(3) == 3
+        for c in later
+    )
+
+
 def test_weighted_tolerance_prevents_free_terminal_match_at_default_iso_tol():
     wbo_r = np.zeros((2, 2))
     wbo_r[0, 1] = wbo_r[1, 0] = 1.0

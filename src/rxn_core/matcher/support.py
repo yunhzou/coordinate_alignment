@@ -225,9 +225,6 @@ def _force_sym_value(cand, r, p, fragment, g_R, r_orbits, p_orbits):
         return _refine_sym_assignments(cand, assignment)
     block_idx = p_to_block.get(p)
     if block_idx is not None:
-        if not _r_compatible_with_block(cand, block_idx, r, fragment,
-                                        g_R, r_orbits):
-            return None
         nc = cand.with_extended_block(block_idx, r)
         return _refine_sym_assignments(nc, {r: p}) if nc is not None else None
     block_r = set(r_to_block)

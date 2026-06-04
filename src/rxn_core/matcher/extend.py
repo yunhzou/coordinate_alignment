@@ -36,7 +36,7 @@ Support = dict[Node, Node]
 SymCandidate = _SymCand | Mapping[Node, Node]
 OrbitMap = Mapping[Node, int] | None
 EdgeKey = tuple[Node, Node]
-TargetEntry = tuple[Node, Support]
+TargetEntry = tuple[Node, Support, bool]
 
 
 
@@ -425,20 +425,29 @@ def _extend_locked_merge(cand: _SymCand, ctx: _ExtensionContext) -> _SymCand | N
     return child if _island_merge_wbo_consistent(child, ctx) else None
 
 
-def _target_join_block(
+def _target_join_info(
     cand: _SymCand,
     ctx: _ExtensionContext,
     v: Node,
-) -> int | None:
-    """Return the symmetry-block index that contains target atom ``v``."""
+) -> tuple[int | None, bool]:
+    """Return the open block containing ``v`` and whether it can grow freely.
+
+    The compatibility predicate is a compression rule, not the validity rule.
+    If it fails, exact support checking may still prove that ``ctx.n -> v`` is
+    valid.  In that case the child must refine/fix the assignment instead of
+    enlarging the block as a symmetric set-to-set choice.
+    """
     _, p_to_block = _sym_block_indexes(cand)
     join_idx = p_to_block.get(v)
     if join_idx is None:
-        return None
-    if not _r_compatible_with_block(
-            cand, join_idx, ctx.n, set(ctx.fragment_old), ctx.g_R, ctx.r_orbits):
-        return None
-    return join_idx
+        return None, False
+    block = cand.blocks[join_idx]
+    if not block.open:
+        return None, False
+    can_extend = _r_compatible_with_block(
+        cand, join_idx, ctx.n, set(ctx.fragment_old),
+        ctx.g_R, ctx.r_orbits)
+    return join_idx, can_extend
 
 
 def _collect_free_target_entries(
@@ -463,15 +472,15 @@ def _collect_free_target_entries(
             continue
         if ctx.g_P.nodes[v]['element'] != ctx.n_element:
             continue
-        join_idx = _target_join_block(cand, ctx, v)
+        join_idx, can_extend = _target_join_info(cand, ctx, v)
         support = _supported_value(cand, ctx, v, join_idx)
         if support is None:
             continue
         if join_idx is not None:
-            block_join[join_idx].append((v, support))
+            block_join[join_idx].append((v, support, can_extend))
         else:
             sig = _p_relation_signature(cand, v, ctx.g_P, ctx.p_orbits)
-            by_group[sig].append((v, support))
+            by_group[sig].append((v, support, True))
     return block_join, by_group
 
 
@@ -484,7 +493,11 @@ def _children_from_block_join(
     """Build children where ``n`` joins an existing open symmetry block."""
     children: list[_SymCand] = []
 
-    free_entries = [(v, support) for v, support in entries if not support]
+    free_entries = [
+        (v, support)
+        for v, support, can_extend in entries
+        if not support and can_extend
+    ]
     if free_entries:
         # No old-block witness needs to be fixed.  The existing block expands
         # from, for example, "one H occupies methyl-H pool" to "two H atoms
@@ -496,12 +509,13 @@ def _children_from_block_join(
         if child is not None:
             children.append(child)
 
-    for v, support in entries:
-        if not support:
+    for v, support, can_extend in entries:
+        if not support and can_extend:
             continue
-        # The join is valid only for a correlated assignment inside an old
-        # block.  Refine/freeze that correlation instead of extending the block
-        # as if the new atom were independent.
+        # The join is either correlated with an old block assignment, or exact
+        # support exists while the source atom is not block-compatible enough
+        # to enlarge the block.  Refine/freeze instead of treating it as an
+        # independent symmetric choice.
         fixed = dict(support)
         fixed[n] = v
         child = _refine_sym_assignments(cand, fixed)
@@ -518,7 +532,8 @@ def _children_from_context_group(
     """Build children for target atoms outside existing symmetry blocks."""
     children: list[_SymCand] = []
 
-    correlated = [(v, support) for v, support in entries if support]
+    correlated = [(v, support) for v, support, _can_extend in entries
+                  if support]
     for v, support in correlated:
         # This target image is outside old blocks, but an old block must still
         # reshuffle to support it.  The child therefore carries a refined
@@ -529,7 +544,8 @@ def _children_from_context_group(
         if child is not None:
             children.append(child)
 
-    independent = [(v, support) for v, support in entries if not support]
+    independent = [(v, support) for v, support, _can_extend in entries
+                   if not support]
     if not independent:
         return children
 
