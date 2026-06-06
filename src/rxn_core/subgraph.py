@@ -61,6 +61,7 @@ def match_weighted_subgraph(query, target, *,
                             node_policy=None,
                             node_match=None,
                             node_key=None,
+                            anchor_map=None,
                             graph_floor=0.2,
                             iso_tol=1.0,
                             symmetry_wbo_tol=0.2,
@@ -72,13 +73,15 @@ def match_weighted_subgraph(query, target, *,
     The node rule decides which query/target node pairs are allowed.  The edge
     verifier then applies the existing WBO ``iso_tol`` logic to active query
     edges.  The default node rule is same element, preserving the old sub-iso
-    behavior.
+    behavior.  ``anchor_map`` gives exact query->target constraints that are
+    preloaded as locked single-node islands and can still seed growth.
     """
     policy = as_node_match_policy(
         node_policy, node_match=node_match, node_key=node_key)
     g_q = _coerce_graph(query, graph_floor)
     g_t = _coerce_graph(target, graph_floor)
     query_nodes = set(g_q.nodes())
+    anchor_map = {int(r): int(p) for r, p in dict(anchor_map or {}).items()}
     order = list(seed_order) if seed_order is not None else sorted(g_q.nodes())
     branches = find_islands(
         g_q,
@@ -92,6 +95,7 @@ def match_weighted_subgraph(query, target, *,
         core_R=tuple(sorted(query_nodes)),
         stop_when_core_mapped=True,
         node_policy=policy,
+        anchor_map=anchor_map,
     )
     matches = []
     seen = set()

@@ -629,3 +629,31 @@ def test_cut_sweep_is_core_mechanism_discovery_api():
 
     assert minimal
     assert all(len(sig[0]) + len(sig[1]) == 0 for sig in minimal)
+
+
+def test_cut_sweep_respects_hard_anchor_map():
+    elements = ["O", "C", "O"]
+    wbo = np.zeros((3, 3))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[1, 2] = wbo[2, 1] = 1.0
+
+    pool = cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=0, n_seeds=1, max_branches=100,
+        cut_floor=0.2, symmetry_repair=True,
+        anchor_map={0: 2},
+    )
+    minimal = select_min_mechanisms(pool)
+
+    assert minimal
+    assert all(info["mapping"][0] == 2 for info in minimal.values())
+    assert all(info["mapping"][2] == 0 for info in minimal.values())
+
+    incompatible = cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=0, n_seeds=1, max_branches=100,
+        cut_floor=0.2, symmetry_repair=True,
+        anchor_map={0: 1},
+    )
+
+    assert incompatible == {}

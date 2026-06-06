@@ -66,7 +66,7 @@ _PIPELINE_EXPORTS = {
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
     "run_ts_stage", "merge_ts_stage_chunks", "write_view_stage",
     "load_ts_targets_from_specs", "process_xyz_stage",
-    "run_full_pipeline_stage", "process_step",
+    "run_subgraph_cli", "run_full_pipeline_stage", "process_step",
 }
 
 
@@ -100,7 +100,7 @@ __all__ = [
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
     "run_ts_stage", "merge_ts_stage_chunks", "write_view_stage",
     "load_ts_targets_from_specs", "process_xyz_stage",
-    "run_full_pipeline_stage", "process_step",
+    "run_subgraph_cli", "run_full_pipeline_stage", "process_step",
 ]
 
 __version__ = "0.1.0"

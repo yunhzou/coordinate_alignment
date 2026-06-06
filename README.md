@@ -40,6 +40,12 @@ rxn-core --stage rp --name my_reaction \
   --workdir work/my_reaction \
   --charge 0 --multiplicity 1 --xtb-mode auto
 
+# Direct R-P AAM with hard atom anchors. Here R atom 13 must map to P atom 9.
+rxn-core --stage rp --name my_reaction_anchor_13_9 \
+  --reactant-xyz R.xyz --product-xyz P.xyz \
+  --workdir work/my_reaction_anchor_13_9 \
+  --anchor 13:9
+
 # Post-Stage-1 collective validation after Stage 1 has written rp_stage.json
 rxn-core --stage post-rp --name my_reaction \
   --reactant-xyz R.xyz --product-xyz P.xyz \
@@ -65,6 +71,99 @@ rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 
 `rxn-core` and `rxn-core-pipeline` are the same command.  The shorter
 `rxn-core` name is intended for new workflows.
+
+### Subgraph Matching And Anchors
+
+The matcher can also be used as a standalone weighted-subgraph search. This is
+the same symmetry-compressed fragment-growth engine used by AAM, but exposed
+with replaceable node compatibility rules. The default node rule is same
+element; the edge rule still uses WBO active-edge matching with `--iso-tol`.
+
+Weighted graph JSON inputs have this shape:
+
+```json
+{
+  "nodes": [
+    {"element": "C", "features": {"outer_shell": 4}},
+    {"element": "O", "features": {"outer_shell": 6}}
+  ],
+  "weights": [[0.0, 1.1], [1.1, 0.0]],
+  "weight_name": "wbo",
+  "coords": [[0.0, 0.0, 0.0], [1.2, 0.0, 0.0]]
+}
+```
+
+Run standalone subgraph matching from the CLI:
+
+```bash
+rxn-core --subgraph-query-json query.json \
+  --subgraph-target-json target.json \
+  --subgraph-node-policy outer_shell \
+  --subgraph-anchor 0:12 \
+  --subgraph-output subgraph_matches.json
+```
+
+`--subgraph-node-policy` may be repeated to build a multi-field node key.
+Fields can live either as top-level node attributes or inside `features`.
+`--subgraph-anchor q:t` hard-locks query node `q` to target node `t`; repeated
+anchors must be one-to-one. Anchored atoms are preloaded as locked single-atom
+islands, but they can still seed growth so their local environment is checked.
+
+The same anchor syntax is available for direct R-P AAM:
+
+```bash
+rxn-core --stage rp --name anchored_rp \
+  --reactant-xyz R.xyz --product-xyz P.xyz \
+  --anchor 13:9
+```
+
+For direct R-P mode, `--anchor R:P` is enforced through every cut-sweep island
+search and symmetry-repair step. If an anchor is incompatible with the
+available chemistry graph, the anchored run returns no matching mechanism
+instead of silently choosing a different atom. `--subgraph-anchor` is accepted
+as an alias in direct R-P mode for anchor maps exported by the picker.
+
+For an interactive local picker, open:
+
+```bash
+open tools/anchor_picker.html
+```
+
+The picker renders R and P with the same 3Dmol stick/sphere style as the main
+viewer. Click one R atom and one P atom to add an anchor pair, then copy the
+JSON `anchor_map` or CLI flags.
+
+Programmatic use:
+
+```python
+from rxn_core import WeightedGraph, match_weighted_subgraph
+
+query = WeightedGraph(
+    nodes=[
+        {"element": "C", "features": {"outer_shell": 4}},
+        {"element": "O", "features": {"outer_shell": 6}},
+    ],
+    weights=[[0.0, 1.1], [1.1, 0.0]],
+)
+target = WeightedGraph(
+    nodes=[
+        {"element": "C", "features": {"outer_shell": 4}},
+        {"element": "O", "features": {"outer_shell": 6}},
+        {"element": "O", "features": {"outer_shell": 6}},
+    ],
+    weights=[
+        [0.0, 1.1, 0.0],
+        [1.1, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+    ],
+)
+matches = match_weighted_subgraph(
+    query,
+    target,
+    node_policy="outer_shell",
+    anchor_map={0: 0},
+)
+```
 
 ### Real Example
 
@@ -364,6 +463,7 @@ src/rxn_core/
   pipeline.py             BGCP full-view pipeline and CLI entry point
 
 tests/                    focused unit tests
+tools/anchor_picker.html  local R/P anchor-picking viewer
 docs/TUTORIAL.ipynb       stage-by-stage usage tutorial notebook
 docs/ARCHITECTURE.md      module boundary notes
 ALGORITHM.md              algorithm details
@@ -383,6 +483,12 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | none | `BGCP_EVAL_JSON` | `out/bgcp_alignment_eval.json` | merged JSON summary output |
 | `--stage` | `BGCP_STAGE` | `full` | run `rp`, `ts`, `view`, or composed `full` stage |
 | `--mechanism` | none | all | restrict Stage 2 verification to one mechanism id; repeat for multiple ids |
+| `--anchor` | none | none | hard R:P anchor for direct R-P AAM; can be repeated |
+| `--subgraph-query-json` | none | none | standalone weighted-subgraph query graph JSON |
+| `--subgraph-target-json` | none | none | standalone weighted-subgraph target graph JSON |
+| `--subgraph-node-policy` | none | same element | node attribute/feature field used for standalone subgraph compatibility; repeat for multi-field keys |
+| `--subgraph-anchor` | none | none | hard query:target anchor for standalone subgraph matching; also accepted as a direct R-P anchor alias |
+| `--subgraph-output` | none | `BGCP_EVAL_JSON` | output JSON path for standalone subgraph matching |
 | `--save-alignment-files` | `BGCP_SAVE_ALIGNMENT_FILES` | `0` | write mechanism-specific aligned R/P files during Stage 1 or full runs |
 | `--steps` | none | all steps | explicit cached step names to process |
 | `--limit` | none | none | process first N step directories after sorting |
@@ -442,6 +548,12 @@ CLI options:
 --charge               molecular charge for auto xtb cache-fill
 --multiplicity         spin multiplicity for auto xtb cache-fill
 --include-gt           load and score optional GT cache directories
+--anchor               hard R:P direct AAM anchor; repeatable
+--subgraph-query-json  standalone weighted-subgraph query graph JSON
+--subgraph-target-json standalone weighted-subgraph target graph JSON
+--subgraph-node-policy node field for standalone subgraph compatibility
+--subgraph-anchor      hard query:target subgraph anchor; direct AAM alias
+--subgraph-output      standalone subgraph output JSON
 --steps                explicit cached step names
 --limit                first N cached steps
 ```
@@ -461,6 +573,7 @@ Use top-level imports for stable pieces:
 ```python
 from rxn_core import align_from_arrays, cut_sweep, run_cut_sweep_chunk
 from rxn_core import build_graph, classify_bonds
+from rxn_core import WeightedGraph, WeightedNode, match_weighted_subgraph
 from rxn_core import parse_g98_modes, bond_overlap_per_mode
 ```
 

@@ -57,6 +57,19 @@ class _Branch:
         self.deferred_edges = set()
         self.symmetry_fragments = []
         self._signature_cache = None
+
+    @classmethod
+    def from_anchor_map(cls, anchor_map):
+        b = cls()
+        for r, p in sorted((int(r), int(p))
+                           for r, p in dict(anchor_map or {}).items()):
+            iid = b.next_iid
+            b.next_iid += 1
+            b.mapping[r] = p
+            b.islands_R[r] = iid
+            b.islands_P[p] = iid
+        return b
+
     def fork(self):
         b = _Branch()
         b.mapping = dict(self.mapping)
@@ -193,6 +206,33 @@ def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
     for a, b, wR, wP in formed:
         delta += abs(float(wP or 0.0) - float(wR or 0.0))
     return (len(broken) + len(formed), round(delta, 12))
+
+
+def _normalize_anchor_map(anchor_map, g_R, g_P):
+    if not anchor_map:
+        return {}
+    out = {}
+    used_p = set()
+    for raw_r, raw_p in dict(anchor_map).items():
+        r, p = int(raw_r), int(raw_p)
+        if r not in g_R:
+            raise ValueError(f"anchor R atom is not in query graph: {r}")
+        if p not in g_P:
+            raise ValueError(f"anchor P atom is not in target graph: {p}")
+        if r in out and out[r] != p:
+            raise ValueError(f"conflicting anchors for R atom {r}")
+        if p in used_p:
+            raise ValueError(f"anchor target atom is used more than once: {p}")
+        out[r] = p
+        used_p.add(p)
+    return out
+
+
+def _anchor_nodes_compatible(anchor_map, g_R, g_P, node_policy):
+    return all(
+        node_policy.compatible(g_R, r, g_P, p)
+        for r, p in anchor_map.items()
+    )
 
 
 def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
@@ -388,6 +428,7 @@ def find_islands(g_R, g_P, seed_order,
                  p_orbits=None, r_orbits=None,
                  abort_on_branch_cap=False,
                  node_policy=None,
+                 anchor_map=None,
                  profile=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
@@ -407,8 +448,15 @@ def find_islands(g_R, g_P, seed_order,
     every core atom is mapped.  With stop_when_core_mapped=True the search
     returns once all live branches have mapped the core; spectators remain
     represented only by the compressed witness state already discovered.
+
+    anchor_map: optional exact R->P constraints.  Anchors are preloaded as
+    locked single-atom islands, but their R atoms may still be used as growth
+    seeds so the surrounding subgraph can be discovered from the constraint.
     """
     node_policy = as_node_match_policy(node_policy)
+    anchor_map = _normalize_anchor_map(anchor_map, g_R, g_P)
+    if not _anchor_nodes_compatible(anchor_map, g_R, g_P, node_policy):
+        return []
     if orbit_dedup:
         if p_orbits is None:
             p_orbits = _nauty_orbits(
@@ -422,13 +470,25 @@ def find_islands(g_R, g_P, seed_order,
         p_orbits = None
         r_orbits = None
     core_R = tuple(sorted(set(core_R or ())))
-    seed_order = list(seed_order)
-    branches = [_Branch()]
+    anchor_roots = tuple(anchor_map)
+    seed_order = list(dict.fromkeys(list(anchor_roots) + list(seed_order)))
+    branches = [_Branch.from_anchor_map(anchor_map)]
     progressed = True
     pass_no = 0
 
     def _core_complete(mapping):
         return core_R and all(r in mapping for r in core_R)
+
+    def _mapped_anchor_can_seed(branch, seed):
+        if seed not in anchor_map:
+            return False
+        seed_iid = branch.islands_R.get(seed)
+        for nb in g_R.neighbors(seed):
+            if g_R[seed][nb].get('wbo', 0.0) < graph_floor:
+                continue
+            if branch.islands_R.get(nb) != seed_iid:
+                return True
+        return False
 
     signature_cache = {}
 
@@ -521,7 +581,11 @@ def find_islands(g_R, g_P, seed_order,
                 if stop_when_core_mapped and _core_complete(b.mapping):
                     _append_pending(b)
                     continue
-                if seed in b.mapping:
+                seed_is_mapped_anchor = seed in b.mapping and seed in anchor_map
+                if seed in b.mapping and not seed_is_mapped_anchor:
+                    _append_pending(b)
+                    continue
+                if seed_is_mapped_anchor and not _mapped_anchor_can_seed(b, seed):
                     _append_pending(b)
                     continue
                 # Only record events for branch 0 to keep trace linear
@@ -535,6 +599,7 @@ def find_islands(g_R, g_P, seed_order,
                                     r_orbits=r_orbits,
                                     prior_deferred_edges=b.deferred_edges,
                                     node_policy=node_policy,
+                                    allow_mapped_seed=seed_is_mapped_anchor,
                                     profile=profile,
                                     profile_context={
                                         'pass': int(pass_no),

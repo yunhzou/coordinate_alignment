@@ -29,7 +29,8 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       reindex_modes_to_R, bond_overlap_per_mode,
                       build_graph, cut_sweep, cut_sweep_items,
                       merge_cut_sweep_pools, run_cut_sweep_chunk,
-                      select_min_mechanisms)
+                      select_min_mechanisms, WeightedGraph,
+                      match_weighted_subgraph)
 from rxn_core.alignment.sweep import run_no_cut_core_branch_records
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
@@ -181,6 +182,7 @@ def rp_stage_config():
         'symmetry_repair': SYMMETRY_REPAIR,
         'symmetry_repair_min_changes': SYMMETRY_REPAIR_MIN_CHANGES,
         'symmetry_repair_max_evals': SYMMETRY_REPAIR_MAX_EVALS,
+        'anchor_map': {},
     }
 
 
@@ -1664,6 +1666,7 @@ def _rp_cut_kwargs(cfg):
             'symmetry_repair_min_changes', SYMMETRY_REPAIR_MIN_CHANGES),
         'symmetry_repair_max_evals': cfg.get(
             'symmetry_repair_max_evals', SYMMETRY_REPAIR_MAX_EVALS),
+        'anchor_map': cfg.get('anchor_map') or {},
     }
 
 
@@ -2385,6 +2388,100 @@ def _target_specs_from_cli(target_xyzs, target_labels=None, target_kinds=None):
     return specs
 
 
+def _weighted_graph_from_json(path):
+    path = Path(path)
+    data = json.loads(path.read_text())
+    weights = data.get("weights", data.get("wbo"))
+    if weights is None:
+        raise ValueError(f"{path} must contain 'weights' or 'wbo'")
+    if "nodes" not in data:
+        raise ValueError(f"{path} must contain 'nodes'")
+    return WeightedGraph(
+        nodes=data["nodes"],
+        weights=np.asarray(weights, float),
+        weight_name=data.get("weight_name", "wbo"),
+        coords=(
+            None if data.get("coords") is None
+            else np.asarray(data.get("coords"), float)
+        ),
+        metadata=dict(data.get("metadata") or {}),
+    )
+
+
+def _parse_subgraph_anchor(raw):
+    text = str(raw).strip()
+    for sep in (":", "="):
+        if sep in text:
+            left, right = text.split(sep, 1)
+            return int(left), int(right)
+    raise ValueError(
+        f"anchor must be formatted as query:target or query=target: {raw}")
+
+
+def _subgraph_anchor_map_from_cli(values):
+    out = {}
+    for raw in values or ():
+        q, t = _parse_subgraph_anchor(raw)
+        if q in out and out[q] != t:
+            raise ValueError(f"conflicting anchors for query node {q}")
+        if t in out.values():
+            raise ValueError(f"target node appears in multiple anchors: {t}")
+        out[q] = t
+    return out
+
+
+def _subgraph_node_policy_from_cli(fields):
+    fields = list(fields or [])
+    if not fields:
+        return None
+    return fields[0] if len(fields) == 1 else tuple(fields)
+
+
+def _subgraph_match_record(match):
+    return {
+        "mapping": {str(k): int(v) for k, v in sorted(match.mapping.items())},
+        "query_nodes": [int(v) for v in match.query_nodes],
+        "target_nodes": [int(v) for v in match.target_nodes],
+        "deferred_edges": [list(map(int, e)) for e in match.deferred_edges],
+        "symmetry_fragments": list(match.symmetry_fragments),
+    }
+
+
+def run_subgraph_cli(query_json, target_json, *, node_policy_fields=None,
+                     anchor_values=None, graph_floor=0.2, iso_tol=1.0,
+                     symmetry_wbo_tol=0.2, orbit_dedup=True,
+                     seed_order=None):
+    query = _weighted_graph_from_json(query_json)
+    target = _weighted_graph_from_json(target_json)
+    anchor_map = _subgraph_anchor_map_from_cli(anchor_values)
+    node_policy = _subgraph_node_policy_from_cli(node_policy_fields)
+    matches = match_weighted_subgraph(
+        query,
+        target,
+        node_policy=node_policy,
+        anchor_map=anchor_map,
+        graph_floor=graph_floor,
+        iso_tol=iso_tol,
+        symmetry_wbo_tol=symmetry_wbo_tol,
+        seed_order=seed_order,
+        orbit_dedup=orbit_dedup,
+    )
+    return {
+        "mode": "subgraph",
+        "query_json": str(Path(query_json)),
+        "target_json": str(Path(target_json)),
+        "node_policy": list(node_policy) if isinstance(node_policy, tuple)
+        else node_policy,
+        "anchor_map": {str(k): int(v) for k, v in sorted(anchor_map.items())},
+        "graph_floor": float(graph_floor),
+        "iso_tol": float(iso_tol),
+        "symmetry_wbo_tol": float(symmetry_wbo_tol),
+        "orbit_dedup": bool(orbit_dedup),
+        "n_matches": len(matches),
+        "matches": [_subgraph_match_record(match) for match in matches],
+    }
+
+
 def _load_ts_target_from_spec_task(task):
     i, spec, workdir, charge, multiplicity, xtb_mode = task
     label = spec.get('label') or Path(spec['xyz']).stem
@@ -2696,6 +2793,29 @@ def main():
     ap.add_argument("--target-kind", action="append",
                     choices=("ig", "gt"), default=None,
                     help="Kind for each --target-xyz. Defaults to ig.")
+    ap.add_argument("--subgraph-query-json", default=None,
+                    help="WeightedGraph JSON query for standalone subgraph "
+                         "matching. Use with --subgraph-target-json.")
+    ap.add_argument("--subgraph-target-json", default=None,
+                    help="WeightedGraph JSON target for standalone subgraph "
+                         "matching.")
+    ap.add_argument("--subgraph-node-policy", action="append", default=None,
+                    help="Node attribute/feature field for subgraph node "
+                         "compatibility. Repeat for a multi-field key. "
+                         "Default is same element.")
+    ap.add_argument("--anchor", action="append", default=None,
+                    help="Exact R:P anchor constraint for direct R-P AAM. "
+                         "Can be repeated. Same format as --subgraph-anchor.")
+    ap.add_argument("--subgraph-anchor", action="append", default=None,
+                    help="Exact query:target anchor constraint for standalone "
+                         "subgraph matching. In direct R-P mode this is also "
+                         "accepted as an R:P AAM anchor. Can be repeated.")
+    ap.add_argument("--subgraph-output", default=None,
+                    help="Output JSON for standalone subgraph matching. "
+                         "Defaults to BGCP_EVAL_JSON.")
+    ap.add_argument("--subgraph-no-orbit-dedup", action="store_true",
+                    help="Disable orbit dedupe for standalone subgraph "
+                         "matching.")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--steps", nargs="+", default=None)
     args = ap.parse_args()
@@ -2735,6 +2855,44 @@ def main():
         "1" if args.save_alignment_files else "0")
     os.environ["BGCP_RESUME_RP"] = "1" if args.resume_rp else "0"
 
+    subgraph_mode = bool(args.subgraph_query_json or args.subgraph_target_json)
+    if subgraph_mode:
+        if args.steps or args.reactant_xyz or args.product_xyz:
+            ap.error("subgraph mode cannot be combined with --steps or "
+                     "--reactant-xyz/--product-xyz")
+        if not (args.subgraph_query_json and args.subgraph_target_json):
+            ap.error("--subgraph-query-json and --subgraph-target-json "
+                     "must be provided together")
+        try:
+            result = run_subgraph_cli(
+                args.subgraph_query_json,
+                args.subgraph_target_json,
+                node_policy_fields=args.subgraph_node_policy,
+                anchor_values=list(args.subgraph_anchor or []) + list(
+                    args.anchor or []),
+                graph_floor=0.2,
+                iso_tol=VIEW_ISO_TOL,
+                symmetry_wbo_tol=SYMMETRY_WBO_TOL,
+                orbit_dedup=not args.subgraph_no_orbit_dedup,
+            )
+        except Exception as e:
+            result = {
+                "mode": "subgraph",
+                "query_json": args.subgraph_query_json,
+                "target_json": args.subgraph_target_json,
+                "error": f"{type(e).__name__}: {e}",
+                "trace": traceback.format_exc(),
+            }
+        out_path = Path(args.subgraph_output or EVAL_JSON)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(result, indent=2))
+        if result.get("error"):
+            print(f"subgraph: ERROR: {result['error']}")
+        else:
+            print(f"subgraph: matches={result['n_matches']} "
+                  f"out={out_path}")
+        return
+
     direct_mode = bool(args.reactant_xyz or args.product_xyz)
     if direct_mode:
         if args.steps:
@@ -2753,6 +2911,13 @@ def main():
         if args.save_alignment_files:
             ALIGNMENT_OUT_ROOT.mkdir(parents=True, exist_ok=True)
         try:
+            rp_config = None
+            direct_anchor_values = list(args.anchor or []) + list(
+                args.subgraph_anchor or [])
+            if direct_anchor_values:
+                rp_config = rp_stage_config()
+                rp_config['anchor_map'] = _subgraph_anchor_map_from_cli(
+                    direct_anchor_values)
             rec = process_xyz_stage(
                 name,
                 Path(args.reactant_xyz),
@@ -2769,6 +2934,7 @@ def main():
                 charge=XTB_CHARGE,
                 multiplicity=XTB_MULTIPLICITY,
                 xtb_mode=XTB_CACHE_MODE,
+                rp_config=rp_config,
                 resume_rp=args.resume_rp,
             )
         except Exception as e:

@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anchor Picker</title>
+  <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+  <style>
+    html,body{margin:0;padding:0;font-family:-apple-system,sans-serif;background:#fafafa}
+    body{padding:14px;box-sizing:border-box}
+    h2{margin:0 0 4px;font-size:18px}
+    .topbar{display:flex;gap:10px;align-items:stretch;margin-bottom:14px}
+    .mech-sel{flex:1;background:white;padding:10px;border:1px solid #ccc;border-radius:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .mech-sel span{font-size:13px;margin-right:2px;color:#444}
+    .mech-sel label{display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:12px;color:#024}
+    .mech-sel input[type="file"]{max-width:260px;font-size:12px}
+    .mech-sel button,.download-all,.dl{border:1px solid #aaa;background:#fff;border-radius:4px;cursor:pointer;font-family:ui-monospace,monospace;color:#024}
+    .mech-sel button{padding:6px 12px;font-size:12px}
+    .mech-sel button.active{background:#ffd700;border-color:#a90;font-weight:600}
+    .download-all{padding:0 16px;border-color:#888;border-radius:6px;font-size:12px}
+    .download-all:hover,.dl:hover,.mech-sel button:hover{background:#eef}
+    .index-toggle{display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid #aaa;background:white;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;color:#024;white-space:nowrap}
+    .index-toggle input{margin:0}
+    .work-row{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;align-items:start}
+    .ref-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
+    .panel{background:white;border:1px solid #ddd;border-radius:6px;padding:6px 8px 8px}
+    .ph{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px;gap:8px}
+    .ph .lbl{font-weight:600;font-size:13px}
+    .ph .rk{font-family:ui-monospace,monospace;color:#024;white-space:nowrap}
+    .dl{padding:3px 7px;margin-left:6px;font-size:11px}
+    .vw{position:relative;width:100%;height:300px}
+    .vwbox{position:absolute;inset:0}
+    .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#777;font-family:ui-monospace,monospace;font-size:12px}
+    .meta{font-family:ui-monospace,monospace;font-size:11px;color:#444;padding:3px 0 0;line-height:1.4}
+    .meta b{color:#024}
+    .side{display:grid;gap:12px}
+    .select-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .select-cell{border:1px solid #ddd;border-radius:4px;padding:8px;background:#fff;min-height:52px}
+    .select-cell .k{font-family:ui-monospace,monospace;font-size:11px;color:#444;margin-bottom:4px}
+    .select-cell .v{font-size:15px;font-weight:600;color:#024}
+    table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
+    th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:middle}
+    th{color:#444;font-weight:600;background:#fafafa;position:sticky;top:0}
+    .pairs{max-height:calc(100vh - 430px);overflow:auto}
+    .swatch{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,.25);vertical-align:-1px}
+    textarea{width:100%;height:74px;resize:vertical;border:1px solid #ccc;border-radius:4px;padding:7px;font-family:ui-monospace,monospace;font-size:12px;color:#024;box-sizing:border-box}
+    .exports{display:grid;gap:8px}
+    .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+    .danger{color:#a00}
+    .toast{position:fixed;right:14px;bottom:14px;background:#222;color:white;padding:8px 11px;border-radius:4px;font-size:13px;opacity:0;transform:translateY(6px);transition:opacity .14s ease,transform .14s ease;pointer-events:none;z-index:20}
+    .toast.show{opacity:1;transform:translateY(0)}
+    @media(max-width:1100px){.work-row{grid-template-columns:1fr}.pairs{max-height:280px}}
+    @media(max-width:760px){.topbar{flex-wrap:wrap}.ref-row{grid-template-columns:1fr}.mech-sel input[type="file"]{max-width:180px}.download-all,.index-toggle{height:32px}.vw{height:260px}}
+  </style>
+</head>
+<body>
+  <h2>Anchor Picker</h2>
+  <div class="topbar">
+    <div class="mech-sel">
+      <span>Input:</span>
+      <label>R <input id="fileR" type="file" accept=".xyz,text/plain"></label>
+      <label>P <input id="fileP" type="file" accept=".xyz,text/plain"></label>
+      <button id="addPair" class="active">Add</button>
+    </div>
+    <label class="index-toggle"><input type="checkbox" id="showAtomIndices" checked> Aligned indices</label>
+    <button class="download-all" id="fitAll">Fit</button>
+    <button class="download-all danger" id="clearAll">Clear</button>
+  </div>
+
+  <div class="work-row">
+    <div>
+      <div class="ref-row">
+        <div class="panel">
+          <div class="ph"><span class="lbl">Reactant</span><span class="rk" id="r_label">static</span></div>
+          <div class="vw"><div id="vw_R" class="vwbox"></div></div>
+          <div class="meta" id="r_meta"><b>atoms</b>=0</div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="lbl">Product</span><span class="rk" id="p_label">static</span></div>
+          <div class="vw"><div id="vw_P" class="vwbox"></div></div>
+          <div class="meta" id="p_meta"><b>atoms</b>=0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="ph"><span class="lbl">Selection</span><span class="rk" id="sel_meta">pending</span></div>
+        <div class="select-grid">
+          <div class="select-cell"><div class="k">Reactant</div><div id="selR" class="v">-</div></div>
+          <div class="select-cell"><div class="k">Product</div><div id="selP" class="v">-</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><span class="lbl">Anchors</span><span class="rk" id="pairCount">0</span></div>
+        <div class="pairs">
+          <table>
+            <thead><tr><th>R</th><th>P</th><th>Flag</th><th></th></tr></thead>
+            <tbody id="pairsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel exports">
+        <div class="ph"><span class="lbl">Export</span><span class="rk">anchor_map</span></div>
+        <textarea id="jsonOut" readonly></textarea>
+        <textarea id="cliOut" readonly></textarea>
+        <div class="btnrow">
+          <button class="dl" id="copyJson">Copy JSON</button>
+          <button class="dl" id="copyCli">Copy CLI</button>
+          <button class="dl" id="downloadJson">Download JSON</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const pairPalette = [
+      "#e11d48", "#2563eb", "#16a34a", "#d97706", "#7c3aed",
+      "#0891b2", "#be123c", "#4d7c0f", "#9333ea", "#0f766e"
+    ];
+
+    const state = {
+      R: emptyMol("Reactant"),
+      P: emptyMol("Product"),
+      selectedR: null,
+      selectedP: null,
+      anchors: new Map(),
+      viewers: { R: null, P: null },
+      showAtomIndices: true
+    };
+
+    function emptyMol(name) {
+      return { name, elements: [], coords: [] };
+    }
+
+    function normalElement(raw) {
+      const s = String(raw || "").trim();
+      if (!s) return "X";
+      return s[0].toUpperCase() + s.slice(1).toLowerCase();
+    }
+
+    function parseXYZ(text) {
+      const lines = text.split(/\r?\n/).filter(line => line.trim().length);
+      if (lines.length < 2) throw new Error("invalid XYZ");
+      const n = parseInt(lines[0].trim(), 10);
+      if (!Number.isFinite(n) || n < 0) throw new Error("invalid atom count");
+      const elements = [];
+      const coords = [];
+      for (let i = 0; i < n; i++) {
+        const parts = (lines[i + 2] || "").trim().split(/\s+/);
+        if (parts.length < 4) throw new Error("invalid atom row " + i);
+        elements.push(normalElement(parts[0]));
+        coords.push([Number(parts[1]), Number(parts[2]), Number(parts[3])]);
+      }
+      return { elements, coords };
+    }
+
+    function xyzText(els, xyz, comment) {
+      let s = els.length + "\n" + (comment || "frame") + "\n";
+      for (let i = 0; i < xyz.length; i++) {
+        s += els[i] + "  " + xyz[i][0].toFixed(6) + "  " + xyz[i][1].toFixed(6) + "  " + xyz[i][2].toFixed(6) + "\n";
+      }
+      return s;
+    }
+
+    function buildBody(els, xyz) {
+      return xyzText(els, xyz, "frame");
+    }
+
+    function atomLabel(mol, idx) {
+      if (idx == null || idx < 0 || idx >= mol.elements.length) return "-";
+      return mol.elements[idx] + String(idx);
+    }
+
+    function metaText(mol) {
+      return "<b>atoms</b>=" + mol.elements.length;
+    }
+
+    function pairColorByR(r) {
+      const keys = [...state.anchors.keys()].sort((a, b) => a - b);
+      const pos = keys.indexOf(r);
+      return pairPalette[(pos < 0 ? keys.length : pos) % pairPalette.length];
+    }
+
+    function selectedIndex(kind) {
+      return kind === "R" ? state.selectedR : state.selectedP;
+    }
+
+    function selectedColor(kind, idx) {
+      if (selectedIndex(kind) === idx) return "#ffd700";
+      if (kind === "R" && state.anchors.has(idx)) return pairColorByR(idx);
+      if (kind === "P") {
+        for (const [r, p] of state.anchors.entries()) {
+          if (p === idx) return pairColorByR(r);
+        }
+      }
+      return null;
+    }
+
+    function atomIndexFrom3Dmol(atom) {
+      if (!atom) return null;
+      if (Number.isInteger(atom.index)) return atom.index;
+      if (Number.isInteger(atom.serial)) return atom.serial - 1;
+      return null;
+    }
+
+    function clearLabels(v) {
+      if (v && v.removeAllLabels) v.removeAllLabels();
+    }
+
+    function addAtomLabels(v, els, xyz) {
+      if (!state.showAtomIndices || !els || !xyz) return;
+      for (let i = 0; i < xyz.length; i++) {
+        v.addLabel(String(i), {
+          position: { x: xyz[i][0], y: xyz[i][1], z: xyz[i][2] },
+          fontSize: 10,
+          fontColor: "black",
+          backgroundColor: "white",
+          backgroundOpacity: 0.72,
+          borderColor: "#666",
+          borderThickness: 0.5,
+          inFront: true
+        });
+      }
+    }
+
+    function addPickLabel(v, text, xyz, color) {
+      v.addLabel(text, {
+        position: { x: xyz[0], y: xyz[1], z: xyz[2] },
+        fontSize: 11,
+        fontColor: "white",
+        backgroundColor: color,
+        backgroundOpacity: 0.86,
+        borderColor: "#222",
+        borderThickness: 0.6,
+        inFront: true
+      });
+    }
+
+    function decorateViewer(kind) {
+      const v = state.viewers[kind];
+      const mol = state[kind];
+      if (!v) return;
+      if (v.removeAllShapes) v.removeAllShapes();
+      clearLabels(v);
+      addAtomLabels(v, mol.elements, mol.coords);
+
+      for (let i = 0; i < mol.coords.length; i++) {
+        const color = selectedColor(kind, i);
+        if (!color) continue;
+        const p = mol.coords[i];
+        v.addSphere({
+          center: { x: p[0], y: p[1], z: p[2] },
+          radius: selectedIndex(kind) === i ? 0.42 : 0.34,
+          color,
+          alpha: selectedIndex(kind) === i ? 0.55 : 0.38
+        });
+      }
+
+      for (const [r, p] of state.anchors.entries()) {
+        const idx = kind === "R" ? r : p;
+        if (idx >= mol.coords.length) continue;
+        addPickLabel(v, kind + String(idx), mol.coords[idx], pairColorByR(r));
+      }
+      v.render();
+    }
+
+    function makeViewer(kind) {
+      const divId = kind === "R" ? "vw_R" : "vw_P";
+      const div = document.getElementById(divId);
+      const mol = state[kind];
+      state.viewers[kind] = null;
+      div.innerHTML = "";
+      if (!mol.coords.length) {
+        div.innerHTML = '<div class="empty">' + (kind === "R" ? "Reactant XYZ" : "Product XYZ") + "</div>";
+        return;
+      }
+      if (!window.$3Dmol) {
+        div.innerHTML = '<div class="empty">3Dmol not loaded</div>';
+        return;
+      }
+      const v = $3Dmol.createViewer(divId, { backgroundColor: "white" });
+      v.addModel(buildBody(mol.elements, mol.coords), "xyz");
+      v.setStyle({}, { stick: { radius: 0.10 }, sphere: { scale: 0.20 } });
+      v.setClickable({}, true, function(atom) {
+        const idx = atomIndexFrom3Dmol(atom);
+        if (idx == null) return;
+        if (kind === "R") state.selectedR = idx;
+        else state.selectedP = idx;
+        if (state.selectedR != null && state.selectedP != null) addPair();
+        else renderUiAndDecorations();
+      });
+      v.zoomTo();
+      state.viewers[kind] = v;
+      decorateViewer(kind);
+    }
+
+    function renderMolecules(rebuild) {
+      if (rebuild || !state.viewers.R) makeViewer("R");
+      else decorateViewer("R");
+      if (rebuild || !state.viewers.P) makeViewer("P");
+      else decorateViewer("P");
+    }
+
+    function renderUiAndDecorations() {
+      updateUi();
+      decorateViewer("R");
+      decorateViewer("P");
+    }
+
+    function renderAll(rebuild = false) {
+      updateUi();
+      renderMolecules(rebuild);
+    }
+
+    function updateUi() {
+      document.querySelector("h2").textContent = "Anchor Picker";
+      document.getElementById("r_label").textContent = state.R.name || "static";
+      document.getElementById("p_label").textContent = state.P.name || "static";
+      document.getElementById("r_meta").innerHTML = metaText(state.R);
+      document.getElementById("p_meta").innerHTML = metaText(state.P);
+      document.getElementById("selR").textContent = atomLabel(state.R, state.selectedR);
+      document.getElementById("selP").textContent = atomLabel(state.P, state.selectedP);
+      document.getElementById("sel_meta").textContent = state.selectedR != null && state.selectedP != null ? "ready" : "pending";
+      document.getElementById("pairCount").textContent = String(state.anchors.size);
+
+      const tbody = document.getElementById("pairsBody");
+      tbody.innerHTML = "";
+      [...state.anchors.entries()].sort((a, b) => a[0] - b[0]).forEach(([r, p]) => {
+        const color = pairColorByR(r);
+        const tr = document.createElement("tr");
+        tr.innerHTML = '<td><span class="swatch" style="background:' + color + '"></span>' + atomLabel(state.R, r) + '</td>' +
+          '<td>' + atomLabel(state.P, p) + '</td>' +
+          '<td>' + r + ':' + p + '</td>' +
+          '<td><button class="dl danger" data-remove="' + r + '">x</button></td>';
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll("button[data-remove]").forEach(btn => {
+        btn.onclick = () => {
+          state.anchors.delete(Number(btn.dataset.remove));
+          renderUiAndDecorations();
+        };
+      });
+
+      const obj = {};
+      [...state.anchors.entries()].sort((a, b) => a[0] - b[0]).forEach(([r, p]) => {
+        obj[String(r)] = p;
+      });
+      document.getElementById("jsonOut").value = JSON.stringify({ anchor_map: obj }, null, 2);
+      document.getElementById("cliOut").value = [...state.anchors.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([r, p]) => "--subgraph-anchor " + r + ":" + p)
+        .join(" ");
+    }
+
+    function addPair() {
+      const r = state.selectedR;
+      const p = state.selectedP;
+      if (r == null || p == null) return;
+      for (const [oldR, oldP] of [...state.anchors.entries()]) {
+        if (oldR === r || oldP === p) state.anchors.delete(oldR);
+      }
+      state.anchors.set(r, p);
+      state.selectedR = null;
+      state.selectedP = null;
+      renderUiAndDecorations();
+    }
+
+    function clearInvalidAnchors() {
+      for (const [r, p] of [...state.anchors.entries()]) {
+        if (r >= state.R.elements.length || p >= state.P.elements.length) state.anchors.delete(r);
+      }
+      if (state.selectedR != null && state.selectedR >= state.R.elements.length) state.selectedR = null;
+      if (state.selectedP != null && state.selectedP >= state.P.elements.length) state.selectedP = null;
+    }
+
+    function loadXYZText(kind, name, text) {
+      const parsed = parseXYZ(text);
+      state[kind].name = name || (kind === "R" ? "Reactant" : "Product");
+      state[kind].elements = parsed.elements;
+      state[kind].coords = parsed.coords;
+      clearInvalidAnchors();
+      renderAll(true);
+    }
+
+    async function loadFile(kind, file) {
+      if (!file) return;
+      loadXYZText(kind, file.name, await file.text());
+    }
+
+    async function copyText(text) {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Copied");
+      } catch (_err) {
+        showToast("Copy failed");
+      }
+    }
+
+    function downloadJson() {
+      const blob = new Blob([document.getElementById("jsonOut").value + "\n"], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "anchor_map.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    let toastTimer = null;
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      toast.textContent = text;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 1000);
+    }
+
+    function decodeBase64Utf8(encoded) {
+      const bytes = Uint8Array.from(atob(encoded), ch => ch.charCodeAt(0));
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    function applyPreloadPayload(payload) {
+      if (payload.R && payload.R.text) loadXYZText("R", payload.R.name || "Reactant", payload.R.text);
+      if (payload.P && payload.P.text) loadXYZText("P", payload.P.name || "Product", payload.P.text);
+    }
+
+    function preloadFromEmbedded() {
+      const el = document.getElementById("preloadData");
+      if (!el) return false;
+      try {
+        applyPreloadPayload(JSON.parse(el.textContent || "{}"));
+        return true;
+      } catch (_err) {
+        showToast("Preload failed");
+        return false;
+      }
+    }
+
+    function preloadFromHash() {
+      if (!location.hash.startsWith("#preload=")) return false;
+      try {
+        applyPreloadPayload(JSON.parse(decodeBase64Utf8(location.hash.slice("#preload=".length))));
+        return true;
+      } catch (_err) {
+        showToast("Preload failed");
+        return false;
+      }
+    }
+
+    document.getElementById("fileR").addEventListener("change", ev => loadFile("R", ev.target.files[0]));
+    document.getElementById("fileP").addEventListener("change", ev => loadFile("P", ev.target.files[0]));
+    document.getElementById("showAtomIndices").addEventListener("change", ev => {
+      state.showAtomIndices = !!ev.target.checked;
+      renderUiAndDecorations();
+    });
+    document.getElementById("fitAll").addEventListener("click", () => {
+      for (const kind of ["R", "P"]) {
+        const v = state.viewers[kind];
+        if (v) { v.zoomTo(); v.render(); }
+      }
+    });
+    document.getElementById("clearAll").addEventListener("click", () => {
+      state.anchors.clear();
+      state.selectedR = null;
+      state.selectedP = null;
+      renderUiAndDecorations();
+    });
+    document.getElementById("addPair").addEventListener("click", addPair);
+    document.getElementById("copyJson").addEventListener("click", () => copyText(document.getElementById("jsonOut").value));
+    document.getElementById("copyCli").addEventListener("click", () => copyText(document.getElementById("cliOut").value));
+    document.getElementById("downloadJson").addEventListener("click", downloadJson);
+
+    window.addEventListener("resize", () => {
+      for (const kind of ["R", "P"]) {
+        const v = state.viewers[kind];
+        if (v) {
+          if (v.resize) v.resize();
+          v.render();
+        }
+      }
+    });
+
+    renderAll(true);
+    preloadFromEmbedded() || preloadFromHash();
+  </script>
+</body>
+</html>

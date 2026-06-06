@@ -42,6 +42,7 @@ def grow_island(g_R, g_P, seed, mapping,
                 r_orbits=None,
                 prior_deferred_edges=None,
                 node_policy=None,
+                allow_mapped_seed=False,
                 profile=None,
                 profile_context=None):
     """
@@ -99,23 +100,31 @@ def grow_island(g_R, g_P, seed, mapping,
 
     locked_p_atoms = set(mapping.values())
     if seed in mapping:
-        _finish_profile('already_mapped')
-        return []
-    seed_targets = [v for v in g_P.nodes()
-                    if v not in locked_p_atoms
-                    and node_policy.compatible(g_R, seed, g_P, v)]
-    if p_orbits is not None:
-        seed_groups = _group_nodes_by_signature(
-            seed_targets, lambda v: (node_policy.key(g_P, v),
-                                     _orbit_id(p_orbits, v)))
+        if not allow_mapped_seed:
+            _finish_profile('already_mapped')
+            return []
+        seed_targets = [mapping[seed]]
+        seed_groups = [(mapping[seed],)]
     else:
-        seed_groups = [(v,) for v in sorted(seed_targets)]
+        seed_targets = [v for v in g_P.nodes()
+                        if v not in locked_p_atoms
+                        and node_policy.compatible(g_R, seed, g_P, v)]
+        if p_orbits is not None:
+            seed_groups = _group_nodes_by_signature(
+                seed_targets, lambda v: (node_policy.key(g_P, v),
+                                         _orbit_id(p_orbits, v)))
+        else:
+            seed_groups = [(v,) for v in sorted(seed_targets)]
     if prof is not None:
         prof['seed_targets'] = int(len(seed_targets))
         prof['seed_groups'] = int(len(seed_groups))
     cands = []
     for group in seed_groups:
-        if len(group) > 1:
+        if seed in mapping:
+            cands.append(_SymCand(
+                {seed: mapping[seed]},
+                exact_fixed=(seed,)))
+        elif len(group) > 1:
             cands.append(_SymCand({seed: group[0]},
                                   (_SymBlock((seed,), group,
                                              extendable=False),)))

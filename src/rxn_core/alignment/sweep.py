@@ -232,6 +232,13 @@ def _pool_add(pool, sig, mapping, cuts):
         entry['dedup_count'] = entry.get('dedup_count', 1) + 1
 
 
+def _anchor_mapping_ok(mapping, anchor_map):
+    return all(
+        int(mapping.get(int(r), -1)) == int(p)
+        for r, p in dict(anchor_map or {}).items()
+    )
+
+
 def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
                               p_orbits=None, r_orbits=None,
                               profile=None):
@@ -249,6 +256,7 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         p_orbits=p_orbits,
         r_orbits=r_orbits,
         profile=profile,
+        anchor_map=cfg.get('anchor_map'),
     )
 
 
@@ -256,16 +264,22 @@ def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
                           g_R_full, p_orbits, r_orbits, core_R, cfg,
                           elR=None, elT=None,
                           return_repair_stats=False):
+    anchor_map = cfg.get('anchor_map') or {}
     if core_R:
         if not all(r in mapping for r in core_R):
+            return None
+        if not _anchor_mapping_ok(mapping, anchor_map):
             return None
         scored = (_core_mapping_key(mapping, core_R), mapping)
         return (*scored, None) if return_repair_stats else scored
 
     if len(mapping) < int(cfg['n_atoms']) - 2:
         return None
+    if not _anchor_mapping_ok(mapping, anchor_map):
+        return None
     repair_stats = None
     if cfg['symmetry_repair']:
+        base_mapping = dict(mapping)
         if return_repair_stats:
             mapping, repair_stats = symmetry_repair_mapping(
                 mapping, wboR, wboT, g_R_full, g_P, p_orbits,
@@ -283,6 +297,11 @@ def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
                 min_changes=int(cfg['symmetry_repair_min_changes']),
                 max_evals=int(cfg['symmetry_repair_max_evals']),
             )
+        if not _anchor_mapping_ok(mapping, anchor_map):
+            mapping = base_mapping
+            if repair_stats is not None:
+                repair_stats = dict(repair_stats)
+                repair_stats['anchor_reverted'] = True
     sig = _mechanism_signature(
         mapping, wboR, wboT, r_orbits, p_orbits,
         dwbo_threshold=float(cfg['dwbo_threshold']),
@@ -654,7 +673,12 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
                    symmetry_repair=True,
                    symmetry_repair_min_changes=1,
                    symmetry_repair_max_evals=20000,
-                   n_atoms=0):
+                   n_atoms=0,
+                   anchor_map=None):
+    anchor_map = {
+        int(r): int(p)
+        for r, p in dict(anchor_map or {}).items()
+    }
     return {
         'cut_floor': float(cut_floor),
         'graph_floor': float(graph_floor),
@@ -673,6 +697,7 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
         'symmetry_repair_max_evals': int(symmetry_repair_max_evals),
         'abort_on_branch_cap': True,
         'n_atoms': int(n_atoms),
+        'anchor_map': anchor_map,
     }
 
 
@@ -743,7 +768,8 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
                         chunksize=1,
                         symmetry_repair=True,
                         symmetry_repair_min_changes=1,
-                        symmetry_repair_max_evals=20000):
+                        symmetry_repair_max_evals=20000,
+                        anchor_map=None):
     """Run a chunk of independent cut-sweep work items.
 
     This is the Slurm-array friendly primitive.  The caller chooses which cut
@@ -763,6 +789,7 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
         symmetry_repair_min_changes=symmetry_repair_min_changes,
         symmetry_repair_max_evals=symmetry_repair_max_evals,
         n_atoms=len(elR),
+        anchor_map=anchor_map,
     )
     core_R = tuple(sorted(set(core_R or ())))
     normalized_cuts = [
@@ -876,7 +903,8 @@ def cut_sweep(elR, wboR, elT, wboT, *,
               chunksize=1,
               symmetry_repair=True,
               symmetry_repair_min_changes=1,
-              symmetry_repair_max_evals=20000):
+              symmetry_repair_max_evals=20000,
+              anchor_map=None):
     """Enumerate mechanism classes via no-cut plus one-edge R cuts.
 
     The returned pool maps a symmetry-canonical signature to:
@@ -904,6 +932,7 @@ def cut_sweep(elR, wboR, elT, wboT, *,
         symmetry_repair_min_changes=symmetry_repair_min_changes,
         symmetry_repair_max_evals=symmetry_repair_max_evals,
         n_atoms=len(elR),
+        anchor_map=anchor_map,
     )
     core_R = tuple(sorted(set(core_R or ())))
     if not n_workers or n_workers <= 1:

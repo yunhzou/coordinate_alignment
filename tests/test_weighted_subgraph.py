@@ -110,3 +110,100 @@ def test_weighted_subgraph_can_match_by_multiple_node_features():
     )
 
     assert [m.mapping for m in matches] == [{0: 1, 1: 0}]
+
+
+def test_weighted_subgraph_anchor_seed_can_grow_from_locked_pair():
+    query = WeightedGraph(
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        _edge_matrix(2, [(0, 1, 1.0)]),
+    )
+    target = WeightedGraph(
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        _edge_matrix(4, [(0, 1, 1.0), (2, 3, 1.0)]),
+    )
+
+    matches = match_weighted_subgraph(
+        query,
+        target,
+        node_policy="outer_shell",
+        anchor_map={0: 2},
+        seed_order=[0],
+        graph_floor=0.2,
+        iso_tol=0.1,
+        orbit_dedup=False,
+    )
+
+    assert [m.mapping for m in matches] == [{0: 2, 1: 3}]
+
+
+def test_weighted_subgraph_anchor_map_filters_to_exact_target():
+    query = WeightedGraph(
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        _edge_matrix(2, [(0, 1, 1.0)]),
+    )
+    target = WeightedGraph(
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        _edge_matrix(4, [(0, 1, 1.0), (2, 3, 1.0)]),
+    )
+
+    matches = match_weighted_subgraph(
+        query,
+        target,
+        node_policy="outer_shell",
+        anchor_map={0: 2, 1: 3},
+        graph_floor=0.2,
+        iso_tol=0.1,
+        orbit_dedup=False,
+    )
+
+    assert [m.mapping for m in matches] == [{0: 2, 1: 3}]
+
+
+def test_weighted_subgraph_complete_anchor_map_still_checks_wbo_edges():
+    query = WeightedGraph(
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        _edge_matrix(2, [(0, 1, 1.0)]),
+    )
+    target = WeightedGraph(
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        _edge_matrix(2, [(0, 1, 0.3)]),
+    )
+
+    assert match_weighted_subgraph(
+        query,
+        target,
+        node_policy="outer_shell",
+        anchor_map={0: 0, 1: 1},
+        graph_floor=0.2,
+        iso_tol=0.1,
+    ) == []
+
+
+def test_weighted_subgraph_incompatible_anchor_has_no_match():
+    query = WeightedGraph(["O"], _edge_matrix(1, []))
+    target = WeightedGraph(["S"], _edge_matrix(1, []))
+
+    assert match_weighted_subgraph(
+        query, target, anchor_map={0: 0}) == []

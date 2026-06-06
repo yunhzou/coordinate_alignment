@@ -1,3 +1,6 @@
+import json
+import sys
+
 import pytest
 import numpy as np
 from pathlib import Path
@@ -7,6 +10,17 @@ from rxn_core.pipeline import (
     _merge_endpoint_core_pools,
     _product_core_pool_to_reactant,
 )
+
+
+def _write_graph_json(path, nodes, edges):
+    n = len(nodes)
+    weights = np.zeros((n, n))
+    for i, j, w in edges:
+        weights[i, j] = weights[j, i] = w
+    Path(path).write_text(json.dumps({
+        "nodes": nodes,
+        "weights": weights.tolist(),
+    }))
 
 
 def test_product_core_pool_pulls_back_and_merges_with_reactant_pool():
@@ -345,6 +359,79 @@ def test_xtb_worker_explicit_override(monkeypatch):
     monkeypatch.setattr(pipeline, "XTB_MAX_THREADS", 4)
 
     assert pipeline._resolve_xtb_workers(inner_workers=24, workers="8") == 8
+
+
+def test_run_subgraph_cli_matches_by_feature_and_anchor(tmp_path):
+    query = tmp_path / "query.json"
+    target = tmp_path / "target.json"
+    _write_graph_json(
+        query,
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        [(0, 1, 1.0)],
+    )
+    _write_graph_json(
+        target,
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        [(0, 1, 1.0), (2, 3, 1.0)],
+    )
+
+    result = pipeline.run_subgraph_cli(
+        query,
+        target,
+        node_policy_fields=["outer_shell"],
+        anchor_values=["0:2"],
+        iso_tol=0.1,
+        orbit_dedup=False,
+    )
+
+    assert result["n_matches"] == 1
+    assert result["matches"][0]["mapping"] == {"0": 2, "1": 3}
+
+
+def test_main_subgraph_mode_writes_output_json(tmp_path, monkeypatch):
+    query = tmp_path / "query.json"
+    target = tmp_path / "target.json"
+    out = tmp_path / "subgraph_out.json"
+    _write_graph_json(
+        query,
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        [(0, 1, 1.0)],
+    )
+    _write_graph_json(
+        target,
+        [
+            {"features": {"outer_shell": 6}},
+            {"features": {"outer_shell": 6}},
+        ],
+        [(0, 1, 1.0)],
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "rxn-core",
+        "--subgraph-query-json", str(query),
+        "--subgraph-target-json", str(target),
+        "--subgraph-node-policy", "outer_shell",
+        "--subgraph-anchor", "0:0",
+        "--subgraph-output", str(out),
+        "--iso-tol", "0.1",
+    ])
+
+    pipeline.main()
+
+    data = json.loads(out.read_text())
+    assert data["mode"] == "subgraph"
+    assert data["n_matches"] == 1
+    assert data["matches"][0]["mapping"] == {"0": 0, "1": 1}
 
 
 def test_alignment_inputs_from_xyz_uses_explicit_cache_dirs(tmp_path, monkeypatch):
