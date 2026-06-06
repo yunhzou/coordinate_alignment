@@ -6,6 +6,7 @@ from collections import defaultdict, deque
 import networkx as nx
 
 from .primitives import _edge_wbo, _wbo_bucket
+from .policy import as_node_match_policy
 
 
 class _OrbitMap(dict):
@@ -111,7 +112,8 @@ def _wbo_tolerance_bucket_lookup(g, tolerance):
             for pair, value in pair_values.items()}, value_to_bucket[0.0]
 
 
-def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None):
+def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None,
+                             node_policy=None):
     try:
         import pynauty
     except ImportError as exc:
@@ -124,13 +126,13 @@ def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None):
     nodes = sorted(g.nodes())
     atom_index = {node: idx for idx, node in enumerate(nodes)}
     pair_buckets, zero_bucket = _wbo_tolerance_bucket_lookup(g, wbo_tol)
+    node_policy = as_node_match_policy(node_policy)
 
     adjacency = defaultdict(set)
     vertex_colors = defaultdict(set)
-    elements = nx.get_node_attributes(g, 'element')
     for node, idx in atom_index.items():
         tag = atom_color_tags.get(node)
-        vertex_colors[('atom', elements.get(node, ''), tag)].add(idx)
+        vertex_colors[('atom', node_policy.key(g, node), tag)].add(idx)
 
     next_idx = len(nodes)
     for (a, b), bucket in sorted(pair_buckets.items()):
@@ -160,7 +162,7 @@ def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None):
     return nodes, atom_index, nauty_graph, pair_buckets, zero_bucket
 
 
-def _nauty_orbits(g, wbo_tol=0.2):
+def _nauty_orbits(g, wbo_tol=0.2, node_policy=None):
     """Exact automorphism orbits for a tolerance-bucketed WBO graph.
 
     Returns the same shape as :func:`_color_refine_orbits`: ``dict[node] ->
@@ -173,7 +175,7 @@ def _nauty_orbits(g, wbo_tol=0.2):
     performs its normal active R-pair ``iso_tol`` validity checks.
     """
     nodes, atom_index, nauty_graph, pair_buckets, zero_bucket = (
-        _nauty_colored_wbo_graph(g, wbo_tol))
+        _nauty_colored_wbo_graph(g, wbo_tol, node_policy=node_policy))
     import pynauty
     _, _, _, raw_orbits, _ = pynauty.autgrp(nauty_graph)
 
@@ -190,7 +192,8 @@ def _nauty_orbits(g, wbo_tol=0.2):
         zero_bucket=zero_bucket, wbo_tol=wbo_tol)
 
 
-def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None):
+def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None,
+                           node_policy=None):
     """Atom-level automorphism generators for a colored WBO graph.
 
     ``atom_color_tags`` refines the atom coloring before nauty is run.  This
@@ -200,7 +203,8 @@ def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None):
     """
     nodes, atom_index, nauty_graph, _pair_buckets, _zero_bucket = (
         _nauty_colored_wbo_graph(
-            g, wbo_tol, atom_color_tags=atom_color_tags))
+            g, wbo_tol, atom_color_tags=atom_color_tags,
+            node_policy=node_policy))
     import pynauty
     generators, _grpsize1, _grpsize2, _raw_orbits, _numorbits = (
         pynauty.autgrp(nauty_graph))

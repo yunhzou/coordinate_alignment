@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .dedupe import _dedup_sym_cands, _p_relation_signature
+from .policy import DEFAULT_NODE_POLICY, as_node_match_policy
 from .primitives import _edge_wbo, _growth_edge_supported
 from .state import _SymCand, _sym_block_indexes, _sym_cand_variants
 from .support import (
@@ -56,6 +57,7 @@ def _extend_sym_cands(
     anchor_u: Node | None = None,
     anchor_wbo: Wbo | None = None,
     dedupe_edges: Iterable[EdgeKey] | None = None,
+    node_policy=None,
 ) -> list[_SymCand]:
     """Symmetry-compressed incremental extension.
 
@@ -74,7 +76,7 @@ def _extend_sym_cands(
     n
         New R atom being added to F.
     g_R, g_P
-        Reactant/target WBO graphs.  They carry both node element labels and a
+        Reactant/target WBO graphs.  They carry both node labels and a
         full WBO matrix at `graph["wbo_matrix"]`.
     mapping
         Already locked global R->P mapping from other islands.  Free extension
@@ -107,6 +109,10 @@ def _extend_sym_cands(
         Optional boundary-edge set to use for deduping the child states.  The
         growth loop passes current deferred edges plus current one-hop frontier
         edges so symmetry dedupe does not erase distinguishable boundary states.
+    node_policy
+        Node-level compatibility policy.  The default is same element.  Custom
+        policies can admit target nodes by electronic or other descriptors
+        before the normal WBO/``iso_tol`` edge verifier is applied.
 
     Returns
     -------
@@ -115,9 +121,11 @@ def _extend_sym_cands(
         Each returned `_SymCand` may represent many concrete injective
         assignments through symmetry blocks and multiplicity/alternates.
     """
+    node_policy = as_node_match_policy(node_policy)
     ctx = _make_extension_context(
         fragment_old, n, g_R, g_P, mapping, iso_tol, islands_R,
-        p_orbits, r_orbits, deferred_edges, anchor_u, anchor_wbo, dedupe_edges)
+        p_orbits, r_orbits, deferred_edges, anchor_u, anchor_wbo,
+        dedupe_edges, node_policy)
     if ctx is None:
         return []
 
@@ -142,6 +150,7 @@ def _extend_sym_cands(
             anchor_u=ctx.anchor_u,
             anchor_wbo=ctx.anchor_wbo,
             dedupe_edges=ctx.dedupe_edges,
+            node_policy=ctx.node_policy,
         )
     return _dedupe_children(children, ctx)
 
@@ -175,6 +184,7 @@ class _ExtensionContext:
     r_wbos: tuple[tuple[Node, Wbo], ...]
     strict_r_wbos: Mapping[Node, Wbo]
     island_atoms: tuple[Node, ...]
+    node_policy: Any = DEFAULT_NODE_POLICY
 
     @property
     def is_merge(self) -> bool:
@@ -264,6 +274,7 @@ def _make_extension_context(
     anchor_u: Node | None,
     anchor_wbo: Wbo | None,
     dedupe_edges: Iterable[EdgeKey] | None,
+    node_policy,
 ) -> _ExtensionContext | None:
     """Collect repeated extension inputs into one typed context."""
     bonded_in_frag = _active_fragment_neighbors(fragment_old, g_R, n)
@@ -273,7 +284,7 @@ def _make_extension_context(
     return _ExtensionContext(
         fragment_old=frozenset(fragment_old),
         n=n,
-        n_element=g_R.nodes[n]['element'],
+        n_element=g_R.nodes[n].get('element'),
         g_R=g_R,
         g_P=g_P,
         mapping=mapping,
@@ -292,6 +303,7 @@ def _make_extension_context(
         strict_r_wbos=_strict_growth_wbos(
             fragment_old, anchor_u, anchor_wbo, g_R, n),
         island_atoms=_locked_island_atoms(n, fragment_old, mapping, islands_R),
+        node_policy=node_policy,
     )
 
 
@@ -470,7 +482,7 @@ def _collect_free_target_entries(
     for v in ctx.g_P.nodes():
         if v in ctx.locked_p_atoms:
             continue
-        if ctx.g_P.nodes[v]['element'] != ctx.n_element:
+        if not ctx.node_policy.compatible(ctx.g_R, ctx.n, ctx.g_P, v):
             continue
         join_idx, can_extend = _target_join_info(cand, ctx, v)
         support = _supported_value(cand, ctx, v, join_idx)
@@ -479,7 +491,9 @@ def _collect_free_target_entries(
         if join_idx is not None:
             block_join[join_idx].append((v, support, can_extend))
         else:
-            sig = _p_relation_signature(cand, v, ctx.g_P, ctx.p_orbits)
+            sig = _p_relation_signature(
+                cand, v, ctx.g_P, ctx.p_orbits,
+                node_policy=ctx.node_policy)
             by_group[sig].append((v, support, True))
     return block_join, by_group
 
@@ -598,4 +612,5 @@ def _dedupe_children(children: list[_SymCand], ctx: _ExtensionContext) -> list[_
         fragment=ctx.sig_fragment,
         deferred_edges=ctx.boundary_edges,
         locked_mapping=ctx.mapping,
+        node_policy=ctx.node_policy,
     )

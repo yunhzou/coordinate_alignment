@@ -14,6 +14,7 @@ from ..matcher import (
     _cand_possible_p_atoms,
     _edge_wbo,
     _growth_edge_supported,
+    as_node_match_policy,
     _support_witness_for_value,
     _sym_block_assignment_expr,
     _sym_block_indexes,
@@ -132,12 +133,12 @@ def pool_by_frag_atom(heap, used_edges, fragment, mapping, g_R):
 
 
 def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
-                      g_R, g_P, locked_mapping, iso_tol):
+                      g_R, g_P, locked_mapping, iso_tol, node_policy=None):
     """Per-candidate explanation of why extension to n_atom failed."""
+    node_policy = as_node_match_policy(node_policy)
     locked_p_atoms = set((locked_mapping or {}).values())
     graph_floor = float(g_P.graph.get("bond_cut", 0.2))
     bonded = sorted(u for u in fragment if g_R.has_edge(u, n_atom))
-    n_el = g_R.nodes[n_atom]['element']
     r_wbos = [(u, _edge_wbo(g_R, u, n_atom)) for u in bonded]
     strict_r_wbos = {}
     if anchor_atom is not None and anchor_atom in fragment:
@@ -157,7 +158,7 @@ def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
             v_set = {
                 v for v in g_P.nodes()
                 if v not in used_p and v not in locked_p_atoms
-                and g_P.nodes[v]['element'] == n_el
+                and node_policy.compatible(g_R, n_atom, g_P, v)
             }
             tried = []
             for v in sorted(v_set)[:30]:

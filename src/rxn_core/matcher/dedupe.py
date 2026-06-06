@@ -4,12 +4,14 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 
 from .orbits import _cand_canon_signature, _orbit_wbo_bucket
+from .policy import as_node_match_policy
 from .primitives import _edge_wbo, _orbit_id, _wbo_bucket
 from .state import _SymCand, _cand_map, _cand_possible_p_atoms
 
 
 def _p_relation_signature_from_parts(cand, v, g_P, p_orbits,
-                                     cm_items=None, blocks=None):
+                                     cm_items=None, blocks=None,
+                                     node_policy=None):
     """Signature of one possible target atom against a candidate state.
 
     Boundary dedupe calls this many times for the same candidate.  Accepting
@@ -20,6 +22,7 @@ def _p_relation_signature_from_parts(cand, v, g_P, p_orbits,
         cm_items = tuple(sorted(_cand_map(cand).items()))
     if blocks is None:
         blocks = cand.blocks if isinstance(cand, _SymCand) else ()
+    node_policy = as_node_match_policy(node_policy)
 
     rel = []
     for r, p in cm_items:
@@ -36,18 +39,21 @@ def _p_relation_signature_from_parts(cand, v, g_P, p_orbits,
             w = _edge_wbo(g_P, p, v)
             edge_wbos.append(_orbit_wbo_bucket(p_orbits, p, v, w))
         block_rel.append((i, v in b.p_atoms, tuple(sorted(edge_wbos))))
-    return (g_P.nodes[v].get('element'), _orbit_id(p_orbits, v),
+    return (node_policy.key(g_P, v), _orbit_id(p_orbits, v),
             tuple(rel), tuple(block_rel))
 
 
-def _p_relation_signature(cand, v, g_P, p_orbits):
-    return _p_relation_signature_from_parts(cand, v, g_P, p_orbits)
+def _p_relation_signature(cand, v, g_P, p_orbits, node_policy=None):
+    return _p_relation_signature_from_parts(
+        cand, v, g_P, p_orbits, node_policy=node_policy)
 
 
 def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
-                        r_orbits=None, p_orbits=None, locked_mapping=None):
+                        r_orbits=None, p_orbits=None, locked_mapping=None,
+                        node_policy=None):
     if not fragment or not deferred_edges:
         return ()
+    node_policy = as_node_match_policy(node_policy)
     fragment = set(fragment)
     cm = _cand_map(cand)
     cm_items = tuple(sorted(cm.items()))
@@ -73,27 +79,27 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
     mapped_rs = sorted(r for r in fragment if r in cm)
     out = []
 
-    # For a fixed candidate, the P-side availability vector depends on the
-    # outside atom element, but not on which R-side boundary atom has that
-    # element.  Many frontiers contain a dozen equivalent H boundary atoms;
-    # without this cache, we rebuild the same target multiset for each of them.
-    p_vec_by_element = {}
+    # For custom compatibility rules, two nodes with the same display element
+    # can still have different target pools.  Cache by the concrete boundary
+    # node to keep this signature exact for arbitrary policies.
+    p_vec_by_node = {}
 
-    def p_vec_for_element(element):
-        cached = p_vec_by_element.get(element)
+    def p_vec_for_node(x):
+        cached = p_vec_by_node.get(x)
         if cached is not None:
             return cached
         target_sigs = []
         for v in g_P.nodes():
             if v in locked_p_atoms or v in used_possible:
                 continue
-            if g_P.nodes[v].get('element') != element:
+            if not node_policy.compatible(g_R, x, g_P, v):
                 continue
             target_sigs.append(_p_relation_signature_from_parts(
-                cand, v, g_P, p_orbits, cm_items=cm_items, blocks=blocks))
+                cand, v, g_P, p_orbits, cm_items=cm_items, blocks=blocks,
+                node_policy=node_policy))
         counts = Counter(target_sigs)
         p_vec = tuple(sorted(counts.items(), key=lambda item: str(item[0])))
-        p_vec_by_element[element] = p_vec
+        p_vec_by_node[x] = p_vec
         return p_vec
 
     for x in sorted(boundary):
@@ -101,18 +107,19 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
             (r, _orbit_id(r_orbits, r), _wbo_bucket(_edge_wbo(g_R, x, r)))
             for r in mapped_rs
         )
-        x_el = g_R.nodes[x].get('element')
-        p_vec = p_vec_for_element(x_el)
+        x_key = node_policy.key(g_R, x)
+        p_vec = p_vec_for_node(x)
         deferred = tuple(sorted(
             (r, _orbit_id(r_orbits, r), _wbo_bucket(_edge_wbo(g_R, x, r)))
             for r in deferred_by_outside.get(x, [])
         ))
-        out.append((_orbit_id(r_orbits, x), x_el, r_vec, deferred, p_vec))
+        out.append((_orbit_id(r_orbits, x), x_key, r_vec, deferred, p_vec))
     return tuple(out)
 
 
 def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
-                     fragment=None, deferred_edges=(), locked_mapping=None):
+                     fragment=None, deferred_edges=(), locked_mapping=None,
+                     node_policy=None):
     if not cands:
         return cands
     internal_keys = []
@@ -138,7 +145,8 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
             boundary = _boundary_signature(
                 cand, g_R, g_P, fragment=fragment,
                 deferred_edges=deferred_edges, r_orbits=r_orbits,
-                p_orbits=p_orbits, locked_mapping=locked_mapping)
+                p_orbits=p_orbits, locked_mapping=locked_mapping,
+                node_policy=node_policy)
         sig = (internal, boundary)
         if sig not in seen:
             seen[sig] = cand

@@ -16,6 +16,7 @@ from ..matcher import (
     _orbit_id,
     _symmetry_state,
 )
+from ..matcher.policy import as_node_match_policy
 from .frontier import _frontier_boundary_edges, _push_edges_from, _set_unique
 from .result import _IsoResult
 from .trace import (
@@ -40,6 +41,7 @@ def grow_island(g_R, g_P, seed, mapping,
                 p_orbits=None,
                 r_orbits=None,
                 prior_deferred_edges=None,
+                node_policy=None,
                 profile=None,
                 profile_context=None):
     """
@@ -54,6 +56,7 @@ def grow_island(g_R, g_P, seed, mapping,
     commit / deferred / merge / seed_end) compatible with the
     existing trace_run.HTML viewer.
     """
+    node_policy = as_node_match_policy(node_policy)
     record = events is not None
     prof = None
     profile_t0 = None
@@ -98,12 +101,12 @@ def grow_island(g_R, g_P, seed, mapping,
     if seed in mapping:
         _finish_profile('already_mapped')
         return []
-    seed_el = g_R.nodes[seed]['element']
     seed_targets = [v for v in g_P.nodes()
-                    if v not in locked_p_atoms and g_P.nodes[v]['element'] == seed_el]
+                    if v not in locked_p_atoms
+                    and node_policy.compatible(g_R, seed, g_P, v)]
     if p_orbits is not None:
         seed_groups = _group_nodes_by_signature(
-            seed_targets, lambda v: (g_P.nodes[v].get('element'),
+            seed_targets, lambda v: (node_policy.key(g_P, v),
                                      _orbit_id(p_orbits, v)))
     else:
         seed_groups = [(v,) for v in sorted(seed_targets)]
@@ -188,7 +191,7 @@ def grow_island(g_R, g_P, seed, mapping,
                 'type': 'pop',
                 'edge': {'frag_atom': int(u), 'ext_atom': int(n),
                          'wbo': round(wbo, 3),
-                         'ext_element': g_R.nodes[n]['element']},
+                         'ext_element': g_R.nodes[n].get('element')},
                 'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
                 'island_id_at_ext': (int(islands_R[n]) if islands_R and n in islands_R else None),
                 'island_image': (int(mapping[n]) if n_in_mapping else None),
@@ -232,7 +235,7 @@ def grow_island(g_R, g_P, seed, mapping,
             cands, fragment, n, g_R, g_P, mapping,
             iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
             deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo,
-            dedupe_edges=dedupe_edges)
+            dedupe_edges=dedupe_edges, node_policy=node_policy)
         if prof is not None:
             extend_elapsed = time.perf_counter() - extend_t0
             prof['extend_elapsed_sec'] += extend_elapsed
@@ -281,7 +284,7 @@ def grow_island(g_R, g_P, seed, mapping,
                     'type': 'commit',
                     'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
                     'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3)},
-                    'added': int(n), 'element': g_R.nodes[n]['element'],
+                    'added': int(n), 'element': g_R.nodes[n].get('element'),
                     'atoms_added': added_atoms,
                     'island_size_absorbed': len(added_atoms) if n_in_mapping else None,
                     'island_image': int(mapping[n]) if n_in_mapping else None,
@@ -311,12 +314,12 @@ def grow_island(g_R, g_P, seed, mapping,
                     'deferred': True,
                     'scenario': ('merge_island' if n_in_mapping else 'extend_free'),
                     'edge': {'frag_atom': int(u), 'ext_atom': int(n), 'wbo': round(wbo, 3),
-                             'ext_element': g_R.nodes[n]['element']},
+                             'ext_element': g_R.nodes[n].get('element')},
                     'reason': ('merge_failed' if n_in_mapping else 'cut_all_cands'),
                     'island_image': int(mapping[n]) if n_in_mapping else None,
                     'island_id': int(islands_R[n]) if islands_R and n in islands_R else None,
                     'why_per_cand': (why_merge_failed(cands, fragment, n, mapping, islands_R, g_R, g_P, iso_tol) if n_in_mapping
-                                     else why_extend_failed(cands, fragment, n, u, wbo, g_R, g_P, mapping, iso_tol)),
+                                     else why_extend_failed(cands, fragment, n, u, wbo, g_R, g_P, mapping, iso_tol, node_policy=node_policy)),
                     'cands_count': len(cands),
                     'represented_assignments': represented_assignment_expr(cands),
                     'cands_sample': cands_sample(cands, 5),
@@ -369,7 +372,8 @@ def grow_island(g_R, g_P, seed, mapping,
                 _boundary_signature(
                     c, g_R, g_P, fragment=fragment,
                     deferred_edges=deferred_edges, r_orbits=r_orbits,
-                    p_orbits=p_orbits, locked_mapping=mapping),
+                    p_orbits=p_orbits, locked_mapping=mapping,
+                    node_policy=node_policy),
             )
         elif p_orbits is not None:
             key = (
@@ -377,7 +381,8 @@ def grow_island(g_R, g_P, seed, mapping,
                 _boundary_signature(
                     c, g_R, g_P, fragment=fragment,
                     deferred_edges=deferred_edges, r_orbits=r_orbits,
-                    p_orbits=p_orbits, locked_mapping=mapping),
+                    p_orbits=p_orbits, locked_mapping=mapping,
+                    node_policy=node_policy),
             )
         else:
             key = (
@@ -385,7 +390,8 @@ def grow_island(g_R, g_P, seed, mapping,
                 _boundary_signature(
                     c, g_R, g_P, fragment=fragment,
                     deferred_edges=deferred_edges, r_orbits=r_orbits,
-                    p_orbits=p_orbits, locked_mapping=mapping),
+                    p_orbits=p_orbits, locked_mapping=mapping,
+                    node_policy=node_policy),
             )
         if key not in by_set:
             by_set[key] = _IsoResult(

@@ -12,6 +12,13 @@ from __future__ import annotations
 
 from .dedupe import _boundary_signature, _dedup_sym_cands, _p_relation_signature
 from .extend import _extend_sym_cands
+from .policy import (
+    DEFAULT_NODE_POLICY,
+    AttributeNodeMatchPolicy,
+    CallableNodeMatchPolicy,
+    ElementNodeMatchPolicy,
+    as_node_match_policy,
+)
 from .orbits import (
     _atom_tuple_orbit,
     _cand_canon_signature,

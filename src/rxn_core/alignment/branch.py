@@ -15,6 +15,7 @@ from ..matcher import (
     _nauty_orbits,
     _orbit_id,
     _wbo_bucket,
+    as_node_match_policy,
 )
 
 SYM_REPAIR_MAX_EVALS = 20000
@@ -147,7 +148,8 @@ def _chemistry_orbit_signature(mapping, g_R, g_P, r_orbits=None, p_orbits=None,
 
 
 def _alignment_state_signature(mapping, deferred_edges, g_R, g_P,
-                               r_orbits=None, p_orbits=None, core_R=()):
+                               r_orbits=None, p_orbits=None, core_R=(),
+                               node_policy=None):
     core_R = tuple(sorted(core_R or ()))
     core_set = set(core_R)
     fixed = []
@@ -173,7 +175,8 @@ def _alignment_state_signature(mapping, deferred_edges, g_R, g_P,
     boundary = _boundary_signature(
         mapping, g_R, g_P, fragment=set(mapping),
         deferred_edges=deferred_edges, r_orbits=r_orbits,
-        p_orbits=p_orbits, locked_mapping=mapping)
+        p_orbits=p_orbits, locked_mapping=mapping,
+        node_policy=node_policy)
     return tuple(fixed), tuple(sorted(internal_pairs)), boundary
 
 
@@ -384,6 +387,7 @@ def find_islands(g_R, g_P, seed_order,
                  stop_when_core_mapped=False,
                  p_orbits=None, r_orbits=None,
                  abort_on_branch_cap=False,
+                 node_policy=None,
                  profile=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns list of _Branch.
@@ -404,11 +408,16 @@ def find_islands(g_R, g_P, seed_order,
     returns once all live branches have mapped the core; spectators remain
     represented only by the compressed witness state already discovered.
     """
+    node_policy = as_node_match_policy(node_policy)
     if orbit_dedup:
         if p_orbits is None:
-            p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
+            p_orbits = _nauty_orbits(
+                g_P, wbo_tol=symmetry_wbo_tol,
+                node_policy=node_policy)
         if r_orbits is None:
-            r_orbits = _nauty_orbits(g_R, wbo_tol=symmetry_wbo_tol)
+            r_orbits = _nauty_orbits(
+                g_R, wbo_tol=symmetry_wbo_tol,
+                node_policy=node_policy)
     else:
         p_orbits = None
         r_orbits = None
@@ -446,7 +455,8 @@ def find_islands(g_R, g_P, seed_order,
         deferred_boundary = _boundary_signature(
             mapping, g_R, g_P, fragment=set(mapping),
             deferred_edges=deferred_edges, r_orbits=r_orbits,
-            p_orbits=p_orbits, locked_mapping=mapping)
+            p_orbits=p_orbits, locked_mapping=mapping,
+            node_policy=node_policy)
         sig = (
             'mechanism_state',
             core_key,
@@ -524,6 +534,7 @@ def find_islands(g_R, g_P, seed_order,
                                     p_orbits=p_orbits,
                                     r_orbits=r_orbits,
                                     prior_deferred_edges=b.deferred_edges,
+                                    node_policy=node_policy,
                                     profile=profile,
                                     profile_context={
                                         'pass': int(pass_no),

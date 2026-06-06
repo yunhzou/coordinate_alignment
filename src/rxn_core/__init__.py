@@ -48,12 +48,14 @@ from .chemistry_computations import (
     load_cached_xtb, reindex_to_R_frame,
 )
 from .frag import build_graph, classify_bonds, expand_mapping
+from .frag import WeightedGraph, WeightedNode, build_weighted_graph
 from .modes import (
     parse_g98_modes,
     core_atoms_in_R_frame, reindex_modes_to_R,
     bond_reaction_vector,
     bond_overlap_per_mode, rxn_overlap_per_mode,
 )
+from .subgraph import SubgraphMatch, match_weighted_subgraph
 
 _PIPELINE_EXPORTS = {
     "load_endpoint_from_xyz", "alignment_inputs_from_xyz",
@@ -83,6 +85,8 @@ __all__ = [
     "select_min_mechanisms",
     "run_xtb", "parse_xyz", "write_xyz_str",
     "build_graph", "classify_bonds", "expand_mapping",
+    "WeightedGraph", "WeightedNode", "build_weighted_graph",
+    "SubgraphMatch", "match_weighted_subgraph",
     "parse_g98_modes",
     "core_atoms_in_R_frame", "reindex_modes_to_R",
     "bond_reaction_vector",
