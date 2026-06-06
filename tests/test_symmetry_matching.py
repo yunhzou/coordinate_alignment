@@ -14,7 +14,7 @@ from rxn_core.alignment import (
     _generate_seed_orders,
     symmetry_repair_mapping,
 )
-from rxn_core.alignment.sweep import _pool_add
+from rxn_core.alignment.sweep import _core_mapping_variants, _pool_add
 import rxn_core.alignment.branch as branch_mod
 from rxn_core.matcher import (
     _SymBlock,
@@ -25,6 +25,7 @@ from rxn_core.matcher import (
     _extend_sym_cands,
     _nauty_orbits,
     _support_witness_for_value,
+    _symmetry_state,
 )
 
 
@@ -200,6 +201,21 @@ def test_core_alignment_expands_internal_branch_degeneracy():
     }
 
 
+def test_core_mapping_variants_do_not_invent_global_orbit_swaps():
+    class Branch:
+        mapping = {0: 0, 1: 1}
+        symmetry_fragments = []
+
+    wbo = np.zeros((2, 2))
+    g_p = build_graph(["H", "H"], wbo, bond_cut=0.2)
+
+    variants = _core_mapping_variants(
+        Branch(), [0, 1], 100,
+        g_P=g_p, p_orbits={0: 0, 1: 0})
+
+    assert variants == [{0: 0, 1: 1}]
+
+
 def test_core_alignment_does_not_filter_nonmatching_core_edges():
     el_r = ["N", "C", "O"]
     wbo_r = np.zeros((3, 3))
@@ -336,6 +352,47 @@ def test_hidden_alternate_witness_can_extend_later_frontier_atom():
 
     assert len(out) == 1
     assert _cand_map(out[0]) == {0: 1, 1: 0, 2: 2}
+
+
+def test_successful_primary_extension_preserves_alternate_witness_evidence():
+    elements = ["X", "C", "C", "H", "H"]
+    wbo = np.zeros((5, 5))
+    for carbon in [1, 2]:
+        wbo[0, carbon] = wbo[carbon, 0] = 1.0
+    wbo[1, 3] = wbo[3, 1] = 1.0
+    wbo[2, 4] = wbo[4, 2] = 1.0
+    g = build_graph(elements, wbo, bond_cut=0.2)
+    r_orbits = _nauty_orbits(g, wbo_tol=0.2)
+    p_orbits = _nauty_orbits(g, wbo_tol=0.2)
+
+    cands = [_SymCand({0: 0})]
+    for fragment, atom, anchor in [
+        ({0}, 1, 0),
+        ({0, 1}, 2, 0),
+        ({0, 1, 2}, 3, 1),
+        ({0, 1, 2, 3}, 4, 2),
+    ]:
+        cands = _extend_sym_cands(
+            cands, fragment, atom, g, g, {}, 0.5, None,
+            p_orbits=p_orbits, r_orbits=r_orbits,
+            anchor_u=anchor, anchor_wbo=1.0)
+
+    assert len(cands) == 1
+    assert cands[0].multiplicity == 2
+    assert cands[0].alternates == (
+        (tuple(sorted({0: 0, 1: 2, 2: 1, 3: 4, 4: 3}.items())), 1),
+    )
+    state = _symmetry_state(cands[0], r_orbits=r_orbits, p_orbits=p_orbits)
+    assert state["alternates"] == [{
+        "witness": {0: 0, 1: 2, 2: 1, 3: 4, 4: 3},
+        "multiplicity": 1,
+    }]
+    assert any(
+        block["r_atoms"] == [1, 2]
+        and block["p_atoms"] == [1, 2]
+        and block["assignments"] == "2!"
+        for block in state["blocks"]
+    )
 
 
 def test_block_join_refines_bucket_mismatch_before_later_frontier():
@@ -502,6 +559,32 @@ def test_cut_sweep_pool_prefers_no_cut_representative():
     assert pool[sig]["has_no_cut"] is True
     assert pool[sig]["cuts"] == frozenset({(0, 1)})
     assert pool[sig]["dedup_count"] == 2
+    assert pool[sig]["branch_symmetry"]["dedup_witness_count"] == 2
+    assert {
+        tuple(sorted(w["mapping"].items()))
+        for w in pool[sig]["dedup_witnesses"]
+    } == {((0, 1),), ((0, 0),)}
+
+
+def test_pool_branch_symmetry_marks_same_mechanism_witness_variation():
+    pool = {}
+    sig = ((), ())
+
+    _pool_add(pool, sig, {0: 0, 1: 1}, ())
+    _pool_add(pool, sig, {0: 1, 1: 0}, ())
+
+    block = next(
+        b for b in pool[sig]["branch_symmetry"]["blocks"]
+        if b.get("source") == "mechanism_dedup_witnesses"
+    )
+    assert block["r_atoms"] == [0, 1]
+    assert block["p_atoms"] == [0, 1]
+    assert block["assignments"] == 2
+    assert pool[sig]["branch_symmetry"]["color_groups"] == [{
+        "r_atoms": [0, 1],
+        "p_atoms": [0, 1],
+        "sources": ["mechanism_dedup_witnesses"],
+    }]
 
 
 def test_generate_seed_orders_honors_trial_cap():
@@ -657,3 +740,81 @@ def test_cut_sweep_respects_hard_anchor_map():
     )
 
     assert incompatible == {}
+
+
+def test_cut_sweep_preserves_branch_symmetry_alternates():
+    elements = ["H", "H"]
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 0.9
+
+    pool = cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=0, n_seeds=1, max_branches=100,
+        cut_floor=0.2, symmetry_repair=False,
+    )
+    info = next(iter(pool.values()))
+    branch_symmetry = info["branch_symmetry"]
+
+    assert branch_symmetry["rule"] == "mechanism_dedup_branch_symmetry"
+    assert branch_symmetry["dedup_witness_count"] == 2
+    assert any(
+        block == {
+            "fragment_index": 0,
+            "block_index": "alt:0",
+            "island_idx": 1,
+            "r_atoms": [0, 1],
+            "p_atoms": [0, 1],
+            "extendable": False,
+            "open": False,
+            "assignments": 1,
+            "source": "alternate_witness",
+            "witness_index": 0,
+        }
+        for block in branch_symmetry["blocks"]
+    )
+    assert any(
+        block.get("source") == "mechanism_dedup_witnesses"
+        and block["r_atoms"] == [0, 1]
+        and block["p_atoms"] == [0, 1]
+        for block in branch_symmetry["blocks"]
+    )
+    assert branch_symmetry["color_groups"] == [{
+        "r_atoms": [0, 1],
+        "p_atoms": [0, 1],
+        "sources": [
+            "alternate_witness",
+            "mechanism_dedup_witnesses",
+            "sym_block",
+        ],
+    }]
+    assert branch_symmetry["fragments"][0]["symmetry"]["alternates"] == [{
+        "witness": {0: 1, 1: 0},
+        "multiplicity": 1,
+    }]
+
+
+def test_anchored_noop_seed_does_not_keep_pass_loop_alive():
+    elements = ["C", "C", "C"]
+    wbo_r = np.zeros((3, 3))
+    wbo_r[0, 1] = wbo_r[1, 0] = 1.0
+    wbo_r[1, 2] = wbo_r[2, 1] = 1.0
+
+    wbo_p = np.zeros((3, 3))
+    wbo_p[1, 2] = wbo_p[2, 1] = 1.0
+
+    g_r = build_graph(elements, wbo_r, bond_cut=0.2)
+    g_p = build_graph(elements, wbo_p, bond_cut=0.2)
+    events = []
+
+    branches = branch_mod.find_islands(
+        g_r, g_p, [1, 0],
+        iso_tol=1.0,
+        max_branches=100,
+        anchor_map={0: 0},
+        events=events,
+    )
+
+    assert branches
+    assert all(branch.mapping[0] == 0 for branch in branches)
+    assert [e["seed"] for e in events if e.get("type") == "seed_start"][:2] == [1, 0]
+    assert sum(1 for e in events if e.get("type") == "pass_start") == 2

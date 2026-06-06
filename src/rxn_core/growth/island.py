@@ -369,7 +369,9 @@ def grow_island(g_R, g_P, seed, mapping,
         return [_IsoResult(_cand_map(cands[0]),
                            deferred_edges=deferred_edges,
                            fragment=fragment,
-                           symmetry=_symmetry_state(cands[0]))]
+                           symmetry=_symmetry_state(
+                               cands[0], r_orbits=r_orbits,
+                               p_orbits=p_orbits))]
     # Dedup by compressed structural signature.  Open symmetry blocks may
     # still contain many concrete witnesses; only one deterministic witness
     # is returned for each orbit/context-distinct saturation.
@@ -405,7 +407,8 @@ def grow_island(g_R, g_P, seed, mapping,
         if key not in by_set:
             by_set[key] = _IsoResult(
                 _cand_map(c), deferred_edges=deferred_edges,
-                fragment=fragment, symmetry=_symmetry_state(c))
+                fragment=fragment, symmetry=_symmetry_state(
+                    c, r_orbits=r_orbits, p_orbits=p_orbits))
     branches = list(by_set.values())[:max_branches]
     _finish_profile('branched', len(cands), fragment, len(branches))
     if record:

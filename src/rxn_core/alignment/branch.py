@@ -470,8 +470,7 @@ def find_islands(g_R, g_P, seed_order,
         p_orbits = None
         r_orbits = None
     core_R = tuple(sorted(set(core_R or ())))
-    anchor_roots = tuple(anchor_map)
-    seed_order = list(dict.fromkeys(list(anchor_roots) + list(seed_order)))
+    seed_order = list(dict.fromkeys(seed_order))
     branches = [_Branch.from_anchor_map(anchor_map)]
     progressed = True
     pass_no = 0
@@ -534,6 +533,14 @@ def find_islands(g_R, g_P, seed_order,
             branch._signature_cache = _mapping_signature(
                 branch.mapping, branch.deferred_edges)
         return branch._signature_cache
+
+    def _state_key(branch):
+        return (
+            tuple(sorted(branch.mapping.items())),
+            tuple(sorted(branch.islands_R.items())),
+            tuple(sorted(branch.islands_P.items())),
+            _deferred_key(branch.deferred_edges),
+        )
 
     def _hit_branch_cap(count, seed, stage):
         if not abort_on_branch_cap:
@@ -626,10 +633,15 @@ def find_islands(g_R, g_P, seed_order,
                     if len(new_branches) >= max_branches:
                         _hit_branch_cap(len(new_branches), seed, 'island_fork')
                         break
+                    before_state = _state_key(b)
                     b2 = b.fork()
                     b2.commit(iso, g_R,
                               events=events if (bi == 0 and ii == 0) else None)
-                    if _append_pending(b2):
+                    after_state = _state_key(b2)
+                    if after_state == before_state:
+                        if _append_pending(b):
+                            continue
+                    elif _append_pending(b2):
                         progressed = True
             new_branches.sort(key=lambda b: -len(b.mapping))
             # Cross-branch dedup uses the same mechanism-state key.  It

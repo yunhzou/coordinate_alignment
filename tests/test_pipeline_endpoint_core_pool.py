@@ -645,7 +645,19 @@ def test_viewer_uses_step_level_download_button():
     assert 'id="r_meta"' in html
     assert 'id="p_meta"' in html
     assert 'id="showAtomIndices"' in html
+    assert 'id="showDegeneracy"' in html
+    assert 'id="rOrdered"' in html
+    assert 'TS R-order' not in html
+    assert '<option value="endpoint">Endpoint</option>' not in html
     assert 'addAtomLabels' in html
+    assert 'applyDegeneracyStyles' in html
+    assert 'branchBlocks' in html
+    assert 'branchColorGroups' in html
+    assert 'productAtomLabels' in html
+    assert '"R"+i+"/P"+mapping[String(i)]' not in html
+    assert "return els.map((_, i) => String(i));" in html
+    assert 'const pAligned = !!(rOrdered && mech.product_xyz_in_R)' in html
+    assert '"native P"' in html
     assert 'id="zipBtn"' not in html
     assert 'mechanism.json' in html
     assert 'energies_frequencies.json' in html
@@ -673,6 +685,52 @@ def test_view_data_carries_endpoint_energy_metadata():
         "energy": "hartree",
         "frequency": "cm^-1",
     }
+
+
+def test_view_data_does_not_emit_endpoint_degeneracy_orbits():
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 0.9
+    inputs = pipeline.step_inputs_from_arrays(
+        "h2",
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]]),
+        wbo,
+        ["H", "H"],
+        np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.75]]),
+        wbo,
+    )
+
+    data = pipeline.build_view_data(inputs, {"mechanisms": []})
+
+    assert "degeneracy" not in data["reactant"]
+    assert "degeneracy" not in data["product"]
+
+
+def test_rp_stage_carries_branch_symmetry_to_mechanism():
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 0.9
+    inputs = pipeline.step_inputs_from_arrays(
+        "h2",
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]]),
+        wbo,
+        ["H", "H"],
+        np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.75]]),
+        wbo,
+    )
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+    cfg["symmetry_repair"] = False
+
+    result = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=0)
+
+    branch_symmetry = result["mechanisms"][0]["branch_symmetry"]
+    assert branch_symmetry["rule"] == "mechanism_dedup_branch_symmetry"
+    assert branch_symmetry["dedup_witness_count"] >= 1
+    assert any(
+        block["r_atoms"] == [0, 1] and block["p_atoms"] == [0, 1]
+        for block in branch_symmetry["blocks"]
+    )
 
 
 def test_array_based_mechanism_discovery_returns_aligned_product():

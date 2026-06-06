@@ -129,29 +129,9 @@ def _extend_sym_cands(
     if ctx is None:
         return []
 
-    primary_cands, alternate_cands = _expand_primary_and_alternates(cands)
     children: list[_SymCand] = []
-    for cand in primary_cands:
+    for cand in _expand_sym_cand_variants(cands):
         children.extend(_extend_one_candidate(cand, ctx))
-
-    if not children and alternate_cands:
-        return _extend_sym_cands(
-            alternate_cands,
-            set(ctx.fragment_old),
-            ctx.n,
-            ctx.g_R,
-            ctx.g_P,
-            ctx.mapping,
-            ctx.iso_tol,
-            ctx.islands_R,
-            p_orbits=ctx.p_orbits,
-            r_orbits=ctx.r_orbits,
-            deferred_edges=ctx.deferred_edges,
-            anchor_u=ctx.anchor_u,
-            anchor_wbo=ctx.anchor_wbo,
-            dedupe_edges=ctx.dedupe_edges,
-            node_policy=ctx.node_policy,
-        )
     return _dedupe_children(children, ctx)
 
 
@@ -307,27 +287,21 @@ def _make_extension_context(
     )
 
 
-def _expand_primary_and_alternates(
+def _expand_sym_cand_variants(
     cands: Iterable[SymCandidate],
-) -> tuple[list[_SymCand], list[_SymCand]]:
-    """Normalize raw mappings and split alternate witnesses.
+) -> list[_SymCand]:
+    """Normalize raw mappings and materialize retained witnesses.
 
     `_SymCand.alternates` holds concrete witnesses collapsed into the same
-    canonical state.  Normally the primary witness is enough.  If all primary
-    witnesses fail to extend, `_extend_sym_cands` retries the alternates before
-    declaring the extension impossible.
+    canonical state.  They still represent legal assignments, so every
+    retained witness must be extended.  The following dedupe step collapses
+    equivalent children back together while preserving which atoms moved.
     """
-    expanded: list[_SymCand] = []
-    alternates: list[_SymCand] = []
+    variants: list[_SymCand] = []
     for raw_cand in cands:
         cand = raw_cand if isinstance(raw_cand, _SymCand) else _SymCand(raw_cand)
-        if cand.alternates:
-            if cand.multiplicity:
-                expanded.append(cand.without_alternates(cand.multiplicity))
-            alternates.extend(_sym_cand_variants(cand)[1:])
-        else:
-            expanded.append(cand)
-    return expanded, alternates
+        variants.extend(_sym_cand_variants(cand))
+    return variants
 
 
 def _candidate_covers_fragment(cand: _SymCand, ctx: _ExtensionContext) -> bool:

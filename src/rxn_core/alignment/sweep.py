@@ -144,17 +144,6 @@ def _core_mapping_variants(branch, core_R, max_variants, *,
             for r in r_atoms:
                 options.setdefault(r, set()).update(p_atoms)
 
-    if p_orbits is not None and g_P is not None:
-        orbit_nodes = {}
-        for node, orbit in p_orbits.items():
-            orbit_nodes.setdefault(int(orbit), []).append(int(node))
-        for r in core_R:
-            p0 = base[r]
-            element = g_P.nodes[p0].get('element')
-            for p in orbit_nodes.get(int(p_orbits[p0]), ()):
-                if g_P.nodes[p].get('element') == element:
-                    options.setdefault(r, set()).add(int(p))
-
     order = sorted(core_R, key=lambda r: (len(options.get(r, ())), r))
     out = {}
 
@@ -213,9 +202,321 @@ def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
     return br, tuple(sorted(fm))
 
 
-def _pool_add(pool, sig, mapping, cuts):
+def _branch_symmetry_record(branch):
+    fragments = []
+    blocks = []
+    for frag_index, fragment in enumerate(
+            getattr(branch, 'symmetry_fragments', ())):
+        record = {
+            'fragment_index': int(frag_index),
+            'island_idx': int(fragment.get('island_idx', frag_index)),
+            'fragment': [int(r) for r in fragment.get('fragment', ())],
+            'deferred_edges': [
+                [int(a), int(b)]
+                for a, b in fragment.get('deferred_edges', ())
+            ],
+            'symmetry': fragment.get('symmetry') or {},
+        }
+        fragments.append(record)
+        symmetry = record['symmetry']
+        for block_index, block in enumerate(symmetry.get('blocks') or ()):
+            r_atoms = [int(r) for r in block.get('r_atoms', ())]
+            p_atoms = [int(p) for p in block.get('p_atoms', ())]
+            if len(p_atoms) <= 1 and len(r_atoms) <= 1:
+                continue
+            blocks.append({
+                'fragment_index': int(frag_index),
+                'block_index': int(block_index),
+                'island_idx': record['island_idx'],
+                'r_atoms': r_atoms,
+                'p_atoms': p_atoms,
+                'extendable': bool(block.get('extendable', False)),
+                'open': bool(block.get('open', False)),
+                'assignments': block.get('assignments'),
+            })
+        witness = {
+            int(r): int(p)
+            for r, p in dict(symmetry.get('witness') or {}).items()
+        }
+        for alt_index, alt in enumerate(symmetry.get('alternates') or ()):
+            alt_witness = {
+                int(r): int(p)
+                for r, p in dict(alt.get('witness') or {}).items()
+            }
+            changed_r = sorted(
+                r for r, p in alt_witness.items()
+                if r in witness and int(witness[r]) != int(p)
+            )
+            p_atoms = sorted({
+                int(witness[r])
+                for r in changed_r
+            } | {
+                int(alt_witness[r])
+                for r in changed_r
+            })
+            if len(p_atoms) <= 1 and len(changed_r) <= 1:
+                continue
+            blocks.append({
+                'fragment_index': int(frag_index),
+                'block_index': f"alt:{int(alt_index)}",
+                'island_idx': record['island_idx'],
+                'r_atoms': changed_r,
+                'p_atoms': p_atoms,
+                'extendable': False,
+                'open': False,
+                'assignments': alt.get('multiplicity'),
+                'source': 'alternate_witness',
+            })
+    return {
+        'rule': 'branch_symmetry_blocks',
+        'fragments': fragments,
+        'blocks': blocks,
+    }
+
+
+def _mapping_key(mapping):
+    return tuple(
+        (int(r), int(p))
+        for r, p in sorted(dict(mapping).items())
+    )
+
+
+def _cut_record(cuts):
+    return [
+        [int(a), int(b)]
+        for a, b in sorted(tuple(tuple(pair) for pair in cuts))
+    ]
+
+
+def _normalize_cut_record(cut):
+    out = []
+    for item in cut or ():
+        if isinstance(item, str):
+            continue
+        try:
+            a, b = item
+        except (TypeError, ValueError):
+            continue
+        out.append([int(a), int(b)])
+    return out
+
+
+def _dedup_witness(mapping, cuts, branch_symmetry=None):
+    return {
+        'mapping': {int(r): int(p) for r, p in dict(mapping).items()},
+        'cut': _cut_record(cuts),
+        'local_symmetry': branch_symmetry or {
+            'rule': 'branch_symmetry_blocks',
+            'fragments': [],
+            'blocks': [],
+        },
+    }
+
+
+def _unique_witnesses(witnesses):
+    out = []
+    seen = set()
+    for witness in witnesses or ():
+        mapping = {
+            int(r): int(p)
+            for r, p in dict(witness.get('mapping') or {}).items()
+        }
+        if not mapping:
+            continue
+        key = _mapping_key(mapping)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({
+            'mapping': mapping,
+            'cut': _normalize_cut_record(witness.get('cut', ())),
+            'local_symmetry': witness.get('local_symmetry') or {
+                'rule': 'branch_symmetry_blocks',
+                'fragments': [],
+                'blocks': [],
+            },
+        })
+    return out
+
+
+def _component_blocks_from_witnesses(witnesses):
+    mappings = [
+        {int(r): int(p) for r, p in witness.get('mapping', {}).items()}
+        for witness in witnesses
+    ]
+    if len(mappings) <= 1:
+        return []
+
+    all_r = sorted({r for mapping in mappings for r in mapping})
+    varied_r = [
+        r for r in all_r
+        if len({mapping[r] for mapping in mappings if r in mapping}) > 1
+    ]
+    if not varied_r:
+        return []
+
+    graph = {}
+    for r in varied_r:
+        r_node = ('r', r)
+        graph.setdefault(r_node, set())
+        for mapping in mappings:
+            if r not in mapping:
+                continue
+            p_node = ('p', int(mapping[r]))
+            graph.setdefault(p_node, set()).add(r_node)
+            graph[r_node].add(p_node)
+
+    blocks = []
+    seen = set()
+    for start in list(graph):
+        if start in seen:
+            continue
+        stack = [start]
+        comp = set()
+        seen.add(start)
+        while stack:
+            node = stack.pop()
+            comp.add(node)
+            for nb in graph.get(node, ()):
+                if nb not in seen:
+                    seen.add(nb)
+                    stack.append(nb)
+        r_atoms = sorted(v for tag, v in comp if tag == 'r')
+        p_atoms = sorted(v for tag, v in comp if tag == 'p')
+        if len(r_atoms) <= 1 and len(p_atoms) <= 1:
+            continue
+        assignments = {
+            tuple((r, mapping.get(r)) for r in r_atoms)
+            for mapping in mappings
+        }
+        if len(assignments) <= 1:
+            continue
+        blocks.append({
+            'source': 'mechanism_dedup_witnesses',
+            'r_atoms': r_atoms,
+            'p_atoms': p_atoms,
+            'extendable': False,
+            'open': False,
+            'assignments': len(assignments),
+            'witnesses': len(mappings),
+        })
+    return blocks
+
+
+def _color_groups_from_blocks(blocks):
+    graph = {}
+    sources = {}
+    for block_index, block in enumerate(blocks):
+        r_atoms = [int(r) for r in block.get('r_atoms', ())]
+        p_atoms = [int(p) for p in block.get('p_atoms', ())]
+        if not r_atoms and not p_atoms:
+            continue
+        block_node = ('b', int(block_index))
+        source = block.get('source') or 'sym_block'
+        sources[block_node] = source
+        graph.setdefault(block_node, set())
+        for r in r_atoms:
+            node = ('r', r)
+            graph.setdefault(node, set()).add(block_node)
+            graph[block_node].add(node)
+        for p in p_atoms:
+            node = ('p', p)
+            graph.setdefault(node, set()).add(block_node)
+            graph[block_node].add(node)
+
+    groups = []
+    seen = set()
+    for start in list(graph):
+        if start in seen:
+            continue
+        stack = [start]
+        comp = set()
+        seen.add(start)
+        while stack:
+            node = stack.pop()
+            comp.add(node)
+            for nb in graph.get(node, ()):
+                if nb not in seen:
+                    seen.add(nb)
+                    stack.append(nb)
+        r_atoms = sorted(v for tag, v in comp if tag == 'r')
+        p_atoms = sorted(v for tag, v in comp if tag == 'p')
+        if len(r_atoms) <= 1 and len(p_atoms) <= 1:
+            continue
+        groups.append({
+            'r_atoms': r_atoms,
+            'p_atoms': p_atoms,
+            'sources': sorted({
+                sources[node] for node in comp if node[0] == 'b'
+            }),
+        })
+    return groups
+
+
+def combine_branch_symmetry_witnesses(witnesses):
+    """Build the principled branch-degeneracy record for one mechanism.
+
+    The record has two evidence sources: local `_SymCand` ambiguity stored by
+    each branch, and mapping variation across unique branch witnesses that were
+    deduped into the same mechanism signature.
+    """
+    witnesses = _unique_witnesses(witnesses)
+    fragments = []
+    blocks = []
+    block_keys = set()
+
+    for witness_index, witness in enumerate(witnesses):
+        local = witness.get('local_symmetry') or {}
+        for fragment in local.get('fragments') or ():
+            record = dict(fragment)
+            record['witness_index'] = int(witness_index)
+            fragments.append(record)
+        for block in local.get('blocks') or ():
+            r_atoms = tuple(sorted(int(r) for r in block.get('r_atoms', ())))
+            p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
+            source = block.get('source') or 'sym_block'
+            key = (source, r_atoms, p_atoms)
+            if key in block_keys:
+                continue
+            block_keys.add(key)
+            record = dict(block)
+            record['source'] = source
+            record['r_atoms'] = list(r_atoms)
+            record['p_atoms'] = list(p_atoms)
+            record['witness_index'] = int(witness_index)
+            blocks.append(record)
+
+    for block in _component_blocks_from_witnesses(witnesses):
+        key = (
+            block['source'],
+            tuple(block['r_atoms']),
+            tuple(block['p_atoms']),
+        )
+        if key in block_keys:
+            continue
+        block_keys.add(key)
+        blocks.append(block)
+
+    return {
+        'rule': 'mechanism_dedup_branch_symmetry',
+        'fragments': fragments,
+        'blocks': blocks,
+        'color_groups': _color_groups_from_blocks(blocks),
+        'witnesses': witnesses,
+        'dedup_witness_count': len(witnesses),
+    }
+
+
+def _refresh_entry_branch_symmetry(entry):
+    entry['dedup_witnesses'] = _unique_witnesses(entry.get('dedup_witnesses'))
+    entry['branch_symmetry'] = combine_branch_symmetry_witnesses(
+        entry['dedup_witnesses'])
+
+
+def _pool_add(pool, sig, mapping, cuts, branch_symmetry=None):
     cuts = frozenset(cuts)
     no_cut = not cuts
+    witness = _dedup_witness(mapping, cuts, branch_symmetry)
     entry = pool.get(sig)
     if entry is None:
         pool[sig] = {
@@ -223,13 +524,17 @@ def _pool_add(pool, sig, mapping, cuts):
             'cuts': cuts,
             'has_no_cut': bool(no_cut),
             'dedup_count': 1,
+            'dedup_witnesses': [witness],
         }
+        _refresh_entry_branch_symmetry(pool[sig])
     else:
         if no_cut and not entry.get('has_no_cut', False):
             entry['mapping'] = dict(mapping)
         entry['has_no_cut'] = bool(entry.get('has_no_cut', False) or no_cut)
         entry['cuts'] = entry['cuts'] | cuts
         entry['dedup_count'] = entry.get('dedup_count', 1) + 1
+        entry.setdefault('dedup_witnesses', []).append(witness)
+        _refresh_entry_branch_symmetry(entry)
 
 
 def _anchor_mapping_ok(mapping, anchor_map):
@@ -547,7 +852,12 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                 max_mapped = max(max_mapped, len(mapping_for_stats))
                 accepted = bool(scored_items)
                 for sig, accepted_mapping, _repair_stats in scored_items:
-                    out.append((sig, tuple(sorted(accepted_mapping.items())), cut))
+                    out.append((
+                        sig,
+                        tuple(sorted(accepted_mapping.items())),
+                        cut,
+                        _branch_symmetry_record(branch),
+                    ))
                     seed_accepted += 1
                 repair_stats = scored_items[0][2] if scored_items else None
                 repair_summary = _repair_trace_stats(repair_stats)
@@ -718,9 +1028,11 @@ def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
             g_P, g_R_full, p_orbits, r_orbits,
             return_trace=bool(trace_path))
         _emit_trace(trace_path, events)
-        for sig, mapping_items, _cut in results:
+        for result in results:
+            sig, mapping_items, _cut = result[:3]
+            branch_symmetry = result[3] if len(result) > 3 else None
             mapping = dict(mapping_items)
-            _pool_add(pool, sig, mapping, _cut)
+            _pool_add(pool, sig, mapping, _cut, branch_symmetry)
     return pool
 
 
@@ -738,8 +1050,10 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
         for payload in proc_pool.imap_unordered(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
-            for sig, mapping_items, cut in payload['results']:
-                _pool_add(pool, sig, dict(mapping_items), cut)
+            for result in payload['results']:
+                sig, mapping_items, cut = result[:3]
+                branch_symmetry = result[3] if len(result) > 3 else None
+                _pool_add(pool, sig, dict(mapping_items), cut, branch_symmetry)
     return pool
 
 
@@ -752,8 +1066,10 @@ def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
         for payload in proc_pool.imap_unordered(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
             _emit_trace(trace_path, payload.get('events', []))
-            for sig, mapping_items, cut in payload['results']:
-                _pool_add(pool, sig, dict(mapping_items), cut)
+            for result in payload['results']:
+                sig, mapping_items, cut = result[:3]
+                branch_symmetry = result[3] if len(result) > 3 else None
+                _pool_add(pool, sig, dict(mapping_items), cut, branch_symmetry)
     return pool
 
 
@@ -878,7 +1194,14 @@ def merge_cut_sweep_pools(pools):
                     'cuts': cuts,
                     'has_no_cut': no_cut,
                     'dedup_count': int(info.get('dedup_count', 1)),
+                    'dedup_witnesses': _unique_witnesses(
+                        info.get('dedup_witnesses') or [
+                            _dedup_witness(
+                                info['mapping'], cuts,
+                                info.get('branch_symmetry'))
+                        ]),
                 }
+                _refresh_entry_branch_symmetry(merged[sig])
                 continue
             if no_cut and not entry.get('has_no_cut', False):
                 entry['mapping'] = dict(info['mapping'])
@@ -891,6 +1214,13 @@ def merge_cut_sweep_pools(pools):
                 int(entry.get('dedup_count', 1))
                 + int(info.get('dedup_count', 1))
             )
+            entry.setdefault('dedup_witnesses', []).extend(
+                _unique_witnesses(info.get('dedup_witnesses') or [
+                    _dedup_witness(
+                        info['mapping'], cuts, info.get('branch_symmetry'))
+                ])
+            )
+            _refresh_entry_branch_symmetry(entry)
     return merged
 
 

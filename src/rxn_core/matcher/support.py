@@ -77,6 +77,16 @@ def _refine_sym_assignments(cand, assignments):
             if p in remaining_p and p not in used:
                 m[r] = p
                 used.add(p)
+        if len(remaining_p) == 1:
+            p = remaining_p[0]
+            for r in remaining_r:
+                if r in m:
+                    continue
+                if p in used:
+                    return None
+                m[r] = p
+                used.add(p)
+            continue
         new_blocks.append(_SymBlock(remaining_r, remaining_p,
                                     extendable=block.extendable))
     exact_fixed = set(cand.exact_fixed)
