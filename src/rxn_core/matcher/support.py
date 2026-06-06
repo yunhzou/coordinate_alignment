@@ -13,10 +13,6 @@ def _r_compatible_with_block(cand, block_idx, n, fragment, g_R, r_orbits):
     b = cand.blocks[block_idx]
     if not b.extendable or b.complete:
         return False
-    if r_orbits is not None:
-        n_orbit = r_orbits[n]
-        if any(r_orbits[r] != n_orbit for r in b.r_atoms):
-            return False
     block_r = set(b.r_atoms)
     outside = sorted(r for r in fragment if r not in block_r and r in cand.mapping)
 

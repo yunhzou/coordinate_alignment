@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from ..frag import build_graph, classify_bonds, expand_mapping
-from ..matcher import _nauty_orbits
+from ..matcher import _SymBlock, _nauty_orbits, _sym_block_assignment_expr
 from .branch import (
     BranchLimitExceeded,
     _generate_seed_orders,
@@ -205,6 +205,10 @@ def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
 def _branch_symmetry_record(branch):
     fragments = []
     blocks = []
+    p_to_r = {
+        int(p): int(r)
+        for r, p in getattr(branch, 'mapping', {}).items()
+    }
     for frag_index, fragment in enumerate(
             getattr(branch, 'symmetry_fragments', ())):
         record = {
@@ -220,20 +224,38 @@ def _branch_symmetry_record(branch):
         fragments.append(record)
         symmetry = record['symmetry']
         for block_index, block in enumerate(symmetry.get('blocks') or ()):
-            r_atoms = [int(r) for r in block.get('r_atoms', ())]
+            r_atoms = {
+                int(r) for r in block.get('r_atoms', ())
+            }
             p_atoms = [int(p) for p in block.get('p_atoms', ())]
+            for p in p_atoms:
+                if p in p_to_r:
+                    r_atoms.add(p_to_r[p])
+            r_atoms = sorted(r_atoms)
             if len(p_atoms) <= 1 and len(r_atoms) <= 1:
                 continue
-            blocks.append({
+            normalized_block = _SymBlock(tuple(r_atoms), tuple(p_atoms),
+                                         extendable=False)
+            source = block.get('source')
+            assignments = (
+                block.get('assignments')
+                if source in {'island_automorph', 'alternate_witness',
+                              'sym_block', 'interbranch'}
+                else _sym_block_assignment_expr(normalized_block)
+            )
+            item = {
                 'fragment_index': int(frag_index),
                 'block_index': int(block_index),
                 'island_idx': record['island_idx'],
                 'r_atoms': r_atoms,
                 'p_atoms': p_atoms,
                 'extendable': bool(block.get('extendable', False)),
-                'open': bool(block.get('open', False)),
-                'assignments': block.get('assignments'),
-            })
+                'open': bool(normalized_block.open),
+                'assignments': assignments,
+            }
+            if source:
+                item['source'] = source
+            blocks.append(item)
         witness = {
             int(r): int(p)
             for r, p in dict(symmetry.get('witness') or {}).items()
@@ -339,126 +361,38 @@ def _unique_witnesses(witnesses):
     return out
 
 
-def _component_blocks_from_witnesses(witnesses):
-    mappings = [
-        {int(r): int(p) for r, p in witness.get('mapping', {}).items()}
-        for witness in witnesses
-    ]
-    if len(mappings) <= 1:
-        return []
-
-    all_r = sorted({r for mapping in mappings for r in mapping})
-    varied_r = [
-        r for r in all_r
-        if len({mapping[r] for mapping in mappings if r in mapping}) > 1
-    ]
-    if not varied_r:
-        return []
-
-    graph = {}
-    for r in varied_r:
-        r_node = ('r', r)
-        graph.setdefault(r_node, set())
-        for mapping in mappings:
-            if r not in mapping:
-                continue
-            p_node = ('p', int(mapping[r]))
-            graph.setdefault(p_node, set()).add(r_node)
-            graph[r_node].add(p_node)
-
-    blocks = []
-    seen = set()
-    for start in list(graph):
-        if start in seen:
-            continue
-        stack = [start]
-        comp = set()
-        seen.add(start)
-        while stack:
-            node = stack.pop()
-            comp.add(node)
-            for nb in graph.get(node, ()):
-                if nb not in seen:
-                    seen.add(nb)
-                    stack.append(nb)
-        r_atoms = sorted(v for tag, v in comp if tag == 'r')
-        p_atoms = sorted(v for tag, v in comp if tag == 'p')
-        if len(r_atoms) <= 1 and len(p_atoms) <= 1:
-            continue
-        assignments = {
-            tuple((r, mapping.get(r)) for r in r_atoms)
-            for mapping in mappings
-        }
-        if len(assignments) <= 1:
-            continue
-        blocks.append({
-            'source': 'mechanism_dedup_witnesses',
-            'r_atoms': r_atoms,
-            'p_atoms': p_atoms,
-            'extendable': False,
-            'open': False,
-            'assignments': len(assignments),
-            'witnesses': len(mappings),
-        })
-    return blocks
-
-
 def _color_groups_from_blocks(blocks):
-    graph = {}
-    sources = {}
-    for block_index, block in enumerate(blocks):
-        r_atoms = [int(r) for r in block.get('r_atoms', ())]
-        p_atoms = [int(p) for p in block.get('p_atoms', ())]
-        if not r_atoms and not p_atoms:
-            continue
-        block_node = ('b', int(block_index))
-        source = block.get('source') or 'sym_block'
-        sources[block_node] = source
-        graph.setdefault(block_node, set())
-        for r in r_atoms:
-            node = ('r', r)
-            graph.setdefault(node, set()).add(block_node)
-            graph[block_node].add(node)
-        for p in p_atoms:
-            node = ('p', p)
-            graph.setdefault(node, set()).add(block_node)
-            graph[block_node].add(node)
-
     groups = []
-    seen = set()
-    for start in list(graph):
-        if start in seen:
-            continue
-        stack = [start]
-        comp = set()
-        seen.add(start)
-        while stack:
-            node = stack.pop()
-            comp.add(node)
-            for nb in graph.get(node, ()):
-                if nb not in seen:
-                    seen.add(nb)
-                    stack.append(nb)
-        r_atoms = sorted(v for tag, v in comp if tag == 'r')
-        p_atoms = sorted(v for tag, v in comp if tag == 'p')
+    by_key = {}
+    for block in blocks:
+        r_atoms = sorted(int(r) for r in block.get('r_atoms', ()))
+        p_atoms = sorted(int(p) for p in block.get('p_atoms', ()))
         if len(r_atoms) <= 1 and len(p_atoms) <= 1:
             continue
-        groups.append({
+        source = block.get('source') or 'sym_block'
+        key = (tuple(r_atoms), tuple(p_atoms))
+        if key in by_key:
+            by_key[key]['sources'].add(source)
+            continue
+        group = {
             'r_atoms': r_atoms,
             'p_atoms': p_atoms,
-            'sources': sorted({
-                sources[node] for node in comp if node[0] == 'b'
-            }),
-        })
+            'sources': {source},
+        }
+        by_key[key] = group
+        groups.append(group)
+    for group in groups:
+        group['sources'] = sorted(group['sources'])
     return groups
 
 
 def combine_branch_symmetry_witnesses(witnesses):
     """Build the principled branch-degeneracy record for one mechanism.
 
-    The record has two evidence sources: local `_SymCand` ambiguity stored by
-    each branch, and mapping variation across unique branch witnesses that were
-    deduped into the same mechanism signature.
+    Displayed degeneracy is only the ambiguity carried by island/SymCand state:
+    local `_SymCand` blocks/alternates and same-island candidate automorph
+    blocks recorded during island growth. Final dedup witnesses remain as
+    provenance but do not create extra coloring.
     """
     witnesses = _unique_witnesses(witnesses)
     fragments = []
@@ -485,17 +419,6 @@ def combine_branch_symmetry_witnesses(witnesses):
             record['p_atoms'] = list(p_atoms)
             record['witness_index'] = int(witness_index)
             blocks.append(record)
-
-    for block in _component_blocks_from_witnesses(witnesses):
-        key = (
-            block['source'],
-            tuple(block['r_atoms']),
-            tuple(block['p_atoms']),
-        )
-        if key in block_keys:
-            continue
-        block_keys.add(key)
-        blocks.append(block)
 
     return {
         'rule': 'mechanism_dedup_branch_symmetry',

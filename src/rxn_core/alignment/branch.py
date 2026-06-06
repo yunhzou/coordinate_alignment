@@ -80,6 +80,30 @@ class _Branch:
         b.symmetry_fragments = list(self.symmetry_fragments)
         b._signature_cache = self._signature_cache
         return b
+
+    def add_interbranch_symmetry(self, blocks):
+        blocks = list(blocks or ())
+        if not blocks:
+            return
+        r_atoms = sorted({
+            int(r)
+            for block in blocks
+            for r in block.get('r_atoms', ())
+        })
+        self.symmetry_fragments.append({
+            'island_idx': 0,
+            'fragment': r_atoms,
+            'deferred_edges': [],
+            'symmetry': {
+                'witness': {
+                    int(r): int(self.mapping[r])
+                    for r in r_atoms
+                    if r in self.mapping
+                },
+                'blocks': blocks,
+            },
+        })
+
     def commit(self, iso, g_R, events=None):
         self._signature_cache = None
         touched = set()
@@ -123,6 +147,73 @@ class _Branch:
                 'relabeled': relabeled,
                 'mapped_total': len(self.mapping),
             })
+
+
+def _mapping_variation_blocks(mappings, source='interbranch'):
+    """Compressed R/P components where equivalent mappings differ."""
+    mappings = [
+        {int(r): int(p) for r, p in dict(mapping or {}).items()}
+        for mapping in mappings
+    ]
+    mappings = [mapping for mapping in mappings if mapping]
+    if len(mappings) <= 1:
+        return []
+
+    graph = {}
+    for r in sorted({r for mapping in mappings for r in mapping}):
+        possible = {
+            mapping[r]
+            for mapping in mappings
+            if r in mapping
+        }
+        if len(possible) <= 1:
+            continue
+        r_node = ('r', int(r))
+        graph.setdefault(r_node, set())
+        for p in possible:
+            p_node = ('p', int(p))
+            graph.setdefault(p_node, set()).add(r_node)
+            graph[r_node].add(p_node)
+
+    blocks = []
+    seen = set()
+    for start in list(graph):
+        if start in seen:
+            continue
+        stack = [start]
+        comp = set()
+        seen.add(start)
+        while stack:
+            node = stack.pop()
+            comp.add(node)
+            for nb in graph.get(node, ()):
+                if nb not in seen:
+                    seen.add(nb)
+                    stack.append(nb)
+        r_atoms = sorted(v for tag, v in comp if tag == 'r')
+        p_atoms = sorted(v for tag, v in comp if tag == 'p')
+        if not r_atoms or len(p_atoms) <= 1:
+            continue
+        assignments = {
+            tuple(
+                (r, mapping.get(r))
+                for r in r_atoms
+                if r in mapping
+            )
+            for mapping in mappings
+        }
+        assignments = {item for item in assignments if item}
+        if len(assignments) <= 1:
+            continue
+        blocks.append({
+            'source': source,
+            'r_atoms': r_atoms,
+            'p_atoms': p_atoms,
+            'extendable': False,
+            'open': len(r_atoms) < len(p_atoms),
+            'assignments': len(assignments),
+        })
+    return blocks
 
 
 def _orbit_pair(a, b, orbits):
@@ -621,6 +712,7 @@ def find_islands(g_R, g_P, seed_order,
                 # one-hop/deferred boundary is part of the key so future
                 # distinguishability is not erased.
                 seen_state = {}
+                seen_state_mappings = defaultdict(list)
                 for iso in isos:
                     full_m = dict(b.mapping); full_m.update(iso)
                     full_deferred = set(b.deferred_edges)
@@ -628,7 +720,18 @@ def find_islands(g_R, g_P, seed_order,
                     state_key = _mapping_signature(full_m, full_deferred)
                     if state_key not in seen_state:
                         seen_state[state_key] = iso
+                    seen_state_mappings[state_key].append(full_m)
                 deduped_isos = list(seen_state.values())
+                for state_key, iso in seen_state.items():
+                    blocks = _mapping_variation_blocks(
+                        seen_state_mappings[state_key],
+                        source='interbranch')
+                    if blocks:
+                        symmetry = dict(getattr(iso, 'symmetry', {}) or {})
+                        symmetry['blocks'] = (
+                            list(symmetry.get('blocks') or []) + blocks
+                        )
+                        iso.symmetry = symmetry
                 for ii, iso in enumerate(deduped_isos):
                     if len(new_branches) >= max_branches:
                         _hit_branch_cap(len(new_branches), seed, 'island_fork')
@@ -647,13 +750,18 @@ def find_islands(g_R, g_P, seed_order,
             # Cross-branch dedup uses the same mechanism-state key.  It
             # collapses orbit-equivalent spectator permutations but keeps
             # states separated when their deferred one-hop boundary differs.
-            seen = set()
+            seen = {}
             uniq = []
             for b in new_branches:
                 state_sig = _branch_signature(b)
-                if state_sig in seen:
+                kept = seen.get(state_sig)
+                if kept is not None:
+                    kept.add_interbranch_symmetry(
+                        _mapping_variation_blocks(
+                            [kept.mapping, b.mapping],
+                            source='interbranch'))
                     continue
-                seen.add(state_sig)
+                seen[state_sig] = b
                 uniq.append(b)
                 if len(uniq) >= max_branches:
                     _hit_branch_cap(len(uniq), seed, 'cross_branch_dedupe')

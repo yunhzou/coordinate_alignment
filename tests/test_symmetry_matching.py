@@ -14,8 +14,14 @@ from rxn_core.alignment import (
     _generate_seed_orders,
     symmetry_repair_mapping,
 )
-from rxn_core.alignment.sweep import _core_mapping_variants, _pool_add
+from rxn_core.alignment.sweep import (
+    _branch_symmetry_record,
+    _color_groups_from_blocks,
+    _core_mapping_variants,
+    _pool_add,
+)
 import rxn_core.alignment.branch as branch_mod
+from rxn_core.growth.island import _island_candidate_symmetry_blocks
 from rxn_core.matcher import (
     _SymBlock,
     _SymCand,
@@ -27,6 +33,7 @@ from rxn_core.matcher import (
     _support_witness_for_value,
     _symmetry_state,
 )
+from rxn_core.growth.result import _IsoResult
 
 
 def _represented_count(cand):
@@ -73,6 +80,71 @@ def test_symcand_reassigns_correlated_block_witness():
     repaired = cand.with_witness(support)
     assert repaired.materialize()[0] == 1
     assert repaired.materialize()[1] == 0
+
+
+def test_island_candidate_blocks_capture_same_island_pool():
+    cands = [
+        _SymCand({8: 11, 12: 12, 20: 20}),
+        _SymCand({8: 12, 12: 11, 20: 20}),
+    ]
+
+    blocks = _island_candidate_symmetry_blocks(cands, {8, 12, 20})
+
+    assert blocks == [{
+        "r_atoms": [8, 12],
+        "p_atoms": [11, 12],
+        "extendable": False,
+        "open": False,
+        "assignments": 2,
+        "source": "island_automorph",
+    }]
+
+
+def test_mapping_variation_blocks_capture_branch_dedupe_pool():
+    blocks = branch_mod._mapping_variation_blocks([
+        {0: 11, 4: 9, 8: 0},
+        {0: 9, 4: 11, 8: 0},
+    ])
+
+    assert blocks == [{
+        "source": "interbranch",
+        "r_atoms": [0, 4],
+        "p_atoms": [9, 11],
+        "extendable": False,
+        "open": False,
+        "assignments": 2,
+    }]
+
+
+def test_branch_symmetry_record_closes_open_pool_with_mapping_owner():
+    branch = branch_mod._Branch()
+    branch.commit(
+        _IsoResult(
+            {27: 27},
+            fragment={27},
+            symmetry={
+                "witness": {27: 27},
+                "blocks": [{
+                    "r_atoms": [27],
+                    "p_atoms": [26, 27],
+                    "extendable": False,
+                    "open": True,
+                    "assignments": "2",
+                }],
+            },
+        ),
+        build_graph(["H"] * 28, np.zeros((28, 28)), bond_cut=0.2),
+    )
+    branch.mapping[22] = 26
+    branch.islands_R[22] = 2
+    branch.islands_P[26] = 2
+
+    record = _branch_symmetry_record(branch)
+
+    assert record["blocks"][0]["r_atoms"] == [22, 27]
+    assert record["blocks"][0]["p_atoms"] == [26, 27]
+    assert record["blocks"][0]["open"] is False
+    assert record["blocks"][0]["assignments"] == "2!"
 
 
 def test_extension_collapses_correlated_orbit_duplicate_without_boundary():
@@ -387,12 +459,7 @@ def test_successful_primary_extension_preserves_alternate_witness_evidence():
         "witness": {0: 0, 1: 2, 2: 1, 3: 4, 4: 3},
         "multiplicity": 1,
     }]
-    assert any(
-        block["r_atoms"] == [1, 2]
-        and block["p_atoms"] == [1, 2]
-        and block["assignments"] == "2!"
-        for block in state["blocks"]
-    )
+    assert state["blocks"] == []
 
 
 def test_block_join_refines_bucket_mismatch_before_later_frontier():
@@ -566,25 +633,49 @@ def test_cut_sweep_pool_prefers_no_cut_representative():
     } == {((0, 1),), ((0, 0),)}
 
 
-def test_pool_branch_symmetry_marks_same_mechanism_witness_variation():
+def test_pool_branch_symmetry_does_not_color_final_witness_variation():
     pool = {}
     sig = ((), ())
 
     _pool_add(pool, sig, {0: 0, 1: 1}, ())
     _pool_add(pool, sig, {0: 1, 1: 0}, ())
 
-    block = next(
-        b for b in pool[sig]["branch_symmetry"]["blocks"]
-        if b.get("source") == "mechanism_dedup_witnesses"
-    )
-    assert block["r_atoms"] == [0, 1]
-    assert block["p_atoms"] == [0, 1]
-    assert block["assignments"] == 2
-    assert pool[sig]["branch_symmetry"]["color_groups"] == [{
-        "r_atoms": [0, 1],
-        "p_atoms": [0, 1],
-        "sources": ["mechanism_dedup_witnesses"],
-    }]
+    assert pool[sig]["branch_symmetry"]["dedup_witness_count"] == 2
+    assert pool[sig]["branch_symmetry"]["blocks"] == []
+    assert pool[sig]["branch_symmetry"]["color_groups"] == []
+
+
+def test_color_groups_do_not_transitively_merge_overlapping_blocks():
+    groups = _color_groups_from_blocks([
+        {
+            "r_atoms": [1, 2],
+            "p_atoms": [10, 11],
+            "source": "sym_block",
+        },
+        {
+            "r_atoms": [2, 3],
+            "p_atoms": [11, 12],
+            "source": "island_automorph",
+        },
+        {
+            "r_atoms": [1, 2],
+            "p_atoms": [10, 11],
+            "source": "alternate_witness",
+        },
+    ])
+
+    assert groups == [
+        {
+            "r_atoms": [1, 2],
+            "p_atoms": [10, 11],
+            "sources": ["alternate_witness", "sym_block"],
+        },
+        {
+            "r_atoms": [2, 3],
+            "p_atoms": [11, 12],
+            "sources": ["island_automorph"],
+        },
+    ]
 
 
 def test_generate_seed_orders_honors_trial_cap():
@@ -772,18 +863,11 @@ def test_cut_sweep_preserves_branch_symmetry_alternates():
         }
         for block in branch_symmetry["blocks"]
     )
-    assert any(
-        block.get("source") == "mechanism_dedup_witnesses"
-        and block["r_atoms"] == [0, 1]
-        and block["p_atoms"] == [0, 1]
-        for block in branch_symmetry["blocks"]
-    )
     assert branch_symmetry["color_groups"] == [{
         "r_atoms": [0, 1],
         "p_atoms": [0, 1],
         "sources": [
             "alternate_witness",
-            "mechanism_dedup_witnesses",
             "sym_block",
         ],
     }]

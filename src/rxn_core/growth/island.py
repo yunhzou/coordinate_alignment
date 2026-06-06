@@ -31,6 +31,123 @@ from .trace import (
 )
 
 
+def _cand_relation(cand):
+    """Return R -> possible P atoms represented by one compressed candidate."""
+    relation = {
+        r: {p}
+        for r, p in _cand_map(cand).items()
+    }
+    if isinstance(cand, _SymCand):
+        for block in cand.blocks:
+            for r in block.r_atoms:
+                relation.setdefault(r, set()).update(block.p_atoms)
+        for items, _mult in cand.alternates:
+            for r, p in dict(items).items():
+                relation.setdefault(r, set()).add(p)
+    return relation
+
+
+def _candidate_assignment(cand, r_atoms):
+    mapping = _cand_map(cand)
+    return tuple(
+        (int(r), int(mapping[r]))
+        for r in sorted(r_atoms)
+        if r in mapping
+    )
+
+
+def _island_candidate_symmetry_blocks(cands, fragment):
+    """Compressed mapping variation across same-island candidate states.
+
+    Local `_SymCand.blocks` describe ambiguity inside one candidate.  During
+    island growth, the live candidate pool can also contain complete correlated
+    witnesses of the same local automorphism.  Store that same-island evidence
+    as bipartite connected components, not as expanded concrete mappings.
+    """
+    cands = list(cands or ())
+    if len(cands) <= 1:
+        return []
+    relations = [_cand_relation(c) for c in cands]
+    graph = {}
+    varied_r = set()
+    for r in sorted(fragment):
+        possible = set()
+        for relation in relations:
+            possible.update(relation.get(r, ()))
+        if len(possible) <= 1:
+            continue
+        varied_r.add(r)
+        r_node = ('r', int(r))
+        graph.setdefault(r_node, set())
+        for p in possible:
+            p_node = ('p', int(p))
+            graph.setdefault(p_node, set()).add(r_node)
+            graph[r_node].add(p_node)
+
+    blocks = []
+    seen = set()
+    block_keys = set()
+    for start in list(graph):
+        if start in seen:
+            continue
+        stack = [start]
+        comp = set()
+        seen.add(start)
+        while stack:
+            node = stack.pop()
+            comp.add(node)
+            for nb in graph.get(node, ()):
+                if nb not in seen:
+                    seen.add(nb)
+                    stack.append(nb)
+        r_atoms = sorted(v for tag, v in comp if tag == 'r')
+        p_atoms = sorted(v for tag, v in comp if tag == 'p')
+        if not r_atoms or len(p_atoms) <= 1:
+            continue
+        assignments = {
+            _candidate_assignment(c, r_atoms)
+            for c in cands
+        }
+        assignments = {item for item in assignments if item}
+        if len(assignments) <= 1 and all(r not in varied_r for r in r_atoms):
+            continue
+        key = (tuple(r_atoms), tuple(p_atoms))
+        if key in block_keys:
+            continue
+        block_keys.add(key)
+        blocks.append({
+            'r_atoms': [int(r) for r in r_atoms],
+            'p_atoms': [int(p) for p in p_atoms],
+            'extendable': False,
+            'open': len(r_atoms) < len(p_atoms),
+            'assignments': len(assignments) if assignments else None,
+            'source': 'island_automorph',
+        })
+    return blocks
+
+
+def _remember_symmetry_blocks(accumulated, seen, blocks):
+    for block in blocks or ():
+        key = (
+            tuple(block.get('r_atoms') or ()),
+            tuple(block.get('p_atoms') or ()),
+            block.get('source'),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        accumulated.append(dict(block))
+
+
+def _symmetry_state_with_island_automorph(cand, island_blocks, *,
+                                          r_orbits=None, p_orbits=None):
+    state = _symmetry_state(cand, r_orbits=r_orbits, p_orbits=p_orbits)
+    if island_blocks:
+        state.setdefault('blocks', []).extend(dict(block)
+                                              for block in island_blocks)
+    return state
+
+
 def grow_island(g_R, g_P, seed, mapping,
                 graph_floor=0.2,
                 iso_tol=0.5,
@@ -144,6 +261,8 @@ def grow_island(g_R, g_P, seed, mapping,
     distance = {seed: 0}
     used_edges = set()
     deferred_edges = {tuple(sorted(e)) for e in (prior_deferred_edges or ())}
+    island_symmetry_blocks = []
+    island_symmetry_keys = set()
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
     if prof is not None:
@@ -313,6 +432,11 @@ def grow_island(g_R, g_P, seed, mapping,
                     'heap_top': heap_snapshot(heap, used_edges, fragment, mapping, 8),
                     'pool_by_frag_atom': pool_by_frag_atom(heap, used_edges, fragment, mapping, g_R),
                 })
+            _remember_symmetry_blocks(
+                island_symmetry_blocks,
+                island_symmetry_keys,
+                _island_candidate_symmetry_blocks(cands, fragment),
+            )
         else:
             if prof is not None:
                 prof['deferred'] += 1
@@ -369,12 +493,17 @@ def grow_island(g_R, g_P, seed, mapping,
         return [_IsoResult(_cand_map(cands[0]),
                            deferred_edges=deferred_edges,
                            fragment=fragment,
-                           symmetry=_symmetry_state(
-                               cands[0], r_orbits=r_orbits,
-                               p_orbits=p_orbits))]
+                           symmetry=_symmetry_state_with_island_automorph(
+                               cands[0], island_symmetry_blocks,
+                               r_orbits=r_orbits, p_orbits=p_orbits))]
     # Dedup by compressed structural signature.  Open symmetry blocks may
     # still contain many concrete witnesses; only one deterministic witness
     # is returned for each orbit/context-distinct saturation.
+    _remember_symmetry_blocks(
+        island_symmetry_blocks,
+        island_symmetry_keys,
+        _island_candidate_symmetry_blocks(cands, fragment),
+    )
     by_set = {}
     for c in cands:
         if isinstance(c, _SymCand):
@@ -407,8 +536,9 @@ def grow_island(g_R, g_P, seed, mapping,
         if key not in by_set:
             by_set[key] = _IsoResult(
                 _cand_map(c), deferred_edges=deferred_edges,
-                fragment=fragment, symmetry=_symmetry_state(
-                    c, r_orbits=r_orbits, p_orbits=p_orbits))
+                fragment=fragment, symmetry=_symmetry_state_with_island_automorph(
+                    c, island_symmetry_blocks, r_orbits=r_orbits,
+                    p_orbits=p_orbits))
     branches = list(by_set.values())[:max_branches]
     _finish_profile('branched', len(cands), fragment, len(branches))
     if record:

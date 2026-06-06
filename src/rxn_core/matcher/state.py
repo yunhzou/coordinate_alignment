@@ -1,7 +1,6 @@
 """Compressed symmetry candidate state."""
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass
 
 from .primitives import _orbit_id
@@ -260,38 +259,14 @@ def _sym_block_assignment_expr(block):
     return f'P({n},{k})'
 
 
-def _orbit_automorphism_blocks(cand, r_orbits=None, p_orbits=None):
-    if not isinstance(cand, _SymCand) or r_orbits is None or p_orbits is None:
-        return []
-    r_to_block, _ = _sym_block_indexes(cand)
-    groups = defaultdict(list)
-    for r, p in sorted(cand.mapping.items()):
-        if r in cand.exact_fixed or r in r_to_block:
-            continue
-        try:
-            key = (_orbit_id(r_orbits, r), _orbit_id(p_orbits, p))
-        except KeyError:
-            continue
-        groups[key].append((int(r), int(p)))
-
-    blocks = []
-    for pairs in groups.values():
-        r_atoms = sorted({r for r, _p in pairs})
-        p_atoms = sorted({p for _r, p in pairs})
-        if len(r_atoms) <= 1 or len(p_atoms) <= 1:
-            continue
-        blocks.append({
-            'r_atoms': r_atoms,
-            'p_atoms': p_atoms,
-            'extendable': False,
-            'open': False,
-            'assignments': _sym_block_assignment_expr(
-                _SymBlock(tuple(r_atoms), tuple(p_atoms), extendable=False)),
-        })
-    return blocks
-
-
 def _symmetry_state(cand, r_orbits=None, p_orbits=None):
+    """Serialize only symmetry carried by the candidate itself.
+
+    The orbit parameters are accepted for call-site compatibility, but display
+    symmetry is intentionally not inferred from global endpoint orbit tables.
+    `_SymCand`/island state is the automorphism unit for the matching
+    algorithm.
+    """
     item = {
         'witness': {int(a): int(b) for a, b in _cand_map(cand).items()},
         'blocks': [],
@@ -315,8 +290,6 @@ def _symmetry_state(cand, r_orbits=None, p_orbits=None):
                 'open': bool(block.open),
                 'assignments': _sym_block_assignment_expr(block),
             })
-        item['blocks'].extend(_orbit_automorphism_blocks(
-            cand, r_orbits=r_orbits, p_orbits=p_orbits))
     return item
 
 
