@@ -25,10 +25,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest"]
+smiles = ["rdkit>=2022.9"]
+sessions = ["pymongo>=4.6"]
 
 [project.scripts]
 rxn-core = "rxn_core.pipeline:main"
 rxn-core-pipeline = "rxn_core.pipeline:main"
+rxn-core-webapp = "rxn_core.webapp:main"
 
 [project.urls]
 Homepage = "https://github.com/yunhzou/coordinate_alignment"

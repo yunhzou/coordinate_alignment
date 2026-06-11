@@ -20,6 +20,10 @@ ts_discovery_paper/
 # Python cache
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Local scratch/test analysis artifacts
+tmp_xtb_single_points/
 
 # macOS
 .DS_Store

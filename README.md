@@ -19,6 +19,10 @@ python -m pip install -e .
 
 `xtb` is only needed when `BGCP_XTB_MODE=auto` fills missing `wbo` or
 `g98.out` cache files. Fully cached runs can use `--xtb-mode cache-only`.
+SMILES/CXSMILES formal-WBO mode uses RDKit; install it with
+`python -m pip install -e '.[smiles]'` or from conda-forge in the same
+environment. The local webapp can persist sessions in MongoDB/GridFS; install
+that optional dependency with `python -m pip install -e '.[sessions]'`.
 
 Verify the installed import and command line:
 
@@ -26,12 +30,15 @@ Verify the installed import and command line:
 python -c "import rxn_core; print(rxn_core.__file__)"
 rxn-core --help
 rxn-core-pipeline --help
+rxn-core-webapp --help
 ```
 
 ## Usage
 
 For a stage-by-stage walkthrough, open
 [`docs/TUTORIAL.ipynb`](docs/TUTORIAL.ipynb).
+For candidate electronic descriptors to retain for mechanism analysis, see
+[`docs/REACTIVITY_DESCRIPTORS.md`](docs/REACTIVITY_DESCRIPTORS.md).
 
 ```bash
 # Direct XYZ mode: no benchmark step schema required
@@ -45,6 +52,20 @@ rxn-core --stage rp --name my_reaction_anchor_13_9 \
   --reactant-xyz R.xyz --product-xyz P.xyz \
   --workdir work/my_reaction_anchor_13_9 \
   --anchor 13:9
+
+# Direct SMILES/CXSMILES mode: formal bond orders, no xtb.
+rxn-core --stage rp --name acid_deprotonation \
+  --reactant-smiles '[O:1][H:2]' \
+  --product-smiles '[O-:1].[H+:2]'
+
+# Local interactive AAM/subgraph workbench
+rxn-core-webapp --port 8765 --open
+
+# Optional local MongoDB for saved webapp sessions
+docker compose -f docker-compose.mongo.yml up -d
+rxn-core-webapp --port 8765 \
+  --mongo-uri mongodb://localhost:27018 \
+  --mongo-db rxn_core --open
 
 # Post-Stage-1 collective validation after Stage 1 has written rp_stage.json
 rxn-core --stage post-rp --name my_reaction \
@@ -71,6 +92,33 @@ rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 
 `rxn-core` and `rxn-core-pipeline` are the same command.  The shorter
 `rxn-core` name is intended for new workflows.
+
+### SMILES / CXSMILES Formal-WBO Mode
+
+For graph-only examples, `rxn-core` can build the R/P endpoint graphs directly
+from SMILES or CXSMILES. This mode does not run xtb. It parses the written
+molecular graph with RDKit, keeps explicitly written hydrogens, does not expand
+implicit hydrogens, and sets the WBO matrix to formal bond orders: single
+`1.0`, double `2.0`, triple `3.0`, aromatic `1.5`.
+
+Generated coordinates are planar RDKit depictions for the viewer only.
+CXSMILES atom-map labels are written as source metadata, but they are not hard
+AAM constraints unless you also pass `--anchor R:P`.
+
+Programmatic use:
+
+```python
+from rxn_core import smiles_to_formal_wbo, smiles_inputs_from_strings
+from rxn_core import run_rp_stage
+
+endpoint = smiles_to_formal_wbo("[CH3:1][O:2][H:3]")
+inputs = smiles_inputs_from_strings(
+    "[O:1][H:2]",
+    "[O-:1].[H+:2]",
+    name="acid_deprotonation",
+)
+rp = run_rp_stage(inputs)
+```
 
 ### Subgraph Matching And Anchors
 
@@ -132,6 +180,33 @@ open tools/anchor_picker.html
 The picker renders R and P with the same 3Dmol stick/sphere style as the main
 viewer. Click one R atom and one P atom to add an anchor pair, then copy the
 JSON `anchor_map` or CLI flags.
+
+For a browser UI that runs the actual R-P matcher and subgraph matcher, launch:
+
+```bash
+rxn-core-webapp --port 8765 --open
+```
+
+The workbench has two tabs. The R-P tab accepts SMILES/CXSMILES or XYZ
+endpoints, previews atoms for anchor picking, runs R-P AAM with the selected
+anchors, and embeds the same generated `view.html` used by the pipeline. XYZ
+mode uses xTB for endpoint WBO generation. The subgraph tab accepts drawn
+element/bond-order graphs, SMILES, XYZ, or WeightedGraph JSON for query and
+target matching.
+
+Saved webapp sessions use MongoDB document storage for the UI state and GridFS
+for generated artifacts such as `view.html`, source files, and `rp_stage.json`.
+If MongoDB is unavailable, the workbench still runs but the Save/Load controls
+report the session-store error. A local Mongo instance can be started with:
+
+```bash
+docker compose -f docker-compose.mongo.yml up -d
+```
+
+The compose file binds the container to host port `27018` by default to avoid
+conflicting with an existing local Mongo on `27017`. Override with
+`RXN_CORE_MONGO_PORT=27017 docker compose -f docker-compose.mongo.yml up -d`
+if you want the standard host port.
 
 Programmatic use:
 
@@ -484,6 +559,7 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | `--stage` | `BGCP_STAGE` | `full` | run `rp`, `ts`, `view`, or composed `full` stage |
 | `--mechanism` | none | all | restrict Stage 2 verification to one mechanism id; repeat for multiple ids |
 | `--anchor` | none | none | hard R:P anchor for direct R-P AAM; can be repeated |
+| `--reactant-smiles` / `--product-smiles` | none | none | direct R-P formal-bond-order input from SMILES/CXSMILES; skips xtb |
 | `--subgraph-query-json` | none | none | standalone weighted-subgraph query graph JSON |
 | `--subgraph-target-json` | none | none | standalone weighted-subgraph target graph JSON |
 | `--subgraph-node-policy` | none | same element | node attribute/feature field used for standalone subgraph compatibility; repeat for multi-field keys |
@@ -549,6 +625,8 @@ CLI options:
 --multiplicity         spin multiplicity for auto xtb cache-fill
 --include-gt           load and score optional GT cache directories
 --anchor               hard R:P direct AAM anchor; repeatable
+--reactant-smiles      direct R endpoint SMILES/CXSMILES formal-WBO input
+--product-smiles       direct P endpoint SMILES/CXSMILES formal-WBO input
 --subgraph-query-json  standalone weighted-subgraph query graph JSON
 --subgraph-target-json standalone weighted-subgraph target graph JSON
 --subgraph-node-policy node field for standalone subgraph compatibility

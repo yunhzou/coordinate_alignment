@@ -28,12 +28,14 @@ Public API:
     # Reusable pipeline stages and BGCP full-view pipeline
     from rxn_core.pipeline import (
         load_endpoint_from_xyz, alignment_inputs_from_xyz,
+        smiles_inputs_from_strings,
         load_step_inputs, step_inputs_from_arrays,
         ts_target_from_xyz, ts_target_from_arrays, load_ts_targets,
         discover_mechanisms_from_xyz, discover_mechanisms_from_arrays,
+        discover_mechanisms_from_smiles,
         run_rp_stage, write_rp_alignment_files, write_ts_alignment_files,
         run_ts_stage, write_view_stage,
-        load_ts_targets_from_specs, process_xyz_stage,
+        load_ts_targets_from_specs, process_xyz_stage, process_smiles_stage,
         run_full_pipeline_stage, process_step, main,
     )
 """
@@ -49,6 +51,11 @@ from .chemistry_computations import (
 )
 from .frag import build_graph, classify_bonds, expand_mapping
 from .frag import WeightedGraph, WeightedNode, build_weighted_graph
+from .smiles import (
+    FormalWBOEndpoint,
+    smiles_to_formal_wbo,
+    smiles_to_weighted_graph,
+)
 from .modes import (
     parse_g98_modes,
     core_atoms_in_R_frame, reindex_modes_to_R,
@@ -59,13 +66,15 @@ from .subgraph import SubgraphMatch, match_weighted_subgraph
 
 _PIPELINE_EXPORTS = {
     "load_endpoint_from_xyz", "alignment_inputs_from_xyz",
+    "smiles_inputs_from_strings",
     "load_step_inputs", "step_inputs_from_arrays",
     "ts_target_from_xyz", "ts_target_from_arrays", "load_ts_targets",
     "discover_mechanisms_from_xyz", "discover_mechanisms_from_arrays",
+    "discover_mechanisms_from_smiles",
     "rp_cut_work_items", "run_rp_cut_chunk", "merge_rp_cut_chunks",
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
     "run_ts_stage", "merge_ts_stage_chunks", "write_view_stage",
-    "load_ts_targets_from_specs", "process_xyz_stage",
+    "load_ts_targets_from_specs", "process_xyz_stage", "process_smiles_stage",
     "run_subgraph_cli", "run_full_pipeline_stage", "process_step",
 }
 
@@ -86,6 +95,7 @@ __all__ = [
     "run_xtb", "parse_xyz", "write_xyz_str",
     "build_graph", "classify_bonds", "expand_mapping",
     "WeightedGraph", "WeightedNode", "build_weighted_graph",
+    "FormalWBOEndpoint", "smiles_to_formal_wbo", "smiles_to_weighted_graph",
     "SubgraphMatch", "match_weighted_subgraph",
     "parse_g98_modes",
     "core_atoms_in_R_frame", "reindex_modes_to_R",
@@ -93,13 +103,15 @@ __all__ = [
     "bond_overlap_per_mode", "rxn_overlap_per_mode",
     "load_cached_xtb", "reindex_to_R_frame",
     "load_endpoint_from_xyz", "alignment_inputs_from_xyz",
+    "smiles_inputs_from_strings",
     "load_step_inputs", "step_inputs_from_arrays",
     "ts_target_from_xyz", "ts_target_from_arrays", "load_ts_targets",
     "discover_mechanisms_from_xyz", "discover_mechanisms_from_arrays",
+    "discover_mechanisms_from_smiles",
     "rp_cut_work_items", "run_rp_cut_chunk", "merge_rp_cut_chunks",
     "run_rp_stage", "write_rp_alignment_files", "write_ts_alignment_files",
     "run_ts_stage", "merge_ts_stage_chunks", "write_view_stage",
-    "load_ts_targets_from_specs", "process_xyz_stage",
+    "load_ts_targets_from_specs", "process_xyz_stage", "process_smiles_stage",
     "run_subgraph_cli", "run_full_pipeline_stage", "process_step",
 ]
 

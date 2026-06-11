@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: rxn-core-mongo
+    ports:
+      - "${RXN_CORE_MONGO_PORT:-27018}:27017"
+    volumes:
+      - rxn_core_mongo_data:/data/db
+
+volumes:
+  rxn_core_mongo_data:

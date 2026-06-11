@@ -517,6 +517,73 @@ def test_process_xyz_stage_runs_rp_without_step_schema(tmp_path, monkeypatch):
     assert (tmp_path / "views" / "h2_direct" / "view.html").exists()
 
 
+def test_smiles_to_formal_wbo_preserves_explicit_h_and_atom_maps():
+    pytest.importorskip("rdkit")
+
+    endpoint = pipeline.smiles_to_formal_wbo("[CH3:1][O:2][H:3]")
+
+    assert endpoint.elements == ["C", "O", "H"]
+    assert endpoint.atom_maps == {0: 1, 1: 2, 2: 3}
+    assert endpoint.wbo[0, 1] == pytest.approx(1.0)
+    assert endpoint.wbo[1, 2] == pytest.approx(1.0)
+    assert endpoint.coords.shape == (3, 3)
+
+
+def test_process_smiles_stage_runs_rp_from_formal_bond_orders(
+        tmp_path, monkeypatch):
+    pytest.importorskip("rdkit")
+
+    monkeypatch.setattr(pipeline, "OUT_ROOT", tmp_path / "views")
+    monkeypatch.setattr(pipeline, "STAGE_ROOT", tmp_path / "stages")
+    monkeypatch.setattr(pipeline, "ALIGNMENT_OUT_ROOT", tmp_path / "alignments")
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+
+    rec = pipeline.process_smiles_stage(
+        "smiles_deprot",
+        "[O:1][H:2]",
+        "[O-:1].[H+:2]",
+        workdir=tmp_path / "work",
+        stage="rp",
+        inner_workers=0,
+        rp_config=cfg)
+
+    assert rec["slim"]["n_mechs"] >= 1
+    assert rec["rp"]["config"]["n_seeds"] == 1
+    broken = [list(pair) for pair in rec["rp"]["mechanisms"][0]["broken_bonds_R"]]
+    assert broken == [[0, 1]]
+    assert (tmp_path / "work" / "source" / "R_wbo.json").exists()
+    assert (tmp_path / "work" / "source" / "R_graph.json").exists()
+    assert (tmp_path / "stages" / "smiles_deprot" / "rp_stage.json").exists()
+    assert (tmp_path / "views" / "smiles_deprot" / "view.html").exists()
+
+
+def test_main_smiles_mode_writes_view_and_eval(tmp_path, monkeypatch):
+    pytest.importorskip("rdkit")
+
+    out = tmp_path / "eval.json"
+    monkeypatch.setattr(pipeline, "OUT_ROOT", tmp_path / "views")
+    monkeypatch.setattr(pipeline, "EVAL_JSON", out)
+    monkeypatch.setattr(sys, "argv", [
+        "rxn-core",
+        "--stage", "rp",
+        "--name", "smiles_cli",
+        "--reactant-smiles", "[O:1][H:2]",
+        "--product-smiles", "[O-:1].[H+:2]",
+        "--workdir", str(tmp_path / "work"),
+        "--stage-root", str(tmp_path / "stages"),
+        "--workers", "1",
+    ])
+
+    pipeline.main()
+
+    data = json.loads(out.read_text())
+    assert data[0]["step"] == "smiles_cli"
+    assert data[0]["n_mechs"] >= 1
+    assert (tmp_path / "stages" / "smiles_cli" / "rp_stage.json").exists()
+    assert (tmp_path / "views" / "smiles_cli" / "view.html").exists()
+
+
 def test_process_xyz_stage_can_resume_rp_for_collective_validation(
         tmp_path, monkeypatch):
     r_xyz = tmp_path / "R.xyz"

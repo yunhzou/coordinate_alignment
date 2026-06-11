@@ -43,6 +43,7 @@ from rxn_core.matcher import (
     _nauty_atom_generators,
     _nauty_orbits,
 )
+from rxn_core.smiles import smiles_to_formal_wbo
 
 PROJECT = Path(os.environ.get(
     "RXN_CORE_PROJECT",
@@ -577,6 +578,91 @@ def alignment_inputs_from_xyz(reactant_xyz, product_xyz, workdir=None, *,
         energy_R=energy_R, energy_P=energy_P)
 
 
+def _weighted_graph_source_json(endpoint):
+    return {
+        "nodes": endpoint.nodes,
+        "weights": np.asarray(endpoint.wbo, float).tolist(),
+        "weight_name": "wbo",
+        "coords": np.asarray(endpoint.coords, float).tolist(),
+        "metadata": {
+            "source": "smiles",
+            "smiles": endpoint.smiles,
+            "wbo_kind": "formal_bond_order",
+            "atom_maps": {
+                str(k): int(v) for k, v in sorted(endpoint.atom_maps.items())
+            },
+        },
+    }
+
+
+def write_smiles_source_files(workdir, reactant_endpoint, product_endpoint,
+                              *, name="alignment"):
+    """Write source/debug files for a formal-WBO SMILES R/P input pair."""
+    source_dir = Path(workdir) / "source"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    (source_dir / "R.xyz").write_text(write_xyz_str(
+        reactant_endpoint.elements,
+        reactant_endpoint.coords,
+        f"{name} R 2D-from-CXSMILES"))
+    (source_dir / "P.xyz").write_text(write_xyz_str(
+        product_endpoint.elements,
+        product_endpoint.coords,
+        f"{name} P 2D-from-CXSMILES"))
+    (source_dir / "R_wbo.json").write_text(json.dumps(
+        np.asarray(reactant_endpoint.wbo, float).tolist(), indent=2))
+    (source_dir / "P_wbo.json").write_text(json.dumps(
+        np.asarray(product_endpoint.wbo, float).tolist(), indent=2))
+    (source_dir / "R_graph.json").write_text(json.dumps(
+        _weighted_graph_source_json(reactant_endpoint), indent=2))
+    (source_dir / "P_graph.json").write_text(json.dumps(
+        _weighted_graph_source_json(product_endpoint), indent=2))
+    (source_dir / "atom_maps.json").write_text(json.dumps({
+        "R_index_to_atom_map": {
+            str(k): int(v)
+            for k, v in sorted(reactant_endpoint.atom_maps.items())
+        },
+        "P_index_to_atom_map": {
+            str(k): int(v)
+            for k, v in sorted(product_endpoint.atom_maps.items())
+        },
+    }, indent=2))
+    (source_dir / "smiles.json").write_text(json.dumps({
+        "reactant_smiles": reactant_endpoint.smiles,
+        "product_smiles": product_endpoint.smiles,
+        "wbo_kind": "formal_bond_order",
+        "hydrogen_policy": "preserve_explicit_only",
+        "coordinate_policy": "planar RDKit depiction for display only",
+    }, indent=2))
+    return source_dir
+
+
+def smiles_inputs_from_strings(reactant_smiles, product_smiles, *,
+                               name="alignment", workdir=None,
+                               sanitize=True, component_spacing=3.0,
+                               write_source=True):
+    """Build Stage 1 inputs from SMILES/CXSMILES formal bond orders.
+
+    Atom-map labels in CXSMILES are retained as metadata/source files only.
+    They are not AAM anchors; pass ``anchor_map``/``--anchor`` separately when
+    those labels should become hard mapping constraints.
+    """
+    r_endpoint = smiles_to_formal_wbo(
+        reactant_smiles, sanitize=sanitize,
+        component_spacing=component_spacing)
+    p_endpoint = smiles_to_formal_wbo(
+        product_smiles, sanitize=sanitize,
+        component_spacing=component_spacing)
+    step_dir = Path("." if workdir is None else workdir)
+    if write_source and workdir is not None:
+        write_smiles_source_files(
+            step_dir, r_endpoint, p_endpoint, name=name)
+    return step_inputs_from_arrays(
+        name,
+        r_endpoint.elements, r_endpoint.coords, r_endpoint.wbo,
+        p_endpoint.elements, p_endpoint.coords, p_endpoint.wbo,
+        step_dir=step_dir)
+
+
 def load_step_inputs(step_name, *, charge=None, multiplicity=None,
                      xtb_mode=None):
     """Adapter: load/cache-fill R and P endpoints for one benchmark step."""
@@ -662,6 +748,20 @@ def discover_mechanisms_from_xyz(reactant_xyz, product_xyz, workdir=None, *,
         charge=charge, multiplicity=multiplicity, xtb_mode=xtb_mode,
         reactant_workdir=reactant_workdir,
         product_workdir=product_workdir)
+    result = run_rp_stage(inputs, config=config, inner_workers=inner_workers)
+    return (inputs, result) if return_inputs else result
+
+
+def discover_mechanisms_from_smiles(reactant_smiles, product_smiles, *,
+                                    name="alignment", workdir=None,
+                                    sanitize=True, component_spacing=3.0,
+                                    config=None, inner_workers=0,
+                                    return_inputs=False):
+    """SMILES/CXSMILES R-P mechanism discovery using formal bond orders."""
+    inputs = smiles_inputs_from_strings(
+        reactant_smiles, product_smiles,
+        name=name, workdir=workdir, sanitize=sanitize,
+        component_spacing=component_spacing)
     result = run_rp_stage(inputs, config=config, inner_workers=inner_workers)
     return (inputs, result) if return_inputs else result
 
@@ -2654,6 +2754,71 @@ def process_xyz_stage(name, reactant_xyz, product_xyz, *, workdir=None,
     }
 
 
+def process_smiles_stage(name, reactant_smiles, product_smiles, *,
+                         workdir=None, stage='full', inner_workers=0,
+                         save_alignment_files=False, rp_config=None,
+                         resume_rp=False, sanitize=True,
+                         component_spacing=3.0):
+    """Run R-P stages for SMILES/CXSMILES endpoints.
+
+    This uses formal bond orders from the written SMILES graph.  It does not
+    run xtb and does not infer implicit hydrogens as extra atoms.
+    """
+    workdir = Path(workdir or (PROJECT / "out" / "smiles_work" / name))
+    inputs = smiles_inputs_from_strings(
+        reactant_smiles, product_smiles,
+        name=name, workdir=workdir, sanitize=sanitize,
+        component_spacing=component_spacing)
+    paths = pipeline_stage_paths(name)
+
+    if stage in {'ts', 'post-rp'}:
+        raise ValueError(
+            "SMILES mode is an R-P formal-bond-order workflow; use XYZ/WBO "
+            "inputs for TS/IG validation")
+
+    if stage == 'view':
+        if not paths.rp_json.exists():
+            raise RuntimeError(
+                f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+        rp_result = read_stage_json(paths.rp_json)
+        view_result = write_view_stage(
+            inputs, rp_result, ts_result=None, include_gt=False)
+        return {
+            'step': name,
+            'rp': rp_result,
+            'view': view_result,
+            'slim': view_result['slim'],
+        }
+
+    if stage not in {'rp', 'full'}:
+        raise ValueError(f"unknown stage: {stage}")
+
+    if resume_rp:
+        if not paths.rp_json.exists():
+            raise RuntimeError(
+                f"missing Stage 1 artifact: {paths.rp_json}; run --stage rp first")
+        rp_result = read_stage_json(paths.rp_json)
+    else:
+        rp_result = run_rp_stage(
+            inputs, config=rp_config, inner_workers=inner_workers)
+        write_stage_json(paths.rp_json, rp_result)
+
+    view_result = write_view_stage(
+        inputs, rp_result, ts_result=None, include_gt=False)
+    alignment_files = (
+        write_rp_alignment_files(inputs, rp_result)
+        if save_alignment_files else None
+    )
+    return {
+        'step': name,
+        'rp': rp_result,
+        'ts': None,
+        'view': view_result,
+        'alignment_files': alignment_files,
+        'slim': view_result['slim'],
+    }
+
+
 def process_step_stage(step_name, stage='full', inner_workers=0,
                        mechanism_ids=None, save_alignment_files=False,
                        resume_rp=False):
@@ -2817,9 +2982,19 @@ def main():
     ap.add_argument("--product-xyz", default=None,
                     help="Direct Stage 1 product endpoint XYZ. Use with "
                          "--reactant-xyz instead of --steps.")
+    ap.add_argument("--reactant-smiles", default=None,
+                    help="Direct Stage 1 reactant endpoint SMILES/CXSMILES. "
+                         "Uses formal bond orders instead of xtb WBO.")
+    ap.add_argument("--product-smiles", default=None,
+                    help="Direct Stage 1 product endpoint SMILES/CXSMILES. "
+                         "Use with --reactant-smiles instead of --steps.")
+    ap.add_argument("--smiles-component-spacing", type=float, default=3.0,
+                    help="Display-only spacing between disconnected SMILES "
+                         "components in generated 2D XYZ coordinates.")
     ap.add_argument("--workdir", default=None,
                     help="Direct XYZ mode cache work directory. Holds "
-                         "endpoint, TS single-point, and TS Hessian caches.")
+                         "endpoint, TS single-point, and TS Hessian caches. "
+                         "In SMILES mode, holds source formal-WBO files.")
     ap.add_argument("--target-xyz", action="append", default=None,
                     help="Direct Stage 2 TS/IG/GT XYZ. Can be repeated.")
     ap.add_argument("--target-label", action="append", default=None,
@@ -2891,9 +3066,10 @@ def main():
 
     subgraph_mode = bool(args.subgraph_query_json or args.subgraph_target_json)
     if subgraph_mode:
-        if args.steps or args.reactant_xyz or args.product_xyz:
+        if (args.steps or args.reactant_xyz or args.product_xyz
+                or args.reactant_smiles or args.product_smiles):
             ap.error("subgraph mode cannot be combined with --steps or "
-                     "--reactant-xyz/--product-xyz")
+                     "direct endpoint inputs")
         if not (args.subgraph_query_json and args.subgraph_target_json):
             ap.error("--subgraph-query-json and --subgraph-target-json "
                      "must be provided together")
@@ -2925,6 +3101,64 @@ def main():
         else:
             print(f"subgraph: matches={result['n_matches']} "
                   f"out={out_path}")
+        return
+
+    smiles_mode = bool(args.reactant_smiles or args.product_smiles)
+    if smiles_mode:
+        if args.steps or args.reactant_xyz or args.product_xyz:
+            ap.error("use only one input mode: --steps, XYZ, or SMILES")
+        if args.target_xyz:
+            ap.error("SMILES mode is R-P only; use XYZ/WBO inputs for TS targets")
+        if not (args.reactant_smiles and args.product_smiles):
+            ap.error("--reactant-smiles and --product-smiles must be provided together")
+        name = args.name or "smiles_alignment"
+        OUT_ROOT.mkdir(parents=True, exist_ok=True)
+        STAGE_ROOT.mkdir(parents=True, exist_ok=True)
+        if args.save_alignment_files:
+            ALIGNMENT_OUT_ROOT.mkdir(parents=True, exist_ok=True)
+        try:
+            rp_config = None
+            direct_anchor_values = list(args.anchor or []) + list(
+                args.subgraph_anchor or [])
+            if direct_anchor_values:
+                rp_config = rp_stage_config()
+                rp_config['anchor_map'] = _subgraph_anchor_map_from_cli(
+                    direct_anchor_values)
+            rec = process_smiles_stage(
+                name,
+                args.reactant_smiles,
+                args.product_smiles,
+                workdir=Path(args.workdir) if args.workdir else None,
+                stage=args.stage,
+                inner_workers=(
+                    args.inner_workers if args.inner_workers > 0
+                    else max(1, int(args.workers))),
+                save_alignment_files=args.save_alignment_files,
+                rp_config=rp_config,
+                resume_rp=args.resume_rp,
+                component_spacing=args.smiles_component_spacing,
+            )
+        except Exception as e:
+            rec = {
+                'step': name,
+                'error': f"{type(e).__name__}: {e}",
+                'trace': traceback.format_exc(),
+            }
+        if rec.get('error'):
+            print(f"{name}: ERROR: {rec['error']}")
+            EVAL_JSON.write_text(json.dumps([{
+                'step': name,
+                'error': rec['error'],
+            }]))
+        else:
+            slim = rec['slim']
+            source_dir = Path(args.workdir or (
+                PROJECT / "out" / "smiles_work" / name)) / "source"
+            print(f"{name}: mechs={slim.get('n_mechs', 0)} "
+                  f"view={rec.get('view', {}).get('view_html')} "
+                  f"source={source_dir}")
+            EVAL_JSON.write_text(json.dumps([slim]))
+        print(f"wrote {EVAL_JSON}")
         return
 
     direct_mode = bool(args.reactant_xyz or args.product_xyz)
