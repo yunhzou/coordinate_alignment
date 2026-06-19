@@ -641,7 +641,7 @@ def smiles_inputs_from_strings(reactant_smiles, product_smiles, *,
                                name="alignment", workdir=None,
                                sanitize=True, component_spacing=3.0,
                                write_source=True,
-                               expand_hydrogens=False):
+                               expand_hydrogens=True):
     """Build Stage 1 inputs from SMILES/CXSMILES formal bond orders.
 
     Atom-map labels in CXSMILES are retained as metadata/source files only.
@@ -761,7 +761,7 @@ def discover_mechanisms_from_smiles(reactant_smiles, product_smiles, *,
                                     sanitize=True, component_spacing=3.0,
                                     config=None, inner_workers=0,
                                     return_inputs=False,
-                                    expand_hydrogens=False):
+                                    expand_hydrogens=True):
     """SMILES/CXSMILES R-P mechanism discovery using formal bond orders."""
     inputs = smiles_inputs_from_strings(
         reactant_smiles, product_smiles,
@@ -2765,11 +2765,11 @@ def process_smiles_stage(name, reactant_smiles, product_smiles, *,
                          save_alignment_files=False, rp_config=None,
                          resume_rp=False, sanitize=True,
                          component_spacing=3.0,
-                         expand_hydrogens=False):
+                         expand_hydrogens=True):
     """Run R-P stages for SMILES/CXSMILES endpoints.
 
     This uses formal bond orders from the written SMILES graph.  It does not
-    run xtb and does not infer implicit hydrogens as extra atoms.
+    run xtb.  By default, RDKit hydrogen counts are materialized as H atoms.
     """
     workdir = Path(workdir or (PROJECT / "out" / "smiles_work" / name))
     inputs = smiles_inputs_from_strings(
@@ -2999,9 +2999,19 @@ def main():
     ap.add_argument("--smiles-component-spacing", type=float, default=3.0,
                     help="Display-only spacing between disconnected SMILES "
                          "components in generated 2D XYZ coordinates.")
-    ap.add_argument("--smiles-expand-hydrogens", action="store_true",
-                    help="Materialize SMILES atom hydrogen counts as explicit "
-                         "H atoms before formal-WBO graph construction.")
+    smiles_h = ap.add_mutually_exclusive_group()
+    smiles_h.add_argument("--smiles-expand-hydrogens",
+                          dest="smiles_expand_hydrogens",
+                          action="store_true", default=True,
+                          help="Materialize SMILES atom hydrogen counts as "
+                               "explicit H atoms before formal-WBO graph "
+                               "construction. This is the default.")
+    smiles_h.add_argument("--smiles-preserve-explicit-only",
+                          dest="smiles_expand_hydrogens",
+                          action="store_false",
+                          help="Keep only atoms explicitly present in the "
+                               "parsed SMILES graph; atom hydrogen counts "
+                               "remain implicit.")
     ap.add_argument("--workdir", default=None,
                     help="Direct XYZ mode cache work directory. Holds "
                          "endpoint, TS single-point, and TS Hessian caches. "

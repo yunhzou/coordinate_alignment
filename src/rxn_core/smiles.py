@@ -14,9 +14,9 @@ class FormalWBOEndpoint:
     """One molecule parsed from SMILES as an element + formal-WBO graph.
 
     The ``wbo`` values are formal bond orders from the written molecular graph,
-    not quantum Wiberg bond orders.  By default, explicit hydrogens in the
-    input are kept and implicit hydrogens are not expanded.  Callers may request
-    hydrogen expansion to materialize atom hydrogen counts as separate H nodes.
+    not quantum Wiberg bond orders.  By default, RDKit hydrogen counts are
+    materialized as separate H nodes.  Callers may opt out to keep only atoms
+    explicitly present in the parsed SMILES graph.
     """
 
     smiles: str
@@ -25,7 +25,7 @@ class FormalWBOEndpoint:
     wbo: np.ndarray
     atom_maps: dict[int, int]
     nodes: list[dict[str, Any]]
-    hydrogen_policy: str = "preserve_explicit_only"
+    hydrogen_policy: str = "expand_hydrogens"
 
 
 def _require_rdkit():
@@ -90,7 +90,7 @@ def _compute_2d_coords(mol, *, component_spacing=3.0):
 
 def smiles_to_formal_wbo(smiles, *, sanitize=True,
                          component_spacing=3.0,
-                         expand_hydrogens=False):
+                         expand_hydrogens=True):
     """Parse SMILES/CXSMILES into a formal-bond-order weighted graph.
 
     Returns element labels, planar display coordinates, a square formal-WBO
@@ -100,6 +100,7 @@ def smiles_to_formal_wbo(smiles, *, sanitize=True,
 
     If ``expand_hydrogens`` is true, RDKit materializes atom hydrogen counts
     as explicit H atoms before coordinates and formal bond orders are built.
+    This is the default for SMILES inputs.
     """
     Chem, _rdDepictor = _require_rdkit()
     mol = _mol_from_smiles(smiles, sanitize=sanitize)
@@ -150,7 +151,7 @@ def smiles_to_formal_wbo(smiles, *, sanitize=True,
 
 def smiles_to_weighted_graph(smiles, *, sanitize=True,
                              component_spacing=3.0,
-                             expand_hydrogens=False):
+                             expand_hydrogens=True):
     """Return a :class:`WeightedGraph` built from SMILES formal bond orders."""
     endpoint = smiles_to_formal_wbo(
         smiles, sanitize=sanitize, component_spacing=component_spacing,

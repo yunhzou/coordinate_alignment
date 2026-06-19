@@ -517,23 +517,10 @@ def test_process_xyz_stage_runs_rp_without_step_schema(tmp_path, monkeypatch):
     assert (tmp_path / "views" / "h2_direct" / "view.html").exists()
 
 
-def test_smiles_to_formal_wbo_preserves_explicit_h_and_atom_maps():
+def test_smiles_to_formal_wbo_expands_hydrogens_by_default():
     pytest.importorskip("rdkit")
 
-    endpoint = pipeline.smiles_to_formal_wbo("[CH3:1][O:2][H:3]")
-
-    assert endpoint.elements == ["C", "O", "H"]
-    assert endpoint.atom_maps == {0: 1, 1: 2, 2: 3}
-    assert endpoint.wbo[0, 1] == pytest.approx(1.0)
-    assert endpoint.wbo[1, 2] == pytest.approx(1.0)
-    assert endpoint.coords.shape == (3, 3)
-
-
-def test_smiles_to_formal_wbo_can_expand_hydrogens():
-    pytest.importorskip("rdkit")
-
-    endpoint = pipeline.smiles_to_formal_wbo(
-        "[CH3:1][O:2]", expand_hydrogens=True)
+    endpoint = pipeline.smiles_to_formal_wbo("[CH3:1][O:2]")
 
     assert endpoint.elements == ["C", "O", "H", "H", "H"]
     assert endpoint.atom_maps == {0: 1, 1: 2}
@@ -544,6 +531,20 @@ def test_smiles_to_formal_wbo_can_expand_hydrogens():
         j for j, value in enumerate(endpoint.wbo[0])
         if value == pytest.approx(1.0)
     ) == [1, 2, 3, 4]
+
+
+def test_smiles_to_formal_wbo_can_preserve_explicit_only():
+    pytest.importorskip("rdkit")
+
+    endpoint = pipeline.smiles_to_formal_wbo(
+        "[CH3:1][O:2][H:3]", expand_hydrogens=False)
+
+    assert endpoint.elements == ["C", "O", "H"]
+    assert endpoint.atom_maps == {0: 1, 1: 2, 2: 3}
+    assert endpoint.hydrogen_policy == "preserve_explicit_only"
+    assert endpoint.wbo[0, 1] == pytest.approx(1.0)
+    assert endpoint.wbo[1, 2] == pytest.approx(1.0)
+    assert endpoint.coords.shape == (3, 3)
 
 
 def test_process_smiles_stage_runs_rp_from_formal_bond_orders(
