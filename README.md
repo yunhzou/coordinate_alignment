@@ -97,9 +97,11 @@ rxn-core-pipeline --steps pr15.example --charge 0 --multiplicity 4
 
 For graph-only examples, `rxn-core` can build the R/P endpoint graphs directly
 from SMILES or CXSMILES. This mode does not run xtb. It parses the written
-molecular graph with RDKit, keeps explicitly written hydrogens, does not expand
-implicit hydrogens, and sets the WBO matrix to formal bond orders: single
-`1.0`, double `2.0`, triple `3.0`, aromatic `1.5`.
+molecular graph with RDKit, keeps explicitly written hydrogens, and sets the
+WBO matrix to formal bond orders: single `1.0`, double `2.0`, triple `3.0`,
+aromatic `1.5`. By default it does not expand atom hydrogen counts into
+separate H atoms; pass `--smiles-expand-hydrogens` when bracket hydrogens such
+as `[CH]` and `[CH2]` should become explicit H nodes in the AAM graph.
 
 Generated coordinates are planar RDKit depictions for the viewer only.
 CXSMILES atom-map labels are written as source metadata, but they are not hard
@@ -560,6 +562,7 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | `--mechanism` | none | all | restrict Stage 2 verification to one mechanism id; repeat for multiple ids |
 | `--anchor` | none | none | hard R:P anchor for direct R-P AAM; can be repeated |
 | `--reactant-smiles` / `--product-smiles` | none | none | direct R-P formal-bond-order input from SMILES/CXSMILES; skips xtb |
+| `--smiles-expand-hydrogens` | none | off | materialize SMILES atom hydrogen counts as explicit H atoms before formal-WBO graph construction |
 | `--subgraph-query-json` | none | none | standalone weighted-subgraph query graph JSON |
 | `--subgraph-target-json` | none | none | standalone weighted-subgraph target graph JSON |
 | `--subgraph-node-policy` | none | same element | node attribute/feature field used for standalone subgraph compatibility; repeat for multi-field keys |
@@ -627,6 +630,8 @@ CLI options:
 --anchor               hard R:P direct AAM anchor; repeatable
 --reactant-smiles      direct R endpoint SMILES/CXSMILES formal-WBO input
 --product-smiles       direct P endpoint SMILES/CXSMILES formal-WBO input
+--smiles-expand-hydrogens
+                       materialize SMILES atom hydrogen counts as explicit H atoms
 --subgraph-query-json  standalone weighted-subgraph query graph JSON
 --subgraph-target-json standalone weighted-subgraph target graph JSON
 --subgraph-node-policy node field for standalone subgraph compatibility

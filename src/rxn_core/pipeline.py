@@ -588,6 +588,7 @@ def _weighted_graph_source_json(endpoint):
             "source": "smiles",
             "smiles": endpoint.smiles,
             "wbo_kind": "formal_bond_order",
+            "hydrogen_policy": endpoint.hydrogen_policy,
             "atom_maps": {
                 str(k): int(v) for k, v in sorted(endpoint.atom_maps.items())
             },
@@ -630,7 +631,7 @@ def write_smiles_source_files(workdir, reactant_endpoint, product_endpoint,
         "reactant_smiles": reactant_endpoint.smiles,
         "product_smiles": product_endpoint.smiles,
         "wbo_kind": "formal_bond_order",
-        "hydrogen_policy": "preserve_explicit_only",
+        "hydrogen_policy": reactant_endpoint.hydrogen_policy,
         "coordinate_policy": "planar RDKit depiction for display only",
     }, indent=2))
     return source_dir
@@ -639,7 +640,8 @@ def write_smiles_source_files(workdir, reactant_endpoint, product_endpoint,
 def smiles_inputs_from_strings(reactant_smiles, product_smiles, *,
                                name="alignment", workdir=None,
                                sanitize=True, component_spacing=3.0,
-                               write_source=True):
+                               write_source=True,
+                               expand_hydrogens=False):
     """Build Stage 1 inputs from SMILES/CXSMILES formal bond orders.
 
     Atom-map labels in CXSMILES are retained as metadata/source files only.
@@ -648,10 +650,12 @@ def smiles_inputs_from_strings(reactant_smiles, product_smiles, *,
     """
     r_endpoint = smiles_to_formal_wbo(
         reactant_smiles, sanitize=sanitize,
-        component_spacing=component_spacing)
+        component_spacing=component_spacing,
+        expand_hydrogens=expand_hydrogens)
     p_endpoint = smiles_to_formal_wbo(
         product_smiles, sanitize=sanitize,
-        component_spacing=component_spacing)
+        component_spacing=component_spacing,
+        expand_hydrogens=expand_hydrogens)
     step_dir = Path("." if workdir is None else workdir)
     if write_source and workdir is not None:
         write_smiles_source_files(
@@ -756,12 +760,14 @@ def discover_mechanisms_from_smiles(reactant_smiles, product_smiles, *,
                                     name="alignment", workdir=None,
                                     sanitize=True, component_spacing=3.0,
                                     config=None, inner_workers=0,
-                                    return_inputs=False):
+                                    return_inputs=False,
+                                    expand_hydrogens=False):
     """SMILES/CXSMILES R-P mechanism discovery using formal bond orders."""
     inputs = smiles_inputs_from_strings(
         reactant_smiles, product_smiles,
         name=name, workdir=workdir, sanitize=sanitize,
-        component_spacing=component_spacing)
+        component_spacing=component_spacing,
+        expand_hydrogens=expand_hydrogens)
     result = run_rp_stage(inputs, config=config, inner_workers=inner_workers)
     return (inputs, result) if return_inputs else result
 
@@ -2758,7 +2764,8 @@ def process_smiles_stage(name, reactant_smiles, product_smiles, *,
                          workdir=None, stage='full', inner_workers=0,
                          save_alignment_files=False, rp_config=None,
                          resume_rp=False, sanitize=True,
-                         component_spacing=3.0):
+                         component_spacing=3.0,
+                         expand_hydrogens=False):
     """Run R-P stages for SMILES/CXSMILES endpoints.
 
     This uses formal bond orders from the written SMILES graph.  It does not
@@ -2768,7 +2775,8 @@ def process_smiles_stage(name, reactant_smiles, product_smiles, *,
     inputs = smiles_inputs_from_strings(
         reactant_smiles, product_smiles,
         name=name, workdir=workdir, sanitize=sanitize,
-        component_spacing=component_spacing)
+        component_spacing=component_spacing,
+        expand_hydrogens=expand_hydrogens)
     paths = pipeline_stage_paths(name)
 
     if stage in {'ts', 'post-rp'}:
@@ -2991,6 +2999,9 @@ def main():
     ap.add_argument("--smiles-component-spacing", type=float, default=3.0,
                     help="Display-only spacing between disconnected SMILES "
                          "components in generated 2D XYZ coordinates.")
+    ap.add_argument("--smiles-expand-hydrogens", action="store_true",
+                    help="Materialize SMILES atom hydrogen counts as explicit "
+                         "H atoms before formal-WBO graph construction.")
     ap.add_argument("--workdir", default=None,
                     help="Direct XYZ mode cache work directory. Holds "
                          "endpoint, TS single-point, and TS Hessian caches. "
@@ -3137,6 +3148,7 @@ def main():
                 rp_config=rp_config,
                 resume_rp=args.resume_rp,
                 component_spacing=args.smiles_component_spacing,
+                expand_hydrogens=args.smiles_expand_hydrogens,
             )
         except Exception as e:
             rec = {

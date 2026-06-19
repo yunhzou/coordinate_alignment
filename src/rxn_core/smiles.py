@@ -14,8 +14,9 @@ class FormalWBOEndpoint:
     """One molecule parsed from SMILES as an element + formal-WBO graph.
 
     The ``wbo`` values are formal bond orders from the written molecular graph,
-    not quantum Wiberg bond orders.  Explicit hydrogens in the input are kept;
-    implicit hydrogens are not expanded.
+    not quantum Wiberg bond orders.  By default, explicit hydrogens in the
+    input are kept and implicit hydrogens are not expanded.  Callers may request
+    hydrogen expansion to materialize atom hydrogen counts as separate H nodes.
     """
 
     smiles: str
@@ -24,6 +25,7 @@ class FormalWBOEndpoint:
     wbo: np.ndarray
     atom_maps: dict[int, int]
     nodes: list[dict[str, Any]]
+    hydrogen_policy: str = "preserve_explicit_only"
 
 
 def _require_rdkit():
@@ -87,15 +89,24 @@ def _compute_2d_coords(mol, *, component_spacing=3.0):
 
 
 def smiles_to_formal_wbo(smiles, *, sanitize=True,
-                         component_spacing=3.0):
+                         component_spacing=3.0,
+                         expand_hydrogens=False):
     """Parse SMILES/CXSMILES into a formal-bond-order weighted graph.
 
     Returns element labels, planar display coordinates, a square formal-WBO
     matrix, atom-map labels, and node records.  Atom-map labels are metadata
     only; they are not used as AAM constraints unless the caller separately
     supplies anchors.
+
+    If ``expand_hydrogens`` is true, RDKit materializes atom hydrogen counts
+    as explicit H atoms before coordinates and formal bond orders are built.
     """
+    Chem, _rdDepictor = _require_rdkit()
     mol = _mol_from_smiles(smiles, sanitize=sanitize)
+    hydrogen_policy = "expand_hydrogens" if expand_hydrogens else (
+        "preserve_explicit_only")
+    if expand_hydrogens:
+        mol = Chem.AddHs(mol)
     n = mol.GetNumAtoms()
     elements = []
     nodes = []
@@ -133,14 +144,17 @@ def smiles_to_formal_wbo(smiles, *, sanitize=True,
         wbo=wbo,
         atom_maps=atom_maps,
         nodes=nodes,
+        hydrogen_policy=hydrogen_policy,
     )
 
 
 def smiles_to_weighted_graph(smiles, *, sanitize=True,
-                             component_spacing=3.0):
+                             component_spacing=3.0,
+                             expand_hydrogens=False):
     """Return a :class:`WeightedGraph` built from SMILES formal bond orders."""
     endpoint = smiles_to_formal_wbo(
-        smiles, sanitize=sanitize, component_spacing=component_spacing)
+        smiles, sanitize=sanitize, component_spacing=component_spacing,
+        expand_hydrogens=expand_hydrogens)
     return WeightedGraph(
         nodes=endpoint.nodes,
         weights=endpoint.wbo,
@@ -150,6 +164,7 @@ def smiles_to_weighted_graph(smiles, *, sanitize=True,
             "source": "smiles",
             "smiles": endpoint.smiles,
             "wbo_kind": "formal_bond_order",
+            "hydrogen_policy": endpoint.hydrogen_policy,
             "atom_maps": endpoint.atom_maps,
         },
     )
