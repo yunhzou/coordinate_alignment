@@ -17,7 +17,6 @@ from .branch import (
     BranchLimitExceeded,
     _generate_seed_orders,
     find_islands,
-    symmetry_repair_mapping,
 )
 
 
@@ -488,77 +487,31 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
     )
 
 
-def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
-                          g_R_full, p_orbits, r_orbits, core_R, cfg,
-                          elR=None, elT=None,
-                          return_repair_stats=False):
+def _score_branch_mapping(mapping, wboR, wboT, p_orbits, r_orbits,
+                          core_R, cfg, elR=None, elT=None):
     anchor_map = cfg.get('anchor_map') or {}
     if core_R:
         if not all(r in mapping for r in core_R):
             return None
         if not _anchor_mapping_ok(mapping, anchor_map):
             return None
-        scored = (_core_mapping_key(mapping, core_R), mapping)
-        return (*scored, None) if return_repair_stats else scored
+        return _core_mapping_key(mapping, core_R), mapping
 
     if len(mapping) < int(cfg['n_atoms']) - 2:
         return None
     if not _anchor_mapping_ok(mapping, anchor_map):
         return None
-    repair_stats = None
-    if cfg['symmetry_repair']:
-        base_mapping = dict(mapping)
-        if return_repair_stats:
-            mapping, repair_stats = symmetry_repair_mapping(
-                mapping, wboR, wboT, g_R_full, g_P, p_orbits,
-                dwbo_threshold=float(cfg['dwbo_threshold']),
-                metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
-                min_changes=int(cfg['symmetry_repair_min_changes']),
-                max_evals=int(cfg['symmetry_repair_max_evals']),
-                return_stats=True,
-            )
-        else:
-            mapping = symmetry_repair_mapping(
-                mapping, wboR, wboT, g_R_full, g_P, p_orbits,
-                dwbo_threshold=float(cfg['dwbo_threshold']),
-                metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
-                min_changes=int(cfg['symmetry_repair_min_changes']),
-                max_evals=int(cfg['symmetry_repair_max_evals']),
-            )
-        if not _anchor_mapping_ok(mapping, anchor_map):
-            mapping = base_mapping
-            if repair_stats is not None:
-                repair_stats = dict(repair_stats)
-                repair_stats['anchor_reverted'] = True
     sig = _mechanism_signature(
         mapping, wboR, wboT, r_orbits, p_orbits,
         dwbo_threshold=float(cfg['dwbo_threshold']),
         elements_R=elR,
         elements_P=elT,
         metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'))
-    scored = (sig, mapping)
-    return (*scored, repair_stats) if return_repair_stats else scored
+    return sig, mapping
 
 
 def _cut_json(cut):
     return [list(map(int, pair)) for pair in cut]
-
-
-def _repair_trace_stats(stats):
-    if not stats:
-        return None
-    groups = stats.get('groups') or []
-    return {
-        'enabled': bool(stats.get('enabled', False)),
-        'base_changes': stats.get('base_changes'),
-        'best_changes': stats.get('best_changes'),
-        'repaired': bool(stats.get('repaired', False)),
-        'evaluated': int(stats.get('evaluated', 0) or 0),
-        'capped': bool(stats.get('capped', False)),
-        'n_groups': len(groups),
-        'group_sizes': [int(group.get('size', 0) or 0)
-                        for group in groups],
-    }
 
 
 def _growth_trace_summary(profile):
@@ -638,7 +591,7 @@ def _emit_trace(trace_path, events):
 
 
 def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
-                  g_P, g_R_full, p_orbits, r_orbits_full,
+                  g_P, p_orbits, r_orbits_full,
                   *, return_trace=False):
     cut = tuple(tuple(int(v) for v in pair) for pair in cut)
     events = []
@@ -665,9 +618,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
             'cut': _cut_json(cut),
             'n_orders': len(orders),
             'max_branches': int(cfg['max_branches']),
-            'symmetry_repair': bool(cfg['symmetry_repair']),
-            'symmetry_repair_max_evals': int(
-                cfg['symmetry_repair_max_evals']),
         })
 
     cut_status = 'completed'
@@ -676,8 +626,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
     total_expand_elapsed = 0.0
     total_branches = 0
     total_accepted = 0
-    total_repair_evals = 0
-    total_repair_capped = 0
     try:
         for order_index, order in enumerate(orders):
             seed_t0 = time.perf_counter()
@@ -733,8 +681,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
             seed_score_elapsed = 0.0
             seed_expand_elapsed = 0.0
             seed_accepted = 0
-            seed_repair_evals = 0
-            seed_repair_capped = 0
             max_mapped = 0
             for branch_index, branch in enumerate(branches):
                 branch_t0 = time.perf_counter()
@@ -748,7 +694,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                         scored_items.append((
                             _core_mapping_key(core_map, core_R),
                             core_map,
-                            None,
                         ))
                     mapping_for_stats = dict(branch.mapping)
                 else:
@@ -756,17 +701,13 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                     mapping = expand_mapping(dict(branch.mapping), g_R, g_P)
                     expand_elapsed = time.perf_counter() - expand_t0
                     scored = _score_branch_mapping(
-                        mapping, g_R, g_P, wboR, wboT, g_R_full,
-                        p_orbits, r_orbits_full, core_R, cfg, elR, elT,
-                        return_repair_stats=return_trace)
+                        mapping, wboR, wboT, p_orbits, r_orbits_full,
+                        core_R, cfg, elR, elT)
                     if scored is None:
                         scored_items = []
-                    elif return_trace:
-                        sig, repaired_mapping, repair_stats = scored
-                        scored_items = [(sig, repaired_mapping, repair_stats)]
                     else:
-                        sig, repaired_mapping = scored
-                        scored_items = [(sig, repaired_mapping, None)]
+                        sig, accepted_mapping = scored
+                        scored_items = [(sig, accepted_mapping)]
                     mapping_for_stats = mapping
                 score_elapsed = time.perf_counter() - score_t0
                 branch_elapsed = time.perf_counter() - branch_t0
@@ -774,7 +715,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                 seed_score_elapsed += score_elapsed
                 max_mapped = max(max_mapped, len(mapping_for_stats))
                 accepted = bool(scored_items)
-                for sig, accepted_mapping, _repair_stats in scored_items:
+                for sig, accepted_mapping in scored_items:
                     out.append((
                         sig,
                         tuple(sorted(accepted_mapping.items())),
@@ -782,11 +723,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                         _branch_symmetry_record(branch),
                     ))
                     seed_accepted += 1
-                repair_stats = scored_items[0][2] if scored_items else None
-                repair_summary = _repair_trace_stats(repair_stats)
-                if repair_summary:
-                    seed_repair_evals += repair_summary['evaluated']
-                    seed_repair_capped += int(repair_summary['capped'])
                 if return_trace:
                     events.append({
                         'event': 'branch',
@@ -799,15 +735,12 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                         'mapped_atoms': len(mapping_for_stats),
                         'accepted': bool(accepted),
                         'accepted_core_variants': len(scored_items),
-                        'repair': repair_summary,
                     })
             n_branches = len(branches)
             total_branches += n_branches
             total_accepted += seed_accepted
             total_expand_elapsed += seed_expand_elapsed
             total_score_elapsed += seed_score_elapsed
-            total_repair_evals += seed_repair_evals
-            total_repair_capped += seed_repair_capped
             if return_trace:
                 for item in seed_growth_profile:
                     growth_event = dict(item)
@@ -825,8 +758,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                     'branches': n_branches,
                     'accepted': seed_accepted,
                     'max_mapped_atoms': max_mapped,
-                    'repair_evals': seed_repair_evals,
-                    'repair_capped_count': seed_repair_capped,
                     'growth': growth_summary,
                 })
     except BranchLimitExceeded:
@@ -849,8 +780,6 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
             'score_elapsed_sec': total_score_elapsed,
             'branches': total_branches,
             'accepted': total_accepted,
-            'repair_evals': total_repair_evals,
-            'repair_capped_count': total_repair_capped,
             'hits': len(out),
             'avg_branch_elapsed_sec': (
                 (total_expand_elapsed + total_score_elapsed) / total_branches
@@ -886,8 +815,7 @@ def _cs_wrun(args):
         _WORKER['elR'], _WORKER['wboR'],
         _WORKER['elT'], _WORKER['wboT'],
         cfg, cut, orders, core_R,
-        _WORKER['g_P'], _WORKER['g_R_full'],
-        _WORKER['p_orbits'], _WORKER['r_orbits'],
+        _WORKER['g_P'], _WORKER['p_orbits'], _WORKER['r_orbits'],
         return_trace=trace_enabled)
     return {'results': out, 'events': events}
 
@@ -903,9 +831,6 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
                    symmetry_wbo_tol=0.2,
                    n_seeds=3, max_branches=100,
                    chunksize=1,
-                   symmetry_repair=True,
-                   symmetry_repair_min_changes=1,
-                   symmetry_repair_max_evals=20000,
                    n_atoms=0,
                    anchor_map=None):
     anchor_map = {
@@ -925,9 +850,6 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
         'n_seeds': int(n_seeds),
         'max_branches': int(max_branches),
         'chunksize': int(chunksize),
-        'symmetry_repair': bool(symmetry_repair),
-        'symmetry_repair_min_changes': int(symmetry_repair_min_changes),
-        'symmetry_repair_max_evals': int(symmetry_repair_max_evals),
         'abort_on_branch_cap': True,
         'n_atoms': int(n_atoms),
         'anchor_map': anchor_map,
@@ -948,7 +870,7 @@ def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
         cut = tuple(tuple(pair) for pair in cut)
         results, events = _run_cut_work(
             elR, wboR, elT, wboT, cfg, cut, None, core_R,
-            g_P, g_R_full, p_orbits, r_orbits,
+            g_P, p_orbits, r_orbits,
             return_trace=bool(trace_path))
         _emit_trace(trace_path, events)
         for result in results:
@@ -1005,9 +927,6 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
                         symmetry_wbo_tol=0.2,
                         n_seeds=3, max_branches=100,
                         chunksize=1,
-                        symmetry_repair=True,
-                        symmetry_repair_min_changes=1,
-                        symmetry_repair_max_evals=20000,
                         anchor_map=None):
     """Run a chunk of independent cut-sweep work items.
 
@@ -1024,9 +943,6 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
         n_seeds=n_seeds,
         max_branches=max_branches,
         chunksize=chunksize,
-        symmetry_repair=symmetry_repair,
-        symmetry_repair_min_changes=symmetry_repair_min_changes,
-        symmetry_repair_max_evals=symmetry_repair_max_evals,
         n_atoms=len(elR),
         anchor_map=anchor_map,
     )
@@ -1154,9 +1070,6 @@ def cut_sweep(elR, wboR, elT, wboT, *,
               symmetry_wbo_tol=0.2,
               n_seeds=3, max_branches=100,
               chunksize=1,
-              symmetry_repair=True,
-              symmetry_repair_min_changes=1,
-              symmetry_repair_max_evals=20000,
               anchor_map=None):
     """Enumerate mechanism classes via no-cut plus one-edge R cuts.
 
@@ -1181,9 +1094,6 @@ def cut_sweep(elR, wboR, elT, wboT, *,
         n_seeds=n_seeds,
         max_branches=max_branches,
         chunksize=chunksize,
-        symmetry_repair=symmetry_repair,
-        symmetry_repair_min_changes=symmetry_repair_min_changes,
-        symmetry_repair_max_evals=symmetry_repair_max_evals,
         n_atoms=len(elR),
         anchor_map=anchor_map,
     )

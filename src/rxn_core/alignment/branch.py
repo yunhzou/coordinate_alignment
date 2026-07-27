@@ -1,13 +1,12 @@
-"""Branch scheduling, mechanism-state dedupe, and symmetry repair."""
+"""Branch scheduling and mechanism-state dedupe."""
 from __future__ import annotations
 
-import itertools
 import random
 from collections import Counter, defaultdict
 
 import numpy as np
 
-from ..frag import bond_event_threshold, classify_bonds
+from ..frag import bond_event_threshold
 from ..growth import grow_island
 from ..matcher import (
     _boundary_signature,
@@ -17,9 +16,6 @@ from ..matcher import (
     _wbo_bucket,
     as_node_match_policy,
 )
-
-SYM_REPAIR_MAX_EVALS = 20000
-
 
 class BranchLimitExceeded(RuntimeError):
     """Raised when a seed order hits the live branch cap.
@@ -284,21 +280,6 @@ def _alignment_state_signature(mapping, deferred_edges, g_R, g_P,
     return tuple(fixed), tuple(sorted(internal_pairs)), boundary
 
 
-def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
-                          elements_R=None, elements_P=None,
-                          metal_dwbo_threshold=None):
-    broken, formed, _, _ = classify_bonds(
-        mapping, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold,
-        elements_R=elements_R, elements_P=elements_P,
-        metal_dwbo_threshold=metal_dwbo_threshold)
-    delta = 0.0
-    for a, b, wR, wP in broken:
-        delta += abs(float(wR or 0.0) - float(wP or 0.0))
-    for a, b, wR, wP in formed:
-        delta += abs(float(wP or 0.0) - float(wR or 0.0))
-    return (len(broken) + len(formed), round(delta, 12))
-
-
 def _normalize_anchor_map(anchor_map, g_R, g_P):
     if not anchor_map:
         return {}
@@ -324,189 +305,6 @@ def _anchor_nodes_compatible(anchor_map, g_R, g_P, node_policy):
         node_policy.compatible(g_R, r, g_P, p)
         for r, p in anchor_map.items()
     )
-
-
-def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
-                            dwbo_threshold=0.5, bond_floor=0.2,
-                            metal_dwbo_threshold=None,
-                            min_changes=1, full_permutation_size=6,
-                            max_evals=SYM_REPAIR_MAX_EVALS,
-                            return_stats=False):
-    """Choose the best concrete realization inside product symmetry orbits.
-
-    The matcher intentionally compresses high-symmetry choices and keeps one
-    witness.  A witness is not chemistry: if changed-bond endpoints sit inside
-    an unresolved P orbit, another realization of the same compressed match may
-    remove fake broken/formed bonds.  This local search swaps
-    only atoms that already occupy the same product orbit and element.
-    """
-    if not mapping or p_orbits is None:
-        return (mapping, {'enabled': False}) if return_stats else mapping
-    mapping0 = dict(mapping)
-    elements_R = [g_R.nodes[i].get('element') for i in range(wbo_R.shape[0])]
-    elements_P = [g_P.nodes[i].get('element') for i in range(wbo_P.shape[0])]
-    base_broken, base_formed, _, _ = classify_bonds(
-        mapping0, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold,
-        elements_R=elements_R, elements_P=elements_P,
-        metal_dwbo_threshold=metal_dwbo_threshold)
-    base_changes = len(base_broken) + len(base_formed)
-    stats = {
-        'enabled': True,
-        'base_changes': int(base_changes),
-        'repaired': False,
-        'groups': [],
-        'evaluated': 0,
-        'capped': False,
-    }
-    # This is a computational guard only.  Any nonzero changed-bond witness may
-    # be an arbitrary representative artifact, so the default is to attempt
-    # repair for every nonzero case.
-    if base_changes < max(1, int(min_changes)):
-        return (mapping0, stats) if return_stats else mapping0
-
-    inv = {v: r for r, v in mapping0.items()}
-    affected = set()
-    for a, b, _, _ in base_broken:
-        affected.add(a); affected.add(b)
-    for a, b, _, _ in base_formed:
-        if a in inv:
-            affected.add(inv[a])
-        if b in inv:
-            affected.add(inv[b])
-    if not affected:
-        return (mapping0, stats) if return_stats else mapping0
-
-    local = set(affected)
-    for r in list(affected):
-        if r not in g_R:
-            continue
-        for nb in g_R.neighbors(r):
-            if g_R[r][nb].get('wbo', 0.0) >= bond_floor:
-                local.add(nb)
-    for p in {x for edge in base_formed for x in edge[:2]}:
-        if p not in g_P:
-            continue
-        for q in g_P.neighbors(p):
-            if q in inv and g_P[p][q].get('wbo', 0.0) >= bond_floor:
-                local.add(inv[q])
-
-    touched_orbits = set()
-    for r in affected:
-        if r in mapping0:
-            p = mapping0[r]
-            touched_orbits.add((g_R.nodes[r].get('element'), p_orbits[p]))
-    groups = defaultdict(list)
-    for r, p in mapping0.items():
-        key = (g_R.nodes[r].get('element'), p_orbits[p])
-        if key in touched_orbits:
-            groups[key].append(r)
-    groups = {
-        key: sorted(rs) for key, rs in groups.items()
-        if len(rs) > 1
-    }
-    if not groups:
-        return (mapping0, stats) if return_stats else mapping0
-
-    local_pairs = []
-    nR = wbo_R.shape[0]
-    for i in range(nR):
-        for j in range(i + 1, nR):
-            if i not in mapping0 or j not in mapping0:
-                continue
-            if i not in local and j not in local:
-                continue
-            local_pairs.append((i, j, float(wbo_R[i, j])))
-
-    def local_score(m):
-        changed = 0
-        delta = 0.0
-        for i, j, wR in local_pairs:
-            wP = float(wbo_P[m[i], m[j]])
-            threshold = bond_event_threshold(
-                elements_R, i, j,
-                default_threshold=dwbo_threshold,
-                metal_threshold=metal_dwbo_threshold)
-            if wR - wP >= threshold:
-                changed += 1
-                delta += wR - wP
-            elif wP - wR >= threshold:
-                changed += 1
-                delta += wP - wR
-            elif wR >= bond_floor or wP >= bond_floor:
-                delta += abs(wR - wP) * 0.01
-        return (changed, round(delta, 12))
-
-    current = dict(mapping0)
-    current_score = local_score(current)
-    for key, rs in sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])):
-        stats['groups'].append({
-            'element': key[0],
-            'orbit': int(key[1]),
-            'size': len(rs),
-            'atoms': [int(r) for r in rs],
-        })
-    max_passes = max(4, 2 * sum(len(rs) for rs in groups.values()))
-    ordered_groups = [rs for _, rs in sorted(
-        groups.items(), key=lambda item: (-len(item[1]), item[0]))]
-    for _ in range(max_passes):
-        improved = False
-        for rs in ordered_groups:
-            if stats['evaluated'] >= max_evals:
-                stats['capped'] = True
-                break
-            best_score = current_score
-            best_map = None
-            if len(rs) <= full_permutation_size:
-                targets = [current[r] for r in rs]
-                for perm in itertools.permutations(targets):
-                    if stats['evaluated'] >= max_evals:
-                        stats['capped'] = True
-                        break
-                    candidate = dict(current)
-                    for r, p in zip(rs, perm):
-                        candidate[r] = p
-                    score = local_score(candidate)
-                    stats['evaluated'] += 1
-                    if score < best_score:
-                        best_score = score
-                        best_map = candidate
-            else:
-                for a, b in itertools.combinations(rs, 2):
-                    if stats['evaluated'] >= max_evals:
-                        stats['capped'] = True
-                        break
-                    candidate = dict(current)
-                    candidate[a], candidate[b] = candidate[b], candidate[a]
-                    score = local_score(candidate)
-                    stats['evaluated'] += 1
-                    if score < best_score:
-                        best_score = score
-                        best_map = candidate
-            if best_map is not None:
-                current = best_map
-                current_score = best_score
-                improved = True
-        if stats['capped']:
-            break
-        if not improved:
-            break
-
-    best = current
-    best_score = _mapping_change_score(best, wbo_R, wbo_P,
-                                       dwbo_threshold=dwbo_threshold,
-                                       elements_R=elements_R,
-                                       elements_P=elements_P,
-                                       metal_dwbo_threshold=metal_dwbo_threshold)
-    base_score = _mapping_change_score(mapping0, wbo_R, wbo_P,
-                                       dwbo_threshold=dwbo_threshold,
-                                       elements_R=elements_R,
-                                       elements_P=elements_P,
-                                       metal_dwbo_threshold=metal_dwbo_threshold)
-    stats['best_changes'] = int(best_score[0])
-    if best_score < base_score:
-        stats['repaired'] = True
-        return (best, stats) if return_stats else best
-    return (mapping0, stats) if return_stats else mapping0
 
 
 def find_islands(g_R, g_P, seed_order,
@@ -788,62 +586,6 @@ def find_islands(g_R, g_P, seed_order,
         events.append({'type': 'done',
                        'mapped': len(branches[0].mapping)})
     return branches
-
-
-def _chirality_violations(mapping, coords_R, coords_P,
-                          broken, formed, elements_R, min_deg=4):
-    """Count spectator-stereocenter chirality flips.
-    Spectator = atom whose 4+ mapped neighbors are all preserved
-    (no incident broken/formed bond). Sign = sign(det) of first-3
-    neighbor displacement vectors against the 4th. Skip near-coplanar."""
-    bad_atoms = set()
-    for (i, j, _, _) in broken:
-        bad_atoms.add(i); bad_atoms.add(j)
-    inv = {v: k for k, v in mapping.items()}
-    for (ip, jp, _, _) in formed:
-        if ip in inv: bad_atoms.add(inv[ip])
-        if jp in inv: bad_atoms.add(inv[jp])
-
-    # Build neighbor lists from R-coords (assume bond-graph already filtered)
-    # We use "any atom within reasonable bond distance" — use the bond-graph
-    # caller passes us implicitly through coords ordering. For correctness
-    # we re-derive from coords by looking up close neighbors.
-    # Simpler: just take all atoms within 1.9 Å in R as "neighbors".
-    n_R = len(elements_R)
-    diff = coords_R[:, None, :] - coords_R[None, :, :]
-    dist = np.linalg.norm(diff, axis=2)
-    np.fill_diagonal(dist, np.inf)
-    violations = 0
-    checked = 0
-    for u in range(n_R):
-        if u in bad_atoms: continue
-        if u not in mapping: continue
-        nbrs = np.where(dist[u] < 1.9)[0].tolist()
-        # all must be mapped + spectator
-        if len(nbrs) < min_deg: continue
-        if any(nb not in mapping for nb in nbrs): continue
-        if any(nb in bad_atoms for nb in nbrs): continue
-        # take first 4 neighbors
-        nb4 = nbrs[:4]
-        # signed volume in R-frame
-        ru = coords_R[u]
-        v1 = coords_R[nb4[1]] - coords_R[nb4[0]]
-        v2 = coords_R[nb4[2]] - coords_R[nb4[0]]
-        v3 = coords_R[nb4[3]] - coords_R[nb4[0]]
-        det_R = float(np.linalg.det(np.stack([v1, v2, v3])))
-        # corresponding atoms in P-frame
-        pu = coords_P[mapping[u]]
-        pn = [coords_P[mapping[nb]] for nb in nb4]
-        v1p = pn[1] - pn[0]
-        v2p = pn[2] - pn[0]
-        v3p = pn[3] - pn[0]
-        det_P = float(np.linalg.det(np.stack([v1p, v2p, v3p])))
-        if abs(det_R) < 0.05 or abs(det_P) < 0.05:
-            continue  # near-coplanar; sign unstable
-        checked += 1
-        if np.sign(det_R) != np.sign(det_P):
-            violations += 1
-    return violations
 
 
 def _ordered_seed_nodes(g_R, rng, common_element_threshold=3):

@@ -86,6 +86,52 @@ def test_rp_cut_chunks_merge_matches_direct_stage():
     assert merged["mechanisms"][0]["mapping_RP"] == direct["mechanisms"][0]["mapping_RP"]
 
 
+def test_rp_cut_chunk_merge_rejects_legacy_mapping_policy():
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 0.9
+    inputs = pipeline.step_inputs_from_arrays(
+        "h2",
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]]),
+        wbo,
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]]),
+        wbo,
+    )
+    cfg = pipeline.rp_stage_config()
+    cfg["n_seeds"] = 1
+    chunk = pipeline.run_rp_cut_chunk(inputs, [()], config=cfg)
+    chunk["config"] = {
+        key: value
+        for key, value in chunk["config"].items()
+        if key != "mapping_policy"
+    }
+
+    with pytest.raises(RuntimeError, match="mapping policy"):
+        pipeline.merge_rp_cut_chunks(inputs, [chunk], config=cfg)
+
+
+def test_ts_stage_rejects_legacy_rp_result():
+    wbo = np.zeros((1, 1))
+    inputs = pipeline.step_inputs_from_arrays(
+        "h",
+        ["H"],
+        np.array([[0.0, 0.0, 0.0]]),
+        wbo,
+        ["H"],
+        np.array([[0.0, 0.0, 0.0]]),
+        wbo,
+    )
+
+    with pytest.raises(
+            RuntimeError, match="native symmetry-assignment matcher"):
+        pipeline.run_ts_stage(
+            inputs,
+            {"config": {}, "mechanisms": []},
+            [],
+        )
+
+
 def test_merge_ts_stage_chunks_recomputes_global_top_flags():
     chunk_a = {
         "stage": "ts",
@@ -805,7 +851,6 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
     )
     cfg = pipeline.rp_stage_config()
     cfg["n_seeds"] = 1
-    cfg["symmetry_repair"] = False
 
     result = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=0)
 
@@ -857,7 +902,7 @@ def test_rp_alignment_file_export_is_neb_ready(tmp_path):
     mdir = tmp_path / "mechanisms" / "mechanism_001"
     assert (mdir / "R.xyz").exists()
     assert (mdir / "P_aligned.xyz").exists()
-    assert (mdir / "neb_endpoints.xyz").read_text().count("\n2\n") == 1
+    assert (mdir / "path_endpoints.xyz").read_text().count("\n2\n") == 1
     assert "R_index,R_element,P_index,P_element" in (
         mdir / "mapping_R_to_P.csv").read_text()
 

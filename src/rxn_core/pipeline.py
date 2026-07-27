@@ -35,6 +35,9 @@ from rxn_core.alignment.sweep import (
     combine_branch_symmetry_witnesses,
     run_no_cut_core_branch_records,
 )
+from rxn_core.alignment.index_chirality import (
+    select_index_chirality_assignment,
+)
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
 )
@@ -73,6 +76,9 @@ CUT_FLOOR = float(os.environ.get("BGCP_CUT_FLOOR", "0.2"))
 N_SEEDS_PER_RUN = 3  # cut + seed are orthogonal diversity sources; keep both modest
 VIEW_MAX_BRANCHES = int(os.environ.get("BGCP_VIEW_MAX_BRANCHES", "100"))
 CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
+RP_MAPPING_POLICY = "native_symmetry_assignment/v2"
+INDEX_CHIRALITY_POLICY = os.environ.get(
+    "BGCP_INDEX_CHIRALITY", "off").strip().lower()
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 DWBO_THRESHOLD = float(os.environ.get("BGCP_DWBO_THRESHOLD", "0.5"))
 METAL_DWBO_THRESHOLD = float(os.environ.get("BGCP_METAL_DWBO_THRESHOLD", "0.3"))
@@ -81,9 +87,6 @@ BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
     "1", "true", "yes", "on"
 }
-SYMMETRY_REPAIR = os.environ.get("BGCP_SYMMETRY_REPAIR", "1") != "0"
-SYMMETRY_REPAIR_MIN_CHANGES = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MIN_CHANGES", "1"))
-SYMMETRY_REPAIR_MAX_EVALS = int(os.environ.get("BGCP_SYMMETRY_REPAIR_MAX_EVALS", "20000"))
 TS_ALIGN_GRAPH_FLOOR = float(os.environ.get("BGCP_TS_ALIGN_GRAPH_FLOOR", "0.2"))
 TS_ALIGN_MAX_CORE_MAPS = int(os.environ.get("BGCP_TS_ALIGN_MAX_CORE_MAPS", "20000"))
 PREFER_ENDPOINT_CONSENSUS = (
@@ -183,9 +186,8 @@ def rp_stage_config():
         'n_seeds': N_SEEDS_PER_RUN,
         'max_branches': VIEW_MAX_BRANCHES,
         'chunksize': CUTSWEEP_CHUNKSIZE,
-        'symmetry_repair': SYMMETRY_REPAIR,
-        'symmetry_repair_min_changes': SYMMETRY_REPAIR_MIN_CHANGES,
-        'symmetry_repair_max_evals': SYMMETRY_REPAIR_MAX_EVALS,
+        'mapping_policy': RP_MAPPING_POLICY,
+        'index_chirality': INDEX_CHIRALITY_POLICY,
         'anchor_map': {},
     }
 
@@ -1496,7 +1498,7 @@ def _safe_file_stem(value):
 
 
 def write_rp_alignment_files(inputs, rp_result, out_dir=None):
-    """Write clean Stage 1 alignment files for NEB/path-building use.
+    """Write clean Stage 1 alignment files for downstream path building.
 
     Coordinates are only reindexed into the R atom frame.  No spatial fitting
     is applied.  Each mechanism directory is self-contained and
@@ -1539,7 +1541,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
             f"{inputs.step_name} {name} P aligned to R atom order")
         (mdir / "R.xyz").write_text(r_xyz)
         (mdir / "P_aligned.xyz").write_text(p_xyz)
-        (mdir / "neb_endpoints.xyz").write_text(r_xyz + p_xyz)
+        (mdir / "path_endpoints.xyz").write_text(r_xyz + p_xyz)
 
         rows = ["R_index,R_element,P_index,P_element"]
         for r in sorted(mapping_RP):
@@ -1564,7 +1566,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
             'files': {
                 'reactant': 'R.xyz',
                 'product_aligned': 'P_aligned.xyz',
-                'neb_endpoints': 'neb_endpoints.xyz',
+                'path_endpoints': 'path_endpoints.xyz',
                 'mapping_csv': 'mapping_R_to_P.csv',
             },
             'coordinate_policy': (
@@ -1579,7 +1581,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
             'directory': f"mechanisms/{name}",
             'reactant': f"mechanisms/{name}/R.xyz",
             'product_aligned': f"mechanisms/{name}/P_aligned.xyz",
-            'neb_endpoints': f"mechanisms/{name}/neb_endpoints.xyz",
+            'path_endpoints': f"mechanisms/{name}/path_endpoints.xyz",
             'metadata': f"mechanisms/{name}/mechanism.json",
             'mapping_csv': f"mechanisms/{name}/mapping_R_to_P.csv",
             'broken_bonds_R': mech.get('broken_bonds_R', []),
@@ -1600,7 +1602,7 @@ def write_rp_alignment_files(inputs, rp_result, out_dir=None):
         'mechanisms': manifest_mechs,
         'coordinate_policy': (
             'All mechanism P endpoints are reindexed into the R atom frame. '
-            'The files are intended for downstream path/NEB setup that needs '
+            'The files are intended for downstream path setup that needs '
             'matching atom order.'
         ),
     }
@@ -1771,7 +1773,32 @@ def write_ts_alignment_files(inputs, ts_result, out_dir=None):
 
 
 def _rp_cfg(config=None):
-    return dict(rp_stage_config() if config is None else config)
+    defaults = rp_stage_config()
+    if config is None:
+        normalized = defaults
+    else:
+        supplied = dict(config)
+        normalized = {
+            key: supplied.get(key, default)
+            for key, default in defaults.items()
+        }
+    normalized['mapping_policy'] = RP_MAPPING_POLICY
+    policy = str(normalized.get('index_chirality', 'off')).strip().lower()
+    if policy not in {'off', 'preserve'}:
+        raise ValueError(
+            "index_chirality must be 'off' or 'preserve'")
+    normalized['index_chirality'] = policy
+    return normalized
+
+
+def _require_native_rp_result(rp_result, *, context):
+    policy = (rp_result.get('config') or {}).get('mapping_policy')
+    if policy != RP_MAPPING_POLICY:
+        raise RuntimeError(
+            f"{context} requires a Stage-1 result generated under "
+            f"{RP_MAPPING_POLICY!r}; found {policy!r}. Rerun Stage 1 with "
+            "the current native symmetry-assignment matcher."
+        )
 
 
 def _rp_cut_kwargs(cfg):
@@ -1786,11 +1813,6 @@ def _rp_cut_kwargs(cfg):
         'n_seeds': cfg.get('n_seeds', N_SEEDS_PER_RUN),
         'max_branches': cfg.get('max_branches', VIEW_MAX_BRANCHES),
         'chunksize': cfg.get('chunksize', CUTSWEEP_CHUNKSIZE),
-        'symmetry_repair': cfg.get('symmetry_repair', SYMMETRY_REPAIR),
-        'symmetry_repair_min_changes': cfg.get(
-            'symmetry_repair_min_changes', SYMMETRY_REPAIR_MIN_CHANGES),
-        'symmetry_repair_max_evals': cfg.get(
-            'symmetry_repair_max_evals', SYMMETRY_REPAIR_MAX_EVALS),
         'anchor_map': cfg.get('anchor_map') or {},
     }
 
@@ -1820,6 +1842,64 @@ def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0,
         'trace_path': str(trace_path) if trace_path else None,
         'timing': {'rp_cut_chunk_seconds': time.time() - t0},
     }
+
+
+def _apply_index_chirality_assignment(inputs, mechanism, cfg):
+    """Select one preserving member of the mechanism's symmetry family."""
+    source_mapping = _int_mapping(mechanism['mapping_RP'])
+    selection = select_index_chirality_assignment(
+        source_mapping,
+        mechanism.get('branch_symmetry'),
+        inputs.elR,
+        inputs.xyzR,
+        inputs.wboR,
+        inputs.elP,
+        inputs.xyzP,
+        inputs.wboP,
+        anchor_map=cfg.get('anchor_map') or {},
+        graph_floor=cfg.get('graph_floor', 0.2),
+        dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        metal_dwbo_threshold=cfg.get(
+            'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+    )
+    mapping_RP = dict(selection.selected_mapping)
+    inv_RP = {p: r for r, p in mapping_RP.items()}
+    broken, formed, _, _ = classify_bonds(
+        mapping_RP,
+        inputs.wboR,
+        inputs.wboP,
+        dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        elements_R=inputs.elR,
+        elements_P=inputs.elP,
+        metal_dwbo_threshold=cfg.get(
+            'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+    )
+    broken_R = [(int(a), int(b)) for a, b, _, _ in broken]
+    formed_R = [
+        (int(inv_RP[a]), int(inv_RP[b]))
+        for a, b, _, _ in formed
+        if a in inv_RP and b in inv_RP
+    ]
+    xyzP_in_R = np.asarray(inputs.xyzR, float).copy()
+    for r, p in mapping_RP.items():
+        xyzP_in_R[r] = inputs.xyzP[p]
+
+    branch_symmetry = dict(mechanism.get('branch_symmetry') or {})
+    branch_symmetry['active_assignment_family'] = (
+        'index_chirality.native_symcand/v3')
+    branch_symmetry['index_chirality'] = selection.metadata
+    mechanism['mapping_RP'] = mapping_RP
+    mechanism['broken_bonds_R'] = broken_R
+    mechanism['formed_bonds_R'] = formed_R
+    mechanism['formed_bonds_P'] = [
+        [int(a), int(b)] for a, b, _, _ in formed]
+    mechanism['core_atoms'] = [
+        int(r)
+        for r in core_atoms_in_R_frame(mapping_RP, broken, formed)
+    ]
+    mechanism['product_xyz_in_R'] = xyzP_in_R.tolist()
+    mechanism['branch_symmetry'] = branch_symmetry
+    return mechanism
 
 
 def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
@@ -1878,6 +1958,11 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         build_graph(inputs.elR, inputs.wboR, bond_cut=0.2),
         wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL))
     mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
+    if cfg.get('index_chirality') == 'preserve':
+        mechanisms = [
+            _apply_index_chirality_assignment(inputs, mechanism, cfg)
+            for mechanism in mechanisms
+        ]
     return {
         'stage': 'rp',
         'step': inputs.step_name,
@@ -1891,6 +1976,13 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
 def merge_rp_cut_chunks(inputs, chunks, config=None):
     """Merge partial R-P cut chunks and finalize the Stage 1 result."""
     t0 = time.time()
+    for index, chunk in enumerate(chunks):
+        policy = (chunk.get('config') or {}).get('mapping_policy')
+        if policy != RP_MAPPING_POLICY:
+            raise RuntimeError(
+                f"R-P cut chunk {index} uses mapping policy {policy!r}; "
+                f"expected {RP_MAPPING_POLICY!r}"
+            )
     pool = merge_cut_sweep_pools([chunk.get('pool', {}) for chunk in chunks])
     elapsed = sum(
         float((chunk.get('timing') or {}).get('rp_cut_chunk_seconds', 0.0))
@@ -1982,6 +2074,7 @@ def _selected_mechanisms(rp_result, mechanism_ids=None):
 def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
                  mechanism_ids=None):
     """Stage 2: verify GT/IG/TS targets under selected mechanisms."""
+    _require_native_rp_result(rp_result, context="Stage 2")
     cfg = dict(ts_stage_config() if config is None else config)
     mechanisms = _selected_mechanisms(rp_result, mechanism_ids)
     for mech in mechanisms:
@@ -2870,6 +2963,7 @@ def main():
     global XTB_WORKERS
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, METAL_DWBO_THRESHOLD, SYMMETRY_WBO_TOL
+    global INDEX_CHIRALITY_POLICY
     global EVENT_WEIGHT_POWER, WBO_PROGRESS_POWER
     global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
@@ -2941,6 +3035,17 @@ def main():
                     default=SYMMETRY_WBO_TOL,
                     help="WBO tolerance for symmetry-orbit bucketing. "
                          "Default from BGCP_SYMMETRY_WBO_TOL=0.2.")
+    ap.add_argument(
+        "--index-chirality",
+        choices=("off", "preserve"),
+        default=INDEX_CHIRALITY_POLICY,
+        help=(
+            "Constrain native symmetry assignments to preserve every "
+            "defined persistent R-index local orientation. This filters "
+            "existing AAM assignments; it does not add mappings. Default "
+            "from BGCP_INDEX_CHIRALITY=off."
+        ),
+    )
     ap.add_argument("--event-weight-power", type=float,
                     default=EVENT_WEIGHT_POWER,
                     help="Exponent on each detected R-P event's |delta WBO| "
@@ -3056,6 +3161,7 @@ def main():
     DWBO_THRESHOLD = float(args.dwbo_threshold)
     METAL_DWBO_THRESHOLD = float(args.metal_dwbo_threshold)
     SYMMETRY_WBO_TOL = float(args.symmetry_wbo_tol)
+    INDEX_CHIRALITY_POLICY = str(args.index_chirality)
     EVENT_WEIGHT_POWER = float(args.event_weight_power)
     WBO_PROGRESS_POWER = float(args.wbo_progress_power)
     STAGE_ROOT = Path(args.stage_root)
@@ -3077,6 +3183,7 @@ def main():
     os.environ["BGCP_DWBO_THRESHOLD"] = str(DWBO_THRESHOLD)
     os.environ["BGCP_METAL_DWBO_THRESHOLD"] = str(METAL_DWBO_THRESHOLD)
     os.environ["BGCP_SYMMETRY_WBO_TOL"] = str(SYMMETRY_WBO_TOL)
+    os.environ["BGCP_INDEX_CHIRALITY"] = INDEX_CHIRALITY_POLICY
     os.environ["BGCP_EVENT_WEIGHT_POWER"] = str(EVENT_WEIGHT_POWER)
     os.environ["BGCP_WBO_PROGRESS_POWER"] = str(WBO_PROGRESS_POWER)
     os.environ["BGCP_STAGE_ROOT"] = str(STAGE_ROOT)
@@ -3307,6 +3414,7 @@ def main():
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
+              f"index_chirality={INDEX_CHIRALITY_POLICY}, "
               f"event_weight_power={EVENT_WEIGHT_POWER}, "
               f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
@@ -3332,6 +3440,7 @@ def main():
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
+              f"index_chirality={INDEX_CHIRALITY_POLICY}, "
               f"event_weight_power={EVENT_WEIGHT_POWER}, "
               f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "
@@ -3368,6 +3477,7 @@ def main():
               f"iso_tol={VIEW_ISO_TOL}, dwbo={DWBO_THRESHOLD}, "
               f"metal_dwbo={METAL_DWBO_THRESHOLD}, "
               f"sym_wbo_tol={SYMMETRY_WBO_TOL}, "
+              f"index_chirality={INDEX_CHIRALITY_POLICY}, "
               f"event_weight_power={EVENT_WEIGHT_POWER}, "
               f"wbo_progress_power={WBO_PROGRESS_POWER}, "
               f"xtb_mode={XTB_CACHE_MODE}, "

@@ -97,9 +97,10 @@ The implementation is split by abstraction; see
 9. **Public API returns witnesses, not total bijections.** `align_from_arrays`
    and downstream scoring receive ordinary dict witnesses, but those dicts are
    selected representatives of compressed symmetry states.  Unmapped spectators
-   must not be completed by geometry.  Before scoring a finished R<->P witness,
-   a bounded local symmetry repair may choose a lower bond-change realization
-   inside touched product orbits.
+   must not be completed by geometry.  After a branch witness is materialized
+   from the compressed symmetry state, it is scored without any orbit-based
+   post-match permutation. Alternative representatives must be carried by the
+   compressed search state itself.
 
 ## Symmetry-Aware Candidate Growth
 
@@ -371,8 +372,7 @@ look symmetric.
 
 `align_from_arrays(...)` builds graphs, generates seed orders, runs
 `find_islands`, materializes one justified witness from each compressed branch,
-applies final symmetry repair for R<->P mappings, classifies bonds, and scores
-branches by:
+classifies bonds on that materialized witness, and scores branches by:
 
 ```
 (number of broken + formed bonds,
@@ -382,34 +382,125 @@ branches by:
 The best lexicographic score wins.  `return_all=True` returns all scored
 branches for view/ranking workflows.
 
-### Final R<->P Symmetry Repair
+### Native R<->P Witness Contract
 
-Compressed growth may still return one legal witness from a symmetric product
-orbit.  If that witness creates many bond changes, the final repair pass
-searches only the product symmetry orbits touched by current broken/formed
-bond endpoints:
+Symmetry is resolved only by the graph-growth state and its retained
+alternatives. Once a concrete R<->P witness has been materialized from that
+state, mechanism classification and scoring must use the same atom
+assignments. Product automorphism orbits may canonicalize mechanism
+signatures, but bare orbit membership never authorizes a later permutation of
+the witness. The optional constraint below reads concrete witnesses and raw
+nested symmetry records already retained by AAM; it does not infer permission
+from orbit membership or per-index image domains.
+
+### Optional Index-Chirality Constraint
+
+`index_chirality=preserve` adds a constraint to the final native symmetry
+assignment; it does not change fragment growth or mechanism discovery.
+
+The atomic candidate seeds are:
+
+- the selected source mapping;
+- each concrete complete branch witness; and
+- each nested alternate patched atomically onto its complete owner, provided
+  the result is still a valid bijection.
+
+An alternate is never split into independent per-index choices. The native v3
+frame definition is also discrete and unique:
+
+1. the R center must have exactly four active graph neighbors;
+2. all four source-mapped neighbors must remain adjacent to the mapped P
+   center; and
+3. the four neighbors are ordered by R index as
+   `n0 < n1 < n2 < n3`.
+
+There is one affine tetrahedral frame for that center, with sign
 
 ```
-affected atoms = endpoints of current broken bonds
-               + R-frame endpoints of current formed bonds
-touched groups = mapped atoms with same (element, product orbit)
+det(X[n1]-X[n0], X[n2]-X[n0], X[n3]-X[n0])
 ```
 
-Within each touched group, the repair swaps images already assigned to that
-same `(element, product orbit)` group.  It never introduces a new spectator
-target outside the compressed alignment.  The score is:
+The first neighbor, not the central atom, is the affine origin. Consequently,
+any permutation of the four neighbor labels changes the frame sign exactly
+when that permutation is odd. The reported normalized value divides by the
+three vector lengths, but definedness is determined from the raw determinant.
+The implementation evaluates its six terms in long-double arithmetic and
+compares the determinant only with a scale-aware roundoff bound derived from
+machine epsilon. Exactly degenerate or numerically indeterminate frames are
+diagnostic and neutral. Three-coordinate and higher-coordinate centers do not
+define this tetrahedral parity. There is no dataset-tuned volume cutoff.
 
-```
-(number of broken + formed bonds,
- total absolute WBO delta on changed bonds)
+### Fragment-Local Parity Authority
+
+An implicit parity route is built from exactly one nested fragment symmetry
+state. It may contain multiple blocks only when those blocks coexist in that
+same state and their R sets and P pools are pairwise disjoint. Each usable
+block must be:
+
+- raw and untagged;
+- closed;
+- equal-size with unique R and P atoms; and
+- occupied bijectively by the route's base mapping.
+
+The base is either the complete owner witness or one atomic alternate belonging
+to that same fragment. The alternate is patched first and its own complete
+mapping is then checked against the fragment's block pools. A block from one
+fragment is never combined with a block or alternate from another historical
+fragment. Aggregated top-level blocks, tagged summaries, open/unequal blocks,
+and image-domain summaries provide no parity authority.
+
+Hard anchors and the fragment state's `exact_fixed` R atoms are frozen. They
+cannot participate in the canonical odd representative. If fewer than two
+element-compatible unfrozen atoms remain, that block supplies no variable.
+
+For one route, each remaining block `Bj` contributes one bit:
+
+```text
+xj = 0  keep the base block parity
+xj = 1  use the deterministic canonical odd representative
 ```
 
-Groups of size up to 6 may try full within-group permutations; larger groups
-use improving pair swaps.  The pass is capped by `SYM_REPAIR_MAX_EVALS`
-(default `20000`; `BGCP_SYMMETRY_REPAIR_MAX_EVALS` in the view builder).
-This is the pr17 TS6a fix: the O/C shell can reshuffle within product orbits
-so equivalent O-C pairs stay paired, while the true mechanism-level bond
-breaking/forming remains.
+A block can affect a tetrahedral equation only if all of its R atoms are among
+that frame's four neighbors. A block containing the center or only partially
+intersecting the neighbor shell is unsupported for that route; no arbitrary
+partial-shell permutation is inferred. For each hard frame `f`, v3 constructs
+
+```text
+XOR(xj for Bj wholly contained in f.neighbors)
+    = 1 if the base frame is reversed, else 0
+```
+
+All coexisting block bits and frame equations are solved together by
+deterministic Gaussian elimination over `GF(2)`. Inconsistent systems reject
+the parity route. Every unconstrained free variable is fixed to `0`, so unused
+symmetry is not shuffled. A `1` bit is materialized by the canonical
+element-compatible transposition chosen by minimum source-mapping changes and
+then canonical mapping order. This transposition is a representative of the
+solved odd parity, not a step in a local search.
+
+Every base seed must satisfy the anchors and exactly equal the source mapping's
+R-index broken/formed event signature. Every parity-materialized mapping is
+checked again against the same anchors, exact mechanism signature, and hard
+frame signs. Reaction-event incidence is serialized on frames for diagnosis
+only; it does not remove or weaken a parity equation.
+
+A defined frame is a hard constraint when it contains at least one R atom that
+can change in an authorized atomic route or an unfrozen parity block. A frame
+with no such atom is immutable under AAM; a reversed endpoint orientation is
+recorded as a diagnostic, not used to reject the mapping or invent a shuffle.
+If no evaluated atomic or solved parity candidate has zero hard-frame
+violations, `preserve` reports a conflict. Otherwise selection minimizes
+changes from the source mapping and then uses canonical mapping order. No
+spatial fit, reflection, or coordinate transformation participates in
+assignment selection.
+
+The evaluated atomic routes, fragment-local equations and solution bits,
+switchable atoms, frame classification, and invariants are serialized in
+`branch_symmetry.index_chirality`. The output is a full bijection from the
+recorded AAM choices. There is no greedy swap walk, cross-fragment block
+composition, product automorphism generation, group closure, independent
+image-domain expansion, block-permutation enumeration, factorial candidate
+materialization, action cap, or chirality-specific numerical threshold.
 
 ## Sweep-Cut Mechanism Discovery
 
@@ -473,10 +564,8 @@ This makes ranking symmetry/core based instead of full-bijection based.  R-P
 cut-sweep work is never skipped by a wall-clock timeout; slow cuts must finish
 or be stopped by the caller.
 
-R<->P work units also apply the bounded final symmetry repair by default
-(`BGCP_SYMMETRY_REPAIR=1`).  It can be disabled for debugging with
-`BGCP_SYMMETRY_REPAIR=0`, and its local search cap is controlled by
-`BGCP_SYMMETRY_REPAIR_MAX_EVALS`.
+R<->P work units classify and score each materialized branch witness without
+post-processing its atom assignments.
 
 The view still applies a final mechanism dedupe before rendering:
 
@@ -550,6 +639,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `iso_tol` | `1.0` | WBO tolerance during candidate extension |
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `symmetry_wbo_tol` | `0.2` | WBO tolerance for exact automorphism orbit bucketing |
+| `index_chirality` | `off` | set to `preserve` for exact affine tetrahedral index parity over atomic native AAM mappings and coherent fragment-local closed-block `GF(2)` equations |
 | `max_branches` | `1_000_000` | live branch cap for direct low-level matching |
 | `BGCP_VIEW_MAX_BRANCHES` | `100` | R-P cut-sweep branch cap; a cut is discarded if any seed order reaches it |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
@@ -557,6 +647,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
 | `BGCP_DWBO_THRESHOLD` | `0.5` | WBO delta threshold for BGCP broken/formed bond classification |
 | `BGCP_SYMMETRY_WBO_TOL` | `0.2` | WBO tolerance for BGCP symmetry-orbit bucketing |
+| `BGCP_INDEX_CHIRALITY` | `off` | native Stage-1 index-chirality policy: `off` or `preserve` |
 | `BGCP_W_RXN` | `1.0` | reaction-coordinate overlap score weight |
 | `BGCP_W_CORE` | `0.2` | core-mode fraction score weight |
 | `BGCP_IMAG_PEN` | `0.3` | imaginary-mode count penalty exponent |

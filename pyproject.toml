@@ -24,7 +24,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ase>=3.22"]
+path = ["ase>=3.22"]
 smiles = ["rdkit>=2022.9"]
 sessions = ["pymongo>=4.6"]
 

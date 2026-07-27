@@ -23,6 +23,8 @@ SMILES/CXSMILES formal-WBO mode uses RDKit; install it with
 `python -m pip install -e '.[smiles]'` or from conda-forge in the same
 environment. The local webapp can persist sessions in MongoDB/GridFS; install
 that optional dependency with `python -m pip install -e '.[sessions]'`.
+The optional internal-coordinate path/viewer tooling uses ASE's IDPP
+implementation; install it with `python -m pip install -e '.[path]'`.
 
 Verify the installed import and command line:
 
@@ -170,10 +172,10 @@ rxn-core --stage rp --name anchored_rp \
 ```
 
 For direct R-P mode, `--anchor R:P` is enforced through every cut-sweep island
-search and symmetry-repair step. If an anchor is incompatible with the
-available chemistry graph, the anchored run returns no matching mechanism
-instead of silently choosing a different atom. `--subgraph-anchor` is accepted
-as an alias in direct R-P mode for anchor maps exported by the picker.
+search. If an anchor is incompatible with the available chemistry graph, the
+anchored run returns no matching mechanism instead of silently choosing a
+different atom. `--subgraph-anchor` is accepted as an alias in direct R-P mode
+for anchor maps exported by the picker.
 
 For an interactive local picker, open:
 
@@ -328,7 +330,7 @@ The pipeline is split into three resumable stages.
 # Stage 1: R-P alignment and mechanism discovery only
 rxn-core --stage rp --steps pr7.V.dodh_ts910 --workers 8
 
-# Stage 1 plus clean mechanism-specific aligned R/P files for NEB/path setup
+# Stage 1 plus clean mechanism-specific aligned R/P files for path setup
 rxn-core --stage rp --steps pr7.V.dodh_ts910 --save-alignment-files
 
 # Post-Stage-1 collective validation plus selected best-S TS core-aligned files
@@ -465,7 +467,7 @@ out/bgcp_stages/<step>/ts_stage.json
 out/bgcp_alignments/<step>/manifest.json
 out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/R.xyz
 out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/P_aligned.xyz
-out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/neb_endpoints.xyz
+out/bgcp_alignments/<step>/mechanisms/mechanism_<id>/path_endpoints.xyz
 out/bgcp_alignments/<step>/ts_alignments/manifest.json
 out/bgcp_alignments/<step>/ts_alignments/mechanisms/mechanism_<id>/<target>/TS_native.xyz
 out/bgcp_alignments/<step>/ts_alignments/mechanisms/mechanism_<id>/<target>/TS_core_aligned_R_frame.xyz
@@ -481,9 +483,399 @@ mechanism, and `viewer_data.json` with the full data used by the HTML view.
 When `--save-alignment-files` is set, Stage 1 also writes a clean aligned
 coordinate package under `out/bgcp_alignments/<step>/`. Each mechanism
 directory is self-contained and includes `R.xyz`, `P_aligned.xyz`, a
-two-frame `neb_endpoints.xyz`, `mapping_R_to_P.csv`, and `mechanism.json`.
+two-frame `path_endpoints.xyz`, `mapping_R_to_P.csv`, and `mechanism.json`.
 `P_aligned.xyz` is product geometry reindexed into the R atom order; no
 spatial fitting is applied.
+
+### Native index-chirality-preserving AAM
+
+`--index-chirality preserve` makes the final Stage 1 atom assignment preserve
+the R-index orientation of every defined tetrahedral frame that the recorded
+AAM symmetry choices can change. It is disabled by default; `off` is a true
+no-op.
+
+The selected mapping is still a full, element-preserving R-to-P bijection from
+the assignment family already encoded by AAM. The method can materialize an
+implicit odd/even choice from a recorded closed symmetry block, but it never
+discovers a new automorphism, invents a new atom choice, or changes the
+mechanism to repair geometry.
+
+This runs natively while Stage 1 finalizes each mechanism, before
+`rp_stage.json` is written. `_SymCand` growth, cut sweeping, graph matching,
+and mechanism deduplication keep their existing logic; the new selector
+consumes their serialized witnesses, alternates, and symmetry blocks.
+
+#### Run one XYZ pair
+
+Use real 3D endpoint geometries. This command computes missing WBO caches with
+xtb, runs Stage 1 with the native constraint, and writes both the certificate
+and R/P files:
+
+```bash
+BGCP_OUT_ROOT=out/native_chirality/views \
+rxn-core --stage rp --name my_case \
+  --reactant-xyz R.xyz --product-xyz P.xyz \
+  --workdir work/my_case \
+  --charge 0 --multiplicity 1 --xtb-mode auto \
+  --index-chirality preserve --workers 8 \
+  --stage-root out/native_chirality/stages \
+  --alignment-out-root out/native_chirality/alignments \
+  --save-alignment-files
+```
+
+The important outputs are:
+
+```text
+out/native_chirality/stages/my_case/rp_stage.json
+out/native_chirality/views/my_case/view.html
+out/native_chirality/alignments/my_case/manifest.json
+out/native_chirality/alignments/my_case/mechanisms/mechanism_<NNN>/R.xyz
+out/native_chirality/alignments/my_case/mechanisms/mechanism_<NNN>/P_aligned.xyz
+out/native_chirality/alignments/my_case/mechanisms/mechanism_<NNN>/path_endpoints.xyz
+out/native_chirality/alignments/my_case/mechanisms/mechanism_<NNN>/mapping_R_to_P.csv
+```
+
+`P_aligned.xyz` is P reindexed into the selected R atom order. Stage 1 does
+not translate, rotate, Kabsch-fit, reflect, or otherwise modify either
+endpoint geometry.
+
+For a fully cached run, place the WBO files at:
+
+```text
+work/my_case/endpoints/R/wbo
+work/my_case/endpoints/P/wbo
+```
+
+Their atom order must match the corresponding input XYZ files. Then use the
+same command with `--xtb-mode cache-only`. R and P must have the same atom
+count and elemental composition.
+
+Standard `--steps` mode uses a different historical layout:
+
+```text
+<BGCP_WORK>/<case>/R/<endpoint>.xyz
+<BGCP_WORK>/<case>/R/wbo
+<BGCP_WORK>/<case>/P/<endpoint>.xyz
+<BGCP_WORK>/<case>/P/wbo
+```
+
+Run multiple cases from that layout with:
+
+```bash
+BGCP_WORK=/path/to/work \
+BGCP_OUT_ROOT=out/native_chirality/views \
+rxn-core --stage rp --steps TS_01 TS_04 \
+  --index-chirality preserve \
+  --workers 40 --parallel-mode auto \
+  --stage-root out/native_chirality/stages \
+  --alignment-out-root out/native_chirality/alignments \
+  --save-alignment-files --xtb-mode cache-only
+```
+
+`--workers` is the total CPU budget. For one direct XYZ case it is used for
+the inner cut-sweep work; for multiple standard cases, `--parallel-mode auto`
+divides it between case-level and inner work.
+
+Do not use `--stage view`, `--stage post-rp`, or `--resume-rp` to convert an
+old `rp_stage.json` made with `index_chirality=off`: those modes reuse the
+stored mapping. Run Stage 1 again with `preserve`. Planar coordinates generated
+from SMILES are useful for graph examples but generally cannot certify 3D
+tetrahedral endpoint orientation.
+
+#### Intended algorithm in plain language
+
+1. Find each R atom with exactly four active graph neighbors whose four mapped
+   neighbors remain attached to the mapped P center.
+2. Record the orientation sign of those four neighbor labels in R and P.
+3. Read possible assignments only from the existing AAM object: the source
+   mapping, complete branch witnesses, correlated nested alternates, and
+   eligible closed symmetry blocks.
+4. Freeze anchors, `exact_fixed` atoms, and the exact broken/formed-bond
+   signature. Solve the remaining closed-block odd/even choices together as
+   XOR equations over `GF(2)`.
+5. Keep only authorized mappings with zero mismatches on every defined,
+   switchable frame. Select the one with the fewest changes from the source
+   witness, then use canonical mapping order as the deterministic tie-break.
+
+This is a bounded parity finalization on top of AAM metadata. It is not a
+greedy swap repair and does not enumerate all permutations of a symmetry
+group. The base AAM search can still be the expensive part, but this
+finalization has no factorial candidate expansion.
+
+#### Frame definition
+
+For the four R-index-ordered neighbors `n0 < n1 < n2 < n3`, the frame sign is
+the affine orientation
+
+```text
+det(X[n1] - X[n0], X[n2] - X[n0], X[n3] - X[n0])
+```
+
+of the four neighbor points. The center atom is deliberately not the
+determinant origin. An odd relabeling of the four neighbors therefore reverses
+the sign, while an even relabeling preserves it.
+
+This is R-index label parity, not a CIP `R`/`S` assignment. Three-coordinate
+centers and centers with more than four R graph neighbors do not define this
+four-label constraint.
+
+The determinant is evaluated in long-double arithmetic. A frame is undefined
+only when it is exactly degenerate or its sign cannot be distinguished from
+floating-point roundoff using a deterministic, scale-aware error bound derived
+from machine epsilon. A planar four-neighbor set is one example. Undefined
+frames are neutral diagnostics.
+
+There is no volume tolerance and no chirality tuning hyperparameter. The
+existing active-graph threshold still determines graph adjacency; the
+chirality method introduces no geometric cutoff.
+
+#### Assignment authority
+
+Complete branch witnesses and nested alternates remain atomic. An alternate
+is patched onto its complete owner as one correlated mapping and is never
+split into independent per-atom image choices.
+
+One implicit parity route may use only untagged, closed, equal-size, pairwise
+disjoint `_SymBlock`s that coexist in one nested fragment symmetry state. Its
+base is that fragment's complete owner witness or one atomic alternate from
+the same fragment. Blocks from different historical fragments are never
+composed. The base must occupy each block's exact P pool; anchors and
+`exact_fixed` R atoms remain frozen.
+
+A block contributes one parity bit to a frame only when the whole block lies
+inside that frame's four-neighbor shell. A block containing the center or only
+partially intersecting the shell is not treated as an independent parity
+choice. Bit `0` keeps the base representative; bit `1` applies a deterministic
+canonical odd transposition. Gaussian elimination solves all frame equations
+together over `GF(2)`, with unconstrained free bits fixed to zero.
+
+Every explicit or parity-materialized candidate must retain the source
+mapping's exact R-index broken/formed event signature. Whether a frame touches
+a reaction-event atom is recorded for diagnosis but does not disable the
+constraint.
+
+A defined frame is hard only when it contains an atom that the recorded AAM
+choices can switch. A frame with no switchable atom cannot be repaired by
+assignment selection, so a mismatch there is reported under
+`immutable_frames`; it is not hidden and does not authorize a new mapping.
+
+#### Verify the Stage 1 certificate
+
+The authoritative selected mapping is
+`mechanisms[*].mapping_RP` in `rp_stage.json`. Its audit is under
+`mechanisms[*].branch_symmetry.index_chirality`. For example:
+
+```python
+import json
+from pathlib import Path
+
+from rxn_core.alignment.index_chirality import mapping_sha256
+
+stage = json.loads(Path(
+    "out/native_chirality/stages/my_case/rp_stage.json"
+).read_text())
+for mechanism in stage["mechanisms"]:
+    branch = mechanism["branch_symmetry"]
+    audit = branch["index_chirality"]
+    assert branch["active_assignment_family"] == (
+        "index_chirality.native_symcand/v3"
+    )
+    assert audit["schema_version"] == "rxn_core.index_chirality/v3"
+    assert audit["policy"] == "preserve"
+    assert audit["status"] == "applied"
+    assert audit["selected_index_chirality_violation_count"] == 0
+    assert audit["selected_mapping_sha256"] == mapping_sha256(
+        mechanism["mapping_RP"]
+    )
+    print(
+        mechanism["id"],
+        audit["source_index_chirality_violation_count"],
+        audit["selected_index_chirality_violation_count"],
+        audit["immutable_source_mismatch_count"],
+        audit["undefined_frame_count"],
+    )
+```
+
+A successful v3 selector application has:
+
+```text
+active_assignment_family = index_chirality.native_symcand/v3
+schema_version = rxn_core.index_chirality/v3
+policy = preserve
+status = applied
+selected_index_chirality_violation_count = 0
+```
+
+That is the hard guarantee for every defined frame that AAM can switch. If
+your acceptance rule is that every defined frame must match, also require
+`immutable_source_mismatch_count = 0`. If it additionally requires every
+eligible four-neighbor frame to have a defined sign, require
+`undefined_frame_count = 0` as well.
+
+`mapping_changes` records each R index changed from the initial AAM witness.
+`frames` contains the hard switchable-frame certificate. `candidate_search`
+records the atomic seeds, fragment-local parity variables, `GF(2)` equations,
+solutions, and evaluated candidates. `invariants` records the authority and
+mechanism-preservation checks.
+
+Always read `immutable_source_mismatch_count` separately: a nonzero value means AAM
+encoded no legal choice capable of changing those reported frames. Likewise,
+`undefined_frame_count` records degenerate or numerically indeterminate frames
+whose sign was not constrained. Therefore a selected violation count of zero
+certifies every defined AAM-switchable frame, not arbitrary stereochemistry
+outside the encoded assignment family.
+
+If no authorized mapping satisfies all hard frames, core finalization raises
+`IndexChiralityConflict`. The direct CLI prints `<name>: ERROR: ...`, records
+the error in its evaluation JSON, and does not write a new successful Stage 1
+artifact. Check the printed/evaluation result rather than relying only on the
+shell exit status.
+
+#### Reproducible cached-case runner
+
+The repository helper used for selected benchmark reruns expects:
+
+```text
+<work-root>/<case>/endpoints/R/reactant_combined.xyz
+<work-root>/<case>/endpoints/R/wbo
+<work-root>/<case>/endpoints/P/product_combined.xyz
+<work-root>/<case>/endpoints/P/wbo
+```
+
+If a preferred combined XYZ name is absent, its endpoint directory must
+contain exactly one XYZ file. Run one case with:
+
+```bash
+python tools/run_native_index_chirality_case.py \
+  --case TS_01 \
+  --work-root /path/to/work \
+  --output-root /path/to/native_v3 \
+  --workers 8 \
+  --policy preserve
+```
+
+It atomically writes:
+
+```text
+/path/to/native_v3/runs/TS_01/rp_stage.json
+/path/to/native_v3/runs/TS_01/run_summary.json
+/path/to/native_v3/runs/TS_01/alignment/
+/path/to/native_v3/runs/TS_01/views/TS_01/view.html
+```
+
+The helper propagates a conflict without publishing a partial case and refuses
+to overwrite an existing run directory.
+
+### Optional endpoint fitting, interpolation audit, and viewer
+
+These helpers live under `tools/`, outside the installable `rxn_core` package.
+They are packaging and path-diagnostic tools, not part of AAM and not an NEB
+optimizer. For a native v3 result, the data flow is:
+
+```text
+native Stage 1 mechanism.mapping_RP
+  -> freeze that exact mapping
+  -> reindex P into R row order
+  -> fit on fixed mapped atoms and apply that one proper transform to all P
+  -> generate a signed IDPP internal-coordinate band
+  -> write R.xyz, P_final.xyz, the band, and an offline viewer
+```
+
+The proper global fit has `det(rotation) = +1` and changes coordinates only.
+It cannot change the atom mapping, reflect P, or rotate fragments
+independently. For native v3 records, the downstream candidate family is a
+singleton and the recorded affine frames are reused exactly. Legacy non-native
+records retain a separate compatibility path that can read correlated choices
+from the selected AAM witness.
+
+The fit requires at least three non-collinear fixed mapped atoms. It prefers
+non-core heavy fixed atoms, then any non-core fixed atoms, then all fixed
+atoms; hydrogen anchors receive weight `0.1`. The resulting one proper
+rotation and translation are applied to every P atom.
+
+To reproduce the complete multi-case package, first run each case with the
+cached-case helper above. Then build an indexed source archive. The viewer
+template must be the historical all-case coordinate-alignment archive, not a
+per-case view produced by the helper. Its root must contain `index.json` and
+the original `viewer.html` with embedded `const DATA`, the requested cases,
+and the standard remote 3Dmol script tag. The final packager replaces that tag
+with the local JavaScript supplied below:
+
+```bash
+python tools/build_native_chirality_source_archive.py \
+  --run-root /path/to/native_v3 \
+  --viewer-template-root /path/to/original_viewer_archive \
+  --output-root /path/to/native_v3/source_archive \
+  --case TS_01 \
+  --case TS_04
+```
+
+Freeze each native mapping and apply the proper global fit:
+
+```bash
+python tools/run_neb_orientation_batch.py \
+  --source-root /path/to/native_v3/source_archive \
+  --wbo-work-root /path/to/work \
+  --output-root /path/to/native_v3/orientation
+```
+
+Each intermediate mechanism directory contains `R.xyz`,
+`P_neb_ordered.xyz`, `neb_endpoints.xyz`, `mapping_R_to_P.csv`, and
+`neb_orientation.json`. The `neb` names are historical; this command does not
+run an NEB calculation.
+
+Finally build the portable package:
+
+```bash
+python tools/build_neb_orientation_deliverable.py \
+  --source-root /path/to/native_v3/source_archive \
+  --orientation-root /path/to/native_v3/orientation \
+  --output-root /path/to/native_v3/deliverable \
+  --3dmol-js /path/to/3Dmol-min.js \
+  --3dmol-license /path/to/3Dmol-LICENSE \
+  --archive /path/to/native_v3/deliverable.tar.gz \
+  --interpolation-images 21
+```
+
+Use fresh destinations for every command in this packaging chain. The source
+archive builder, orientation batch, deliverable builder, and archive writer
+refuse to overwrite existing outputs.
+
+The package has one self-contained `viewer.html` for all cases and, for every
+case/mechanism:
+
+```text
+cases/<case>/mechanisms/mechanism_<NNN>/R.xyz
+cases/<case>/mechanisms/mechanism_<NNN>/P_final.xyz
+cases/<case>/mechanisms/mechanism_<NNN>/metadata.json
+cases/<case>/mechanisms/mechanism_<NNN>/internal_coordinate_interpolation.xyz
+cases/<case>/mechanisms/mechanism_<NNN>/interpolation_report.json
+```
+
+`R.xyz` and `P_final.xyz` have identical element rows in R-index order.
+`P_final.xyz` uses the exact native `mapping_RP` plus one proper global rigid
+fit.
+
+The animation is not a Cartesian endpoint interpolation. Its internal
+coordinates are all mapped atom-pair distances, with targets interpolated
+between R and `P_final` and reconstructed as one IDPP band. Pair distances
+alone cannot distinguish mirror images, so each native hard tetrahedron is
+placed deterministically on its recorded R-sign branch by choosing the local
+mirror embedding that best retains the IDPP distance targets. This changes
+neither the mapping nor the six pair distances inside that tetrahedron.
+
+The viewer plays the exact generated images embedded in the HTML; it does not
+recompute `R + t(P_final - R)` in JavaScript. The report applies the exact
+signed-volume cubic test to every adjacent image segment and analytically
+checks every atom pair's closest approach on that piecewise path. The separate
+close-approach thresholds remain a geometry-review heuristic, not part of the
+native mapping constraint.
+
+This is still an initializer/animation, not an optimized NEB trajectory or a
+minimum-energy path. A failed path audit can coexist with a valid endpoint
+mapping. The diagnostic package is still written so the failing images and
+report can be inspected; a failure means the path should not be used as an NEB
+initializer until it is improved. It must not widen the AAM mapping family.
 
 When Stage 2 is run with `--save-alignment-files`, the same output root gets
 `ts_alignments/`. Each scored GT/IG/TS target has native target coordinates,
@@ -601,13 +993,11 @@ current benchmark workflow; expose them when testing sensitivity.
 | `--iso-tol` | `BGCP_ISO_TOL` / `iso_tol` | `1.0` | Active R-side growth edges must have a P-side active edge with `abs(WBO_R-WBO_P) <= iso_tol`; the loose default tolerates endpoint/TS distortion while bond-change ranking decides the mechanism. |
 | `--dwbo-threshold` | `BGCP_DWBO_THRESHOLD` / `dwbo_threshold` | `0.5` | Broken/forming events require `abs(delta WBO) >= 0.5`; smaller WBO differences are treated as spectator variation. |
 | `--symmetry-wbo-tol` | `BGCP_SYMMETRY_WBO_TOL` / `symmetry_wbo_tol` | `0.2` | Nauty orbit detection buckets WBO values within this tolerance; this collapses xtb/noise-level symmetry without changing exact active-edge validity checks. |
+| `--index-chirality` | `BGCP_INDEX_CHIRALITY` / `index_chirality` | `off` | `preserve` enforces exact affine tetrahedral index parity over atomic AAM witnesses/alternates and coherent fragment-local closed-block parity equations; `off` leaves assignment selection unchanged. |
 | none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Per-cut branch cap for R-P sweep; cuts that exceed it are discarded as pathological branch multipliers. |
 | none | `BGCP_TS_ALIGN_GRAPH_FLOOR` / `graph_floor` | `0.2` | Active WBO graph edge floor for no-cut R/P-to-TS fragment growth. |
 | none | `BGCP_TS_ALIGN_MAX_CORE_MAPS` / `max_core_maps` | `20000` | Cap on mechanism-local TS/IG core maps after expanding compressed core degeneracy. |
 | none | `BGCP_PREFER_ENDPOINT_CONSENSUS` / `prefer_endpoint_consensus` | `1` | Prefer the highest-S exact core map recovered from both R-side and P-side endpoint matching; if no consensus map exists, fall back to the highest-S endpoint-union map. |
-| none | `BGCP_SYMMETRY_REPAIR` | `1` | Enables local reshuffling inside product symmetry orbits after R-P matching to remove witness-choice artifacts. |
-| none | `BGCP_SYMMETRY_REPAIR_MIN_CHANGES` | `1` | Computational guard for symmetry repair; the default attempts repair for every nonzero changed-bond witness and skips only already-clean mappings. |
-| none | `BGCP_SYMMETRY_REPAIR_MAX_EVALS` | `20000` | Evaluation cap for the local symmetry-repair search. |
 | `--event-weight-power` | `BGCP_EVENT_WEIGHT_POWER` | `1.0` | Exponent on each detected event's R-P `abs(delta WBO)` when building the weighted bond-motion vector for `beta`. |
 | `--wbo-progress-power` | `BGCP_WBO_PROGRESS_POWER` | `1.0` | Exponent on the TS WBO progress factor in the final TS/IG score. |
 | none | `N_SEEDS_PER_RUN` | `3` | Fixed seed-order count per cut-sweep run; cut diversity plus three seeds has been enough for the benchmark while keeping runtime bounded. |
@@ -622,6 +1012,7 @@ CLI options:
 --iso-tol              WBO tolerance for active graph matching
 --dwbo-threshold       WBO delta for broken/formed bond classification
 --symmetry-wbo-tol     WBO tolerance for symmetry-orbit bucketing
+--index-chirality      off | preserve
 --event-weight-power   exponent on R-P event delta-WBO weights
 --wbo-progress-power   exponent on TS WBO progress factor
 --xtb-mode             auto | cache-only

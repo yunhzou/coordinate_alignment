@@ -150,7 +150,7 @@
   "files": {
     "reactant": "R.xyz",
     "product_aligned": "P_aligned.xyz",
-    "neb_endpoints": "neb_endpoints.xyz",
+    "path_endpoints": "path_endpoints.xyz",
     "mapping_csv": "mapping_R_to_P.csv"
   },
   "coordinate_policy": "P_aligned.xyz is product geometry reindexed into R atom order using mapping_RP; no spatial fitting is used."

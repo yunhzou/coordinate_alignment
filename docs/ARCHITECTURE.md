@@ -27,13 +27,17 @@ Files:
 - `alignment/api.py`: public dataclasses and entry points:
   `MatchCandidate`, `MatchResult`, `match_wbo_graphs`,
   `align_from_arrays`, `analyze_alignment`, `cut_edges_above_floor`.
-- `alignment/branch.py`: molecule-level branch scheduling, branch dedupe,
-  seed-order generation, and final symmetry repair.
+- `alignment/branch.py`: molecule-level branch scheduling, branch dedupe, and
+  seed-order generation.
 - `alignment/sweep.py`: R-P sweep-cut mechanism discovery via no-cut plus
   one-edge R cuts, with symmetry-canonical mechanism signatures.  Parallel
   cut-sweep work is grouped by cut, so each worker computes the cut-specific R
   orbit map once and reuses it for all seed orders; product orbits are
   invariant and are computed once in the worker initializer.
+- `alignment/index_chirality.py`: optional exact affine tetrahedral-parity
+  selection over complete AAM witnesses, atomic nested alternates, and
+  coherent fragment-local closed-block bits solved over `GF(2)`. It does not
+  generate automorphism groups or expand block permutations.
 - `alignment/ts_core.py`: mechanism-local endpoint->TS/IG core mapping used by
   the ranker after R-P mechanisms are known. The BGCP pipeline runs it from
   both R and P, pulls P-derived mappings back through the R-P witness, and
@@ -75,7 +79,6 @@ Files:
   WBO-colored graphs, plus the old WL/color-refinement helper for fallback
   and comparison.
 - `matcher/primitives.py`: WBO access and tolerance helpers.
-- `matcher/chemistry.py`: post-hoc chemistry-relevant symmetry expansion.
 
 This layer owns the central compression model:
 
@@ -86,6 +89,36 @@ _SymCand = witness mapping + interchangeable/correlated _SymBlock pools
 The witness is one deterministic assignment. The blocks encode the actual
 symmetry state. A block with two R atoms and four P atoms represents
 `P(4, 2)` injective concrete assignments without enumerating them.
+
+Optional index-chirality finalization does not change this compression model
+or the matcher search. `alignment/index_chirality.py` consumes only complete
+branch witnesses, atomic nested alternates, and raw nested `_SymBlock` records.
+Only untagged, closed, equal-size, pairwise disjoint blocks coexisting in one
+nested fragment state can contribute parity variables. A route uses either
+that fragment's owner witness or an atomic alternate belonging to the same
+fragment. Historical fragment states are never composed. Anchors and
+fragment-local `exact_fixed` atoms remain frozen.
+
+One frame is built for each persistent R center of exactly degree four. Its
+sign is the affine orientation of the four R-index-ordered neighbor points,
+so a whole-shell relabeling changes the sign exactly by permutation parity.
+A block contributes only when its complete R set is contained in that
+four-neighbor shell; center or partial-shell intersections are unsupported
+rather than expanded.
+
+The coexisting block bits and frame requirements form a deterministic linear
+system over `GF(2)`. Free bits are zero, and an odd bit uses one canonical
+element-compatible transposition. This is direct parity materialization, not a
+greedy swap search. Determinant definedness uses a scale-aware floating-point
+roundoff bound derived from machine epsilon, not a configurable volume
+tolerance.
+
+Frames incident to an AAM-switchable atom are hard constraints; fully
+immutable frames are diagnostics. Reaction-event incidence is diagnostic only,
+while every accepted mapping must retain the exact source R-index
+broken/formed event signature. The selector performs no cross-fragment
+composition, group/domain closure, permutation enumeration, factorial
+candidate expansion, or capped action search.
 
 ## Chemistry And IO Helpers
 
@@ -106,8 +139,8 @@ symmetry state. A block with two R atoms and four P atoms represents
   only core-atom degeneracy, and writes `ts_stage.json`. `write_view_stage` is
   presentation-only: it writes the multi-mechanism viewer plus slim eval JSON
   from stage records. `write_rp_alignment_files` is a Stage 1 export helper
-  for downstream NEB/path setup: it writes per-mechanism `R.xyz`,
-  `P_aligned.xyz`, `neb_endpoints.xyz`, mapping CSV, and metadata without
+  for downstream path setup: it writes per-mechanism `R.xyz`,
+  `P_aligned.xyz`, `path_endpoints.xyz`, mapping CSV, and metadata without
   doing any spatial fitting. `write_ts_alignment_files` exports the
   Stage 2 selected best-S GT/IG/TS core mapping as native target XYZ plus an
   R-frame core-aligned materialization and picked-mode extended XYZ. The

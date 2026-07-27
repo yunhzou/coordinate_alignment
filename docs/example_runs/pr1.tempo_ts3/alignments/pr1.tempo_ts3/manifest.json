@@ -14,7 +14,7 @@
       "directory": "mechanisms/mechanism_001",
       "reactant": "mechanisms/mechanism_001/R.xyz",
       "product_aligned": "mechanisms/mechanism_001/P_aligned.xyz",
-      "neb_endpoints": "mechanisms/mechanism_001/neb_endpoints.xyz",
+      "path_endpoints": "mechanisms/mechanism_001/path_endpoints.xyz",
       "metadata": "mechanisms/mechanism_001/mechanism.json",
       "mapping_csv": "mechanisms/mechanism_001/mapping_R_to_P.csv",
       "broken_bonds_R": [
@@ -36,5 +36,5 @@
       ]
     }
   ],
-  "coordinate_policy": "All mechanism P endpoints are reindexed into the R atom frame. The files are intended for downstream path/NEB setup that needs matching atom order."
+  "coordinate_policy": "All mechanism P endpoints are reindexed into the R atom frame. The files are intended for downstream path setup that needs matching atom order."
 }

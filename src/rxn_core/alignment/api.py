@@ -8,22 +8,23 @@ from pathlib import Path
 from ..chemistry_computations import run_xtb
 from ..frag import build_graph, expand_mapping, classify_bonds
 from .branch import (
-    _chirality_violations,
     _generate_seed_orders,
     find_islands,
-    symmetry_repair_mapping,
 )
-from ..matcher import _nauty_orbits
+from .index_chirality import (
+    build_index_frames,
+    index_chirality_violations,
+)
 
 
 @dataclass
 class MatchCandidate:
     """One scored molecule-level alignment candidate.
 
-    `mapping` is the symmetry-aware selected representative used for mechanism
-    scoring. `raw_mapping` is the deterministic witness emitted by fragment
-    growth before optional symmetry repair. `symmetry_fragments` records the
-    compressed fragment states that produced the witness.
+    `mapping` is the native witness emitted by fragment growth.
+    `raw_mapping` retains the same witness for explicit provenance.
+    `symmetry_fragments` records the compressed fragment states that produced
+    the witness.
     """
     seed_index: int
     seed_atom: int
@@ -69,13 +70,41 @@ def cut_edges_above_floor(wboR, floor=0.2):
                  if float(wboR[i, j]) >= floor)
 
 
+def _index_chirality_violation_count(
+    mapping,
+    coords_R,
+    coords_P,
+    wbo_R,
+    wbo_P,
+    *,
+    graph_floor,
+):
+    """Score one mapping with the shared WBO/index-chirality definition."""
+    frames, _undefined = build_index_frames(
+        mapping,
+        coords_R,
+        coords_P,
+        wbo_R,
+        wbo_P,
+        graph_floor=graph_floor,
+    )
+    count, _details = index_chirality_violations(
+        mapping,
+        frames,
+        coords_P,
+        wbo_P,
+        graph_floor=graph_floor,
+    )
+    return int(count)
+
+
 def match_wbo_graphs(elR, wboR, elP, wboP, *,
                      xyzR=None, xyzP=None,
                      graph_floor=0.2, iso_tol=1.0,
                      dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
                      symmetry_wbo_tol=0.2,
                      n_seeds=3, max_branches=1_000_000,
-                     cut_edges=(), repair_symmetry=True,
+                     cut_edges=(),
                      chirality=False, capture_events=False):
     """Symmetry-centric molecule match.
 
@@ -86,15 +115,14 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
     3. For each seed, grow fragments with compressed symmetry candidates.
     4. Score candidates by least broken+formed bonds.
 
-    `cut_edges` changes only the R growth graph.  Bond classification and
-    symmetry repair still use the full WBO matrices.
+    `cut_edges` changes only the R growth graph. Bond classification always
+    uses the native fragment-growth witness and the full WBO matrices.
     """
     if Counter(elR) != Counter(elP):
         raise ValueError(f"composition mismatch: {Counter(elR)} vs {Counter(elP)}")
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
     g_R = _apply_cut_edges(g_R_full, tuple(tuple(e) for e in cut_edges or ()))
     g_P = build_graph(elP, wboP, bond_cut=graph_floor)
-    p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
 
     candidates = []
     orders = _generate_seed_orders(g_R, n_seeds)
@@ -110,19 +138,20 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
         for branch_index, branch in enumerate(branches):
             raw_mapping = expand_mapping(branch.mapping, g_R, g_P)
             mapping = dict(raw_mapping)
-            if repair_symmetry:
-                mapping = symmetry_repair_mapping(
-                    mapping, wboR, wboP, g_R_full, g_P, p_orbits,
-                    dwbo_threshold=dwbo_threshold,
-                    metal_dwbo_threshold=metal_dwbo_threshold)
             broken, formed, _, _ = classify_bonds(
                 mapping, wboR, wboP, dwbo_threshold=dwbo_threshold,
                 elements_R=elR, elements_P=elP,
                 metal_dwbo_threshold=metal_dwbo_threshold)
             chir = 0
             if chirality and xyzR is not None and xyzP is not None:
-                chir = _chirality_violations(
-                    mapping, xyzR, xyzP, broken, formed, elR)
+                chir = _index_chirality_violation_count(
+                    mapping,
+                    xyzR,
+                    xyzP,
+                    wboR,
+                    wboP,
+                    graph_floor=graph_floor,
+                )
             score = (len(broken) + len(formed), chir)
             candidates.append(MatchCandidate(
                 seed_index=seed_index,
@@ -165,7 +194,7 @@ def align_from_arrays(elR, xyzR, wboR, elP, xyzP, wboP,
         metal_dwbo_threshold=metal_dwbo_threshold,
         symmetry_wbo_tol=symmetry_wbo_tol,
         n_seeds=n_seeds, max_branches=max_branches,
-        repair_symmetry=True, chirality=chirality)
+        chirality=chirality)
     if result.best is None:
         raise RuntimeError("no alignment candidates produced")
     best = result.best

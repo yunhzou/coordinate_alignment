@@ -12,7 +12,6 @@ from rxn_core.alignment import (
     run_cut_sweep_chunk,
     select_min_mechanisms,
     _generate_seed_orders,
-    symmetry_repair_mapping,
 )
 from rxn_core.alignment.sweep import (
     _branch_symmetry_record,
@@ -21,6 +20,7 @@ from rxn_core.alignment.sweep import (
     _pool_add,
 )
 import rxn_core.alignment.branch as branch_mod
+import rxn_core.alignment.api as alignment_api
 from rxn_core.growth.island import _island_candidate_symmetry_blocks
 from rxn_core.matcher import (
     _SymBlock,
@@ -89,6 +89,26 @@ def test_island_candidate_blocks_capture_same_island_pool():
     ]
 
     blocks = _island_candidate_symmetry_blocks(cands, {8, 12, 20})
+
+    assert blocks == [{
+        "r_atoms": [8, 12],
+        "p_atoms": [11, 12],
+        "extendable": False,
+        "open": False,
+        "assignments": 2,
+        "source": "island_automorph",
+    }]
+
+
+def test_island_candidate_blocks_count_compressed_alternates():
+    primary = _SymCand({8: 11, 12: 12, 20: 20})
+    alternate = _SymCand({8: 12, 12: 11, 20: 20})
+    compressed = primary.with_added_alternate(alternate)
+
+    blocks = _island_candidate_symmetry_blocks(
+        [compressed, primary],
+        {8, 12, 20},
+    )
 
     assert blocks == [{
         "r_atoms": [8, 12],
@@ -570,30 +590,6 @@ def test_deferred_boundary_prevents_false_orbit_dedup():
     assert len(with_boundary) == 2
 
 
-def test_symmetry_repair_removes_false_orbit_swap_changes():
-    elements = ["C", "O", "C", "O"]
-    wbo = np.zeros((4, 4))
-    wbo[0, 1] = wbo[1, 0] = 1.0
-    wbo[2, 3] = wbo[3, 2] = 1.0
-    g_r = build_graph(elements, wbo, bond_cut=0.2)
-    g_p = build_graph(elements, wbo, bond_cut=0.2)
-
-    bad = {0: 0, 1: 3, 2: 2, 3: 1}
-    before = classify_bonds(bad, wbo, wbo)
-    repaired, stats = symmetry_repair_mapping(
-        bad, wbo, wbo, g_r, g_p,
-        p_orbits={0: 0, 1: 1, 2: 2, 3: 1},
-        min_changes=1,
-        return_stats=True,
-    )
-    after = classify_bonds(repaired, wbo, wbo)
-
-    assert (len(before[0]), len(before[1])) == (2, 2)
-    assert (len(after[0]), len(after[1])) == (0, 0)
-    assert stats["repaired"] is True
-    assert stats["evaluated"] <= 4
-
-
 def test_classify_bonds_uses_lower_metal_event_threshold():
     wbo_r = np.zeros((2, 2))
     wbo_p = np.zeros((2, 2))
@@ -741,13 +737,42 @@ def test_match_wbo_graphs_uses_three_seed_contract():
     result = match_wbo_graphs(
         elements, wbo, elements, wbo,
         n_seeds=3, graph_floor=0.2, iso_tol=0.5,
-        repair_symmetry=False,
     )
 
     assert result.n_seeds == 3
     assert result.best is not None
     assert result.best.score == (0, 0)
     assert (len(result.best.broken), len(result.best.formed)) == (0, 0)
+    assert all(
+        candidate.mapping == candidate.raw_mapping
+        for candidate in result.candidates
+    )
+
+
+def test_match_wbo_graphs_does_not_mutate_growth_witness(monkeypatch):
+    elements = ["C", "O", "C", "O"]
+    wbo = np.zeros((4, 4))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[2, 3] = wbo[3, 2] = 1.0
+    witness = {0: 0, 1: 3, 2: 2, 3: 1}
+
+    class Branch:
+        mapping = dict(witness)
+        deferred_edges = set()
+        symmetry_fragments = []
+
+    monkeypatch.setattr(
+        alignment_api, "find_islands", lambda *args, **kwargs: [Branch()])
+
+    result = match_wbo_graphs(
+        elements, wbo, elements, wbo,
+        n_seeds=1, graph_floor=0.2, iso_tol=0.5,
+    )
+
+    assert result.best is not None
+    assert result.best.raw_mapping == witness
+    assert result.best.mapping == witness
+    assert (len(result.best.broken), len(result.best.formed)) == (2, 2)
 
 
 def test_find_islands_reuses_precomputed_orbits(monkeypatch):
@@ -797,7 +822,7 @@ def test_cut_sweep_is_core_mechanism_discovery_api():
     pool = cut_sweep(
         elements, wbo, elements, wbo,
         n_workers=0, n_seeds=1, max_branches=100,
-        cut_floor=0.2, symmetry_repair=False,
+        cut_floor=0.2,
     )
     minimal = select_min_mechanisms(pool)
 
@@ -814,7 +839,7 @@ def test_cut_sweep_respects_hard_anchor_map():
     pool = cut_sweep(
         elements, wbo, elements, wbo,
         n_workers=0, n_seeds=1, max_branches=100,
-        cut_floor=0.2, symmetry_repair=True,
+        cut_floor=0.2,
         anchor_map={0: 2},
     )
     minimal = select_min_mechanisms(pool)
@@ -826,7 +851,7 @@ def test_cut_sweep_respects_hard_anchor_map():
     incompatible = cut_sweep(
         elements, wbo, elements, wbo,
         n_workers=0, n_seeds=1, max_branches=100,
-        cut_floor=0.2, symmetry_repair=True,
+        cut_floor=0.2,
         anchor_map={0: 1},
     )
 
@@ -841,7 +866,7 @@ def test_cut_sweep_preserves_branch_symmetry_alternates():
     pool = cut_sweep(
         elements, wbo, elements, wbo,
         n_workers=0, n_seeds=1, max_branches=100,
-        cut_floor=0.2, symmetry_repair=False,
+        cut_floor=0.2,
     )
     info = next(iter(pool.values()))
     branch_symmetry = info["branch_symmetry"]

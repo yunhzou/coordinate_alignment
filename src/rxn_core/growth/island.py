@@ -49,11 +49,21 @@ def _cand_relation(cand):
 
 def _candidate_assignment(cand, r_atoms):
     mapping = _cand_map(cand)
+    if any(r not in mapping for r in r_atoms):
+        return ()
     return tuple(
         (int(r), int(mapping[r]))
         for r in sorted(r_atoms)
-        if r in mapping
     )
+
+
+def _candidate_assignments(cand, r_atoms):
+    """Concrete assignments represented by a compressed candidate."""
+    assignments = {_candidate_assignment(cand, r_atoms)}
+    if isinstance(cand, _SymCand):
+        for items, _mult in cand.alternates:
+            assignments.add(_candidate_assignment(dict(items), r_atoms))
+    return {assignment for assignment in assignments if assignment}
 
 
 def _island_candidate_symmetry_blocks(cands, fragment):
@@ -104,11 +114,9 @@ def _island_candidate_symmetry_blocks(cands, fragment):
         p_atoms = sorted(v for tag, v in comp if tag == 'p')
         if not r_atoms or len(p_atoms) <= 1:
             continue
-        assignments = {
-            _candidate_assignment(c, r_atoms)
-            for c in cands
-        }
-        assignments = {item for item in assignments if item}
+        assignments = set()
+        for cand in cands:
+            assignments.update(_candidate_assignments(cand, r_atoms))
         if len(assignments) <= 1 and all(r not in varied_r for r in r_atoms):
             continue
         key = (tuple(r_atoms), tuple(p_atoms))

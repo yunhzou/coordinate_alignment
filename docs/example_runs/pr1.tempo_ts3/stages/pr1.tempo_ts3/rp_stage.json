@@ -12,9 +12,9 @@
     "n_seeds": 3,
     "max_branches": 100,
     "chunksize": 1,
-    "symmetry_repair": true,
-    "symmetry_repair_min_changes": 1,
-    "symmetry_repair_max_evals": 20000
+    "mapping_policy": "native_symmetry_assignment/v2",
+    "index_chirality": "off",
+    "anchor_map": {}
   },
   "mechanisms": [
     {
