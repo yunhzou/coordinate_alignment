@@ -19,9 +19,9 @@ from rxn_core.alignment.sweep import (
     _color_groups_from_blocks,
     _core_mapping_variants,
     _pool_add,
+    run_no_cut_core_branch_records,
 )
 import rxn_core.alignment.branch as branch_mod
-from rxn_core.growth.island import _island_candidate_symmetry_blocks
 from rxn_core.matcher import (
     _SymBlock,
     _SymCand,
@@ -82,24 +82,6 @@ def test_symcand_reassigns_correlated_block_witness():
     assert repaired.materialize()[1] == 0
 
 
-def test_island_candidate_blocks_capture_same_island_pool():
-    cands = [
-        _SymCand({8: 11, 12: 12, 20: 20}),
-        _SymCand({8: 12, 12: 11, 20: 20}),
-    ]
-
-    blocks = _island_candidate_symmetry_blocks(cands, {8, 12, 20})
-
-    assert blocks == [{
-        "r_atoms": [8, 12],
-        "p_atoms": [11, 12],
-        "extendable": False,
-        "open": False,
-        "assignments": 2,
-        "source": "island_automorph",
-    }]
-
-
 def test_mapping_variation_blocks_capture_branch_dedupe_pool():
     blocks = branch_mod._mapping_variation_blocks([
         {0: 11, 4: 9, 8: 0},
@@ -113,6 +95,22 @@ def test_mapping_variation_blocks_capture_branch_dedupe_pool():
         "extendable": False,
         "open": False,
         "assignments": 2,
+    }]
+
+
+def test_core_branch_records_use_exact_target_orbits_not_growth_history():
+    wbo = np.zeros((2, 2))
+
+    records = run_no_cut_core_branch_records(
+        ["H", "H"], wbo, ["H", "H"], wbo, [0],
+        n_seeds=1, max_branches=100,
+    )
+
+    assert records
+    assert records[0]["blocks"] == [{
+        "r_atoms": [0],
+        "p_atoms": [0, 1],
+        "source": "pynauty_target_orbit",
     }]
 
 
@@ -645,6 +643,38 @@ def test_pool_branch_symmetry_does_not_color_final_witness_variation():
     assert pool[sig]["branch_symmetry"]["color_groups"] == []
 
 
+def test_display_symmetry_uses_only_selected_final_candidate_blocks():
+    pool = {}
+    sig = ((), ())
+    selected_local = {
+        "blocks": [
+            {"r_atoms": [0, 1], "p_atoms": [10, 11]},
+            {
+                "r_atoms": [2, 3],
+                "p_atoms": [12, 13],
+                "source": "island_automorph",
+            },
+        ],
+        "fragments": [],
+    }
+    other_local = {
+        "blocks": [{"r_atoms": [4, 5], "p_atoms": [14, 15]}],
+        "fragments": [],
+    }
+
+    _pool_add(pool, sig, {0: 10, 1: 11}, (), selected_local)
+    _pool_add(pool, sig, {0: 11, 1: 10}, (), other_local)
+
+    symmetry = pool[sig]["branch_symmetry"]
+    assert symmetry["selected_witness_index"] == 0
+    assert symmetry["dedup_witness_count"] == 2
+    assert symmetry["color_groups"] == [{
+        "r_atoms": [0, 1],
+        "p_atoms": [10, 11],
+        "sources": ["sym_block"],
+    }]
+
+
 def test_color_groups_do_not_transitively_merge_overlapping_blocks():
     groups = _color_groups_from_blocks([
         {
@@ -846,7 +876,7 @@ def test_cut_sweep_preserves_branch_symmetry_alternates():
     info = next(iter(pool.values()))
     branch_symmetry = info["branch_symmetry"]
 
-    assert branch_symmetry["rule"] == "mechanism_dedup_branch_symmetry"
+    assert branch_symmetry["rule"] == "representative_branch_final_symmetry"
     assert branch_symmetry["dedup_witness_count"] == 2
     assert any(
         block == {
@@ -857,7 +887,7 @@ def test_cut_sweep_preserves_branch_symmetry_alternates():
             "p_atoms": [0, 1],
             "extendable": False,
             "open": False,
-            "assignments": 1,
+                "assignments": 2,
             "source": "alternate_witness",
             "witness_index": 0,
         }
@@ -868,7 +898,6 @@ def test_cut_sweep_preserves_branch_symmetry_alternates():
         "p_atoms": [0, 1],
         "sources": [
             "alternate_witness",
-            "sym_block",
         ],
     }]
     assert branch_symmetry["fragments"][0]["symmetry"]["alternates"] == [{

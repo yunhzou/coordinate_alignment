@@ -40,5 +40,8 @@ Repository = "https://github.com/yunhzou/coordinate_alignment"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+rxn_core = ["static/*.js", "static/LICENSES/*"]
+
 # Note: xtb (Grimme) is a runtime requirement but not a Python dependency;
 # install it via your system package manager (e.g. conda install -c conda-forge xtb).

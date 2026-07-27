@@ -18,6 +18,7 @@ ts_discovery_paper/
 *.zip
 
 # Python cache
+.venv/
 __pycache__/
 *.pyc
 .pytest_cache/

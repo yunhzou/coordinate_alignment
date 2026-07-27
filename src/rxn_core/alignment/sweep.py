@@ -12,10 +12,17 @@ import time
 from pathlib import Path
 
 from ..frag import build_graph, classify_bonds, expand_mapping
-from ..matcher import _SymBlock, _nauty_orbits, _sym_block_assignment_expr
+from ..matcher import (
+    _SymBlock,
+    _atom_tuple_orbit,
+    _nauty_atom_generators,
+    _nauty_orbits,
+    _sym_block_assignment_expr,
+)
 from .branch import (
     BranchLimitExceeded,
     _generate_seed_orders,
+    _mapping_variation_blocks,
     find_islands,
     symmetry_repair_mapping,
 )
@@ -45,7 +52,7 @@ def _core_mapping_key(mapping, core_R):
     )
 
 
-def _core_branch_record(branch, core_R):
+def _core_branch_record(branch, core_R, p_orbits=None):
     """Return the core-restricted compressed state for one aligned branch.
 
     This is intentionally not an exact core-map expansion.  It keeps the
@@ -62,27 +69,31 @@ def _core_branch_record(branch, core_R):
     if len(mapping) != len(core_R):
         return None
 
-    blocks = {}
-    for fragment in getattr(branch, 'symmetry_fragments', ()):
-        symmetry = fragment.get('symmetry') or {}
-        for block in symmetry.get('blocks') or ():
-            r_atoms = tuple(sorted(
-                int(r) for r in block.get('r_atoms', ())
-                if int(r) in core_set
-            ))
-            if not r_atoms:
-                continue
-            p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
-            if len(p_atoms) < len(r_atoms):
-                continue
-            blocks[(r_atoms, p_atoms)] = {
-                'r_atoms': list(r_atoms),
-                'p_atoms': list(p_atoms),
-            }
+    # Core-map compression is based on exact target automorphism orbits from
+    # pynauty, not on transient candidate-pool history.  Joint permutations
+    # are validated later with strict target automorphism generators.
+    orbit_members = {}
+    for p, orbit in dict(p_orbits or {}).items():
+        orbit_members.setdefault(int(orbit), []).append(int(p))
+    core_by_orbit = {}
+    for r, p in mapping.items():
+        orbit = (p_orbits or {}).get(p)
+        if orbit is not None:
+            core_by_orbit.setdefault(int(orbit), []).append(int(r))
+    blocks = []
+    for orbit, r_atoms in sorted(core_by_orbit.items()):
+        p_atoms = sorted(orbit_members.get(orbit, ()))
+        if len(p_atoms) <= 1:
+            continue
+        blocks.append({
+            'r_atoms': sorted(r_atoms),
+            'p_atoms': p_atoms,
+            'source': 'pynauty_target_orbit',
+        })
 
     return {
         'mapping': mapping,
-        'blocks': [blocks[key] for key in sorted(blocks)],
+        'blocks': blocks,
         'dedup_count': 1,
     }
 
@@ -109,17 +120,8 @@ def _core_branch_record_key(record, core_R):
 
 def _core_mapping_variants(branch, core_R, max_variants, *,
                            g_P=None, p_orbits=None):
-    """Enumerate exact core maps represented by one compressed branch.
-
-    Fragment growth stores one concrete witness plus symmetry blocks.  For
-    TS/IG verification the spectator witness is irrelevant, but core atoms
-    inside those blocks must be shuffled before scoring.  This function does
-    not impose any core-core WBO validity rule; normal island growth already
-    decided what can be aligned, including separate islands and deferred
-    nonmatching edges.
-    """
+    """Expand final candidate-carried core ambiguity with strict pynauty."""
     core_R = tuple(sorted(set(int(r) for r in core_R)))
-    core_set = set(core_R)
     base = {
         int(r): int(branch.mapping[r])
         for r in core_R
@@ -127,55 +129,67 @@ def _core_mapping_variants(branch, core_R, max_variants, *,
     }
     if len(base) != len(core_R):
         return []
+    if g_P is None:
+        return [base]
 
-    options = {r: {p} for r, p in base.items()}
-    for fragment in getattr(branch, 'symmetry_fragments', ()):
-        symmetry = fragment.get('symmetry') or {}
-        for block in symmetry.get('blocks') or ():
-            r_atoms = tuple(sorted(
-                int(r) for r in block.get('r_atoms', ())
-                if int(r) in core_set
-            ))
-            if not r_atoms:
-                continue
-            p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
-            if len(p_atoms) < len(r_atoms):
-                continue
-            for r in r_atoms:
-                options.setdefault(r, set()).update(p_atoms)
+    blocks = []
+    covered = set()
+    final_symmetry = _branch_symmetry_record(branch)
+    for block in final_symmetry.get('blocks', ()):
+        source = block.get('source') or 'sym_block'
+        if source not in {'sym_block', 'alternate_witness'}:
+            continue
+        r_atoms = tuple(sorted(
+            int(r) for r in block.get('r_atoms', ())
+            if int(r) in set(core_R) and int(r) not in covered
+        ))
+        if not r_atoms:
+            continue
+        p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
+        if len(p_atoms) < len(r_atoms):
+            continue
+        blocks.append((r_atoms, frozenset(p_atoms)))
+        covered.update(r_atoms)
+    if not blocks:
+        return [base]
 
-    order = sorted(core_R, key=lambda r: (len(options.get(r, ())), r))
-    out = {}
+    fixed = {r: base[r] for r in core_R if r not in covered}
+    tag_parts = {}
 
-    def rec(i, state, used):
-        if len(out) > max_variants:
-            raise BranchLimitExceeded(
-                max_variants,
-                branch_count=len(out),
-                stage='core_symmetry_expansion',
-            )
-        if i == len(order):
-            mapping = {int(r): int(state[r]) for r in core_R}
-            out[_core_mapping_key(mapping, core_R)] = mapping
-            if len(out) > max_variants:
-                raise BranchLimitExceeded(
-                    max_variants,
-                    branch_count=len(out),
-                    stage='core_symmetry_expansion',
-                )
-            return
-        r = order[i]
-        for p in sorted(options.get(r, {base[r]})):
-            if p in used:
-                continue
-            state[r] = p
-            used.add(p)
-            rec(i + 1, state, used)
-            used.remove(p)
-            del state[r]
+    def add_tag(atom, tag):
+        tag_parts.setdefault(int(atom), []).append(tag)
 
-    rec(0, {}, set())
-    return list(out.values())
+    for r, p in fixed.items():
+        add_tag(p, ('fixed', int(r), int(p)))
+    for block_index, (_r_atoms, p_atoms) in enumerate(blocks):
+        for p in p_atoms:
+            add_tag(p, ('block', int(block_index)))
+
+    generators = _nauty_atom_generators(
+        g_P,
+        wbo_tol=float(getattr(p_orbits, 'wbo_tol', 0.2)),
+        atom_color_tags={
+            atom: tuple(tags) for atom, tags in tag_parts.items()
+        },
+    )
+    seed = tuple(base[r] for r in core_R)
+    states = _atom_tuple_orbit(seed, generators)
+    out = []
+    for state in states:
+        mapping = {int(r): int(p) for r, p in zip(core_R, state)}
+        if any(mapping[r] != p for r, p in fixed.items()):
+            continue
+        if any(mapping[r] not in p_atoms
+               for r_atoms, p_atoms in blocks for r in r_atoms):
+            continue
+        out.append(mapping)
+    if len(out) > int(max_variants):
+        raise BranchLimitExceeded(
+            max_variants,
+            branch_count=len(out),
+            stage='core_symmetry_expansion',
+        )
+    return out
 
 
 def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
@@ -260,33 +274,24 @@ def _branch_symmetry_record(branch):
             int(r): int(p)
             for r, p in dict(symmetry.get('witness') or {}).items()
         }
-        for alt_index, alt in enumerate(symmetry.get('alternates') or ()):
-            alt_witness = {
+        alternate_mappings = [witness] + [
+            {
                 int(r): int(p)
                 for r, p in dict(alt.get('witness') or {}).items()
             }
-            changed_r = sorted(
-                r for r, p in alt_witness.items()
-                if r in witness and int(witness[r]) != int(p)
-            )
-            p_atoms = sorted({
-                int(witness[r])
-                for r in changed_r
-            } | {
-                int(alt_witness[r])
-                for r in changed_r
-            })
-            if len(p_atoms) <= 1 and len(changed_r) <= 1:
-                continue
+            for alt in symmetry.get('alternates') or ()
+        ]
+        for alt_index, alt_block in enumerate(_mapping_variation_blocks(
+                alternate_mappings, source='alternate_witness')):
             blocks.append({
                 'fragment_index': int(frag_index),
                 'block_index': f"alt:{int(alt_index)}",
                 'island_idx': record['island_idx'],
-                'r_atoms': changed_r,
-                'p_atoms': p_atoms,
-                'extendable': False,
-                'open': False,
-                'assignments': alt.get('multiplicity'),
+                'r_atoms': alt_block['r_atoms'],
+                'p_atoms': alt_block['p_atoms'],
+                'extendable': bool(alt_block.get('extendable', False)),
+                'open': bool(alt_block.get('open', False)),
+                'assignments': alt_block.get('assignments'),
                 'source': 'alternate_witness',
             })
     return {
@@ -386,20 +391,29 @@ def _color_groups_from_blocks(blocks):
     return groups
 
 
-def combine_branch_symmetry_witnesses(witnesses):
-    """Build the principled branch-degeneracy record for one mechanism.
+def combine_branch_symmetry_witnesses(witnesses, representative_mapping=None):
+    """Build display degeneracy from one chosen completed branch.
 
-    Displayed degeneracy is only the ambiguity carried by island/SymCand state:
-    local `_SymCand` blocks/alternates and same-island candidate automorph
-    blocks recorded during island growth. Final dedup witnesses remain as
-    provenance but do not create extra coloring.
+    Deduplicated witnesses remain available as provenance, but only the local
+    final ``_SymCand`` blocks/alternates of the representative mapping drive
+    coloring.  Historical same-island candidate-pool and inter-branch
+    variation are not final mutability and therefore are not displayed.
     """
     witnesses = _unique_witnesses(witnesses)
+    representative_key = _mapping_key(representative_mapping or {})
+    selected_index = 0
+    if representative_key:
+        for witness_index, witness in enumerate(witnesses):
+            if _mapping_key(witness['mapping']) == representative_key:
+                selected_index = witness_index
+                break
+
     fragments = []
     blocks = []
     block_keys = set()
-
-    for witness_index, witness in enumerate(witnesses):
+    if witnesses:
+        witness_index = selected_index
+        witness = witnesses[selected_index]
         local = witness.get('local_symmetry') or {}
         for fragment in local.get('fragments') or ():
             record = dict(fragment)
@@ -409,6 +423,8 @@ def combine_branch_symmetry_witnesses(witnesses):
             r_atoms = tuple(sorted(int(r) for r in block.get('r_atoms', ())))
             p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
             source = block.get('source') or 'sym_block'
+            if source not in {'sym_block', 'alternate_witness'}:
+                continue
             key = (source, r_atoms, p_atoms)
             if key in block_keys:
                 continue
@@ -421,19 +437,22 @@ def combine_branch_symmetry_witnesses(witnesses):
             blocks.append(record)
 
     return {
-        'rule': 'mechanism_dedup_branch_symmetry',
+        'rule': 'representative_branch_final_symmetry',
         'fragments': fragments,
         'blocks': blocks,
         'color_groups': _color_groups_from_blocks(blocks),
         'witnesses': witnesses,
         'dedup_witness_count': len(witnesses),
+        'selected_witness_index': (
+            int(selected_index) if witnesses else None
+        ),
     }
 
 
 def _refresh_entry_branch_symmetry(entry):
     entry['dedup_witnesses'] = _unique_witnesses(entry.get('dedup_witnesses'))
     entry['branch_symmetry'] = combine_branch_symmetry_witnesses(
-        entry['dedup_witnesses'])
+        entry['dedup_witnesses'], representative_mapping=entry.get('mapping'))
 
 
 def _pool_add(pool, sig, mapping, cuts, branch_symmetry=None):
@@ -1085,7 +1104,8 @@ def run_no_cut_core_branch_records(elS, wboS, elT, wboT, core_S, *,
                 r_orbits=r_orbits,
             )
             for branch in branches:
-                record = _core_branch_record(branch, core_S)
+                record = _core_branch_record(
+                    branch, core_S, p_orbits=p_orbits)
                 if record is None:
                     continue
                 key = _core_branch_record_key(record, core_S)

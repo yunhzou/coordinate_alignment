@@ -716,6 +716,8 @@ def test_default_worker_count_is_not_the_xtb_thread_cap(monkeypatch):
 def test_viewer_uses_step_level_download_button():
     html = pipeline.HTML.format(
         title="x",
+        three_dmol_js=(pipeline.VIEWER_STATIC_DIR / "3Dmol-min.js").read_text(),
+        jszip_js=(pipeline.VIEWER_STATIC_DIR / "jszip.min.js").read_text(),
         data_json=(
             '{"step":"s","n_atoms":1,'
             '"reactant":{"elements":["H"],"coords":[[0,0,0]]},'
@@ -751,6 +753,10 @@ def test_viewer_uses_step_level_download_button():
     assert 'view_html:"view.html"' in html
     assert 'root+"/view.html"' in html
     assert 'mechanisms/mechanism_' in html
+    assert "https://3dmol.org" not in html
+    assert "https://cdn.jsdelivr.net" not in html
+    assert "JSZip=" in html
+    assert "root[\"3Dmol\"]=" in html
 
 
 def test_view_data_carries_endpoint_energy_metadata():
@@ -810,7 +816,7 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
     result = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=0)
 
     branch_symmetry = result["mechanisms"][0]["branch_symmetry"]
-    assert branch_symmetry["rule"] == "mechanism_dedup_branch_symmetry"
+    assert branch_symmetry["rule"] == "representative_branch_final_symmetry"
     assert branch_symmetry["dedup_witness_count"] >= 1
     assert any(
         block["r_atoms"] == [0, 1] and block["p_atoms"] == [0, 1]

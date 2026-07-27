@@ -65,6 +65,7 @@ ALIGNMENT_OUT_ROOT = Path(os.environ.get(
     "BGCP_ALIGNMENT_OUT_ROOT",
     PROJECT / "out" / "bgcp_alignments",
 ))
+VIEWER_STATIC_DIR = Path(__file__).with_name("static")
 EVAL_JSON = Path(os.environ.get(
     "BGCP_EVAL_JSON",
     PROJECT / "out" / "bgcp_alignment_eval.json",
@@ -882,7 +883,8 @@ def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
         witnesses = []
         for mech in group:
             witnesses.extend(_mechanism_branch_witnesses(mech))
-        rep['branch_symmetry'] = combine_branch_symmetry_witnesses(witnesses)
+        rep['branch_symmetry'] = combine_branch_symmetry_witnesses(
+            witnesses, representative_mapping=rep.get('mapping_RP'))
         deduped.append(rep)
 
     for new_id, mech in enumerate(deduped, 1):
@@ -2253,6 +2255,8 @@ def write_view_stage(inputs, rp_result, ts_result=None, out_root=None,
         title=f"BGCP &mdash; {inputs.step_name}  "
               f"({len(data['mechanisms'])} mechanisms)",
         data_json=json.dumps(_json_ready(data)),
+        three_dmol_js=(VIEWER_STATIC_DIR / "3Dmol-min.js").read_text(),
+        jszip_js=(VIEWER_STATIC_DIR / "jszip.min.js").read_text(),
     ))
     paths.eval_slim_json.write_text(json.dumps(_json_ready(slim)))
     return {
@@ -2265,8 +2269,8 @@ def write_view_stage(inputs, rp_result, ts_result=None, out_root=None,
 
 
 HTML = r"""<!doctype html><html><head><meta charset="utf-8"><title>{title}</title>
-<script src="https://3dmol.org/build/3Dmol-min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>{three_dmol_js}</script>
+<script>{jszip_js}</script>
 <style>
 html,body{{margin:0;padding:0;font-family:-apple-system,sans-serif;background:#fafafa}}
 body{{padding:14px;box-sizing:border-box}}
