@@ -19,6 +19,7 @@ from rxn_core.alignment.sweep import (
     _color_groups_from_blocks,
     _core_mapping_variants,
     _pool_add,
+    complete_chosen_automorphism_groups,
     run_no_cut_core_branch_records,
 )
 import rxn_core.alignment.branch as branch_mod
@@ -33,6 +34,7 @@ from rxn_core.matcher import (
     _support_witness_for_value,
     _symmetry_state,
 )
+from rxn_core.matcher.orbits import _wbo_tolerance_bucket_lookup
 from rxn_core.growth.result import _IsoResult
 
 
@@ -323,6 +325,64 @@ def test_nauty_orbits_group_near_wbo_by_tolerance():
     assert strict[1] != strict[2]
 
 
+def test_nauty_loose_tolerance_preserves_edges_and_methyl_orbit():
+    pytest.importorskip("pynauty")
+    wbo = np.zeros((4, 4))
+    for h, value in enumerate((0.982056, 0.980196, 0.960315), start=1):
+        wbo[0, h] = wbo[h, 0] = value
+    g = build_graph(["C", "H", "H", "H"], wbo, bond_cut=0.2)
+
+    buckets, zero_bucket = _wbo_tolerance_bucket_lookup(g, 1.0)
+    orbits = _nauty_orbits(g, wbo_tol=1.0)
+
+    assert all(buckets[(0, h)] != zero_bucket for h in (1, 2, 3))
+    assert buckets[(1, 2)] == zero_bucket
+    assert orbits[1] == orbits[2] == orbits[3]
+    assert orbits[0] != orbits[1]
+
+
+def test_nauty_masks_positive_wbo_below_graph_floor():
+    pytest.importorskip("pynauty")
+    wbo = np.zeros((5, 5))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[0, 2] = wbo[2, 0] = 1.0
+    wbo[1, 3] = wbo[3, 1] = 1.0
+    wbo[2, 4] = wbo[4, 2] = 1.0
+    wbo[1, 4] = wbo[4, 1] = 0.16
+    graph = build_graph(["B", "O", "O", "H", "H"], wbo, bond_cut=0.2)
+
+    buckets, zero_bucket = _wbo_tolerance_bucket_lookup(graph, 1.0)
+    orbits = _nauty_orbits(graph, wbo_tol=1.0)
+
+    assert buckets[(1, 4)] == zero_bucket
+    assert orbits[1] == orbits[2]
+    assert orbits[3] == orbits[4]
+
+
+def test_chosen_automorphism_closure_recovers_early_singleton():
+    pytest.importorskip("pynauty")
+    wbo = np.zeros((4, 4))
+    for h, value in enumerate((0.982056, 0.980196, 0.960315), start=1):
+        wbo[0, h] = wbo[h, 0] = value
+    graph = build_graph(["C", "H", "H", "H"], wbo, bond_cut=0.2)
+    partial = {
+        "fragments": [{"fragment_index": 0, "island_idx": 0,
+                       "fragment": [0, 1, 2, 3]}],
+        "blocks": [{
+            "r_atoms": [1, 2], "p_atoms": [1, 2], "source": "sym_block",
+        }],
+    }
+
+    complete = complete_chosen_automorphism_groups(
+        partial, {0: 0, 1: 1, 2: 2, 3: 3}, graph, graph, 1.0)
+
+    assert complete["color_groups"] == [{
+        "r_atoms": [1, 2, 3],
+        "p_atoms": [1, 2, 3],
+        "sources": ["chosen_candidate_automorph"],
+    }]
+
+
 def test_nauty_orbits_drop_into_single_step_extension():
     pytest.importorskip("pynauty")
     wbo_r = np.zeros((3, 3))
@@ -568,7 +628,7 @@ def test_deferred_boundary_prevents_false_orbit_dedup():
     assert len(with_boundary) == 2
 
 
-def test_symmetry_repair_removes_false_orbit_swap_changes():
+def test_symmetry_repair_rejects_non_automorphic_orbit_swap():
     elements = ["C", "O", "C", "O"]
     wbo = np.zeros((4, 4))
     wbo[0, 1] = wbo[1, 0] = 1.0
@@ -587,9 +647,29 @@ def test_symmetry_repair_removes_false_orbit_swap_changes():
     after = classify_bonds(repaired, wbo, wbo)
 
     assert (len(before[0]), len(before[1])) == (2, 2)
+    assert (len(after[0]), len(after[1])) == (2, 2)
+    assert repaired == bad
+    assert stats["repaired"] is False
+
+
+def test_symmetry_repair_accepts_strict_local_automorphism():
+    elements = ["C", "H", "H"]
+    wbo = np.zeros((3, 3))
+    wbo[0, 1] = wbo[1, 0] = 0.3
+    wbo[0, 2] = wbo[2, 0] = 1.0
+    g_r = build_graph(elements, wbo, bond_cut=0.2)
+    g_p = build_graph(elements, wbo, bond_cut=0.2)
+    p_orbits = _nauty_orbits(g_p, wbo_tol=1.0)
+
+    bad = {0: 0, 1: 2, 2: 1}
+    repaired, stats = symmetry_repair_mapping(
+        bad, wbo, wbo, g_r, g_p, p_orbits,
+        min_changes=1, return_stats=True)
+    after = classify_bonds(repaired, wbo, wbo)
+
+    assert repaired == {0: 0, 1: 1, 2: 2}
     assert (len(after[0]), len(after[1])) == (0, 0)
     assert stats["repaired"] is True
-    assert stats["evaluated"] <= 4
 
 
 def test_classify_bonds_uses_lower_metal_event_threshold():

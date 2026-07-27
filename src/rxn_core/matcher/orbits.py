@@ -89,27 +89,39 @@ def _wbo_tolerance_bucket_lookup(g, tolerance):
     if tolerance <= 0:
         raise ValueError("tolerance must be positive")
     nodes = sorted(g.nodes())
-    values = {0.0}
+    # Zero is structural: it means that no edge subdivision vertex is
+    # emitted below.  Never tolerance-cluster a real edge into that class,
+    # even when the matching tolerance is as loose as 1.0.
+    values = set()
     pair_values = {}
     for i, a in enumerate(nodes):
         for b in nodes[i + 1:]:
-            w = round(float(_edge_wbo(g, a, b)), 12)
+            # The graph's edge mask (normally WBO >= graph_floor) defines
+            # topology.  The retained full WBO matrix is for scoring only;
+            # sub-floor numerical contacts must remain structural non-edges.
+            w = (
+                round(float(_edge_wbo(g, a, b)), 12)
+                if g.has_edge(a, b) else 0.0
+            )
             pair_values[(a, b)] = w
-            values.add(w)
+            if w > 0.0:
+                values.add(w)
 
     reps = []
-    value_to_bucket = {}
+    value_to_bucket = {0.0: 0}
     eps = 1e-12
     for value in sorted(values):
         for idx, rep in enumerate(reps):
             if abs(value - rep) <= tolerance + eps:
-                value_to_bucket[value] = idx
+                value_to_bucket[value] = idx + 1
                 break
         else:
-            value_to_bucket[value] = len(reps)
+            value_to_bucket[value] = len(reps) + 1
             reps.append(value)
-    return {pair: value_to_bucket[value]
-            for pair, value in pair_values.items()}, value_to_bucket[0.0]
+    return {
+        pair: value_to_bucket[value] if value > 0.0 else 0
+        for pair, value in pair_values.items()
+    }, 0
 
 
 def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None,

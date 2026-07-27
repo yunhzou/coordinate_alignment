@@ -344,14 +344,15 @@ def run_subgraph_payload(payload):
     if isinstance(node_policy, list) and not node_policy:
         node_policy = None
     anchors = {int(k): int(v) for k, v in dict(payload.get("anchors") or {}).items()}
+    iso_tol = float(payload.get("iso_tol") or 1.0)
     matches = match_weighted_subgraph(
         query,
         target,
         node_policy=node_policy,
         anchor_map=anchors,
         graph_floor=float(payload.get("graph_floor") or 0.2),
-        iso_tol=float(payload.get("iso_tol") or 1.0),
-        symmetry_wbo_tol=float(payload.get("symmetry_wbo_tol") or 0.2),
+        iso_tol=iso_tol,
+        symmetry_wbo_tol=iso_tol,
         orbit_dedup=not bool(payload.get("no_orbit_dedup")),
     )
     return {
@@ -745,7 +746,6 @@ APP_HTML = r"""<!doctype html>
           <div class="twocol">
             <label>iso_tol <input id="isoTol" type="number" value="1.0" step="0.1"></label>
             <label>dwbo_threshold <input id="dwboThreshold" type="number" value="0.5" step="0.1"></label>
-            <label>symmetry_wbo_tol <input id="symTol" type="number" value="0.2" step="0.05"></label>
             <label>n_seeds <input id="nSeeds" type="number" value="3" min="1"></label>
           </div>
           <div class="row">
@@ -858,7 +858,6 @@ APP_HTML = r"""<!doctype html>
             <label>Node policy <input id="nodePolicy" placeholder="element"></label>
             <label>iso_tol <input id="subIsoTol" type="number" value="1.0" step="0.1"></label>
             <label>graph_floor <input id="subGraphFloor" type="number" value="0.2" step="0.1"></label>
-            <label>symmetry_wbo_tol <input id="subSymTol" type="number" value="0.2" step="0.05"></label>
           </div>
           <button id="runSubBtn" class="primary">Run Subgraph Match</button>
           <span id="subSummary" class="metric">No match yet</span>
@@ -928,7 +927,7 @@ APP_HTML = r"""<!doctype html>
       const mode=$("rpMode").value;
       const payload={mode,name:$("rpName").value,anchors:Object.fromEntries(rp.anchors),config:{
         iso_tol:Number($("isoTol").value),dwbo_threshold:Number($("dwboThreshold").value),
-        symmetry_wbo_tol:Number($("symTol").value),n_seeds:Number($("nSeeds").value)
+        symmetry_wbo_tol:Number($("isoTol").value),n_seeds:Number($("nSeeds").value)
       }};
       if(mode==="smiles"){
         payload.reactant={smiles:$("rSmiles").value};
@@ -1146,7 +1145,7 @@ APP_HTML = r"""<!doctype html>
     $("runSubBtn").onclick=async()=>{
       try{ setStatus("running subgraph");
         const policy=$("nodePolicy").value.trim();
-        const data=await postJSON("/api/subgraph",{query:subSpec("q"),target:subSpec("t"),node_policy:policy||null,iso_tol:Number($("subIsoTol").value),graph_floor:Number($("subGraphFloor").value),symmetry_wbo_tol:Number($("subSymTol").value)});
+        const data=await postJSON("/api/subgraph",{query:subSpec("q"),target:subSpec("t"),node_policy:policy||null,iso_tol:Number($("subIsoTol").value),graph_floor:Number($("subGraphFloor").value)});
         lastSubResult=data;
         $("subSummary").textContent=`matches=${data.n_matches}`;
         $("subJson").textContent=JSON.stringify(data,null,2);
@@ -1181,7 +1180,7 @@ APP_HTML = r"""<!doctype html>
           multiplicity:$("multiplicity").value,
           reactant_xyz:$("rXyz").value,
           product_xyz:$("pXyz").value,
-          config:{iso_tol:$("isoTol").value,dwbo_threshold:$("dwboThreshold").value,symmetry_wbo_tol:$("symTol").value,n_seeds:$("nSeeds").value},
+          config:{iso_tol:$("isoTol").value,dwbo_threshold:$("dwboThreshold").value,n_seeds:$("nSeeds").value},
           anchors:Object.fromEntries(rp.anchors),
           selected:rp.selected,
           preview:rp.preview,
@@ -1202,7 +1201,6 @@ APP_HTML = r"""<!doctype html>
           nodePolicy:$("nodePolicy").value,
           iso_tol:$("subIsoTol").value,
           graph_floor:$("subGraphFloor").value,
-          symmetry_wbo_tol:$("subSymTol").value,
           result:lastSubResult,
           summary:$("subSummary").textContent,
           resultJson:$("subJson").textContent
@@ -1232,7 +1230,6 @@ APP_HTML = r"""<!doctype html>
       const cfg=rs.config || {};
       $("isoTol").value=cfg.iso_tol ?? "1.0";
       $("dwboThreshold").value=cfg.dwbo_threshold ?? "0.5";
-      $("symTol").value=cfg.symmetry_wbo_tol ?? "0.2";
       $("nSeeds").value=cfg.n_seeds ?? "3";
       $("rpMode").onchange(); $("xyzWboMode").onchange();
       rp.anchors=new Map(Object.entries(rs.anchors || {}).map(([k,v])=>[Number(k),Number(v)]));
@@ -1265,7 +1262,6 @@ APP_HTML = r"""<!doctype html>
       $("nodePolicy").value=ss.nodePolicy || "";
       $("subIsoTol").value=ss.iso_tol ?? "1.0";
       $("subGraphFloor").value=ss.graph_floor ?? "0.2";
-      $("subSymTol").value=ss.symmetry_wbo_tol ?? "0.2";
       lastSubResult=ss.result || null;
       $("subSummary").textContent=ss.summary || "No match yet";
       $("subJson").textContent=ss.resultJson || (lastSubResult ? JSON.stringify(lastSubResult,null,2) : "");

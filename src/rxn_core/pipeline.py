@@ -33,6 +33,7 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       match_weighted_subgraph)
 from rxn_core.alignment.sweep import (
     combine_branch_symmetry_witnesses,
+    complete_chosen_automorphism_groups,
     run_no_cut_core_branch_records,
 )
 from rxn_core.alignment.index_chirality import (
@@ -80,7 +81,9 @@ CUTSWEEP_CHUNKSIZE = int(os.environ.get("BGCP_CUTSWEEP_CHUNKSIZE", "1"))
 VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 DWBO_THRESHOLD = float(os.environ.get("BGCP_DWBO_THRESHOLD", "0.5"))
 METAL_DWBO_THRESHOLD = float(os.environ.get("BGCP_METAL_DWBO_THRESHOLD", "0.3"))
-SYMMETRY_WBO_TOL = float(os.environ.get("BGCP_SYMMETRY_WBO_TOL", "0.2"))
+# Compatibility name for serialized artifacts and older callers.  Pynauty
+# must use the same tolerance as active-edge matching.
+SYMMETRY_WBO_TOL = VIEW_ISO_TOL
 INDEX_CHIRALITY = os.environ.get(
     "BGCP_INDEX_CHIRALITY", "off").strip().lower()
 INDEX_CHIRALITY_MAX_VARIANTS = int(os.environ.get(
@@ -187,7 +190,7 @@ def rp_stage_config():
         'iso_tol': VIEW_ISO_TOL,
         'dwbo_threshold': DWBO_THRESHOLD,
         'metal_dwbo_threshold': METAL_DWBO_THRESHOLD,
-        'symmetry_wbo_tol': SYMMETRY_WBO_TOL,
+        'symmetry_wbo_tol': VIEW_ISO_TOL,
         'index_chirality': INDEX_CHIRALITY,
         'index_chirality_max_variants': INDEX_CHIRALITY_MAX_VARIANTS,
         'n_seeds': N_SEEDS_PER_RUN,
@@ -207,7 +210,7 @@ def ts_stage_config():
         'graph_floor': TS_ALIGN_GRAPH_FLOOR,
         'dwbo_threshold': DWBO_THRESHOLD,
         'metal_dwbo_threshold': METAL_DWBO_THRESHOLD,
-        'symmetry_wbo_tol': SYMMETRY_WBO_TOL,
+        'symmetry_wbo_tol': VIEW_ISO_TOL,
         'n_seeds': N_SEEDS_PER_RUN,
         'max_core_maps': TS_ALIGN_MAX_CORE_MAPS,
         'prefer_endpoint_consensus': PREFER_ENDPOINT_CONSENSUS,
@@ -1796,7 +1799,7 @@ def _rp_cut_kwargs(cfg):
         'dwbo_threshold': cfg.get('dwbo_threshold', DWBO_THRESHOLD),
         'metal_dwbo_threshold': cfg.get(
             'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
-        'symmetry_wbo_tol': cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+        'symmetry_wbo_tol': cfg.get('iso_tol', VIEW_ISO_TOL),
         'n_seeds': cfg.get('n_seeds', N_SEEDS_PER_RUN),
         'max_branches': cfg.get('max_branches', VIEW_MAX_BRANCHES),
         'chunksize': cfg.get('chunksize', CUTSWEEP_CHUNKSIZE),
@@ -1844,6 +1847,9 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         raise RuntimeError("no min-bond mechanism")
 
     mechanisms = []
+    graph_floor = cfg.get('graph_floor', 0.2)
+    g_R_full = build_graph(inputs.elR, inputs.wboR, bond_cut=graph_floor)
+    g_P_full = build_graph(inputs.elP, inputs.wboP, bond_cut=graph_floor)
     index_chirality_mode = str(
         cfg.get('index_chirality', 'off')).lower()
     if index_chirality_mode not in {'off', 'preserve'}:
@@ -1851,16 +1857,18 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             "index_chirality must be 'off' or 'preserve'")
     for mi, (_sig, info) in enumerate(rp_min.items(), 1):
         mapping_RP = _int_mapping(info['mapping'])
+        branch_symmetry = complete_chosen_automorphism_groups(
+            info.get('branch_symmetry') or {}, mapping_RP,
+            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
         index_chirality = None
         if index_chirality_mode == 'preserve':
             selection = select_index_chirality_assignment(
                 mapping_RP,
-                info.get('branch_symmetry') or {},
+                branch_symmetry,
                 inputs.elR, inputs.xyzR, inputs.wboR,
                 inputs.elP, inputs.xyzP, inputs.wboP,
                 graph_floor=cfg.get('graph_floor', 0.2),
-                symmetry_wbo_tol=cfg.get(
-                    'symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+                symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
                 dwbo_threshold=cfg.get(
                     'dwbo_threshold', DWBO_THRESHOLD),
                 metal_dwbo_threshold=cfg.get(
@@ -1911,14 +1919,22 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'formed_bonds_P': [[int(a), int(b)] for (a, b, _, _) in formed],
             'core_atoms': [int(r) for r in core_R],
             'product_xyz_in_R': xyzP_in_R.tolist(),
-            'branch_symmetry': info.get('branch_symmetry'),
+            'branch_symmetry': branch_symmetry,
             'index_chirality': index_chirality,
         })
 
     r_orbits = _nauty_orbits(
         build_graph(inputs.elR, inputs.wboR, bond_cut=0.2),
-        wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL))
+        wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
     mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
+    for mechanism in mechanisms:
+        mechanism['branch_symmetry'] = complete_chosen_automorphism_groups(
+            mechanism.get('branch_symmetry') or {},
+            _int_mapping(mechanism.get('mapping_RP') or {}),
+            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
+        if mechanism.get('index_chirality'):
+            mechanism['branch_symmetry']['index_chirality'] = dict(
+                mechanism['index_chirality'])
     return {
         'stage': 'rp',
         'step': inputs.step_name,
@@ -1978,8 +1994,7 @@ def _add_ts_endpoint_tasks(tasks, inputs, key, target_order, target_label,
         'dwbo_threshold': config.get('dwbo_threshold', DWBO_THRESHOLD),
         'metal_dwbo_threshold': config.get(
             'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
-        'symmetry_wbo_tol': config.get(
-            'symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+        'symmetry_wbo_tol': config.get('iso_tol', VIEW_ISO_TOL),
         'n_seeds': config.get('n_seeds', N_SEEDS_PER_RUN),
         'max_core_maps': config.get('max_core_maps', TS_ALIGN_MAX_CORE_MAPS),
     }
@@ -2110,7 +2125,7 @@ def run_ts_stage(inputs, rp_result, targets, config=None, inner_workers=0,
             score_weights=cfg.get('score', score_config()),
             prefer_endpoint_consensus=cfg.get(
                 'prefer_endpoint_consensus', True),
-            symmetry_wbo_tol=cfg.get('symmetry_wbo_tol', SYMMETRY_WBO_TOL))
+            symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
         _attach_target_metadata(s, target)
         if ctx['kind'] == 'gt':
             mech['gt'] = s
@@ -2645,7 +2660,7 @@ def run_subgraph_cli(query_json, target_json, *, node_policy_fields=None,
         anchor_map=anchor_map,
         graph_floor=graph_floor,
         iso_tol=iso_tol,
-        symmetry_wbo_tol=symmetry_wbo_tol,
+        symmetry_wbo_tol=iso_tol,
         seed_order=seed_order,
         orbit_dedup=orbit_dedup,
     )
@@ -2658,7 +2673,7 @@ def run_subgraph_cli(query_json, target_json, *, node_policy_fields=None,
         "anchor_map": {str(k): int(v) for k, v in sorted(anchor_map.items())},
         "graph_floor": float(graph_floor),
         "iso_tol": float(iso_tol),
-        "symmetry_wbo_tol": float(symmetry_wbo_tol),
+        "symmetry_wbo_tol": float(iso_tol),
         "orbit_dedup": bool(orbit_dedup),
         "n_matches": len(matches),
         "matches": [_subgraph_match_record(match) for match in matches],
@@ -2981,10 +2996,8 @@ def main():
                     help="Delta-WBO threshold for broken/formed events where "
                          "either endpoint is a metal. Default from "
                          "BGCP_METAL_DWBO_THRESHOLD=0.3.")
-    ap.add_argument("--symmetry-wbo-tol", type=float,
-                    default=SYMMETRY_WBO_TOL,
-                    help="WBO tolerance for symmetry-orbit bucketing. "
-                         "Default from BGCP_SYMMETRY_WBO_TOL=0.2.")
+    ap.add_argument("--symmetry-wbo-tol", type=float, default=None,
+                    help=argparse.SUPPRESS)
     ap.add_argument("--index-chiral-mode", "--index-chirality",
                     dest="index_chirality",
                     choices=("off", "preserve"),
@@ -3109,7 +3122,10 @@ def main():
     VIEW_ISO_TOL = float(args.iso_tol)
     DWBO_THRESHOLD = float(args.dwbo_threshold)
     METAL_DWBO_THRESHOLD = float(args.metal_dwbo_threshold)
-    SYMMETRY_WBO_TOL = float(args.symmetry_wbo_tol)
+    if (args.symmetry_wbo_tol is not None
+            and not np.isclose(args.symmetry_wbo_tol, VIEW_ISO_TOL)):
+        ap.error("--symmetry-wbo-tol must equal --iso-tol; use --iso-tol")
+    SYMMETRY_WBO_TOL = VIEW_ISO_TOL
     INDEX_CHIRALITY = str(args.index_chirality)
     INDEX_CHIRALITY_MAX_VARIANTS = max(
         1, int(args.index_chirality_max_variants))

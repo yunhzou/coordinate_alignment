@@ -197,7 +197,10 @@ def _selected_blocks(branch_symmetry):
     seen = set()
     for block in dict(branch_symmetry or {}).get("blocks") or ():
         source = block.get("source") or "sym_block"
-        if source not in {"sym_block", "alternate_witness"}:
+        if source not in {
+                "sym_block", "alternate_witness",
+                "chosen_candidate_automorph",
+                "chosen_fragment_automorph"}:
             continue
         r_atoms = tuple(sorted(int(r) for r in block.get("r_atoms") or ()))
         p_atoms = tuple(sorted(int(p) for p in block.get("p_atoms") or ()))
@@ -216,7 +219,7 @@ def _allowed_automorphism_mappings(source, branch_symmetry, g_P, *,
     """Enumerate the chosen candidate's strict final automorphism orbit."""
     blocks = _selected_blocks(branch_symmetry)
     if not blocks:
-        return (dict(source),), (), 0
+        return (dict(source),), (), 0, False
     mutable = sorted({r for r_atoms, _, _ in blocks for r in r_atoms})
     mutable_set = set(mutable)
     fixed = {r: p for r, p in source.items() if r not in mutable_set}
@@ -238,6 +241,7 @@ def _allowed_automorphism_mappings(source, branch_symmetry, g_P, *,
     seed = tuple(source[r] for r in mutable)
     seen = {seed}
     queue = deque([seed])
+    truncated = False
     while queue:
         state = queue.popleft()
         for generator in generators:
@@ -245,9 +249,9 @@ def _allowed_automorphism_mappings(source, branch_symmetry, g_P, *,
             if candidate in seen:
                 continue
             if len(seen) >= int(max_variants):
-                raise IndexChiralityConflict(
-                    f"index-chirality automorphism orbit exceeds "
-                    f"max_variants={max_variants}")
+                truncated = True
+                queue.clear()
+                break
             seen.add(candidate)
             queue.append(candidate)
     mappings = []
@@ -258,7 +262,7 @@ def _allowed_automorphism_mappings(source, branch_symmetry, g_P, *,
                for r_atoms, p_atoms, _ in blocks for r in r_atoms):
             continue
         mappings.append(candidate)
-    return tuple(mappings), blocks, len(generators)
+    return tuple(mappings), blocks, len(generators), truncated
 
 
 def _frame_violations(mapping, frames, coords_P, wbo_P, *, graph_floor):
@@ -301,10 +305,11 @@ def select_index_chirality_assignment(
         source, coords_R, coords_P, wbo_R, wbo_P,
         graph_floor=graph_floor)
     g_P = build_graph(elements_P, wbo_P, bond_cut=graph_floor)
-    mappings, blocks, generator_count = _allowed_automorphism_mappings(
+    mappings, blocks, generator_count, orbit_truncated = (
+        _allowed_automorphism_mappings(
         source, branch_symmetry, g_P,
         symmetry_wbo_tol=symmetry_wbo_tol,
-        max_variants=max_variants)
+        max_variants=max_variants))
     source_signature = mapping_event_signature(
         source, wbo_R, wbo_P, elements_R,
         dwbo_threshold=dwbo_threshold,
@@ -347,9 +352,13 @@ def select_index_chirality_assignment(
     evaluated.sort(key=lambda item: item[:3])
     best = evaluated[0]
     if require_zero and best[0] != 0:
+        suffix = (
+            f" within max_variants={max_variants}"
+            if orbit_truncated else ""
+        )
         raise IndexChiralityConflict(
             f"no allowed final automorphism preserves index chirality; "
-            f"minimum violations={best[0]}")
+            f"minimum violations={best[0]}{suffix}")
     selected = dict(best[3])
     source_violations = _frame_violations(
         source, active_frames, coords_P, wbo_P,
@@ -363,6 +372,7 @@ def select_index_chirality_assignment(
         "status": "applied" if selected != source else "already_consistent",
         "candidate_source": "selected_final_candidate_pynauty_automorphisms",
         "candidate_count": len(mappings),
+        "candidate_orbit_truncated": bool(orbit_truncated),
         "pynauty_generator_count": int(generator_count),
         "allowed_block_count": len(blocks),
         "switchable_r_atoms": switchable,

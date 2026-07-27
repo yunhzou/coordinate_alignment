@@ -94,7 +94,8 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
     g_R = _apply_cut_edges(g_R_full, tuple(tuple(e) for e in cut_edges or ()))
     g_P = build_graph(elP, wboP, bond_cut=graph_floor)
-    p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
+    symmetry_wbo_tol = float(iso_tol)
+    p_orbits = _nauty_orbits(g_P, wbo_tol=iso_tol)
 
     candidates = []
     orders = _generate_seed_orders(g_R, n_seeds)

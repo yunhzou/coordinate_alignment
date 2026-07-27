@@ -816,7 +816,8 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
     result = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=0)
 
     branch_symmetry = result["mechanisms"][0]["branch_symmetry"]
-    assert branch_symmetry["rule"] == "representative_branch_final_symmetry"
+    assert branch_symmetry["rule"] == (
+        "chosen_fragment_masked_automorphism_closure")
     assert branch_symmetry["dedup_witness_count"] >= 1
     assert any(
         block["r_atoms"] == [0, 1] and block["p_atoms"] == [0, 1]
