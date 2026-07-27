@@ -47,6 +47,13 @@ rxn-core --stage rp --name my_reaction \
   --workdir work/my_reaction \
   --charge 0 --multiplicity 1 --xtb-mode auto
 
+# Post-process the selected final automorphism so persistent tetrahedral
+# index orientations agree between R and P.
+rxn-core --stage rp --name my_reaction_index_chiral \
+  --reactant-xyz R.xyz --product-xyz P.xyz \
+  --workdir work/my_reaction \
+  --index-chiral-mode preserve
+
 # Direct R-P AAM with hard atom anchors. Here R atom 13 must map to P atom 9.
 rxn-core --stage rp --name my_reaction_anchor_13_9 \
   --reactant-xyz R.xyz --product-xyz P.xyz \
@@ -581,6 +588,8 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | `--xtb-workers` | `BGCP_XTB_WORKERS` | `auto` | concurrent xtb target-cache jobs; `auto` uses available CPUs divided by xtb threads, capped by inner workers |
 | `--charge` | `BGCP_CHARGE` | `0` | molecular charge used only when auto-filling missing xtb caches |
 | `--multiplicity` | `BGCP_MULTIPLICITY` | `1` | spin multiplicity for auto xtb cache-fill; converted to `--uhf=multiplicity-1` |
+| `--index-chiral-mode` | `BGCP_INDEX_CHIRALITY` | `off` | `preserve` selects an event-preserving final candidate automorphism whose persistent degree-four index orientations agree between R and P |
+| `--index-chirality-max-variants` | `BGCP_INDEX_CHIRALITY_MAX_VARIANTS` | `20000` | cap on exact final automorphism states evaluated by index-chirality post-processing |
 | `--workers` | none | `os.cpu_count()-1` | total CPU budget in auto mode, or outer workers in outer mode |
 | `--parallel-mode` | `BGCP_PARALLEL_MODE` | `auto` | `auto`, `outer`, or `inner` scheduling |
 | `--inner-workers` | none | `0` | explicit inner workers per step; `0` lets the mode choose |
@@ -601,6 +610,7 @@ current benchmark workflow; expose them when testing sensitivity.
 | `--iso-tol` | `BGCP_ISO_TOL` / `iso_tol` | `1.0` | Active R-side growth edges must have a P-side active edge with `abs(WBO_R-WBO_P) <= iso_tol`; the loose default tolerates endpoint/TS distortion while bond-change ranking decides the mechanism. |
 | `--dwbo-threshold` | `BGCP_DWBO_THRESHOLD` / `dwbo_threshold` | `0.5` | Broken/forming events require `abs(delta WBO) >= 0.5`; smaller WBO differences are treated as spectator variation. |
 | `--symmetry-wbo-tol` | `BGCP_SYMMETRY_WBO_TOL` / `symmetry_wbo_tol` | `0.2` | Nauty orbit detection buckets WBO values within this tolerance; this collapses xtb/noise-level symmetry without changing exact active-edge validity checks. |
+| `--index-chiral-mode` | `BGCP_INDEX_CHIRALITY` / `index_chirality` | `off` | `preserve` is a post-processing mode: retain the selected broken/formed bond signature, search only its final pynauty-validated automorphisms, and require matching R/P index-orientation signs for switchable persistent degree-four frames. |
 | none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Per-cut branch cap for R-P sweep; cuts that exceed it are discarded as pathological branch multipliers. |
 | none | `BGCP_TS_ALIGN_GRAPH_FLOOR` / `graph_floor` | `0.2` | Active WBO graph edge floor for no-cut R/P-to-TS fragment growth. |
 | none | `BGCP_TS_ALIGN_MAX_CORE_MAPS` / `max_core_maps` | `20000` | Cap on mechanism-local TS/IG core maps after expanding compressed core degeneracy. |

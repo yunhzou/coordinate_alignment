@@ -44,6 +44,8 @@ from .alignment import (
     MatchCandidate, MatchResult, cut_edges_above_floor,
     cut_sweep, cut_sweep_items, merge_cut_sweep_pools,
     run_cut_sweep_chunk, select_min_mechanisms,
+    IndexChiralityConflict, IndexChiralityError,
+    select_index_chirality_assignment,
 )
 from .chemistry_computations import (
     run_xtb, parse_xyz, write_xyz_str,
@@ -92,6 +94,8 @@ __all__ = [
     "cut_edges_above_floor", "cut_sweep", "cut_sweep_items",
     "merge_cut_sweep_pools", "run_cut_sweep_chunk",
     "select_min_mechanisms",
+    "IndexChiralityConflict", "IndexChiralityError",
+    "select_index_chirality_assignment",
     "run_xtb", "parse_xyz", "write_xyz_str",
     "build_graph", "classify_bonds", "expand_mapping",
     "WeightedGraph", "WeightedNode", "build_weighted_graph",

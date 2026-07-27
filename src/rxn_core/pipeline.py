@@ -35,6 +35,9 @@ from rxn_core.alignment.sweep import (
     combine_branch_symmetry_witnesses,
     run_no_cut_core_branch_records,
 )
+from rxn_core.alignment.index_chirality import (
+    select_index_chirality_assignment,
+)
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
 )
@@ -78,6 +81,10 @@ VIEW_ISO_TOL = float(os.environ.get("BGCP_ISO_TOL", "1.0"))
 DWBO_THRESHOLD = float(os.environ.get("BGCP_DWBO_THRESHOLD", "0.5"))
 METAL_DWBO_THRESHOLD = float(os.environ.get("BGCP_METAL_DWBO_THRESHOLD", "0.3"))
 SYMMETRY_WBO_TOL = float(os.environ.get("BGCP_SYMMETRY_WBO_TOL", "0.2"))
+INDEX_CHIRALITY = os.environ.get(
+    "BGCP_INDEX_CHIRALITY", "off").strip().lower()
+INDEX_CHIRALITY_MAX_VARIANTS = int(os.environ.get(
+    "BGCP_INDEX_CHIRALITY_MAX_VARIANTS", "20000"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
     "1", "true", "yes", "on"
@@ -181,6 +188,8 @@ def rp_stage_config():
         'dwbo_threshold': DWBO_THRESHOLD,
         'metal_dwbo_threshold': METAL_DWBO_THRESHOLD,
         'symmetry_wbo_tol': SYMMETRY_WBO_TOL,
+        'index_chirality': INDEX_CHIRALITY,
+        'index_chirality_max_variants': INDEX_CHIRALITY_MAX_VARIANTS,
         'n_seeds': N_SEEDS_PER_RUN,
         'max_branches': VIEW_MAX_BRANCHES,
         'chunksize': CUTSWEEP_CHUNKSIZE,
@@ -885,6 +894,9 @@ def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
             witnesses.extend(_mechanism_branch_witnesses(mech))
         rep['branch_symmetry'] = combine_branch_symmetry_witnesses(
             witnesses, representative_mapping=rep.get('mapping_RP'))
+        if rep.get('index_chirality'):
+            rep['branch_symmetry']['index_chirality'] = dict(
+                rep['index_chirality'])
         deduped.append(rep)
 
     for new_id, mech in enumerate(deduped, 1):
@@ -1832,8 +1844,34 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         raise RuntimeError("no min-bond mechanism")
 
     mechanisms = []
+    index_chirality_mode = str(
+        cfg.get('index_chirality', 'off')).lower()
+    if index_chirality_mode not in {'off', 'preserve'}:
+        raise ValueError(
+            "index_chirality must be 'off' or 'preserve'")
     for mi, (_sig, info) in enumerate(rp_min.items(), 1):
         mapping_RP = _int_mapping(info['mapping'])
+        index_chirality = None
+        if index_chirality_mode == 'preserve':
+            selection = select_index_chirality_assignment(
+                mapping_RP,
+                info.get('branch_symmetry') or {},
+                inputs.elR, inputs.xyzR, inputs.wboR,
+                inputs.elP, inputs.xyzP, inputs.wboP,
+                graph_floor=cfg.get('graph_floor', 0.2),
+                symmetry_wbo_tol=cfg.get(
+                    'symmetry_wbo_tol', SYMMETRY_WBO_TOL),
+                dwbo_threshold=cfg.get(
+                    'dwbo_threshold', DWBO_THRESHOLD),
+                metal_dwbo_threshold=cfg.get(
+                    'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+                max_variants=cfg.get(
+                    'index_chirality_max_variants',
+                    INDEX_CHIRALITY_MAX_VARIANTS),
+                anchor_map=cfg.get('anchor_map') or {},
+            )
+            mapping_RP = selection.selected_mapping
+            index_chirality = selection.metadata
         inv_RP = {v: k for k, v in mapping_RP.items()}
         broken, formed, _, _ = classify_bonds(
             mapping_RP, inputs.wboR, inputs.wboP,
@@ -1874,6 +1912,7 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'core_atoms': [int(r) for r in core_R],
             'product_xyz_in_R': xyzP_in_R.tolist(),
             'branch_symmetry': info.get('branch_symmetry'),
+            'index_chirality': index_chirality,
         })
 
     r_orbits = _nauty_orbits(
@@ -2351,7 +2390,7 @@ function structureMeta(item) {{ const meta = (item && item.metadata) ? item.meta
 function freqSummaryText(item) {{ if (!item || !item.frequency_summary) return ""; const fs = item.frequency_summary; const imag = fs.imaginary_cm1 || []; if (imag.length) return imag.map(formatFreq).join(", "); if (isFiniteNumber(fs.lowest_cm1)) return "min "+formatFreq(fs.lowest_cm1); return ""; }}
 function targetAnalysisRecord(item) {{ if (!item) return null; return {{label:item.label || null, energy_hartree:item.energy_hartree ?? null, energy_units:item.energy_units || "hartree", frequency_units:item.frequency_units || "cm^-1", frequencies_cm1:item.frequencies_cm1 || null, frequency_summary:item.frequency_summary || null, picked_mode:{{index:item.k ?? null, frequency_cm1:item.freq ?? null}}}}; }}
 function scoreRecord(item) {{ if (!item || item.S === undefined || item.S === null) return null; return {{S:item.S, energy_hartree:item.energy_hartree ?? null, energy_units:item.energy_units || "hartree", frequency_units:item.frequency_units || "cm^-1", frequencies_cm1:item.frequencies_cm1 || null, frequency_summary:item.frequency_summary || null, decomposition:{{beta:item.beta, wbo_progress:item.wbo_progress, wbo_progress_factor:item.wbo_progress_factor, freq:item.freq, mode_index:item.k}}, event_terms:item.event_terms || [], core_map:item.core_map, core_sources:item.core_sources, core_pool_dedup_count:item.core_pool_dedup_count, endpoint_consensus:item.endpoint_consensus}}; }}
-function mechanismRecord(mech) {{ return {{id:mech.id, label:mech.label, cut:mech.cut, dedup_count:mech.dedup_count || 1, dedup_source_ids:mech.dedup_source_ids || [mech.id], dedup_cuts:mech.dedup_cuts || [mech.cut], broken_bonds_R:mech.broken_bonds_R, formed_bonds_R:mech.formed_bonds_R, formed_bonds_P:mech.formed_bonds_P || [], core_atoms_R:mech.core_atoms || [], branch_symmetry:mech.branch_symmetry || null, gt:scoreRecord(mech.gt), igs:(mech.igs || []).map(ig => ({{label:ig.label, energy_hartree:ig.energy_hartree ?? null, frequency_summary:ig.frequency_summary || null, is_top2:!!ig.is_top2, is_union_top:!!ig.is_union_top, score:scoreRecord(ig)}}))}}; }}
+function mechanismRecord(mech) {{ return {{id:mech.id, label:mech.label, cut:mech.cut, dedup_count:mech.dedup_count || 1, dedup_source_ids:mech.dedup_source_ids || [mech.id], dedup_cuts:mech.dedup_cuts || [mech.cut], broken_bonds_R:mech.broken_bonds_R, formed_bonds_R:mech.formed_bonds_R, formed_bonds_P:mech.formed_bonds_P || [], core_atoms_R:mech.core_atoms || [], branch_symmetry:mech.branch_symmetry || null, index_chirality:mech.index_chirality || null, gt:scoreRecord(mech.gt), igs:(mech.igs || []).map(ig => ({{label:ig.label, energy_hartree:ig.energy_hartree ?? null, frequency_summary:ig.frequency_summary || null, is_top2:!!ig.is_top2, is_union_top:!!ig.is_union_top, score:scoreRecord(ig)}}))}}; }}
 function buildEnergyFrequencySummary() {{ return {{step:DATA.step, units:{{energy:"hartree", frequency:"cm^-1"}}, reactant:(DATA.reactant && DATA.reactant.metadata) || null, product:(DATA.product && DATA.product.metadata) || null, mechanisms:(DATA.mechanisms || []).map(mech => ({{id:mech.id, label:mech.label, gt:targetAnalysisRecord(mech.gt), igs:(mech.igs || []).map(targetAnalysisRecord)}}))}}; }}
 function buildArchiveManifest() {{ return {{step:DATA.step, n_atoms:DATA.n_atoms, include_gt:!!DATA.include_gt, default_mech_id:DATA.default_mech_id, score_formula:"S = beta * wbo_progress^WBO_PROGRESS_POWER", score_config:DATA.score_config || null, endpoint_metadata:{{reactant:(DATA.reactant && DATA.reactant.metadata) || null, product:(DATA.product && DATA.product.metadata) || null}}, mechanisms:(DATA.mechanisms || []).map(mechanismRecord), files:{{reactant:"R.xyz", product:"P.xyz", gt:"GT/GT.xyz if available", ig:"IG/<label>.xyz", energy_frequency_summary:"energies_frequencies.json", per_mechanism:"mechanisms/mechanism_<id>.json", full_viewer_data:"viewer_data.json", view_html:"view.html"}}}}; }}
 function scoreMeta(item) {{ if (!item) return "(no data)"; const parts = []; if (item.energy_hartree !== undefined && item.energy_hartree !== null) parts.push("<b>E</b>="+formatEnergy(item.energy_hartree)); if (item.beta !== undefined) parts.push("<b>&beta;</b>="+item.beta.toFixed(3)); if (item.wbo_progress !== undefined) parts.push("<b>wbo</b>="+item.wbo_progress.toFixed(3)); if (item.freq !== undefined && item.freq !== null) parts.push("<b>mode</b>="+formatFreq(item.freq)); const fs = freqSummaryText(item); if (fs) parts.push("<b>freqs</b>="+fs); return parts.length ? parts.join(" ") : "(no data)"; }}
@@ -2874,6 +2913,7 @@ def main():
     global XTB_WORKERS
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, METAL_DWBO_THRESHOLD, SYMMETRY_WBO_TOL
+    global INDEX_CHIRALITY, INDEX_CHIRALITY_MAX_VARIANTS
     global EVENT_WEIGHT_POWER, WBO_PROGRESS_POWER
     global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
@@ -2945,6 +2985,16 @@ def main():
                     default=SYMMETRY_WBO_TOL,
                     help="WBO tolerance for symmetry-orbit bucketing. "
                          "Default from BGCP_SYMMETRY_WBO_TOL=0.2.")
+    ap.add_argument("--index-chiral-mode", "--index-chirality",
+                    dest="index_chirality",
+                    choices=("off", "preserve"),
+                    default=INDEX_CHIRALITY,
+                    help="Post-process the selected final automorphism to "
+                         "preserve endpoint index chirality. Default off.")
+    ap.add_argument("--index-chirality-max-variants", type=int,
+                    default=INDEX_CHIRALITY_MAX_VARIANTS,
+                    help="Maximum final automorphism states evaluated by "
+                         "index-chirality post-processing.")
     ap.add_argument("--event-weight-power", type=float,
                     default=EVENT_WEIGHT_POWER,
                     help="Exponent on each detected R-P event's |delta WBO| "
@@ -3060,6 +3110,9 @@ def main():
     DWBO_THRESHOLD = float(args.dwbo_threshold)
     METAL_DWBO_THRESHOLD = float(args.metal_dwbo_threshold)
     SYMMETRY_WBO_TOL = float(args.symmetry_wbo_tol)
+    INDEX_CHIRALITY = str(args.index_chirality)
+    INDEX_CHIRALITY_MAX_VARIANTS = max(
+        1, int(args.index_chirality_max_variants))
     EVENT_WEIGHT_POWER = float(args.event_weight_power)
     WBO_PROGRESS_POWER = float(args.wbo_progress_power)
     STAGE_ROOT = Path(args.stage_root)
@@ -3081,6 +3134,9 @@ def main():
     os.environ["BGCP_DWBO_THRESHOLD"] = str(DWBO_THRESHOLD)
     os.environ["BGCP_METAL_DWBO_THRESHOLD"] = str(METAL_DWBO_THRESHOLD)
     os.environ["BGCP_SYMMETRY_WBO_TOL"] = str(SYMMETRY_WBO_TOL)
+    os.environ["BGCP_INDEX_CHIRALITY"] = INDEX_CHIRALITY
+    os.environ["BGCP_INDEX_CHIRALITY_MAX_VARIANTS"] = str(
+        INDEX_CHIRALITY_MAX_VARIANTS)
     os.environ["BGCP_EVENT_WEIGHT_POWER"] = str(EVENT_WEIGHT_POWER)
     os.environ["BGCP_WBO_PROGRESS_POWER"] = str(WBO_PROGRESS_POWER)
     os.environ["BGCP_STAGE_ROOT"] = str(STAGE_ROOT)
