@@ -44,7 +44,6 @@ from .state import (
     _cand_possible_p_atoms,
     _sym_block_assignment_expr,
     _sym_block_indexes,
-    _sym_cand_variants,
     _symmetry_state,
 )
 from .support import (

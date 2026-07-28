@@ -3,15 +3,20 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
+from .canonical import _CandidateAutomorphismCanonicalizer
 from .orbits import _cand_canon_signature, _orbit_wbo_bucket
-from .policy import as_node_match_policy
+from .policy import (
+    AttributeNodeMatchPolicy,
+    ElementNodeMatchPolicy,
+    as_node_match_policy,
+)
 from .primitives import _edge_wbo, _orbit_id, _wbo_bucket
 from .state import _SymCand, _cand_map, _cand_possible_p_atoms
 
 
 def _p_relation_signature_from_parts(cand, v, g_P, p_orbits,
                                      cm_items=None, blocks=None,
-                                     node_policy=None):
+                                     node_policy=None, compact=False):
     """Signature of one possible target atom against a candidate state.
 
     Boundary dedupe calls this many times for the same candidate.  Accepting
@@ -24,23 +29,64 @@ def _p_relation_signature_from_parts(cand, v, g_P, p_orbits,
         blocks = cand.blocks if isinstance(cand, _SymCand) else ()
     node_policy = as_node_match_policy(node_policy)
 
-    rel = []
-    for r, p in cm_items:
-        if p == v:
-            continue
-        w = _edge_wbo(g_P, p, v)
-        rel.append((r, _orbit_wbo_bucket(p_orbits, p, v, w)))
-    block_rel = []
-    for i, b in enumerate(blocks):
-        edge_wbos = []
-        for p in b.p_atoms:
+    # Exact nauty orbit maps give structural zero its own bucket.  In that
+    # representation all absent graph edges contribute the same zero value,
+    # so recording them one by one is redundant.  Store the domain plus only
+    # nonzero neighbor relations; this is losslessly equivalent to the former
+    # dense vector and changes O(fragment_size) work per target atom into
+    # O(target_degree) work.  Plain user-supplied orbit dicts lack this
+    # structural-zero guarantee and retain the dense path below.
+    structural_zero = getattr(p_orbits, 'zero_bucket', None)
+    if compact and structural_zero is not None:
+        active_cm = tuple((r, p) for r, p in cm_items if p != v)
+        mapped_r = tuple(r for r, _ in active_cm)
+        r_by_p = {p: r for r, p in active_cm}
+        rel = []
+        for p in g_P.neighbors(v):
+            r = r_by_p.get(p)
+            if r is None:
+                continue
+            w = _edge_wbo(g_P, p, v)
+            bucket = _orbit_wbo_bucket(p_orbits, p, v, w)
+            if bucket != structural_zero:
+                rel.append((r, bucket))
+        rel = ('sparse', mapped_r, tuple(sorted(rel)))
+
+        neighbor_buckets = {}
+        for p in g_P.neighbors(v):
+            bucket = _orbit_wbo_bucket(
+                p_orbits, p, v, _edge_wbo(g_P, p, v))
+            if bucket != structural_zero:
+                neighbor_buckets[p] = bucket
+        block_rel = []
+        for i, b in enumerate(blocks):
+            member = v in b.p_atoms
+            domain_size = len(b.p_atoms) - int(member)
+            edge_wbos = tuple(sorted(
+                neighbor_buckets[p] for p in b.p_atoms
+                if p != v and p in neighbor_buckets
+            ))
+            block_rel.append(
+                (i, member, domain_size, edge_wbos))
+    else:
+        rel = []
+        for r, p in cm_items:
             if p == v:
                 continue
             w = _edge_wbo(g_P, p, v)
-            edge_wbos.append(_orbit_wbo_bucket(p_orbits, p, v, w))
-        block_rel.append((i, v in b.p_atoms, tuple(sorted(edge_wbos))))
+            rel.append((r, _orbit_wbo_bucket(p_orbits, p, v, w)))
+        rel = tuple(rel)
+        block_rel = []
+        for i, b in enumerate(blocks):
+            edge_wbos = []
+            for p in b.p_atoms:
+                if p == v:
+                    continue
+                w = _edge_wbo(g_P, p, v)
+                edge_wbos.append(_orbit_wbo_bucket(p_orbits, p, v, w))
+            block_rel.append((i, v in b.p_atoms, tuple(sorted(edge_wbos))))
     return (node_policy.key(g_P, v), _orbit_id(p_orbits, v),
-            tuple(rel), tuple(block_rel))
+            rel, tuple(block_rel))
 
 
 def _p_relation_signature(cand, v, g_P, p_orbits, node_policy=None):
@@ -79,13 +125,21 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
     mapped_rs = sorted(r for r in fragment if r in cm)
     out = []
 
-    # For custom compatibility rules, two nodes with the same display element
-    # can still have different target pools.  Cache by the concrete boundary
-    # node to keep this signature exact for arbitrary policies.
+    # Element/attribute policies define compatibility entirely by ``key``.
+    # Boundary nodes with the same key therefore have exactly the same target
+    # pool, so compute that pool's candidate-dependent vector only once.  A
+    # callable/custom policy may distinguish two same-key query nodes; retain
+    # concrete-node caching for those policies to preserve exact semantics.
+    compatibility_is_key_equality = isinstance(
+        node_policy, (ElementNodeMatchPolicy, AttributeNodeMatchPolicy))
     p_vec_by_node = {}
 
     def p_vec_for_node(x):
-        cached = p_vec_by_node.get(x)
+        cache_key = (
+            ('key', node_policy.key(g_R, x))
+            if compatibility_is_key_equality else ('node', x)
+        )
+        cached = p_vec_by_node.get(cache_key)
         if cached is not None:
             return cached
         target_sigs = []
@@ -96,10 +150,13 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
                 continue
             target_sigs.append(_p_relation_signature_from_parts(
                 cand, v, g_P, p_orbits, cm_items=cm_items, blocks=blocks,
-                node_policy=node_policy))
+                node_policy=node_policy, compact=True))
         counts = Counter(target_sigs)
-        p_vec = tuple(sorted(counts.items(), key=lambda item: str(item[0])))
-        p_vec_by_node[x] = p_vec
+        # This is a multiset used only for hashing/equality.  Sorting its very
+        # large nested signatures by their string representation was the main
+        # cost in large fragments and carries no semantic information.
+        p_vec = frozenset(counts.items())
+        p_vec_by_node[cache_key] = p_vec
         return p_vec
 
     for x in sorted(boundary):
@@ -122,34 +179,31 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
                      node_policy=None):
     if not cands:
         return cands
-    internal_keys = []
-    internal_counts = Counter()
-    for cand in cands:
-        if isinstance(cand, _SymCand):
-            internal = cand.structural_signature(g_R, g_P, r_orbits, p_orbits)
-        elif p_orbits is not None:
-            internal = _cand_canon_signature(cand, p_orbits)
-        else:
-            internal = tuple(sorted(cand.items()))
-        internal_keys.append(internal)
-        internal_counts[internal] += 1
-
+    canonicalizer = _CandidateAutomorphismCanonicalizer(
+        g_P, p_orbits=p_orbits, locked_mapping=locked_mapping,
+        node_policy=node_policy)
+    certificates = [canonicalizer.certificate(cand) for cand in cands]
+    certificate_counts = Counter(certificates)
     seen = {}
-    for cand, internal in zip(cands, internal_keys):
-        if internal_counts[internal] == 1:
-            # Boundary can only distinguish candidates that already share the
-            # same internal symmetry signature.  Singleton internal classes are
-            # necessarily unique under the full (internal, boundary) key.
-            boundary = ()
-        else:
+    for cand, certificate in zip(cands, certificates):
+        # Exact active-graph automorphism is the primary hierarchy.  Preserve
+        # legacy deferred/full-WBO evidence only inside an automorphic class;
+        # this catches sub-floor distinctions without comparing every pair of
+        # unrelated candidates.
+        boundary = ()
+        if certificate_counts[certificate] > 1 and deferred_edges:
             boundary = _boundary_signature(
                 cand, g_R, g_P, fragment=fragment,
                 deferred_edges=deferred_edges, r_orbits=r_orbits,
                 p_orbits=p_orbits, locked_mapping=locked_mapping,
                 node_policy=node_policy)
-        sig = (internal, boundary)
+        sig = (certificate, boundary)
         if sig not in seen:
             seen[sig] = cand
         elif isinstance(seen[sig], _SymCand) and isinstance(cand, _SymCand):
-            seen[sig] = seen[sig].with_added_alternate(cand)
+            kept = seen[sig]
+            # Exact automorphism transport guarantees that every continuation
+            # of ``cand`` has an equivalent continuation of ``kept``.  Count
+            # the represented states, but never enumerate alternate witnesses.
+            seen[sig] = kept.with_automorph_equivalent(cand)
     return list(seen.values())

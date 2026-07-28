@@ -7,10 +7,9 @@ import time
 from ..matcher import (
     _SymBlock,
     _SymCand,
-    _boundary_signature,
-    _cand_canon_signature,
     _cand_map,
     _cand_possible_p_atoms,
+    _dedup_sym_cands,
     _extend_sym_cands,
     _group_nodes_by_signature,
     _orbit_id,
@@ -18,7 +17,7 @@ from ..matcher import (
 )
 from ..matcher.policy import as_node_match_policy
 from .frontier import _frontier_boundary_edges, _push_edges_from, _set_unique
-from .result import _IsoResult
+from .result import IslandBranchLimitExceeded, _IsoResult
 from .trace import (
     cand_possible_values,
     cands_pattern_sample,
@@ -339,6 +338,14 @@ def grow_island(g_R, g_P, seed, mapping,
                     'pool_by_frag_atom': pool_by_frag_atom(heap, used_edges, fragment, mapping, g_R),
                 })
 
+    # Apply the same exact product-automorphism quotient at saturation.  This
+    # is normally a no-op after incremental canonicalization, but also covers
+    # single-atom/no-extension fragments.
+    cands = _dedup_sym_cands(
+        cands, g_R, g_P, r_orbits=r_orbits, p_orbits=p_orbits,
+        fragment=fragment, deferred_edges=deferred_edges,
+        locked_mapping=mapping, node_policy=node_policy)
+
     # heap empty
     if not cands or len(fragment) < min_lock_size:
         _finish_profile(
@@ -372,45 +379,29 @@ def grow_island(g_R, g_P, seed, mapping,
                            symmetry=_symmetry_state(
                                cands[0],
                                r_orbits=r_orbits, p_orbits=p_orbits))]
-    # Dedup by compressed structural signature.  Open symmetry blocks may
-    # still contain many concrete witnesses; only one deterministic witness
-    # is returned for each orbit/context-distinct saturation.
-    by_set = {}
-    for c in cands:
-        if isinstance(c, _SymCand):
-            key = (
-                c.structural_signature(g_R, g_P, r_orbits, p_orbits),
-                _boundary_signature(
-                    c, g_R, g_P, fragment=fragment,
-                    deferred_edges=deferred_edges, r_orbits=r_orbits,
-                    p_orbits=p_orbits, locked_mapping=mapping,
-                    node_policy=node_policy),
-            )
-        elif p_orbits is not None:
-            key = (
-                _cand_canon_signature(c, p_orbits),
-                _boundary_signature(
-                    c, g_R, g_P, fragment=fragment,
-                    deferred_edges=deferred_edges, r_orbits=r_orbits,
-                    p_orbits=p_orbits, locked_mapping=mapping,
-                    node_policy=node_policy),
-            )
-        else:
-            key = (
-                tuple(sorted(c.items())),
-                _boundary_signature(
-                    c, g_R, g_P, fragment=fragment,
-                    deferred_edges=deferred_edges, r_orbits=r_orbits,
-                    p_orbits=p_orbits, locked_mapping=mapping,
-                    node_policy=node_policy),
-            )
-        if key not in by_set:
-            by_set[key] = _IsoResult(
-                _cand_map(c), deferred_edges=deferred_edges,
-                fragment=fragment, symmetry=_symmetry_state(
-                    c, r_orbits=r_orbits,
-                    p_orbits=p_orbits))
-    branches = list(by_set.values())[:max_branches]
+    if len(cands) > max_branches:
+        _finish_profile('subtree_branch_cap', len(cands), fragment, len(cands))
+        if record:
+            events.append({
+                'type': 'seed_end',
+                'result': 'subtree_branch_cap',
+                'final_cands': len(cands),
+                'max_branches': int(max_branches),
+                'fragment': sorted(int(x) for x in fragment),
+                'iso': None,
+            })
+        raise IslandBranchLimitExceeded(
+            len(cands), max_branches, seed=int(seed))
+    # ``cands`` was just quotient-deduped by this same structural/boundary
+    # relation.  Materialize each surviving saturation directly instead of
+    # recomputing every large boundary signature a second time.
+    branches = [
+        _IsoResult(
+            _cand_map(c), deferred_edges=deferred_edges,
+            fragment=fragment, symmetry=_symmetry_state(
+                c, r_orbits=r_orbits, p_orbits=p_orbits))
+        for c in cands
+    ]
     _finish_profile('branched', len(cands), fragment, len(branches))
     if record:
         events.append({

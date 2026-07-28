@@ -743,7 +743,8 @@ def test_viewer_uses_step_level_download_button():
     assert 'productAtomLabels' in html
     assert '"R"+i+"/P"+mapping[String(i)]' not in html
     assert "return els.map((_, i) => String(i));" in html
-    assert 'const pAligned = !!(rOrdered && mech.product_xyz_in_R)' in html
+    assert 'const alignedP = mech.product_xyz_in_R_aligned || mech.product_xyz_in_R' in html
+    assert 'const pAligned = !!(rOrdered && alignedP)' in html
     assert '"native P"' in html
     assert 'id="zipBtn"' not in html
     assert 'mechanism.json' in html

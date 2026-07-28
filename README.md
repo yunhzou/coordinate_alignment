@@ -588,8 +588,7 @@ These controls select files, outputs, cache-fill behavior, and parallelism.
 | `--xtb-workers` | `BGCP_XTB_WORKERS` | `auto` | concurrent xtb target-cache jobs; `auto` uses available CPUs divided by xtb threads, capped by inner workers |
 | `--charge` | `BGCP_CHARGE` | `0` | molecular charge used only when auto-filling missing xtb caches |
 | `--multiplicity` | `BGCP_MULTIPLICITY` | `1` | spin multiplicity for auto xtb cache-fill; converted to `--uhf=multiplicity-1` |
-| `--index-chiral-mode` | `BGCP_INDEX_CHIRALITY` | `off` | `preserve` selects an event-preserving final candidate automorphism whose persistent degree-four index orientations agree between R and P |
-| `--index-chirality-max-variants` | `BGCP_INDEX_CHIRALITY_MAX_VARIANTS` | `20000` | cap on exact final automorphism states evaluated by index-chirality post-processing |
+| `--index-chiral-mode` | `BGCP_INDEX_CHIRALITY` | `off` | `preserve` first selects the same-event AAM witness retaining the most higher-coordinate center-relative orientations, then composes it with an exact event-preserving masked-fragment automorphism that preserves those relations and every stereochemically equivalent affine substituent simplex |
 | `--workers` | none | `os.cpu_count()-1` | total CPU budget in auto mode, or outer workers in outer mode |
 | `--parallel-mode` | `BGCP_PARALLEL_MODE` | `auto` | `auto`, `outer`, or `inner` scheduling |
 | `--inner-workers` | none | `0` | explicit inner workers per step; `0` lets the mode choose |
@@ -609,9 +608,9 @@ current benchmark workflow; expose them when testing sensitivity.
 | none | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery sweeps cuts over every R edge at or above this WBO; `0.2` includes weak but chemically relevant WBO graph edges while excluding near-zero pairs. |
 | `--iso-tol` | `BGCP_ISO_TOL` / `iso_tol` | `1.0` | Active R-side growth edges must have a P-side active edge with `abs(WBO_R-WBO_P) <= iso_tol`; the loose default tolerates endpoint/TS distortion while bond-change ranking decides the mechanism. |
 | `--dwbo-threshold` | `BGCP_DWBO_THRESHOLD` / `dwbo_threshold` | `0.5` | Broken/forming events require `abs(delta WBO) >= 0.5`; smaller WBO differences are treated as spectator variation. |
-| `--symmetry-wbo-tol` | `BGCP_SYMMETRY_WBO_TOL` / `symmetry_wbo_tol` | `0.2` | Nauty orbit detection buckets WBO values within this tolerance; this collapses xtb/noise-level symmetry without changing exact active-edge validity checks. |
-| `--index-chiral-mode` | `BGCP_INDEX_CHIRALITY` / `index_chirality` | `off` | `preserve` is a post-processing mode: retain the selected broken/formed bond signature, search only its final pynauty-validated automorphisms, and require matching R/P index-orientation signs for switchable persistent degree-four frames. |
-| none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Per-cut branch cap for R-P sweep; cuts that exceed it are discarded as pathological branch multipliers. |
+| `--symmetry-wbo-tol` | compatibility alias for `--iso-tol` | `1.0` | Pynauty orbit detection uses exactly the active-edge matching tolerance; supplying a different value is rejected. |
+| `--index-chiral-mode` | `BGCP_INDEX_CHIRALITY` / `index_chirality` | `off` | `preserve` retains the selected broken/formed bond signature, chooses among its AAM isomorphism witnesses by higher-coordinate group orientation, and then composes only with an exact final masked-fragment automorphism that preserves the chosen group relations and every stereochemically equivalent affine substituent simplex. |
+| none | `BGCP_VIEW_MAX_BRANCHES` / `max_branches` | `100` | Post-dedupe live-leaf cap per R-P seed-order tree; exactly 100 is allowed and only the overflowing parent subtree is removed. |
 | none | `BGCP_TS_ALIGN_GRAPH_FLOOR` / `graph_floor` | `0.2` | Active WBO graph edge floor for no-cut R/P-to-TS fragment growth. |
 | none | `BGCP_TS_ALIGN_MAX_CORE_MAPS` / `max_core_maps` | `20000` | Cap on mechanism-local TS/IG core maps after expanding compressed core degeneracy. |
 | none | `BGCP_PREFER_ENDPOINT_CONSENSUS` / `prefer_endpoint_consensus` | `1` | Prefer the highest-S exact core map recovered from both R-side and P-side endpoint matching; if no consensus map exists, fall back to the highest-S endpoint-union map. |
@@ -631,7 +630,6 @@ CLI options:
 --auto-inner-workers   target inner workers per concurrent step in auto mode
 --iso-tol              WBO tolerance for active graph matching
 --dwbo-threshold       WBO delta for broken/formed bond classification
---symmetry-wbo-tol     WBO tolerance for symmetry-orbit bucketing
 --event-weight-power   exponent on R-P event delta-WBO weights
 --wbo-progress-power   exponent on TS WBO progress factor
 --xtb-mode             auto | cache-only

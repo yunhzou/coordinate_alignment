@@ -22,7 +22,7 @@ from typing import Any
 from .dedupe import _dedup_sym_cands, _p_relation_signature
 from .policy import DEFAULT_NODE_POLICY, as_node_match_policy
 from .primitives import _edge_wbo, _growth_edge_supported
-from .state import _SymCand, _sym_block_indexes, _sym_cand_variants
+from .state import _SymCand, _sym_block_indexes
 from .support import (
     _force_sym_value,
     _refine_sym_assignments,
@@ -58,6 +58,7 @@ def _extend_sym_cands(
     anchor_wbo: Wbo | None = None,
     dedupe_edges: Iterable[EdgeKey] | None = None,
     node_policy=None,
+    defer_boundary_dedupe: bool = False,
 ) -> list[_SymCand]:
     """Symmetry-compressed incremental extension.
 
@@ -113,13 +114,16 @@ def _extend_sym_cands(
         Node-level compatibility policy.  The default is same element.  Custom
         policies can admit target nodes by electronic or other descriptors
         before the normal WBO/``iso_tol`` edge verifier is applied.
+    defer_boundary_dedupe
+        Diagnostic mode that postpones automorphism quotienting until fragment
+        saturation. Exact duplicate states are still combined.
 
     Returns
     -------
     list[_SymCand]
         Canonical-distinct compressed matches for `fragment_old union {n}`.
         Each returned `_SymCand` may represent many concrete injective
-        assignments through symmetry blocks and multiplicity/alternates.
+        assignments through symmetry blocks and exact automorphism domains.
     """
     node_policy = as_node_match_policy(node_policy)
     ctx = _make_extension_context(
@@ -130,8 +134,11 @@ def _extend_sym_cands(
         return []
 
     children: list[_SymCand] = []
-    for cand in _expand_sym_cand_variants(cands):
+    for raw_cand in cands:
+        cand = raw_cand if isinstance(raw_cand, _SymCand) else _SymCand(raw_cand)
         children.extend(_extend_one_candidate(cand, ctx))
+    if defer_boundary_dedupe:
+        return _dedupe_children_exact(children)
     return _dedupe_children(children, ctx)
 
 
@@ -285,23 +292,6 @@ def _make_extension_context(
         island_atoms=_locked_island_atoms(n, fragment_old, mapping, islands_R),
         node_policy=node_policy,
     )
-
-
-def _expand_sym_cand_variants(
-    cands: Iterable[SymCandidate],
-) -> list[_SymCand]:
-    """Normalize raw mappings and materialize retained witnesses.
-
-    `_SymCand.alternates` holds concrete witnesses collapsed into the same
-    canonical state.  They still represent legal assignments, so every
-    retained witness must be extended.  The following dedupe step collapses
-    equivalent children back together while preserving which atoms moved.
-    """
-    variants: list[_SymCand] = []
-    for raw_cand in cands:
-        cand = raw_cand if isinstance(raw_cand, _SymCand) else _SymCand(raw_cand)
-        variants.extend(_sym_cand_variants(cand))
-    return variants
 
 
 def _candidate_covers_fragment(cand: _SymCand, ctx: _ExtensionContext) -> bool:
@@ -588,3 +578,32 @@ def _dedupe_children(children: list[_SymCand], ctx: _ExtensionContext) -> list[_
         locked_mapping=ctx.mapping,
         node_policy=ctx.node_policy,
     )
+
+
+def _dedupe_children_exact(children: list[_SymCand]) -> list[_SymCand]:
+    """Combine only literally identical compressed child states.
+
+    Unlike orbit/boundary dedupe, this operation cannot erase a future
+    distinction: mapping, block pools, block behavior, and exact-fixed atoms
+    must all agree.  Multiplicity is additive because the states are exact
+    duplicates rather than separate automorphism-group members.
+    """
+    seen: dict[tuple, _SymCand] = {}
+    order: list[tuple] = []
+    for child in children:
+        key = (
+            tuple(sorted(child.mapping.items())),
+            tuple((block.r_atoms, block.p_atoms, bool(block.extendable))
+                  for block in child.blocks),
+            tuple(sorted(child.exact_fixed)),
+            tuple((block.r_atoms, block.p_atoms)
+                  for block in child.automorph_blocks),
+        )
+        kept = seen.get(key)
+        if kept is None:
+            seen[key] = child
+            order.append(key)
+            continue
+        seen[key] = kept.with_multiplicity(
+            kept.multiplicity + child.multiplicity)
+    return [seen[key] for key in order]

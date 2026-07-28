@@ -42,11 +42,12 @@ class _SymCand:
     deterministic witness used for cheap WBO existence checks.
     """
     __slots__ = (
-        'mapping', 'blocks', 'exact_fixed', 'multiplicity', 'alternates'
+        'mapping', 'blocks', 'exact_fixed', 'multiplicity',
+        'automorph_blocks',
     )
 
     def __init__(self, mapping=None, blocks=(), exact_fixed=(), multiplicity=1,
-                 alternates=()):
+                 automorph_blocks=()):
         blocks = tuple(blocks)
         block_r = {r for b in blocks for r in b.r_atoms}
         raw = dict(mapping or {})
@@ -74,11 +75,14 @@ class _SymCand:
         self.blocks = blocks
         self.exact_fixed = frozenset(exact_fixed)
         self.multiplicity = int(multiplicity)
-        self.alternates = tuple(
-            (tuple(sorted(dict(alt_map).items())), int(alt_mult))
-            for alt_map, alt_mult in alternates
-            if int(alt_mult) > 0
-        )
+        expanded_automorph_blocks = []
+        for block in automorph_blocks:
+            p_atoms = set(block.p_atoms)
+            r_atoms = set(block.r_atoms)
+            r_atoms.update(r for r, p in m.items() if p in p_atoms)
+            expanded_automorph_blocks.append(_SymBlock(
+                tuple(r_atoms), tuple(p_atoms), extendable=False))
+        self.automorph_blocks = tuple(expanded_automorph_blocks)
 
     def __contains__(self, r):
         return r in self.mapping
@@ -110,7 +114,7 @@ class _SymCand:
         m[r] = p
         try:
             return _SymCand(m, self.blocks, self.exact_fixed,
-                            self.multiplicity, self.alternates)
+                            self.multiplicity, self.automorph_blocks)
         except ValueError:
             return None
 
@@ -126,7 +130,7 @@ class _SymCand:
         try:
             return _SymCand(self.mapping, self.blocks + (b,),
                             self.exact_fixed, self.multiplicity,
-                            self.alternates)
+                            self.automorph_blocks)
         except ValueError:
             return None
 
@@ -141,7 +145,7 @@ class _SymCand:
                                       extendable=b.extendable)
         try:
             return _SymCand(self.mapping, blocks, self.exact_fixed,
-                            self.multiplicity, self.alternates)
+                            self.multiplicity, self.automorph_blocks)
         except ValueError:
             return None
 
@@ -161,34 +165,53 @@ class _SymCand:
         m.update(assignments)
         try:
             return _SymCand(m, self.blocks, self.exact_fixed,
-                            self.multiplicity, self.alternates)
+                            self.multiplicity, self.automorph_blocks)
         except ValueError:
             return None
 
     def with_multiplicity(self, multiplicity):
         return _SymCand(self.mapping, self.blocks, self.exact_fixed,
-                        multiplicity, self.alternates)
+                        multiplicity, self.automorph_blocks)
 
-    def without_alternates(self, multiplicity=None):
-        return _SymCand(self.mapping, self.blocks, self.exact_fixed,
-                        self.primary_multiplicity()
-                        if multiplicity is None else multiplicity)
-
-    def primary_multiplicity(self):
-        alt_total = sum(mult for _, mult in self.alternates)
-        return max(0, self.multiplicity - alt_total)
-
-    def with_added_alternate(self, other):
+    def with_automorph_equivalent(self, other):
+        """Merge an exactly automorphic witness without storing its mapping."""
         if not isinstance(other, _SymCand):
             other = _SymCand(other)
-        alt_items = list(self.alternates)
-        primary = other.primary_multiplicity()
-        if primary:
-            alt_items.append((tuple(sorted(other.mapping.items())), primary))
-        alt_items.extend(other.alternates)
-        total = self.multiplicity + other.multiplicity
-        return _SymCand(self.mapping, self.blocks, self.exact_fixed,
-                        total, alt_items)
+        varying_r = tuple(sorted(
+            r for r in set(self.mapping) & set(other.mapping)
+            if self.mapping[r] != other.mapping[r]
+        ))
+        blocks = list(self.automorph_blocks) + list(other.automorph_blocks)
+        if varying_r:
+            p_atoms = tuple(sorted({
+                p for r in varying_r
+                for p in (self.mapping[r], other.mapping[r])
+            }))
+            blocks.append(_SymBlock(varying_r, p_atoms, extendable=False))
+
+        # Store connected variation domains, not individual group elements.
+        merged = []
+        for block in blocks:
+            r_set = set(block.r_atoms)
+            p_set = set(block.p_atoms)
+            changed = True
+            while changed:
+                changed = False
+                keep = []
+                for prior in merged:
+                    if r_set.intersection(prior.r_atoms) or p_set.intersection(prior.p_atoms):
+                        r_set.update(prior.r_atoms)
+                        p_set.update(prior.p_atoms)
+                        changed = True
+                    else:
+                        keep.append(prior)
+                merged = keep
+            merged.append(_SymBlock(tuple(r_set), tuple(p_set), extendable=False))
+        merged.sort(key=lambda block: (block.r_atoms, block.p_atoms))
+        return _SymCand(
+            self.mapping, self.blocks, self.exact_fixed,
+            self.multiplicity + other.multiplicity,
+            tuple(merged))
 
     def structural_signature(self, g_R, g_P, r_orbits=None, p_orbits=None):
         block_r = {r for b in self.blocks for r in b.r_atoms}
@@ -229,24 +252,6 @@ def _cand_has_open_choice(cand):
     return isinstance(cand, _SymCand) and cand.has_open_choice()
 
 
-def _sym_cand_variants(cand):
-    """Concrete witness variants retained by a compressed candidate."""
-    if not isinstance(cand, _SymCand) or not cand.alternates:
-        return (cand,)
-    variants = []
-    primary = cand.primary_multiplicity()
-    if primary:
-        variants.append(cand.without_alternates(primary))
-    for items, mult in cand.alternates:
-        try:
-            variants.append(_SymCand(dict(items), cand.blocks,
-                                     cand.exact_fixed, mult))
-        except ValueError:
-            variants.append(_SymCand(dict(items), (), cand.exact_fixed,
-                                     mult))
-    return tuple(variants)
-
-
 def _sym_block_assignment_expr(block):
     n = len(block.p_atoms)
     k = len(block.r_atoms)
@@ -274,14 +279,14 @@ def _symmetry_state(cand, r_orbits=None, p_orbits=None):
     if isinstance(cand, _SymCand):
         item['exact_fixed'] = [int(x) for x in sorted(cand.exact_fixed)]
         item['multiplicity'] = int(cand.multiplicity)
-        item['alternate_witnesses'] = len(cand.alternates)
-        item['alternates'] = [
-            {
-                'witness': {int(a): int(b) for a, b in dict(items).items()},
-                'multiplicity': int(mult),
-            }
-            for items, mult in cand.alternates
-        ]
+        item['automorph_blocks'] = [{
+            'r_atoms': [int(x) for x in block.r_atoms],
+            'p_atoms': [int(x) for x in block.p_atoms],
+            'extendable': False,
+            'open': False,
+            'assignments': 'exact_group',
+            'source': 'exact_automorph_group',
+        } for block in cand.automorph_blocks]
         for block in cand.blocks:
             item['blocks'].append({
                 'r_atoms': [int(x) for x in block.r_atoms],
@@ -290,6 +295,7 @@ def _symmetry_state(cand, r_orbits=None, p_orbits=None):
                 'open': bool(block.open),
                 'assignments': _sym_block_assignment_expr(block),
             })
+        item['blocks'].extend(item['automorph_blocks'])
     return item
 
 

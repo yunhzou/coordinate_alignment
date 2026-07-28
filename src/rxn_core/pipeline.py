@@ -37,7 +37,13 @@ from rxn_core.alignment.sweep import (
     run_no_cut_core_branch_records,
 )
 from rxn_core.alignment.index_chirality import (
+    IndexChiralityConflict,
+    select_group_chiral_witness,
     select_index_chirality_assignment,
+)
+from rxn_core.alignment.interpolation import (
+    internal_coordinate_interpolation,
+    proper_align_coordinates,
 )
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
@@ -86,8 +92,6 @@ METAL_DWBO_THRESHOLD = float(os.environ.get("BGCP_METAL_DWBO_THRESHOLD", "0.3"))
 SYMMETRY_WBO_TOL = VIEW_ISO_TOL
 INDEX_CHIRALITY = os.environ.get(
     "BGCP_INDEX_CHIRALITY", "off").strip().lower()
-INDEX_CHIRALITY_MAX_VARIANTS = int(os.environ.get(
-    "BGCP_INDEX_CHIRALITY_MAX_VARIANTS", "20000"))
 BGCP_TIMING = os.environ.get("BGCP_TIMING", "0") == "1"
 INCLUDE_GT = os.environ.get("BGCP_INCLUDE_GT", "0").lower() in {
     "1", "true", "yes", "on"
@@ -192,7 +196,6 @@ def rp_stage_config():
         'metal_dwbo_threshold': METAL_DWBO_THRESHOLD,
         'symmetry_wbo_tol': VIEW_ISO_TOL,
         'index_chirality': INDEX_CHIRALITY,
-        'index_chirality_max_variants': INDEX_CHIRALITY_MAX_VARIANTS,
         'n_seeds': N_SEEDS_PER_RUN,
         'max_branches': VIEW_MAX_BRANCHES,
         'chunksize': CUTSWEEP_CHUNKSIZE,
@@ -894,6 +897,16 @@ def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
         })
         witnesses = []
         for mech in group:
+            current_symmetry = mech.get('branch_symmetry') or {}
+            witnesses.append({
+                'mapping': _int_mapping(mech.get('mapping_RP') or {}),
+                'cut': mech.get('dedup_cuts', [mech.get('cut')]),
+                'local_symmetry': {
+                    key: current_symmetry.get(key)
+                    for key in ('rule', 'fragments', 'blocks', 'color_groups')
+                    if current_symmetry.get(key) is not None
+                },
+            })
             witnesses.extend(_mechanism_branch_witnesses(mech))
         rep['branch_symmetry'] = combine_branch_symmetry_witnesses(
             witnesses, representative_mapping=rep.get('mapping_RP'))
@@ -1855,31 +1868,58 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
     if index_chirality_mode not in {'off', 'preserve'}:
         raise ValueError(
             "index_chirality must be 'off' or 'preserve'")
+    rejected_index_chirality = []
     for mi, (_sig, info) in enumerate(rp_min.items(), 1):
         mapping_RP = _int_mapping(info['mapping'])
-        branch_symmetry = complete_chosen_automorphism_groups(
-            info.get('branch_symmetry') or {}, mapping_RP,
-            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
+        raw_branch_symmetry = info.get('branch_symmetry') or {}
+        group_chirality = None
         index_chirality = None
         if index_chirality_mode == 'preserve':
-            selection = select_index_chirality_assignment(
+            group_chirality = select_group_chiral_witness(
                 mapping_RP,
-                branch_symmetry,
+                raw_branch_symmetry.get('witnesses') or (),
                 inputs.elR, inputs.xyzR, inputs.wboR,
                 inputs.elP, inputs.xyzP, inputs.wboP,
                 graph_floor=cfg.get('graph_floor', 0.2),
-                symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
-                dwbo_threshold=cfg.get(
-                    'dwbo_threshold', DWBO_THRESHOLD),
-                metal_dwbo_threshold=cfg.get(
-                    'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
-                max_variants=cfg.get(
-                    'index_chirality_max_variants',
-                    INDEX_CHIRALITY_MAX_VARIANTS),
-                anchor_map=cfg.get('anchor_map') or {},
             )
+            mapping_RP = group_chirality.selected_mapping
+            if raw_branch_symmetry.get('witnesses'):
+                raw_branch_symmetry = combine_branch_symmetry_witnesses(
+                    raw_branch_symmetry['witnesses'],
+                    representative_mapping=mapping_RP)
+        branch_symmetry = complete_chosen_automorphism_groups(
+            raw_branch_symmetry, mapping_RP,
+            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
+        if index_chirality_mode == 'preserve':
+            try:
+                selection = select_index_chirality_assignment(
+                    mapping_RP,
+                    branch_symmetry,
+                    inputs.elR, inputs.xyzR, inputs.wboR,
+                    inputs.elP, inputs.xyzP, inputs.wboP,
+                    graph_floor=cfg.get('graph_floor', 0.2),
+                    symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
+                    dwbo_threshold=cfg.get(
+                        'dwbo_threshold', DWBO_THRESHOLD),
+                    metal_dwbo_threshold=cfg.get(
+                        'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+                    anchor_map=cfg.get('anchor_map') or {},
+                    group_chirality_frames=(
+                        group_chirality.preserved_frames),
+                )
+            except IndexChiralityConflict as exc:
+                rejected_index_chirality.append({
+                    'source_mechanism_id': int(mi),
+                    'reason': str(exc),
+                    'source_mapping_RP': dict(mapping_RP),
+                    'branch_symmetry': branch_symmetry,
+                    'diagnostics': getattr(exc, 'diagnostics', None),
+                })
+                continue
             mapping_RP = selection.selected_mapping
             index_chirality = selection.metadata
+            index_chirality['group_chirality_witness'] = (
+                group_chirality.metadata)
         inv_RP = {v: k for k, v in mapping_RP.items()}
         broken, formed, _, _ = classify_bonds(
             mapping_RP, inputs.wboR, inputs.wboP,
@@ -1923,6 +1963,16 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'index_chirality': index_chirality,
         })
 
+    if index_chirality_mode == 'preserve' and not mechanisms:
+        reasons = "; ".join(
+            f"#{item['source_mechanism_id']}: {item['reason']}"
+            for item in rejected_index_chirality)
+        raise IndexChiralityConflict(
+            f"all {len(rp_min)} minimum-event mechanisms failed "
+            f"index-direction consensus ({reasons})",
+            diagnostics={
+                'rejected_mechanisms': rejected_index_chirality,
+            })
     r_orbits = _nauty_orbits(
         build_graph(inputs.elR, inputs.wboR, bond_cut=0.2),
         wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
@@ -1941,6 +1991,7 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         'n_atoms': len(inputs.elR),
         'config': cfg,
         'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
+        'rejected_index_chirality': rejected_index_chirality,
         'timing': {'rp_seconds': elapsed},
     }
 
@@ -2225,6 +2276,40 @@ def build_view_data(inputs, rp_result, ts_result=None, include_gt=None):
         if ts_result is not None
         else [dict(m, gt=None, igs=[]) for m in rp_result.get('mechanisms', [])]
     )
+    graph_floor = float(
+        (rp_result.get('config') or {}).get('graph_floor', 0.2))
+    for mechanism in mechanisms:
+        mapping = _int_mapping(mechanism.get('mapping_RP') or {})
+        product_in_R = np.asarray(
+            mechanism.get('product_xyz_in_R'), dtype=float)
+        if (len(mapping) != len(inputs.elR)
+                or product_in_R.shape != np.asarray(inputs.xyzR).shape):
+            mechanism['endpoint_interpolation'] = None
+            continue
+        mechanism['product_xyz_in_R_aligned'] = proper_align_coordinates(
+            product_in_R, inputs.xyzR).tolist()
+        inverse = {int(p): int(r) for r, p in mapping.items()}
+        reactant_bonds = {
+            (left, right)
+            for left in range(len(inputs.elR))
+            for right in range(left + 1, len(inputs.elR))
+            if float(inputs.wboR[left, right]) >= graph_floor
+        }
+        product_bonds = set()
+        for left_P in range(len(inputs.elP)):
+            for right_P in range(left_P + 1, len(inputs.elP)):
+                if float(inputs.wboP[left_P, right_P]) < graph_floor:
+                    continue
+                if left_P not in inverse or right_P not in inverse:
+                    continue
+                product_bonds.add(tuple(sorted(
+                    (inverse[left_P], inverse[right_P]))))
+        bonded_pairs = reactant_bonds | product_bonds
+        persistent_bonds = reactant_bonds & product_bonds
+        mechanism['endpoint_interpolation'] = internal_coordinate_interpolation(
+            inputs.xyzR, product_in_R, inputs.elR,
+            bonded_pairs=sorted(bonded_pairs),
+            persistent_bonded_pairs=sorted(persistent_bonds), n_frames=101)
     if include_gt and any(m.get('gt') for m in mechanisms):
         default_id = max(
             mechanisms, key=lambda m: m['gt']['S'] if m.get('gt') else 0
@@ -2353,13 +2438,19 @@ h2{{margin:0 0 4px;font-size:18px}}
 .vwbox{{position:absolute;inset:0}}
 .meta{{font-family:ui-monospace,monospace;font-size:11px;color:#444;padding:3px 0 0;line-height:1.4}}
 .meta b{{color:#024}}
+.interp-panel{{margin:0 0 18px}}
+.interp-panel .vw{{height:360px}}
+.interp-controls{{display:flex;align-items:center;gap:10px;width:100%}}
+.interp-controls input[type=range]{{flex:1}}
+.clash-ok{{color:#16733b}}
+.clash-bad{{color:#b00020;font-weight:700}}
 </style></head><body>
 <h2>{title}</h2>
 <div class="topbar">
   <div class="mech-sel" id="mech-sel"></div>
   <label class="index-toggle"><input type="checkbox" id="showAtomIndices"> Atom labels</label>
   <label class="index-toggle"><input type="checkbox" id="showDegeneracy"> Degeneracy</label>
-  <label class="index-toggle"><input type="checkbox" id="rOrdered"> R-order</label>
+  <label class="index-toggle"><input type="checkbox" id="rOrdered" checked> R-order + spatial alignment</label>
   <button class="download-all" id="downloadAllBtn">Download</button>
 </div>
 <div class="ref-row" id="ref-row">
@@ -2373,13 +2464,28 @@ h2{{margin:0 0 4px;font-size:18px}}
     <div class="vw"><div id="vw_GT" class="vwbox"></div></div>
     <div class="meta" id="gt_meta"></div></div>
 </div>
+<div class="panel interp-panel">
+  <div class="ph"><span class="lbl">R&rarr;P internal-coordinate interpolation</span><span class="rk" id="interp_method"></span></div>
+  <div class="vw"><div id="vw_interp" class="vwbox"></div></div>
+  <div class="interp-controls">
+    <button class="dl" id="interpPlayBtn">Play</button>
+    <input type="range" id="interpFrame" min="0" max="20" value="0" step="1">
+    <span class="rk" id="interp_t">t=0.00</span>
+    <label class="index-toggle"><input type="checkbox" id="showClashHighlights"> Highlight clashes</label>
+  </div>
+  <div class="meta" id="interp_meta"></div>
+</div>
 <div class="ig-grid" id="grid"></div>
 <script>
 const DATA = {data_json};
 let currentMechId = DATA.default_mech_id;
 let showAtomIndices = false;
 let showDegeneracy = false;
-let rOrdered = false;
+let rOrdered = true;
+let interpPlayTimer = null;
+let interpViewer = null;
+let interpViewerMechId = null;
+let showClashHighlights = false;
 const elements = DATA.reactant.elements;
 const xyzR_static = DATA.reactant.coords;
 function findMech(id) {{ return DATA.mechanisms.find(m=>m.id===id); }}
@@ -2392,7 +2498,7 @@ function downloadBlob(name, blob) {{ const a = document.createElement("a"); cons
 function downloadText(name, text) {{ downloadBlob(name, new Blob([text], {{type:"chemical/x-xyz"}})); }}
 function downloadXYZ(name, els, xyz, comment) {{ if (!els || !xyz) return; downloadText(name, xyzText(els, xyz, comment)); }}
 function downloadR() {{ downloadXYZ(safeName(DATA.step)+"_R.xyz", DATA.reactant.elements, DATA.reactant.coords, DATA.step+" R"); }}
-function downloadP() {{ const mech = findMech(currentMechId); if (rOrdered && mech && mech.product_xyz_in_R) downloadXYZ(safeName(DATA.step)+"_P_R_ordered_mech"+mech.id+".xyz", DATA.reactant.elements, mech.product_xyz_in_R, DATA.step+" P R-ordered mech "+mech.id); else downloadXYZ(safeName(DATA.step)+"_P_native.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P native"); }}
+function downloadP() {{ const mech = findMech(currentMechId); const aligned = mech && (mech.product_xyz_in_R_aligned || mech.product_xyz_in_R); if (rOrdered && aligned) downloadXYZ(safeName(DATA.step)+"_P_R_aligned_mech"+mech.id+".xyz", DATA.reactant.elements, aligned, DATA.step+" P R-ordered and spatially aligned mech "+mech.id); else downloadXYZ(safeName(DATA.step)+"_P_native.xyz", DATA.product.elements, DATA.product.coords, DATA.step+" P native"); }}
 function targetFrame(item, mech) {{ if (!item) return {{aligned:false, elements:elements, xyz:null, disp:null, broken:[], formed:[], core:[], label:"missing"}}; const nativeEls = item.elements || elements; const nativeXYZ = item.xyz || null; const nativeDisp = item.picked_disp || null; if (!nativeXYZ) return {{aligned:false, elements:nativeEls, xyz:item.xyz_in_R || null, disp:item.picked_disp_R || null, broken:item.broken_bonds_T || mech.broken_bonds_R || [], formed:item.formed_bonds_T || mech.formed_bonds_R || [], core:item.core_atoms_T || mech.core_atoms || [], label:"native"}}; if (!rOrdered) return {{aligned:false, elements:nativeEls, xyz:nativeXYZ, disp:nativeDisp, broken:item.broken_bonds_T || mech.broken_bonds_R || [], formed:item.formed_bonds_T || mech.formed_bonds_R || [], core:item.core_atoms_T || mech.core_atoms || [], label:"native"}}; const n = nativeXYZ.length; const perm = Array(n).fill(null); const used = new Set(); const cmap = item.core_map || {{}}; for (const rk of Object.keys(cmap)) {{ const r = parseInt(rk), t = parseInt(cmap[rk]); if (Number.isInteger(r) && Number.isInteger(t) && r >= 0 && r < n && t >= 0 && t < n && !used.has(t)) {{ perm[r] = t; used.add(t); }} }} for (let r = 0; r < n; r++) {{ if (perm[r] !== null) continue; const want = elements[r]; let pick = -1; for (let t = 0; t < n; t++) {{ if (!used.has(t) && nativeEls[t] === want) {{ pick = t; break; }} }} if (pick < 0) for (let t = 0; t < n; t++) {{ if (!used.has(t)) {{ pick = t; break; }} }} if (pick >= 0) {{ perm[r] = pick; used.add(pick); }} }} const orderedXYZ = perm.map(t => nativeXYZ[t]); const orderedDisp = nativeDisp ? perm.map(t => nativeDisp[t]) : null; return {{aligned:true, elements:elements, xyz:orderedXYZ, disp:orderedDisp, broken:mech.broken_bonds_R || [], formed:mech.formed_bonds_R || [], core:mech.core_atoms || [], label:"R-ordered"}}; }}
 function downloadTargetXYZ(name, item, mech, comment) {{ const frame = targetFrame(item, mech); downloadXYZ(name, frame.elements, frame.xyz, comment+" "+frame.label); }}
 function targetSuffix() {{ return rOrdered ? "_R_ordered" : "_native"; }}
@@ -2431,8 +2537,14 @@ function drawBonds(v, xyz, pairs, color) {{ for (const [i,j] of pairs) {{ if (i>
 function drawArrows(v, xyz, disp, core) {{ for (const i of core) {{ if (!disp||!disp[i]) continue; const d = disp[i]; const len = Math.hypot(d[0],d[1],d[2]); if (len<0.05) continue; v.addArrow({{start:{{x:xyz[i][0],y:xyz[i][1],z:xyz[i][2]}}, end:{{x:xyz[i][0]+d[0]*1.5,y:xyz[i][1]+d[1]*1.5,z:xyz[i][2]+d[2]*1.5}}, color:'#0066cc', radius:0.07}}); }} }}
 function makeStatic(divId, els, xyz, broken, formed, degMap=null, labels=null) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); applyDegeneracyStyles(v, degMap); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); addAtomLabels(v, els, xyz, labels); v.zoomTo(); v.render(); return v; }}
 function makeAnimated(divId, els, xyz, disp, broken, formed, core, degMap=null, labels=null) {{ stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {{backgroundColor:'white'}}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); applyDegeneracyStyles(v, degMap); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); addAtomLabels(v, els, xyz, labels); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); clearLabels(v); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({{}}, {{stick:{{radius:0.10}}, sphere:{{scale:0.20}}}}); applyDegeneracyStyles(v, degMap); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); addAtomLabels(v, els, cur, labels); v.render(); }}, 60); return v; }}
-function render() {{ const mech = findMech(currentMechId); document.getElementById('r_meta').innerHTML = structureMeta(DATA.reactant); document.getElementById('p_meta').innerHTML = structureMeta(DATA.product); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, [], rDegMap(mech), reactantAtomLabels()); const pAligned = !!(rOrdered && mech.product_xyz_in_R); const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? mech.product_xyz_in_R : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed, mappedProductDegMap(mech, pAligned), productAtomLabels(mech, pAligned)); document.getElementById('prod_label').innerHTML = (pAligned ? "R-ordered" : "native P")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; const gtFrame = mech.gt ? targetFrame(mech.gt, mech) : null; const showGT = !!(gtFrame && gtFrame.disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', gtFrame.elements, gtFrame.xyz, gtFrame.disp, gtFrame.broken, gtFrame.formed, gtFrame.core, targetDegMap(gtFrame, mech), targetAtomLabels(gtFrame)); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt)+" <b>frame</b>="+gtFrame.label; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const frame = targetFrame(ig, mech); const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = frame.xyz ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+" <b>frame</b>="+frame.label+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (frame.disp) makeAnimated("vw_ig"+idx, frame.elements, frame.xyz, frame.disp, frame.broken, frame.formed, frame.core, targetDegMap(frame, mech), targetAtomLabels(frame)); else if (frame.xyz) makeStatic("vw_ig"+idx, frame.elements, frame.xyz, frame.broken, frame.formed, targetDegMap(frame, mech), targetAtomLabels(frame)); }}); }}
+function stopInterpolation() {{ if (interpPlayTimer) {{ clearInterval(interpPlayTimer); interpPlayTimer=null; }} document.getElementById('interpPlayBtn').textContent='Play'; }}
+function renderInterpolationFrame() {{ const mech=findMech(currentMechId); const path=mech && mech.endpoint_interpolation; const div=document.getElementById('vw_interp'); if (!path || !path.frames || !path.frames.length) {{ div.innerHTML=''; interpViewer=null; interpViewerMechId=null; document.getElementById('interp_meta').textContent='Interpolation unavailable'; return; }} const slider=document.getElementById('interpFrame'); slider.max=String(path.frames.length-1); const index=Math.max(0,Math.min(path.frames.length-1,parseInt(slider.value)||0)); const frame=path.frames[index]; const sameViewer=!!(interpViewer && interpViewerMechId===mech.id); const savedView=(sameViewer && interpViewer.getView) ? interpViewer.getView() : null; if (!sameViewer) {{ div.innerHTML=''; interpViewer=$3Dmol.createViewer('vw_interp',{{backgroundColor:'white'}}); interpViewerMechId=mech.id; }} else {{ interpViewer.removeAllModels(); interpViewer.removeAllShapes(); clearLabels(interpViewer); }} const v=interpViewer; v.addModel(buildBody(DATA.reactant.elements,frame.coords),'xyz'); v.setStyle({{}},{{stick:{{radius:0.10}},sphere:{{scale:0.20}}}}); applyDegeneracyStyles(v,rDegMap(mech)); drawBonds(v,frame.coords,mech.broken_bonds_R,'red'); drawBonds(v,frame.coords,mech.formed_bonds_R,'green'); addAtomLabels(v,DATA.reactant.elements,frame.coords,reactantAtomLabels()); if (showClashHighlights) {{ const clashAtoms=new Set(); for (const pair of (frame.clashes.pairs||[])) for (const atom of pair.atoms) clashAtoms.add(atom); for (const atom of clashAtoms) v.setStyle({{serial:atom}},{{stick:{{radius:0.14,color:'#d000ff'}},sphere:{{scale:0.42,color:'#d000ff'}}}}); }} if (savedView && v.setView) v.setView(savedView); else v.zoomTo(); v.render(); document.getElementById('interp_t').textContent='t='+frame.t.toFixed(2); document.getElementById('interp_method').textContent=path.method; const ratio=frame.clashes.minimum_radius_ratio; const pairs=(frame.clashes.pairs||[]).map(p=>'R'+p.atoms[0]+'–R'+p.atoms[1]).join(', '); document.getElementById('interp_meta').innerHTML='<span class="'+(frame.clashes.count?'clash-bad':'clash-ok')+'"><b>severe overlaps</b>='+frame.clashes.count+'</span> <b>min clearance</b>='+(ratio===null?'n/a':ratio.toFixed(3)+' × covalent radii')+(pairs?' <b>pairs</b>='+pairs:''); }}
+function toggleInterpolation() {{ if (interpPlayTimer) {{ stopInterpolation(); return; }} document.getElementById('interpPlayBtn').textContent='Pause'; interpPlayTimer=setInterval(()=>{{ const slider=document.getElementById('interpFrame'); let next=(parseInt(slider.value)||0)+1; if (next>parseInt(slider.max)) next=0; slider.value=String(next); renderInterpolationFrame(); }},180); }}
+function render() {{ const mech = findMech(currentMechId); document.getElementById('r_meta').innerHTML = structureMeta(DATA.reactant); document.getElementById('p_meta').innerHTML = structureMeta(DATA.product); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, [], rDegMap(mech), reactantAtomLabels()); const alignedP = mech.product_xyz_in_R_aligned || mech.product_xyz_in_R; const pAligned = !!(rOrdered && alignedP); const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? alignedP : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed, mappedProductDegMap(mech, pAligned), productAtomLabels(mech, pAligned)); document.getElementById('prod_label').innerHTML = (pAligned ? "R-ordered + spatially aligned" : "native P")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; renderInterpolationFrame(); const gtFrame = mech.gt ? targetFrame(mech.gt, mech) : null; const showGT = !!(gtFrame && gtFrame.disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', gtFrame.elements, gtFrame.xyz, gtFrame.disp, gtFrame.broken, gtFrame.formed, gtFrame.core, targetDegMap(gtFrame, mech), targetAtomLabels(gtFrame)); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt)+" <b>frame</b>="+gtFrame.label; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const frame = targetFrame(ig, mech); const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = frame.xyz ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+" <b>frame</b>="+frame.label+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (frame.disp) makeAnimated("vw_ig"+idx, frame.elements, frame.xyz, frame.disp, frame.broken, frame.formed, frame.core, targetDegMap(frame, mech), targetAtomLabels(frame)); else if (frame.xyz) makeStatic("vw_ig"+idx, frame.elements, frame.xyz, frame.broken, frame.formed, targetDegMap(frame, mech), targetAtomLabels(frame)); }}); }}
 const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => {{ showAtomIndices = !!e.target.checked; render(); }}; document.getElementById('showDegeneracy').onchange = (e) => {{ showDegeneracy = !!e.target.checked; render(); }}; document.getElementById('rOrdered').onchange = (e) => {{ rOrdered = !!e.target.checked; render(); }}; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
+document.getElementById('interpFrame').oninput = renderInterpolationFrame;
+document.getElementById('interpPlayBtn').onclick = toggleInterpolation;
+document.getElementById('showClashHighlights').onchange = (e) => {{ showClashHighlights=!!e.target.checked; renderInterpolationFrame(); }};
 window.addEventListener('load', render);
 </script>
 </body></html>
@@ -2928,7 +3040,7 @@ def main():
     global XTB_WORKERS
     global XTB_CHARGE, XTB_MULTIPLICITY
     global VIEW_ISO_TOL, DWBO_THRESHOLD, METAL_DWBO_THRESHOLD, SYMMETRY_WBO_TOL
-    global INDEX_CHIRALITY, INDEX_CHIRALITY_MAX_VARIANTS
+    global INDEX_CHIRALITY
     global EVENT_WEIGHT_POWER, WBO_PROGRESS_POWER
     global STAGE_ROOT, ALIGNMENT_OUT_ROOT
     ap = argparse.ArgumentParser()
@@ -3004,10 +3116,6 @@ def main():
                     default=INDEX_CHIRALITY,
                     help="Post-process the selected final automorphism to "
                          "preserve endpoint index chirality. Default off.")
-    ap.add_argument("--index-chirality-max-variants", type=int,
-                    default=INDEX_CHIRALITY_MAX_VARIANTS,
-                    help="Maximum final automorphism states evaluated by "
-                         "index-chirality post-processing.")
     ap.add_argument("--event-weight-power", type=float,
                     default=EVENT_WEIGHT_POWER,
                     help="Exponent on each detected R-P event's |delta WBO| "
@@ -3127,8 +3235,6 @@ def main():
         ap.error("--symmetry-wbo-tol must equal --iso-tol; use --iso-tol")
     SYMMETRY_WBO_TOL = VIEW_ISO_TOL
     INDEX_CHIRALITY = str(args.index_chirality)
-    INDEX_CHIRALITY_MAX_VARIANTS = max(
-        1, int(args.index_chirality_max_variants))
     EVENT_WEIGHT_POWER = float(args.event_weight_power)
     WBO_PROGRESS_POWER = float(args.wbo_progress_power)
     STAGE_ROOT = Path(args.stage_root)
@@ -3151,8 +3257,6 @@ def main():
     os.environ["BGCP_METAL_DWBO_THRESHOLD"] = str(METAL_DWBO_THRESHOLD)
     os.environ["BGCP_SYMMETRY_WBO_TOL"] = str(SYMMETRY_WBO_TOL)
     os.environ["BGCP_INDEX_CHIRALITY"] = INDEX_CHIRALITY
-    os.environ["BGCP_INDEX_CHIRALITY_MAX_VARIANTS"] = str(
-        INDEX_CHIRALITY_MAX_VARIANTS)
     os.environ["BGCP_EVENT_WEIGHT_POWER"] = str(EVENT_WEIGHT_POWER)
     os.environ["BGCP_WBO_PROGRESS_POWER"] = str(WBO_PROGRESS_POWER)
     os.environ["BGCP_STAGE_ROOT"] = str(STAGE_ROOT)

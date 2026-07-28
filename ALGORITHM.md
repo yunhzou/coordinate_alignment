@@ -2,10 +2,10 @@
 
 This document states the WBO-weighted atom alignment algorithm for
 reactant/product and reactant/TS/IG alignment.  The implementation is
-symmetry-aware during growth: it does not enumerate a concrete one-to-one
-bijection for every symmetric atom permutation.  Instead, it carries
-hierarchical symmetry blocks internally and materializes one deterministic
-witness mapping only at API boundaries.
+symmetry-aware during growth: it does not retain a concrete one-to-one
+bijection for every symmetric atom permutation.  Instead, it carries local
+symmetry pools plus exact product-automorphism domains and materializes one
+deterministic representative mapping at API boundaries.
 
 The implementation is split by abstraction; see
 `docs/ARCHITECTURE.md`. The main code paths are `src/rxn_core/alignment/`,
@@ -52,23 +52,22 @@ The implementation is split by abstraction; see
    fragment atom that is not connected to the new R atom; such differences are
    handled later as mechanism-level formed/broken bonds.
 
-3. **No concrete symmetry explosion.** Symmetric choices are represented as
-   local `_SymBlock(r_atoms, p_atoms)` pools inside `_SymCand`.  A block says:
-   these R atoms occupy this P atom pool up to symmetry.  The object keeps a
-   deterministic witness mapping, but branch identity is the block structure,
-   not every possible permutation.  Extension is allowed to reshuffle the
-   witness inside a block when another correlated assignment satisfies the
-   same compressed state.  If a child atom resolves an active parent block to
-   one witness while all alternatives remain symmetry-equivalent, `_SymCand`
-   carries their represented count as `multiplicity`; when concrete alternate
-   witnesses are available, they can be re-used if a later frontier atom cannot
-   extend the primary witness.
+3. **No concrete symmetry explosion.** During extension, local choices are
+   represented as `_SymBlock(r_atoms, p_atoms)` pools.  After every extension,
+   candidates are colored by their complete R-role assignment and canonized
+   against the exact WBO-colored product graph with pynauty.  Candidates with
+   the same certificate are one orbit of the product automorphism group.  The
+   matcher retains one representative, its `multiplicity`, and connected
+   `automorph_blocks` describing where that exact group can move assignments.
+   It does not retain or replay one mapping per group element.
 
-4. **Hierarchical symmetry centers.** `_nauty_orbits` runs exact pynauty
-   automorphism orbit detection on both graphs after encoding atom elements
-   and 0.2-tolerance WBO buckets as vertex colors.  The resulting orbit IDs
-   are the hierarchy used to group seed targets, extension targets, and
-   chemistry signatures.
+4. **Hierarchical symmetry centers.** `_nauty_orbits` groups seed and extension
+   targets.  `_CandidateAutomorphismCanonicalizer` provides the stronger
+   candidate-level hierarchy: graph vertices carry atom/WBO colors, locked
+   atoms are individualized, fixed R roles remain distinct, and pool/domain
+   roles are colored as sets.  Equality of canonical certificates therefore
+   proves a single exact automorphism transports the whole partial state; it
+   does not incorrectly treat independent orbit swaps as freely composable.
 
 5. **Lock only after saturation.** `_set_unique(cands)` is false if any
    candidate has an open symmetry block.  Even one fully resolved candidate is
@@ -94,7 +93,7 @@ The implementation is split by abstraction; see
    island that already failed to absorb a boundary atom is not duplicate with
    the other side.
 
-9. **Public API returns witnesses, not total bijections.** `align_from_arrays`
+9. **Public API returns representatives, not the automorphism group.** `align_from_arrays`
    and downstream scoring receive ordinary dict witnesses, but those dicts are
    selected representatives of compressed symmetry states.  Unmapped spectators
    must not be completed by geometry.  Before scoring a finished R<->P witness,
@@ -173,14 +172,12 @@ symmetry-related carbon, tied to the parent symmetry state instead of matching
 the H as an isolated same-element atom.
 
 If a new atom is valid only under a particular assignment inside an existing
-block, the candidate witness is refined to a correlated assignment.  When
-several refined witnesses are the same weighted-symmetry state, dedupe merges
-them and sums their `multiplicity`.  When concrete alternate witnesses are
-retained, they are not display-only: if the primary witness has no extension,
-later growth tries those alternates locally.  This is the hierarchical case:
-for `Pd(CH3)4`, growing `Pd-C` represents four carbon choices; growing `C-H`
-afterward represents `4 * 3 = 12` correlated assignments even though the
-candidate keeps one primary witness mapping.
+block, the candidate representative is refined to that correlated assignment.
+After the extension, exact canonical certificates merge product-automorphic
+children immediately.  For `Pd(CH3)4`, the hierarchy represents the coupled
+carbon/hydrogen action without storing the 12 concrete carbon/hydrogen
+assignments.  A non-automorphic child has a different certificate and remains
+a distinct candidate.
 
 Targets that pass the support test are grouped before constructing children:
 
@@ -203,11 +200,11 @@ For each target group:
 This is the main change from concrete matching: a K-way symmetric target group
 creates one compressed candidate, not K dicts.
 
-When a support assignment differs from the current witness but still extends an
-open block, `_SymCand` updates only the witness for the touched block and keeps
-the block.  When the support assignment collapses an open block into a
-correlated child relation, the block may become a concrete witness plus
-`multiplicity`; the represented alternatives are still part of the state.
+When a support assignment differs from the current representative but still
+extends an open block, `_SymCand` updates only the touched block.  The next
+certificate calculation either merges it into an exact automorphism domain or
+keeps it as a genuinely distinct branch.  `multiplicity` counts represented
+states; it is not backed by an alternate-witness list.
 
 ### Growth Transition Policy
 
@@ -286,18 +283,20 @@ when a deferred boundary relation distinguishes one side from another.
 
 The dedupe key has two parts.
 
-### Internal Signature
+### Exact Internal Certificate
 
-The internal signature describes the grown fragment:
+The primary key is a pynauty canonical certificate of the full active product
+graph with candidate roles added as vertex colors:
 
-- mapped R atoms and their P images, with exact-fixed assignments preserved
-- `_SymBlock` pools, including R orbit IDs, P orbit IDs, pool sizes, and
-  extendability
-- core mappings kept exact when the caller marks a mechanism core
+- locked P images and fixed mapped R roles are individualized
+- each `_SymBlock` pool is one set-valued role
+- each previously merged exact automorphism domain is one set-valued role
+- atom elements and WBO buckets use the same symmetry tolerance as the endpoint
+  orbit computation
 
-This signature collapses spectator permutations inside true symmetry blocks
-but keeps core assignments and deferred-boundary-distinguished assignments
-when the exact pairing matters.
+This collapses only candidates related by an exact graph automorphism.  Orbit
+membership alone is insufficient because it loses correlations between group
+actions.
 
 ### One-Hop Boundary Signature
 
@@ -312,10 +311,18 @@ fragment:
 - locked neighboring island IDs, when a boundary points at an already locked
   island
 
-Two candidates are duplicates only if both the internal signature and this
-one-hop boundary signature are symmetry-equivalent.  This one-hop check catches
-the important case where an internally symmetric island has two sides, but
-only one side is already coupled to another island.
+At fragment saturation, two candidates are duplicates only if both the
+internal signature and this one-hop boundary signature are
+symmetry-equivalent.  This one-hop check catches the important case where an
+internally symmetric island has two sides, but only one side is already
+coupled to another island.
+
+During one-atom growth, the exact internal certificate is computed immediately,
+so automorphic children collapse before the next frontier atom.  The expensive
+boundary signature is evaluated only when two candidates already share that
+certificate and deferred evidence exists.  Sub-floor/full-WBO boundary evidence
+can therefore split an otherwise automorphic class without making every growth
+step compare every boundary vector.
 
 Boundary-aware dedupe is still compression, not enumeration.  If all boundary
 vectors are symmetry-equivalent, the candidates remain compressed.  If a
@@ -343,8 +350,9 @@ for each seed while progress is possible:
                 fork one branch per remaining iso
 
     dedup live branches by mechanism-state plus deferred boundary
-    enforce max_branches; in R-P cut sweep, hitting the cap discards the
-    whole cut rather than keeping a truncated branch set
+    enforce max_branches per parent subtree after dedupe; a subtree that would
+    create leaf max_branches + 1 is removed atomically while sibling branches
+    and other seed orders continue
 ```
 
 This branch dedupe is a mechanism-state dedupe, not a concrete bijection
@@ -551,7 +559,7 @@ The mode scorer only needs these chemistry-relevant atoms.
 | `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
 | `symmetry_wbo_tol` | `0.2` | WBO tolerance for exact automorphism orbit bucketing |
 | `max_branches` | `1_000_000` | live branch cap for direct low-level matching |
-| `BGCP_VIEW_MAX_BRANCHES` | `100` | R-P cut-sweep branch cap; a cut is discarded if any seed order reaches it |
+| `BGCP_VIEW_MAX_BRANCHES` | `100` | post-dedupe live-leaf cap per R-P seed-order tree; exactly 100 is allowed and only an overflowing parent subtree is removed |
 | `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
 | `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
 | `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |

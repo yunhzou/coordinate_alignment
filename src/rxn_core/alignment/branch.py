@@ -7,7 +7,7 @@ from collections import Counter, defaultdict, deque
 import numpy as np
 
 from ..frag import bond_event_threshold, classify_bonds
-from ..growth import grow_island
+from ..growth import IslandBranchLimitExceeded, grow_island
 from ..matcher import (
     _boundary_signature,
     _edge_wbo,
@@ -22,12 +22,7 @@ SYM_REPAIR_MAX_EVALS = 20000
 
 
 class BranchLimitExceeded(RuntimeError):
-    """Raised when a seed order hits the live branch cap.
-
-    Sweep-cut uses this as a cut-level abort signal: if any seed order for a
-    cut reaches the cap, that cut is considered pathological and contributes
-    no mechanism witnesses.
-    """
+    """Raised when an explicitly enumerated result set exceeds its cap."""
 
     def __init__(self, max_branches, *, seed=None, pass_no=None,
                  branch_count=None, stage=None):
@@ -522,7 +517,6 @@ def find_islands(g_R, g_P, seed_order,
                  orbit_dedup=True, core_R=None,
                  stop_when_core_mapped=False,
                  p_orbits=None, r_orbits=None,
-                 abort_on_branch_cap=False,
                  node_policy=None,
                  anchor_map=None,
                  profile=None):
@@ -642,27 +636,6 @@ def find_islands(g_R, g_P, seed_order,
             _deferred_key(branch.deferred_edges),
         )
 
-    def _hit_branch_cap(count, seed, stage):
-        if not abort_on_branch_cap:
-            return
-        if events is not None:
-            events.append({
-                'type': 'done',
-                'mapped': len(branches[0].mapping) if branches else 0,
-                'stop_reason': 'branch_cap',
-                'max_branches': int(max_branches),
-                'branches': int(count),
-                'seed': int(seed) if seed is not None else None,
-                'stage': stage,
-            })
-        raise BranchLimitExceeded(
-            max_branches,
-            seed=int(seed) if seed is not None else None,
-            pass_no=pass_no,
-            branch_count=int(count),
-            stage=stage,
-        )
-
     while progressed:
         progressed = False
         pass_no += 1
@@ -673,48 +646,88 @@ def find_islands(g_R, g_P, seed_order,
             new_branches = []
             pending_seen = set()
 
-            def _append_pending(branch):
-                sig = _branch_signature(branch)
-                if sig in pending_seen:
+            def _admit_subtree(subtree, *, made_progress=False,
+                               source_branch=None):
+                """Admit one parent branch's result atomically.
+
+                A subtree that would take the live post-dedupe leaf count over
+                ``max_branches`` is discarded by itself.  Sibling branches and
+                other seed orders remain valid; exactly ``max_branches`` live
+                leaves is allowed.
+                """
+                nonlocal progressed
+                additions = []
+                local_seen = set()
+                for candidate in subtree:
+                    sig = _branch_signature(candidate)
+                    if sig in pending_seen or sig in local_seen:
+                        continue
+                    local_seen.add(sig)
+                    additions.append((sig, candidate))
+                if len(new_branches) + len(additions) > max_branches:
+                    if profile is not None:
+                        profile.append({
+                            'seed': int(seed),
+                            'pass': int(pass_no),
+                            'branch_index': (
+                                None if source_branch is None
+                                else int(source_branch)),
+                            'mapped_before': (
+                                0 if source_branch is None
+                                else len(branches[source_branch].mapping)),
+                            'result': 'subtree_branch_cap',
+                            'stage': 'combined_live_leaves',
+                            'subtree_branches': len(additions),
+                            'live_branches_before': len(new_branches),
+                            'max_branches': int(max_branches),
+                            'elapsed_sec': 0.0,
+                            'extend_elapsed_sec': 0.0,
+                        })
                     return False
-                pending_seen.add(sig)
-                new_branches.append(branch)
-                return True
+                for sig, candidate in additions:
+                    pending_seen.add(sig)
+                    new_branches.append(candidate)
+                if additions and made_progress:
+                    progressed = True
+                return bool(additions)
 
             for bi, b in enumerate(branches):
-                if len(new_branches) >= max_branches:
-                    _hit_branch_cap(len(new_branches), seed, 'pre_branch_loop')
-                    break
                 if stop_when_core_mapped and _core_complete(b.mapping):
-                    _append_pending(b)
+                    _admit_subtree([b], source_branch=bi)
                     continue
                 seed_is_mapped_anchor = seed in b.mapping and seed in anchor_map
                 if seed in b.mapping and not seed_is_mapped_anchor:
-                    _append_pending(b)
+                    _admit_subtree([b], source_branch=bi)
                     continue
                 if seed_is_mapped_anchor and not _mapped_anchor_can_seed(b, seed):
-                    _append_pending(b)
+                    _admit_subtree([b], source_branch=bi)
                     continue
                 # Only record events for branch 0 to keep trace linear
                 ev_arg = events if (events is not None and bi == 0) else None
-                isos = grow_island(g_R, g_P, seed, b.mapping,
-                                    graph_floor=graph_floor, iso_tol=iso_tol,
-                                    max_branches=max_branches,
-                                    events=ev_arg,
-                                    islands_R=b.islands_R,
-                                    p_orbits=p_orbits,
-                                    r_orbits=r_orbits,
-                                    prior_deferred_edges=b.deferred_edges,
-                                    node_policy=node_policy,
-                                    allow_mapped_seed=seed_is_mapped_anchor,
-                                    profile=profile,
-                                    profile_context={
-                                        'pass': int(pass_no),
-                                        'branch_index': int(bi),
-                                        'mapped_before': len(b.mapping),
-                                    })
+                try:
+                    isos = grow_island(
+                        g_R, g_P, seed, b.mapping,
+                        graph_floor=graph_floor, iso_tol=iso_tol,
+                        max_branches=max_branches,
+                        events=ev_arg,
+                        islands_R=b.islands_R,
+                        p_orbits=p_orbits,
+                        r_orbits=r_orbits,
+                        prior_deferred_edges=b.deferred_edges,
+                        node_policy=node_policy,
+                        allow_mapped_seed=seed_is_mapped_anchor,
+                        profile=profile,
+                        profile_context={
+                            'pass': int(pass_no),
+                            'branch_index': int(bi),
+                            'mapped_before': len(b.mapping),
+                        })
+                except IslandBranchLimitExceeded:
+                    # Only this parent branch's descendant subtree is
+                    # pathological.  Remove it and continue its siblings.
+                    continue
                 if not isos:
-                    _append_pending(b)
+                    _admit_subtree([b], source_branch=bi)
                     continue
                 # Dedup island results by weighted alignment state before
                 # forking branches.  This is still pre-mechanism dedupe: the
@@ -741,20 +754,22 @@ def find_islands(g_R, g_P, seed_order,
                             list(symmetry.get('blocks') or []) + blocks
                         )
                         iso.symmetry = symmetry
+                subtree = []
+                subtree_progressed = False
                 for ii, iso in enumerate(deduped_isos):
-                    if len(new_branches) >= max_branches:
-                        _hit_branch_cap(len(new_branches), seed, 'island_fork')
-                        break
                     before_state = _state_key(b)
                     b2 = b.fork()
                     b2.commit(iso, g_R,
                               events=events if (bi == 0 and ii == 0) else None)
                     after_state = _state_key(b2)
                     if after_state == before_state:
-                        if _append_pending(b):
-                            continue
-                    elif _append_pending(b2):
-                        progressed = True
+                        subtree.append(b)
+                    else:
+                        subtree.append(b2)
+                        subtree_progressed = True
+                _admit_subtree(
+                    subtree, made_progress=subtree_progressed,
+                    source_branch=bi)
             new_branches.sort(key=lambda b: -len(b.mapping))
             # Cross-branch dedup uses the same mechanism-state key.  It
             # collapses orbit-equivalent spectator permutations but keeps
@@ -772,9 +787,6 @@ def find_islands(g_R, g_P, seed_order,
                     continue
                 seen[state_sig] = b
                 uniq.append(b)
-                if len(uniq) >= max_branches:
-                    _hit_branch_cap(len(uniq), seed, 'cross_branch_dedupe')
-                    break
             branches = uniq
             # Soft warning: pathological symmetry can blow this up. Default
             # cap is 1e6 so we should never hit it on real molecules; if we

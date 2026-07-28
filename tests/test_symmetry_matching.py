@@ -36,6 +36,7 @@ from rxn_core.matcher import (
 )
 from rxn_core.matcher.orbits import _wbo_tolerance_bucket_lookup
 from rxn_core.growth.result import _IsoResult
+from rxn_core.growth import IslandBranchLimitExceeded, grow_island
 
 
 def _represented_count(cand):
@@ -62,6 +63,55 @@ def _tetramethyl_metal_graph():
     for i, j, w in edges:
         wbo[i, j] = wbo[j, i] = w
     return elements, wbo
+
+
+def test_fragment_branch_cap_is_loud_and_allows_exact_limit():
+    g_r = build_graph(["C"], np.zeros((1, 1)), bond_cut=0.2)
+    wbo_two = np.zeros((4, 4))
+    wbo_two[0, 2] = wbo_two[2, 0] = 1.0
+    wbo_two[1, 3] = wbo_two[3, 1] = 1.0
+    g_p_two = build_graph(["C", "C", "O", "N"], wbo_two, bond_cut=0.2)
+    wbo_three = np.zeros((6, 6))
+    for carbon, ligand in ((0, 3), (1, 4), (2, 5)):
+        wbo_three[carbon, ligand] = wbo_three[ligand, carbon] = 1.0
+    g_p_three = build_graph(
+        ["C", "C", "C", "O", "N", "F"], wbo_three, bond_cut=0.2)
+
+    assert len(grow_island(g_r, g_p_two, 0, {}, max_branches=2)) == 2
+    with pytest.raises(IslandBranchLimitExceeded) as exc_info:
+        grow_island(g_r, g_p_three, 0, {}, max_branches=2)
+    assert exc_info.value.count == 3
+    assert exc_info.value.limit == 2
+
+
+def test_live_branch_cap_discards_only_overflowing_parent_subtree(monkeypatch):
+    g_r = build_graph(["C", "O"], np.zeros((2, 2)), bond_cut=0.2)
+    g_p = build_graph(
+        ["C", "C", "O", "O", "O"], np.zeros((5, 5)), bond_cut=0.2)
+
+    def fake_grow(_g_r, _g_p, seed, mapping, **_kwargs):
+        if seed == 0:
+            return [
+                _IsoResult({0: 0}, fragment={0}),
+                _IsoResult({0: 1}, fragment={0}),
+            ]
+        if mapping[0] == 0:
+            # This parent alone would create three children under a cap of
+            # two, so its subtree must be removed atomically.
+            return [
+                _IsoResult({1: p}, fragment={1}) for p in (2, 3, 4)
+            ]
+        return [_IsoResult({1: 2}, fragment={1})]
+
+    monkeypatch.setattr(branch_mod, "grow_island", fake_grow)
+    monkeypatch.setattr(
+        branch_mod, "_chemistry_orbit_signature",
+        lambda mapping, *_args, **_kwargs: tuple(sorted(mapping.items())))
+
+    branches = branch_mod.find_islands(
+        g_r, g_p, [0, 1], orbit_dedup=False, max_branches=2)
+
+    assert [branch.mapping for branch in branches] == [{0: 1, 1: 2}]
 
 
 def test_symcand_reassigns_correlated_block_witness():
@@ -460,7 +510,7 @@ def test_planar_metal_tetramethyl_two_metal_carbon_edges_are_correlated():
     assert second[0].blocks[0].p_atoms == (1, 5, 9, 13)
 
 
-def test_hidden_alternate_witness_can_extend_later_frontier_atom():
+def test_nonautomorphic_witnesses_are_not_compressed_before_later_frontier():
     wbo_r = np.zeros((3, 3))
     wbo_r[0, 2] = wbo_r[2, 0] = 1.0
     g_r = build_graph(["C", "C", "O"], wbo_r, bond_cut=0.2)
@@ -469,13 +519,14 @@ def test_hidden_alternate_witness_can_extend_later_frontier_atom():
     wbo_p[1, 2] = wbo_p[2, 1] = 1.0
     g_p = build_graph(["C", "C", "O"], wbo_p, bond_cut=0.2)
 
-    compressed = _SymCand(
-        {0: 0, 1: 1},
-        multiplicity=2,
-        alternates=[({0: 1, 1: 0}, 1)],
+    cands = _dedup_sym_cands(
+        [_SymCand({0: 0, 1: 1}), _SymCand({0: 1, 1: 0})],
+        g_r, g_p,
     )
+    assert len(cands) == 2
+
     out = _extend_sym_cands(
-        [compressed], {0, 1}, 2,
+        cands, {0, 1}, 2,
         g_r, g_p, {}, 0.5, None,
         anchor_u=0, anchor_wbo=1.0,
     )
@@ -484,7 +535,29 @@ def test_hidden_alternate_witness_can_extend_later_frontier_atom():
     assert _cand_map(out[0]) == {0: 1, 1: 0, 2: 2}
 
 
-def test_successful_primary_extension_preserves_alternate_witness_evidence():
+def test_exact_certificate_preserves_coupled_group_action_not_just_orbits():
+    wbo = np.zeros((4, 4))
+    for a, b in [(0, 1), (1, 2), (2, 3), (3, 0)]:
+        wbo[a, b] = wbo[b, a] = 1.0
+    graph = build_graph(["C"] * 4, wbo, bond_cut=0.2)
+    orbits = _nauty_orbits(graph, wbo_tol=0.2)
+
+    # Every P atom belongs to one orbit, but a square automorphism cannot map
+    # an adjacent ordered pair onto an opposite pair.  Independent orbit-pool
+    # shuffling would merge these states incorrectly.
+    adjacent = _SymCand({10: 0, 11: 1})
+    rotated = _SymCand({10: 1, 11: 2})
+    opposite = _SymCand({10: 0, 11: 2})
+    deduped = _dedup_sym_cands(
+        [adjacent, rotated, opposite], graph, graph,
+        r_orbits=orbits, p_orbits=orbits,
+    )
+
+    assert len(deduped) == 2
+    assert sorted(cand.multiplicity for cand in deduped) == [1, 2]
+
+
+def test_successful_primary_extension_preserves_exact_group_evidence():
     elements = ["X", "C", "C", "H", "H"]
     wbo = np.zeros((5, 5))
     for carbon in [1, 2]:
@@ -509,15 +582,53 @@ def test_successful_primary_extension_preserves_alternate_witness_evidence():
 
     assert len(cands) == 1
     assert cands[0].multiplicity == 2
-    assert cands[0].alternates == (
-        (tuple(sorted({0: 0, 1: 2, 2: 1, 3: 4, 4: 3}.items())), 1),
-    )
+    assert [(b.r_atoms, b.p_atoms) for b in cands[0].automorph_blocks] == [
+        ((1, 2, 3, 4), (1, 2, 3, 4)),
+    ]
     state = _symmetry_state(cands[0], r_orbits=r_orbits, p_orbits=p_orbits)
-    assert state["alternates"] == [{
-        "witness": {0: 0, 1: 2, 2: 1, 3: 4, 4: 3},
-        "multiplicity": 1,
-    }]
-    assert state["blocks"] == []
+    assert state["automorph_blocks"][0]["source"] == "exact_automorph_group"
+
+
+def test_deferred_boundary_dedupe_retains_concrete_witnesses_until_saturation():
+    elements = ["X", "C", "C", "H", "H"]
+    wbo = np.zeros((5, 5))
+    for carbon in [1, 2]:
+        wbo[0, carbon] = wbo[carbon, 0] = 1.0
+    wbo[1, 3] = wbo[3, 1] = 1.0
+    wbo[2, 4] = wbo[4, 2] = 1.0
+    graph = build_graph(elements, wbo, bond_cut=0.2)
+    r_orbits = _nauty_orbits(graph, wbo_tol=0.2)
+    p_orbits = _nauty_orbits(graph, wbo_tol=0.2)
+
+    cands = [_SymCand({0: 0})]
+    for fragment, atom, anchor in [
+        ({0}, 1, 0),
+        ({0, 1}, 2, 0),
+        ({0, 1, 2}, 3, 1),
+        ({0, 1, 2, 3}, 4, 2),
+    ]:
+        cands = _extend_sym_cands(
+            cands, fragment, atom, graph, graph, {}, 0.5, None,
+            p_orbits=p_orbits, r_orbits=r_orbits,
+            anchor_u=anchor, anchor_wbo=1.0,
+            defer_boundary_dedupe=True)
+
+    # No witness was quotient-merged during growth, so both correlated
+    # concrete paths remain independently available to later atoms.
+    assert len(cands) == 2
+    assert {tuple(sorted(cand.mapping.items())) for cand in cands} == {
+        tuple(sorted({0: 0, 1: 1, 2: 2, 3: 3, 4: 4}.items())),
+        tuple(sorted({0: 0, 1: 2, 2: 1, 3: 4, 4: 3}.items())),
+    }
+
+    saturated = _dedup_sym_cands(
+        cands, graph, graph, r_orbits=r_orbits, p_orbits=p_orbits,
+        fragment=set(range(5)))
+    assert len(saturated) == 1
+    assert saturated[0].multiplicity == 2
+    assert [(b.r_atoms, b.p_atoms) for b in saturated[0].automorph_blocks] == [
+        ((1, 2, 3, 4), (1, 2, 3, 4)),
+    ]
 
 
 def test_block_join_refines_bucket_mismatch_before_later_frontier():
@@ -770,7 +881,7 @@ def test_color_groups_do_not_transitively_merge_overlapping_blocks():
         {
             "r_atoms": [1, 2],
             "p_atoms": [10, 11],
-            "source": "alternate_witness",
+            "source": "exact_automorph_group",
         },
     ])
 
@@ -778,7 +889,7 @@ def test_color_groups_do_not_transitively_merge_overlapping_blocks():
         {
             "r_atoms": [1, 2],
             "p_atoms": [10, 11],
-            "sources": ["alternate_witness", "sym_block"],
+            "sources": ["exact_automorph_group", "sym_block"],
         },
         {
             "r_atoms": [2, 3],
@@ -943,7 +1054,7 @@ def test_cut_sweep_respects_hard_anchor_map():
     assert incompatible == {}
 
 
-def test_cut_sweep_preserves_branch_symmetry_alternates():
+def test_cut_sweep_preserves_branch_exact_automorph_group():
     elements = ["H", "H"]
     wbo = np.zeros((2, 2))
     wbo[0, 1] = wbo[1, 0] = 0.9
@@ -961,29 +1072,28 @@ def test_cut_sweep_preserves_branch_symmetry_alternates():
     assert any(
         block == {
             "fragment_index": 0,
-            "block_index": "alt:0",
+            "block_index": 0,
             "island_idx": 1,
             "r_atoms": [0, 1],
             "p_atoms": [0, 1],
             "extendable": False,
             "open": False,
-                "assignments": 2,
-            "source": "alternate_witness",
+            "assignments": "exact_group",
+            "source": "exact_automorph_group",
             "witness_index": 0,
         }
         for block in branch_symmetry["blocks"]
     )
     assert branch_symmetry["color_groups"] == [{
         "r_atoms": [0, 1],
-        "p_atoms": [0, 1],
-        "sources": [
-            "alternate_witness",
-        ],
+            "p_atoms": [0, 1],
+            "sources": [
+                "exact_automorph_group",
+            ],
     }]
-    assert branch_symmetry["fragments"][0]["symmetry"]["alternates"] == [{
-        "witness": {0: 1, 1: 0},
-        "multiplicity": 1,
-    }]
+    fragment_symmetry = branch_symmetry["fragments"][0]["symmetry"]
+    assert fragment_symmetry["automorph_blocks"][0]["source"] == (
+        "exact_automorph_group")
 
 
 def test_anchored_noop_seed_does_not_keep_pass_loop_alive():

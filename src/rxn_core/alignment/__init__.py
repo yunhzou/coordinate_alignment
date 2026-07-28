@@ -37,8 +37,8 @@ from .index_chirality import (
     IndexChiralityConflict,
     IndexChiralityError,
     IndexChiralitySelection,
-    build_index_frames,
+    GroupChiralityWitnessSelection,
     mapping_event_signature,
-    normalized_index_orientation,
+    select_group_chiral_witness,
     select_index_chirality_assignment,
 )

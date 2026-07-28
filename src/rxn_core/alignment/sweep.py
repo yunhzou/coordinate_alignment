@@ -137,7 +137,8 @@ def _core_mapping_variants(branch, core_R, max_variants, *,
     final_symmetry = _branch_symmetry_record(branch)
     for block in final_symmetry.get('blocks', ()):
         source = block.get('source') or 'sym_block'
-        if source not in {'sym_block', 'alternate_witness'}:
+        if source not in {
+                'sym_block', 'exact_automorph_group'}:
             continue
         r_atoms = tuple(sorted(
             int(r) for r in block.get('r_atoms', ())
@@ -253,8 +254,8 @@ def _branch_symmetry_record(branch):
             source = block.get('source')
             assignments = (
                 block.get('assignments')
-                if source in {'island_automorph', 'alternate_witness',
-                              'sym_block', 'interbranch'}
+                if source in {'island_automorph', 'sym_block', 'interbranch',
+                              'exact_automorph_group'}
                 else _sym_block_assignment_expr(normalized_block)
             )
             item = {
@@ -270,30 +271,6 @@ def _branch_symmetry_record(branch):
             if source:
                 item['source'] = source
             blocks.append(item)
-        witness = {
-            int(r): int(p)
-            for r, p in dict(symmetry.get('witness') or {}).items()
-        }
-        alternate_mappings = [witness] + [
-            {
-                int(r): int(p)
-                for r, p in dict(alt.get('witness') or {}).items()
-            }
-            for alt in symmetry.get('alternates') or ()
-        ]
-        for alt_index, alt_block in enumerate(_mapping_variation_blocks(
-                alternate_mappings, source='alternate_witness')):
-            blocks.append({
-                'fragment_index': int(frag_index),
-                'block_index': f"alt:{int(alt_index)}",
-                'island_idx': record['island_idx'],
-                'r_atoms': alt_block['r_atoms'],
-                'p_atoms': alt_block['p_atoms'],
-                'extendable': bool(alt_block.get('extendable', False)),
-                'open': bool(alt_block.get('open', False)),
-                'assignments': alt_block.get('assignments'),
-                'source': 'alternate_witness',
-            })
     return {
         'rule': 'branch_symmetry_blocks',
         'fragments': fragments,
@@ -536,7 +513,7 @@ def combine_branch_symmetry_witnesses(witnesses, representative_mapping=None):
     """Build display degeneracy from one chosen completed branch.
 
     Deduplicated witnesses remain available as provenance, but only the local
-    final ``_SymCand`` blocks/alternates of the representative mapping drive
+    final ``_SymCand`` pools and exact automorphism domains drive
     coloring.  Historical same-island candidate-pool and inter-branch
     variation are not final mutability and therefore are not displayed.
     """
@@ -564,7 +541,8 @@ def combine_branch_symmetry_witnesses(witnesses, representative_mapping=None):
             r_atoms = tuple(sorted(int(r) for r in block.get('r_atoms', ())))
             p_atoms = tuple(sorted(int(p) for p in block.get('p_atoms', ())))
             source = block.get('source') or 'sym_block'
-            if source not in {'sym_block', 'alternate_witness'}:
+            if source not in {
+                    'sym_block', 'exact_automorph_group'}:
                 continue
             key = (source, r_atoms, p_atoms)
             if key in block_keys:
@@ -635,7 +613,6 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         g_R, g_P, list(order),
         iso_tol=float(cfg['iso_tol']),
         max_branches=int(cfg['max_branches']),
-        abort_on_branch_cap=bool(cfg.get('abort_on_branch_cap', False)),
         dwbo_threshold=float(cfg['dwbo_threshold']),
         metal_dwbo_threshold=cfg.get('metal_dwbo_threshold'),
         symmetry_wbo_tol=float(cfg['symmetry_wbo_tol']),
@@ -885,7 +862,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                         'error': str(exc),
                         'growth': _growth_trace_summary(seed_growth_profile),
                     })
-                continue
+                raise
 
             search_elapsed = time.perf_counter() - seed_t0
             growth_summary = _growth_trace_summary(seed_growth_profile)
@@ -902,9 +879,15 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                 score_t0 = time.perf_counter()
                 if core_R:
                     scored_items = []
-                    for core_map in _core_mapping_variants(
+                    try:
+                        core_variants = _core_mapping_variants(
                             branch, core_R, int(cfg['max_branches']),
-                            g_P=g_P, p_orbits=p_orbits):
+                            g_P=g_P, p_orbits=p_orbits)
+                    except BranchLimitExceeded:
+                        # This branch's explicit core expansion is the capped
+                        # sub-result; sibling branches and seed orders remain.
+                        core_variants = ()
+                    for core_map in core_variants:
                         scored_items.append((
                             _core_mapping_key(core_map, core_R),
                             core_map,
@@ -990,11 +973,9 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                     'growth': growth_summary,
                 })
     except BranchLimitExceeded:
-        # Kill the whole cut.  Partial seed-order witnesses from this cut are
-        # deliberately discarded because the cut has entered a pathological
-        # outer-branch multiplication regime.
-        cut_status = 'branch_cap'
-        out = []
+        # No broad cut-level fallback: a cap must be handled at the concrete
+        # subtree that owns it.  Any uncaught cap is an implementation error.
+        raise
 
     elapsed = time.perf_counter() - cut_t0
     if return_trace:
@@ -1089,7 +1070,6 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
         'symmetry_repair': bool(symmetry_repair),
         'symmetry_repair_min_changes': int(symmetry_repair_min_changes),
         'symmetry_repair_max_evals': int(symmetry_repair_max_evals),
-        'abort_on_branch_cap': True,
         'n_atoms': int(n_atoms),
         'anchor_map': anchor_map,
     }
@@ -1237,7 +1217,6 @@ def run_no_cut_core_branch_records(elS, wboS, elT, wboT, core_S, *,
                 g_S, g_T, list(order),
                 iso_tol=float(iso_tol),
                 max_branches=int(max_branches),
-                abort_on_branch_cap=True,
                 dwbo_threshold=float(dwbo_threshold),
                 metal_dwbo_threshold=metal_dwbo_threshold,
                 symmetry_wbo_tol=float(symmetry_wbo_tol),

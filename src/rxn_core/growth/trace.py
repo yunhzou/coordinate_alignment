@@ -18,7 +18,6 @@ from ..matcher import (
     _support_witness_for_value,
     _sym_block_assignment_expr,
     _sym_block_indexes,
-    _sym_cand_variants,
 )
 
 
@@ -76,15 +75,7 @@ def cands_pattern_sample(cands, k=5):
         }
         if isinstance(cand, _SymCand):
             item['multiplicity'] = int(cand.multiplicity)
-            item['alternate_witnesses'] = len(cand.alternates)
-            if cand.alternates:
-                item['alternate_witness_sample'] = [
-                    {
-                        'multiplicity': int(mult),
-                        'witness': {int(a): int(b) for a, b in items},
-                    }
-                    for items, mult in cand.alternates[:3]
-                ]
+            item['automorph_domains'] = len(cand.automorph_blocks)
             for block in cand.blocks:
                 item['blocks'].append({
                     'r_atoms': [int(x) for x in block.r_atoms],
@@ -148,11 +139,8 @@ def why_extend_failed(cands, fragment, n_atom, anchor_atom, anchor_wbo,
         )
     out = []
     for ci, raw_cand in enumerate(cands[:5]):
-        variants = _sym_cand_variants(
-            raw_cand if isinstance(raw_cand, _SymCand)
-            else _SymCand(raw_cand)
-        )
-        for vi, cand in enumerate(variants[:5]):
+        cand = raw_cand if isinstance(raw_cand, _SymCand) else _SymCand(raw_cand)
+        for vi, cand in enumerate((cand,)):
             cm = _cand_map(cand)
             used_p = _cand_possible_p_atoms(cand)
             v_set = {
