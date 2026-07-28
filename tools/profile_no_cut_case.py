@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stream diagnostics while running exactly one R/P no-cut work unit.
+"""Stream diagnostics while running one R/P cut work unit.
 
 This tool wraps hot functions for observation only.  It does not change their
 arguments, return values, matching order, limits, or exception behavior.
@@ -36,6 +36,8 @@ class StreamLog:
             "boundary_seconds": 0.0,
             "repair_calls": 0,
             "repair_seconds": 0.0,
+            "canonical_calls": 0,
+            "canonical_seconds": 0.0,
         }
 
     def emit(self, event: str, **fields) -> None:
@@ -78,6 +80,7 @@ def install_observers(log: StreamLog) -> None:
     # observational: it forwards the original arguments and result unchanged.
     from rxn_core.growth import island
     from rxn_core.matcher import dedupe
+    from rxn_core.matcher import canonical
     from rxn_core.alignment import branch, sweep
 
     original_extend = island._extend_sym_cands
@@ -105,7 +108,8 @@ def install_observers(log: StreamLog) -> None:
         log.emit(
             "extend_end", **fields, operation_sec=elapsed,
             result_count=len(result or ()),
-            result_alternate_count=_alternate_count(result or ()),
+            result_automorph_domain_count=(
+                _automorph_domain_count(result or ())),
         )
         return result
 
@@ -133,6 +137,31 @@ def install_observers(log: StreamLog) -> None:
     patch_boundary(island, "growth.island")
     patch_boundary(dedupe, "matcher.dedupe")
     patch_boundary(branch, "alignment.branch")
+
+    original_certificate = (
+        canonical._CandidateAutomorphismCanonicalizer.certificate)
+
+    def observed_certificate(self, cand):
+        call_no = log.state["canonical_calls"] + 1
+        fields = {
+            "call": call_no,
+            "mapped_atoms": len(getattr(cand, "mapping", cand)),
+            "symmetry_blocks": len(getattr(cand, "blocks", ()) or ()),
+            "automorph_domains": len(
+                getattr(cand, "automorph_blocks", ()) or ()),
+            "graph_vertices": int(self.n_vertices),
+        }
+        log.set_phase("candidate_certificate", **fields)
+        log.emit("canonical_start", **fields)
+        started = time.perf_counter()
+        result = original_certificate(self, cand)
+        elapsed = time.perf_counter() - started
+        log.add_timing("canonical", elapsed)
+        log.emit("canonical_end", **fields, operation_sec=elapsed)
+        return result
+
+    canonical._CandidateAutomorphismCanonicalizer.certificate = (
+        observed_certificate)
 
     original_repair = sweep.symmetry_repair_mapping
 
@@ -173,6 +202,9 @@ def main() -> int:
     parser.add_argument("--step", required=True)
     parser.add_argument("--log", type=Path, required=True)
     parser.add_argument("--trace", type=Path, required=True)
+    parser.add_argument(
+        "--cut", type=int, nargs=2, metavar=("ATOM_A", "ATOM_B"),
+        help="profile this one-edge cut instead of the no-cut work unit")
     parser.add_argument("--heartbeat-seconds", type=float, default=30.0)
     parser.add_argument("--stack-seconds", type=float, default=60.0)
     args = parser.parse_args()
@@ -209,9 +241,10 @@ def main() -> int:
             )},
         )
         install_observers(log)
-        log.set_phase("run_no_cut")
+        cut = () if args.cut is None else (tuple(sorted(args.cut)),)
+        log.set_phase("run_cut", cut=[list(edge) for edge in cut])
         result = run_cut_sweep_chunk(
-            inputs.elR, inputs.wboR, inputs.elP, inputs.wboP, [()],
+            inputs.elR, inputs.wboR, inputs.elP, inputs.wboP, [cut],
             n_workers=1,
             trace_path=args.trace.resolve(),
             cut_floor=float(config["cut_floor"]),

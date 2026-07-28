@@ -411,29 +411,57 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
                 continue
             if i not in local and j not in local:
                 continue
-            local_pairs.append((i, j, float(wbo_R[i, j])))
+            local_pairs.append((
+                i, j, float(wbo_R[i, j]),
+                bond_event_threshold(
+                    elements_R, i, j,
+                    default_threshold=dwbo_threshold,
+                    metal_threshold=metal_dwbo_threshold)))
 
-    def local_score(m):
-        changed = 0
-        delta = 0.0
-        for i, j, wR in local_pairs:
-            wP = float(wbo_P[m[i], m[j]])
-            threshold = bond_event_threshold(
-                elements_R, i, j,
-                default_threshold=dwbo_threshold,
-                metal_threshold=metal_dwbo_threshold)
-            if wR - wP >= threshold:
-                changed += 1
-                delta += wR - wP
-            elif wP - wR >= threshold:
-                changed += 1
-                delta += wP - wR
-            elif wR >= bond_floor or wP >= bond_floor:
-                delta += abs(wR - wP) * 0.01
-        return (changed, round(delta, 12))
+    pair_i = np.fromiter(
+        (item[0] for item in local_pairs), dtype=np.intp,
+        count=len(local_pairs))
+    pair_j = np.fromiter(
+        (item[1] for item in local_pairs), dtype=np.intp,
+        count=len(local_pairs))
+    pair_wbo_R = np.fromiter(
+        (item[2] for item in local_pairs), dtype=float,
+        count=len(local_pairs))
+    pair_threshold = np.fromiter(
+        (item[3] for item in local_pairs), dtype=float,
+        count=len(local_pairs))
+    pair_r_active = pair_wbo_R >= float(bond_floor)
+    current_images = np.full(nR, -1, dtype=np.intp)
+    for r, p in mapping0.items():
+        current_images[int(r)] = int(p)
+
+    def local_score(images):
+        """Exact former score with pair classification vectorized.
+
+        ``sum(list, 0.0)`` intentionally retains the former left-to-right
+        floating-point accumulation before the 12-place rounding tie-break.
+        """
+        pair_wbo_P = np.asarray(wbo_P)[
+            images[pair_i], images[pair_j]]
+        difference = pair_wbo_R - pair_wbo_P
+        changed_mask = (
+            (difference >= pair_threshold)
+            | (-difference >= pair_threshold)
+        )
+        contribution = np.where(
+            changed_mask,
+            np.abs(difference),
+            np.where(
+                pair_r_active | (pair_wbo_P >= float(bond_floor)),
+                np.abs(difference) * 0.01,
+                0.0,
+            ),
+        )
+        delta = sum(contribution.tolist(), 0.0)
+        return (int(np.count_nonzero(changed_mask)), round(delta, 12))
 
     current = dict(mapping0)
-    current_score = local_score(current)
+    current_score = local_score(current_images)
     for key, rs in sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])):
         stats['groups'].append({
             'element': key[0],
@@ -475,21 +503,25 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
                     break
 
         best_score = current_score
-        best_map = None
+        best_state = None
+        rs_array = np.asarray(rs, dtype=np.intp)
+        base_images = current_images.copy()
         for state in sorted(states):
             if stats['evaluated'] >= max_evals:
                 stats['capped'] = True
                 break
-            candidate = dict(current)
-            candidate.update(zip(rs, state))
-            score = local_score(candidate)
+            current_images[rs_array] = state
+            score = local_score(current_images)
             stats['evaluated'] += 1
             if score < best_score:
                 best_score = score
-                best_map = candidate
-        if best_map is not None:
-            current = best_map
+                best_state = state
+        if best_state is not None:
+            current.update(zip(rs, best_state))
+            current_images[rs_array] = best_state
             current_score = best_score
+        else:
+            current_images = base_images
 
     best = current
     best_score = _mapping_change_score(best, wbo_R, wbo_P,
