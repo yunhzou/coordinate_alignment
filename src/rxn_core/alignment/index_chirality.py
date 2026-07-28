@@ -346,6 +346,8 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
     values_P = {
         key: tuple(sorted(set(values))) for key, values in pair_groups_P.items()
     }
+    colored_pair_records = []
+    color_counts = defaultdict(Counter)
     for left_P, right_P, group_key, r_value, p_value in pair_records:
         threshold = group_key[1]
         r_behavior = tuple(
@@ -354,9 +356,31 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
         p_behavior = tuple(
             _event_class(other, p_value, threshold)
             for other in values_R[group_key])
+        color = (
+            "event_invariant_pair", group_key, r_behavior, p_behavior)
+        colored_pair_records.append((left_P, right_P, group_key, color))
+        color_counts[group_key][color] += 1
+
+    # This is a complete edge-colored relation within each element/threshold
+    # pair class.  Its most frequent color can be represented by absence:
+    # atom colors already preserve the pair class, and any permutation that
+    # preserves every exceptional colored pair necessarily maps the remaining
+    # (baseline) pairs among themselves.  This is exactly equivalent to
+    # materializing O(N^2) relation vertices, while molecular graphs normally
+    # retain only O(E) exceptional event relations.
+    baseline_color = {
+        group_key: min(
+            counts,
+            key=lambda color: (-counts[color], repr(color)),
+        )
+        for group_key, counts in color_counts.items()
+    }
+    for left_P, right_P, group_key, color in colored_pair_records:
+        if color == baseline_color[group_key]:
+            continue
         relation.add_pair(
             left_P, right_P,
-            ("event_invariant_pair", group_key, r_behavior, p_behavior))
+            color)
 
     return relation, persistent_P, inverse, fragments
 

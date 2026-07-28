@@ -4,6 +4,7 @@ import pytest
 import rxn_core.pipeline as pipeline
 from rxn_core.alignment.index_chirality import (
     IndexChiralityConflict,
+    _masked_relation_data,
     select_group_chiral_witness,
     select_index_chirality_assignment,
 )
@@ -419,3 +420,26 @@ def test_one_coplanar_high_coordinate_simplex_does_not_erase_the_others():
     assert selection.metadata["nonstereogenic_frame_count"] == 1
     assert len(selection.metadata["active_frames"]) == 4
     assert {frame["center_R"] for frame in selection.metadata["active_frames"]} == {0}
+
+
+def test_event_relation_uses_lossless_sparse_baseline_encoding():
+    import pynauty
+
+    elements = ["C"] * 4
+    wbo_R = np.zeros((4, 4))
+    wbo_P = np.zeros((4, 4))
+    wbo_P[0, 1] = wbo_P[1, 0] = 0.8
+    identity = {index: index for index in range(4)}
+
+    relation, _persistent, _inverse, _fragments = _masked_relation_data(
+        identity, {}, elements, wbo_R, elements, wbo_P,
+        1.0, 0.2, 0.5, 0.3, None)
+    graph = relation.graph("B")
+    _generators, _m1, _m2, orbits, _count = pynauty.autgrp(graph)
+
+    # Six complete atom pairs have two event colors.  Absence represents the
+    # five-pair baseline exactly, leaving one exceptional relation vertex.
+    assert graph.number_of_vertices == 5
+    assert orbits[0] == orbits[1]
+    assert orbits[2] == orbits[3]
+    assert orbits[0] != orbits[2]

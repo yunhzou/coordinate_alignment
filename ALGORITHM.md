@@ -375,6 +375,19 @@ boundary-aware growth dedupe: two partial states that might become different
 mechanisms must not be collapsed just because their current internal islands
 look symmetric.
 
+### Exact index-chirality relation
+
+Index-chirality post-processing builds an endpoint relational graph whose atom
+colors, masked WBO relations, event classes, anchors, and signed coordination
+simplices are solved together by pynauty.  Event invariance is a complete
+edge-coloring inside each element/threshold pair class.  The implementation
+stores the most frequent color as the implicit (absent-edge) baseline and emits
+relation vertices only for exceptional colors.  This is losslessly equivalent
+to the complete O(N^2) coloring: atom colors preserve the pair class, so a
+permutation preserving every exceptional pair must also preserve its baseline
+complement.  Molecular cases therefore give pynauty an O(E)-sized relation
+instead of thousands of redundant zero-event pair vertices.
+
 ## Outer Alignment
 
 `align_from_arrays(...)` builds graphs, generates seed orders, runs
