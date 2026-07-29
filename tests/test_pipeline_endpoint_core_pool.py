@@ -818,7 +818,7 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
 
     branch_symmetry = result["mechanisms"][0]["branch_symmetry"]
     assert branch_symmetry["rule"] == (
-        "chosen_fragment_masked_automorphism_closure")
+        "chosen_fragment_automorphisms_plus_equivalent_witness_group")
     assert branch_symmetry["dedup_witness_count"] >= 1
     assert any(
         block["r_atoms"] == [0, 1] and block["p_atoms"] == [0, 1]

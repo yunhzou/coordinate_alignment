@@ -1,13 +1,26 @@
 import numpy as np
 
 from rxn_core.alignment.interpolation import (
-    _local_internal,
+    _dihedral,
+    _rotation_fraction,
     _wrap_angle,
-    _zmatrix_plan,
     internal_coordinate_interpolation,
     internal_distance_interpolation,
     proper_align_coordinates,
 )
+
+
+def test_half_turn_follows_proper_rotation_without_crossing_center_plane():
+    half_turn = np.diag([-1.0, -1.0, 1.0])
+    vector = np.array([1.0, 0.0, 0.0])
+    path = np.stack([
+        vector @ _rotation_fraction(half_turn, t)
+        for t in np.linspace(0.0, 1.0, 101)
+    ])
+
+    assert np.allclose(np.linalg.norm(path, axis=1), 1.0)
+    assert np.linalg.norm(path[50]) == 1.0
+    assert np.max(np.linalg.norm(np.diff(path, axis=0), axis=1)) < 0.04
 
 
 def test_internal_distance_interpolation_preserves_endpoints_and_frame_count():
@@ -53,7 +66,7 @@ def test_internal_distance_interpolation_reports_nonbonded_clash():
     assert report["pairs"][0]["atoms"] == [0, 2]
 
 
-def test_midpoint_interpolates_local_distance_angle_and_signed_torsion():
+def test_midpoint_preserves_redundant_bonds_angles_and_signed_torsion():
     coords_r = np.array([
         [0.0, 0.0, 0.0], [1.4, 0.0, 0.0], [2.1, 1.1, 0.0],
         [3.1, 1.4, 0.8], [3.8, 2.2, 1.5],
@@ -66,17 +79,17 @@ def test_midpoint_interpolates_local_distance_angle_and_signed_torsion():
     result = internal_coordinate_interpolation(
         coords_r, coords_p, ["C"] * 5, bonded_pairs=bonds,
         persistent_bonded_pairs=bonds, n_frames=3)
-    anchors, entries = _zmatrix_plan(5, bonds, bonds)
-    assert len(anchors) == 3
     midpoint = np.asarray(result["frames"][1]["coords"])
-    for atom, refs in entries:
-        q_r = _local_internal(coords_r, atom, refs)
-        q_p = _local_internal(coords_p, atom, refs)
-        q_mid = _local_internal(midpoint, atom, refs)
-        assert np.isclose(q_mid[0], 0.5 * (q_r[0] + q_p[0]))
-        assert np.isclose(q_mid[1], 0.5 * (q_r[1] + q_p[1]))
-        expected_phi = q_r[2] + 0.5 * _wrap_angle(q_p[2] - q_r[2])
-        assert abs(_wrap_angle(q_mid[2] - expected_phi)) < 1e-8
+    residuals = result["frames"][1]["constraint_residuals"]
+    assert residuals["max_bond_relative_error"] < 1e-3
+    assert residuals["max_angle_error_degrees"] < 0.1
+    assert residuals["max_torsion_error_degrees"] < 0.2
+    for atoms in ((0, 1, 2, 3), (1, 2, 3, 4)):
+        phi_r = _dihedral(coords_r, *atoms)
+        phi_p = _dihedral(coords_p, *atoms)
+        expected = phi_r + 0.5 * _wrap_angle(phi_p - phi_r)
+        assert abs(_wrap_angle(_dihedral(midpoint, *atoms) - expected)) < (
+            np.radians(0.2))
 
 
 def test_high_coordinate_donor_stays_in_anchored_orientation_hemisphere():
@@ -95,13 +108,9 @@ def test_high_coordinate_donor_stays_in_anchored_orientation_hemisphere():
         coords_r, coords_p, ["Sc"] + ["O"] * 6 + ["C"],
         bonded_pairs=bonds, persistent_bonded_pairs=bonds, n_frames=21)
 
-    assert result["coordination_constraints"] == [{
-        "center": 0,
-        "anchors": [1, 2],
-        "persistent_donors": [1, 2, 3, 4, 5, 6],
-        "anchor_rule": (
-            "persistent_chelating_pair_then_maximum_angular_condition"),
-    }]
+    assert result["schema_version"] == (
+        "rxn_core.fragment_kinematic_interpolation/v8")
+    assert result["primitive_counts"]["angles"] >= 15
     determinants = []
     for frame in result["frames"]:
         xyz = np.asarray(frame["coords"])
@@ -109,7 +118,52 @@ def test_high_coordinate_donor_stays_in_anchored_orientation_hemisphere():
             xyz[1] - xyz[0], xyz[2] - xyz[0], xyz[3] - xyz[0],
         ])))
     assert min(determinants) > 0
+    assert max(
+        frame["constraint_residuals"]["max_angle_error_degrees"]
+        for frame in result["frames"]) < 2.0
     assert np.allclose(result["frames"][0]["coords"], coords_r)
     assert np.allclose(
         result["frames"][-1]["coords"],
         proper_align_coordinates(coords_p, coords_r))
+
+
+def test_two_rigid_fragments_follow_one_smooth_bridge_rotation():
+    coords_r = np.array([
+        [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0],
+        [2.0, 0.0, 0.0], [2.0, 1.0, 0.0], [2.0, 0.0, 1.0],
+    ])
+    coords_p = coords_r.copy()
+    angle = np.radians(140.0)
+    rotation = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, np.cos(angle), np.sin(angle)],
+        [0.0, -np.sin(angle), np.cos(angle)],
+    ])
+    coords_p[3:] = ((coords_r[3:] - coords_r[3]) @ rotation
+                    + coords_r[3])
+    bonds = [
+        (0, 1), (1, 2), (0, 2),
+        (3, 4), (4, 5), (3, 5),
+        (2, 3),
+    ]
+
+    result = internal_coordinate_interpolation(
+        coords_r, coords_p, ["C"] * 6, bonded_pairs=bonds,
+        persistent_bonded_pairs=bonds, n_frames=101)
+
+    assert result["primitive_counts"]["persistent_fragments"] == 2
+    assert result["primitive_counts"]["interfragment_joints"] == 1
+    path = np.asarray([frame["coords"] for frame in result["frames"]])
+    steps = np.sqrt(np.mean(np.diff(path, axis=0) ** 2, axis=(1, 2)))
+    assert np.max(steps) / np.median(steps) < 1.6
+    for frame in path:
+        for atoms in ((0, 1, 2), (3, 4, 5)):
+            endpoint = coords_r[list(atoms)]
+            current = frame[list(atoms)]
+            assert np.allclose(
+                np.sort(np.linalg.norm(
+                    current[:, None, :] - current[None, :, :], axis=2),
+                        axis=None),
+                np.sort(np.linalg.norm(
+                    endpoint[:, None, :] - endpoint[None, :, :], axis=2),
+                        axis=None), atol=1e-6)

@@ -33,6 +33,66 @@ def _split_shared_script(document: bytes):
     return document[start:end], document[:start] + COMMON_MARKER + document[end:]
 
 
+def _rounded(value, digits=6):
+    if isinstance(value, float):
+        return round(value, digits)
+    return value
+
+
+def _compact_view_document(document: bytes) -> bytes:
+    """Remove non-rendered diagnostics and compact display-only coordinates.
+
+    The standalone batch navigator only needs the chosen final symmetry blocks,
+    not the branch witnesses used to derive them.  Interpolation coordinates are
+    display data; six decimal places retain sub-micro-Angstrom precision while
+    avoiding large JSON representations of binary floating-point values.
+    """
+    text = document.decode("utf-8")
+    marker = "const DATA = "
+    start = text.find(marker)
+    if start < 0:
+        raise ValueError("case viewer has no DATA declaration")
+    data_start = start + len(marker)
+    data, consumed = json.JSONDecoder().raw_decode(text[data_start:])
+    data_end = data_start + consumed
+
+    for mechanism in data.get("mechanisms", []):
+        symmetry = mechanism.get("branch_symmetry")
+        if isinstance(symmetry, dict):
+            # These are the only symmetry fields consulted by rDegMap() and
+            # mappedProductDegMap() in the case viewer.
+            mechanism["branch_symmetry"] = {
+                key: symmetry[key]
+                for key in ("blocks", "color_groups")
+                if key in symmetry
+            }
+
+        interpolation = mechanism.get("endpoint_interpolation")
+        if not isinstance(interpolation, dict):
+            continue
+        for key in ("coordination_constraints", "primitive_counts",
+                    "schema_version"):
+            interpolation.pop(key, None)
+        for frame in interpolation.get("frames", []):
+            frame["coords"] = [
+                [_rounded(component) for component in point]
+                for point in frame.get("coords", [])
+            ]
+            residuals = frame.get("constraint_residuals")
+            if isinstance(residuals, dict):
+                frame["constraint_residuals"] = {
+                    key: _rounded(value)
+                    for key, value in residuals.items()
+                }
+            clashes = frame.get("clashes")
+            if isinstance(clashes, dict):
+                clashes["minimum_radius_ratio"] = _rounded(
+                    clashes.get("minimum_radius_ratio"))
+
+    compact_data = json.dumps(data, separators=(",", ":"))
+    return (text[:data_start] + compact_data + text[data_end:]).encode("utf-8")
+
+
 def _case_records(batch_root: Path):
     records = []
     for tier in ("small", "medium", "large"):
@@ -42,7 +102,7 @@ def _case_records(batch_root: Path):
     return sorted(records)
 
 
-def build(batch_root: Path, output: Path):
+def build(batch_root: Path, output: Path, compact: bool = False):
     batch_root = batch_root.resolve()
     output = output.resolve()
     inventory = _read_json(batch_root / "inventory.json")
@@ -64,6 +124,8 @@ def build(batch_root: Path, output: Path):
         reconstructed = stripped.replace(COMMON_MARKER, common_script, 1)
         if reconstructed != document:
             raise RuntimeError(f"viewer reconstruction failed for {step}")
+        if compact:
+            stripped = _compact_view_document(stripped)
         mechanisms = rp.get("mechanisms") or []
         cases.append({
             "id": step,
@@ -134,8 +196,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--batch-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--compact", action="store_true",
+        help="omit non-rendered diagnostics and compact display coordinates",
+    )
     args = parser.parse_args()
-    print(json.dumps(build(args.batch_root, args.output), indent=2))
+    print(json.dumps(build(
+        args.batch_root, args.output, compact=args.compact), indent=2))
 
 
 if __name__ == "__main__":

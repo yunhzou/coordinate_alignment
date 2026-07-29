@@ -164,6 +164,31 @@ def validate_mapping(mapping, elements_R, elements_P):
     return mapping
 
 
+def fixed_mapping_aligned_rmsd(mapping, coords_R, coords_P):
+    """RMSD after a proper rigid fit of one immutable atom mapping.
+
+    Product coordinates are first reindexed exactly once by ``mapping``.
+    Kabsch removes only global translation and proper rotation; it performs no
+    permutation, assignment, symmetry shuffle, or correspondence search.
+    """
+    mapping = _int_mapping(mapping)
+    reactant = np.asarray(coords_R, dtype=float)
+    product = np.asarray(
+        [coords_P[mapping[r]] for r in range(len(reactant))], dtype=float)
+    if product.shape != reactant.shape:
+        raise IndexChiralityError("fixed-mapping RMSD coordinate mismatch")
+    centered_P = product - product.mean(axis=0)
+    centered_R = reactant - reactant.mean(axis=0)
+    u, _singular, vt = np.linalg.svd(centered_P.T @ centered_R)
+    rotation = u @ vt
+    if np.linalg.det(rotation) < 0.0:
+        u[:, -1] *= -1.0
+        rotation = u @ vt
+    aligned = centered_P @ rotation
+    return float(np.sqrt(np.mean(np.sum(
+        (aligned - centered_R) ** 2, axis=1))))
+
+
 def _orientation_measure(coords, origin, other_points, *,
                          degeneracy_tol=ORIENTATION_DEGENERACY_TOL):
     xyz = np.asarray(coords, dtype=np.longdouble)
@@ -493,23 +518,26 @@ def select_group_chiral_witness(
             else:
                 reversed_frames.append(record)
         mapping_key = tuple(mapping[r] for r in sorted(mapping))
+        fixed_rmsd = fixed_mapping_aligned_rmsd(
+            mapping, coords_R, coords_P)
         rank = (
             -len(preserved),
             len(reversed_frames),
             degenerate_count,
             missing_count,
-            mapping_key != source_key,
+            fixed_rmsd,
             mapping_key,
         )
         evaluated.append((
             rank, witness_index, mapping, preserved, reversed_frames,
-            degenerate_count, missing_count))
+            degenerate_count, missing_count, fixed_rmsd))
     evaluated.sort(key=lambda item: item[0])
     (_rank, witness_index, selected, preserved, reversed_frames,
-     degenerate_count, missing_count) = evaluated[0]
+     degenerate_count, missing_count, selected_rmsd) = evaluated[0]
     metadata = {
         "schema_version": "rxn_core.group_chirality_witness/v1",
-        "policy": "maximize_preserved_high_coordinate_orientation",
+        "policy": (
+            "maximize_preserved_orientation_then_minimize_fixed_mapping_rmsd"),
         "candidate_witness_count": len(candidate_records),
         "high_coordinate_centers_R": sorted(high_coordinate_centers),
         "reference_frame_count": len(reference_frames),
@@ -519,6 +547,9 @@ def select_group_chiral_witness(
         "missing_frame_count": int(missing_count),
         "selected_witness_index": witness_index,
         "selected_mapping_changed": selected != source,
+        "selected_fixed_mapping_aligned_rmsd": float(selected_rmsd),
+        "rmsd_policy": (
+            "exact_mapping_then_proper_rigid_fit_no_permutation"),
         "selected_reversed_frames": reversed_frames,
     }
     return GroupChiralityWitnessSelection(

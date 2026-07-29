@@ -822,7 +822,7 @@ def test_cut_sweep_pool_prefers_no_cut_representative():
     } == {((0, 1),), ((0, 0),)}
 
 
-def test_pool_branch_symmetry_does_not_color_final_witness_variation():
+def test_pool_branch_symmetry_colors_exact_equivalent_witness_variation():
     pool = {}
     sig = ((), ())
 
@@ -830,8 +830,16 @@ def test_pool_branch_symmetry_does_not_color_final_witness_variation():
     _pool_add(pool, sig, {0: 1, 1: 0}, ())
 
     assert pool[sig]["branch_symmetry"]["dedup_witness_count"] == 2
-    assert pool[sig]["branch_symmetry"]["blocks"] == []
-    assert pool[sig]["branch_symmetry"]["color_groups"] == []
+    assert pool[sig]["branch_symmetry"]["matching_generators"] == [{
+        "witness_index": 1,
+        "r_cycles": [[0, 1]],
+        "p_cycles": [[0, 1]],
+    }]
+    assert pool[sig]["branch_symmetry"]["color_groups"] == [{
+        "r_atoms": [0, 1],
+        "p_atoms": [0, 1],
+        "sources": ["equivalent_mechanism_witness_group"],
+    }]
 
 
 def test_display_symmetry_uses_only_selected_final_candidate_blocks():
@@ -862,7 +870,10 @@ def test_display_symmetry_uses_only_selected_final_candidate_blocks():
     assert symmetry["color_groups"] == [{
         "r_atoms": [0, 1],
         "p_atoms": [10, 11],
-        "sources": ["sym_block"],
+        "sources": [
+            "equivalent_mechanism_witness_group",
+            "sym_block",
+        ],
     }]
 
 
@@ -1067,7 +1078,8 @@ def test_cut_sweep_preserves_branch_exact_automorph_group():
     info = next(iter(pool.values()))
     branch_symmetry = info["branch_symmetry"]
 
-    assert branch_symmetry["rule"] == "representative_branch_final_symmetry"
+    assert branch_symmetry["rule"] == (
+        "hierarchical_candidate_and_equivalent_witness_group")
     assert branch_symmetry["dedup_witness_count"] == 2
     assert any(
         block == {
@@ -1088,6 +1100,7 @@ def test_cut_sweep_preserves_branch_exact_automorph_group():
         "r_atoms": [0, 1],
             "p_atoms": [0, 1],
             "sources": [
+                "equivalent_mechanism_witness_group",
                 "exact_automorph_group",
             ],
     }]

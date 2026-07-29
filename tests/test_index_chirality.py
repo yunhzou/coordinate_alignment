@@ -114,6 +114,32 @@ def test_group_chirality_selects_between_distinct_aam_witnesses():
     assert selection.metadata["reversed_frame_count"] == 0
 
 
+def test_group_chirality_rmsd_uses_each_fixed_candidate_mapping():
+    elements = ["C"] * 4
+    coords = np.array([
+        [0.0, 0.0, 0.0],
+        [1.1, 0.0, 0.0],
+        [0.2, 1.7, 0.0],
+        [0.3, 0.4, 2.3],
+    ])
+    wbo = np.zeros((4, 4))
+    identity = {atom: atom for atom in range(4)}
+    swapped = dict(identity)
+    swapped[0], swapped[1] = 1, 0
+    witnesses = [{"mapping": swapped}, {"mapping": identity}]
+
+    selection = select_group_chiral_witness(
+        swapped, witnesses,
+        elements, coords, wbo, elements, coords, wbo)
+
+    assert selection.selected_mapping == identity
+    assert selection.selected_witness_index == 1
+    assert selection.metadata["selected_fixed_mapping_aligned_rmsd"] == (
+        pytest.approx(0.0, abs=1e-12))
+    assert selection.metadata["rmsd_policy"] == (
+        "exact_mapping_then_proper_rigid_fit_no_permutation")
+
+
 def test_group_orientation_keeps_a_definite_near_planar_sign():
     elements = ["Sc", "O", "O", "O", "O", "O"]
     coords_R = np.array([
