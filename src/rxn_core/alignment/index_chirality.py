@@ -688,17 +688,68 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
         return total
 
     initial_sum = distance_increment(canonical_mapping, fixed_R, ())
+    factor_details = []
+    for support, actions in factors:
+        support_set = set(support)
+        affected_R = tuple(sorted(
+            r for r, p in canonical_mapping.items() if p in support_set))
+        action_images = tuple(
+            tuple(int(action[canonical_mapping[r]]) for r in affected_R)
+            for action in actions)
+        factor_details.append((affected_R, action_images))
+
+    def cross_factor_cost(left_R, left_images, right_R, right_images):
+        total = 0.0
+        for left, left_P in zip(left_R, left_images):
+            for right, right_P in zip(right_R, right_images):
+                delta = (distances_R[left, right]
+                         - distances_P[left_P, right_P])
+                total += float(delta * delta)
+        return total
+
+    # Pairwise minima between every two still-undecided independent factors
+    # are mutually relaxed (their minimizing actions need not agree), hence
+    # their sum is a rigorous lower bound.  Including it prevents the search
+    # from descending through millions of leaves before unavoidable geometric
+    # disagreement becomes visible.
+    pairwise_floor = {}
+    for left_index, (left_R, left_actions) in enumerate(factor_details):
+        for right_index in range(left_index + 1, len(factor_details)):
+            right_R, right_actions = factor_details[right_index]
+            pairwise_floor[(left_index, right_index)] = min(
+                cross_factor_cost(left_R, left_images,
+                                  right_R, right_images)
+                for left_images in left_actions
+                for right_images in right_actions
+            )
+
+    def action_mapping(base, affected_R, images):
+        candidate = dict(base)
+        candidate.update(zip(affected_R, images))
+        return candidate
+
+    def optimistic_remaining(index, mapping, decided):
+        floor = 0.0
+        for factor_index in range(index, len(factor_details)):
+            affected_R, action_images = factor_details[factor_index]
+            floor += min(
+                distance_increment(
+                    action_mapping(mapping, affected_R, images),
+                    affected_R, decided)
+                for images in action_images
+            )
+        for left_index in range(index, len(factor_details)):
+            for right_index in range(left_index + 1, len(factor_details)):
+                floor += pairwise_floor[(left_index, right_index)]
+        return floor
+
     # A deterministic greedy descent supplies a strong incumbent but never
     # removes alternatives from the exact search below.
     greedy = dict(canonical_mapping)
-    for support, actions in factors:
-        affected_R = tuple(sorted(
-            r for r, p in canonical_mapping.items() if p in set(support)))
+    for affected_R, action_images in factor_details:
         trials = []
-        for action in actions:
-            candidate = dict(greedy)
-            for r in affected_R:
-                candidate[r] = int(action[canonical_mapping[r]])
+        for images in action_images:
+            candidate = action_mapping(greedy, affected_R, images)
             rmsd = fixed_mapping_aligned_rmsd(candidate, coords_R, coords_P)
             trials.append((round(rmsd, 12), tuple(candidate[r]
                                                   for r in range(atom_count)),
@@ -717,7 +768,9 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
 
     def search(index, mapping, decided, distance_sum):
         nonlocal best_mapping, best_rmsd, best_rank, evaluated, pruned
-        lower_bound = np.sqrt(max(distance_sum, 0.0)) / atom_count
+        relaxed_sum = distance_sum + optimistic_remaining(
+            index, mapping, decided)
+        lower_bound = np.sqrt(max(relaxed_sum, 0.0)) / atom_count
         if lower_bound > best_rmsd + 1e-12:
             pruned += suffix_orders[index]
             return
@@ -731,15 +784,10 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
                 best_rmsd = float(rmsd)
                 best_rank = rank
             return
-        support, actions = factors[index]
-        support_set = set(support)
-        affected_R = tuple(sorted(
-            r for r, p in canonical_mapping.items() if p in support_set))
+        affected_R, action_images = factor_details[index]
         children = []
-        for action in actions:
-            child = dict(mapping)
-            for r in affected_R:
-                child[r] = int(action[canonical_mapping[r]])
+        for images in action_images:
+            child = action_mapping(mapping, affected_R, images)
             increment = distance_increment(child, affected_R, decided)
             children.append((distance_sum + increment,
                              tuple(child[r] for r in affected_R), child))
