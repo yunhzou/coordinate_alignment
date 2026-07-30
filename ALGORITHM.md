@@ -465,7 +465,14 @@ For finite cosets, `F1` is proven to be a subset of `F2` by checking:
 1. `F1`'s representative belongs to `F2`;
 2. applying every generator of `F1` to that representative remains in `F2`.
 
-Families are processed into a maximal antichain:
+Identical mapping/fragment payloads are quotient-collapsed before family
+compilation. Compiled families are then reduced in two exact phases:
+
+1. canonical relation-certificate buckets prove and merge equal cosets;
+2. families are visited in descending group order, using orbit compatibility
+   to reject impossible containment before relation transport.
+
+The result is a maximal antichain:
 
 ```text
 equal family       -> merge provenance
@@ -552,13 +559,19 @@ RMSD = sqrt(mean(||R - rotated(P_R_order)||^2))
 Kabsch removes only global translation and proper rotation. It never performs
 assignment, symmetry matching, or atom remapping.
 
-### 12.1 Small groups
+### 12.1 Covariance representation
 
-When the chirality-valid atom action contains at most 4096 elements, all
-actions are evaluated in one bounded vectorized batch. This is faster than
-many small Python/SVD calls and cannot grow past the explicit threshold.
+For centered coordinates, the coordinate norms are invariant under every
+permutation. Proper-fit RMSD therefore depends only on the 3x3 covariance:
 
-### 12.2 Large factorizable groups
+```text
+C(m) = sum_r outer(P[m(r)], R[r])
+RMSD(m)^2 = (||R||^2 + ||P||^2 - 2 proper_score(C(m))) / N
+```
+
+No global mapping list is constructed.
+
+### 12.2 Exact factor search
 
 Generator supports are joined when they overlap. Disjoint support components
 are exact commuting factors:
@@ -567,24 +580,24 @@ are exact commuting factors:
 G = G1 x G2 x ... x Gk
 ```
 
-The global Cartesian product is searched without materializing it. A greedy
-descent supplies only an initial incumbent. Exact branch-and-bound then uses
-the rotation-invariant lower bound for already assigned atoms:
+Each local action contributes one additive 3x3 covariance matrix. Local
+action matrices are stored in a binary tree; every tree node is enclosed by a
+rigorous Frobenius ball. A greedy descent supplies only an incumbent. For a
+partial covariance and all remaining action balls:
 
 ```text
-RMSD >= sqrt(sum_(i<j) (distance_R(i,j)
-                         - distance_P(m(i),m(j)))^2) / N
+proper_score(C + remaining)
+    <= proper_score(C + sum(ball centers))
+       + sqrt(3) * sum(ball radii)
 ```
 
-If this lower bound is worse than the incumbent, the entire remaining coset
-subtree is skipped. Tie-breaking remains deterministic by rounded RMSD and
+This is an upper bound on the best possible Kabsch score and therefore a
+lower bound on RMSD. If it cannot improve the incumbent, the complete group
+subtree is discarded. Tie-breaking remains deterministic by rounded RMSD and
 the complete mapping tuple.
 
-The search is exact. Its present worst-case risk is a very large connected
-support factor: local factor actions are still closed explicitly. The global
-independent-factor product no longer needs to be enumerated, but a future
-Schreier-Sims representation would be needed to remove that final worst-case
-group-size risk.
+The search is exact. Local connected-factor actions are still closed
+explicitly, but the global product is never enumerated as atom bijections.
 
 ## 13. Post-AAM Parallelism and Performance
 
@@ -675,17 +688,17 @@ If every minimum-event mechanism is rejected, the pipeline raises an
 | `max_branches` | `100` in BGCP | post-dedupe live leaves per parent subtree |
 | `SYM_SUPPORT_MAX_STATES` | `4096` | local correlated block-support cap |
 | `symmetry_repair_max_evals` | `20000` | bounded completed-representative repair |
-| RMSD vector batch threshold | `4096` | largest explicitly materialized global atom action |
-| analytical compile workers | up to `32` | process parallelism for large branch sets |
+| analytical compile workers | up to `48` | process parallelism for large branch sets |
 
 ## 18. Verification Record
 
-The current implementation is covered by 133 automated tests. Important
+The current implementation is covered by 136 automated tests. Important
 checks include:
 
 - cached and uncached relational graphs are identical;
-- a generated 8192-action group gives the same selected mapping and RMSD under
-  branch-and-bound as exhaustive enumeration;
+- a generated 8192-action group gives the same selected mapping and RMSD as
+  exhaustive enumeration while evaluating one complete mapping and proving
+  the other 8191 cannot win;
 - TS01 retains one mechanism, one maximal family, and all 82 paths;
 - TS04 retains all four exact mechanisms and 2187 chirality-valid mappings per
   mechanism;

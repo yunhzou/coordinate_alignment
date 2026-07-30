@@ -1921,7 +1921,10 @@ def _compile_analytical_families(inputs, branches, cfg, static_context=None):
             unique_payloads.append((mapping, hierarchy))
         branch_payload_indices.append(index)
     requested = int(cfg.get('post_aam_workers') or _available_cpus(default=1))
-    worker_cap = 32 if len(unique_payloads) >= 128 else 8
+    # Large branch sets are relation-compilation bound and each payload is
+    # independent.  Use the full 48-core node rather than leaving one third of
+    # the allocation idle; smaller sets retain the lower process cap.
+    worker_cap = 48 if len(unique_payloads) >= 128 else 8
     workers = min(len(unique_payloads), max(1, requested), worker_cap)
     # A process cannot create children when this pipeline itself is running as
     # a daemonic pool worker.  Sequential execution is the same exact
