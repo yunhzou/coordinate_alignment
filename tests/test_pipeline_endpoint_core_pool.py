@@ -818,12 +818,18 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
 
     branch_symmetry = result["mechanisms"][0]["branch_symmetry"]
     assert branch_symmetry["rule"] == (
-        "chosen_fragment_automorphisms_plus_equivalent_witness_group")
-    assert branch_symmetry["dedup_witness_count"] >= 1
+        "chosen_analytical_branch_fragment_automorphisms")
+    assert "dedup_witness_count" not in branch_symmetry
     assert any(
         block["r_atoms"] == [0, 1] and block["p_atoms"] == [0, 1]
         for block in branch_symmetry["blocks"]
     )
+    post_aam = result["mechanisms"][0]["post_aam"]
+    assert post_aam["endpoint_source_orbits"] == [[0, 1]]
+    assert post_aam["endpoint_target_orbits"] == [[0, 1]]
+    assert len(post_aam["analytical_branches"]) == 1
+    assert post_aam["analytical_branches"][0]["covered_path_count"] == 2
+    assert "witnesses" not in post_aam
 
 
 def test_array_based_mechanism_discovery_returns_aligned_product():

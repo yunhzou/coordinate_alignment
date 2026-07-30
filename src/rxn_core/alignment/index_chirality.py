@@ -1,4 +1,4 @@
-"""Exact index-orientation consensus for one selected AAM witness.
+"""Exact index-orientation consensus for one analytical AAM branch.
 
 The selected AAM mapping is never recomputed here.  This module only composes
 it with an automorphism shared by the selected, floor-masked R and P
@@ -69,6 +69,13 @@ class GroupChiralityWitnessSelection:
 
 
 @dataclass(frozen=True)
+class GroupChiralityBranchAnalysis:
+    mapping: dict[int, int]
+    defined_frames: tuple[dict, ...]
+    metadata: dict
+
+
+@dataclass(frozen=True)
 class _OrientationMeasure:
     normalized: float
     determinant: float
@@ -86,6 +93,9 @@ class _RelationalGraph:
         self.colors_A = list(atom_colors_A)
         self.colors_B = list(atom_colors_B)
         self.adjacency = [set() for _ in atom_colors_A]
+        self.atom_count = len(atom_colors_A)
+        self.relation_records_A = []
+        self.relation_records_B = []
 
     def _vertex(self, color_A, color_B=None):
         index = len(self.adjacency)
@@ -99,22 +109,34 @@ class _RelationalGraph:
         self.adjacency[right].add(left)
 
     def add_pair(self, left, right, color_A, color_B=None):
+        color_B = color_A if color_B is None else color_B
         relation = self._vertex(color_A, color_B)
         self._edge(relation, int(left))
         self._edge(relation, int(right))
+        atoms = tuple(sorted((int(left), int(right))))
+        self.relation_records_A.append(("pair", repr(color_A), atoms))
+        self.relation_records_B.append(("pair", repr(color_B), atoms))
 
     def add_ordered_relation(self, atoms, color_A, color_B):
+        atoms = tuple(map(int, atoms))
         relation = self._vertex(color_A, color_B)
         for role, atom in enumerate(atoms):
             role_vertex = self._vertex(("orientation_role", role))
             self._edge(relation, role_vertex)
             self._edge(role_vertex, int(atom))
+        self.relation_records_A.append(
+            ("ordered", repr(color_A), atoms))
+        self.relation_records_B.append(
+            ("ordered", repr(color_B), atoms))
 
     def clone(self):
         result = _RelationalGraph([], [])
         result.colors_A = list(self.colors_A)
         result.colors_B = list(self.colors_B)
         result.adjacency = [set(neighbors) for neighbors in self.adjacency]
+        result.atom_count = self.atom_count
+        result.relation_records_A = list(self.relation_records_A)
+        result.relation_records_B = list(self.relation_records_B)
         return result
 
     def graph(self, side, *, individualized=()):
@@ -187,6 +209,40 @@ def fixed_mapping_aligned_rmsd(mapping, coords_R, coords_P):
     aligned = centered_P @ rotation
     return float(np.sqrt(np.mean(np.sum(
         (aligned - centered_R) ** 2, axis=1))))
+
+
+def _fixed_mappings_aligned_rmsd(mappings, coords_R, coords_P):
+    """Vectorized equivalent of :func:`fixed_mapping_aligned_rmsd`.
+
+    Every product coordinate array is indexed by its supplied immutable
+    mapping before a batched proper Kabsch fit.  This changes only scheduling:
+    there is no correspondence search or symmetry rematching.
+    """
+    mappings = list(mappings)
+    if not mappings:
+        return np.empty(0, dtype=float)
+    reactant = np.asarray(coords_R, dtype=float)
+    product_xyz = np.asarray(coords_P, dtype=float)
+    atom_count = len(reactant)
+    indices = np.asarray([
+        [int(mapping[r]) for r in range(atom_count)]
+        for mapping in mappings
+    ], dtype=int)
+    products = product_xyz[indices]
+    centered_P = products - products.mean(axis=1, keepdims=True)
+    centered_R = reactant - reactant.mean(axis=0)
+    covariance = np.einsum(
+        'kni,nj->kij', centered_P, centered_R, optimize=True)
+    u, _singular, vt = np.linalg.svd(covariance)
+    rotations = u @ vt
+    reflected = np.linalg.det(rotations) < 0.0
+    if np.any(reflected):
+        u = u.copy()
+        u[reflected, :, -1] *= -1.0
+        rotations = u @ vt
+    aligned = centered_P @ rotations
+    return np.sqrt(np.mean(np.sum(
+        (aligned - centered_R[None, :, :]) ** 2, axis=2), axis=1))
 
 
 def _orientation_measure(coords, origin, other_points, *,
@@ -286,10 +342,66 @@ def _selected_fragments(branch_symmetry, source):
     return tuple(fragments), owner
 
 
+def analytical_family_static_context(
+        elements_R, wbo_R, elements_P, wbo_P, *, graph_floor=0.2,
+        dwbo_threshold=0.5, metal_dwbo_threshold=0.3):
+    """Precompute endpoint-only data shared by every analytical branch."""
+    wbo_R = np.asarray(wbo_R)
+    wbo_P = np.asarray(wbo_P)
+    atom_count = len(elements_R)
+    pair_groups_R = defaultdict(list)
+    pair_groups_P = defaultdict(list)
+    records_R, records_P = {}, {}
+    for side, elements, wbo, groups, records in (
+            ('R', elements_R, wbo_R, pair_groups_R, records_R),
+            ('P', elements_P, wbo_P, pair_groups_P, records_P)):
+        for left in range(atom_count):
+            for right in range(left + 1, atom_count):
+                element_pair = tuple(sorted((
+                    str(elements[left]), str(elements[right]))))
+                threshold = bond_event_threshold(
+                    elements, left, right,
+                    default_threshold=float(dwbo_threshold),
+                    metal_threshold=metal_dwbo_threshold)
+                group_key = (element_pair, float(threshold))
+                value = float(wbo[left, right])
+                groups[group_key].append(value)
+                records[(left, right)] = (group_key, value)
+    values_R = {
+        key: tuple(sorted(set(values)))
+        for key, values in pair_groups_R.items()
+    }
+    values_P = {
+        key: tuple(sorted(set(values)))
+        for key, values in pair_groups_P.items()
+    }
+    behavior_R = {}
+    for pair, (group_key, value) in records_R.items():
+        threshold = group_key[1]
+        behavior_R[pair] = tuple(
+            _event_class(value, other, threshold)
+            for other in values_P[group_key])
+    behavior_P = {}
+    for pair, (group_key, value) in records_P.items():
+        threshold = group_key[1]
+        behavior_P[pair] = tuple(
+            _event_class(other, value, threshold)
+            for other in values_R[group_key])
+    return {
+        'graph_R': build_graph(elements_R, wbo_R, bond_cut=graph_floor),
+        'graph_P': build_graph(elements_P, wbo_P, bond_cut=graph_floor),
+        'pair_records_R': records_R,
+        'pair_records_P': records_P,
+        'behavior_R': behavior_R,
+        'behavior_P': behavior_P,
+    }
+
+
 def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
                           elements_P, wbo_P, graph_floor,
                           symmetry_wbo_tol, dwbo_threshold,
-                          metal_dwbo_threshold, anchor_map):
+                          metal_dwbo_threshold, anchor_map,
+                          static_context=None):
     atom_count = len(source)
     inverse = {p: r for r, p in source.items()}
     fragments, owner_R = _selected_fragments(branch_symmetry, source)
@@ -313,8 +425,13 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
         atom_colors_B.append(common + (tuple(target_anchor_tags[p]),))
     relation = _RelationalGraph(atom_colors_A, atom_colors_B)
 
-    g_R = build_graph(elements_R, wbo_R, bond_cut=graph_floor)
-    g_P = build_graph(elements_P, wbo_P, bond_cut=graph_floor)
+    static_context = static_context or analytical_family_static_context(
+        elements_R, wbo_R, elements_P, wbo_P,
+        graph_floor=graph_floor,
+        dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold)
+    g_R = static_context['graph_R']
+    g_P = static_context['graph_P']
     persistent_P = {p: set() for p in range(atom_count)}
     for fragment_id, fragment_R in enumerate(fragments):
         fragment_P = tuple(source[r] for r in fragment_R)
@@ -346,41 +463,22 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
     # These complete-pair colors are the coarsest endpoint scalar relations
     # needed to make the broken/formed event classification invariant.  They
     # split an iso-tolerance class only when crossing an actual event boundary.
-    pair_groups_R = defaultdict(list)
-    pair_groups_P = defaultdict(list)
     pair_records = []
     for left_P in range(atom_count):
         for right_P in range(left_P + 1, atom_count):
             left_R, right_R = inverse[left_P], inverse[right_P]
-            element_pair = tuple(sorted((
-                str(elements_R[left_R]), str(elements_R[right_R]))))
-            threshold = bond_event_threshold(
-                elements_R, left_R, right_R,
-                default_threshold=float(dwbo_threshold),
-                metal_threshold=metal_dwbo_threshold)
-            r_value = float(wbo_R[left_R, right_R])
-            p_value = float(wbo_P[left_P, right_P])
-            group_key = (element_pair, float(threshold))
-            pair_groups_R[group_key].append(r_value)
-            pair_groups_P[group_key].append(p_value)
-            pair_records.append((
-                left_P, right_P, group_key, r_value, p_value))
-    values_R = {
-        key: tuple(sorted(set(values))) for key, values in pair_groups_R.items()
-    }
-    values_P = {
-        key: tuple(sorted(set(values))) for key, values in pair_groups_P.items()
-    }
+            pair_R = tuple(sorted((left_R, right_R)))
+            pair_P = (left_P, right_P)
+            group_key = static_context['pair_records_R'][pair_R][0]
+            if static_context['pair_records_P'][pair_P][0] != group_key:
+                raise IndexChiralityError(
+                    "mapping changed an endpoint element-pair class")
+            pair_records.append((left_P, right_P, group_key,
+                                 static_context['behavior_R'][pair_R],
+                                 static_context['behavior_P'][pair_P]))
     colored_pair_records = []
     color_counts = defaultdict(Counter)
-    for left_P, right_P, group_key, r_value, p_value in pair_records:
-        threshold = group_key[1]
-        r_behavior = tuple(
-            _event_class(r_value, other, threshold)
-            for other in values_P[group_key])
-        p_behavior = tuple(
-            _event_class(other, p_value, threshold)
-            for other in values_R[group_key])
+    for left_P, right_P, group_key, r_behavior, p_behavior in pair_records:
         color = (
             "event_invariant_pair", group_key, r_behavior, p_behavior)
         colored_pair_records.append((left_P, right_P, group_key, color))
@@ -419,6 +517,379 @@ def _canonical_isomorphism(graph_A, graph_B):
     label_B = pynauty.canon_label(graph_B)
     return {int(label_A[i]): int(label_B[i])
             for i in range(len(label_A))}
+
+
+def _generated_atom_permutations(raw_generators, degree):
+    """Enumerate the exact distinct atom action generated by pynauty.
+
+    Relation vertices can permute while every atom stays fixed.  Restricting
+    generators to the atom prefix before closure ensures such kernel elements
+    never become RMSD candidates.
+    """
+    degree = int(degree)
+    identity = tuple(range(degree))
+    generators = tuple(dict.fromkeys(
+        tuple(int(generator[atom]) for atom in range(degree))
+        for generator in raw_generators
+    ))
+    generators = tuple(generator for generator in generators
+                       if generator != identity)
+    seen = {identity}
+    queue = [identity]
+    while queue:
+        current = queue.pop()
+        for generator in generators:
+            image = tuple(generator[current[atom]]
+                          for atom in range(degree))
+            if image not in seen:
+                seen.add(image)
+                queue.append(image)
+    return tuple(sorted(seen))
+
+
+def _independent_atom_action_factors(raw_generators, degree):
+    """Factor an atom action into exact disjoint-support subgroups.
+
+    Generator supports that overlap belong to the same factor.  Distinct
+    resulting factors have disjoint supports, commute, and intersect only in
+    the identity, so their Cartesian product is the original atom action.
+    Only each local subgroup is enumerated; the global product is not.
+    """
+    degree = int(degree)
+    identity = tuple(range(degree))
+    generators = tuple(dict.fromkeys(
+        tuple(int(generator[atom]) for atom in range(degree))
+        for generator in raw_generators
+    ))
+    generators = tuple(generator for generator in generators
+                       if generator != identity)
+    supports = [
+        {atom for atom, image in enumerate(generator) if atom != image}
+        for generator in generators
+    ]
+    parent = list(range(degree))
+
+    def find(atom):
+        while parent[atom] != atom:
+            parent[atom] = parent[parent[atom]]
+            atom = parent[atom]
+        return atom
+
+    def union(left, right):
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    for support in supports:
+        support = tuple(sorted(support))
+        for atom in support[1:]:
+            union(support[0], atom)
+    component_generators = defaultdict(list)
+    for generator, support in zip(generators, supports):
+        component_generators[find(min(support))].append(generator)
+    factors = []
+    for component in component_generators.values():
+        local_actions = _generated_atom_permutations(component, degree)
+        support = tuple(sorted({
+            atom for action in local_actions
+            for atom, image in enumerate(action) if atom != image
+        }))
+        factors.append((support, local_actions))
+    return tuple(sorted(factors, key=lambda item: item[0]))
+
+
+def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
+                               coords_R, coords_P):
+    """Find the exact minimum-RMSD atom action without global enumeration.
+
+    Independent symmetry factors form a search tree.  For every partial
+    assignment, pair-distance disagreement among already fixed atoms gives a
+    rigorous lower bound on any proper-fit RMSD below that node:
+
+        RMSD >= sqrt(sum_ij (dR_ij - dP_ij)^2) / N.
+
+    Therefore a complete remaining coset can be skipped when its bound is
+    worse than the incumbent.  This is exact branch-and-bound, not a local or
+    greedy selection; the greedy pass only supplies an initial incumbent.
+    """
+    canonical_mapping = dict(canonical_mapping)
+    atom_count = len(canonical_mapping)
+    factors = list(_independent_atom_action_factors(
+        raw_generators, atom_count))
+    group_order = 1
+    for _support, actions in factors:
+        group_order *= len(actions)
+    if not factors:
+        rmsd = fixed_mapping_aligned_rmsd(
+            canonical_mapping, coords_R, coords_P)
+        return canonical_mapping, rmsd, {
+            'group_order': 1, 'evaluated_leaf_count': 1,
+            'pruned_leaf_count': 0, 'factor_orders': [],
+        }
+    # Small groups are faster as one bounded vectorized batch.  The threshold
+    # is explicit, so this path can never recreate an unbounded group closure.
+    if group_order <= 4096:
+        actions = _generated_atom_permutations(
+            raw_generators, atom_count)
+        candidates = [{
+            r: int(action[canonical_mapping[r]])
+            for r in canonical_mapping
+        } for action in actions]
+        rmsds = _fixed_mappings_aligned_rmsd(
+            candidates, coords_R, coords_P)
+        ranked = [(
+            round(float(rmsd), 12),
+            tuple(candidate[r] for r in range(atom_count)),
+            float(rmsd), candidate,
+        ) for candidate, rmsd in zip(candidates, rmsds)]
+        _rounded, _key, rmsd, selected = min(
+            ranked, key=lambda item: item[:2])
+        return selected, rmsd, {
+            'group_order': int(group_order),
+            'evaluated_leaf_count': int(group_order),
+            'pruned_leaf_count': 0,
+            'factor_orders': [len(actions) for _support, actions in factors],
+        }
+
+    # Larger factors and factors touching more atoms are decided first so the
+    # invariant distance bound becomes informative as early as possible.
+    factors.sort(key=lambda item: (-len(item[0]), -len(item[1]), item[0]))
+    coords_R = np.asarray(coords_R, dtype=float)
+    coords_P = np.asarray(coords_P, dtype=float)
+    distances_R = np.linalg.norm(
+        coords_R[:, None, :] - coords_R[None, :, :], axis=2)
+    distances_P = np.linalg.norm(
+        coords_P[:, None, :] - coords_P[None, :, :], axis=2)
+    movable_targets = set().union(*(set(support) for support, _ in factors))
+    fixed_R = tuple(sorted(
+        r for r, p in canonical_mapping.items() if p not in movable_targets))
+
+    def distance_increment(mapping, new_atoms, decided_atoms):
+        total = 0.0
+        new_atoms = tuple(new_atoms)
+        for offset, left in enumerate(new_atoms):
+            for right in decided_atoms:
+                delta = (distances_R[left, right]
+                         - distances_P[mapping[left], mapping[right]])
+                total += float(delta * delta)
+            for right in new_atoms[:offset]:
+                delta = (distances_R[left, right]
+                         - distances_P[mapping[left], mapping[right]])
+                total += float(delta * delta)
+        return total
+
+    initial_sum = distance_increment(canonical_mapping, fixed_R, ())
+    # A deterministic greedy descent supplies a strong incumbent but never
+    # removes alternatives from the exact search below.
+    greedy = dict(canonical_mapping)
+    for support, actions in factors:
+        affected_R = tuple(sorted(
+            r for r, p in canonical_mapping.items() if p in set(support)))
+        trials = []
+        for action in actions:
+            candidate = dict(greedy)
+            for r in affected_R:
+                candidate[r] = int(action[canonical_mapping[r]])
+            rmsd = fixed_mapping_aligned_rmsd(candidate, coords_R, coords_P)
+            trials.append((round(rmsd, 12), tuple(candidate[r]
+                                                  for r in range(atom_count)),
+                           rmsd, candidate))
+        greedy = min(trials, key=lambda item: item[:2])[3]
+    best_mapping = greedy
+    best_rmsd = fixed_mapping_aligned_rmsd(greedy, coords_R, coords_P)
+    best_rank = (round(best_rmsd, 12),
+                 tuple(greedy[r] for r in range(atom_count)))
+    evaluated = 0
+    pruned = 0
+    suffix_orders = [1] * (len(factors) + 1)
+    for index in range(len(factors) - 1, -1, -1):
+        suffix_orders[index] = (
+            suffix_orders[index + 1] * len(factors[index][1]))
+
+    def search(index, mapping, decided, distance_sum):
+        nonlocal best_mapping, best_rmsd, best_rank, evaluated, pruned
+        lower_bound = np.sqrt(max(distance_sum, 0.0)) / atom_count
+        if lower_bound > best_rmsd + 1e-12:
+            pruned += suffix_orders[index]
+            return
+        if index == len(factors):
+            evaluated += 1
+            rmsd = fixed_mapping_aligned_rmsd(mapping, coords_R, coords_P)
+            rank = (round(rmsd, 12),
+                    tuple(mapping[r] for r in range(atom_count)))
+            if rank < best_rank:
+                best_mapping = dict(mapping)
+                best_rmsd = float(rmsd)
+                best_rank = rank
+            return
+        support, actions = factors[index]
+        support_set = set(support)
+        affected_R = tuple(sorted(
+            r for r, p in canonical_mapping.items() if p in support_set))
+        children = []
+        for action in actions:
+            child = dict(mapping)
+            for r in affected_R:
+                child[r] = int(action[canonical_mapping[r]])
+            increment = distance_increment(child, affected_R, decided)
+            children.append((distance_sum + increment,
+                             tuple(child[r] for r in affected_R), child))
+        for child_sum, _key, child in sorted(children, key=lambda item: item[:2]):
+            search(index + 1, child, decided + affected_R, child_sum)
+
+    search(0, dict(canonical_mapping), fixed_R, initial_sum)
+    return best_mapping, best_rmsd, {
+        'group_order': int(group_order),
+        'evaluated_leaf_count': int(evaluated),
+        'pruned_leaf_count': int(pruned),
+        'factor_orders': [len(actions) for _support, actions in factors],
+    }
+
+
+class AnalyticalMappingFamily:
+    """Exact isomorphism coset represented by one completed AAM branch.
+
+    The branch relation defines ``Iso(A, B)``.  Restricting those
+    isomorphisms to atom vertices and composing with the branch's R->P source
+    mapping gives every concrete bijection represented by the branch.  Group
+    equality is proven by generator containment; no elements are enumerated.
+    """
+
+    def __init__(self, source_mapping, relation):
+        import pynauty
+
+        self.source_mapping = dict(source_mapping)
+        self.degree = len(self.source_mapping)
+        self.relation = relation
+        self.graph_A = relation.graph("A")
+        self.graph_B = relation.graph("B")
+        isomorphism = _canonical_isomorphism(self.graph_A, self.graph_B)
+        if isomorphism is None:
+            raise IndexChiralityConflict(
+                "analytical AAM branch relation has no endpoint isomorphism")
+        self.representative_mapping = {
+            r: int(isomorphism[self.source_mapping[r]])
+            for r in sorted(self.source_mapping)
+        }
+        (raw_generators, mantissa, exponent,
+         raw_orbits, _orbit_count) = pynauty.autgrp(self.graph_B)
+        identity = tuple(range(self.degree))
+        self.target_generators = tuple(dict.fromkeys(
+            tuple(int(generator[atom]) for atom in range(self.degree))
+            for generator in raw_generators
+            if tuple(int(generator[atom])
+                     for atom in range(self.degree)) != identity
+        ))
+        orbit_members = {}
+        for atom in range(self.degree):
+            orbit_members.setdefault(int(raw_orbits[atom]), []).append(atom)
+        self.target_orbits = tuple(sorted(
+            (tuple(members) for members in orbit_members.values()),
+            key=lambda members: members[0]))
+        self.group_order = (round(float(mantissa), 12), int(exponent))
+        self._membership_cache = {}
+        self._sorted_relation_records_B = tuple(sorted(
+            self.relation.relation_records_B, key=repr))
+
+    @property
+    def invariant(self):
+        return self.degree, self.group_order, self.target_orbits
+
+    def contains(self, mapping):
+        mapping = validate_mapping(
+            mapping,
+            ["X"] * self.degree,
+            ["X"] * self.degree)
+        key = tuple(mapping[r] for r in range(self.degree))
+        cached = self._membership_cache.get(key)
+        if cached is not None:
+            return cached
+        source_order = tuple(self.source_mapping[r]
+                             for r in range(self.degree))
+        target_order = tuple(mapping[r] for r in range(self.degree))
+        sigma = {
+            int(source_atom): int(target_atom)
+            for source_atom, target_atom in zip(source_order, target_order)
+        }
+        atom_colors_match = all(
+            self.relation.colors_A[atom]
+            == self.relation.colors_B[sigma[atom]]
+            for atom in range(self.degree)
+        )
+
+        def transported_records():
+            records = []
+            for kind, color, atoms in self.relation.relation_records_A:
+                images = tuple(sigma[atom] for atom in atoms)
+                if kind == "pair":
+                    images = tuple(sorted(images))
+                records.append((kind, color, images))
+            return sorted(records, key=repr)
+
+        result = (atom_colors_match and tuple(transported_records())
+                  == self._sorted_relation_records_B)
+        self._membership_cache[key] = bool(result)
+        return bool(result)
+
+    @staticmethod
+    def _left_act(generator, mapping):
+        return {
+            r: int(generator[mapping[r]])
+            for r in mapping
+        }
+
+    def equivalent(self, other):
+        if not isinstance(other, AnalyticalMappingFamily):
+            return False
+        return self.is_subset_of(other) and other.is_subset_of(self)
+
+    def is_subset_of(self, other):
+        """Prove coset inclusion by representative/generator membership."""
+        if not isinstance(other, AnalyticalMappingFamily):
+            return False
+        if self.degree != other.degree:
+            return False
+        self_log_order = (np.log10(self.group_order[0])
+                          + self.group_order[1])
+        other_log_order = (np.log10(other.group_order[0])
+                           + other.group_order[1])
+        if self_log_order > other_log_order + 1e-10:
+            return False
+        if not other.contains(self.representative_mapping):
+            return False
+        return not any(not other.contains(self._left_act(
+            generator, self.representative_mapping))
+            for generator in self.target_generators)
+
+    def record(self):
+        return {
+            "representative_mapping": dict(self.representative_mapping),
+            "target_generators": [list(generator)
+                                  for generator in self.target_generators],
+            "target_orbits": [list(orbit) for orbit in self.target_orbits],
+            "group_order": {
+                "mantissa": self.group_order[0],
+                "decimal_exponent": self.group_order[1],
+            },
+        }
+
+
+def compile_analytical_mapping_family(
+        source_mapping, branch_symmetry,
+        elements_R: Sequence[str], wbo_R,
+        elements_P: Sequence[str], wbo_P, *,
+        graph_floor=0.2, symmetry_wbo_tol=0.2,
+        dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
+        anchor_map=None, static_context=None):
+    """Compile one completed branch into its exact pre-chirality coset."""
+    source = validate_mapping(source_mapping, elements_R, elements_P)
+    relation, _persistent, _inverse, _fragments = _masked_relation_data(
+        source, branch_symmetry, elements_R, np.asarray(wbo_R),
+        elements_P, np.asarray(wbo_P), graph_floor,
+        symmetry_wbo_tol, dwbo_threshold,
+        metal_dwbo_threshold, anchor_map or {},
+        static_context=static_context)
+    return AnalyticalMappingFamily(source, relation)
 
 
 def _simplex_measure(coords, center, neighbors, degeneracy_tol):
@@ -560,6 +1031,38 @@ def select_group_chiral_witness(
     )
 
 
+def analyze_group_chirality_branch(
+        mapping,
+        elements_R: Sequence[str], coords_R, wbo_R,
+        elements_P: Sequence[str], coords_P, wbo_P, *,
+        graph_floor=0.2,
+        orientation_degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL):
+    """Analyze all defined persistent coordination frames in one branch.
+
+    This is the post-AAM branch API.  It has exactly one immutable branch
+    representative and performs no candidate ranking or witness sampling.
+    Both currently preserved and reversed frames are returned as constraints;
+    the relational solver decides whether the branch family can satisfy them.
+    """
+    legacy = select_group_chiral_witness(
+        mapping, (), elements_R, coords_R, wbo_R,
+        elements_P, coords_P, wbo_P,
+        graph_floor=graph_floor,
+        orientation_degeneracy_tol=orientation_degeneracy_tol)
+    metadata = dict(legacy.metadata)
+    reversed_frames = list(metadata.pop('selected_reversed_frames', ()))
+    metadata.pop('selected_witness_index', None)
+    metadata.pop('candidate_witness_count', None)
+    metadata['schema_version'] = "rxn_core.group_chirality_branch/v1"
+    metadata['policy'] = "analytical_branch_constraint_construction"
+    frames = tuple(list(legacy.preserved_frames) + reversed_frames)
+    metadata['defined_constraint_frame_count'] = len(frames)
+    return GroupChiralityBranchAnalysis(
+        mapping=dict(legacy.selected_mapping),
+        defined_frames=frames,
+        metadata=metadata)
+
+
 def _frame_measure_for_mapping(frame, mapping, coords_P, degeneracy_tol):
     return _simplex_measure(
         coords_P, mapping[frame.center_R],
@@ -573,7 +1076,7 @@ def select_index_chirality_assignment(
         graph_floor=0.2, symmetry_wbo_tol=0.2,
         dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
         orientation_degeneracy_tol=ORIENTATION_DEGENERACY_TOL,
-        anchor_map=None, group_chirality_frames=()):
+        anchor_map=None, group_chirality_frames=(), static_context=None):
     """Compose one AAM witness with one exact orientation-preserving automorph.
 
     The constraint is solved simultaneously as a colored relational-graph
@@ -585,9 +1088,9 @@ def select_index_chirality_assignment(
         source, branch_symmetry, elements_R, np.asarray(wbo_R),
         elements_P, np.asarray(wbo_P), graph_floor,
         symmetry_wbo_tol, dwbo_threshold, metal_dwbo_threshold,
-        anchor_map)
+        anchor_map, static_context=static_context)
 
-    group_frames = []
+    group_frame_candidates = []
     for raw_frame in group_chirality_frames or ():
         center_R = int(raw_frame["center_R"])
         neighbors_R = tuple(
@@ -609,23 +1112,49 @@ def select_index_chirality_assignment(
         measure_P = _orientation_measure(
             coords_P, center_P, neighbors_P,
             degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL)
-        if not measure_R.sign or measure_R.sign != measure_P.sign:
+        if not measure_R.sign or not measure_P.sign:
             raise IndexChiralityError(
-                "selected group-chirality frame is not orientation-preserving")
-        group_frames.append((center_R, neighbors_R, measure_R.sign))
+                "group-chirality frame has undefined endpoint orientation")
+        group_frame_candidates.append((
+            min(abs(measure_R.normalized), abs(measure_P.normalized)),
+            center_R, neighbors_R, measure_R.sign, center_P,
+        ))
+
+    # Higher-coordinate geometries can continuously reconfigure so that one
+    # ligand triple crosses coplanarity while the overall ligand assignment
+    # remains orientation-consistent.  Build a maximal feasible signed-frame
+    # basis, strongest simplices first, rather than making one conflicting
+    # triple reject the entire exact mapping family.
+    group_frames = []
+    reconfigured_group_frames = []
+    for robustness, center_R, neighbors_R, sign_R, center_P in sorted(
+            group_frame_candidates,
+            key=lambda item: (-item[0], item[1], item[2])):
+        trial = relation.clone()
         for ordered_R in permutations(neighbors_R):
             ordered_P = tuple(source[r] for r in ordered_R)
-            sign_R = _orientation_measure(
+            ordered_sign_R = _orientation_measure(
                 coords_R, center_R, ordered_R,
                 degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
             sign_P = _orientation_measure(
                 coords_P, center_P, ordered_P,
                 degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
-            relation.add_ordered_relation(
+            trial.add_ordered_relation(
                 (center_P, *ordered_P),
-                ("oriented_coordination_triple", sign_R),
+                ("oriented_coordination_triple", ordered_sign_R),
                 ("oriented_coordination_triple", sign_P),
             )
+        if _canonical_isomorphism(trial.graph("A"), trial.graph("B")) is None:
+            reconfigured_group_frames.append({
+                "center_R": int(center_R),
+                "neighbors_R_index_order": list(neighbors_R),
+                "reactant_orientation_sign": int(sign_R),
+                "normalized_orientation_robustness": float(robustness),
+                "reason": "incompatible_with_stronger_group_frame_basis",
+            })
+            continue
+        relation = trial
+        group_frames.append((center_R, neighbors_R, sign_R))
 
     base_A, base_B = relation.graph("A"), relation.graph("B")
     if _canonical_isomorphism(base_A, base_B) is None:
@@ -818,7 +1347,14 @@ def select_index_chirality_assignment(
                         frame.normalized_P_source),
                 } for frame in source_mismatch_frames],
             })
-    selected = {r: int(isomorphism[source[r]]) for r in source}
+    import pynauty
+    (oriented_generators, oriented_mantissa, oriented_exponent,
+     _oriented_orbits, _oriented_orbit_count) = pynauty.autgrp(oriented_B)
+    canonical_mapping = {
+        r: int(isomorphism[source[r]]) for r in source
+    }
+    selected, selected_rmsd, rmsd_search = _minimum_rmsd_group_action(
+        canonical_mapping, oriented_generators, coords_R, coords_P)
     validate_mapping(selected, elements_R, elements_P)
 
     source_signature = mapping_event_signature(
@@ -873,8 +1409,23 @@ def select_index_chirality_assignment(
             "mantissa": float(group_mantissa),
             "decimal_exponent": int(group_exponent),
         },
+        "chirality_valid_atom_bijection_count": rmsd_search['group_order'],
+        "chirality_relation_automorphism_group_order": {
+            "mantissa": float(oriented_mantissa),
+            "decimal_exponent": int(oriented_exponent),
+        },
+        "rmsd_candidate_count": rmsd_search['group_order'],
+        "rmsd_evaluated_leaf_count": rmsd_search['evaluated_leaf_count'],
+        "rmsd_pruned_leaf_count": rmsd_search['pruned_leaf_count'],
+        "rmsd_symmetry_factor_orders": rmsd_search['factor_orders'],
+        "selected_fixed_mapping_aligned_rmsd": float(selected_rmsd),
+        "rmsd_policy": (
+            "exact_symmetry_factor_branch_and_bound_then_fixed_mapping_"
+            "proper_fit_no_remapping"),
         "selected_fragment_count": len(fragments),
         "preserved_group_chirality_frame_count": len(group_frames),
+        "reconfigured_group_chirality_frame_count": len(
+            reconfigured_group_frames),
         "switchable_r_atoms": switchable_R,
         "defined_frame_count": sum(
             frame.sign_R != 0 and frame.sign_P_source != 0
@@ -903,6 +1454,7 @@ def select_index_chirality_assignment(
             "neighbors_R_index_order": list(neighbors_R),
             "reactant_orientation_sign": sign_R,
         } for center_R, neighbors_R, sign_R in group_frames],
+        "reconfigured_group_chirality_frames": reconfigured_group_frames,
         "nonstereogenic_frames": nonstereogenic_frames,
         "reconfigured_frames": reconfigured_frames,
         "event_signature_unchanged": True,

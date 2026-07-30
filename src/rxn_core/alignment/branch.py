@@ -43,14 +43,14 @@ class BranchLimitExceeded(RuntimeError):
 
 class _Branch:
     __slots__ = ('mapping', 'islands_R', 'islands_P', 'next_iid',
-                 'deferred_edges', 'symmetry_fragments', '_signature_cache')
+                 'deferred_edges', 'symmetry_paths', '_signature_cache')
     def __init__(self):
         self.mapping = {}
         self.islands_R = {}
         self.islands_P = {}
         self.next_iid = 1
         self.deferred_edges = set()
-        self.symmetry_fragments = []
+        self.symmetry_paths = [[]]
         self._signature_cache = None
 
     @classmethod
@@ -72,9 +72,23 @@ class _Branch:
         b.islands_P = dict(self.islands_P)
         b.next_iid = self.next_iid
         b.deferred_edges = set(self.deferred_edges)
-        b.symmetry_fragments = list(self.symmetry_fragments)
+        b.symmetry_paths = [list(path) for path in self.symmetry_paths]
         b._signature_cache = self._signature_cache
         return b
+
+    @property
+    def symmetry_fragments(self):
+        """Compatibility view of the first retained analytical path."""
+        return self.symmetry_paths[0]
+
+    def merge_exact_paths(self, other):
+        """Union histories after exact equality of cumulative search state."""
+        seen = {_freeze_branch_value(path) for path in self.symmetry_paths}
+        for path in other.symmetry_paths:
+            key = _freeze_branch_value(path)
+            if key not in seen:
+                seen.add(key)
+                self.symmetry_paths.append(list(path))
 
     def add_interbranch_symmetry(self, blocks):
         blocks = list(blocks or ())
@@ -85,7 +99,7 @@ class _Branch:
             for block in blocks
             for r in block.get('r_atoms', ())
         })
-        self.symmetry_fragments.append({
+        record = {
             'island_idx': 0,
             'fragment': r_atoms,
             'deferred_edges': [],
@@ -97,7 +111,9 @@ class _Branch:
                 },
                 'blocks': blocks,
             },
-        })
+        }
+        for path in self.symmetry_paths:
+            path.append(record)
 
     def commit(self, iso, g_R, events=None):
         self._signature_cache = None
@@ -121,13 +137,15 @@ class _Branch:
             self.islands_R[r] = iid
             self.islands_P[p] = iid
         self.deferred_edges.update(getattr(iso, 'deferred_edges', ()))
-        self.symmetry_fragments.append({
+        record = {
             'island_idx': int(iid),
             'fragment': sorted(int(r) for r in getattr(iso, 'fragment', ())),
             'deferred_edges': [list(map(int, e))
                                for e in sorted(getattr(iso, 'deferred_edges', ()))],
             'symmetry': getattr(iso, 'symmetry', {}),
-        })
+        }
+        for path in self.symmetry_paths:
+            path.append(record)
         for r, k in list(self.islands_R.items()):
             if k in touched and k != iid:
                 relabeled.append((int(r), int(k)))
@@ -142,6 +160,18 @@ class _Branch:
                 'relabeled': relabeled,
                 'mapped_total': len(self.mapping),
             })
+
+
+def _freeze_branch_value(value):
+    if isinstance(value, dict):
+        return tuple(sorted((str(key), _freeze_branch_value(item))
+                            for key, item in value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_branch_value(item) for item in value)
+    if isinstance(value, (set, frozenset)):
+        return tuple(sorted((_freeze_branch_value(item) for item in value),
+                            key=repr))
+    return value
 
 
 def _mapping_variation_blocks(mappings, source='interbranch'):
@@ -595,6 +625,13 @@ def find_islands(g_R, g_P, seed_order,
     else:
         p_orbits = None
         r_orbits = None
+    # Completed hierarchy/coset equivalence is richer than the live
+    # mapping/island state.  Do not quotient distinct concrete live states by
+    # endpoint automorphism here: two such states can carry different exact
+    # fragment-assignment domains and therefore lead to different mechanisms.
+    # Exact semantic family dedupe is performed after AAM has the complete
+    # hierarchy available.
+    branch_canonicalizer = None
     core_R = tuple(sorted(set(core_R or ())))
     seed_order = list(dict.fromkeys(seed_order))
     branches = [_Branch.from_anchor_map(anchor_map)]
@@ -615,58 +652,36 @@ def find_islands(g_R, g_P, seed_order,
                 return True
         return False
 
-    signature_cache = {}
-
     def _deferred_key(deferred_edges):
         return tuple(sorted(tuple(sorted(e)) for e in deferred_edges))
 
-    def _mapping_signature(mapping, deferred_edges=()):
-        # Full chemistry signatures are expensive for large near-complete
-        # mappings.  The same branch state is checked repeatedly while seeds
-        # are carried forward and cross-branch dedupe runs, so cache by exact
-        # mapping/deferred state inside this find_islands invocation.
-        cache_key = (
-            tuple(sorted(mapping.items())),
-            _deferred_key(deferred_edges),
-        )
-        cached = signature_cache.get(cache_key)
-        if cached is not None:
-            return cached
-        core_key = tuple((r, mapping[r]) for r in core_R if r in mapping)
-        if core_R and len(core_key) == len(core_R):
-            sig = ('core_complete', core_key)
-            signature_cache[cache_key] = sig
-            return sig
-        deferred_boundary = _boundary_signature(
-            mapping, g_R, g_P, fragment=set(mapping),
-            deferred_edges=deferred_edges, r_orbits=r_orbits,
-            p_orbits=p_orbits, locked_mapping=mapping,
-            node_policy=node_policy)
-        sig = (
-            'mechanism_state',
-            core_key,
-            _chemistry_orbit_signature(
-                mapping, g_R, g_P, r_orbits, p_orbits,
-                dwbo_threshold=dwbo_threshold,
-                metal_dwbo_threshold=metal_dwbo_threshold),
-            deferred_boundary,
-        )
-        signature_cache[cache_key] = sig
-        return sig
-
-    def _branch_signature(branch):
-        if branch._signature_cache is None:
-            branch._signature_cache = _mapping_signature(
-                branch.mapping, branch.deferred_edges)
-        return branch._signature_cache
-
-    def _state_key(branch):
+    def _progress_key(branch):
         return (
             tuple(sorted(branch.mapping.items())),
             tuple(sorted(branch.islands_R.items())),
             tuple(sorted(branch.islands_P.items())),
             _deferred_key(branch.deferred_edges),
         )
+
+    def _island_partition(branch):
+        groups = {}
+        for atom, island in branch.islands_R.items():
+            groups.setdefault(int(island), []).append(int(atom))
+        return tuple(sorted(tuple(sorted(atoms))
+                            for atoms in groups.values()))
+
+    def _branch_signature(branch):
+        if branch._signature_cache is not None:
+            return branch._signature_cache
+        signature = _progress_key(branch)
+        branch._signature_cache = signature
+        return signature
+
+    def _merge_equivalent_paths(kept, other):
+        if kept.mapping == other.mapping:
+            kept.merge_exact_paths(other)
+            return
+        raise RuntimeError("nonidentical branches shared an exact state key")
 
     while progressed:
         progressed = False
@@ -676,7 +691,7 @@ def find_islands(g_R, g_P, seed_order,
                            'mapped': len(branches[0].mapping)})
         for seed in seed_order:
             new_branches = []
-            pending_seen = set()
+            pending_seen = {}
 
             def _admit_subtree(subtree, *, made_progress=False,
                                source_branch=None):
@@ -689,12 +704,17 @@ def find_islands(g_R, g_P, seed_order,
                 """
                 nonlocal progressed
                 additions = []
-                local_seen = set()
+                local_seen = {}
                 for candidate in subtree:
                     sig = _branch_signature(candidate)
-                    if sig in pending_seen or sig in local_seen:
+                    if sig in pending_seen:
+                        _merge_equivalent_paths(
+                            pending_seen[sig], candidate)
                         continue
-                    local_seen.add(sig)
+                    if sig in local_seen:
+                        _merge_equivalent_paths(local_seen[sig], candidate)
+                        continue
+                    local_seen[sig] = candidate
                     additions.append((sig, candidate))
                 if len(new_branches) + len(additions) > max_branches:
                     if profile is not None:
@@ -717,7 +737,7 @@ def find_islands(g_R, g_P, seed_order,
                         })
                     return False
                 for sig, candidate in additions:
-                    pending_seen.add(sig)
+                    pending_seen[sig] = candidate
                     new_branches.append(candidate)
                 if additions and made_progress:
                     progressed = True
@@ -761,39 +781,19 @@ def find_islands(g_R, g_P, seed_order,
                 if not isos:
                     _admit_subtree([b], source_branch=bi)
                     continue
-                # Dedup island results by weighted alignment state before
-                # forking branches.  This is still pre-mechanism dedupe: the
-                # one-hop/deferred boundary is part of the key so future
-                # distinguishability is not erased.
-                seen_state = {}
-                seen_state_mappings = defaultdict(list)
-                for iso in isos:
-                    full_m = dict(b.mapping); full_m.update(iso)
-                    full_deferred = set(b.deferred_edges)
-                    full_deferred.update(getattr(iso, 'deferred_edges', ()))
-                    state_key = _mapping_signature(full_m, full_deferred)
-                    if state_key not in seen_state:
-                        seen_state[state_key] = iso
-                    seen_state_mappings[state_key].append(full_m)
-                deduped_isos = list(seen_state.values())
-                for state_key, iso in seen_state.items():
-                    blocks = _mapping_variation_blocks(
-                        seen_state_mappings[state_key],
-                        source='interbranch')
-                    if blocks:
-                        symmetry = dict(getattr(iso, 'symmetry', {}) or {})
-                        symmetry['blocks'] = (
-                            list(symmetry.get('blocks') or []) + blocks
-                        )
-                        iso.symmetry = symmetry
+                # Fragment candidates were already quotiented by an exact
+                # pynauty transporter inside ``grow_island``.  Distinct
+                # surviving candidates are distinct symbolic branch choices;
+                # do not collapse them by a mechanism/event summary here.
+                deduped_isos = list(isos)
                 subtree = []
                 subtree_progressed = False
                 for ii, iso in enumerate(deduped_isos):
-                    before_state = _state_key(b)
+                    before_state = _progress_key(b)
                     b2 = b.fork()
                     b2.commit(iso, g_R,
                               events=events if (bi == 0 and ii == 0) else None)
-                    after_state = _state_key(b2)
+                    after_state = _progress_key(b2)
                     if after_state == before_state:
                         subtree.append(b)
                     else:
@@ -803,19 +803,17 @@ def find_islands(g_R, g_P, seed_order,
                     subtree, made_progress=subtree_progressed,
                     source_branch=bi)
             new_branches.sort(key=lambda b: -len(b.mapping))
-            # Cross-branch dedup uses the same mechanism-state key.  It
-            # collapses orbit-equivalent spectator permutations but keeps
-            # states separated when their deferred one-hop boundary differs.
+            # Cross-branch dedupe is intentionally exact.  Coupled
+            # automorphic branches remain separate until their transporter is
+            # represented analytically; an orbit/event signature is not a
+            # proof that their mapping families are equal.
             seen = {}
             uniq = []
             for b in new_branches:
                 state_sig = _branch_signature(b)
                 kept = seen.get(state_sig)
                 if kept is not None:
-                    kept.add_interbranch_symmetry(
-                        _mapping_variation_blocks(
-                            [kept.mapping, b.mapping],
-                            source='interbranch'))
+                    _merge_equivalent_paths(kept, b)
                     continue
                 seen[state_sig] = b
                 uniq.append(b)

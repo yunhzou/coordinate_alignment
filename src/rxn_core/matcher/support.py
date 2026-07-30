@@ -89,7 +89,8 @@ def _refine_sym_assignments(cand, assignments):
     try:
         return _SymCand(m, tuple(new_blocks), exact_fixed=exact_fixed,
                         multiplicity=cand.multiplicity,
-                        automorph_blocks=cand.automorph_blocks)
+                        automorph_blocks=cand.automorph_blocks,
+                        automorph_generators=cand.automorph_generators)
     except ValueError:
         return None
 

@@ -185,6 +185,7 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
     certificates = [canonicalizer.certificate(cand) for cand in cands]
     certificate_counts = Counter(certificates)
     seen = {}
+    representatives = {}
     for cand, certificate in zip(cands, certificates):
         # Exact active-graph automorphism is the primary hierarchy.  Preserve
         # legacy deferred/full-WBO evidence only inside an automorphic class;
@@ -200,10 +201,18 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
         sig = (certificate, boundary)
         if sig not in seen:
             seen[sig] = cand
+            representatives[sig] = cand
         elif isinstance(seen[sig], _SymCand) and isinstance(cand, _SymCand):
             kept = seen[sig]
             # Exact automorphism transport guarantees that every continuation
             # of ``cand`` has an equivalent continuation of ``kept``.  Count
             # the represented states, but never enumerate alternate witnesses.
-            seen[sig] = kept.with_automorph_equivalent(cand)
+            # ``kept`` accumulates quotient metadata and consequently need
+            # not retain the original certificate.  Transport every member
+            # to the immutable first representative of this equivalence
+            # class.
+            transporter = canonicalizer.transporter(
+                cand, representatives[sig])
+            seen[sig] = kept.with_automorph_equivalent(
+                cand, transporter=transporter)
     return list(seen.values())

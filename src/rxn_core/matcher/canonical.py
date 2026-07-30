@@ -121,3 +121,53 @@ class _CandidateAutomorphismCanonicalizer:
     def certificate(self, cand):
         import pynauty
         return pynauty.certificate(self.graph(cand))
+
+    def transporter(self, source, target):
+        """Return the exact product-label permutation ``source -> target``."""
+        import pynauty
+
+        graph_source = self.graph(source)
+        graph_target = self.graph(target)
+        if pynauty.certificate(graph_source) != pynauty.certificate(graph_target):
+            raise ValueError("candidate states are not automorphically equivalent")
+        source_label = tuple(map(int, pynauty.canon_label(graph_source)))
+        target_label = tuple(map(int, pynauty.canon_label(graph_target)))
+
+        def inverse(permutation):
+            result = [0] * len(permutation)
+            for atom, image in enumerate(permutation):
+                result[image] = atom
+            return tuple(result)
+
+        source_inverse = inverse(source_label)
+        target_inverse = inverse(target_label)
+        candidates = (
+            tuple(target_inverse[source_label[v]]
+                  for v in range(self.n_vertices)),
+            tuple(target_label[source_inverse[v]]
+                  for v in range(self.n_vertices)),
+        )
+
+        def valid(permutation):
+            for vertex in range(self.n_vertices):
+                if {permutation[n] for n in self.adjacency[vertex]} != set(
+                        self.adjacency[permutation[vertex]]):
+                    return False
+            source_colors = [set(cell) for cell in graph_source.vertex_coloring]
+            target_colors = [set(cell) for cell in graph_target.vertex_coloring]
+            return [
+                {permutation[v] for v in cell} for cell in source_colors
+            ] == target_colors
+
+        full = next((permutation for permutation in candidates
+                     if valid(permutation)), None)
+        if full is None:
+            raise RuntimeError("pynauty canonical labels yielded no transporter")
+        atom_by_index = {index: atom for atom, index in self.atom_index.items()}
+        atom_permutation = [0] * self.n_atoms
+        for atom, index in self.atom_index.items():
+            image_index = full[index]
+            if image_index not in atom_by_index:
+                raise RuntimeError("candidate transporter mixed atom/edge vertices")
+            atom_permutation[int(atom)] = int(atom_by_index[image_index])
+        return tuple(atom_permutation)

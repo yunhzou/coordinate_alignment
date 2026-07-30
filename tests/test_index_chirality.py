@@ -4,10 +4,92 @@ import pytest
 import rxn_core.pipeline as pipeline
 from rxn_core.alignment.index_chirality import (
     IndexChiralityConflict,
+    _fixed_mappings_aligned_rmsd,
+    _generated_atom_permutations,
     _masked_relation_data,
+    _minimum_rmsd_group_action,
+    analytical_family_static_context,
+    fixed_mapping_aligned_rmsd,
     select_group_chiral_witness,
     select_index_chirality_assignment,
 )
+
+
+def test_batched_fixed_mapping_rmsd_is_scalar_equivalent():
+    rng = np.random.default_rng(20260729)
+    coords_R = rng.normal(size=(9, 3))
+    coords_P = rng.normal(size=(9, 3))
+    permutations = [rng.permutation(9) for _ in range(12)]
+    mappings = [
+        {r: int(permutation[r]) for r in range(9)}
+        for permutation in permutations
+    ]
+    scalar = np.asarray([
+        fixed_mapping_aligned_rmsd(mapping, coords_R, coords_P)
+        for mapping in mappings
+    ])
+    batched = _fixed_mappings_aligned_rmsd(
+        mappings, coords_R, coords_P)
+    np.testing.assert_allclose(batched, scalar, rtol=1e-13, atol=1e-13)
+
+
+def test_symmetry_factor_rmsd_search_matches_exhaustive_group():
+    rng = np.random.default_rng(41)
+    coords_R = rng.normal(size=(8, 3))
+    coords_P = rng.normal(size=(8, 3))
+    identity = tuple(range(8))
+    cycle_012 = (1, 2, 0, 3, 4, 5, 6, 7)
+    swap_34 = (0, 1, 2, 4, 3, 5, 6, 7)
+    swap_56 = (0, 1, 2, 3, 4, 6, 5, 7)
+    generators = (cycle_012, swap_34, swap_56)
+    canonical = {atom: atom for atom in range(8)}
+
+    selected, rmsd, search = _minimum_rmsd_group_action(
+        canonical, generators, coords_R, coords_P)
+    exhaustive = []
+    for action in _generated_atom_permutations(generators, 8):
+        mapping = {r: int(action[r]) for r in range(8)}
+        value = fixed_mapping_aligned_rmsd(mapping, coords_R, coords_P)
+        exhaustive.append((round(value, 12), tuple(mapping.values()),
+                           value, mapping))
+    expected = min(exhaustive, key=lambda item: item[:2])
+
+    assert selected == expected[3]
+    assert rmsd == pytest.approx(expected[2], abs=1e-13)
+    assert search["group_order"] == len(exhaustive) == 12
+    assert (search["evaluated_leaf_count"]
+            + search["pruned_leaf_count"]) == 12
+
+
+def test_large_symmetry_branch_and_bound_matches_exhaustive_group():
+    rng = np.random.default_rng(407088)
+    atom_count = 30
+    coords_R = rng.normal(size=(atom_count, 3))
+    coords_P = coords_R + rng.normal(scale=0.03, size=(atom_count, 3))
+    generators = []
+    for left in range(4, atom_count, 2):
+        permutation = list(range(atom_count))
+        permutation[left], permutation[left + 1] = left + 1, left
+        generators.append(tuple(permutation))
+    canonical = {atom: atom for atom in range(atom_count)}
+
+    selected, rmsd, search = _minimum_rmsd_group_action(
+        canonical, generators, coords_R, coords_P)
+    actions = _generated_atom_permutations(generators, atom_count)
+    mappings = [{r: int(action[r]) for r in range(atom_count)}
+                for action in actions]
+    rmsds = _fixed_mappings_aligned_rmsd(mappings, coords_R, coords_P)
+    exhaustive = min((
+        round(float(value), 12), tuple(mapping.values()),
+        float(value), mapping,
+    ) for mapping, value in zip(mappings, rmsds))
+
+    assert selected == exhaustive[3]
+    assert rmsd == pytest.approx(exhaustive[2], abs=1e-13)
+    assert search["group_order"] == 8192
+    assert (search["evaluated_leaf_count"]
+            + search["pruned_leaf_count"]) == 8192
+    assert search["pruned_leaf_count"] > 0
 
 
 def _tetrahedral_case():
@@ -140,6 +222,29 @@ def test_group_chirality_rmsd_uses_each_fixed_candidate_mapping():
         "exact_mapping_then_proper_rigid_fit_no_permutation")
 
 
+def test_index_chirality_scores_every_valid_atom_action_before_rmsd_choice():
+    elements = ["C"] * 4
+    coords = np.array([
+        [0.0, 0.0, 0.0],
+        [1.1, 0.0, 0.0],
+        [0.2, 1.7, 0.0],
+        [0.3, 0.4, 2.3],
+    ])
+    wbo = np.zeros((4, 4))
+    source = {0: 1, 1: 0, 2: 2, 3: 3}
+    hierarchy = {"fragments": [{"fragment": [0, 1, 2, 3]}]}
+
+    selection = select_index_chirality_assignment(
+        source, hierarchy,
+        elements, coords, wbo, elements, coords, wbo)
+
+    assert selection.selected_mapping == {atom: atom for atom in range(4)}
+    assert selection.metadata["chirality_valid_atom_bijection_count"] == 24
+    assert selection.metadata["rmsd_candidate_count"] == 24
+    assert selection.metadata["selected_fixed_mapping_aligned_rmsd"] == (
+        pytest.approx(0.0, abs=1e-12))
+
+
 def test_group_orientation_keeps_a_definite_near_planar_sign():
     elements = ["Sc", "O", "O", "O", "O", "O"]
     coords_R = np.array([
@@ -221,10 +326,13 @@ def test_rp_stage_selects_group_chiral_branch_before_automorphism():
             "cuts": frozenset(),
             "has_no_cut": True,
             "dedup_count": 2,
-            "branch_symmetry": {
-                "witnesses": witnesses,
-                "fragments": witnesses[0]["local_symmetry"]["fragments"],
-            },
+            "branch_symmetry": witnesses[0]["local_symmetry"],
+            "branches": [{
+                "mapping": witness["mapping"],
+                "cuts": witness["cut"],
+                "encounter_count": 1,
+                "hierarchy": witness["local_symmetry"],
+            } for witness in witnesses],
         },
     }
     config = pipeline.rp_stage_config()
@@ -233,9 +341,15 @@ def test_rp_stage_selects_group_chiral_branch_before_automorphism():
     result = pipeline.run_rp_stage_from_pool(inputs, pool, config=config)
 
     mechanism = result["mechanisms"][0]
-    group = mechanism["index_chirality"]["group_chirality_witness"]
-    assert group["selected_witness_index"] == 1
-    assert group["reversed_frame_count"] == 0
+    group = mechanism["index_chirality"]["group_chirality_branch"]
+    # Branch 0's representative is reversed, but its exact branch family can
+    # repair the frame analytically; selection must not depend on choosing the
+    # already-correct representative branch 1.
+    assert mechanism["mapping_RP"] == identity
+    assert mechanism["index_chirality"][
+        "selected_analytical_branch_index"] == 0
+    assert "selected_witness_index" not in group
+    assert group["reversed_frame_count"] > 0
     assert mechanism["index_chirality"][
         "preserved_group_chirality_frame_count"] > 0
 
@@ -469,3 +583,32 @@ def test_event_relation_uses_lossless_sparse_baseline_encoding():
     assert orbits[0] == orbits[1]
     assert orbits[2] == orbits[3]
     assert orbits[0] != orbits[2]
+
+
+def test_cached_event_relation_is_identical_to_uncached_construction():
+    rng = np.random.default_rng(73)
+    elements = ["C", "C", "O", "H", "H", "H"]
+    wbo_R = rng.uniform(0.0, 1.2, size=(6, 6))
+    wbo_R = (wbo_R + wbo_R.T) / 2.0
+    np.fill_diagonal(wbo_R, 0.0)
+    wbo_P = wbo_R.copy()
+    mapping = {index: index for index in range(6)}
+    hierarchy = {"fragments": [
+        {"fragment": [0, 1, 2]},
+        {"fragment": [3, 4, 5]},
+    ]}
+    uncached = _masked_relation_data(
+        mapping, hierarchy, elements, wbo_R, elements, wbo_P,
+        0.2, 0.2, 0.5, 0.3, {})[0]
+    context = analytical_family_static_context(
+        elements, wbo_R, elements, wbo_P,
+        graph_floor=0.2, dwbo_threshold=0.5,
+        metal_dwbo_threshold=0.3)
+    cached = _masked_relation_data(
+        mapping, hierarchy, elements, wbo_R, elements, wbo_P,
+        0.2, 0.2, 0.5, 0.3, {}, static_context=context)[0]
+
+    assert cached.colors_A == uncached.colors_A
+    assert cached.colors_B == uncached.colors_B
+    assert cached.relation_records_A == uncached.relation_records_A
+    assert cached.relation_records_B == uncached.relation_records_B

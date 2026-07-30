@@ -18,6 +18,8 @@ from rxn_core.alignment.sweep import (
     _branch_symmetry_record,
     _color_groups_from_blocks,
     _core_mapping_variants,
+    _mechanism_signature,
+    _orbit_bond_key,
     _pool_add,
     complete_chosen_automorphism_groups,
     run_no_cut_core_branch_records,
@@ -804,6 +806,42 @@ def test_classify_bonds_uses_lower_metal_event_threshold():
     assert metal[1] == [(0, 1, 0.0, 0.35)]
 
 
+def test_mechanism_certificate_distinguishes_pair_orbits_not_vertex_orbits():
+    # A distance-colored K5 is vertex-transitive, but cycle edges and
+    # diagonals are different pair orbits.  Endpoint-orbit IDs alone conflate
+    # these two one-bond events.
+    n = 5
+    elements = ["C"] * n
+    wbo_r = np.full((n, n), 0.5)
+    np.fill_diagonal(wbo_r, 0.0)
+    for atom in range(n):
+        neighbor = (atom + 1) % n
+        wbo_r[atom, neighbor] = wbo_r[neighbor, atom] = 1.0
+    wbo_cycle = wbo_r.copy()
+    wbo_cycle[0, 1] = wbo_cycle[1, 0] = 0.0
+    wbo_diagonal = wbo_r.copy()
+    wbo_diagonal[0, 2] = wbo_diagonal[2, 0] = 0.0
+    graph_r = build_graph(elements, wbo_r, bond_cut=0.2)
+    r_orbits = _nauty_orbits(graph_r, wbo_tol=0.2)
+    assert len(set(r_orbits.values())) == 1
+    assert _orbit_bond_key([(0, 1)], r_orbits, "R") == (
+        _orbit_bond_key([(0, 2)], r_orbits, "R"))
+    mapping = {atom: atom for atom in range(n)}
+
+    def signature(product_wbo):
+        graph_p = build_graph(elements, product_wbo, bond_cut=0.2)
+        return _mechanism_signature(
+            mapping, wbo_r, product_wbo, r_orbits,
+            _nauty_orbits(graph_p, wbo_tol=0.2),
+            elements_R=elements, elements_P=elements,
+            g_R_full=graph_r, symmetry_wbo_tol=0.2)
+
+    cycle_signature = signature(wbo_cycle)
+    diagonal_signature = signature(wbo_diagonal)
+    assert len(cycle_signature[0]) == len(diagonal_signature[0]) == 1
+    assert cycle_signature != diagonal_signature
+
+
 def test_cut_sweep_pool_prefers_no_cut_representative():
     pool = {}
     sig = (("broken",), ("formed",))
@@ -815,31 +853,24 @@ def test_cut_sweep_pool_prefers_no_cut_representative():
     assert pool[sig]["has_no_cut"] is True
     assert pool[sig]["cuts"] == frozenset({(0, 1)})
     assert pool[sig]["dedup_count"] == 2
-    assert pool[sig]["branch_symmetry"]["dedup_witness_count"] == 2
+    assert pool[sig]["branch_symmetry"]["analytical_branch_count"] == 2
     assert {
-        tuple(sorted(w["mapping"].items()))
-        for w in pool[sig]["dedup_witnesses"]
+        tuple(sorted(branch["mapping"].items()))
+        for branch in pool[sig]["branches"]
     } == {((0, 1),), ((0, 0),)}
 
 
-def test_pool_branch_symmetry_colors_exact_equivalent_witness_variation():
+def test_pool_keeps_distinct_completed_branches_under_one_mechanism():
     pool = {}
     sig = ((), ())
 
     _pool_add(pool, sig, {0: 0, 1: 1}, ())
     _pool_add(pool, sig, {0: 1, 1: 0}, ())
 
-    assert pool[sig]["branch_symmetry"]["dedup_witness_count"] == 2
-    assert pool[sig]["branch_symmetry"]["matching_generators"] == [{
-        "witness_index": 1,
-        "r_cycles": [[0, 1]],
-        "p_cycles": [[0, 1]],
-    }]
-    assert pool[sig]["branch_symmetry"]["color_groups"] == [{
-        "r_atoms": [0, 1],
-        "p_atoms": [0, 1],
-        "sources": ["equivalent_mechanism_witness_group"],
-    }]
+    assert pool[sig]["branch_symmetry"]["analytical_branch_count"] == 2
+    assert len(pool[sig]["branches"]) == 2
+    assert "matching_generators" not in pool[sig]["branch_symmetry"]
+    assert "dedup_witnesses" not in pool[sig]
 
 
 def test_display_symmetry_uses_only_selected_final_candidate_blocks():
@@ -865,15 +896,12 @@ def test_display_symmetry_uses_only_selected_final_candidate_blocks():
     _pool_add(pool, sig, {0: 11, 1: 10}, (), other_local)
 
     symmetry = pool[sig]["branch_symmetry"]
-    assert symmetry["selected_witness_index"] == 0
-    assert symmetry["dedup_witness_count"] == 2
+    assert symmetry["selected_branch_index"] == 0
+    assert symmetry["analytical_branch_count"] == 2
     assert symmetry["color_groups"] == [{
         "r_atoms": [0, 1],
         "p_atoms": [10, 11],
-        "sources": [
-            "equivalent_mechanism_witness_group",
-            "sym_block",
-        ],
+        "sources": ["sym_block"],
     }]
 
 
@@ -1078,9 +1106,8 @@ def test_cut_sweep_preserves_branch_exact_automorph_group():
     info = next(iter(pool.values()))
     branch_symmetry = info["branch_symmetry"]
 
-    assert branch_symmetry["rule"] == (
-        "hierarchical_candidate_and_equivalent_witness_group")
-    assert branch_symmetry["dedup_witness_count"] == 2
+    assert branch_symmetry["rule"] == "selected_analytical_branch"
+    assert branch_symmetry["analytical_branch_count"] == 2
     assert any(
         block == {
             "fragment_index": 0,
@@ -1092,21 +1119,18 @@ def test_cut_sweep_preserves_branch_exact_automorph_group():
             "open": False,
             "assignments": "exact_group",
             "source": "exact_automorph_group",
-            "witness_index": 0,
         }
         for block in branch_symmetry["blocks"]
     )
     assert branch_symmetry["color_groups"] == [{
         "r_atoms": [0, 1],
             "p_atoms": [0, 1],
-            "sources": [
-                "equivalent_mechanism_witness_group",
-                "exact_automorph_group",
-            ],
+            "sources": ["exact_automorph_group"],
     }]
     fragment_symmetry = branch_symmetry["fragments"][0]["symmetry"]
     assert fragment_symmetry["automorph_blocks"][0]["source"] == (
         "exact_automorph_group")
+    assert fragment_symmetry["automorph_generators"] == [[1, 0]]
 
 
 def test_anchored_noop_seed_does_not_keep_pass_loop_alive():

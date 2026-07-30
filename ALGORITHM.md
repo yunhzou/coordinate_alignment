@@ -346,34 +346,40 @@ for each seed while progress is possible:
             if no isos:
                 carry branch forward
             else:
-                dedup isos by mechanism-state plus deferred boundary
-                fork one branch per remaining iso
+                fragment candidates are already quotiented by exact pynauty
+                transporters; fork one branch per remaining candidate
 
-    dedup live branches by mechanism-state plus deferred boundary
+    merge only exactly equal cumulative search states, retaining every
+    distinct fragment history inside the merged branch family
     enforce max_branches per parent subtree after dedupe; a subtree that would
     create leaf max_branches + 1 is removed atomically while sibling branches
     and other seed orders continue
 ```
 
-This branch dedupe is a mechanism-state dedupe, not a concrete bijection
-dedupe.  It uses the current symmetry-canonical broken/formed WBO-change
-signature plus the deferred one-hop boundary.  During growth, the key must
-preserve future distinguishability already observed through deferred boundary
-constraints, without enumerating spectator permutations that have no mechanism
-effect.
+The live-state key is the exact mapping, island membership, and deferred-edge
+state.  Chemical-event/orbit summaries are not equivalence proofs and are not
+used to merge growing branches.  When exact states meet, their fragment paths
+remain separate analytical histories even though future growth is shared.
 
-After complete mappings are scored, the mechanism-level signature records:
+After complete mappings are scored, all broken and formed edges are annotated
+jointly on the full WBO-colored R graph.  A pynauty certificate of that graph
+is the mechanism key.  This is stronger than storing individual endpoint
+orbit IDs: two pairs may have endpoints in the same vertex orbits without
+belonging to the same pair orbit.
 
 ```
-broken: ((R orbit pair), (P orbit pair))
-formed: ((R orbit pair), (P orbit pair))
+mechanism
+├── exact canonical event certificate
+└── maximal analytical mapping families[]
+    ├── exact isomorphism coset
+    └── covered fragment-path/cut/seed provenance
 ```
 
-That final mechanism signature collapses symmetric spectator swaps without
-erasing distinct bond-change patterns.  It is intentionally later than
-boundary-aware growth dedupe: two partial states that might become different
-mechanisms must not be collapsed just because their current internal islands
-look symmetric.
+Each completed fragment path is compiled into an exact relational-isomorphism
+coset.  Coset equality is proven by mutual generator containment.  A coset
+strictly contained in another family is redundant in the mechanism union and
+is retained only as provenance under the broader family.  No group elements
+are enumerated.
 
 ### Exact index-chirality relation
 
@@ -387,6 +393,17 @@ to the complete O(N^2) coloring: atom colors preserve the pair class, so a
 permutation preserving every exceptional pair must also preserve its baseline
 complement.  Molecular cases therefore give pynauty an O(E)-sized relation
 instead of thousands of redundant zero-event pair vertices.
+
+Post-AAM processing evaluates every analytical branch independently.  Both
+already-preserved and reversed persistent coordination frames become signed
+relations, allowing exact within-branch symmetry to repair a reversed
+representative.  Branches with no satisfying relational isomorphism are
+rejected.  Pynauty's automorphism generators for the oriented relation are
+restricted to atom vertices and closed into the distinct chirality-valid atom
+actions; relation-vertex-only kernel permutations disappear at this step.
+Fixed-mapping RMSD is evaluated only for those valid bijections and selects the
+final one: P is reindexed exactly once, and proper Kabsch removes only global
+rigid pose without changing correspondence.
 
 ## Outer Alignment
 
@@ -465,9 +482,9 @@ because they are invariant across every cut and seed.  This avoids the old
 
 The dedupe target depends on the alignment purpose:
 
-- R<->P mechanism discovery deduplicates by symmetry-canonical broken/formed
-  bond changes.  Multiple concrete mappings with the same mechanism under R
-  symmetry collapse before GT/IG scoring.
+- R<->P mechanism discovery groups completed analytical branch families by
+  the exact canonical broken/formed-event certificate.  Branches remain
+  available for chirality constraints and fixed-mapping RMSD selection.
 - R/P<->GT and R/P<->IG verification is mechanism-local.  For each mechanism,
   `rxn_core.alignment.ts_core_pool(...)` enumerates exact mappings for the
   same mechanism core from both endpoints: `R -> TS` using R-core WBO context,
@@ -504,20 +521,9 @@ R<->P work units also apply the bounded final symmetry repair by default
 `BGCP_SYMMETRY_REPAIR=0`, and its local search cap is controlled by
 `BGCP_SYMMETRY_REPAIR_MAX_EVALS`.
 
-The view still applies a final mechanism dedupe before rendering:
-
-```
-key = (
-    broken R bonds canonicalized by R symmetry orbit pairs,
-    formed  R bonds canonicalized by R symmetry orbit pairs,
-)
-```
-
-All concrete alignments with the same key are the same displayed mechanism.
-The view records collapsed source mechanism IDs/cuts in the slim JSON and
-scores/renders IGs only for the deduped mechanism list.  This removes
-degenerate mechanisms caused only by swapping equivalent reactant atoms while
-preserving different bond-change patterns.
+The view does not perform another weaker orbit-pair mechanism dedupe.  It
+renders the exact mechanism list returned by AAM and records the selected
+analytical branch and its fixed-mapping RMSD.
 
 ## Bond-Change Core Logic: 1-1, 1-0, 0-1, 0-0
 

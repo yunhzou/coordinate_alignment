@@ -598,6 +598,7 @@ def _dedupe_children_exact(children: list[_SymCand]) -> list[_SymCand]:
             tuple(sorted(child.exact_fixed)),
             tuple((block.r_atoms, block.p_atoms)
                   for block in child.automorph_blocks),
+            tuple(child.automorph_generators),
         )
         kept = seen.get(key)
         if kept is None:

@@ -32,19 +32,22 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       select_min_mechanisms, WeightedGraph,
                       match_weighted_subgraph)
 from rxn_core.alignment.sweep import (
-    combine_branch_symmetry_witnesses,
     complete_chosen_automorphism_groups,
     run_no_cut_core_branch_records,
 )
 from rxn_core.alignment.index_chirality import (
     IndexChiralityConflict,
-    select_group_chiral_witness,
+    analytical_family_static_context,
+    analyze_group_chirality_branch,
+    compile_analytical_mapping_family,
+    fixed_mapping_aligned_rmsd,
     select_index_chirality_assignment,
 )
 from rxn_core.alignment.interpolation import (
     internal_coordinate_interpolation,
     proper_align_coordinates,
 )
+from rxn_core.alignment.post_aam import PostAAMMechanism
 from rxn_core.chemistry_computations import (
     run_xtb, run_xtb_hess, write_xyz_str, xyz_with_disp,
 )
@@ -860,62 +863,17 @@ def _gt_score(mech):
     return float(gt['S']) if gt and gt.get('S') is not None else float('-inf')
 
 
-def _mechanism_branch_witnesses(mech):
-    branch_symmetry = mech.get('branch_symmetry') or {}
-    witnesses = branch_symmetry.get('witnesses')
-    if witnesses:
-        return witnesses
-    return [{
-        'mapping': _int_mapping(mech.get('mapping_RP', {})),
-        'cut': mech.get('dedup_cuts', [mech.get('cut')]),
-        'local_symmetry': branch_symmetry,
-    }]
-
-
 def dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits):
-    """Collapse final-view mechanisms with the same R-symmetry bond changes.
+    """Finalize ids after exact event-certificate grouping in AAM.
 
-    The cut sweep may find multiple concrete alignments whose broken/formed
-    R-index bonds differ only by swapping equivalent reactant atoms.  They are
-    the same mechanism for the view, so keep the highest-GT-scoring
-    representative and retain provenance for the slim JSON / button tooltip.
+    Mechanism grouping now happens in the cut-sweep pool using a canonical
+    colored-event certificate.  Re-grouping here by individual atom orbit IDs
+    was weaker and discarded analytical branch families, so this outer/view
+    stage is intentionally non-deduplicating.
     """
-    groups = {}
-    for mech in mechanisms:
-        key = _mechanism_bond_key(mech, r_orbits)
-        groups.setdefault(key, []).append(mech)
-
-    deduped = []
-    for group in groups.values():
-        rep = max(group, key=_gt_score)
-        rep['dedup_count'] = sum(m.get('dedup_count', 1) for m in group)
-        rep['dedup_source_ids'] = [int(m['id']) for m in group]
-        rep['dedup_cuts'] = sorted({
-            cut
-            for m in group
-            for cut in m.get('dedup_cuts', [m['cut']])
-        })
-        witnesses = []
-        for mech in group:
-            current_symmetry = mech.get('branch_symmetry') or {}
-            witnesses.append({
-                'mapping': _int_mapping(mech.get('mapping_RP') or {}),
-                'cut': mech.get('dedup_cuts', [mech.get('cut')]),
-                'local_symmetry': {
-                    key: current_symmetry.get(key)
-                    for key in ('rule', 'fragments', 'blocks', 'color_groups')
-                    if current_symmetry.get(key) is not None
-                },
-            })
-            witnesses.extend(_mechanism_branch_witnesses(mech))
-        rep['branch_symmetry'] = combine_branch_symmetry_witnesses(
-            witnesses, representative_mapping=rep.get('mapping_RP'))
-        if rep.get('index_chirality'):
-            rep['branch_symmetry']['index_chirality'] = dict(
-                rep['index_chirality'])
-        deduped.append(rep)
-
+    deduped = list(mechanisms)
     for new_id, mech in enumerate(deduped, 1):
+        mech.setdefault('dedup_source_ids', [int(mech.get('id', new_id))])
         suffix = re.sub(r"^#\d+:\s*", "", mech['label'])
         if mech['dedup_count'] > 1:
             suffix = f"{suffix} [dedup x{mech['dedup_count']}]"
@@ -1825,6 +1783,158 @@ def _rp_cut_kwargs(cfg):
     }
 
 
+_ANALYTICAL_FAMILY_WORKER_CONTEXT = None
+_ANALYTICAL_BRANCH_EVAL_CONTEXT = None
+
+
+def _init_analytical_family_worker(context):
+    global _ANALYTICAL_FAMILY_WORKER_CONTEXT
+    _ANALYTICAL_FAMILY_WORKER_CONTEXT = context
+
+
+def _init_analytical_branch_eval_worker(context):
+    global _ANALYTICAL_BRANCH_EVAL_CONTEXT
+    _ANALYTICAL_BRANCH_EVAL_CONTEXT = context
+
+
+def _evaluate_analytical_branch_task(branch_index):
+    """Evaluate one maximal family independently for chirality and RMSD."""
+    context = _ANALYTICAL_BRANCH_EVAL_CONTEXT
+    branch = context['branches'][branch_index]
+    inputs = context['inputs']
+    cfg = context['cfg']
+    branch_mapping = _int_mapping(branch['mapping'])
+    branch_hierarchy = branch.get('hierarchy') or {}
+    branch_group_chirality = None
+    branch_index_chirality = None
+    try:
+        if context['index_chirality_mode'] == 'preserve':
+            branch_group_chirality = analyze_group_chirality_branch(
+                branch_mapping,
+                inputs.elR, inputs.xyzR, inputs.wboR,
+                inputs.elP, inputs.xyzP, inputs.wboP,
+                graph_floor=cfg.get('graph_floor', 0.2),
+            )
+            selection = select_index_chirality_assignment(
+                branch_mapping, branch_hierarchy,
+                inputs.elR, inputs.xyzR, inputs.wboR,
+                inputs.elP, inputs.xyzP, inputs.wboP,
+                graph_floor=cfg.get('graph_floor', 0.2),
+                symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
+                dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+                metal_dwbo_threshold=cfg.get(
+                    'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+                anchor_map=cfg.get('anchor_map') or {},
+                group_chirality_frames=(
+                    branch_group_chirality.defined_frames),
+                static_context=context['static_context'],
+            )
+            branch_mapping = selection.selected_mapping
+            branch_index_chirality = selection.metadata
+            branch_index_chirality['group_chirality_branch'] = (
+                branch_group_chirality.metadata)
+        rmsd = fixed_mapping_aligned_rmsd(
+            branch_mapping, inputs.xyzR, inputs.xyzP)
+        return ('ok', (
+            float(rmsd), tuple(branch_mapping[r]
+                               for r in sorted(branch_mapping)),
+            branch_index, branch_mapping, branch_hierarchy,
+            branch_group_chirality, branch_index_chirality,
+        ))
+    except IndexChiralityConflict as exc:
+        return ('failure', {
+            'branch_index': int(branch_index),
+            'reason': str(exc),
+            'source_mapping_RP': dict(branch_mapping),
+            'diagnostics': getattr(exc, 'diagnostics', None),
+        })
+
+
+def _compile_analytical_family_task(payload):
+    """Pickle-safe exact family compiler for post-AAM process batches."""
+    mapping, hierarchy = payload
+    context = _ANALYTICAL_FAMILY_WORKER_CONTEXT
+    if context is None:
+        raise RuntimeError("analytical family compiler context is unset")
+    return compile_analytical_mapping_family(
+        mapping, hierarchy,
+        context['elements_R'], context['wbo_R'],
+        context['elements_P'], context['wbo_P'],
+        graph_floor=context['graph_floor'],
+        symmetry_wbo_tol=context['symmetry_wbo_tol'],
+        dwbo_threshold=context['dwbo_threshold'],
+        metal_dwbo_threshold=context['metal_dwbo_threshold'],
+        anchor_map=context['anchor_map'],
+        static_context=context['static_context'],
+    )
+
+
+def _compile_analytical_families(inputs, branches, cfg, static_context=None):
+    """Compile independent exact cosets in parallel when CPUs are available."""
+    context = {
+        'elements_R': inputs.elR,
+        'wbo_R': inputs.wboR,
+        'elements_P': inputs.elP,
+        'wbo_P': inputs.wboP,
+        'graph_floor': cfg.get('graph_floor', 0.2),
+        'symmetry_wbo_tol': cfg.get('iso_tol', VIEW_ISO_TOL),
+        'dwbo_threshold': cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        'metal_dwbo_threshold': cfg.get(
+            'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
+        'anchor_map': cfg.get('anchor_map') or {},
+    }
+    context['static_context'] = static_context or (
+        analytical_family_static_context(
+            inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
+            graph_floor=context['graph_floor'],
+            dwbo_threshold=context['dwbo_threshold'],
+            metal_dwbo_threshold=context['metal_dwbo_threshold']))
+    unique_payloads = []
+    branch_payload_indices = []
+    payload_index = {}
+    for branch in branches:
+        mapping = _int_mapping(branch['mapping'])
+        hierarchy = branch.get('hierarchy') or {}
+        fragments = tuple(sorted(
+            tuple(sorted(int(atom) for atom in fragment.get('fragment', ())))
+            for fragment in hierarchy.get('fragments') or ({
+                'fragment': sorted(mapping),
+            },)
+        ))
+        # _masked_relation_data consumes exactly the mapping and fragment
+        # partition.  Fragment order/indices are categorical names only, so
+        # canonical sorting removes growth-history duplicates without
+        # weakening any relational constraint.
+        key = (tuple(sorted(mapping.items())), fragments)
+        index = payload_index.get(key)
+        if index is None:
+            index = len(unique_payloads)
+            payload_index[key] = index
+            unique_payloads.append((mapping, hierarchy))
+        branch_payload_indices.append(index)
+    requested = int(cfg.get('post_aam_workers') or _available_cpus(default=1))
+    worker_cap = 32 if len(unique_payloads) >= 128 else 8
+    workers = min(len(unique_payloads), max(1, requested), worker_cap)
+    # A process cannot create children when this pipeline itself is running as
+    # a daemonic pool worker.  Sequential execution is the same exact
+    # computation, only a scheduling difference.
+    if (workers <= 1 or len(unique_payloads) < 16
+            or mp.current_process().daemon):
+        _init_analytical_family_worker(context)
+        compiled = [
+            _compile_analytical_family_task(item)
+            for item in unique_payloads
+        ]
+    else:
+        with mp.get_context('fork').Pool(
+                processes=workers,
+                initializer=_init_analytical_family_worker,
+                initargs=(context,)) as pool:
+            compiled = pool.map(
+                _compile_analytical_family_task, unique_payloads)
+    return [compiled[index] for index in branch_payload_indices]
+
+
 def rp_cut_work_items(inputs, config=None):
     """Return independent R-P no-cut/one-edge cut work items."""
     cfg = _rp_cfg(config)
@@ -1852,6 +1962,76 @@ def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0,
     }
 
 
+def _dedupe_analytical_mapping_families(
+        inputs, branches, cfg, static_context=None):
+    """Keep maximal exact mapping cosets and retain subsumed provenance."""
+    unique = []
+    compiled = _compile_analytical_families(
+        inputs, branches, cfg, static_context=static_context)
+    for source_index, (raw, family) in enumerate(zip(branches, compiled)):
+        branch = dict(raw)
+        provenance = {
+            'source_branch_index': int(source_index),
+            'cuts': [list(map(int, cut))
+                     for cut in branch.get('cuts') or ()],
+            'encounter_count': int(branch.get('encounter_count', 1)),
+            'fragment_count': len(
+                (branch.get('hierarchy') or {}).get('fragments') or ()),
+        }
+        covering = next((
+            candidate for candidate in unique
+            if family.is_subset_of(candidate['family'])
+        ), None)
+        if covering is not None:
+            kept = covering['branch']
+            kept['encounter_count'] = (
+                int(kept.get('encounter_count', 1))
+                + int(branch.get('encounter_count', 1)))
+            cuts = {
+                tuple(map(int, cut)) for cut in kept.get('cuts') or ()
+            } | {
+                tuple(map(int, cut)) for cut in branch.get('cuts') or ()
+            }
+            kept['cuts'] = [list(cut) for cut in sorted(cuts)]
+            kept.setdefault('path_provenance', []).append(provenance)
+            kept['covered_path_count'] = len(kept['path_provenance'])
+            continue
+
+        subsumed = [
+            candidate for candidate in unique
+            if candidate['family'].is_subset_of(family)
+        ]
+        if subsumed:
+            subsumed_ids = {id(candidate) for candidate in subsumed}
+            unique = [candidate for candidate in unique
+                      if id(candidate) not in subsumed_ids]
+            for candidate in subsumed:
+                prior = candidate['branch']
+                branch['encounter_count'] = (
+                    int(branch.get('encounter_count', 1))
+                    + int(prior.get('encounter_count', 1)))
+                provenance_records = list(
+                    prior.get('path_provenance') or ())
+                provenance.setdefault('subsumed_provenance', []).extend(
+                    provenance_records)
+                cuts = {
+                    tuple(map(int, cut))
+                    for cut in branch.get('cuts') or ()
+                } | {
+                    tuple(map(int, cut))
+                    for cut in prior.get('cuts') or ()
+                }
+                branch['cuts'] = [list(cut) for cut in sorted(cuts)]
+        branch['path_provenance'] = [provenance]
+        if provenance.get('subsumed_provenance'):
+            branch['path_provenance'].extend(
+                provenance.pop('subsumed_provenance'))
+        branch['covered_path_count'] = len(branch['path_provenance'])
+        branch['mapping_family'] = family.record()
+        unique.append({'branch': branch, 'family': family})
+    return [item['branch'] for item in unique]
+
+
 def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
     """Finalize Stage 1 from a full or merged cut-sweep pool."""
     cfg = _rp_cfg(config)
@@ -1869,57 +2049,90 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         raise ValueError(
             "index_chirality must be 'off' or 'preserve'")
     rejected_index_chirality = []
+    analytical_static_context = analytical_family_static_context(
+        inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
+        graph_floor=cfg.get('graph_floor', 0.2),
+        dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
+        metal_dwbo_threshold=cfg.get(
+            'metal_dwbo_threshold', METAL_DWBO_THRESHOLD))
     for mi, (_sig, info) in enumerate(rp_min.items(), 1):
-        mapping_RP = _int_mapping(info['mapping'])
-        raw_branch_symmetry = info.get('branch_symmetry') or {}
+        raw_analytical_branches = list(info.get('branches') or [{
+            'mapping': info['mapping'],
+            'hierarchy': info.get('branch_symmetry') or {},
+            'encounter_count': int(info.get('dedup_count', 1)),
+        }])
+        analytical_branches = _dedupe_analytical_mapping_families(
+            inputs, raw_analytical_branches, cfg,
+            static_context=analytical_static_context)
+        analytical_info = dict(info)
+        analytical_info['branches'] = analytical_branches
+        analytical_info['mapping'] = dict(analytical_branches[0]['mapping'])
+        analytical_info['branch_symmetry'] = (
+            analytical_branches[0].get('hierarchy') or {})
+        post_aam = PostAAMMechanism.from_aam_graphs(
+            _sig, analytical_info, g_R_full, g_P_full,
+            symmetry_wbo_tolerance=cfg.get('iso_tol', VIEW_ISO_TOL))
+        mapping_RP = _int_mapping(analytical_info['mapping'])
+        raw_branch_symmetry = analytical_info['branch_symmetry']
         group_chirality = None
         index_chirality = None
-        if index_chirality_mode == 'preserve':
-            group_chirality = select_group_chiral_witness(
-                mapping_RP,
-                raw_branch_symmetry.get('witnesses') or (),
-                inputs.elR, inputs.xyzR, inputs.wboR,
-                inputs.elP, inputs.xyzP, inputs.wboP,
-                graph_floor=cfg.get('graph_floor', 0.2),
-            )
-            mapping_RP = group_chirality.selected_mapping
-            if raw_branch_symmetry.get('witnesses'):
-                raw_branch_symmetry = combine_branch_symmetry_witnesses(
-                    raw_branch_symmetry['witnesses'],
-                    representative_mapping=mapping_RP)
+        evaluated_branches = []
+        branch_failures = []
+        eval_context = {
+            'branches': analytical_branches,
+            'inputs': inputs,
+            'cfg': cfg,
+            'index_chirality_mode': index_chirality_mode,
+            'static_context': analytical_static_context,
+        }
+        eval_workers = min(
+            len(analytical_branches), _available_cpus(default=1), 8)
+        if (eval_workers > 1 and len(analytical_branches) > 1
+                and not mp.current_process().daemon):
+            with mp.get_context('fork').Pool(
+                    processes=eval_workers,
+                    initializer=_init_analytical_branch_eval_worker,
+                    initargs=(eval_context,)) as eval_pool:
+                branch_results = eval_pool.map(
+                    _evaluate_analytical_branch_task,
+                    range(len(analytical_branches)))
+        else:
+            _init_analytical_branch_eval_worker(eval_context)
+            branch_results = [
+                _evaluate_analytical_branch_task(index)
+                for index in range(len(analytical_branches))
+            ]
+        for status, record in branch_results:
+            if status == 'ok':
+                evaluated_branches.append(record)
+            else:
+                branch_failures.append(record)
+        if not evaluated_branches:
+            failure_reason = (
+                branch_failures[0]['reason']
+                if len(branch_failures) == 1
+                else 'no analytical AAM branch satisfies chirality')
+            rejected_index_chirality.append({
+                'source_mechanism_id': int(mi),
+                'reason': failure_reason,
+                'source_mapping_RP': dict(mapping_RP),
+                'analytical_branch_failures': branch_failures,
+            })
+            continue
+        evaluated_branches.sort(key=lambda item: item[:3])
+        (selected_rmsd, _mapping_key_for_rank, selected_branch_index,
+         mapping_RP, raw_branch_symmetry, group_chirality,
+         index_chirality) = evaluated_branches[0]
         branch_symmetry = complete_chosen_automorphism_groups(
             raw_branch_symmetry, mapping_RP,
             g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
-        if index_chirality_mode == 'preserve':
-            try:
-                selection = select_index_chirality_assignment(
-                    mapping_RP,
-                    branch_symmetry,
-                    inputs.elR, inputs.xyzR, inputs.wboR,
-                    inputs.elP, inputs.xyzP, inputs.wboP,
-                    graph_floor=cfg.get('graph_floor', 0.2),
-                    symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
-                    dwbo_threshold=cfg.get(
-                        'dwbo_threshold', DWBO_THRESHOLD),
-                    metal_dwbo_threshold=cfg.get(
-                        'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
-                    anchor_map=cfg.get('anchor_map') or {},
-                    group_chirality_frames=(
-                        group_chirality.preserved_frames),
-                )
-            except IndexChiralityConflict as exc:
-                rejected_index_chirality.append({
-                    'source_mechanism_id': int(mi),
-                    'reason': str(exc),
-                    'source_mapping_RP': dict(mapping_RP),
-                    'branch_symmetry': branch_symmetry,
-                    'diagnostics': getattr(exc, 'diagnostics', None),
-                })
-                continue
-            mapping_RP = selection.selected_mapping
-            index_chirality = selection.metadata
-            index_chirality['group_chirality_witness'] = (
-                group_chirality.metadata)
+        if index_chirality is not None:
+            index_chirality['selected_analytical_branch_index'] = int(
+                selected_branch_index)
+            index_chirality['selected_fixed_mapping_aligned_rmsd'] = float(
+                selected_rmsd)
+            index_chirality['analytical_branch_count'] = len(
+                analytical_branches)
         inv_RP = {v: k for k, v in mapping_RP.items()}
         broken, formed, _, _ = classify_bonds(
             mapping_RP, inputs.wboR, inputs.wboP,
@@ -1944,6 +2157,13 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         )
         br_label = ",".join(
             f"{inputs.elR[a]}{a}-{inputs.elR[b]}{b}" for a, b in broken_R)
+        post_aam_record = post_aam.symmetry_record()
+        post_aam_record['selected_mapping'] = dict(mapping_RP)
+        post_aam_record['selected_analytical_branch_index'] = int(
+            selected_branch_index)
+        post_aam_record['selected_fixed_mapping_aligned_rmsd'] = float(
+            selected_rmsd)
+        post_aam_record['branch_failures'] = branch_failures
         mechanisms.append({
             'id': mi,
             'cut': cut_name,
@@ -1959,6 +2179,7 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'formed_bonds_P': [[int(a), int(b)] for (a, b, _, _) in formed],
             'core_atoms': [int(r) for r in core_R],
             'product_xyz_in_R': xyzP_in_R.tolist(),
+            'post_aam': post_aam_record,
             'branch_symmetry': branch_symmetry,
             'index_chirality': index_chirality,
         })
@@ -2013,7 +2234,8 @@ def run_rp_stage(inputs, config=None, inner_workers=0):
 
     This is the reusable alignment/mechanism-discovery entry point.  It runs
     the no-cut plus one-edge cut sweep on R->P, selects minimum bond-change
-    mechanisms, classifies broken/forming bonds, and stores the R-P witness
+    mechanisms, classifies broken/forming bonds, and stores the selected R-P
+    bijection together with every retained analytical AAM branch
     needed for later TS verification.
     """
     cfg = _rp_cfg(config)
@@ -2546,7 +2768,7 @@ function stopInterpolation() {{ if (interpPlayTimer) {{ clearInterval(interpPlay
 function renderInterpolationFrame() {{ const mech=findMech(currentMechId); const path=mech && mech.endpoint_interpolation; const div=document.getElementById('vw_interp'); if (!path || !path.frames || !path.frames.length) {{ div.innerHTML=''; interpViewer=null; interpViewerMechId=null; document.getElementById('interp_meta').textContent='Interpolation unavailable'; return; }} const slider=document.getElementById('interpFrame'); slider.max=String(path.frames.length-1); const index=Math.max(0,Math.min(path.frames.length-1,parseInt(slider.value)||0)); const frame=path.frames[index]; const sameViewer=!!(interpViewer && interpViewerMechId===mech.id); const savedView=(sameViewer && interpViewer.getView) ? interpViewer.getView() : null; if (!sameViewer) {{ div.innerHTML=''; interpViewer=$3Dmol.createViewer('vw_interp',{{backgroundColor:'white'}}); interpViewerMechId=mech.id; }} else {{ interpViewer.removeAllModels(); interpViewer.removeAllShapes(); clearLabels(interpViewer); }} const v=interpViewer; v.addModel(buildBody(DATA.reactant.elements,frame.coords),'xyz'); v.setStyle({{}},{{stick:{{radius:0.10}},sphere:{{scale:0.20}}}}); applyDegeneracyStyles(v,rDegMap(mech)); drawBonds(v,frame.coords,mech.broken_bonds_R,'red'); drawBonds(v,frame.coords,mech.formed_bonds_R,'green'); addAtomLabels(v,DATA.reactant.elements,frame.coords,reactantAtomLabels()); if (showClashHighlights) {{ const clashAtoms=new Set(); for (const pair of (frame.clashes.pairs||[])) for (const atom of pair.atoms) clashAtoms.add(atom); for (const atom of clashAtoms) v.setStyle({{serial:atom}},{{stick:{{radius:0.14,color:'#d000ff'}},sphere:{{scale:0.42,color:'#d000ff'}}}}); }} if (savedView && v.setView) v.setView(savedView); else v.zoomTo(); v.render(); document.getElementById('interp_t').textContent='t='+frame.t.toFixed(2); document.getElementById('interp_method').textContent=path.method; const ratio=frame.clashes.minimum_radius_ratio; const pairs=(frame.clashes.pairs||[]).map(p=>'R'+p.atoms[0]+'–R'+p.atoms[1]).join(', '); const residuals=frame.constraint_residuals||{{}}; const geometry=' <b>persistent bond error</b>='+((100*(residuals.max_persistent_bond_relative_error||0)).toFixed(2))+'% <b>angle error</b>='+((residuals.max_angle_error_degrees||0).toFixed(2))+'° <b>torsion error</b>='+((residuals.max_torsion_error_degrees||0).toFixed(2))+'°'; document.getElementById('interp_meta').innerHTML='<span class="'+(frame.clashes.count?'clash-bad':'clash-ok')+'"><b>severe overlaps</b>='+frame.clashes.count+'</span> <b>min clearance</b>='+(ratio===null?'n/a':ratio.toFixed(3)+' × covalent radii')+geometry+(pairs?' <b>pairs</b>='+pairs:''); }}
 function toggleInterpolation() {{ if (interpPlayTimer) {{ stopInterpolation(); return; }} document.getElementById('interpPlayBtn').textContent='Pause'; interpPlayTimer=setInterval(()=>{{ const slider=document.getElementById('interpFrame'); let next=(parseInt(slider.value)||0)+1; if (next>parseInt(slider.max)) next=0; slider.value=String(next); renderInterpolationFrame(); }},180); }}
 function render() {{ const mech = findMech(currentMechId); document.getElementById('r_meta').innerHTML = structureMeta(DATA.reactant); document.getElementById('p_meta').innerHTML = structureMeta(DATA.product); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => {{ b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }}); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, [], rDegMap(mech), reactantAtomLabels()); const alignedP = mech.product_xyz_in_R_aligned || mech.product_xyz_in_R; const pAligned = !!(rOrdered && alignedP); const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? alignedP : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed, mappedProductDegMap(mech, pAligned), productAtomLabels(mech, pAligned)); document.getElementById('prod_label').innerHTML = (pAligned ? "R-ordered + spatially aligned" : "native P")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; renderInterpolationFrame(); const gtFrame = mech.gt ? targetFrame(mech.gt, mech) : null; const showGT = !!(gtFrame && gtFrame.disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) {{ makeAnimated('vw_GT', gtFrame.elements, gtFrame.xyz, gtFrame.disp, gtFrame.broken, gtFrame.formed, gtFrame.core, targetDegMap(gtFrame, mech), targetAtomLabels(gtFrame)); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt)+" <b>frame</b>="+gtFrame.label; }} else {{ stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; }} const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => {{ const frame = targetFrame(ig, mech); const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = frame.xyz ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+" <b>frame</b>="+frame.label+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (frame.disp) makeAnimated("vw_ig"+idx, frame.elements, frame.xyz, frame.disp, frame.broken, frame.formed, frame.core, targetDegMap(frame, mech), targetAtomLabels(frame)); else if (frame.xyz) makeStatic("vw_ig"+idx, frame.elements, frame.xyz, frame.broken, frame.formed, targetDegMap(frame, mech), targetAtomLabels(frame)); }}); }}
-const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => {{ showAtomIndices = !!e.target.checked; render(); }}; document.getElementById('showDegeneracy').onchange = (e) => {{ showDegeneracy = !!e.target.checked; render(); }}; document.getElementById('rOrdered').onchange = (e) => {{ rOrdered = !!e.target.checked; render(); }}; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Collapsed raw witnesses: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
+const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => {{ showAtomIndices = !!e.target.checked; render(); }}; document.getElementById('showDegeneracy').onchange = (e) => {{ showDegeneracy = !!e.target.checked; render(); }}; document.getElementById('rOrdered').onchange = (e) => {{ rOrdered = !!e.target.checked; render(); }}; DATA.mechanisms.forEach(m => {{ const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Analytical branch encounters: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => {{ currentMechId = m.id; render(); }}; ms.appendChild(b); }});
 document.getElementById('interpFrame').oninput = renderInterpolationFrame;
 document.getElementById('interpPlayBtn').onclick = toggleInterpolation;
 document.getElementById('showClashHighlights').onchange = (e) => {{ showClashHighlights=!!e.target.checked; renderInterpolationFrame(); }};
