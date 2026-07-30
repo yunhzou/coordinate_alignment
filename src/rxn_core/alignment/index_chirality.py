@@ -761,10 +761,28 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
                  tuple(greedy[r] for r in range(atom_count)))
     evaluated = 0
     pruned = 0
+    leaf_buffer = []
+    leaf_batch_size = 512
     suffix_orders = [1] * (len(factors) + 1)
     for index in range(len(factors) - 1, -1, -1):
         suffix_orders[index] = (
             suffix_orders[index + 1] * len(factors[index][1]))
+
+    def flush_leaves():
+        nonlocal best_mapping, best_rmsd, best_rank, evaluated
+        if not leaf_buffer:
+            return
+        rmsds = _fixed_mappings_aligned_rmsd(
+            leaf_buffer, coords_R, coords_P)
+        evaluated += len(leaf_buffer)
+        for mapping, rmsd in zip(leaf_buffer, rmsds):
+            rank = (round(float(rmsd), 12),
+                    tuple(mapping[r] for r in range(atom_count)))
+            if rank < best_rank:
+                best_mapping = dict(mapping)
+                best_rmsd = float(rmsd)
+                best_rank = rank
+        leaf_buffer.clear()
 
     def search(index, mapping, decided, distance_sum):
         nonlocal best_mapping, best_rmsd, best_rank, evaluated, pruned
@@ -775,14 +793,9 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
             pruned += suffix_orders[index]
             return
         if index == len(factors):
-            evaluated += 1
-            rmsd = fixed_mapping_aligned_rmsd(mapping, coords_R, coords_P)
-            rank = (round(rmsd, 12),
-                    tuple(mapping[r] for r in range(atom_count)))
-            if rank < best_rank:
-                best_mapping = dict(mapping)
-                best_rmsd = float(rmsd)
-                best_rank = rank
+            leaf_buffer.append(dict(mapping))
+            if len(leaf_buffer) >= leaf_batch_size:
+                flush_leaves()
             return
         affected_R, action_images = factor_details[index]
         children = []
@@ -795,6 +808,7 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
             search(index + 1, child, decided + affected_R, child_sum)
 
     search(0, dict(canonical_mapping), fixed_R, initial_sum)
+    flush_leaves()
     return best_mapping, best_rmsd, {
         'group_order': int(group_order),
         'evaluated_leaf_count': int(evaluated),
