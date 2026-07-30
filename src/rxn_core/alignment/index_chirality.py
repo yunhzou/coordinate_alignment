@@ -245,6 +245,30 @@ def _fixed_mappings_aligned_rmsd(mappings, coords_R, coords_P):
         (aligned - centered_R[None, :, :]) ** 2, axis=2), axis=1))
 
 
+def _proper_fit_scores(covariances):
+    """Maximum ``trace(Q.T @ C)`` for proper rotations and 3x3 ``C``."""
+    covariances = np.asarray(covariances, dtype=float)
+    scalar = covariances.ndim == 2
+    if scalar:
+        covariances = covariances[None, :, :]
+    u, singular, vt = np.linalg.svd(covariances)
+    signs = np.where(np.linalg.det(u @ vt) < 0.0, -1.0, 1.0)
+    scores = singular[:, 0] + singular[:, 1] + signs * singular[:, 2]
+    return float(scores[0]) if scalar else scores
+
+
+@dataclass(frozen=True)
+class _CovarianceActionNode:
+    """A rigorous Frobenius ball around a set of local group actions."""
+
+    center: np.ndarray
+    radius: float
+    size: int
+    minimum_key: tuple[int, ...]
+    action_index: int | None = None
+    children: tuple["_CovarianceActionNode", ...] = ()
+
+
 def _orientation_measure(coords, origin, other_points, *,
                          degeneracy_tol=ORIENTATION_DEGENERACY_TOL):
     xyz = np.asarray(coords, dtype=np.longdouble)
@@ -635,185 +659,205 @@ def _minimum_rmsd_group_action(canonical_mapping, raw_generators,
             'group_order': 1, 'evaluated_leaf_count': 1,
             'pruned_leaf_count': 0, 'factor_orders': [],
         }
-    # Small groups are faster as one bounded vectorized batch.  The threshold
-    # is explicit, so this path can never recreate an unbounded group closure.
-    if group_order <= 4096:
-        actions = _generated_atom_permutations(
-            raw_generators, atom_count)
-        candidates = [{
-            r: int(action[canonical_mapping[r]])
-            for r in canonical_mapping
-        } for action in actions]
-        rmsds = _fixed_mappings_aligned_rmsd(
-            candidates, coords_R, coords_P)
-        ranked = [(
-            round(float(rmsd), 12),
-            tuple(candidate[r] for r in range(atom_count)),
-            float(rmsd), candidate,
-        ) for candidate, rmsd in zip(candidates, rmsds)]
-        _rounded, _key, rmsd, selected = min(
-            ranked, key=lambda item: item[:2])
-        return selected, rmsd, {
-            'group_order': int(group_order),
-            'evaluated_leaf_count': int(group_order),
-            'pruned_leaf_count': 0,
-            'factor_orders': [len(actions) for _support, actions in factors],
-        }
-
-    # Larger factors and factors touching more atoms are decided first so the
-    # invariant distance bound becomes informative as early as possible.
+    # The centered coordinate norms are permutation-invariant.  For mapping
+    # ``m``, proper-fit RMSD depends only on the 3x3 covariance
+    #
+    #     C(m) = sum_r outer(P[m(r)], R[r]).
+    #
+    # Independent automorphism factors contribute additively to C.  Search
+    # their covariance-space product directly; never materialize the global
+    # Cartesian product of atom bijections.
     factors.sort(key=lambda item: (-len(item[0]), -len(item[1]), item[0]))
-    coords_R = np.asarray(coords_R, dtype=float)
-    coords_P = np.asarray(coords_P, dtype=float)
-    distances_R = np.linalg.norm(
-        coords_R[:, None, :] - coords_R[None, :, :], axis=2)
-    distances_P = np.linalg.norm(
-        coords_P[:, None, :] - coords_P[None, :, :], axis=2)
-    movable_targets = set().union(*(set(support) for support, _ in factors))
-    fixed_R = tuple(sorted(
-        r for r, p in canonical_mapping.items() if p not in movable_targets))
+    reactant = np.asarray(coords_R, dtype=float)
+    product = np.asarray(coords_P, dtype=float)
+    centered_R = reactant - reactant.mean(axis=0)
+    centered_P = product - product.mean(axis=0)
+    norm_sum = float(np.sum(centered_R * centered_R)
+                     + np.sum(centered_P * centered_P))
 
-    def distance_increment(mapping, new_atoms, decided_atoms):
-        total = 0.0
-        new_atoms = tuple(new_atoms)
-        for offset, left in enumerate(new_atoms):
-            for right in decided_atoms:
-                delta = (distances_R[left, right]
-                         - distances_P[mapping[left], mapping[right]])
-                total += float(delta * delta)
-            for right in new_atoms[:offset]:
-                delta = (distances_R[left, right]
-                         - distances_P[mapping[left], mapping[right]])
-                total += float(delta * delta)
-        return total
-
-    initial_sum = distance_increment(canonical_mapping, fixed_R, ())
     factor_details = []
+    movable_R = set()
     for support, actions in factors:
         support_set = set(support)
         affected_R = tuple(sorted(
             r for r, p in canonical_mapping.items() if p in support_set))
-        action_images = tuple(
+        movable_R.update(affected_R)
+        raw_images = tuple(
             tuple(int(action[canonical_mapping[r]]) for r in affected_R)
             for action in actions)
-        factor_details.append((affected_R, action_images))
+        matrices = np.asarray([
+            sum((np.outer(centered_P[p], centered_R[r])
+                 for r, p in zip(affected_R, images)),
+                start=np.zeros((3, 3), dtype=float))
+            for images in raw_images
+        ])
+        action_images = raw_images
+        factor_details.append((affected_R, action_images, matrices))
 
-    def cross_factor_cost(left_R, left_images, right_R, right_images):
-        total = 0.0
-        for left, left_P in zip(left_R, left_images):
-            for right, right_P in zip(right_R, right_images):
-                delta = (distances_R[left, right]
-                         - distances_P[left_P, right_P])
-                total += float(delta * delta)
-        return total
+    fixed_R = tuple(sorted(set(range(atom_count)) - movable_R))
+    fixed_covariance = sum((
+        np.outer(centered_P[canonical_mapping[r]], centered_R[r])
+        for r in fixed_R
+    ), start=np.zeros((3, 3), dtype=float))
 
-    # Pairwise minima between every two still-undecided independent factors
-    # are mutually relaxed (their minimizing actions need not agree), hence
-    # their sum is a rigorous lower bound.  Including it prevents the search
-    # from descending through millions of leaves before unavoidable geometric
-    # disagreement becomes visible.
-    pairwise_floor = {}
-    for left_index, (left_R, left_actions) in enumerate(factor_details):
-        for right_index in range(left_index + 1, len(factor_details)):
-            right_R, right_actions = factor_details[right_index]
-            pairwise_floor[(left_index, right_index)] = min(
-                cross_factor_cost(left_R, left_images,
-                                  right_R, right_images)
-                for left_images in left_actions
-                for right_images in right_actions
-            )
+    def rmsd_from_score(score):
+        squared = max((norm_sum - 2.0 * float(score)) / atom_count, 0.0)
+        return float(np.sqrt(squared))
 
-    def action_mapping(base, affected_R, images):
-        candidate = dict(base)
-        candidate.update(zip(affected_R, images))
-        return candidate
+    def build_action_tree(matrices, images, indices):
+        indices = np.asarray(indices, dtype=int)
+        values = matrices[indices]
+        center = np.mean(values, axis=0)
+        radius = float(np.max(np.linalg.norm(
+            values - center, axis=(1, 2)))) if len(indices) > 1 else 0.0
+        minimum_key = min(images[int(index)] for index in indices)
+        if len(indices) == 1:
+            return _CovarianceActionNode(
+                center=center, radius=0.0, size=1,
+                minimum_key=minimum_key,
+                action_index=int(indices[0]))
+        flat = values.reshape(len(indices), 9)
+        split_axis = int(np.argmax(np.ptp(flat, axis=0)))
+        order = sorted(
+            range(len(indices)),
+            key=lambda offset: (
+                float(flat[offset, split_axis]),
+                images[int(indices[offset])]),
+        )
+        midpoint = len(order) // 2
+        left_indices = indices[order[:midpoint]]
+        right_indices = indices[order[midpoint:]]
+        children = (
+            build_action_tree(matrices, images, left_indices),
+            build_action_tree(matrices, images, right_indices),
+        )
+        return _CovarianceActionNode(
+            center=center, radius=radius, size=len(indices),
+            minimum_key=minimum_key, children=children)
 
-    def optimistic_remaining(index, mapping, decided):
-        floor = 0.0
-        for factor_index in range(index, len(factor_details)):
-            affected_R, action_images = factor_details[factor_index]
-            floor += min(
-                distance_increment(
-                    action_mapping(mapping, affected_R, images),
-                    affected_R, decided)
-                for images in action_images
-            )
-        for left_index in range(index, len(factor_details)):
-            for right_index in range(left_index + 1, len(factor_details)):
-                floor += pairwise_floor[(left_index, right_index)]
-        return floor
+    roots = tuple(
+        build_action_tree(matrices, images, np.arange(len(images)))
+        for _affected, images, matrices in factor_details)
+    suffix_orders = [1] * (len(factor_details) + 1)
+    suffix_centers = [np.zeros((3, 3), dtype=float)
+                      for _ in range(len(factor_details) + 1)]
+    suffix_radii = [0.0] * (len(factor_details) + 1)
+    for index in range(len(factor_details) - 1, -1, -1):
+        suffix_orders[index] = suffix_orders[index + 1] * roots[index].size
+        suffix_centers[index] = (
+            suffix_centers[index + 1] + roots[index].center)
+        suffix_radii[index] = suffix_radii[index + 1] + roots[index].radius
 
-    # A deterministic greedy descent supplies a strong incumbent but never
-    # removes alternatives from the exact search below.
-    greedy = dict(canonical_mapping)
-    for affected_R, action_images in factor_details:
-        trials = []
-        for images in action_images:
-            candidate = action_mapping(greedy, affected_R, images)
-            rmsd = fixed_mapping_aligned_rmsd(candidate, coords_R, coords_P)
-            trials.append((round(rmsd, 12), tuple(candidate[r]
-                                                  for r in range(atom_count)),
-                           rmsd, candidate))
-        greedy = min(trials, key=lambda item: item[:2])[3]
-    best_mapping = greedy
-    best_rmsd = fixed_mapping_aligned_rmsd(greedy, coords_R, coords_P)
+    def mapping_from_choices(choices):
+        mapping = dict(canonical_mapping)
+        for (affected_R, action_images, _matrices), action_index in zip(
+                factor_details, choices):
+            mapping.update(zip(affected_R, action_images[action_index]))
+        return mapping
+
+    # Coordinate ascent supplies only an incumbent.  Every discarded subtree
+    # below is still proven unable to improve that incumbent by a rigorous
+    # covariance-ball upper bound.
+    choices = []
+    covariance = fixed_covariance.copy()
+    for affected_R, action_images, matrices in factor_details:
+        identity_images = tuple(canonical_mapping[r] for r in affected_R)
+        try:
+            action_index = action_images.index(identity_images)
+        except ValueError as exc:
+            raise IndexChiralityError(
+                "symmetry factor omitted its identity action") from exc
+        choices.append(action_index)
+        covariance += matrices[action_index]
+    for _pass in range(2):
+        for factor_index, (_affected, images, matrices) in enumerate(
+                factor_details):
+            base = covariance - matrices[choices[factor_index]]
+            scores = _proper_fit_scores(base[None, :, :] + matrices)
+            best_score = float(np.max(scores))
+            candidates = [
+                index for index, score in enumerate(scores)
+                if abs(float(score) - best_score) <= 1e-12
+            ]
+            selected_index = min(candidates, key=lambda index: images[index])
+            covariance = base + matrices[selected_index]
+            choices[factor_index] = selected_index
+
+    best_mapping = mapping_from_choices(choices)
+    best_score = float(_proper_fit_scores(covariance))
+    best_rmsd = rmsd_from_score(best_score)
     best_rank = (round(best_rmsd, 12),
-                 tuple(greedy[r] for r in range(atom_count)))
+                 tuple(best_mapping[r] for r in range(atom_count)))
     evaluated = 0
     pruned = 0
-    leaf_buffer = []
-    leaf_batch_size = 512
-    suffix_orders = [1] * (len(factors) + 1)
-    for index in range(len(factors) - 1, -1, -1):
-        suffix_orders[index] = (
-            suffix_orders[index + 1] * len(factors[index][1]))
+    visited_action_nodes = 0
+    sqrt_three = float(np.sqrt(3.0))
 
-    def flush_leaves():
-        nonlocal best_mapping, best_rmsd, best_rank, evaluated
-        if not leaf_buffer:
-            return
-        rmsds = _fixed_mappings_aligned_rmsd(
-            leaf_buffer, coords_R, coords_P)
-        evaluated += len(leaf_buffer)
-        for mapping, rmsd in zip(leaf_buffer, rmsds):
-            rank = (round(float(rmsd), 12),
-                    tuple(mapping[r] for r in range(atom_count)))
-            if rank < best_rank:
-                best_mapping = dict(mapping)
-                best_rmsd = float(rmsd)
-                best_rank = rank
-        leaf_buffer.clear()
+    def bound_for(partial_covariance, factor_index, node):
+        relaxed_center = (
+            partial_covariance + node.center
+            + suffix_centers[factor_index + 1])
+        relaxed_radius = (
+            node.radius + suffix_radii[factor_index + 1])
+        return (float(_proper_fit_scores(relaxed_center))
+                + sqrt_three * relaxed_radius)
 
-    def search(index, mapping, decided, distance_sum):
-        nonlocal best_mapping, best_rmsd, best_rank, evaluated, pruned
-        relaxed_sum = distance_sum + optimistic_remaining(
-            index, mapping, decided)
-        lower_bound = np.sqrt(max(relaxed_sum, 0.0)) / atom_count
-        if lower_bound > best_rmsd + 1e-12:
-            pruned += suffix_orders[index]
-            return
-        if index == len(factors):
-            leaf_buffer.append(dict(mapping))
-            if len(leaf_buffer) >= leaf_batch_size:
-                flush_leaves()
-            return
-        affected_R, action_images = factor_details[index]
-        children = []
-        for images in action_images:
-            child = action_mapping(mapping, affected_R, images)
-            increment = distance_increment(child, affected_R, decided)
-            children.append((distance_sum + increment,
-                             tuple(child[r] for r in affected_R), child))
-        for child_sum, _key, child in sorted(children, key=lambda item: item[:2]):
-            search(index + 1, child, decided + affected_R, child_sum)
+    def search_factor(factor_index, partial_covariance, selected_choices):
+        nonlocal best_mapping, best_score, best_rmsd, best_rank
+        nonlocal evaluated, pruned, visited_action_nodes
 
-    search(0, dict(canonical_mapping), fixed_R, initial_sum)
-    flush_leaves()
+        def visit(node):
+            nonlocal best_mapping, best_score, best_rmsd, best_rank
+            nonlocal evaluated, pruned, visited_action_nodes
+            visited_action_nodes += 1
+            upper_score = bound_for(partial_covariance, factor_index, node)
+            lower_rmsd = rmsd_from_score(upper_score)
+            if round(lower_rmsd, 12) > best_rank[0]:
+                pruned += node.size * suffix_orders[factor_index + 1]
+                return
+            if node.action_index is not None:
+                action_index = node.action_index
+                covariance_here = (
+                    partial_covariance
+                    + factor_details[factor_index][2][action_index])
+                choices_here = selected_choices + (action_index,)
+                if factor_index + 1 < len(factor_details):
+                    search_factor(
+                        factor_index + 1, covariance_here, choices_here)
+                    return
+                evaluated += 1
+                score = float(_proper_fit_scores(covariance_here))
+                rmsd = rmsd_from_score(score)
+                mapping = mapping_from_choices(choices_here)
+                rank = (round(rmsd, 12),
+                        tuple(mapping[r] for r in range(atom_count)))
+                if rank < best_rank:
+                    best_mapping = mapping
+                    best_score = score
+                    best_rmsd = rmsd
+                    best_rank = rank
+                return
+            ordered_children = sorted(
+                node.children,
+                key=lambda child: (
+                    -bound_for(partial_covariance, factor_index, child),
+                    child.minimum_key),
+            )
+            for child in ordered_children:
+                visit(child)
+
+        visit(roots[factor_index])
+
+    search_factor(0, fixed_covariance, ())
     return best_mapping, best_rmsd, {
         'group_order': int(group_order),
         'evaluated_leaf_count': int(evaluated),
         'pruned_leaf_count': int(pruned),
         'factor_orders': [len(actions) for _support, actions in factors],
+        'covariance_factor_orders': [
+            len(images) for _affected, images, _matrices in factor_details],
+        'visited_action_node_count': int(visited_action_nodes),
+        'search_method': 'exact_covariance_action_ball_tree',
     }
 
 
@@ -1504,10 +1548,16 @@ def select_index_chirality_assignment(
         "rmsd_evaluated_leaf_count": rmsd_search['evaluated_leaf_count'],
         "rmsd_pruned_leaf_count": rmsd_search['pruned_leaf_count'],
         "rmsd_symmetry_factor_orders": rmsd_search['factor_orders'],
+        "rmsd_covariance_factor_orders": rmsd_search.get(
+            'covariance_factor_orders', rmsd_search['factor_orders']),
+        "rmsd_visited_action_node_count": rmsd_search.get(
+            'visited_action_node_count', 1),
+        "rmsd_search_method": rmsd_search.get(
+            'search_method', 'trivial_group'),
         "selected_fixed_mapping_aligned_rmsd": float(selected_rmsd),
         "rmsd_policy": (
-            "exact_symmetry_factor_branch_and_bound_then_fixed_mapping_"
-            "proper_fit_no_remapping"),
+            "exact_covariance_group_action_search_then_fixed_mapping_"
+            "proper_fit_no_remapping_no_global_bijection_enumeration"),
         "selected_fragment_count": len(fragments),
         "preserved_group_chirality_frame_count": len(group_frames),
         "reconfigured_group_chirality_frame_count": len(

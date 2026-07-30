@@ -830,6 +830,11 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
     assert len(post_aam["analytical_branches"]) == 1
     assert post_aam["analytical_branches"][0]["covered_path_count"] == 2
     assert "witnesses" not in post_aam
+    assert result["timing"]["rp_seconds"] == pytest.approx(
+        result["timing"]["cut_sweep_seconds"]
+        + result["timing"]["post_aam_seconds"])
+    assert result["timing"]["analytical_family_dedupe_seconds"] >= 0.0
+    assert result["timing"]["chirality_rmsd_seconds"] >= 0.0
 
 
 def test_array_based_mechanism_discovery_returns_aligned_product():

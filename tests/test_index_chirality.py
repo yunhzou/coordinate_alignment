@@ -90,6 +90,8 @@ def test_large_symmetry_branch_and_bound_matches_exhaustive_group():
     assert (search["evaluated_leaf_count"]
             + search["pruned_leaf_count"]) == 8192
     assert search["pruned_leaf_count"] > 0
+    assert search["evaluated_leaf_count"] < 16
+    assert search["search_method"] == "exact_covariance_action_ball_tree"
 
 
 def _tetrahedral_case():

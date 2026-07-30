@@ -20,6 +20,7 @@ import re
 import shutil
 import time
 import traceback
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
@@ -1869,6 +1870,19 @@ def _compile_analytical_family_task(payload):
     )
 
 
+def _analytical_branch_payload_key(branch):
+    """Exact relation input consumed by analytical-family compilation."""
+    mapping = _int_mapping(branch['mapping'])
+    hierarchy = branch.get('hierarchy') or {}
+    fragments = tuple(sorted(
+        tuple(sorted(int(atom) for atom in fragment.get('fragment', ())))
+        for fragment in hierarchy.get('fragments') or ({
+            'fragment': sorted(mapping),
+        },)
+    ))
+    return tuple(sorted(mapping.items())), fragments
+
+
 def _compile_analytical_families(inputs, branches, cfg, static_context=None):
     """Compile independent exact cosets in parallel when CPUs are available."""
     context = {
@@ -1895,17 +1909,11 @@ def _compile_analytical_families(inputs, branches, cfg, static_context=None):
     for branch in branches:
         mapping = _int_mapping(branch['mapping'])
         hierarchy = branch.get('hierarchy') or {}
-        fragments = tuple(sorted(
-            tuple(sorted(int(atom) for atom in fragment.get('fragment', ())))
-            for fragment in hierarchy.get('fragments') or ({
-                'fragment': sorted(mapping),
-            },)
-        ))
         # _masked_relation_data consumes exactly the mapping and fragment
         # partition.  Fragment order/indices are categorical names only, so
         # canonical sorting removes growth-history duplicates without
         # weakening any relational constraint.
-        key = (tuple(sorted(mapping.items())), fragments)
+        key = _analytical_branch_payload_key(branch)
         index = payload_index.get(key)
         if index is None:
             index = len(unique_payloads)
@@ -1965,10 +1973,16 @@ def run_rp_cut_chunk(inputs, cuts, config=None, inner_workers=0,
 def _dedupe_analytical_mapping_families(
         inputs, branches, cfg, static_context=None):
     """Keep maximal exact mapping cosets and retain subsumed provenance."""
-    unique = []
-    compiled = _compile_analytical_families(
-        inputs, branches, cfg, static_context=static_context)
-    for source_index, (raw, family) in enumerate(zip(branches, compiled)):
+    # Growth paths that have the same mapping and fragment partition compile
+    # to the exact same colored relation and therefore the same coset.  The
+    # former implementation compiled them once but expanded the shared object
+    # back to every raw path before containment, recreating an O(raw*families)
+    # loop.  Quotient those identical relation inputs first and carry all path
+    # provenance on their single exact representative.
+    payload_groups = {}
+    for source_index, raw in enumerate(branches):
+        key = _analytical_branch_payload_key(raw)
+        group = payload_groups.get(key)
         branch = dict(raw)
         provenance = {
             'source_branch_index': int(source_index),
@@ -1978,6 +1992,32 @@ def _dedupe_analytical_mapping_families(
             'fragment_count': len(
                 (branch.get('hierarchy') or {}).get('fragments') or ()),
         }
+        if group is None:
+            payload_groups[key] = {
+                'branch': branch,
+                'provenance': [provenance],
+            }
+            continue
+        kept = group['branch']
+        kept['encounter_count'] = (
+            int(kept.get('encounter_count', 1))
+            + int(branch.get('encounter_count', 1)))
+        cuts = {
+            tuple(map(int, cut)) for cut in kept.get('cuts') or ()
+        } | {
+            tuple(map(int, cut)) for cut in branch.get('cuts') or ()
+        }
+        kept['cuts'] = [list(cut) for cut in sorted(cuts)]
+        group['provenance'].append(provenance)
+
+    grouped = list(payload_groups.values())
+    grouped_branches = [group['branch'] for group in grouped]
+    unique = []
+    compiled = _compile_analytical_families(
+        inputs, grouped_branches, cfg, static_context=static_context)
+    for group, family in zip(grouped, compiled):
+        branch = dict(group['branch'])
+        provenance_records = list(group['provenance'])
         covering = next((
             candidate for candidate in unique
             if family.is_subset_of(candidate['family'])
@@ -1993,7 +2033,8 @@ def _dedupe_analytical_mapping_families(
                 tuple(map(int, cut)) for cut in branch.get('cuts') or ()
             }
             kept['cuts'] = [list(cut) for cut in sorted(cuts)]
-            kept.setdefault('path_provenance', []).append(provenance)
+            kept.setdefault('path_provenance', []).extend(
+                provenance_records)
             kept['covered_path_count'] = len(kept['path_provenance'])
             continue
 
@@ -2010,10 +2051,10 @@ def _dedupe_analytical_mapping_families(
                 branch['encounter_count'] = (
                     int(branch.get('encounter_count', 1))
                     + int(prior.get('encounter_count', 1)))
-                provenance_records = list(
+                prior_provenance = list(
                     prior.get('path_provenance') or ())
-                provenance.setdefault('subsumed_provenance', []).extend(
-                    provenance_records)
+                group.setdefault('subsumed_provenance', []).extend(
+                    prior_provenance)
                 cuts = {
                     tuple(map(int, cut))
                     for cut in branch.get('cuts') or ()
@@ -2022,10 +2063,10 @@ def _dedupe_analytical_mapping_families(
                     for cut in prior.get('cuts') or ()
                 }
                 branch['cuts'] = [list(cut) for cut in sorted(cuts)]
-        branch['path_provenance'] = [provenance]
-        if provenance.get('subsumed_provenance'):
+        branch['path_provenance'] = provenance_records
+        if group.get('subsumed_provenance'):
             branch['path_provenance'].extend(
-                provenance.pop('subsumed_provenance'))
+                group.pop('subsumed_provenance'))
         branch['covered_path_count'] = len(branch['path_provenance'])
         branch['mapping_family'] = family.record()
         unique.append({'branch': branch, 'family': family})
@@ -2034,8 +2075,12 @@ def _dedupe_analytical_mapping_families(
 
 def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
     """Finalize Stage 1 from a full or merged cut-sweep pool."""
+    post_start = time.time()
+    phase_seconds = defaultdict(float)
     cfg = _rp_cfg(config)
+    phase_start = time.time()
     rp_min = select_min_mechanisms(pool)
+    phase_seconds['mechanism_selection_seconds'] += time.time() - phase_start
     if not rp_min:
         raise RuntimeError("no min-bond mechanism")
 
@@ -2049,29 +2094,36 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         raise ValueError(
             "index_chirality must be 'off' or 'preserve'")
     rejected_index_chirality = []
+    phase_start = time.time()
     analytical_static_context = analytical_family_static_context(
         inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
         graph_floor=cfg.get('graph_floor', 0.2),
         dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
         metal_dwbo_threshold=cfg.get(
             'metal_dwbo_threshold', METAL_DWBO_THRESHOLD))
+    phase_seconds['analytical_context_seconds'] += time.time() - phase_start
     for mi, (_sig, info) in enumerate(rp_min.items(), 1):
         raw_analytical_branches = list(info.get('branches') or [{
             'mapping': info['mapping'],
             'hierarchy': info.get('branch_symmetry') or {},
             'encounter_count': int(info.get('dedup_count', 1)),
         }])
+        phase_start = time.time()
         analytical_branches = _dedupe_analytical_mapping_families(
             inputs, raw_analytical_branches, cfg,
             static_context=analytical_static_context)
+        phase_seconds['analytical_family_dedupe_seconds'] += (
+            time.time() - phase_start)
         analytical_info = dict(info)
         analytical_info['branches'] = analytical_branches
         analytical_info['mapping'] = dict(analytical_branches[0]['mapping'])
         analytical_info['branch_symmetry'] = (
             analytical_branches[0].get('hierarchy') or {})
+        phase_start = time.time()
         post_aam = PostAAMMechanism.from_aam_graphs(
             _sig, analytical_info, g_R_full, g_P_full,
             symmetry_wbo_tolerance=cfg.get('iso_tol', VIEW_ISO_TOL))
+        phase_seconds['post_aam_model_seconds'] += time.time() - phase_start
         mapping_RP = _int_mapping(analytical_info['mapping'])
         raw_branch_symmetry = analytical_info['branch_symmetry']
         group_chirality = None
@@ -2087,6 +2139,7 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         }
         eval_workers = min(
             len(analytical_branches), _available_cpus(default=1), 8)
+        phase_start = time.time()
         if (eval_workers > 1 and len(analytical_branches) > 1
                 and not mp.current_process().daemon):
             with mp.get_context('fork').Pool(
@@ -2102,6 +2155,8 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
                 _evaluate_analytical_branch_task(index)
                 for index in range(len(analytical_branches))
             ]
+        phase_seconds['chirality_rmsd_seconds'] += time.time() - phase_start
+        phase_start = time.time()
         for status, record in branch_results:
             if status == 'ok':
                 evaluated_branches.append(record)
@@ -2183,6 +2238,8 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'branch_symmetry': branch_symmetry,
             'index_chirality': index_chirality,
         })
+        phase_seconds['mechanism_materialization_seconds'] += (
+            time.time() - phase_start)
 
     if index_chirality_mode == 'preserve' and not mechanisms:
         reasons = "; ".join(
@@ -2194,6 +2251,7 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             diagnostics={
                 'rejected_mechanisms': rejected_index_chirality,
             })
+    phase_start = time.time()
     r_orbits = _nauty_orbits(
         build_graph(inputs.elR, inputs.wboR, bond_cut=0.2),
         wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
@@ -2206,6 +2264,9 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         if mechanism.get('index_chirality'):
             mechanism['branch_symmetry']['index_chirality'] = dict(
                 mechanism['index_chirality'])
+    phase_seconds['final_symmetry_dedupe_seconds'] += time.time() - phase_start
+    cut_sweep_seconds = float(elapsed or 0.0)
+    post_aam_seconds = time.time() - post_start
     return {
         'stage': 'rp',
         'step': inputs.step_name,
@@ -2213,7 +2274,12 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         'config': cfg,
         'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
         'rejected_index_chirality': rejected_index_chirality,
-        'timing': {'rp_seconds': elapsed},
+        'timing': {
+            'rp_seconds': cut_sweep_seconds + post_aam_seconds,
+            'cut_sweep_seconds': cut_sweep_seconds,
+            'post_aam_seconds': post_aam_seconds,
+            **{key: float(value) for key, value in phase_seconds.items()},
+        },
     }
 
 
