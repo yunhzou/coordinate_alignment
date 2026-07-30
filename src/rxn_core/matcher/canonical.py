@@ -1,7 +1,7 @@
 """Exact automorphism certificates for hierarchical partial mappings."""
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from .orbits import _nauty_colored_wbo_graph
 from .policy import as_node_match_policy
@@ -135,7 +135,7 @@ class _CandidateAutomorphismCanonicalizer:
 
     def transporter(self, source, target):
         """Return the exact product-label permutation ``source -> target``."""
-        import pynauty
+        import networkx as nx
 
         if self.certificate(source) != self.certificate(target):
             raise ValueError("candidate states are not automorphically equivalent")
@@ -150,61 +150,41 @@ class _CandidateAutomorphismCanonicalizer:
         source_colors = colors_by_vertex(source)
         target_colors = colors_by_vertex(target)
 
-        # Canonical labels of separately constructed colored graphs may rename
-        # whole partition cells.  Build one graph containing both candidates
-        # instead.  Each semantic role cell is shared across the two halves,
-        # so every automorphism preserves its actual meaning.  The paired hubs
-        # make each half one connected component; consequently a generator
-        # moving the source hub to the target hub transports the complete
-        # candidate state in one exact operation.
-        degree = self.n_vertices
-        source_hub = 2 * degree
-        target_hub = source_hub + 1
-        adjacency = defaultdict(set)
-        for vertex, neighbors in self.adjacency.items():
-            for neighbor in neighbors:
-                adjacency[vertex].add(neighbor)
-                adjacency[vertex + degree].add(neighbor + degree)
-            adjacency[vertex].add(source_hub)
-            adjacency[source_hub].add(vertex)
-            adjacency[vertex + degree].add(target_hub)
-            adjacency[target_hub].add(vertex + degree)
+        def exact_graph(colors):
+            graph = nx.Graph()
+            counts = Counter(colors.values())
+            # VF2 chooses candidates according to graph insertion order.  Pin
+            # singleton and other rare semantic roles before bulk symmetric
+            # atoms; this changes no search domain, but avoids exploring huge
+            # equivalent prefixes before the actual constraints are applied.
+            ordered_vertices = sorted(
+                range(self.n_vertices),
+                key=lambda vertex: (
+                    counts[colors[vertex]], repr(colors[vertex]), vertex),
+            )
+            graph.add_nodes_from(
+                (vertex, {"semantic_color": colors[vertex]})
+                for vertex in ordered_vertices)
+            graph.add_edges_from(
+                (vertex, neighbor)
+                for vertex in ordered_vertices
+                for neighbor in self.adjacency[vertex]
+                if vertex < neighbor)
+            return graph
 
-        source_cells = defaultdict(set)
-        target_cells = defaultdict(set)
-        for vertex, color in source_colors.items():
-            source_cells[color].add(vertex)
-        for vertex, color in target_colors.items():
-            target_cells[color].add(vertex + degree)
-        if set(source_cells) != set(target_cells):
-            raise ValueError("candidate semantic color domains differ")
-        coloring = [
-            set(source_cells[color]) | set(target_cells[color])
-            for color in sorted(source_cells, key=repr)
-        ]
-        coloring.append({source_hub, target_hub})
-        union_graph = pynauty.Graph(
-            2 * degree + 2,
-            directed=False,
-            adjacency_dict={
-                vertex: sorted(adjacency.get(vertex, ()))
-                for vertex in range(2 * degree + 2)
-            },
-            vertex_coloring=coloring,
+        matcher = nx.algorithms.isomorphism.GraphMatcher(
+            exact_graph(source_colors), exact_graph(target_colors),
+            node_match=lambda left, right: (
+                left["semantic_color"] == right["semantic_color"]),
         )
-        raw_generators = pynauty.autgrp(union_graph)[0]
-        crossing = next(
-            (tuple(map(int, generator)) for generator in raw_generators
-             if int(generator[source_hub]) == target_hub),
-            None,
-        )
-        if crossing is None:
+        try:
+            mapping = next(matcher.isomorphisms_iter())
+        except StopIteration as exc:
             raise ValueError(
                 "candidate states share a coarse pynauty certificate but are "
-                "not exactly color-preserving equivalent")
-        full = tuple(crossing[vertex] - degree for vertex in range(degree))
-        if any(image < 0 or image >= degree for image in full):
-            raise RuntimeError("candidate union transporter did not swap halves")
+                "not exactly color-preserving equivalent") from exc
+        full = tuple(int(mapping[vertex])
+                     for vertex in range(self.n_vertices))
         atom_by_index = {index: atom for atom, index in self.atom_index.items()}
         atom_permutation = [0] * self.n_atoms
         for atom, index in self.atom_index.items():
