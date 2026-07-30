@@ -985,8 +985,7 @@ class AnalyticalMappingFamily:
             (tuple(members) for members in orbit_members.values()),
             key=lambda members: members[0]))
         self.group_order = (round(float(mantissa), 12), int(exponent))
-        self._target_group = _PermutationGroupChain(
-            self.target_generators, self.degree)
+        self._target_group = None
         self._membership_cache = {}
 
     @property
@@ -1013,6 +1012,9 @@ class AnalyticalMappingFamily:
         sigma = [0] * self.degree
         for source_atom, target_atom in zip(source_order, target_order):
             sigma[int(source_atom)] = int(target_atom)
+        if self._target_group is None:
+            self._target_group = _PermutationGroupChain(
+                self.target_generators, self.degree)
         result = self._target_group.contains(tuple(sigma))
         self._membership_cache[key] = bool(result)
         return bool(result)
