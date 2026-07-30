@@ -93,9 +93,7 @@ class _CandidateAutomorphismCanonicalizer:
         return {p: tuple(sorted(items, key=repr))
                 for p, items in roles.items()}
 
-    def graph(self, cand):
-        import pynauty
-
+    def _colored_vertices(self, cand):
         candidate_roles = self._candidate_roles(cand)
         colors = defaultdict(set)
         for p in self.nodes:
@@ -107,62 +105,98 @@ class _CandidateAutomorphismCanonicalizer:
             colors[('atom', self.atom_base_color[vertex], role)].add(vertex)
         for color_index, vertices in self.edge_color_classes:
             colors[('edge', color_index)].update(vertices)
-        coloring = [
-            set(vertices)
-            for _, vertices in sorted(colors.items(), key=lambda item: repr(item[0]))
-        ]
+        return tuple(
+            (color, frozenset(vertices))
+            for color, vertices in sorted(
+                colors.items(), key=lambda item: repr(item[0])))
+
+    def graph(self, cand):
+        import pynauty
+
+        colored_vertices = self._colored_vertices(cand)
         return pynauty.Graph(
             self.n_vertices,
             directed=False,
             adjacency_dict=self.adjacency,
-            vertex_coloring=coloring,
+            vertex_coloring=[set(vertices)
+                             for _, vertices in colored_vertices],
         )
 
     def certificate(self, cand):
         import pynauty
-        return pynauty.certificate(self.graph(cand))
+        colored_vertices = self._colored_vertices(cand)
+        # pynauty canonicalizes a partition, whose cells are not themselves
+        # named.  Preserve the semantic role attached to every cell as part of
+        # the coarse certificate; the exact transporter below remains the
+        # authoritative equivalence test.
+        color_profile = tuple(
+            (color, len(vertices)) for color, vertices in colored_vertices)
+        return pynauty.certificate(self.graph(cand)), color_profile
 
     def transporter(self, source, target):
         """Return the exact product-label permutation ``source -> target``."""
+        import networkx as nx
         import pynauty
 
         graph_source = self.graph(source)
         graph_target = self.graph(target)
-        if pynauty.certificate(graph_source) != pynauty.certificate(graph_target):
+        if self.certificate(source) != self.certificate(target):
             raise ValueError("candidate states are not automorphically equivalent")
-        source_label = tuple(map(int, pynauty.canon_label(graph_source)))
-        target_label = tuple(map(int, pynauty.canon_label(graph_target)))
 
-        def inverse(permutation):
-            result = [0] * len(permutation)
-            for atom, image in enumerate(permutation):
-                result[image] = atom
-            return tuple(result)
+        def colors_by_vertex(cand):
+            result = {}
+            for color, vertices in self._colored_vertices(cand):
+                for vertex in vertices:
+                    result[vertex] = color
+            return result
 
-        source_inverse = inverse(source_label)
-        target_inverse = inverse(target_label)
-        candidates = (
-            tuple(target_inverse[source_label[v]]
-                  for v in range(self.n_vertices)),
-            tuple(target_label[source_inverse[v]]
-                  for v in range(self.n_vertices)),
-        )
+        source_colors = colors_by_vertex(source)
+        target_colors = colors_by_vertex(target)
 
         def valid(permutation):
-            for vertex in range(self.n_vertices):
-                if {permutation[n] for n in self.adjacency[vertex]} != set(
-                        self.adjacency[permutation[vertex]]):
-                    return False
-            source_colors = [set(cell) for cell in graph_source.vertex_coloring]
-            target_colors = [set(cell) for cell in graph_target.vertex_coloring]
-            return [
-                {permutation[v] for v in cell} for cell in source_colors
-            ] == target_colors
+            return all(
+                source_colors[vertex] == target_colors[permutation[vertex]]
+                and {permutation[n] for n in self.adjacency[vertex]} == set(
+                    self.adjacency[permutation[vertex]])
+                for vertex in range(self.n_vertices))
 
-        full = next((permutation for permutation in candidates
-                     if valid(permutation)), None)
+        source_label = tuple(map(int, pynauty.canon_label(graph_source)))
+        target_label = tuple(map(int, pynauty.canon_label(graph_target)))
+        source_inverse = [0] * self.n_vertices
+        for canonical_index, vertex in enumerate(source_label):
+            source_inverse[vertex] = canonical_index
+        canonical_transporter = tuple(
+            target_label[source_inverse[vertex]]
+            for vertex in range(self.n_vertices))
+        if valid(canonical_transporter):
+            full = canonical_transporter
+        else:
+            full = None
+
+        def exact_graph(colors):
+            graph = nx.Graph()
+            graph.add_nodes_from(
+                (vertex, {"semantic_color": colors[vertex]})
+                for vertex in range(self.n_vertices))
+            graph.add_edges_from(
+                (vertex, neighbor)
+                for vertex, neighbors in self.adjacency.items()
+                for neighbor in neighbors if vertex < neighbor)
+            return graph
+
         if full is None:
-            raise RuntimeError("pynauty canonical labels yielded no transporter")
+            matcher = nx.algorithms.isomorphism.GraphMatcher(
+                exact_graph(source_colors), exact_graph(target_colors),
+                node_match=lambda left, right: (
+                    left["semantic_color"] == right["semantic_color"]))
+            try:
+                mapping = next(matcher.isomorphisms_iter())
+            except StopIteration as exc:
+                raise ValueError(
+                    "candidate states share a coarse pynauty certificate but "
+                    "are not exactly color-preserving equivalent") from exc
+            full = tuple(int(mapping[vertex])
+                         for vertex in range(self.n_vertices))
         atom_by_index = {index: atom for atom, index in self.atom_index.items()}
         atom_permutation = [0] * self.n_atoms
         for atom, index in self.atom_index.items():

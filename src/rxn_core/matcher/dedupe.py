@@ -184,8 +184,9 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
         node_policy=node_policy)
     certificates = [canonicalizer.certificate(cand) for cand in cands]
     certificate_counts = Counter(certificates)
-    seen = {}
-    representatives = {}
+    kept = []
+    representatives = []
+    indices_by_signature = defaultdict(list)
     for cand, certificate in zip(cands, certificates):
         # Exact active-graph automorphism is the primary hierarchy.  Preserve
         # legacy deferred/full-WBO evidence only inside an automorphic class;
@@ -199,11 +200,27 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
                 p_orbits=p_orbits, locked_mapping=locked_mapping,
                 node_policy=node_policy)
         sig = (certificate, boundary)
-        if sig not in seen:
-            seen[sig] = cand
-            representatives[sig] = cand
-        elif isinstance(seen[sig], _SymCand) and isinstance(cand, _SymCand):
-            kept = seen[sig]
+        equivalent_index = None
+        transporter = None
+        for index in indices_by_signature[sig]:
+            try:
+                transporter = canonicalizer.transporter(
+                    cand, representatives[index])
+            except ValueError:
+                # A pynauty certificate is a coarse partition certificate:
+                # entire same-profile role cells can be canonically renamed.
+                # Exact semantic-color transport is authoritative.
+                continue
+            equivalent_index = index
+            break
+        if equivalent_index is None:
+            equivalent_index = len(kept)
+            kept.append(cand)
+            representatives.append(cand)
+            indices_by_signature[sig].append(equivalent_index)
+        elif (isinstance(kept[equivalent_index], _SymCand)
+              and isinstance(cand, _SymCand)):
+            kept_cand = kept[equivalent_index]
             # Exact automorphism transport guarantees that every continuation
             # of ``cand`` has an equivalent continuation of ``kept``.  Count
             # the represented states, but never enumerate alternate witnesses.
@@ -211,8 +228,6 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
             # not retain the original certificate.  Transport every member
             # to the immutable first representative of this equivalence
             # class.
-            transporter = canonicalizer.transporter(
-                cand, representatives[sig])
-            seen[sig] = kept.with_automorph_equivalent(
+            kept[equivalent_index] = kept_cand.with_automorph_equivalent(
                 cand, transporter=transporter)
-    return list(seen.values())
+    return kept
