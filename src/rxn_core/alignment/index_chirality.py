@@ -269,6 +269,87 @@ class _CovarianceActionNode:
     children: tuple["_CovarianceActionNode", ...] = ()
 
 
+def _perm_compose(first, second):
+    """Return ``second o first`` for image-tuples."""
+    return tuple(second[first[atom]] for atom in range(len(first)))
+
+
+def _perm_inverse(permutation):
+    inverse = [0] * len(permutation)
+    for atom, image in enumerate(permutation):
+        inverse[image] = atom
+    return tuple(inverse)
+
+
+class _PermutationGroupChain:
+    """Exact Schreier stabilizer chain for permutation membership.
+
+    Pynauty supplies a compact generating set.  A candidate permutation is
+    sifted through successive point stabilizers, so membership never replays
+    the molecular relation records and never enumerates group elements.
+    """
+
+    def __init__(self, generators, degree):
+        self.degree = int(degree)
+        self.identity = tuple(range(self.degree))
+        generators = tuple(dict.fromkeys(
+            tuple(map(int, generator)) for generator in generators
+            if tuple(map(int, generator)) != self.identity
+        ))
+        self.base = None
+        self.transversals = {}
+        self.child = None
+        if not generators:
+            return
+        moved = sorted({
+            atom for generator in generators
+            for atom, image in enumerate(generator) if atom != image
+        })
+        if not moved:
+            return
+        self.base = moved[0]
+        transversals = {self.base: self.identity}
+        queue = [self.base]
+        while queue:
+            point = queue.pop(0)
+            transversal = transversals[point]
+            for generator in generators:
+                image = generator[point]
+                if image in transversals:
+                    continue
+                transversals[image] = _perm_compose(
+                    transversal, generator)
+                queue.append(image)
+        self.transversals = transversals
+        schreier = []
+        seen = set()
+        for point, transversal in transversals.items():
+            for generator in generators:
+                image = generator[point]
+                image_transversal = transversals[image]
+                stabilizer = _perm_compose(
+                    _perm_compose(transversal, generator),
+                    _perm_inverse(image_transversal))
+                if stabilizer != self.identity and stabilizer not in seen:
+                    seen.add(stabilizer)
+                    schreier.append(stabilizer)
+        self.child = _PermutationGroupChain(schreier, self.degree)
+
+    def contains(self, permutation):
+        permutation = tuple(map(int, permutation))
+        if len(permutation) != self.degree:
+            return False
+        if self.base is None:
+            return permutation == self.identity
+        image = permutation[self.base]
+        transversal = self.transversals.get(image)
+        if transversal is None:
+            return False
+        reduced = _perm_compose(
+            permutation, _perm_inverse(transversal))
+        return self.child.contains(reduced)
+
+
 def _orientation_measure(coords, origin, other_points, *,
                          degeneracy_tol=ORIENTATION_DEGENERACY_TOL):
     xyz = np.asarray(coords, dtype=np.longdouble)
@@ -904,9 +985,9 @@ class AnalyticalMappingFamily:
             (tuple(members) for members in orbit_members.values()),
             key=lambda members: members[0]))
         self.group_order = (round(float(mantissa), 12), int(exponent))
+        self._target_group = _PermutationGroupChain(
+            self.target_generators, self.degree)
         self._membership_cache = {}
-        self._relation_record_counts_B = Counter(
-            self.relation.relation_records_B)
 
     @property
     def invariant(self):
@@ -915,7 +996,7 @@ class AnalyticalMappingFamily:
     @property
     def equivalence_bucket(self):
         """Fast canonical bucket; equality is still proven explicitly."""
-        return (self.invariant, self.certificate_A, self.certificate_B)
+        return self.invariant
 
     def contains(self, mapping):
         mapping = validate_mapping(
@@ -926,34 +1007,13 @@ class AnalyticalMappingFamily:
         cached = self._membership_cache.get(key)
         if cached is not None:
             return cached
-        source_order = tuple(self.source_mapping[r]
+        source_order = tuple(self.representative_mapping[r]
                              for r in range(self.degree))
         target_order = tuple(mapping[r] for r in range(self.degree))
-        sigma = {
-            int(source_atom): int(target_atom)
-            for source_atom, target_atom in zip(source_order, target_order)
-        }
-        atom_colors_match = all(
-            self.relation.colors_A[atom]
-            == self.relation.colors_B[sigma[atom]]
-            for atom in range(self.degree)
-        )
-
-        def transported_record_counts():
-            records = Counter()
-            for kind, color, atoms in self.relation.relation_records_A:
-                images = tuple(sigma[atom] for atom in atoms)
-                if kind == "pair":
-                    images = tuple(sorted(images))
-                record = (kind, color, images)
-                if record not in self._relation_record_counts_B:
-                    return None
-                records[record] += 1
-            return records
-
-        transported = transported_record_counts() if atom_colors_match else None
-        result = (transported is not None
-                  and transported == self._relation_record_counts_B)
+        sigma = [0] * self.degree
+        for source_atom, target_atom in zip(source_order, target_order):
+            sigma[int(source_atom)] = int(target_atom)
+        result = self._target_group.contains(tuple(sigma))
         self._membership_cache[key] = bool(result)
         return bool(result)
 
