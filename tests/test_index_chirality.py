@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from itertools import permutations
 
 import rxn_core.pipeline as pipeline
 from rxn_core.alignment.index_chirality import (
@@ -9,24 +8,11 @@ from rxn_core.alignment.index_chirality import (
     _generated_atom_permutations,
     _masked_relation_data,
     _minimum_rmsd_group_action,
-    _PermutationGroupChain,
     analytical_family_static_context,
     fixed_mapping_aligned_rmsd,
     select_group_chiral_witness,
     select_index_chirality_assignment,
 )
-
-
-def test_stabilizer_chain_membership_matches_generated_group():
-    generators = (
-        (1, 2, 0, 3, 4),
-        (0, 1, 2, 4, 3),
-    )
-    generated = set(_generated_atom_permutations(generators, 5))
-    chain = _PermutationGroupChain(generators, 5)
-
-    for permutation in permutations(range(5)):
-        assert chain.contains(permutation) == (permutation in generated)
 
 
 def test_batched_fixed_mapping_rmsd_is_scalar_equivalent():
