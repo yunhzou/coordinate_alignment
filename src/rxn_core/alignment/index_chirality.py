@@ -317,7 +317,7 @@ def _event_class(r_wbo, p_wbo, threshold):
     return 0
 
 
-def _selected_fragments(branch_symmetry, source):
+def _selected_fragments(branch_symmetry, source, fixed_singletons=()):
     raw = list(dict(branch_symmetry or {}).get("fragments") or ())
     if not raw:
         raw = [{"fragment_index": 0, "fragment": sorted(source)}]
@@ -336,9 +336,17 @@ def _selected_fragments(branch_symmetry, source):
             owner[atom] = position
         fragments.append(atoms)
     missing = sorted(set(source) - set(owner))
-    if missing:
+    fixed_singletons = set(map(int, fixed_singletons or ()))
+    uncovered = sorted(set(missing) - fixed_singletons)
+    if uncovered:
         raise IndexChiralityError(
-            f"selected AAM fragments do not cover R atoms {missing}")
+            f"selected AAM fragments do not cover R atoms {uncovered}")
+    # Hard anchors are preloaded into the branch before island growth.  If an
+    # anchor never participates in a grown fragment, it is still a complete
+    # individually fixed analytical fragment rather than missing hierarchy.
+    for atom in missing:
+        owner[atom] = len(fragments)
+        fragments.append((atom,))
     return tuple(fragments), owner
 
 
@@ -404,14 +412,15 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
                           static_context=None):
     atom_count = len(source)
     inverse = {p: r for r, p in source.items()}
-    fragments, owner_R = _selected_fragments(branch_symmetry, source)
-    owner_P = {source[r]: owner_R[r] for r in source}
     anchors = {int(r): int(p) for r, p in dict(anchor_map or {}).items()}
     for r, p in anchors.items():
         if r not in source or p not in inverse:
             raise IndexChiralityError(f"invalid anchor R{r}->P{p}")
         if str(elements_R[r]) != str(elements_P[p]):
             raise IndexChiralityError(f"anchor element mismatch R{r}->P{p}")
+    fragments, owner_R = _selected_fragments(
+        branch_symmetry, source, fixed_singletons=anchors)
+    owner_P = {source[r]: owner_R[r] for r in source}
 
     source_anchor_tags = defaultdict(list)
     target_anchor_tags = defaultdict(list)

@@ -354,6 +354,38 @@ def test_rp_stage_selects_group_chiral_branch_before_automorphism():
         "preserved_group_chirality_frame_count"] > 0
 
 
+def test_rp_stage_preserves_preloaded_anchor_through_family_and_rmsd():
+    elements = ["O", "C", "O"]
+    wbo = np.zeros((3, 3))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[1, 2] = wbo[2, 1] = 1.0
+    coords_R = np.array([[-1.0, 0.0, 0.0],
+                         [0.0, 0.0, 0.0],
+                         [1.0, 0.0, 0.0]])
+    coords_P = coords_R[::-1].copy()
+    inputs = pipeline.step_inputs_from_arrays(
+        "anchored_post_aam", elements, coords_R, wbo,
+        elements, coords_P, wbo)
+    config = pipeline.rp_stage_config()
+    config.update({
+        "anchor_map": {0: 2},
+        "index_chirality": "preserve",
+        "n_seeds": 1,
+        "max_branches": 100,
+    })
+    pool = pipeline.cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=0, **pipeline._rp_cut_kwargs(config))
+
+    result = pipeline.run_rp_stage_from_pool(inputs, pool, config=config)
+
+    assert len(result["mechanisms"]) == 1
+    mapping = result["mechanisms"][0]["mapping_RP"]
+    assert mapping == {0: 2, 1: 1, 2: 0}
+    assert result["mechanisms"][0]["index_chirality"][
+        "selected_index_chirality_violation_count"] == 0
+
+
 def test_rp_stage_index_chiral_off_is_noop(monkeypatch):
     elements, coords, wbo, _identity, odd, symmetry = _tetrahedral_case()
     inputs = pipeline.step_inputs_from_arrays(

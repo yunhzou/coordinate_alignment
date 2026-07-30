@@ -1,622 +1,703 @@
-# R<->P Atom Alignment Algorithm
+# Coordinate Alignment: Current Algorithm and Design Rationale
 
-This document states the WBO-weighted atom alignment algorithm for
-reactant/product and reactant/TS/IG alignment.  The implementation is
-symmetry-aware during growth: it does not retain a concrete one-to-one
-bijection for every symmetric atom permutation.  Instead, it carries local
-symmetry pools plus exact product-automorphism domains and materializes one
-deterministic representative mapping at API boundaries.
+This document describes the current reactant-to-product atom alignment
+algorithm, the data structures produced by AAM, and the post-AAM selection
+steps for symmetry, mechanism identity, index chirality, and RMSD. It also
+records the main problems found during the TS01/TS04 and full-batch
+investigation so the old witness-based design is not accidentally restored.
 
-The implementation is split by abstraction; see
-`docs/ARCHITECTURE.md`. The main code paths are `src/rxn_core/alignment/`,
-`src/rxn_core/growth/`, and `src/rxn_core/matcher/`.
+The central principle is:
 
-## Inputs
+> AAM returns analytical families of valid atom bijections. A random witness
+> is provenance, not the solution. Mechanism identity, chirality, and RMSD
+> selection must operate on the exact family represented by graph symmetry.
 
-- Element lists, coordinates, and Wiberg bond-order matrices for `R` and `P`
-  (or `T` / `IG`).
-- Identical composition: `Counter(elR) == Counter(elP)`.
-- The alignment object is a thresholded WBO graph plus the full WBO matrix.
-  Graph edges, by default `WBO >= graph_floor = 0.2`, define which R-side
-  pairs participate in local island matching.  The full matrix is retained for
-  exact WBO values, scoring, traces, and bond-change classification.
+The primary implementation is in:
 
-## Output
+- `src/rxn_core/matcher/`: compressed fragment candidate matching;
+- `src/rxn_core/growth/`: weighted island growth;
+- `src/rxn_core/alignment/branch.py`: multi-island branch construction;
+- `src/rxn_core/alignment/sweep.py`: cut sweep and mechanism grouping;
+- `src/rxn_core/alignment/post_aam.py`: typed post-AAM data model;
+- `src/rxn_core/alignment/index_chirality.py`: analytical families,
+  chirality, and fixed-mapping RMSD selection;
+- `src/rxn_core/pipeline.py`: orchestration, parallelism, serialization, and
+  viewer generation.
 
-- A symmetry-aware witness mapping `R atom index -> P atom index`. This is not
-  a promise to materialize every atom in a total concrete bijection.
-- Broken and formed bonds from `classify_bonds`.
-- For BGCP views, mode scores for GT and IGs under each minimal mechanism.
+## 1. What the Investigation Changed
 
-## Core Principles
+The implementation originally mixed several distinct concepts:
 
-1. **Weighted active-edge graph first.** Candidate growth matches element
-   labels and WBO values on active R-side graph pairs.  Coordinates are used
-   later for scoring, chirality, and visualization.  Zero/non-frontier R pairs
-   are not local iso constraints during island growth; final chemistry is
-   still scored from the full WBO matrices.
+1. one arbitrary concrete mapping encountered during branch growth;
+2. noisy atom-orbit or symmetry indicators accumulated from multiple paths;
+3. fragment automorphisms that actually describe allowed assignments;
+4. different growth paths that happen to produce the same mechanism;
+5. final geometry-based choices such as chirality and RMSD.
 
-2. **Validity is active-pair WBO consistency.** A partial mapping `m` is valid
-   on its grown fragment when it is injective, element-preserving, and every
-   active R-side pair in the grown fragment maps to an active target-side pair
-   and satisfies:
+This produced several observable problems:
 
-   ```
-   WBO_P[m[i], m[j]] >= graph_floor
-   abs(WBO_R[i, j] - WBO_P[m[i], m[j]]) <= iso_tol
-   for every R graph edge (i, j) in the current island
-   ```
+- the viewer colored atoms using aggregated symmetry indicators rather than
+  the symmetry of the selected analytical branch;
+- several displayed "mechanisms" were duplicate event realizations;
+- individual atom orbits were incorrectly used as if they identified an edge
+  orbit or an entire multi-edge mechanism;
+- group-level ligand permutations disappeared when branches were deduplicated;
+- chirality was checked on arbitrary witnesses, although witnesses are not a
+  generating set and have no privileged geometric meaning;
+- RMSD was used to rank sampled witnesses instead of the exact
+  chirality-valid family;
+- exact but redundant paths made post-processing much slower than AAM;
+- interpolation artifacts were sometimes mistaken for mapping errors.
 
-   Non-edges on the R side are not checked during local extension.  This avoids
-   rejecting a valid local match because the target has an additional bond to a
-   fragment atom that is not connected to the new R atom; such differences are
-   handled later as mechanism-level formed/broken bonds.
+The current design separates these responsibilities:
 
-3. **No concrete symmetry explosion.** During extension, local choices are
-   represented as `_SymBlock(r_atoms, p_atoms)` pools.  After every extension,
-   candidates are colored by their complete R-role assignment and canonized
-   against the exact WBO-colored product graph with pynauty.  Candidates with
-   the same certificate are one orbit of the product automorphism group.  The
-   matcher retains one representative, its `multiplicity`, and connected
-   `automorph_blocks` describing where that exact group can move assignments.
-   It does not retain or replay one mapping per group element.
-
-4. **Hierarchical symmetry centers.** `_nauty_orbits` groups seed and extension
-   targets.  `_CandidateAutomorphismCanonicalizer` provides the stronger
-   candidate-level hierarchy: graph vertices carry atom/WBO colors, locked
-   atoms are individualized, fixed R roles remain distinct, and pool/domain
-   roles are colored as sets.  Equality of canonical certificates therefore
-   proves a single exact automorphism transports the whole partial state; it
-   does not incorrectly treat independent orbit swaps as freely composable.
-
-5. **Lock only after saturation.** `_set_unique(cands)` is false if any
-   candidate has an open symmetry block.  Even one fully resolved candidate is
-   not allowed to lock while the growth heap still has live edges, because
-   pending edges may still extend the fragment or become deferred one-hop
-   boundary evidence.  `_set_unique` is only a finalization check after heap
-   exhaustion.
-
-6. **Growth outcomes are 0/1/many, not arbitrary choices.** A unique candidate
-   can grow to many valid targets when it sits at a symmetry center.  That is a
-   first-class state, not an ambiguity to resolve by picking one target.
-
-7. **The popped growth edge is not special.** Extension validity uses the same
-   active R-pair weighted-vector rule for every already-fragmented atom `r`
-   where `(n, r)` is an R graph edge:
-   `WBO_P[v, map[r]] >= graph_floor` and
-   `abs(WBO_R[n, r] - WBO_P[v, map[r]]) <= iso_tol`.  The heap only chooses
-   traversal order.  It must not add a chemistry-specific anchor rule.
-
-8. **Dedupe must preserve observed future distinguishability.** Two candidates
-   are true duplicates only if their internal orbit state and their deferred
-   one-hop boundary state are symmetry-equivalent.  A side of a symmetric
-   island that already failed to absorb a boundary atom is not duplicate with
-   the other side.
-
-9. **Public API returns representatives, not the automorphism group.** `align_from_arrays`
-   and downstream scoring receive ordinary dict witnesses, but those dicts are
-   selected representatives of compressed symmetry states.  Unmapped spectators
-   must not be completed by geometry.  Before scoring a finished R<->P witness,
-   a bounded local symmetry repair may choose a lower bond-change realization
-   inside touched product orbits.
-
-## Symmetry-Aware Candidate Growth
-
-`grow_island(g_R, g_P, seed, mapping, inv, ...)` grows one island from a
-seed using a priority queue of R edges ordered by descending WBO.
-
-### Initialization
-
-```
-seed_targets = all unused P atoms with matching element
-seed_groups  = seed_targets grouped by P orbit
-
-for each group:
-    if len(group) > 1:
-        make _SymCand with a non-extendable seed block:
-            {seed} -> group
-    else:
-        make fixed _SymCand({seed: group[0]})
+```text
+weighted graph matching
+        |
+        v
+compressed fragment candidates + exact candidate automorphisms
+        |
+        v
+completed hierarchical AAM branches
+        |
+        v
+exact mechanism event certificate
+        |
+        v
+analytical mapping cosets, deduplicated by containment
+        |
+        v
+signed chirality relations
+        |
+        v
+exact chirality-valid atom action
+        |
+        v
+minimum fixed-mapping proper-fit RMSD
+        |
+        v
+one selected R -> P_aligned mapping and its selected symmetry metadata
 ```
 
-The initial seed block is non-extendable because it represents "which anchor
-could this seed be" rather than "these sibling R atoms share one target pool."
+No geometry remapping or witness fallback is present in this decision flow.
 
-### Extension
+## 2. Inputs, Graphs, and Tolerances
 
-When the heap pops an edge from fragment atom `u` to outside atom `n`,
-`_extend_sym_cands` replaces the old concrete fanout.  The important point is
-that the deterministic witness is not trusted as the only valid assignment.
-For each possible target `v`, `_support_witness_for_value` asks whether there
-exists a block-internal assignment that supports the WBO vector from `n` to
-the already-grown fragment.
+For each endpoint the algorithm receives:
 
-```
-for each compressed candidate:
-    for each unused matching-element P target v:
-        test whether some assignment inside every touched symmetry block can
-        satisfy:
-            WBO_P[v, m[r]] >= graph_floor
-            abs(WBO_R[n, r] - WBO_P[v, m[r]]) <= iso_tol
-        for every already-grown fragment atom r where R[n,r] is an active edge
-```
+- an element array;
+- Cartesian coordinates;
+- a full Wiberg bond-order matrix.
 
-For fixed atoms the test is direct:
+R and P must contain the same multiset of elements. Their atom indices do not
+need to agree initially.
 
-```
-- v must be unused by this candidate
-- element_R[n] == element_P[v]
-- every active R-pair from n to the grown fragment maps to an active target
-  edge and has WBO delta <= iso_tol
-- R-side non-edges are ignored by local extension; they are not interpreted as
-  required target non-bonds
+Two graph views are used:
+
+1. **Active connectivity graph.** An edge exists when
+   `WBO >= graph_floor`, normally `0.2`. This graph drives fragment growth and
+   persistent-neighbor tests.
+2. **Full WBO matrix.** This remains authoritative for weighted matching,
+   event classification, and final scoring.
+
+The current pipeline intentionally uses one WBO tolerance for edge matching
+and pynauty WBO colors:
+
+```text
+symmetry_wbo_tolerance = iso_tol
 ```
 
-For atoms inside a `_SymBlock`, the test is a small constrained matching over
-that block's P pool.  The support question is existential:
+The default BGCP value is `1.0`. Using a different hidden tolerance for
+pynauty was one cause of missing degeneracy groups, so the pipeline now
+normalizes both settings to the same value.
 
-```
-Does there exist an injective assignment inside the touched symmetry blocks
-such that the WBO-vector test passes?
-```
+Bond events use a separate threshold, normally `dwbo_threshold = 0.5`, with
+the configured metal-specific threshold where applicable.
 
-This handles correlated symmetry: if two core or shell atoms sit in the same
-symmetry block, they are assigned jointly, not shuffled independently.  The
-support search is capped by `SYM_SUPPORT_MAX_STATES` (default `4096`) so a
-pathological block cannot create unbounded backtracking.
+## 3. Complete Pipeline
 
-The popped edge anchor is included in this same existential support search. If
-`u` is inside a symmetry block, the new atom must attach to one compatible
-member of that block's target pool. This keeps a leaf atom, such as an H on a
-symmetry-related carbon, tied to the parent symmetry state instead of matching
-the H as an isolated same-element atom.
-
-If a new atom is valid only under a particular assignment inside an existing
-block, the candidate representative is refined to that correlated assignment.
-After the extension, exact canonical certificates merge product-automorphic
-children immediately.  For `Pd(CH3)4`, the hierarchy represents the coupled
-carbon/hydrogen action without storing the 12 concrete carbon/hydrogen
-assignments.  A non-automorphic child has a different certificate and remains
-a distinct candidate.
-
-Targets that pass the support test are grouped before constructing children:
-
-```
-group key =
-    P element
-    P orbit id
-    WBO-vector relation of v to the current fragment/witness
-    relation of v to existing symmetry blocks
-```
-
-For each target group:
-
-- If it lies inside an existing extendable block and `n` is R-orbit-compatible
-  with that block, extend the block by adding `n`.
-- Else if the group has multiple P atoms, create a new symmetry block
-  `{n} -> group`.
-- Else add a fixed mapping `n -> v`.
-
-This is the main change from concrete matching: a K-way symmetric target group
-creates one compressed candidate, not K dicts.
-
-When a support assignment differs from the current representative but still
-extends an open block, `_SymCand` updates only the touched block.  The next
-certificate calculation either merges it into an exact automorphism domain or
-keeps it as a genuinely distinct branch.  `multiplicity` counts represented
-states; it is not backed by an alternate-witness list.
-
-### Growth Transition Policy
-
-For a popped growth proposal, evaluate every live candidate and every unused
-same-element target by the WBO-vector rule.  Then classify the transition by
-the number of input candidates and valid output states:
-
-- **0 -> 0.** No live candidates exist.  Growth cannot continue.
-
-- **1 -> 0.** The only candidate has no valid extension for this proposed
-  atom.  The proposal is deferred as a boundary constraint; the candidate
-  itself remains live.
-
-- **1 -> 1.** The only candidate has one valid extension.  Commit it.
-
-- **1 -> many.** The only candidate has multiple valid targets.  This is the
-  symmetry-center case.  Do not choose one target.  Compress
-  symmetry-equivalent targets into a `_SymBlock`; branch only on genuinely
-  distinct weighted-symmetry states.
-
-- **many -> 0.** No live candidate can extend through this proposal.  Defer
-  the boundary constraint and keep the candidate set unchanged.
-
-- **many -> 1.** Multiple candidates extend, but the resulting states dedupe
-  to one symmetry-equivalent weighted state.  Keep the compressed state.
-
-- **many -> many.** Multiple distinct valid states remain after symmetry-aware
-  dedupe.  Keep all distinct states, compressed where possible.
-
-The heap chooses which growth proposal to try next.  It does not define
-validity.  Popping edge `(u, n)` means "try adding `n` now"; all active R
-pairs from `n` to the current fragment are checked, not only `(u, n)`.
-
-In traces, `cut_all_cands` is the `1 -> 0` or `many -> 0` case for an
-`extend_free` proposal: every represented candidate variant failed the complete
-active-edge WBO-vector test for the popped atom.  The rejection may be caused
-by any already-grown fragment atom with an active R edge to the popped atom,
-not necessarily by the popped anchor edge.
-
-### Forced Island Merge
-
-If `n` is already in the global locked mapping, its image is forced.  If it
-belongs to a prior island, the whole island is folded into the candidate with
-exact images.  The code verifies all pairwise WBO constraints between the
-existing fragment and the absorbed island before committing the merge.
-
-### Commit Or Defer
-
-If extension succeeds, the fragment grows and outgoing R edges are pushed into
-the heap.  If every candidate fails, the popped proposal is not thrown away.
-It is recorded as a deferred boundary constraint and the fragment is unchanged.
-
-A deferred boundary constraint records that this island saw an outside atom
-through a specific weighted relation but could not absorb it under the current
-candidate family.  It is not part of the locked island's internal fragment,
-but it remains part of the candidate's boundary state.
-
-This distinction matters for symmetric islands.  If island A has two
-internally symmetric sides, but side 1 already has a deferred relation toward
-island B, then side 1 and side 2 are no longer interchangeable in that growth
-direction.  Dedupe must see that boundary difference.
-
-At heap exhaustion:
-
-- no candidates or too-small fragment -> fail this seed
-- resolved unique candidate -> return one concrete witness
-- unresolved/non-unique saturation -> deduplicate by compressed
-  deferred-boundary-aware structural signature and return one concrete witness per
-  distinct compressed state
-
-## Boundary-Aware Dedupe
-
-Dedupe is allowed only when two candidates represent the same orbit state under
-the currently observed constraints.  It is not allowed to collapse candidates
-when a deferred boundary relation distinguishes one side from another.
-
-The dedupe key has two parts.
-
-### Exact Internal Certificate
-
-The primary key is a pynauty canonical certificate of the full active product
-graph with candidate roles added as vertex colors:
-
-- locked P images and fixed mapped R roles are individualized
-- each `_SymBlock` pool is one set-valued role
-- each previously merged exact automorphism domain is one set-valued role
-- atom elements and WBO buckets use the same symmetry tolerance as the endpoint
-  orbit computation
-
-This collapses only candidates related by an exact graph automorphism.  Orbit
-membership alone is insufficient because it loses correlations between group
-actions.
-
-### One-Hop Boundary Signature
-
-The boundary signature describes what the candidate can see just outside the
-fragment:
-
-- deferred proposals that failed to extend earlier
-- WBO values from mapped R atoms to those deferred outside R atoms
-- element labels and R orbit IDs of the deferred outside atoms
-- the corresponding WBO possibilities from mapped P atoms or P pools to unused
-  same-element P atoms
-- locked neighboring island IDs, when a boundary points at an already locked
-  island
-
-At fragment saturation, two candidates are duplicates only if both the
-internal signature and this one-hop boundary signature are
-symmetry-equivalent.  This one-hop check catches the important case where an
-internally symmetric island has two sides, but only one side is already
-coupled to another island.
-
-During one-atom growth, the exact internal certificate is computed immediately,
-so automorphic children collapse before the next frontier atom.  The expensive
-boundary signature is evaluated only when two candidates already share that
-certificate and deferred evidence exists.  Sub-floor/full-WBO boundary evidence
-can therefore split an otherwise automorphic class without making every growth
-step compare every boundary vector.
-
-Boundary-aware dedupe is still compression, not enumeration.  If all boundary
-vectors are symmetry-equivalent, the candidates remain compressed.  If a
-boundary vector distinguishes one side, the compressed state is refined or
-branched only as far as needed to preserve that distinction.
-
-## Multi-Island Branching
-
-`find_islands` drives `grow_island` across seed orderings.
-
-```
-precompute p_orbits and r_orbits with `_nauty_orbits(..., wbo_tol=symmetry_wbo_tol)`
-branches = [empty branch]
-
-for each seed while progress is possible:
-    for each live branch:
-        if seed is already mapped:
-            carry branch forward
-        else:
-            isos = grow_island(..., p_orbits, r_orbits)
-            if no isos:
-                carry branch forward
-            else:
-                fragment candidates are already quotiented by exact pynauty
-                transporters; fork one branch per remaining candidate
-
-    merge only exactly equal cumulative search states, retaining every
-    distinct fragment history inside the merged branch family
-    enforce max_branches per parent subtree after dedupe; a subtree that would
-    create leaf max_branches + 1 is removed atomically while sibling branches
-    and other seed orders continue
+```text
+                                  +-----------------------+
+R elements/WBO/XYZ -------------->| build weighted R graph|
+                                  +-----------+-----------+
+                                              |
+P elements/WBO/XYZ -------------->+-----------v-----------+
+                                  | build weighted P graph|
+                                  +-----------+-----------+
+                                              |
+                        no cut + selected R edge cuts
+                                              |
+                         +--------------------v--------------------+
+                         | per cut: generate seed orders           |
+                         | per seed: grow fragments sequentially   |
+                         +--------------------+--------------------+
+                                              |
+                           compressed `_SymCand` fragment results
+                                              |
+                         +--------------------v--------------------+
+                         | `find_islands`: build `_Branch` states  |
+                         | exact live-state dedupe; subtree cap    |
+                         +--------------------+--------------------+
+                                              |
+                              completed paths and hierarchies
+                                              |
+                         +--------------------v--------------------+
+                         | classify broken/formed bonds            |
+                         | canonicalize whole event set on R graph |
+                         +--------------------+--------------------+
+                                              |
+                                  mechanism-keyed AAM pool
+                                              |
+                         +--------------------v--------------------+
+                         | compile exact relational mapping cosets |
+                         | remove equal/subsumed families          |
+                         +--------------------+--------------------+
+                                              |
+                         +--------------------v--------------------+
+                         | add local and group orientation         |
+                         | solve exact oriented isomorphism        |
+                         +--------------------+--------------------+
+                                              |
+                         +--------------------v--------------------+
+                         | minimize fixed-mapping proper-fit RMSD  |
+                         +--------------------+--------------------+
+                                              |
+                                selected complete R -> P mapping
 ```
 
-The live-state key is the exact mapping, island membership, and deferred-edge
-state.  Chemical-event/orbit summaries are not equivalence proofs and are not
-used to merge growing branches.  When exact states meet, their fragment paths
-remain separate analytical histories even though future growth is shared.
+Sweep cut is search orchestration, not part of the definition of a mapping.
+For focused debugging the no-cut work unit can be run alone. Full production
+mechanism discovery normally runs no-cut plus one work unit per eligible R
+edge cut.
 
-After complete mappings are scored, all broken and formed edges are annotated
-jointly on the full WBO-colored R graph.  A pynauty certificate of that graph
-is the mechanism key.  This is stronger than storing individual endpoint
-orbit IDs: two pairs may have endpoints in the same vertex orbits without
-belonging to the same pair orbit.
+## 4. Fragment Candidate State
 
-```
-mechanism
-├── exact canonical event certificate
-└── maximal analytical mapping families[]
-    ├── exact isomorphism coset
-    └── covered fragment-path/cut/seed provenance
-```
+### 4.1 `_SymBlock`
 
-Each completed fragment path is compiled into an exact relational-isomorphism
-coset.  Coset equality is proven by mutual generator containment.  A coset
-strictly contained in another family is redundant in the mechanism union and
-is retained only as provenance under the broader family.  No group elements
-are enumerated.
+A symmetry block represents a set-valued assignment domain:
 
-### Exact index-chirality relation
-
-Index-chirality post-processing builds an endpoint relational graph whose atom
-colors, masked WBO relations, event classes, anchors, and signed coordination
-simplices are solved together by pynauty.  Event invariance is a complete
-edge-coloring inside each element/threshold pair class.  The implementation
-stores the most frequent color as the implicit (absent-edge) baseline and emits
-relation vertices only for exceptional colors.  This is losslessly equivalent
-to the complete O(N^2) coloring: atom colors preserve the pair class, so a
-permutation preserving every exceptional pair must also preserve its baseline
-complement.  Molecular cases therefore give pynauty an O(E)-sized relation
-instead of thousands of redundant zero-event pair vertices.
-
-Post-AAM processing evaluates every analytical branch independently.  Both
-already-preserved and reversed persistent coordination frames become signed
-relations, allowing exact within-branch symmetry to repair a reversed
-representative.  Branches with no satisfying relational isomorphism are
-rejected.  Pynauty's automorphism generators for the oriented relation are
-restricted to atom vertices and closed into the distinct chirality-valid atom
-actions; relation-vertex-only kernel permutations disappear at this step.
-Fixed-mapping RMSD is evaluated only for those valid bijections and selects the
-final one: P is reindexed exactly once, and proper Kabsch removes only global
-rigid pose without changing correspondence.
-
-## Outer Alignment
-
-`align_from_arrays(...)` builds graphs, generates seed orders, runs
-`find_islands`, materializes one justified witness from each compressed branch,
-applies final symmetry repair for R<->P mappings, classifies bonds, and scores
-branches by:
-
-```
-(number of broken + formed bonds,
- chirality violations)
+```text
+SymBlock
+|- r_atoms: R roles participating in this domain
+|- p_atoms: interchangeable target pool
+`- extendable: whether later growth may add another R role
 ```
 
-The best lexicographic score wins.  `return_all=True` returns all scored
-branches for view/ranking workflows.
+It does not mean that every factorial permutation is valid. Correlations are
+resolved by the exact candidate automorphism group.
 
-### Final R<->P Symmetry Repair
+### 4.2 `_SymCand`
 
-Compressed growth may still return one legal witness from a symmetric product
-orbit.  If that witness creates many bond changes, the final repair pass
-searches only the product symmetry orbits touched by current broken/formed
-bond endpoints:
+One compressed candidate stores:
 
-```
-affected atoms = endpoints of current broken bonds
-               + R-frame endpoints of current formed bonds
-touched groups = mapped atoms with same (element, product orbit)
-```
-
-Within each touched group, the repair swaps images already assigned to that
-same `(element, product orbit)` group.  It never introduces a new spectator
-target outside the compressed alignment.  The score is:
-
-```
-(number of broken + formed bonds,
- total absolute WBO delta on changed bonds)
+```text
+_SymCand
+|- mapping: one deterministic representative R -> P assignment
+|- blocks: open/closed assignment domains
+|- exact_fixed: roles individualized by prior constraints
+|- multiplicity: number of encountered states represented
+|- automorph_blocks: connected display domains
+`- automorph_generators: authoritative exact target permutations
 ```
 
-Every reassignment is generated by the exact pynauty subgroup that fixes all
-atoms outside the touched target group.  The pass is capped by
-`SYM_REPAIR_MAX_EVALS` (default `20000`;
-`BGCP_SYMMETRY_REPAIR_MAX_EVALS` in the view builder).  Pair thresholds and
-R-side values are precomputed once, and each exact group state is scored with
-vectorized P-WBO lookup while retaining the original left-to-right floating
-point tie-break.  The cap therefore bounds group states rather than repeating
-the same Python pair-classification work for every state.
-This is the pr17 TS6a fix: the O/C shell can reshuffle within product orbits
-so equivalent O-C pairs stay paired, while the true mechanism-level bond
-breaking/forming remains.
+The representative is needed to continue deterministic code, but it is not
+treated as the only mapping represented by the candidate.
 
-## Sweep-Cut Mechanism Discovery
+### 4.3 Candidate canonicalization
 
-`rxn_core.alignment.cut_sweep(...)` is the core R-P mechanism discovery API.
-The package pipeline in `rxn_core.pipeline` passes runtime parameters and
-renders results; it does not implement the sweep algorithm. `cut_sweep`
-collects mechanisms from:
+After extension, `_CandidateAutomorphismCanonicalizer` constructs a colored
+pynauty graph containing:
 
-- baseline graph
-- plus one run per R edge removed (`WBO >= cut_floor`, default `0.2`)
-- each with `n_seeds` seed orders
+- target atom elements and WBO buckets;
+- fixed target atoms;
+- distinct R-role colors;
+- set-valued symmetry pools;
+- already locked assignments.
 
-This is intentionally broader than a single R<->P alignment because mechanism
-discovery needs multiple possible broken/formed bond patterns for later GT/IG
-scoring.
+Two candidates are merged only when equal canonical certificates and an exact
+transporter prove that one full state maps to the other. The transporter is
+retained as an exact automorphism generator. Merely placing two atoms in the
+same vertex orbit is not sufficient because independent orbit labels discard
+correlations.
 
-Seed generation is capped: `n_seeds=3` means three seed orderings, not
-one ordering per heavy atom.  The chosen anchors are heavy atoms in graph
-order, then random full-order shuffles only if more trials are requested than
-heavy anchors exist.
+## 5. Weighted Island Growth
 
-Parallel cut sweeps dispatch one work unit per cut.  Each work unit runs all
-seed orders for that cut, so the cut-specific R orbit map is computed once and
-reused across seeds.  Product orbits are computed once per worker process
-because they are invariant across every cut and seed.  This avoids the old
-`3 * (E + 1)` exact-orbit recomputation pattern for `E` cuttable R edges.
+`grow_island` starts from one R seed and uses a priority queue of R edges,
+normally strongest WBO first. Queue order affects traversal, not validity.
 
-The dedupe target depends on the alignment purpose:
+For a proposed new R atom `n` and candidate target `v`, all active edges from
+`n` to the already grown R fragment are checked:
 
-- R<->P mechanism discovery groups completed analytical branch families by
-  the exact canonical broken/formed-event certificate.  Branches remain
-  available for chirality constraints and fixed-mapping RMSD selection.
-- R/P<->GT and R/P<->IG verification is mechanism-local.  For each mechanism,
-  `rxn_core.alignment.ts_core_pool(...)` enumerates exact mappings for the
-  same mechanism core from both endpoints: `R -> TS` using R-core WBO context,
-  and `P -> TS` using the R-P witness to pull the same core into product
-  indexing.  Product-derived candidates are converted back to R-core indexing,
-  unioned with the reactant-derived candidates, deduped by the exact
-  `R_core -> TS_core` map, scored, and the best `S` is kept.  Spectator atoms
-  are never enumerated and are not filled by geometry after a core mapping is
-  chosen.  Mode-score numerators use the mapped/core atoms; denominators use
-  the full TS mode norm.
+```text
+element_R[n] == element_P[v]
+v is unused
 
-This matters when symmetry touches a core atom.  If an atom is a spectator,
-one arbitrary representative of a symmetric group is fine.  If that same
-symmetric group contains a core atom, each possible core representative can
-give a different `beta/rho/kappa` because TS coordinates and normal modes live
-on concrete target atoms.  The code therefore enumerates symmetry alternatives
-only on the mechanism core.  A methyl H core in an 18-H symmetric environment
-creates up to 18 core candidates, not 18! full spectator permutations.
-
-Mechanism-local TS/IG core enumeration enforces preserved endpoint-core edges
-against the target WBO graph (`edge_floor`, default `0.2`) and allows extra TS
-partial bonds.  The R endpoint preserves R-core active edges; the P endpoint
-preserves P-core active edges after the R-P mechanism witness maps the same
-core into product indexing.  The optional `max_candidates` cap defaults to
-`20000` in the BGCP script; hitting it is a diagnostic warning, not an
-expected path for elementary steps.
-
-This makes ranking symmetry/core based instead of full-bijection based.  R-P
-cut-sweep work is never skipped by a wall-clock timeout; slow cuts must finish
-or be stopped by the caller.
-
-R<->P work units also apply the bounded final symmetry repair by default
-(`BGCP_SYMMETRY_REPAIR=1`).  It can be disabled for debugging with
-`BGCP_SYMMETRY_REPAIR=0`, and its local search cap is controlled by
-`BGCP_SYMMETRY_REPAIR_MAX_EVALS`.
-
-The view does not perform another weaker orbit-pair mechanism dedupe.  It
-renders the exact mechanism list returned by AAM and records the selected
-analytical branch and its fixed-mapping RMSD.
-
-## Bond-Change Core Logic: 1-1, 1-0, 0-1, 0-0
-
-This section is the chemistry core and should stay stable.
-
-For an R atom pair `(r1, r2)` and mapped P pair `(p1, p2)`:
-
-```
-wR = wboR[r1, r2]
-wP = wboP[p1, p2]
+for every grown r with WBO_R[n,r] >= graph_floor:
+    WBO_P[v,m(r)] >= graph_floor
+    abs(WBO_R[n,r] - WBO_P[v,m(r)]) <= iso_tol
 ```
 
-Using `dwbo_threshold` (default `0.5`):
+R non-edges are not local negative constraints. An extra P bond may be a
+formed bond and is classified at mechanism level.
 
-- **1-1: preserved bond.** R has a bond and P has the corresponding bond.
-  If `abs(wR - wP) < dwbo_threshold`, this is spectator connectivity, not a
-  broken/formed event.
+If a touched R role belongs to a symmetry block, the support question is
+existential and correlated:
 
-- **1-0: broken bond.** R has a bond and P does not have the corresponding
-  bond strongly enough:
-
-  ```
-  wR - wP >= dwbo_threshold
-  ```
-
-  If one or both R endpoints are unmapped, the missing P counterpart is
-  treated as `wP = 0`, so the same rule applies.
-
-- **0-1: formed bond.** P has a bond and R does not have the corresponding
-  bond strongly enough:
-
-  ```
-  wP - wR >= dwbo_threshold
-  ```
-
-  If one or both P endpoints are unmapped by the inverse mapping, the missing R
-  counterpart is treated as `wR = 0`.
-
-- **0-0: ignored.** Neither graph has a meaningful bond for the pair; it is not
-  part of the mechanism.
-
-`classify_bonds(mapping, wboR, wboP, ...)` implements these rules and returns:
-
-```
-broken, formed, core_R, core_P
+```text
+Does one injective assignment inside all touched blocks make the complete
+active-edge WBO vector valid?
 ```
 
-`core_R` and `core_P` are the atoms participating in broken or formed events.
-The mode scorer only needs these chemistry-relevant atoms.
+This small internal matching is bounded by `SYM_SUPPORT_MAX_STATES`. It is not
+a global witness enumeration.
 
-## Important Knobs
+The growth transition is explicitly one of:
 
-| name | default | meaning |
+```text
+0 outputs       -> defer the observed boundary; keep the candidate alive
+1 output        -> commit the unique compressed state
+many outputs    -> merge automorphic outputs; branch only on distinct states
+```
+
+At saturation, the fragment record retains:
+
+- its R atom set;
+- its representative assignments;
+- exact target automorphism generators;
+- symmetry domains;
+- deferred boundary edges.
+
+## 6. Deferred Boundaries
+
+A fragment that cannot absorb a frontier atom is not necessarily invalid.
+The failed weighted relationship is stored as a deferred boundary. This is
+essential when an internally symmetric fragment has two sides but only one
+side has already encountered another island.
+
+Candidate equality therefore includes:
+
+```text
+exact internal pynauty certificate
+              +
+deferred one-hop boundary state
+```
+
+Without the second term, future-distinguishable branches would be collapsed.
+
+## 7. Multi-Fragment AAM Branches
+
+`find_islands` grows fragments sequentially for each seed order.
+
+### 7.1 Live branch object
+
+```text
+_Branch
+|- mapping: current concrete representative
+|- islands_R: R atom -> island ID
+|- islands_P: P atom -> island ID
+|- deferred_edges
+`- symmetry_paths[]
+    `- ordered committed fragment records
+```
+
+An AAM branch is therefore a combination of fragment candidates, not a single
+fragment and not merely a final mapping.
+
+Hard `anchor_map` pairs are preloaded into the branch as fixed mapping/island
+state. An anchored atom may seed growth, but it can also remain outside every
+grown fragment. During analytical compilation, such an uncovered anchor is
+represented as an individually fixed singleton fragment. Missing non-anchor
+atoms remain an error. Anchor colors are also carried into the relational
+graph, so family dedupe, chirality, symmetry repair, and RMSD selection cannot
+move an anchored pair.
+
+### 7.2 Exact live dedupe
+
+Live branches merge only when these concrete cumulative states are equal:
+
+```text
+(mapping, islands_R, islands_P, deferred_edges)
+```
+
+Their distinct fragment histories are retained in `symmetry_paths`.
+
+We tested a more aggressive coupled R/P automorphic live-state quotient. It
+reduced TS04 from four correct mechanisms to two because the live graph did
+not encode the full accumulated hierarchy. That optimization was removed.
+Semantic automorphic dedupe is delayed until the completed hierarchy exists.
+
+### 7.3 Branch cap
+
+The configured BGCP cap is normally `max_branches = 100`. It applies to the
+post-dedupe live leaves of one parent subtree:
+
+```text
+if accepting this parent's descendants would make live leaves > 100:
+    discard only this overflowing descendant subtree
+    retain siblings and other seed paths
+```
+
+Exactly 100 is legal. This is an intentional computational completeness cap,
+not a symmetry equivalence rule.
+
+## 8. Completed AAM Data Hierarchy
+
+The raw pool and typed post-AAM model have the following ownership:
+
+```text
+CutSweepPool
+`- mechanism entry, keyed by exact event certificate
+   |- representative_mapping
+   |- cuts / has_no_cut / encounter count
+   `- completed branches[]
+      `- AAMBranch
+         |- representative_mapping
+         |- encounter_count
+         |- cuts
+         |- hierarchy: AAMHierarchy
+         |  `- fragments[]: FragmentMatch
+         |     |- R atom set
+         |     |- island ID
+         |     |- deferred edges
+         |     |- symmetry domains
+         |     `- exact target generators
+         |- analytical mapping-family record
+         `- path provenance[]
+
+PostAAMMechanism
+|- exact mechanism key
+|- endpoint R automorphism group   [auxiliary graph information]
+|- endpoint P automorphism group   [auxiliary graph information]
+`- maximal AAMBranch families[]    [authoritative mapping choices]
+```
+
+Endpoint automorphism groups are not automatically free mapping candidates.
+They describe endpoint graph symmetry. Allowed mapping changes come from the
+selected branch's analytical relation/coset.
+
+### 8.1 Meaning of a witness
+
+A witness is one complete bijection inside a family. It is useful for:
+
+- continuing deterministic computation;
+- recording provenance;
+- initializing an exact isomorphism.
+
+It is not sampled uniformly, is not a generator, and must not be ranked as if
+the encountered witness list were the solution space.
+
+## 9. Exact Mechanism Identity
+
+For a complete mapping, bond events are computed in R index order:
+
+```text
+broken if WBO_R[i,j] - WBO_P[m(i),m(j)] >= event_threshold(i,j)
+formed if WBO_P[m(i),m(j)] - WBO_R[i,j] >= event_threshold(i,j)
+```
+
+The entire broken/formed edge set is then attached to the full WBO-colored R
+graph using typed event vertices. A pynauty certificate of this decorated
+graph is the mechanism key.
+
+```text
+R graph atom vertices
+      |
+      +-- WBO-colored graph edges
+      |
+      +-- broken-event vertices -- broken type marker
+      |
+      `-- formed-event vertices -- formed type marker
+                         |
+                         v
+               pynauty canonical certificate
+```
+
+This fixes a subtle but important bug: equal endpoint vertex-orbit IDs do not
+prove that two edges lie in the same edge orbit, and they certainly do not
+prove that two multi-edge event sets are equivalent.
+
+Mechanism selection keeps the classes with the minimum number of bond-breaking
+plus bond-forming events. Different exact event certificates at that minimum
+remain distinct mechanisms.
+
+## 10. Analytical Mapping Families
+
+Every completed branch is compiled into a colored relational isomorphism
+between endpoint A and endpoint B.
+
+The relation includes:
+
+- atom element and fragment-owner colors;
+- selected fragment WBO relations at `iso_tol`;
+- anchors;
+- event-invariant pair colors;
+- later, signed orientation relations.
+
+If `g` is one isomorphism and `G` is the target automorphism group of the
+relation, the branch represents the coset:
+
+```text
+F = gG
+```
+
+`AnalyticalMappingFamily` stores:
+
+```text
+AnalyticalMappingFamily
+|- source_mapping
+|- representative_mapping g
+|- target_generators of G
+|- target_orbits
+|- group_order
+`- colored relational records for exact membership
+```
+
+### 10.1 Membership
+
+For a proposed complete mapping `m`, `contains(m)` directly transports all A
+atom colors and relation records through `m` and compares them with B. It does
+not invoke a new geometry matching operation.
+
+### 10.2 Family inclusion and dedupe
+
+For finite cosets, `F1` is proven to be a subset of `F2` by checking:
+
+1. `F1`'s representative belongs to `F2`;
+2. applying every generator of `F1` to that representative remains in `F2`.
+
+Families are processed into a maximal antichain:
+
+```text
+equal family       -> merge provenance
+strict subset      -> attach its provenance to the containing family
+strict superset    -> replace contained families and inherit provenance
+incomparable       -> retain both
+```
+
+Thus 82 TS01 growth paths become one maximal analytical family without
+pretending the paths themselves are group elements. Large cases may retain
+several incomparable families under the same mechanism.
+
+## 11. Index Chirality
+
+Index chirality is a correspondence constraint. It asks whether the ordering
+of mapped substituent indices is orientation-consistent between endpoints. It
+does not assign chemical R/S labels and does not alter AAM chemistry.
+
+### 11.1 Affine simplex sign
+
+For center `c` and ordered neighbors `(a,b,d)`:
+
+```text
+v1 = xyz[a] - xyz[c]
+v2 = xyz[b] - xyz[c]
+v3 = xyz[d] - xyz[c]
+
+s = sign(det([v1, v2, v3]))
+```
+
+The determinant is normalized by vector lengths before applying the
+degeneracy threshold. Ordinary local centers use the configured dimensionless
+near-planarity tolerance.
+
+### 11.2 Local persistent centers
+
+Persistent neighbor simplices are found from the selected branch relation,
+not from display color groups. Pynauty stabilizer orbits determine whether a
+center's neighbors are actually movable. Signed ordered-simplex relation
+vertices are then added to A and B.
+
+The oriented graph is solved as one simultaneous isomorphism problem. There
+is no degree-four-only swap rule and no sequential local shuffle.
+
+### 11.3 Higher-coordinate group orientation
+
+For centers with more than four ligands, orientation is a relation among
+ligand triples. Physical endpoint geometries can reconfigure so one dependent
+triple crosses coplanarity even while the overall ligand assignment remains
+consistent. Requiring every one of `C(k,3)` signs as a hard constraint can
+therefore reject a valid family.
+
+The current algorithm builds a maximal feasible signed-frame basis:
+
+1. construct all defined group-level triples;
+2. rank them by endpoint-normalized geometric robustness;
+3. add each complete ordered-sign relation to a trial relational graph;
+4. retain it only if the cumulative graph still admits an exact isomorphism;
+5. record incompatible dependent triples as geometric reconfiguration.
+
+This is not a witness fallback. Every retained constraint is solved against
+the complete analytical family. The excluded frame is explicitly reported.
+
+PR8 demonstrates the distinction: 19 R48 frames are simultaneously
+preserved, while the nearly coplanar `[34,41,43]` frame is recorded as
+reconfigured instead of invalidating the entire mapping family.
+
+## 12. RMSD Selection Inside the Exact Family
+
+After orientation relations are added, pynauty returns generators of the
+chirality-valid target action. Relation-vertex-only kernel permutations are
+discarded by restricting each generator to atom vertices.
+
+For any candidate mapping, RMSD uses immutable correspondence:
+
+```text
+P_R_order[r] = xyz_P[m(r)]
+
+center R and P_R_order
+compute proper Kabsch rotation, det(rotation) = +1
+RMSD = sqrt(mean(||R - rotated(P_R_order)||^2))
+```
+
+Kabsch removes only global translation and proper rotation. It never performs
+assignment, symmetry matching, or atom remapping.
+
+### 12.1 Small groups
+
+When the chirality-valid atom action contains at most 4096 elements, all
+actions are evaluated in one bounded vectorized batch. This is faster than
+many small Python/SVD calls and cannot grow past the explicit threshold.
+
+### 12.2 Large factorizable groups
+
+Generator supports are joined when they overlap. Disjoint support components
+are exact commuting factors:
+
+```text
+G = G1 x G2 x ... x Gk
+```
+
+The global Cartesian product is searched without materializing it. A greedy
+descent supplies only an initial incumbent. Exact branch-and-bound then uses
+the rotation-invariant lower bound for already assigned atoms:
+
+```text
+RMSD >= sqrt(sum_(i<j) (distance_R(i,j)
+                         - distance_P(m(i),m(j)))^2) / N
+```
+
+If this lower bound is worse than the incumbent, the entire remaining coset
+subtree is skipped. Tie-breaking remains deterministic by rounded RMSD and
+the complete mapping tuple.
+
+The search is exact. Its present worst-case risk is a very large connected
+support factor: local factor actions are still closed explicitly. The global
+independent-factor product no longer needs to be enumerated, but a future
+Schreier-Sims representation would be needed to remove that final worst-case
+group-size risk.
+
+## 13. Post-AAM Parallelism and Performance
+
+Post-processing previously recomputed endpoint-only event behavior for every
+growth path. On a 133-atom case this performed roughly 830,000 repeated event
+comparisons per family.
+
+The current immutable compiler context precomputes once:
+
+- endpoint active graphs;
+- element/threshold pair classes;
+- R-side event behavior vectors;
+- P-side event behavior vectors.
+
+It is shared by family compilation and chirality evaluation. Exact relation
+records are cached for containment checks. Families are compiled in process
+batches, with up to 32 workers for large branch sets, and the remaining
+maximal families are evaluated independently in parallel.
+
+Measured on the 133-atom Pd TS12 case with eight CPUs:
+
+```text
+initial exact post-AAM: 29.02 s
+current exact post-AAM: 11.5-11.6 s
+```
+
+The old witness baseline was faster because it proved less and sampled
+witnesses. The current result retains the exact family and gives lower RMSD.
+
+## 14. Bounded Symmetry Repair During AAM Scoring
+
+Before analytical-family post-processing, completed AAM mappings may undergo
+a bounded symmetry repair inside exact touched target subgroups. The touched
+atoms are derived from current event endpoints. The repair never imports an
+unrelated target or performs geometric remapping; it composes the mapping with
+exact pynauty subgroup actions and scores bond-event count/WBO change.
+
+`symmetry_repair_max_evals`, normally 20000, is a hard diagnostic cap. This
+step normalizes a concrete completed representative for event scoring. It does
+not replace analytical family compilation or final chirality/RMSD selection.
+
+## 15. Viewer Semantics
+
+The viewer must display only the selected solution:
+
+- one selected mechanism at a time;
+- one selected analytical branch/family;
+- its selected complete R mapping and aligned P mapping;
+- symmetry/degeneracy derived from that branch's exact fragment
+  automorphisms;
+- atoms that are actually mutable under the selected relation.
+
+It must not aggregate color groups from rejected paths or treat endpoint
+orbits as allowed mapping shuffles.
+
+Viewer interpolation is a validation layer, not an alignment step. It uses the
+already selected indices. A collision or path crossing in interpolation does
+not by itself prove that AAM is wrong; mapping chirality, endpoint pose, and
+interpolation constraints must be diagnosed separately. Self-contained HTML
+views and per-mechanism `R.xyz` / `P_aligned.xyz` remain the portable debugging
+artifacts.
+
+## 16. Failure Rules and Prohibited Shortcuts
+
+The current code deliberately avoids the following shortcuts:
+
+- selecting a random or first witness;
+- treating witnesses as generators;
+- combining independent atom orbits as if their swaps were uncorrelated;
+- deduplicating mechanisms from endpoint orbit pairs;
+- merging live automorphic branches without encoding their hierarchy;
+- geometry-based remapping before RMSD;
+- accepting chirality through a fallback mapping outside the AAM family;
+- silently changing WBO tolerance between edge verification and pynauty.
+
+An analytical branch with no oriented isomorphism is rejected with diagnostics.
+If every minimum-event mechanism is rejected, the pipeline raises an
+`IndexChiralityConflict`; it does not silently return an unverified mapping.
+
+## 17. Important Parameters
+
+| Parameter | Typical value | Role |
 |---|---:|---|
-| `graph_floor` | `0.2` | threshold for active R/P graph edges used by frontier growth and local iso validity |
-| `iso_tol` | `1.0` | WBO tolerance during candidate extension |
-| `dwbo_threshold` | `0.5` | WBO delta threshold for 1-0 / 0-1 events |
-| `symmetry_wbo_tol` | `0.2` | WBO tolerance for exact automorphism orbit bucketing |
-| `max_branches` | `1_000_000` | live branch cap for direct low-level matching |
-| `BGCP_VIEW_MAX_BRANCHES` | `100` | post-dedupe live-leaf cap per R-P seed-order tree; exactly 100 is allowed and only an overflowing parent subtree is removed |
-| `BGCP_CUT_FLOOR` | `0.2` | R-P mechanism discovery cuts every R edge with WBO at or above this floor |
-| `BGCP_CUTSWEEP_CHUNKSIZE` | `1` | multiprocessing chunk size for cut-sweep work units |
-| `BGCP_ISO_TOL` | `1.0` | WBO tolerance used by BGCP view cut-sweeps |
-| `BGCP_DWBO_THRESHOLD` | `0.5` | WBO delta threshold for BGCP broken/formed bond classification |
-| `BGCP_SYMMETRY_WBO_TOL` | `0.2` | WBO tolerance for BGCP symmetry-orbit bucketing |
-| `BGCP_W_RXN` | `1.0` | reaction-coordinate overlap score weight |
-| `BGCP_W_CORE` | `0.2` | core-mode fraction score weight |
-| `BGCP_IMAG_PEN` | `0.3` | imaginary-mode count penalty exponent |
-| `BGCP_PARALLEL_MODE` | `auto` | pipeline scheduling mode: `auto`, `outer`, or `inner` |
-| `BGCP_AUTO_INNER_WORKERS` | `8` | target inner workers per concurrent step in auto mode |
-| `BGCP_TIMING` | `0` | set to `1` to print per-target cut-sweep and TS endpoint timings |
-| `BGCP_TS_CORE_EDGE_FLOOR` | `0.2` | minimum target WBO for preserving an R-core edge during TS/IG core matching |
-| `BGCP_TS_CORE_MAX_CANDIDATES` | `20000` | cap for mechanism-local TS/IG core mappings |
-| `n_seeds` | `3` | seed orders in `align_from_arrays` |
-| `N_SEEDS_PER_RUN` | `3` | seed orders per cut-sweep unit in views |
+| `graph_floor` | `0.2` | active connectivity threshold |
+| `iso_tol` | `1.0` | weighted edge tolerance and pynauty WBO color tolerance |
+| `dwbo_threshold` | `0.5` | broken/formed bond threshold |
+| `n_seeds` | `3` | seed orders per cut work unit |
+| `max_branches` | `100` in BGCP | post-dedupe live leaves per parent subtree |
+| `SYM_SUPPORT_MAX_STATES` | `4096` | local correlated block-support cap |
+| `symmetry_repair_max_evals` | `20000` | bounded completed-representative repair |
+| RMSD vector batch threshold | `4096` | largest explicitly materialized global atom action |
+| analytical compile workers | up to `32` | process parallelism for large branch sets |
 
-The full BGCP pipeline parallelizes two independent stages inside one step.
-R-P mechanism discovery is parallel over cut work units.  GT/IG scoring then
-parallelizes over endpoint core-matching tasks: every `(target TS or IG,
-mechanism, endpoint R/P)` pool is built independently, and the main process
-merges R-derived and P-derived core maps before ranking modes.  There is no
-sweep-cut step for R-TS/P-TS; those endpoint matches use the known R-P
-mechanism core.
+## 18. Verification Record
 
-## Verification Notes
+The current implementation is covered by 133 automated tests. Important
+checks include:
 
-Recent single-process checks after the symmetry-block implementation:
+- cached and uncached relational graphs are identical;
+- a generated 8192-action group gives the same selected mapping and RMSD under
+  branch-and-bound as exhaustive enumeration;
+- TS01 retains one mechanism, one maximal family, and all 82 paths;
+- TS04 retains all four exact mechanisms and 2187 chirality-valid mappings per
+  mechanism;
+- PR9 TS41a-endo matches the prior corrected mapping and event;
+- PR8 retains 19 compatible higher-coordinate frames and records one
+  reconfigured frame;
+- 133-atom Pd TS12 retains both mechanisms and all four maximal families;
+- 133-atom Pd TS14 retains both concrete mechanisms and seven maximal
+  families;
+- 95-atom Noyori TS65 completes with two exact mechanisms and zero chirality
+  violations.
 
-- perfect hexamethylethane: orbit hierarchy `[18, 6, 2]`
-- hexamethylethane island growth: one full 26-atom witness, max traced candidates 4
-- `pr12.Co_Silylation_JACS2015_TS_B-CStep1`: one full 123-atom branch, peak
-  compressed candidates 10
-- `pr7.V.dodh_ts910`: two full branches preserved
-- `pr14.Pd_hydroamination_JOC2025_TS3_step2_alkene_inserion`: full BGCP view
-  generated with 10 inner workers; four concrete `2/3` alignments collapse to
-  one symmetry-canonical displayed mechanism
+These checks are a regression sample, not a substitute for rerunning the full
+140-case batch after future changes to search equivalence, mechanism
+certificates, or chirality constraints.
