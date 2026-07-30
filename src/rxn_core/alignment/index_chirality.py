@@ -845,8 +845,8 @@ class AnalyticalMappingFamily:
             key=lambda members: members[0]))
         self.group_order = (round(float(mantissa), 12), int(exponent))
         self._membership_cache = {}
-        self._sorted_relation_records_B = tuple(sorted(
-            self.relation.relation_records_B, key=repr))
+        self._relation_record_counts_B = Counter(
+            self.relation.relation_records_B)
 
     @property
     def invariant(self):
@@ -874,17 +874,21 @@ class AnalyticalMappingFamily:
             for atom in range(self.degree)
         )
 
-        def transported_records():
-            records = []
+        def transported_record_counts():
+            records = Counter()
             for kind, color, atoms in self.relation.relation_records_A:
                 images = tuple(sigma[atom] for atom in atoms)
                 if kind == "pair":
                     images = tuple(sorted(images))
-                records.append((kind, color, images))
-            return sorted(records, key=repr)
+                record = (kind, color, images)
+                if record not in self._relation_record_counts_B:
+                    return None
+                records[record] += 1
+            return records
 
-        result = (atom_colors_match and tuple(transported_records())
-                  == self._sorted_relation_records_B)
+        transported = transported_record_counts() if atom_colors_match else None
+        result = (transported is not None
+                  and transported == self._relation_record_counts_B)
         self._membership_cache[key] = bool(result)
         return bool(result)
 
@@ -911,6 +915,17 @@ class AnalyticalMappingFamily:
         other_log_order = (np.log10(other.group_order[0])
                            + other.group_order[1])
         if self_log_order > other_log_order + 1e-10:
+            return False
+        other_orbit = {
+            atom: orbit_index
+            for orbit_index, orbit in enumerate(other.target_orbits)
+            for atom in orbit
+        }
+        # A subgroup orbit cannot cross two orbits of the containing group.
+        # This is a necessary exact group-inclusion condition and rejects most
+        # unrelated family pairs before any dense relation transport.
+        if any(len({other_orbit[atom] for atom in orbit}) > 1
+               for orbit in self.target_orbits):
             return False
         if not other.contains(self.representative_mapping):
             return False
