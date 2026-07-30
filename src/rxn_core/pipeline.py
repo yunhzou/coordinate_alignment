@@ -2012,65 +2012,74 @@ def _dedupe_analytical_mapping_families(
 
     grouped = list(payload_groups.values())
     grouped_branches = [group['branch'] for group in grouped]
-    unique = []
     compiled = _compile_analytical_families(
         inputs, grouped_branches, cfg, static_context=static_context)
+    entries = []
     for group, family in zip(grouped, compiled):
         branch = dict(group['branch'])
-        provenance_records = list(group['provenance'])
-        covering = next((
-            candidate for candidate in unique
-            if family.is_subset_of(candidate['family'])
-        ), None)
-        if covering is not None:
-            kept = covering['branch']
-            kept['encounter_count'] = (
-                int(kept.get('encounter_count', 1))
-                + int(branch.get('encounter_count', 1)))
-            cuts = {
-                tuple(map(int, cut)) for cut in kept.get('cuts') or ()
-            } | {
-                tuple(map(int, cut)) for cut in branch.get('cuts') or ()
-            }
-            kept['cuts'] = [list(cut) for cut in sorted(cuts)]
-            kept.setdefault('path_provenance', []).extend(
-                provenance_records)
-            kept['covered_path_count'] = len(kept['path_provenance'])
-            continue
-
-        subsumed = [
-            candidate for candidate in unique
-            if candidate['family'].is_subset_of(family)
-        ]
-        if subsumed:
-            subsumed_ids = {id(candidate) for candidate in subsumed}
-            unique = [candidate for candidate in unique
-                      if id(candidate) not in subsumed_ids]
-            for candidate in subsumed:
-                prior = candidate['branch']
-                branch['encounter_count'] = (
-                    int(branch.get('encounter_count', 1))
-                    + int(prior.get('encounter_count', 1)))
-                prior_provenance = list(
-                    prior.get('path_provenance') or ())
-                group.setdefault('subsumed_provenance', []).extend(
-                    prior_provenance)
-                cuts = {
-                    tuple(map(int, cut))
-                    for cut in branch.get('cuts') or ()
-                } | {
-                    tuple(map(int, cut))
-                    for cut in prior.get('cuts') or ()
-                }
-                branch['cuts'] = [list(cut) for cut in sorted(cuts)]
-        branch['path_provenance'] = provenance_records
-        if group.get('subsumed_provenance'):
-            branch['path_provenance'].extend(
-                group.pop('subsumed_provenance'))
+        branch['path_provenance'] = list(group['provenance'])
         branch['covered_path_count'] = len(branch['path_provenance'])
         branch['mapping_family'] = family.record()
-        unique.append({'branch': branch, 'family': family})
-    return [item['branch'] for item in unique]
+        entries.append({'branch': branch, 'family': family})
+
+    def merge_entry(kept, removed):
+        kept_branch = kept['branch']
+        removed_branch = removed['branch']
+        kept_branch['encounter_count'] = (
+            int(kept_branch.get('encounter_count', 1))
+            + int(removed_branch.get('encounter_count', 1)))
+        cuts = {
+            tuple(map(int, cut))
+            for cut in kept_branch.get('cuts') or ()
+        } | {
+            tuple(map(int, cut))
+            for cut in removed_branch.get('cuts') or ()
+        }
+        kept_branch['cuts'] = [list(cut) for cut in sorted(cuts)]
+        kept_branch.setdefault('path_provenance', []).extend(
+            removed_branch.get('path_provenance') or ())
+        kept_branch['covered_path_count'] = len(
+            kept_branch['path_provenance'])
+
+    # Phase 1: equal cosets normally share the same colored-relation
+    # certificates and exact group invariant.  Resolve those dense duplicate
+    # classes locally instead of comparing every new path with every maximal
+    # family found so far.  A certificate mismatch is never treated as proof
+    # of inequality; phase 2 still performs authoritative subset checks.
+    equality_buckets = defaultdict(list)
+    equality_unique = []
+    for entry in entries:
+        bucket = equality_buckets[entry['family'].equivalence_bucket]
+        equivalent = next((
+            candidate for candidate in bucket
+            if entry['family'].equivalent(candidate['family'])
+        ), None)
+        if equivalent is not None:
+            merge_entry(equivalent, entry)
+            continue
+        bucket.append(entry)
+        equality_unique.append(entry)
+
+    # Phase 2: visit larger groups first.  A later family cannot contain an
+    # earlier strictly larger group, so maximal-coset reduction needs only one
+    # directional subset test.  Equal groups missed by the fast certificate
+    # bucket are also resolved here because coset inclusion at equal order is
+    # equality.
+    def descending_group_order(entry):
+        mantissa, exponent = entry['family'].group_order
+        return -(np.log10(mantissa) + exponent)
+
+    maximal = []
+    for entry in sorted(equality_unique, key=descending_group_order):
+        covering = next((
+            candidate for candidate in maximal
+            if entry['family'].is_subset_of(candidate['family'])
+        ), None)
+        if covering is not None:
+            merge_entry(covering, entry)
+            continue
+        maximal.append(entry)
+    return [item['branch'] for item in maximal]
 
 
 def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):

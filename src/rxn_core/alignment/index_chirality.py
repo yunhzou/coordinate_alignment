@@ -878,6 +878,8 @@ class AnalyticalMappingFamily:
         self.relation = relation
         self.graph_A = relation.graph("A")
         self.graph_B = relation.graph("B")
+        self.certificate_A = pynauty.certificate(self.graph_A)
+        self.certificate_B = pynauty.certificate(self.graph_B)
         isomorphism = _canonical_isomorphism(self.graph_A, self.graph_B)
         if isomorphism is None:
             raise IndexChiralityConflict(
@@ -909,6 +911,11 @@ class AnalyticalMappingFamily:
     @property
     def invariant(self):
         return self.degree, self.group_order, self.target_orbits
+
+    @property
+    def equivalence_bucket(self):
+        """Fast canonical bucket; equality is still proven explicitly."""
+        return (self.invariant, self.certificate_A, self.certificate_B)
 
     def contains(self, mapping):
         mapping = validate_mapping(
