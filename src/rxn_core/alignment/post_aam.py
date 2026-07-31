@@ -195,7 +195,6 @@ class FragmentMatch:
     r_atoms: tuple[int, ...]
     deferred_edges: tuple[tuple[int, int], ...] = ()
     symmetry_domains: tuple[SymmetryDomain, ...] = ()
-    exact_target_generators: tuple[tuple[int, ...], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -221,11 +220,7 @@ class AAMHierarchy:
                 deferred_edges=tuple(
                     tuple(sorted(map(int, edge)))
                     for edge in raw.get("deferred_edges") or ()),
-                symmetry_domains=tuple(domains),
-                exact_target_generators=tuple(
-                    tuple(map(int, generator))
-                    for generator in symmetry.get(
-                        "automorph_generators") or ())))
+                symmetry_domains=tuple(domains)))
         return cls(tuple(fragments))
 
 
@@ -362,10 +357,6 @@ class PostAAMMechanism:
                         "p_atoms": list(domain.p_atoms),
                         "source": domain.source,
                     } for domain in fragment.symmetry_domains],
-                    "exact_target_generators": [
-                        list(generator)
-                        for generator in fragment.exact_target_generators
-                    ],
                 } for fragment in branch.hierarchy.fragments],
             } for branch in self.branches],
             "fragments": [{
@@ -378,10 +369,6 @@ class PostAAMMechanism:
                     "p_atoms": list(domain.p_atoms),
                     "source": domain.source,
                 } for domain in fragment.symmetry_domains],
-                "exact_target_generators": [
-                    list(generator)
-                    for generator in fragment.exact_target_generators
-                ],
             } for fragment in self.hierarchy.fragments],
             "raw_branch_count": self.raw_branch_count,
         }

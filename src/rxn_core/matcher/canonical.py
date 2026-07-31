@@ -1,7 +1,7 @@
 """Exact automorphism certificates for hierarchical partial mappings."""
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 
 from .orbits import _nauty_colored_wbo_graph
 from .policy import as_node_match_policy
@@ -132,64 +132,3 @@ class _CandidateAutomorphismCanonicalizer:
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
         return pynauty.certificate(self.graph(cand)), color_profile
-
-    def transporter(self, source, target):
-        """Return the exact product-label permutation ``source -> target``."""
-        import networkx as nx
-
-        if self.certificate(source) != self.certificate(target):
-            raise ValueError("candidate states are not automorphically equivalent")
-
-        def colors_by_vertex(cand):
-            result = {}
-            for color, vertices in self._colored_vertices(cand):
-                for vertex in vertices:
-                    result[vertex] = color
-            return result
-
-        source_colors = colors_by_vertex(source)
-        target_colors = colors_by_vertex(target)
-
-        def exact_graph(colors):
-            graph = nx.Graph()
-            counts = Counter(colors.values())
-            # VF2 chooses candidates according to graph insertion order.  Pin
-            # singleton and other rare semantic roles before bulk symmetric
-            # atoms; this changes no search domain, but avoids exploring huge
-            # equivalent prefixes before the actual constraints are applied.
-            ordered_vertices = sorted(
-                range(self.n_vertices),
-                key=lambda vertex: (
-                    counts[colors[vertex]], repr(colors[vertex]), vertex),
-            )
-            graph.add_nodes_from(
-                (vertex, {"semantic_color": colors[vertex]})
-                for vertex in ordered_vertices)
-            graph.add_edges_from(
-                (vertex, neighbor)
-                for vertex in ordered_vertices
-                for neighbor in self.adjacency[vertex]
-                if vertex < neighbor)
-            return graph
-
-        matcher = nx.algorithms.isomorphism.GraphMatcher(
-            exact_graph(source_colors), exact_graph(target_colors),
-            node_match=lambda left, right: (
-                left["semantic_color"] == right["semantic_color"]),
-        )
-        try:
-            mapping = next(matcher.isomorphisms_iter())
-        except StopIteration as exc:
-            raise ValueError(
-                "candidate states share a coarse pynauty certificate but are "
-                "not exactly color-preserving equivalent") from exc
-        full = tuple(int(mapping[vertex])
-                     for vertex in range(self.n_vertices))
-        atom_by_index = {index: atom for atom, index in self.atom_index.items()}
-        atom_permutation = [0] * self.n_atoms
-        for atom, index in self.atom_index.items():
-            image_index = full[index]
-            if image_index not in atom_by_index:
-                raise RuntimeError("candidate transporter mixed atom/edge vertices")
-            atom_permutation[int(atom)] = int(atom_by_index[image_index])
-        return tuple(atom_permutation)

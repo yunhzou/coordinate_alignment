@@ -12,16 +12,12 @@ def _carbon_path():
     return graph
 
 
-def test_candidate_transporter_preserves_semantic_roles():
+def test_candidate_certificate_preserves_semantic_roles():
     canonicalizer = _CandidateAutomorphismCanonicalizer(_carbon_path())
     source = {10: 0, 11: 1}
     target = {10: 3, 11: 2}
 
-    transporter = canonicalizer.transporter(source, target)
-
-    assert transporter == (3, 2, 1, 0)
-    for reactant, product in source.items():
-        assert transporter[product] == target[reactant]
+    assert canonicalizer.certificate(source) == canonicalizer.certificate(target)
 
 
 def test_candidate_certificate_distinguishes_wrong_role_assignment():

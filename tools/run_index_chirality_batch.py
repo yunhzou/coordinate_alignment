@@ -110,9 +110,9 @@ def run_case(selection_manifest: Path, output_root: Path,
         raise IndexError(f"{tier} task index {task_index} is outside the manifest")
     case = cases[task_index]
     expected_workers = int(TIERS[tier]["cpus"])
-    if workers != expected_workers:
+    if workers < 1 or workers > expected_workers:
         raise ValueError(
-            f"{tier} tier requires exactly {expected_workers} workers, got {workers}")
+            f"{tier} tier permits 1..{expected_workers} workers, got {workers}")
 
     selection = _read_json(selection_manifest)
     source = selection["cases"][int(case["source_index"])]

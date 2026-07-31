@@ -43,11 +43,11 @@ class _SymCand:
     """
     __slots__ = (
         'mapping', 'blocks', 'exact_fixed', 'multiplicity',
-        'automorph_blocks', 'automorph_generators',
+        'automorph_blocks',
     )
 
     def __init__(self, mapping=None, blocks=(), exact_fixed=(), multiplicity=1,
-                 automorph_blocks=(), automorph_generators=()):
+                 automorph_blocks=()):
         blocks = tuple(blocks)
         block_r = {r for b in blocks for r in b.r_atoms}
         raw = dict(mapping or {})
@@ -83,18 +83,6 @@ class _SymCand:
             expanded_automorph_blocks.append(_SymBlock(
                 tuple(r_atoms), tuple(p_atoms), extendable=False))
         self.automorph_blocks = tuple(expanded_automorph_blocks)
-        generators = []
-        seen_generators = set()
-        for raw in automorph_generators:
-            generator = tuple(int(image) for image in raw)
-            if set(generator) != set(range(len(generator))):
-                raise ValueError("candidate automorphism is not a permutation")
-            if generator == tuple(range(len(generator))):
-                continue
-            if generator not in seen_generators:
-                seen_generators.add(generator)
-                generators.append(generator)
-        self.automorph_generators = tuple(generators)
 
     def __contains__(self, r):
         return r in self.mapping
@@ -126,8 +114,7 @@ class _SymCand:
         m[r] = p
         try:
             return _SymCand(m, self.blocks, self.exact_fixed,
-                            self.multiplicity, self.automorph_blocks,
-                            self.automorph_generators)
+                            self.multiplicity, self.automorph_blocks)
         except ValueError:
             return None
 
@@ -143,8 +130,7 @@ class _SymCand:
         try:
             return _SymCand(self.mapping, self.blocks + (b,),
                             self.exact_fixed, self.multiplicity,
-                            self.automorph_blocks,
-                            self.automorph_generators)
+                            self.automorph_blocks)
         except ValueError:
             return None
 
@@ -159,8 +145,7 @@ class _SymCand:
                                       extendable=b.extendable)
         try:
             return _SymCand(self.mapping, blocks, self.exact_fixed,
-                            self.multiplicity, self.automorph_blocks,
-                            self.automorph_generators)
+                            self.multiplicity, self.automorph_blocks)
         except ValueError:
             return None
 
@@ -180,52 +165,18 @@ class _SymCand:
         m.update(assignments)
         try:
             return _SymCand(m, self.blocks, self.exact_fixed,
-                            self.multiplicity, self.automorph_blocks,
-                            self.automorph_generators)
+                            self.multiplicity, self.automorph_blocks)
         except ValueError:
             return None
 
     def with_multiplicity(self, multiplicity):
         return _SymCand(self.mapping, self.blocks, self.exact_fixed,
-                        multiplicity, self.automorph_blocks,
-                        self.automorph_generators)
+                        multiplicity, self.automorph_blocks)
 
-    def with_automorph_equivalent(self, other, transporter):
-        """Merge one proven-equivalent candidate using its exact transporter.
-
-        ``transporter`` maps target labels in ``other`` into this candidate's
-        frame.  Connected atom domains remain display metadata; the exact
-        generated subgroup is retained separately and is authoritative.
-        """
+    def with_automorph_equivalent(self, other):
+        """Merge an exactly automorphic witness without storing a bijection."""
         if not isinstance(other, _SymCand):
             other = _SymCand(other)
-        transporter = tuple(int(image) for image in transporter)
-        degree = len(transporter)
-        if set(transporter) != set(range(degree)):
-            raise ValueError("candidate transporter is not a permutation")
-
-        def inverse(permutation):
-            result = [0] * len(permutation)
-            for atom, image in enumerate(permutation):
-                result[image] = atom
-            return tuple(result)
-
-        def compose(first, second):
-            """Return ``second o first``."""
-            return tuple(second[first[atom]] for atom in range(len(first)))
-
-        transporter_inverse = inverse(transporter)
-        generators = list(self.automorph_generators)
-        # From the kept representative, the inverse transporter reaches the
-        # removed representative exactly.
-        generators.append(transporter_inverse)
-        for generator in other.automorph_generators:
-            if len(generator) != degree:
-                raise ValueError("candidate generator/transporter size mismatch")
-            # Move the removed candidate's group into the kept frame:
-            # transporter o generator o transporter^-1.
-            generators.append(compose(
-                compose(transporter_inverse, generator), transporter))
         varying_r = tuple(sorted(
             r for r in set(self.mapping) & set(other.mapping)
             if self.mapping[r] != other.mapping[r]
@@ -238,9 +189,8 @@ class _SymCand:
             }))
             blocks.append(_SymBlock(varying_r, p_atoms, extendable=False))
 
-        # Retain the historical connected-domain summary for search behavior
-        # and display compatibility.  It is explicitly non-authoritative;
-        # ``automorph_generators`` carries the exact subgroup.
+        # The domain is search/display metadata.  The exact automorphism group
+        # is reconstructed from the completed AAM fragment relation.
         merged = []
         for block in blocks:
             r_set = set(block.r_atoms)
@@ -264,7 +214,7 @@ class _SymCand:
         return _SymCand(
             self.mapping, self.blocks, self.exact_fixed,
             self.multiplicity + other.multiplicity,
-            tuple(merged), tuple(generators))
+            tuple(merged))
 
     def structural_signature(self, g_R, g_P, r_orbits=None, p_orbits=None):
         block_r = {r for b in self.blocks for r in b.r_atoms}
@@ -340,10 +290,6 @@ def _symmetry_state(cand, r_orbits=None, p_orbits=None):
             'assignments': 'exact_group',
             'source': 'exact_automorph_group',
         } for block in cand.automorph_blocks]
-        item['automorph_generators'] = [
-            [int(image) for image in generator]
-            for generator in cand.automorph_generators
-        ]
         for block in cand.blocks:
             item['blocks'].append({
                 'r_atoms': [int(x) for x in block.r_atoms],

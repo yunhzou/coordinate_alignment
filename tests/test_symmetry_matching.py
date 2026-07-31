@@ -1130,7 +1130,7 @@ def test_cut_sweep_preserves_branch_exact_automorph_group():
     fragment_symmetry = branch_symmetry["fragments"][0]["symmetry"]
     assert fragment_symmetry["automorph_blocks"][0]["source"] == (
         "exact_automorph_group")
-    assert fragment_symmetry["automorph_generators"] == [[1, 0]]
+    assert "automorph_generators" not in fragment_symmetry
 
 
 def test_anchored_noop_seed_does_not_keep_pass_loop_alive():
