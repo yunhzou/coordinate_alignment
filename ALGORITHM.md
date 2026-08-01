@@ -550,12 +550,25 @@ reconfigured instead of invalidating the entire mapping family.
 
 ## 12. RMSD Selection Inside the Exact Family
 
-The finalized fragment records already contain dense atom permutations in
-`symmetry.automorph_generators`. Post-AAM selection reuses those permutations;
-it does not call pynauty again and does not rebuild a second relational graph.
-The generators are split into exact disjoint-support factors. Each local
-factor is closed independently, but their global Cartesian product is never
-materialized.
+Every maximal `AAMBranch` carries the authoritative compiled mapping family:
+its representative, exact target generators, target orbits, group order, and
+the in-memory colored relation used to prove family equality/containment.
+Post-AAM selection reuses this object; endpoint chemistry and fragment
+symmetry are not recomputed.
+
+There are two exact execution strategies. SymPy Schreier-Sims first measures
+the group and overlapping-support component orders without enumerating group
+elements:
+
+1. when the complete action is at most 1,000,000 and every component is at
+   most 4,096, components are closed and filtered directly;
+2. for a larger entangled action, chirality colors are added to the already
+   compiled AAM relation and pynauty returns the exact chirality subgroup.
+
+The second route is not a fallback and does not rematch atoms. It is the
+algebraically appropriate representation for wreath-product-like groups where
+materializing one support component would itself be combinatorial. Both
+routes operate on the same AAM family and return an exact subgroup/coset.
 
 Factors touching chirality frames, a hard anchor, or a potentially changing
 bond event are filtered explicitly. Event sensitivity is tested over every
@@ -617,8 +630,11 @@ lower bound on RMSD. If it cannot improve the incumbent, the complete group
 subtree is discarded. Tie-breaking remains deterministic by rounded RMSD and
 the complete mapping tuple.
 
-The search is exact. Local connected-factor actions are still closed
-explicitly, but the global product is never enumerated as atom bijections.
+The search is exact. On the direct route, local connected-factor actions are
+closed explicitly but the global product is never enumerated as atom
+bijections. On the entangled route, orientation restriction first reduces the
+compiled family (for example, the Ni TS11 family becomes 324 valid actions),
+then the same exact covariance search scores the reduced action.
 
 ## 13. Post-AAM Parallelism and Performance
 
@@ -708,12 +724,14 @@ If every minimum-event mechanism is rejected, the pipeline raises an
 | `n_seeds` | `3` | seed orders per cut work unit |
 | `max_branches` | `100` in BGCP | post-dedupe live leaves per parent subtree |
 | `SYM_SUPPORT_MAX_STATES` | `4096` | local correlated block-support cap |
+| direct component order | `4096` | direct exact action-closure strategy limit |
+| direct total group order | `1,000,000` | direct vs compiled-relation exact strategy |
 | `symmetry_repair_max_evals` | `20000` | bounded completed-representative repair |
 | analytical compile workers | up to `48` | process parallelism for large branch sets |
 
 ## 18. Verification Record
 
-The current implementation is covered by 152 automated tests. Important
+The current implementation is covered by 154 automated tests. Important
 checks include:
 
 - cached and uncached relational graphs are identical;
@@ -721,7 +739,8 @@ checks include:
   exhaustive enumeration while evaluating one complete mapping and proving
   the other 8191 cannot win;
 - TS01 retains one mechanism, one maximal family, and all 82 paths;
-- TS04 retains all four exact mechanisms with zero chirality violations;
+- TS04 retains all four exact mechanisms and 2187 chirality-valid actions per
+  mechanism, with zero violations;
 - PR9 TS41a-endo matches the prior corrected mapping and event;
 - PR8 retains 19 compatible higher-coordinate frames and records one
   reconfigured frame;
@@ -743,6 +762,22 @@ The direct stored-group regression gates additionally show:
 - concrete Fe TS8 events using R15 and R26 have the same exact WBO-colored
   mechanism certificate; regression checks therefore compare canonical event
   certificates rather than arbitrary symmetry-equivalent atom labels.
+
+The final revision `3b1e34c` was rerun over the complete 140-case manifest:
+
+- 140/140 cases succeeded, producing 166 mechanisms;
+- every selected mechanism reports zero index-chirality violations;
+- all 139 cases shared with the previous analytical batch retain their
+  mechanism count;
+- two concrete event representatives changed atom labels, and both pairs have
+  identical exact mechanism certificates;
+- 114 mechanisms used direct stored-group actions and 52 used the exact
+  compiled-relation subgroup route;
+- summed per-case wall time fell from 10,652 s to 9,165 s on the 139 directly
+  comparable cases; median time ratio was 0.988;
+- the compact self-contained viewer contains all 140 cases, and the aligned
+  package contains 332 XYZ files (`R.xyz` and `P_aligned.xyz` for each of 166
+  mechanisms).
 
 These checks are a regression sample, not a substitute for rerunning the full
 140-case batch after future changes to search equivalence, mechanism
