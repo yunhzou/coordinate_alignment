@@ -1991,6 +1991,42 @@ def select_index_chirality_assignment(
         add_frame_relations(local_relation, keys)
         if _canonical_isomorphism(
                 local_relation.graph("A"), local_relation.graph("B")) is None:
+            high_coordinate = any(
+                len(persistent_P[center_P]) > 4
+                for center_P, _neighbors_P in keys)
+            if not high_coordinate:
+                # A persistent three- or four-coordinate simplex is the
+                # complete local orientation constraint.  Calling it a
+                # "reconfiguration" after the exact AAM family cannot
+                # realize its orientation silently converts a failed hard
+                # constraint into a successful result.  Only the dependent
+                # simplex basis at a higher-coordinate center may discard an
+                # incompatible member.
+                mismatch_frames = [
+                    frame_records[key][0] for key in keys
+                    if frame_records[key][0].sign_R
+                    != frame_records[key][0].sign_P_source
+                ]
+                raise IndexChiralityConflict(
+                    "ordinary persistent coordination center has no "
+                    "chirality-consistent action in the selected AAM family",
+                    diagnostics={
+                        "constraint_model": (
+                            "hard_ordinary_affine_substituent_simplex"),
+                        "center_R": sorted({
+                            int(frame_records[key][0].center_R)
+                            for key in keys
+                        }),
+                        "source_mismatch_frames": [{
+                            "id": frame.frame_id,
+                            "center_R": frame.center_R,
+                            "neighbors_R_index_order": list(
+                                frame.neighbors_R),
+                            "reactant_orientation_sign": frame.sign_R,
+                            "source_product_orientation_sign": (
+                                frame.sign_P_source),
+                        } for frame in mismatch_frames],
+                    })
             for key in keys:
                 frame, measure_R, measure_P = frame_records[key]
                 reconfigured_frames.append({
@@ -2000,8 +2036,8 @@ def select_index_chirality_assignment(
                     "reactant_orientation_sign": measure_R.sign,
                     "source_product_orientation_sign": measure_P.sign,
                     "reason": (
-                        "local_coordination_geometry_is_not_"
-                        "stereochemically_equivalent"),
+                        "high_coordination_dependent_frame_"
+                        "reconfiguration"),
                 })
             continue
         eligible_center_roots.add(root)

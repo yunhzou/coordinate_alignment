@@ -221,6 +221,38 @@ def test_entangled_group_reuses_compiled_aam_relation(monkeypatch):
         "compiled_AAM_relation_chirality_subgroup")
 
 
+def test_compiled_family_cannot_drop_an_incompatible_ordinary_frame(
+        monkeypatch):
+    elements, coords, wbo, _identity, odd, symmetry = _tetrahedral_case()
+    family = compile_analytical_mapping_family(
+        odd, symmetry, elements, wbo, elements, wbo)
+    base_vertices = family.graph_A.number_of_vertices
+    canonical_isomorphism = index_chirality_module._canonical_isomorphism
+
+    def reject_oriented_relation(graph_A, graph_B):
+        # Model an exact AAM family whose base relation is valid but whose
+        # orientation-colored subgroup is empty.
+        if graph_A.number_of_vertices > base_vertices:
+            return None
+        return canonical_isomorphism(graph_A, graph_B)
+
+    monkeypatch.setattr(
+        index_chirality_module, "_canonical_isomorphism",
+        reject_oriented_relation)
+
+    with pytest.raises(IndexChiralityConflict) as caught:
+        select_index_chirality_assignment(
+            odd, symmetry,
+            elements, coords, wbo,
+            elements, coords, wbo,
+            compiled_aam_family=family)
+
+    diagnostics = caught.value.diagnostics
+    assert diagnostics["constraint_model"] == (
+        "hard_ordinary_affine_substituent_simplex")
+    assert diagnostics["center_R"] == [0]
+
+
 def test_exact_symmetry_freedom_corrects_orientation_without_display_block():
     elements, coords_R, wbo, identity, _odd, _symmetry = _tetrahedral_case()
     coords_P = coords_R.copy()
