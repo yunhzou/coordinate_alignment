@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from functools import lru_cache
 from itertools import combinations, permutations, product
 from typing import Mapping, Sequence
 
@@ -28,6 +29,7 @@ GROUP_ORIENTATION_DEGENERACY_TOL = 0.0
 # entangled components are restricted by adding chirality colors to the
 # already-compiled AAM relation; both routes represent the same exact group.
 DIRECT_ACTION_COMPONENT_MAX_ORDER = 4096
+DIRECT_ACTION_GROUP_MAX_ORDER = 1_000_000
 
 
 class IndexChiralityError(ValueError):
@@ -1222,60 +1224,6 @@ def _perm_inverse(permutation):
     return tuple(inverse)
 
 
-class _PermutationGroupChain:
-    """Exact Schreier chain used to measure a generated action compactly."""
-
-    def __init__(self, generators, degree):
-        self.degree = int(degree)
-        self.identity = tuple(range(self.degree))
-        generators = tuple(dict.fromkeys(
-            tuple(map(int, generator)) for generator in generators
-            if tuple(map(int, generator)) != self.identity))
-        self.base = None
-        self.transversals = {}
-        self.child = None
-        if not generators:
-            return
-        moved = sorted({
-            atom for generator in generators
-            for atom, image in enumerate(generator) if atom != image
-        })
-        if not moved:
-            return
-        self.base = moved[0]
-        transversals = {self.base: self.identity}
-        queue = [self.base]
-        while queue:
-            point = queue.pop(0)
-            transversal = transversals[point]
-            for generator in generators:
-                image = generator[point]
-                if image in transversals:
-                    continue
-                transversals[image] = _perm_compose(
-                    transversal, generator)
-                queue.append(image)
-        self.transversals = transversals
-        schreier = []
-        seen = set()
-        for point, transversal in transversals.items():
-            for generator in generators:
-                image = generator[point]
-                stabilizer = _perm_compose(
-                    _perm_compose(transversal, generator),
-                    _perm_inverse(transversals[image]))
-                if stabilizer != self.identity and stabilizer not in seen:
-                    seen.add(stabilizer)
-                    schreier.append(stabilizer)
-        self.child = _PermutationGroupChain(schreier, self.degree)
-
-    @property
-    def order(self):
-        if self.base is None:
-            return 1
-        return len(self.transversals) * self.child.order
-
-
 def _generator_support_components(generators, degree):
     """Return exact overlapping-support generator components."""
     identity = tuple(range(int(degree)))
@@ -1312,9 +1260,27 @@ def _generator_support_components(generators, degree):
         components.items()))
 
 
+@lru_cache(maxsize=256)
+def _permutation_group_order(component, degree):
+    # SymPy's deterministic Schreier-Sims implementation obtains the exact
+    # order without enumerating the component.  A home-grown Schreier closure
+    # was both redundant and pathological for nested wreath-product actions.
+    from sympy.combinatorics import Permutation, PermutationGroup
+
+    return int(PermutationGroup([
+        Permutation(generator, size=int(degree))
+        for generator in component
+    ]).order())
+
+
 def _requires_compiled_relation_subgroup(generators, degree):
+    generators = tuple(dict.fromkeys(
+        tuple(map(int, generator)) for generator in generators))
+    if (_permutation_group_order(generators, int(degree))
+            > DIRECT_ACTION_GROUP_MAX_ORDER):
+        return True
     return any(
-        _PermutationGroupChain(component, degree).order
+        _permutation_group_order(component, int(degree))
         > DIRECT_ACTION_COMPONENT_MAX_ORDER
         for component in _generator_support_components(generators, degree))
 
