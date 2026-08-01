@@ -15,6 +15,9 @@
           "formed_bonds_R": [[10, 12], [11, 12], [15, 37]]
         }
       ],
+      "mechanism_event_certificate_digests": [
+        "68a5b155eac53fef4cf6c614aa84d8879a3a9d6f0937ccbaa2ffb430faf6e792"
+      ],
       "hard_call_limits": {
         "complete_chosen_automorphism_groups": 1
       },

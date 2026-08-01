@@ -159,7 +159,9 @@ def main():
     source_root = args.source_root.resolve()
     sys.path.insert(0, str(source_root / "src"))
     from rxn_core import cut_sweep
+    from rxn_core.alignment.sweep import _MechanismEventCanonicalizer
     from rxn_core.benchmark_regression import evaluate_record, load_contract
+    from rxn_core.frag import build_graph
     import rxn_core.alignment.sweep as sweep_module
     import rxn_core.pipeline as pipeline_module
     from rxn_core.alignment.index_chirality import fixed_mapping_aligned_rmsd
@@ -223,12 +225,20 @@ def main():
         ledger.restore()
     post_seconds = time.perf_counter() - post_started
 
+    event_canonicalizer = _MechanismEventCanonicalizer(
+        build_graph(inputs.elR, inputs.wboR,
+                    bond_cut=config.get("graph_floor", 0.2)),
+        wbo_tol=float(config.get("iso_tol", 1.0)))
     mechanisms = []
     for mechanism in result.get("mechanisms") or ():
         mapping = {int(r): int(p)
                    for r, p in mechanism["mapping_RP"].items()}
         index = mechanism.get("index_chirality") or {}
         post = mechanism.get("post_aam") or {}
+        broken_bonds = mechanism.get("broken_bonds_R") or []
+        formed_bonds = mechanism.get("formed_bonds_R") or []
+        event_certificate = event_canonicalizer.certificate(
+            broken_bonds, formed_bonds)
         degeneracy_groups = [{
             "center_R": block.get("center_R"),
             "r_atoms": sorted(map(int, block.get("r_atoms") or ())),
@@ -238,8 +248,10 @@ def main():
                         .get("blocks") or ())]
         mechanisms.append({
             "id": int(mechanism["id"]),
-            "broken_bonds_R": mechanism.get("broken_bonds_R") or [],
-            "formed_bonds_R": mechanism.get("formed_bonds_R") or [],
+            "broken_bonds_R": broken_bonds,
+            "formed_bonds_R": formed_bonds,
+            "event_certificate_digest": hashlib.sha256(
+                bytes.fromhex(event_certificate)).hexdigest(),
             "mapping_digest": _digest(mapping),
             "fixed_mapping_rmsd": fixed_mapping_aligned_rmsd(
                 mapping, inputs.xyzR, inputs.xyzP),

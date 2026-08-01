@@ -23,6 +23,8 @@ def _healthy_record():
         "mechanisms": [{
             "broken_bonds_R": [[15, 12], [37, 12]],
             "formed_bonds_R": [[12, 10], [12, 11], [37, 15]],
+            "event_certificate_digest": (
+                "68a5b155eac53fef4cf6c614aa84d8879a3a9d6f0937ccbaa2ffb430faf6e792"),
             "index_chirality_violations": 0,
             "degeneracy_groups": [],
         }],
@@ -54,6 +56,7 @@ def test_contract_is_versioned_and_healthy_record_passes():
 def test_contract_detects_chemistry_branch_memory_and_time_regressions():
     record = _healthy_record()
     record["mechanisms"][0]["formed_bonds_R"] = [[0, 1]]
+    record["mechanisms"][0]["event_certificate_digest"] = "wrong"
     record["mechanisms"][0]["index_chirality_violations"] = 1
     record["regression_metrics"]["max_live_branches"] = 101
     record["total_seconds"] = 1101
@@ -62,7 +65,7 @@ def test_contract_detects_chemistry_branch_memory_and_time_regressions():
     report = evaluate_record(
         record, load_contract(CONTRACT), performance_profile="cpunodes_16")
     text = "\n".join(report["failures"])
-    assert "bond-change events" in text
+    assert "mechanism event certificates" in text
     assert "chirality violations" in text
     assert "max_live_branches exceeded" in text
     assert "total_seconds exceeded" in text

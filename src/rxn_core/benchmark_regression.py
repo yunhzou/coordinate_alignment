@@ -47,6 +47,13 @@ def evaluate_record(record, contract, performance_profile=None):
           int(record.get("selected_mechanism_count", -1)),
           int(case.get("selected_mechanism_count", 1)))
 
+    expected_event_certificates = set(
+        map(str, case.get("mechanism_event_certificate_digests") or ()))
+    observed_event_certificates = {
+        str(item.get("event_certificate_digest"))
+        for item in record.get("mechanisms") or ()
+        if item.get("event_certificate_digest") is not None
+    }
     expected_events = {
         (
             frozenset(_bond_set(item.get("broken_bonds_R"))),
@@ -54,7 +61,13 @@ def evaluate_record(record, contract, performance_profile=None):
         )
         for item in case.get("mechanism_events") or ()
     }
-    if expected_events and _mechanism_events(record) != expected_events:
+    if (expected_event_certificates
+            and observed_event_certificates != expected_event_certificates):
+        failures.append(
+            "symmetry-canonical mechanism event certificates differ from "
+            "ground truth")
+    elif (not expected_event_certificates and expected_events
+          and _mechanism_events(record) != expected_events):
         failures.append("mechanism bond-change events differ from ground truth")
 
     for mechanism in record.get("mechanisms") or ():
