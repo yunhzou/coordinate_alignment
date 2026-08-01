@@ -12,6 +12,7 @@ Parallelized via multiprocessing.
 """
 from __future__ import annotations
 import argparse
+import copy
 import concurrent.futures as cf
 import json
 import multiprocessing as mp
@@ -1884,6 +1885,37 @@ def _analytical_branch_payload_key(branch):
     return tuple(sorted(mapping.items())), fragments
 
 
+def _merge_stored_fragment_groups(kept_branch, incoming_branch):
+    """Union exact generators while collapsing an identical branch input."""
+    kept_fragments = {
+        tuple(sorted(map(int, fragment.get('fragment') or ()))): fragment
+        for fragment in (kept_branch.get('hierarchy') or {}).get(
+            'fragments') or ()
+    }
+    for incoming in (incoming_branch.get('hierarchy') or {}).get(
+            'fragments') or ():
+        key = tuple(sorted(map(int, incoming.get('fragment') or ())))
+        kept = kept_fragments.get(key)
+        if kept is None:
+            continue
+        kept_symmetry = kept.setdefault('symmetry', {})
+        incoming_symmetry = incoming.get('symmetry') or {}
+        if ('automorph_generators' not in kept_symmetry
+                and 'automorph_generators' not in incoming_symmetry):
+            continue
+        generators = {
+            tuple(map(int, generator))
+            for generator in kept_symmetry.get(
+                'automorph_generators') or ()
+        }
+        generators.update(
+            tuple(map(int, generator))
+            for generator in incoming_symmetry.get(
+                'automorph_generators') or ())
+        kept_symmetry['automorph_generators'] = [
+            list(generator) for generator in sorted(generators)]
+
+
 def _compile_analytical_families(inputs, branches, cfg, static_context=None):
     """Compile independent exact cosets in parallel when CPUs are available."""
     context = {
@@ -1987,7 +2019,7 @@ def _dedupe_analytical_mapping_families(
     for source_index, raw in enumerate(branches):
         key = _analytical_branch_payload_key(raw)
         group = payload_groups.get(key)
-        branch = dict(raw)
+        branch = copy.deepcopy(raw)
         provenance = {
             'source_branch_index': int(source_index),
             'cuts': [list(map(int, cut))
@@ -2003,6 +2035,7 @@ def _dedupe_analytical_mapping_families(
             }
             continue
         kept = group['branch']
+        _merge_stored_fragment_groups(kept, branch)
         kept['encounter_count'] = (
             int(kept.get('encounter_count', 1))
             + int(branch.get('encounter_count', 1)))
@@ -2121,13 +2154,13 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'hierarchy': info.get('branch_symmetry') or {},
             'encounter_count': int(info.get('dedup_count', 1)),
         }])
+        raw_analytical_branches = attach_completed_candidate_groups(
+            raw_analytical_branches, g_P_full,
+            wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
         phase_start = time.time()
         analytical_branches = _dedupe_analytical_mapping_families(
             inputs, raw_analytical_branches, cfg,
             static_context=analytical_static_context)
-        analytical_branches = attach_completed_candidate_groups(
-            analytical_branches, g_P_full,
-            wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
         phase_seconds['analytical_family_dedupe_seconds'] += (
             time.time() - phase_start)
         analytical_info = dict(info)

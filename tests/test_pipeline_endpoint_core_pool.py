@@ -859,6 +859,22 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism(monkeypatch):
     assert exact_group_supplied
 
 
+def test_identical_branch_payload_merge_retains_generator_union():
+    kept = {"hierarchy": {"fragments": [{
+        "fragment": [0, 1, 2],
+        "symmetry": {"automorph_generators": [[1, 0, 2]]},
+    }]}}
+    incoming = {"hierarchy": {"fragments": [{
+        "fragment": [0, 1, 2],
+        "symmetry": {"automorph_generators": [[0, 2, 1]]},
+    }]}}
+
+    pipeline._merge_stored_fragment_groups(kept, incoming)
+
+    assert kept["hierarchy"]["fragments"][0]["symmetry"][
+        "automorph_generators"] == [[0, 2, 1], [1, 0, 2]]
+
+
 def test_array_based_mechanism_discovery_returns_aligned_product():
     el = ["H", "H"]
     xyz_r = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.75]])
