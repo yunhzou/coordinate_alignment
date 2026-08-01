@@ -154,8 +154,8 @@ P elements/WBO/XYZ -------------->+-----------v-----------+
                          +--------------------+--------------------+
                                               |
                          +--------------------v--------------------+
-                         | add local and group orientation         |
-                         | solve exact oriented isomorphism        |
+                        | reuse finalized AAM generators          |
+                        | filter exact local actions by chirality |
                          +--------------------+--------------------+
                                               |
                          +--------------------v--------------------+
@@ -509,13 +509,20 @@ near-planarity tolerance.
 
 ### 11.2 Local persistent centers
 
-Persistent neighbor simplices are found from the selected branch relation,
-not from display color groups. Pynauty stabilizer orbits determine whether a
-center's neighbors are actually movable. Signed ordered-simplex relation
-vertices are then added to A and B.
+Persistent neighbor simplices are found from the selected branch, not from
+display color groups. Mutability comes from two exact AAM sources:
 
-The oriented graph is solved as one simultaneous isomorphism problem. There
-is no degree-four-only swap rule and no sequential local shuffle.
+1. point stabilizers of the finalized fragment automorphism generators;
+2. correlated assignments represented by the maximal branch families.
+
+A center is constrained only when its complete R neighbor shell maps onto the
+same P neighbor shell. Coordination-changing event centers are therefore not
+incorrectly rejected as persistent stereocenters. For every mutable persistent
+center, the algorithm constructs all defined affine simplices: three ligands
+at coordination three and four-ligand simplices at higher coordination.
+
+There is no degree-four-only swap rule, sequential greedy shuffle, or sampled
+witness fallback.
 
 ### 11.3 Higher-coordinate group orientation
 
@@ -525,16 +532,17 @@ triple crosses coplanarity even while the overall ligand assignment remains
 consistent. Requiring every one of `C(k,3)` signs as a hard constraint can
 therefore reject a valid family.
 
-The current algorithm builds a maximal feasible signed-frame basis:
+The current algorithm builds a maximal feasible signed-frame basis directly
+inside the stored AAM action:
 
 1. construct all defined group-level triples;
 2. rank them by endpoint-normalized geometric robustness;
-3. add each complete ordered-sign relation to a trial relational graph;
-4. retain it only if the cumulative graph still admits an exact isomorphism;
+3. filter the still-valid exact local factor actions by each frame;
+4. retain a frame only when at least one cumulative action remains;
 5. record incompatible dependent triples as geometric reconfiguration.
 
 This is not a witness fallback. Every retained constraint is solved against
-the complete analytical family. The excluded frame is explicitly reported.
+the finalized AAM group. The excluded frame is explicitly reported.
 
 PR8 demonstrates the distinction: 19 R48 frames are simultaneously
 preserved, while the nearly coplanar `[34,41,43]` frame is recorded as
@@ -542,9 +550,22 @@ reconfigured instead of invalidating the entire mapping family.
 
 ## 12. RMSD Selection Inside the Exact Family
 
-After orientation relations are added, pynauty returns generators of the
-chirality-valid target action. Relation-vertex-only kernel permutations are
-discarded by restricting each generator to atom vertices.
+The finalized fragment records already contain dense atom permutations in
+`symmetry.automorph_generators`. Post-AAM selection reuses those permutations;
+it does not call pynauty again and does not rebuild a second relational graph.
+The generators are split into exact disjoint-support factors. Each local
+factor is closed independently, but their global Cartesian product is never
+materialized.
+
+Factors touching chirality frames, a hard anchor, or a potentially changing
+bond event are filtered explicitly. Event sensitivity is tested over every
+action of a local factor, not just the supplied generator list, so a generator
+product cannot silently change the chosen mechanism. Factors independent of
+all constraints remain as generators for exact RMSD minimization.
+
+Completed branch representatives contribute correlated mutability detection,
+but they are not treated as random RMSD candidates. Each maximal family is
+evaluated independently; only exact group actions are scored.
 
 For any candidate mapping, RMSD uses immutable correspondence:
 
@@ -692,7 +713,7 @@ If every minimum-event mechanism is rejected, the pipeline raises an
 
 ## 18. Verification Record
 
-The current implementation is covered by 136 automated tests. Important
+The current implementation is covered by 152 automated tests. Important
 checks include:
 
 - cached and uncached relational graphs are identical;
@@ -700,8 +721,7 @@ checks include:
   exhaustive enumeration while evaluating one complete mapping and proving
   the other 8191 cannot win;
 - TS01 retains one mechanism, one maximal family, and all 82 paths;
-- TS04 retains all four exact mechanisms and 2187 chirality-valid mappings per
-  mechanism;
+- TS04 retains all four exact mechanisms with zero chirality violations;
 - PR9 TS41a-endo matches the prior corrected mapping and event;
 - PR8 retains 19 compatible higher-coordinate frames and records one
   reconfigured frame;
@@ -710,6 +730,19 @@ checks include:
   families;
 - 95-atom Noyori TS65 completes with two exact mechanisms and zero chirality
   violations.
+
+The direct stored-group regression gates additionally show:
+
+- TS01: one mechanism, one maximal family, all 82 growth paths, and a
+  self-contained viewer;
+- PR9 TS41a-endo: unchanged event, zero violations, and 3.47 seconds total;
+- Fe TS2 (83 atoms, 16 workers): 23.9 seconds total, with chirality/RMSD
+  reduced from 792 seconds to 0.98 seconds;
+- Fe TS8 (82 atoms, 16 workers): 313 seconds total versus 823 seconds before,
+  with post-AAM reduced to 13.7 seconds;
+- concrete Fe TS8 events using R15 and R26 have the same exact WBO-colored
+  mechanism certificate; regression checks therefore compare canonical event
+  certificates rather than arbitrary symmetry-equivalent atom labels.
 
 These checks are a regression sample, not a substitute for rerunning the full
 140-case batch after future changes to search equivalence, mechanism
