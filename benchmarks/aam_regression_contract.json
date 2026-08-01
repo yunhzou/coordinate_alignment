@@ -15,9 +15,6 @@
         }
       ],
       "hard_call_limits": {
-        "complete_chosen_automorphism_groups": 2
-      },
-      "target_call_limits": {
         "complete_chosen_automorphism_groups": 1
       },
       "performance_profiles": {
@@ -39,9 +36,6 @@
         }
       ],
       "hard_call_limits": {
-        "complete_chosen_automorphism_groups": 2
-      },
-      "target_call_limits": {
         "complete_chosen_automorphism_groups": 1
       },
       "performance_profiles": {
@@ -63,9 +57,6 @@
         }
       ],
       "hard_call_limits": {
-        "complete_chosen_automorphism_groups": 2
-      },
-      "target_call_limits": {
         "complete_chosen_automorphism_groups": 1
       }
     },
@@ -81,9 +72,6 @@
         }
       ],
       "hard_call_limits": {
-        "complete_chosen_automorphism_groups": 2
-      },
-      "target_call_limits": {
         "complete_chosen_automorphism_groups": 1
       }
     }

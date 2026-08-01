@@ -798,7 +798,7 @@ def test_view_data_does_not_emit_endpoint_degeneracy_orbits():
     assert "degeneracy" not in data["product"]
 
 
-def test_rp_stage_carries_branch_symmetry_to_mechanism():
+def test_rp_stage_carries_branch_symmetry_to_mechanism(monkeypatch):
     wbo = np.zeros((2, 2))
     wbo[0, 1] = wbo[1, 0] = 0.9
     inputs = pipeline.step_inputs_from_arrays(
@@ -813,6 +813,17 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
     cfg = pipeline.rp_stage_config()
     cfg["n_seeds"] = 1
     cfg["symmetry_repair"] = False
+
+    calls = 0
+    original = pipeline.complete_chosen_automorphism_groups
+
+    def measured(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        pipeline, "complete_chosen_automorphism_groups", measured)
 
     result = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=0)
 
@@ -835,6 +846,7 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism():
         + result["timing"]["post_aam_seconds"])
     assert result["timing"]["analytical_family_dedupe_seconds"] >= 0.0
     assert result["timing"]["chirality_rmsd_seconds"] >= 0.0
+    assert calls == len(result["mechanisms"]) == 1
 
 
 def test_array_based_mechanism_discovery_returns_aligned_product():

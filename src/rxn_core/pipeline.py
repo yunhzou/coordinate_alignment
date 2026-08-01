@@ -2269,10 +2269,6 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
     mechanisms = dedupe_mechanisms_by_bond_changes(mechanisms, r_orbits)
     for mechanism in mechanisms:
-        mechanism['branch_symmetry'] = complete_chosen_automorphism_groups(
-            mechanism.get('branch_symmetry') or {},
-            _int_mapping(mechanism.get('mapping_RP') or {}),
-            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
         if mechanism.get('index_chirality'):
             mechanism['branch_symmetry']['index_chirality'] = dict(
                 mechanism['index_chirality'])

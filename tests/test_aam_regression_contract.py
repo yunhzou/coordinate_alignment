@@ -61,16 +61,15 @@ def test_contract_detects_chemistry_branch_memory_and_time_regressions():
     assert "peak_process_tree_rss_kb exceeded" in text
 
 
-def test_duplicate_degeneracy_work_is_reported_separately_from_hard_failure():
+def test_duplicate_degeneracy_work_is_a_hard_regression():
     record = _healthy_record()
     record["regression_metrics"]["post_aam_call_counts"][
         "complete_chosen_automorphism_groups"] = 2
 
     report = evaluate_record(record, load_contract(CONTRACT))
-    assert report["passed"] is True
-    assert report["failures"] == []
-    assert report["advisories"] == [
-        "complete_chosen_automorphism_groups remains redundant: 2>1"]
+    assert report["passed"] is False
+    assert report["failures"] == [
+        "complete_chosen_automorphism_groups call count exceeded: 2>1"]
 
 
 def test_contract_json_contains_no_environment_specific_paths():
