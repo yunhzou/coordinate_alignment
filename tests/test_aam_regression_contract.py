@@ -16,6 +16,8 @@ def _healthy_record():
         "case": CASE,
         "atom_count": 82,
         "selected_mechanism_count": 1,
+        "aam_seconds": 300.0,
+        "post_aam_seconds": 500.0,
         "total_seconds": 900.0,
         "peak_process_tree_rss_kb": 2_000_000,
         "mechanisms": [{

@@ -8,6 +8,7 @@
       "selected_mechanism_count": 1,
       "max_chirality_violations": 0,
       "max_branches": 100,
+      "max_growth_candidates": 40,
       "mechanism_events": [
         {
           "broken_bonds_R": [[12, 15], [12, 37]],
@@ -19,8 +20,10 @@
       },
       "performance_profiles": {
         "cpunodes_16": {
-          "total_seconds": 1100,
-          "peak_process_tree_rss_kb": 8388608
+          "aam_seconds": 380,
+          "post_aam_seconds": 650,
+          "total_seconds": 950,
+          "peak_process_tree_rss_kb": 4194304
         }
       }
     },
@@ -29,6 +32,7 @@
       "selected_mechanism_count": 1,
       "max_chirality_violations": 0,
       "max_branches": 100,
+      "max_growth_candidates": 40,
       "mechanism_events": [
         {
           "broken_bonds_R": [[46, 59]],
@@ -40,8 +44,10 @@
       },
       "performance_profiles": {
         "cpunodes_16": {
-          "total_seconds": 1400,
-          "peak_process_tree_rss_kb": 8388608
+          "aam_seconds": 30,
+          "post_aam_seconds": 900,
+          "total_seconds": 950,
+          "peak_process_tree_rss_kb": 4194304
         }
       }
     },
