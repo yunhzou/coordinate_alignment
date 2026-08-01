@@ -86,6 +86,40 @@ def test_fragment_branch_cap_is_loud_and_allows_exact_limit():
     assert exc_info.value.limit == 2
 
 
+def test_cut_sweep_compact_metrics_are_opt_in_and_respect_branch_cap():
+    elements = ["C", "C"]
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+
+    ordinary = cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=0, n_seeds=1, max_branches=2,
+        symmetry_repair=False)
+    measured, metrics = cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=0, n_seeds=1, max_branches=2,
+        symmetry_repair=False, return_metrics=True)
+
+    assert measured == ordinary
+    assert metrics["configured_max_branches"] == 2
+    assert metrics["cuts"] == 2
+    assert metrics["seed_orders"] == 2
+    assert metrics["growth_calls"] > 0
+    assert metrics["max_live_branches"] <= 2
+    assert metrics["max_growth_candidates"] <= 2
+
+    parallel, parallel_metrics = cut_sweep(
+        elements, wbo, elements, wbo,
+        n_workers=2, n_seeds=1, max_branches=2,
+        symmetry_repair=False, return_metrics=True)
+    # Multiprocessing may return a different symmetry-equivalent witness;
+    # mechanism-family keys and compact metrics are the invariant objects.
+    assert set(parallel) == set(ordinary)
+    assert parallel_metrics["cuts"] == metrics["cuts"]
+    assert parallel_metrics["seed_orders"] == metrics["seed_orders"]
+    assert parallel_metrics["max_live_branches"] <= 2
+
+
 def test_live_branch_cap_discards_only_overflowing_parent_subtree(monkeypatch):
     g_r = build_graph(["C", "O"], np.zeros((2, 2)), bond_cut=0.2)
     g_p = build_graph(

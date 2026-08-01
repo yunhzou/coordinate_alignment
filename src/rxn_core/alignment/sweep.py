@@ -886,7 +886,7 @@ def _emit_trace(trace_path, events):
 
 def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                   g_P, g_R_full, p_orbits, r_orbits_full,
-                  *, return_trace=False):
+                  *, return_trace=False, collect_metrics=False):
     cut = tuple(tuple(int(v) for v in pair) for pair in cut)
     events = []
     out = []
@@ -927,10 +927,18 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
     total_accepted = 0
     total_repair_evals = 0
     total_repair_capped = 0
+    compact_metrics = {
+        'cuts': 1,
+        'seed_orders': 0,
+        'growth_calls': 0,
+        'subtree_branch_cap_count': 0,
+        'max_live_branches': 0,
+        'max_growth_candidates': 0,
+    }
     try:
         for order_index, order in enumerate(orders):
             seed_t0 = time.perf_counter()
-            seed_growth_profile = [] if return_trace else None
+            seed_growth_profile = [] if (return_trace or collect_metrics) else None
             try:
                 branches = _run_find_islands_limited(
                     g_R, g_P, order, core_R, cfg,
@@ -978,6 +986,17 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
 
             search_elapsed = time.perf_counter() - seed_t0
             growth_summary = _growth_trace_summary(seed_growth_profile)
+            if collect_metrics:
+                compact_metrics['seed_orders'] += 1
+                compact_metrics['growth_calls'] += int(
+                    growth_summary['calls'])
+                compact_metrics['max_growth_candidates'] = max(
+                    compact_metrics['max_growth_candidates'],
+                    int(growth_summary['max_cands_before']),
+                    int(growth_summary['max_cands_after']))
+                compact_metrics['subtree_branch_cap_count'] += sum(
+                    item.get('result') == 'subtree_branch_cap'
+                    for item in seed_growth_profile)
             total_search_elapsed += search_elapsed
             seed_score_elapsed = 0.0
             seed_expand_elapsed = 0.0
@@ -1061,6 +1080,9 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                         'repair': repair_summary,
                     })
             n_branches = len(branches)
+            if collect_metrics:
+                compact_metrics['max_live_branches'] = max(
+                    compact_metrics['max_live_branches'], n_branches)
             total_branches += n_branches
             total_accepted += seed_accepted
             total_expand_elapsed += seed_expand_elapsed
@@ -1114,7 +1136,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                 if total_branches else 0.0
             ),
         })
-    return out, events
+    return out, events, compact_metrics
 
 
 _WORKER = {}
@@ -1137,16 +1159,42 @@ def _cs_winit(elR, wboR, elT, wboT, cfg):
 
 
 def _cs_wrun(args):
-    cut, orders, core_R, trace_enabled = args
+    cut, orders, core_R, trace_enabled, metrics_enabled = args
     cfg = _WORKER['cfg']
-    out, events = _run_cut_work(
+    out, events, metrics = _run_cut_work(
         _WORKER['elR'], _WORKER['wboR'],
         _WORKER['elT'], _WORKER['wboT'],
         cfg, cut, orders, core_R,
         _WORKER['g_P'], _WORKER['g_R_full'],
         _WORKER['p_orbits'], _WORKER['r_orbits'],
-        return_trace=trace_enabled)
-    return {'results': out, 'events': events}
+        return_trace=trace_enabled, collect_metrics=metrics_enabled)
+    return {'results': out, 'events': events, 'metrics': metrics}
+
+
+def _merge_sweep_metrics(target, source):
+    target['cuts'] += int(source.get('cuts', 0))
+    target['seed_orders'] += int(source.get('seed_orders', 0))
+    target['growth_calls'] += int(source.get('growth_calls', 0))
+    target['subtree_branch_cap_count'] += int(
+        source.get('subtree_branch_cap_count', 0))
+    target['max_live_branches'] = max(
+        target['max_live_branches'],
+        int(source.get('max_live_branches', 0)))
+    target['max_growth_candidates'] = max(
+        target['max_growth_candidates'],
+        int(source.get('max_growth_candidates', 0)))
+
+
+def _new_sweep_metrics(max_branches):
+    return {
+        'configured_max_branches': int(max_branches),
+        'cuts': 0,
+        'seed_orders': 0,
+        'growth_calls': 0,
+        'subtree_branch_cap_count': 0,
+        'max_live_branches': 0,
+        'max_growth_candidates': 0,
+    }
 
 
 def cut_sweep_items(wboR, cut_floor=0.2):
@@ -1192,7 +1240,7 @@ def _cut_sweep_cfg(*, cut_floor=0.2, graph_floor=0.2, iso_tol=1.0,
 
 
 def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
-                            trace_path=None):
+                            trace_path=None, collect_metrics=False):
     graph_floor = float(cfg['graph_floor'])
     g_P = build_graph(elT, wboT, bond_cut=graph_floor)
     g_R_full = build_graph(elR, wboR, bond_cut=graph_floor)
@@ -1200,46 +1248,58 @@ def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
     p_orbits = _nauty_orbits(g_P, wbo_tol=symmetry_wbo_tol)
     r_orbits = _nauty_orbits(g_R_full, wbo_tol=symmetry_wbo_tol)
     pool = {}
+    metrics = _new_sweep_metrics(cfg['max_branches'])
 
     for cut in cuts:
         cut = tuple(tuple(pair) for pair in cut)
-        results, events = _run_cut_work(
+        results, events, cut_metrics = _run_cut_work(
             elR, wboR, elT, wboT, cfg, cut, None, core_R,
             g_P, g_R_full, p_orbits, r_orbits,
-            return_trace=bool(trace_path))
+            return_trace=bool(trace_path), collect_metrics=collect_metrics)
+        if collect_metrics:
+            _merge_sweep_metrics(metrics, cut_metrics)
         _emit_trace(trace_path, events)
         for result in results:
             sig, mapping_items, _cut = result[:3]
             branch_symmetry = result[3] if len(result) > 3 else None
             mapping = dict(mapping_items)
             _pool_add(pool, sig, mapping, _cut, branch_symmetry)
-    return pool
+    return pool, metrics
 
 
-def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R):
-    return _public_pool(_cut_sweep_chunk_serial(
+def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R,
+                      collect_metrics=False):
+    pool, metrics = _cut_sweep_chunk_serial(
         elR, wboR, elT, wboT, cfg, core_R,
-        cut_sweep_items(wboR, cfg['cut_floor'])))
+        cut_sweep_items(wboR, cfg['cut_floor']),
+        collect_metrics=collect_metrics)
+    public = _public_pool(pool)
+    return (public, metrics) if collect_metrics else public
 
 
-def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R):
+def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
+                        collect_metrics=False):
     cuts = cut_sweep_items(wboR, cfg['cut_floor'])
-    work = [(cut, None, core_R, False) for cut in cuts]
+    work = [(cut, None, core_R, False, collect_metrics) for cut in cuts]
     pool = {}
+    metrics = _new_sweep_metrics(cfg['max_branches'])
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
         for payload in proc_pool.imap_unordered(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
+            if collect_metrics:
+                _merge_sweep_metrics(metrics, payload['metrics'])
             for result in payload['results']:
                 sig, mapping_items, cut = result[:3]
                 branch_symmetry = result[3] if len(result) > 3 else None
                 _pool_add(pool, sig, dict(mapping_items), cut, branch_symmetry)
-    return _public_pool(pool)
+    public = _public_pool(pool)
+    return (public, metrics) if collect_metrics else public
 
 
 def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
                               cuts, trace_path=None):
-    work = [(cut, None, core_R, bool(trace_path)) for cut in cuts]
+    work = [(cut, None, core_R, bool(trace_path), False) for cut in cuts]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
@@ -1297,9 +1357,10 @@ def run_cut_sweep_chunk(elR, wboR, elT, wboT, cuts, *,
             elR, wboR, elT, wboT, cfg,
             min(int(n_workers), len(normalized_cuts)),
             core_R, normalized_cuts, trace_path=trace_path)
-    return _public_pool(_cut_sweep_chunk_serial(
+    pool, _metrics = _cut_sweep_chunk_serial(
         elR, wboR, elT, wboT, cfg, core_R, normalized_cuts,
-        trace_path=trace_path))
+        trace_path=trace_path)
+    return _public_pool(pool)
 
 
 def run_no_cut_core_branch_records(elS, wboS, elT, wboT, core_S, *,
@@ -1417,7 +1478,8 @@ def cut_sweep(elR, wboR, elT, wboT, *,
               symmetry_repair=True,
               symmetry_repair_min_changes=1,
               symmetry_repair_max_evals=20000,
-              anchor_map=None):
+              anchor_map=None,
+              return_metrics=False):
     """Enumerate mechanism classes via no-cut plus one-edge R cuts.
 
     The returned pool maps a symmetry-canonical signature to:
@@ -1449,9 +1511,12 @@ def cut_sweep(elR, wboR, elT, wboT, *,
     )
     core_R = tuple(sorted(set(core_R or ())))
     if not n_workers or n_workers <= 1:
-        return _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R)
+        return _cut_sweep_serial(
+            elR, wboR, elT, wboT, cfg, core_R,
+            collect_metrics=bool(return_metrics))
     return _cut_sweep_parallel(elR, wboR, elT, wboT, cfg,
-                               int(n_workers), core_R)
+                               int(n_workers), core_R,
+                               collect_metrics=bool(return_metrics))
 
 
 def select_min_mechanisms(pool):

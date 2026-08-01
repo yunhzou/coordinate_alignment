@@ -191,10 +191,12 @@ def main():
     if args.pool_input:
         with args.pool_input.open("rb") as handle:
             pool = pickle.load(handle)
+        aam_metrics = {}
     else:
-        pool = cut_sweep(
+        pool, aam_metrics = cut_sweep(
             inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
-            n_workers=args.workers, **_rp_cut_kwargs(config))
+            n_workers=args.workers, return_metrics=True,
+            **_rp_cut_kwargs(config))
     aam_seconds = time.perf_counter() - aam_started
     if args.pool_output:
         args.pool_output.parent.mkdir(parents=True, exist_ok=True)
@@ -258,8 +260,8 @@ def main():
         revision = "unknown"
     peak_process_tree_rss_kb = memory_sampler.stop()
     regression_metrics = {
+        **aam_metrics,
         "configured_max_branches": int(config["max_branches"]),
-        "max_live_branches": None,
         "stage_call_counts": {
             "aam_search": 1,
             "post_aam_finalize": 1,
