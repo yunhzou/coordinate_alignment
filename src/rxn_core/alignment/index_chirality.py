@@ -1389,16 +1389,21 @@ def _select_from_stored_aam_group(
         source, wbo_R, wbo_P, elements_R,
         dwbo_threshold=dwbo_threshold,
         metal_dwbo_threshold=metal_dwbo_threshold)
+    factors = list(_independent_atom_action_factors(
+        stored_generators, degree))
     event_sensitive_atoms = set()
-    for generator in stored_generators:
-        acted = {r: int(generator[source[r]]) for r in source}
-        if mapping_event_signature(
-                acted, wbo_R, wbo_P, elements_R,
+    for support, actions in factors:
+        if any(mapping_event_signature(
+                {r: int(action[source[r]]) for r in source},
+                wbo_R, wbo_P, elements_R,
                 dwbo_threshold=dwbo_threshold,
-                metal_dwbo_threshold=metal_dwbo_threshold) != source_signature:
-            event_sensitive_atoms.update(
-                atom for atom, image in enumerate(generator)
-                if atom != image)
+                metal_dwbo_threshold=metal_dwbo_threshold)
+               != source_signature for action in actions):
+            # A generator can preserve the selected event while a product of
+            # generators in the same factor does not.  Classify the complete
+            # local factor, which is already enumerated for exact RMSD search,
+            # rather than sampling only its supplied generators.
+            event_sensitive_atoms.update(support)
     constrained_atoms.update(event_sensitive_atoms)
     event_filter = bool(event_sensitive_atoms)
     anchor_filter = any(
@@ -1408,8 +1413,6 @@ def _select_from_stored_aam_group(
     if anchor_filter:
         constrained_atoms.update(source[int(r)] for r in anchor_map)
 
-    factors = list(_independent_atom_action_factors(
-        stored_generators, degree))
     constrained = [
         [support, list(actions)] for support, actions in factors
         if set(support) & constrained_atoms]
