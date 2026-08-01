@@ -564,11 +564,18 @@ therefore reject a valid family.
 The current algorithm builds a maximal feasible signed-frame basis directly
 inside the stored AAM action:
 
-1. construct all defined group-level triples;
-2. rank them by endpoint-normalized geometric robustness;
-3. filter the still-valid exact local factor actions by each frame;
-4. retain a frame only when at least one cumulative action remains;
-5. record incompatible dependent triples as geometric reconfiguration.
+1. install every ordinary persistent three/four-ligand frame as a hard
+   simultaneous constraint;
+2. construct symmetry-closed high-coordinate simplex units;
+3. rank dependent units and group-level triples by endpoint-normalized
+   geometric robustness;
+4. filter the still-valid exact action cumulatively by each unit;
+5. retain a unit only when at least one cumulative action remains;
+6. record incompatible dependent units as geometric reconfiguration.
+
+This priority is invariant across both execution routes: a dependent
+high-coordinate frame can never consume the freedom required by an ordinary
+hard frame.
 
 This is not a witness fallback. Every retained constraint is solved against
 the finalized AAM group. The excluded frame is explicitly reported.

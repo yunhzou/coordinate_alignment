@@ -1869,42 +1869,6 @@ def select_index_chirality_assignment(
             center_R, neighbors_R, measure_R.sign, center_P,
         ))
 
-    # Higher-coordinate geometries can continuously reconfigure so that one
-    # ligand triple crosses coplanarity while the overall ligand assignment
-    # remains orientation-consistent.  Build a maximal feasible signed-frame
-    # basis, strongest simplices first, rather than making one conflicting
-    # triple reject the entire exact mapping family.
-    group_frames = []
-    reconfigured_group_frames = []
-    for robustness, center_R, neighbors_R, sign_R, center_P in sorted(
-            group_frame_candidates,
-            key=lambda item: (-item[0], item[1], item[2])):
-        trial = relation.clone()
-        for ordered_R in permutations(neighbors_R):
-            ordered_P = tuple(source[r] for r in ordered_R)
-            ordered_sign_R = _orientation_measure(
-                coords_R, center_R, ordered_R,
-                degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
-            sign_P = _orientation_measure(
-                coords_P, center_P, ordered_P,
-                degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
-            trial.add_ordered_relation(
-                (center_P, *ordered_P),
-                ("oriented_coordination_triple", ordered_sign_R),
-                ("oriented_coordination_triple", sign_P),
-            )
-        if _canonical_isomorphism(trial.graph("A"), trial.graph("B")) is None:
-            reconfigured_group_frames.append({
-                "center_R": int(center_R),
-                "neighbors_R_index_order": list(neighbors_R),
-                "reactant_orientation_sign": int(sign_R),
-                "normalized_orientation_robustness": float(robustness),
-                "reason": "incompatible_with_stronger_group_frame_basis",
-            })
-            continue
-        relation = trial
-        group_frames.append((center_R, neighbors_R, sign_R))
-
     base_A, base_B = relation.graph("A"), relation.graph("B")
     if _canonical_isomorphism(base_A, base_B) is None:
         raise IndexChiralityConflict(
@@ -1997,13 +1961,6 @@ def select_index_chirality_assignment(
             or frame_records[key][2].sign == 0
             for key in keys)
 
-    center_orbit_keys = defaultdict(list)
-    for simplex_root, keys in simplex_orbit_keys.items():
-        if not simplex_orbit_is_stereogenic[simplex_root]:
-            continue
-        for key in keys:
-            center_orbit_keys[int(raw_orbits[key[0]])].append(key)
-
     def add_frame_relations(target, keys):
         for center_P, neighbors_P in keys:
             center_R = inverse[center_P]
@@ -2037,48 +1994,76 @@ def select_index_chirality_assignment(
                         "automorphism_orbit_contains_nonstereogenic_endpoint"),
                 })
 
-    eligible_center_roots = set()
-    for root, keys in center_orbit_keys.items():
-        local_relation = relation.clone()
-        add_frame_relations(local_relation, keys)
+    oriented_relation = relation.clone()
+    active_keys = []
+    ordinary_units = []
+    high_coordinate_units = []
+    for root, keys in simplex_orbit_keys.items():
+        if not simplex_orbit_is_stereogenic[root]:
+            continue
+        unit = tuple(keys)
+        if any(len(persistent_P[center_P]) > 4
+               for center_P, _neighbors_P in unit):
+            high_coordinate_units.append(unit)
+        else:
+            ordinary_units.append(unit)
+
+    def unit_rank(keys):
+        robustness = min(
+            min(abs(frame_records[key][1].normalized),
+                abs(frame_records[key][2].normalized))
+            for key in keys)
+        frames = tuple(sorted(
+            (frame_records[key][0].center_R,
+             frame_records[key][0].neighbors_R)
+            for key in keys))
+        return (-robustness, frames)
+
+    # Ordinary persistent simplices are simultaneous hard constraints.  They
+    # are installed before any dependent high-coordinate basis member, so a
+    # soft frame can never make a valid ordinary orientation appear
+    # infeasible.
+    for keys in sorted(ordinary_units, key=unit_rank):
+        trial = oriented_relation.clone()
+        add_frame_relations(trial, keys)
         if _canonical_isomorphism(
-                local_relation.graph("A"), local_relation.graph("B")) is None:
-            high_coordinate = any(
-                len(persistent_P[center_P]) > 4
-                for center_P, _neighbors_P in keys)
-            if not high_coordinate:
-                # A persistent three- or four-coordinate simplex is the
-                # complete local orientation constraint.  Calling it a
-                # "reconfiguration" after the exact AAM family cannot
-                # realize its orientation silently converts a failed hard
-                # constraint into a successful result.  Only the dependent
-                # simplex basis at a higher-coordinate center may discard an
-                # incompatible member.
-                mismatch_frames = [
-                    frame_records[key][0] for key in keys
-                    if frame_records[key][0].sign_R
-                    != frame_records[key][0].sign_P_source
-                ]
-                raise IndexChiralityConflict(
-                    "ordinary persistent coordination center has no "
-                    "chirality-consistent action in the selected AAM family",
-                    diagnostics={
-                        "constraint_model": (
-                            "hard_ordinary_affine_substituent_simplex"),
-                        "center_R": sorted({
-                            int(frame_records[key][0].center_R)
-                            for key in keys
-                        }),
-                        "source_mismatch_frames": [{
-                            "id": frame.frame_id,
-                            "center_R": frame.center_R,
-                            "neighbors_R_index_order": list(
-                                frame.neighbors_R),
-                            "reactant_orientation_sign": frame.sign_R,
-                            "source_product_orientation_sign": (
-                                frame.sign_P_source),
-                        } for frame in mismatch_frames],
-                    })
+                trial.graph("A"), trial.graph("B")) is None:
+            mismatch_frames = [
+                frame_records[key][0] for key in keys
+                if frame_records[key][0].sign_R
+                != frame_records[key][0].sign_P_source
+            ]
+            raise IndexChiralityConflict(
+                "ordinary persistent coordination center has no "
+                "chirality-consistent action in the selected AAM family",
+                diagnostics={
+                    "constraint_model": (
+                        "hard_ordinary_affine_substituent_simplex"),
+                    "center_R": sorted({
+                        int(frame_records[key][0].center_R)
+                        for key in keys
+                    }),
+                    "source_mismatch_frames": [{
+                        "id": frame.frame_id,
+                        "center_R": frame.center_R,
+                        "neighbors_R_index_order": list(frame.neighbors_R),
+                        "reactant_orientation_sign": frame.sign_R,
+                        "source_product_orientation_sign": (
+                            frame.sign_P_source),
+                    } for frame in mismatch_frames],
+                })
+        oriented_relation = trial
+        active_keys.extend(keys)
+
+    # Each exact simplex orbit is one symmetry-closed dependent basis unit.
+    # Add the strongest feasible units cumulatively after the hard ordinary
+    # constraints rather than testing every unit against the unconstrained
+    # family independently.
+    for keys in sorted(high_coordinate_units, key=unit_rank):
+        trial = oriented_relation.clone()
+        add_frame_relations(trial, keys)
+        if _canonical_isomorphism(
+                trial.graph("A"), trial.graph("B")) is None:
             for key in keys:
                 frame, measure_R, measure_P = frame_records[key]
                 reconfigured_frames.append({
@@ -2092,15 +2077,45 @@ def select_index_chirality_assignment(
                         "reconfiguration"),
                 })
             continue
-        eligible_center_roots.add(root)
+        oriented_relation = trial
+        active_keys.extend(keys)
 
-    active_frames = [
-        frame_records[key][0]
-        for root in eligible_center_roots for key in center_orbit_keys[root]
-    ]
-    oriented_relation = relation.clone()
-    for root in eligible_center_roots:
-        add_frame_relations(oriented_relation, center_orbit_keys[root])
+    active_frames = [frame_records[key][0] for key in active_keys]
+
+    # Higher-coordinate center-relative triples are dependent on the local
+    # simplex constraints above.  Construct their maximal feasible basis only
+    # after every hard ordinary frame and stronger local basis unit is fixed.
+    group_frames = []
+    reconfigured_group_frames = []
+    for robustness, center_R, neighbors_R, sign_R, center_P in sorted(
+            group_frame_candidates,
+            key=lambda item: (-item[0], item[1], item[2])):
+        trial = oriented_relation.clone()
+        for ordered_R in permutations(neighbors_R):
+            ordered_P = tuple(source[r] for r in ordered_R)
+            ordered_sign_R = _orientation_measure(
+                coords_R, center_R, ordered_R,
+                degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
+            sign_P = _orientation_measure(
+                coords_P, center_P, ordered_P,
+                degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
+            trial.add_ordered_relation(
+                (center_P, *ordered_P),
+                ("oriented_coordination_triple", ordered_sign_R),
+                ("oriented_coordination_triple", sign_P),
+            )
+        if _canonical_isomorphism(
+                trial.graph("A"), trial.graph("B")) is None:
+            reconfigured_group_frames.append({
+                "center_R": int(center_R),
+                "neighbors_R_index_order": list(neighbors_R),
+                "reactant_orientation_sign": int(sign_R),
+                "normalized_orientation_robustness": float(robustness),
+                "reason": "incompatible_with_stronger_group_frame_basis",
+            })
+            continue
+        oriented_relation = trial
+        group_frames.append((center_R, neighbors_R, sign_R))
 
     oriented_A = oriented_relation.graph("A")
     oriented_B = oriented_relation.graph("B")

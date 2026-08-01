@@ -49,6 +49,56 @@ def _case(source: Path, tier: str, task_index: int):
     return cases[task_index]
 
 
+def _hierarchy_from_post_aam_branch(branch):
+    """Restore the serialized typed hierarchy without rematching atoms."""
+    fragments = []
+    for position, raw in enumerate(branch.get("fragments") or ()):
+        blocks = [{
+            "r_atoms": list(map(int, domain.get("r_atoms") or ())),
+            "p_atoms": list(map(int, domain.get("p_atoms") or ())),
+            "source": str(domain.get("source") or "sym_block"),
+        } for domain in raw.get("symmetry_domains") or ()]
+        generators = raw.get("target_generators")
+        fragments.append({
+            "fragment_index": int(raw.get("fragment_index", position)),
+            "island_idx": int(raw.get("island_index", position)),
+            "fragment": list(map(int, raw.get("r_atoms") or ())),
+            "deferred_edges": [
+                list(map(int, edge))
+                for edge in raw.get("deferred_edges") or ()
+            ],
+            "symmetry": {
+                "blocks": blocks,
+                **({"automorph_generators": generators}
+                   if generators is not None else {}),
+            },
+        })
+    return {"fragments": fragments}
+
+
+def _analytical_branches(mechanism):
+    records = ((mechanism.get("post_aam") or {})
+               .get("analytical_branches") or ())
+    branches = []
+    for raw in records:
+        mapping = raw.get("representative_mapping")
+        if not mapping:
+            continue
+        branches.append({
+            "mapping": {int(r): int(p) for r, p in mapping.items()},
+            "hierarchy": _hierarchy_from_post_aam_branch(raw),
+            "encounter_count": int(raw.get("encounter_count", 1)),
+            "covered_path_count": int(raw.get("covered_path_count", 1)),
+            "cuts": [list(map(int, cut))
+                     for cut in raw.get("cuts") or ()],
+            "mapping_family": dict(raw.get("mapping_family") or {}),
+            "path_provenance": [dict(record)
+                                for record in raw.get("path_provenance") or ()],
+            "target_group_generators": raw.get("target_group_generators"),
+        })
+    return branches
+
+
 def _pool_for_mechanism(mechanism):
     symmetry = mechanism.get("branch_symmetry") or {}
     witnesses = symmetry.get("witnesses") or ()
@@ -60,18 +110,20 @@ def _pool_for_mechanism(mechanism):
     has_no_cut = any(not witness.get("cut") for witness in witnesses)
     if not witnesses:
         has_no_cut = mechanism.get("cut") in (None, "none")
-    return {
-        ((), ()): {
-            "mapping": {
-                int(r): int(p)
-                for r, p in mechanism["mapping_RP"].items()
-            },
-            "cuts": frozenset(cuts),
-            "has_no_cut": bool(has_no_cut),
-            "dedup_count": int(mechanism.get("dedup_count", 1)),
-            "branch_symmetry": symmetry,
+    entry = {
+        "mapping": {
+            int(r): int(p)
+            for r, p in mechanism["mapping_RP"].items()
         },
+        "cuts": frozenset(cuts),
+        "has_no_cut": bool(has_no_cut),
+        "dedup_count": int(mechanism.get("dedup_count", 1)),
+        "branch_symmetry": symmetry,
     }
+    branches = _analytical_branches(mechanism)
+    if branches:
+        entry["branches"] = branches
+    return {((), ()): entry}
 
 
 def _comparison(old, new, inputs):
