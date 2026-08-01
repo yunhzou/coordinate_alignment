@@ -4,7 +4,11 @@ from __future__ import annotations
 from collections import defaultdict
 
 from .orbits import _nauty_colored_wbo_graph
-from .policy import as_node_match_policy
+from .policy import (
+    AttributeNodeMatchPolicy,
+    ElementNodeMatchPolicy,
+    as_node_match_policy,
+)
 from .state import _SymCand
 
 
@@ -19,43 +23,70 @@ class _CandidateAutomorphismCanonicalizer:
     """
 
     def __init__(self, g_P, p_orbits=None, locked_mapping=None,
-                 node_policy=None, wbo_tol=None):
+                 node_policy=None, wbo_tol=None, base_cache=None):
         self.g_P = g_P
         self.node_policy = as_node_match_policy(node_policy)
-        self.nodes, self.atom_index, _base_graph, pair_buckets, zero_bucket = (
-            _nauty_colored_wbo_graph(
-                g_P,
-                wbo_tol=float(
-                    wbo_tol if wbo_tol is not None else
-                    (getattr(p_orbits, 'wbo_tol', 0.2) or 0.2)),
-                node_policy=self.node_policy,
+        tolerance = float(
+            wbo_tol if wbo_tol is not None else
+            (getattr(p_orbits, 'wbo_tol', 0.2) or 0.2))
+        # A cut worker reuses one immutable product graph and orbit object but
+        # constructs many canonicalizers as the locked prefix changes.  The
+        # subdivision graph is independent of that prefix, so retain it on the
+        # graph-specific orbit object.  Only built-in immutable key policies
+        # are cached; arbitrary user policies may carry mutable state.
+        policy_key = None
+        if isinstance(self.node_policy, ElementNodeMatchPolicy):
+            policy_key = ('element',)
+        elif isinstance(self.node_policy, AttributeNodeMatchPolicy):
+            policy_key = ('attributes', self.node_policy.fields)
+        cache = base_cache
+        cache_key = None
+        if (cache is None and p_orbits is not None and policy_key is not None
+                and hasattr(p_orbits, '__dict__')):
+            cache = getattr(p_orbits, '_candidate_canonical_bases', None)
+            if cache is None:
+                cache = {}
+                p_orbits._candidate_canonical_bases = cache
+        if cache is not None and policy_key is None:
+            # A mutable/custom policy cannot safely share prepared colors.
+            cache = None
+        if cache is not None:
+            cache_key = (g_P, tolerance, policy_key)
+        base = cache.get(cache_key) if cache is not None else None
+        if base is None:
+            nodes, atom_index, _base_graph, pair_buckets, zero_bucket = (
+                _nauty_colored_wbo_graph(
+                    g_P, wbo_tol=tolerance, node_policy=self.node_policy))
+            n_atoms = len(nodes)
+            atom_base_color = {
+                atom_index[p]: ('node', self.node_policy.key(g_P, p))
+                for p in nodes
+            }
+            adjacency = defaultdict(set)
+            edge_vertices_by_bucket = defaultdict(set)
+            next_vertex = n_atoms
+            for (a, b), bucket in sorted(pair_buckets.items()):
+                if bucket == zero_bucket:
+                    continue
+                ai = atom_index[a]
+                bi = atom_index[b]
+                adjacency[ai].add(next_vertex)
+                adjacency[bi].add(next_vertex)
+                adjacency[next_vertex].update((ai, bi))
+                edge_vertices_by_bucket[bucket].add(next_vertex)
+                next_vertex += 1
+            base = (
+                tuple(nodes), atom_index, n_atoms, atom_base_color,
+                next_vertex,
+                {vertex: sorted(adjacency.get(vertex, ()))
+                 for vertex in range(next_vertex)},
+                tuple(sorted(edge_vertices_by_bucket.items(),
+                             key=lambda item: item[0])),
             )
-        )
-        self.n_atoms = len(self.nodes)
-        self.atom_base_color = {
-            self.atom_index[p]: ('node', self.node_policy.key(g_P, p))
-            for p in self.nodes
-        }
-        adjacency = defaultdict(set)
-        edge_vertices_by_bucket = defaultdict(set)
-        next_vertex = self.n_atoms
-        for (a, b), bucket in sorted(pair_buckets.items()):
-            if bucket == zero_bucket:
-                continue
-            ai = self.atom_index[a]
-            bi = self.atom_index[b]
-            adjacency[ai].add(next_vertex)
-            adjacency[bi].add(next_vertex)
-            adjacency[next_vertex].update((ai, bi))
-            edge_vertices_by_bucket[bucket].add(next_vertex)
-            next_vertex += 1
-        self.n_vertices = next_vertex
-        self.adjacency = {
-            vertex: sorted(adjacency.get(vertex, ()))
-            for vertex in range(self.n_vertices)
-        }
-        self.edge_color_classes = tuple(sorted(
-            edge_vertices_by_bucket.items(), key=lambda item: item[0]))
+            if cache is not None:
+                cache[cache_key] = base
+        (self.nodes, self.atom_index, self.n_atoms, self.atom_base_color,
+         self.n_vertices, self.adjacency, self.edge_color_classes) = base
 
         locked_roles = defaultdict(list)
         for r, p in sorted((int(r), int(p))

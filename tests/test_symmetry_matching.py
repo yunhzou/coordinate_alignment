@@ -121,6 +121,25 @@ def test_cut_sweep_compact_metrics_are_opt_in_and_respect_branch_cap():
     assert parallel_metrics["max_live_branches"] <= 2
 
 
+def test_worker_local_cut_compression_is_exactly_serial_equivalent():
+    elements = ["C", "O", "N"]
+    wbo = np.zeros((3, 3))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[1, 2] = wbo[2, 1] = 1.0
+    kwargs = {
+        "n_seeds": 2,
+        "max_branches": 100,
+        "symmetry_repair": False,
+    }
+
+    serial = cut_sweep(
+        elements, wbo, elements, wbo, n_workers=0, **kwargs)
+    compressed_parallel = cut_sweep(
+        elements, wbo, elements, wbo, n_workers=2, **kwargs)
+
+    assert compressed_parallel == serial
+
+
 def test_live_branch_cap_discards_only_overflowing_parent_subtree(monkeypatch):
     g_r = build_graph(["C", "O"], np.zeros((2, 2)), bond_cut=0.2)
     g_p = build_graph(

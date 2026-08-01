@@ -218,13 +218,23 @@ def classify_bonds(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
     record is (i, j, wbo_R_or_None, wbo_P_or_None)."""
     inv = {v: k for k, v in mapping.items()}
     nR, nP = wbo_R.shape[0], wbo_P.shape[0]
+    default_threshold = float(dwbo_threshold)
+    metal_threshold = (
+        None if metal_dwbo_threshold is None
+        else float(metal_dwbo_threshold))
+    metal_R = (
+        None if elements_R is None or metal_threshold is None
+        else tuple(is_metal_element(element) for element in elements_R))
+    metal_P = (
+        None if elements_P is None or metal_threshold is None
+        else tuple(is_metal_element(element) for element in elements_P))
     broken, formed = [], []
     for i in range(nR):
         for j in range(i + 1, nR):
-            threshold = bond_event_threshold(
-                elements_R, i, j,
-                default_threshold=dwbo_threshold,
-                metal_threshold=metal_dwbo_threshold)
+            threshold = (
+                metal_threshold
+                if metal_R is not None and (metal_R[i] or metal_R[j])
+                else default_threshold)
             wR = wbo_R[i, j]
             if wR < threshold: continue
             if i not in mapping or j not in mapping:
@@ -234,10 +244,10 @@ def classify_bonds(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
                 broken.append((i, j, float(wR), float(wP)))
     for ip in range(nP):
         for jp in range(ip + 1, nP):
-            threshold = bond_event_threshold(
-                elements_P, ip, jp,
-                default_threshold=dwbo_threshold,
-                metal_threshold=metal_dwbo_threshold)
+            threshold = (
+                metal_threshold
+                if metal_P is not None and (metal_P[ip] or metal_P[jp])
+                else default_threshold)
             wP = wbo_P[ip, jp]
             if wP < threshold: continue
             if ip not in inv or jp not in inv:

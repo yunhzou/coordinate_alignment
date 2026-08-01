@@ -904,6 +904,51 @@ def _public_pool(pool):
     return pool
 
 
+def _merge_compressed_pool(target, incoming):
+    """Merge an already deduplicated partial pool without losing counts."""
+    for sig, raw_entry in dict(incoming or {}).items():
+        entry = target.get(sig)
+        if entry is None:
+            entry = copy.deepcopy(raw_entry)
+            branches = entry.setdefault('branches', [])
+            entry['_branch_key_index'] = {
+                _analytical_branch_key(branch): branch
+                for branch in branches
+            }
+            target[sig] = entry
+            continue
+        representative_changed = bool(
+            raw_entry.get('has_no_cut', False)
+            and not entry.get('has_no_cut', False))
+        if representative_changed:
+            entry['mapping'] = dict(raw_entry['mapping'])
+        entry['has_no_cut'] = bool(
+            entry.get('has_no_cut', False)
+            or raw_entry.get('has_no_cut', False))
+        entry['cuts'] = (
+            frozenset(entry.get('cuts', ()))
+            | frozenset(raw_entry.get('cuts', ())))
+        entry['dedup_count'] = (
+            int(entry.get('dedup_count', 1))
+            + int(raw_entry.get('dedup_count', 1)))
+        branches = entry.setdefault('branches', [])
+        key_index = entry.get('_branch_key_index')
+        if key_index is None:
+            key_index = {
+                _analytical_branch_key(branch): branch
+                for branch in branches
+            }
+            entry['_branch_key_index'] = key_index
+        changed = representative_changed
+        for raw_branch in raw_entry.get('branches') or ():
+            changed = (_merge_analytical_branch(
+                branches, copy.deepcopy(raw_branch),
+                key_index=key_index) or changed)
+        if changed:
+            _refresh_entry_branch_symmetry(entry)
+    return target
+
+
 def _candidate_from_symmetry_state(state):
     """Reconstruct one completed compressed candidate from its AAM record."""
     state = dict(state or {})
@@ -935,6 +980,7 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
     candidates and discarded growth paths never enter this bounded stage.
     """
     cache = {}
+    canonical_base_cache = {}
     completed = []
     metrics = {
         'completed_candidate_group_requests': 0,
@@ -956,7 +1002,8 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
                 metrics['completed_candidate_group_calculations'] += 1
                 canonicalizer = _CandidateAutomorphismCanonicalizer(
                     g_P, locked_mapping=locked, node_policy=node_policy,
-                    wbo_tol=float(wbo_tol))
+                    wbo_tol=float(wbo_tol),
+                    base_cache=canonical_base_cache)
                 generators = canonicalizer.atom_generators(candidate)
                 cache[key] = generators
             else:
@@ -1176,9 +1223,12 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
     r_orbits_cut = _nauty_orbits(
         g_R, wbo_tol=float(cfg['symmetry_wbo_tol']))
     graph_elapsed = time.perf_counter() - graph_t0
-    if orders is None:
-        orders = _generate_seed_orders(
+    if orders is None or isinstance(orders, int):
+        generated_orders = _generate_seed_orders(
             g_R, n_trials=int(cfg['n_seeds']))
+        orders = (
+            generated_orders
+            if orders is None else [generated_orders[int(orders)]])
     else:
         orders = list(orders)
     if return_trace:
@@ -1389,6 +1439,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
         raise
 
     elapsed = time.perf_counter() - cut_t0
+    compact_metrics['raw_result_count'] = len(out)
     if return_trace:
         events.append({
             'event': 'cut_end',
@@ -1441,7 +1492,17 @@ def _cs_wrun(args):
         _WORKER['g_P'], _WORKER['g_R_full'],
         _WORKER['p_orbits'], _WORKER['r_orbits'],
         return_trace=trace_enabled, collect_metrics=metrics_enabled)
-    return {'results': out, 'events': events, 'metrics': metrics}
+    local_pool = {}
+    for result in out:
+        sig, mapping_items, cut = result[:3]
+        branch_symmetry = result[3] if len(result) > 3 else None
+        _pool_add(
+            local_pool, sig, dict(mapping_items), cut, branch_symmetry)
+    local_pool = _public_pool(local_pool)
+    metrics['worker_returned_branch_count'] = sum(
+        len(entry.get('branches') or ())
+        for entry in local_pool.values())
+    return {'pool': local_pool, 'events': events, 'metrics': metrics}
 
 
 def _merge_sweep_metrics(target, source):
@@ -1456,6 +1517,9 @@ def _merge_sweep_metrics(target, source):
     target['max_growth_candidates'] = max(
         target['max_growth_candidates'],
         int(source.get('max_growth_candidates', 0)))
+    target['raw_result_count'] += int(source.get('raw_result_count', 0))
+    target['worker_returned_branch_count'] += int(
+        source.get('worker_returned_branch_count', 0))
 
 
 def _new_sweep_metrics(max_branches):
@@ -1467,6 +1531,9 @@ def _new_sweep_metrics(max_branches):
         'subtree_branch_cap_count': 0,
         'max_live_branches': 0,
         'max_growth_candidates': 0,
+        'raw_result_count': 0,
+        'worker_returned_branch_count': 0,
+        'parent_merge_seconds': 0.0,
     }
 
 
@@ -1553,7 +1620,11 @@ def _cut_sweep_serial(elR, wboR, elT, wboT, cfg, core_R,
 def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
                         collect_metrics=False):
     cuts = cut_sweep_items(wboR, cfg['cut_floor'])
-    work = [(cut, None, core_R, False, collect_metrics) for cut in cuts]
+    work = [
+        (cut, seed_index, core_R, False, collect_metrics)
+        for cut in cuts
+        for seed_index in range(int(cfg['n_seeds']))
+    ]
     pool = {}
     metrics = _new_sweep_metrics(cfg['max_branches'])
     with mp.Pool(n_workers, initializer=_cs_winit,
@@ -1562,27 +1633,29 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
             if collect_metrics:
                 _merge_sweep_metrics(metrics, payload['metrics'])
-            for result in payload['results']:
-                sig, mapping_items, cut = result[:3]
-                branch_symmetry = result[3] if len(result) > 3 else None
-                _pool_add(pool, sig, dict(mapping_items), cut, branch_symmetry)
+            merge_started = time.perf_counter()
+            _merge_compressed_pool(pool, payload['pool'])
+            metrics['parent_merge_seconds'] += (
+                time.perf_counter() - merge_started)
+    metrics['cuts'] = len(cuts)
     public = _public_pool(pool)
     return (public, metrics) if collect_metrics else public
 
 
 def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
                               cuts, trace_path=None):
-    work = [(cut, None, core_R, bool(trace_path), False) for cut in cuts]
+    work = [
+        (cut, seed_index, core_R, bool(trace_path), False)
+        for cut in cuts
+        for seed_index in range(int(cfg['n_seeds']))
+    ]
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
         for payload in proc_pool.imap_unordered(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
             _emit_trace(trace_path, payload.get('events', []))
-            for result in payload['results']:
-                sig, mapping_items, cut = result[:3]
-                branch_symmetry = result[3] if len(result) > 3 else None
-                _pool_add(pool, sig, dict(mapping_items), cut, branch_symmetry)
+            _merge_compressed_pool(pool, payload['pool'])
     return _public_pool(pool)
 
 
@@ -1697,48 +1770,15 @@ def run_no_cut_core_branch_records(elS, wboS, elT, wboT, core_S, *,
 
 def merge_cut_sweep_pools(pools):
     """Merge partial cut-sweep pools produced by chunk tasks."""
-    def branches_from(info, cuts):
-        if not info.get('branches'):
-            raise ValueError(
-                "cut-sweep chunk lacks analytical AAM branches; rerun it "
-                "with the current branch schema")
-        return [copy.deepcopy(branch) for branch in info['branches']]
-
     merged = {}
     for pool in pools:
-        for sig, info in dict(pool or {}).items():
-            cuts = frozenset(info.get('cuts', ()))
-            no_cut = bool(info.get('has_no_cut', False))
-            entry = merged.get(sig)
-            if entry is None:
-                branches = []
-                for branch in branches_from(info, cuts):
-                    _merge_analytical_branch(branches, branch)
-                merged[sig] = {
-                    'mapping': dict(info['mapping']),
-                    'cuts': cuts,
-                    'has_no_cut': no_cut,
-                    'dedup_count': int(info.get('dedup_count', 1)),
-                    'branches': branches,
-                }
-                _refresh_entry_branch_symmetry(merged[sig])
-                continue
-            if no_cut and not entry.get('has_no_cut', False):
-                entry['mapping'] = dict(info['mapping'])
-            entry['cuts'] = frozenset(entry.get('cuts', ())) | cuts
-            entry['has_no_cut'] = bool(
-                entry.get('has_no_cut', False)
-                or no_cut
-            )
-            entry['dedup_count'] = (
-                int(entry.get('dedup_count', 1))
-                + int(info.get('dedup_count', 1))
-            )
-            for branch in branches_from(info, cuts):
-                _merge_analytical_branch(
-                    entry.setdefault('branches', []), branch)
-            _refresh_entry_branch_symmetry(entry)
-    return merged
+        for info in dict(pool or {}).values():
+            if not info.get('branches'):
+                raise ValueError(
+                    "cut-sweep chunk lacks analytical AAM branches; rerun it "
+                    "with the current branch schema")
+        _merge_compressed_pool(merged, pool)
+    return _public_pool(merged)
 
 
 def cut_sweep(elR, wboR, elT, wboT, *,

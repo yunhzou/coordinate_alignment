@@ -2,6 +2,7 @@ import networkx as nx
 
 from rxn_core.matcher.canonical import _CandidateAutomorphismCanonicalizer
 from rxn_core.matcher.dedupe import _dedup_sym_cands
+from rxn_core.matcher.orbits import _nauty_orbits
 from rxn_core.matcher.state import _SymCand
 
 
@@ -47,3 +48,48 @@ def test_live_candidate_dedupe_never_computes_full_automorphism_group(
 
     deduped = _dedup_sym_cands(candidates, graph, graph)
     assert len(deduped) == 1
+
+
+def test_candidate_canonicalizer_reuses_product_base(monkeypatch):
+    from rxn_core.matcher import canonical
+
+    graph = _carbon_path()
+    orbits = _nauty_orbits(graph)
+    original = canonical._nauty_colored_wbo_graph
+    calls = []
+
+    def counted(*args, **kwargs):
+        calls.append((args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(canonical, '_nauty_colored_wbo_graph', counted)
+    first = _CandidateAutomorphismCanonicalizer(
+        graph, p_orbits=orbits, locked_mapping={10: 0})
+    second = _CandidateAutomorphismCanonicalizer(
+        graph, p_orbits=orbits, locked_mapping={10: 1})
+
+    assert len(calls) == 1
+    assert first.adjacency is second.adjacency
+    assert first.locked_roles != second.locked_roles
+
+
+def test_candidate_canonicalizer_reuses_explicit_operation_cache(monkeypatch):
+    from rxn_core.matcher import canonical
+
+    graph = _carbon_path()
+    original = canonical._nauty_colored_wbo_graph
+    calls = []
+
+    def counted(*args, **kwargs):
+        calls.append((args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(canonical, '_nauty_colored_wbo_graph', counted)
+    cache = {}
+    first = _CandidateAutomorphismCanonicalizer(
+        graph, locked_mapping={10: 0}, base_cache=cache)
+    second = _CandidateAutomorphismCanonicalizer(
+        graph, locked_mapping={10: 1}, base_cache=cache)
+
+    assert len(calls) == 1
+    assert first.adjacency is second.adjacency
