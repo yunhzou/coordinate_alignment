@@ -523,6 +523,12 @@ The determinant is normalized by vector lengths before applying the
 degeneracy threshold. Ordinary local centers use the configured dimensionless
 near-planarity tolerance.
 
+For a four-ligand affine tetrahedron, normalization uses the geometric mean
+of all six ligand-ligand edge lengths. This scale is invariant to which ligand
+is written first; ordered signs are derived from one canonical determinant and
+the ligand permutation parity. Consequently, every ordering of one geometric
+tetrahedron has the same degeneracy classification and normalized magnitude.
+
 ### 11.2 Local persistent centers
 
 Persistent neighbor simplices are found from the selected branch, not from

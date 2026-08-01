@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from itertools import permutations
 
 import rxn_core.alignment.index_chirality as index_chirality_module
 import rxn_core.pipeline as pipeline
@@ -34,6 +35,31 @@ def test_batched_fixed_mapping_rmsd_is_scalar_equivalent():
     batched = _fixed_mappings_aligned_rmsd(
         mappings, coords_R, coords_P)
     np.testing.assert_allclose(batched, scalar, rtol=1e-13, atol=1e-13)
+
+
+def test_four_ligand_simplex_degeneracy_is_permutation_invariant():
+    coords = np.array([
+        [0.0, 0.0, 0.0],
+        [1.1, 0.0, 0.0],
+        [0.1, 1.7, 0.0],
+        [0.2, 0.3, 1.3],
+        [3.0, 3.0, 3.0],  # unused center for the affine four-point frame
+    ])
+    measures = [
+        index_chirality_module._simplex_measure(
+            coords, 4, order, 0.1)
+        for order in permutations((0, 1, 2, 3))
+    ]
+
+    assert all(measure.sign in {-1, 1} for measure in measures)
+    assert len({round(abs(measure.normalized), 14)
+                for measure in measures}) == 1
+    canonical_sign = measures[0].sign
+    for order, measure in zip(permutations((0, 1, 2, 3)), measures):
+        inversions = sum(
+            order[left] > order[right]
+            for left in range(4) for right in range(left + 1, 4))
+        assert measure.sign == canonical_sign * (-1 if inversions % 2 else 1)
 
 
 def test_symmetry_factor_rmsd_search_matches_exhaustive_group():

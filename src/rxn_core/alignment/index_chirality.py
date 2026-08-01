@@ -1139,13 +1139,53 @@ def _simplex_measure(coords, center, neighbors, degeneracy_tol):
     neighbors = tuple(int(atom) for atom in neighbors)
     if len(neighbors) == 3:
         origin, points = int(center), neighbors
-    elif len(neighbors) == 4:
-        origin, points = neighbors[0], neighbors[1:]
-    else:
+        return _orientation_measure(
+            coords, origin, points, degeneracy_tol=degeneracy_tol)
+    if len(neighbors) != 4:
         raise IndexChiralityError(
             "an oriented substituent simplex needs three or four neighbors")
-    return _orientation_measure(
-        coords, origin, points, degeneracy_tol=degeneracy_tol)
+
+    # A four-ligand simplex is an affine tetrahedron.  Normalizing its volume
+    # by the three edges incident to ``neighbors[0]`` makes the degeneracy
+    # decision depend on which ligand happens to be listed first.  Use one
+    # canonical determinant and the permutation-invariant geometric mean of
+    # all six tetrahedron edges instead; recover ordered orientation solely
+    # from permutation parity.
+    canonical = tuple(sorted(neighbors))
+    base = _orientation_measure(
+        coords, canonical[0], canonical[1:], degeneracy_tol=0.0)
+    xyz = np.asarray(coords, dtype=np.longdouble)
+    squared_distances = []
+    for left, right in combinations(canonical, 2):
+        delta = xyz[left] - xyz[right]
+        squared_distances.append(np.sum(delta * delta))
+    zero_length = bool(any(value == 0 for value in squared_distances))
+    denominator = (
+        np.longdouble(0.0) if zero_length else
+        np.prod(np.asarray(squared_distances, dtype=np.longdouble))
+        ** np.longdouble(0.25))
+    positions = {atom: index for index, atom in enumerate(canonical)}
+    order = tuple(positions[atom] for atom in neighbors)
+    inversions = sum(
+        order[left] > order[right]
+        for left in range(4) for right in range(left + 1, 4))
+    parity = -1 if inversions % 2 else 1
+    determinant = np.longdouble(parity) * np.longdouble(base.determinant)
+    normalized = (
+        np.longdouble(0.0) if zero_length else determinant / denominator)
+    if (zero_length
+            or abs(determinant) <= base.determinant_error_bound
+            or abs(normalized) <= float(degeneracy_tol)):
+        sign = 0
+    else:
+        sign = 1 if determinant > 0 else -1
+    return _OrientationMeasure(
+        normalized=float(normalized),
+        determinant=float(determinant),
+        determinant_error_bound=float(base.determinant_error_bound),
+        sign=sign,
+        zero_length=zero_length,
+    )
 
 
 def select_group_chiral_witness(
