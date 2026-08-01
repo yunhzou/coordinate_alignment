@@ -15,6 +15,7 @@ from rxn_core.alignment import (
     symmetry_repair_mapping,
 )
 from rxn_core.alignment.sweep import (
+    attach_completed_candidate_groups,
     _branch_symmetry_record,
     _color_groups_from_blocks,
     _core_mapping_variants,
@@ -496,6 +497,54 @@ def test_stored_branch_group_preserves_correlated_local_orbits():
     assert (0, (3, 4)) in groups
     assert all(block["source"] == "stored_AAM_branch_mapping_group"
                for block in complete["blocks"])
+
+
+def test_completed_candidate_groups_are_cached_after_branch_reduction(
+        monkeypatch):
+    from rxn_core.matcher.canonical import (
+        _CandidateAutomorphismCanonicalizer,
+    )
+
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    graph = build_graph(["H", "H"], wbo, bond_cut=0.2)
+    state = {
+        "witness": {0: 0, 1: 1},
+        "blocks": [{
+            "r_atoms": [0, 1],
+            "p_atoms": [0, 1],
+            "source": "exact_automorph_group",
+        }],
+        "automorph_blocks": [{
+            "r_atoms": [0, 1],
+            "p_atoms": [0, 1],
+        }],
+        "multiplicity": 2,
+    }
+    branch = {"hierarchy": {"fragments": [{
+        "fragment_index": 0,
+        "fragment": [0, 1],
+        "symmetry": state,
+    }]}}
+    calls = 0
+    original = _CandidateAutomorphismCanonicalizer.atom_generators
+
+    def measured(self, candidate):
+        nonlocal calls
+        calls += 1
+        return original(self, candidate)
+
+    monkeypatch.setattr(
+        _CandidateAutomorphismCanonicalizer, "atom_generators", measured)
+    completed = attach_completed_candidate_groups(
+        [branch, branch], graph, wbo_tol=1.0)
+
+    assert calls == 1
+    for item in completed:
+        symmetry = item["hierarchy"]["fragments"][0]["symmetry"]
+        assert symmetry["automorph_generators"] == [[1, 0]]
+        assert symmetry["automorph_group_source"] == (
+            "completed_candidate_after_branch_family_reduction")
 
 
 def test_nauty_orbits_drop_into_single_step_extension():

@@ -33,6 +33,7 @@ from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
                       select_min_mechanisms, WeightedGraph,
                       match_weighted_subgraph)
 from rxn_core.alignment.sweep import (
+    attach_completed_candidate_groups,
     complete_chosen_automorphism_groups,
     run_no_cut_core_branch_records,
 )
@@ -2124,6 +2125,9 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         analytical_branches = _dedupe_analytical_mapping_families(
             inputs, raw_analytical_branches, cfg,
             static_context=analytical_static_context)
+        analytical_branches = attach_completed_candidate_groups(
+            analytical_branches, g_P_full,
+            wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
         phase_seconds['analytical_family_dedupe_seconds'] += (
             time.time() - phase_start)
         analytical_info = dict(info)
@@ -2190,13 +2194,19 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         (selected_rmsd, _mapping_key_for_rank, selected_branch_index,
          mapping_RP, raw_branch_symmetry, group_chirality,
          index_chirality) = evaluated_branches[0]
-        selected_family = dict(
-            analytical_branches[selected_branch_index].get(
-                'mapping_family') or {})
-        exact_target_generators = selected_family.get('target_generators')
-        if exact_target_generators is None:
+        selected_fragments = (
+            (analytical_branches[selected_branch_index].get('hierarchy') or {})
+            .get('fragments') or ())
+        if any('automorph_generators' not in (fragment.get('symmetry') or {})
+               for fragment in selected_fragments):
             raise RuntimeError(
-                "selected completed AAM branch lacks its exact mapping group")
+                "selected completed AAM branch lacks fragment groups")
+        exact_target_generators = [
+            generator
+            for fragment in selected_fragments
+            for generator in ((fragment.get('symmetry') or {})
+                              .get('automorph_generators') or ())
+        ]
         branch_symmetry = complete_chosen_automorphism_groups(
             raw_branch_symmetry, mapping_RP,
             g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL),

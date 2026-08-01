@@ -19,13 +19,15 @@ class _CandidateAutomorphismCanonicalizer:
     """
 
     def __init__(self, g_P, p_orbits=None, locked_mapping=None,
-                 node_policy=None):
+                 node_policy=None, wbo_tol=None):
         self.g_P = g_P
         self.node_policy = as_node_match_policy(node_policy)
         self.nodes, self.atom_index, _base_graph, pair_buckets, zero_bucket = (
             _nauty_colored_wbo_graph(
                 g_P,
-                wbo_tol=float(getattr(p_orbits, 'wbo_tol', 0.2) or 0.2),
+                wbo_tol=float(
+                    wbo_tol if wbo_tol is not None else
+                    (getattr(p_orbits, 'wbo_tol', 0.2) or 0.2)),
                 node_policy=self.node_policy,
             )
         )
@@ -63,7 +65,7 @@ class _CandidateAutomorphismCanonicalizer:
         self.locked_roles = {
             p: tuple(roles) for p, roles in locked_roles.items()
         }
-    def _candidate_roles(self, cand):
+    def _candidate_roles(self, cand, *, group_domains=False):
         if isinstance(cand, _SymCand):
             mapping = cand.mapping
             blocks = cand.blocks
@@ -73,6 +75,10 @@ class _CandidateAutomorphismCanonicalizer:
 
         roles = defaultdict(list)
         block_r = {r for block in blocks for r in block.r_atoms}
+        if group_domains and isinstance(cand, _SymCand):
+            block_r.update(
+                r for block in cand.automorph_blocks
+                for r in block.r_atoms)
         for r, p in sorted(mapping.items()):
             if r not in block_r:
                 roles[int(p)].append(('mapped', int(r)))
@@ -93,8 +99,9 @@ class _CandidateAutomorphismCanonicalizer:
         return {p: tuple(sorted(items, key=repr))
                 for p, items in roles.items()}
 
-    def _colored_vertices(self, cand):
-        candidate_roles = self._candidate_roles(cand)
+    def _colored_vertices(self, cand, *, group_domains=False):
+        candidate_roles = self._candidate_roles(
+            cand, group_domains=group_domains)
         colors = defaultdict(set)
         for p in self.nodes:
             vertex = self.atom_index[p]
@@ -110,10 +117,11 @@ class _CandidateAutomorphismCanonicalizer:
             for color, vertices in sorted(
                 colors.items(), key=lambda item: repr(item[0])))
 
-    def graph(self, cand):
+    def graph(self, cand, *, group_domains=False):
         import pynauty
 
-        colored_vertices = self._colored_vertices(cand)
+        colored_vertices = self._colored_vertices(
+            cand, group_domains=group_domains)
         return pynauty.Graph(
             self.n_vertices,
             directed=False,
@@ -132,3 +140,28 @@ class _CandidateAutomorphismCanonicalizer:
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
         return pynauty.certificate(self.graph(cand)), color_profile
+
+    def atom_generators(self, cand):
+        """Exact generators for a bounded completed candidate state."""
+        import pynauty
+
+        raw_generators = pynauty.autgrp(
+            self.graph(cand, group_domains=True))[0]
+        atom_by_index = {
+            index: atom for atom, index in self.atom_index.items()}
+        identity = tuple(range(self.n_atoms))
+        generators = []
+        seen = set()
+        for raw in raw_generators:
+            permutation = list(identity)
+            for atom, index in self.atom_index.items():
+                image_index = int(raw[index])
+                if image_index not in atom_by_index:
+                    raise RuntimeError(
+                        "candidate automorphism mixed atom/edge vertices")
+                permutation[int(atom)] = int(atom_by_index[image_index])
+            permutation = tuple(permutation)
+            if permutation != identity and permutation not in seen:
+                seen.add(permutation)
+                generators.append(permutation)
+        return tuple(generators)

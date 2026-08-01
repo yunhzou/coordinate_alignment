@@ -17,11 +17,13 @@ from pathlib import Path
 from ..frag import build_graph, classify_bonds, expand_mapping
 from ..matcher import (
     _SymBlock,
+    _SymCand,
     _atom_tuple_orbit,
     _nauty_atom_generators,
     _nauty_orbits,
     _sym_block_assignment_expr,
 )
+from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
 from ..matcher.orbits import _nauty_colored_wbo_graph
 from .branch import (
     BranchLimitExceeded,
@@ -841,6 +843,70 @@ def _public_pool(pool):
     for entry in pool.values():
         entry.pop('_branch_key_index', None)
     return pool
+
+
+def _candidate_from_symmetry_state(state):
+    """Reconstruct one completed compressed candidate from its AAM record."""
+    state = dict(state or {})
+    witness = {int(r): int(p)
+               for r, p in dict(state.get('witness') or {}).items()}
+    automorph_blocks = tuple(_SymBlock(
+        tuple(map(int, block.get('r_atoms') or ())),
+        tuple(map(int, block.get('p_atoms') or ())),
+        extendable=False)
+        for block in state.get('automorph_blocks') or ())
+    blocks = tuple(_SymBlock(
+        tuple(map(int, block.get('r_atoms') or ())),
+        tuple(map(int, block.get('p_atoms') or ())),
+        extendable=bool(block.get('extendable', False)))
+        for block in state.get('blocks') or ()
+        if str(block.get('source') or '') != 'exact_automorph_group')
+    return _SymCand(
+        witness, blocks,
+        exact_fixed=tuple(map(int, state.get('exact_fixed') or ())),
+        multiplicity=int(state.get('multiplicity', 1)),
+        automorph_blocks=automorph_blocks)
+
+
+def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
+                                      node_policy=None):
+    """Attach exact groups after completed branch-family reduction.
+
+    The cache key is the complete locked prefix plus candidate state.  Live
+    candidates and discarded growth paths never enter this bounded stage.
+    """
+    cache = {}
+    completed = []
+    for raw_branch in branches:
+        branch = copy.deepcopy(raw_branch)
+        hierarchy = branch.get('hierarchy') or {}
+        locked = {}
+        for fragment in hierarchy.get('fragments') or ():
+            state = fragment.get('symmetry') or {}
+            candidate = _candidate_from_symmetry_state(state)
+            key = (tuple(sorted(locked.items())),
+                   _freeze_analytical(state))
+            generators = cache.get(key)
+            if generators is None:
+                canonicalizer = _CandidateAutomorphismCanonicalizer(
+                    g_P, locked_mapping=locked, node_policy=node_policy,
+                    wbo_tol=float(wbo_tol))
+                generators = canonicalizer.atom_generators(candidate)
+                cache[key] = generators
+            state = dict(state)
+            state['automorph_generators'] = [
+                list(generator) for generator in generators]
+            state['automorph_group_source'] = (
+                'completed_candidate_after_branch_family_reduction')
+            fragment['symmetry'] = state
+            for r, p in candidate.mapping.items():
+                prior = locked.get(int(r))
+                if prior is not None and prior != int(p):
+                    raise RuntimeError(
+                        "completed AAM fragment conflicts with locked prefix")
+                locked[int(r)] = int(p)
+        completed.append(branch)
+    return completed
 
 
 def _anchor_mapping_ok(mapping, anchor_map):
