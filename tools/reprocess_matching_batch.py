@@ -123,7 +123,19 @@ def _pool_for_mechanism(mechanism):
     branches = _analytical_branches(mechanism)
     if branches:
         entry["branches"] = branches
-    return {((), ()): entry}
+    mechanism_key = (mechanism.get("post_aam") or {}).get("mechanism_key")
+    if not mechanism_key:
+        raise ValueError("stored post-AAM mechanism key is missing")
+
+    def freeze(value):
+        if isinstance(value, list):
+            return tuple(freeze(item) for item in value)
+        if isinstance(value, dict):
+            return tuple(sorted((key, freeze(item))
+                                for key, item in value.items()))
+        return value
+
+    return {freeze(mechanism_key): entry}
 
 
 def _comparison(old, new, inputs):
