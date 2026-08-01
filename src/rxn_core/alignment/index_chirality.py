@@ -24,6 +24,10 @@ ORIENTATION_DEGENERACY_TOL = 0.1
 # zero at working precision is undefined.  The local-center tolerance above
 # remains appropriate for ordinary near-planar stereocenters.
 GROUP_ORIENTATION_DEGENERACY_TOL = 0.0
+# Exact small action components are cheaper to close directly.  Larger
+# entangled components are restricted by adding chirality colors to the
+# already-compiled AAM relation; both routes represent the same exact group.
+DIRECT_ACTION_COMPONENT_MAX_ORDER = 4096
 
 
 class IndexChiralityError(ValueError):
@@ -1218,6 +1222,103 @@ def _perm_inverse(permutation):
     return tuple(inverse)
 
 
+class _PermutationGroupChain:
+    """Exact Schreier chain used to measure a generated action compactly."""
+
+    def __init__(self, generators, degree):
+        self.degree = int(degree)
+        self.identity = tuple(range(self.degree))
+        generators = tuple(dict.fromkeys(
+            tuple(map(int, generator)) for generator in generators
+            if tuple(map(int, generator)) != self.identity))
+        self.base = None
+        self.transversals = {}
+        self.child = None
+        if not generators:
+            return
+        moved = sorted({
+            atom for generator in generators
+            for atom, image in enumerate(generator) if atom != image
+        })
+        if not moved:
+            return
+        self.base = moved[0]
+        transversals = {self.base: self.identity}
+        queue = [self.base]
+        while queue:
+            point = queue.pop(0)
+            transversal = transversals[point]
+            for generator in generators:
+                image = generator[point]
+                if image in transversals:
+                    continue
+                transversals[image] = _perm_compose(
+                    transversal, generator)
+                queue.append(image)
+        self.transversals = transversals
+        schreier = []
+        seen = set()
+        for point, transversal in transversals.items():
+            for generator in generators:
+                image = generator[point]
+                stabilizer = _perm_compose(
+                    _perm_compose(transversal, generator),
+                    _perm_inverse(transversals[image]))
+                if stabilizer != self.identity and stabilizer not in seen:
+                    seen.add(stabilizer)
+                    schreier.append(stabilizer)
+        self.child = _PermutationGroupChain(schreier, self.degree)
+
+    @property
+    def order(self):
+        if self.base is None:
+            return 1
+        return len(self.transversals) * self.child.order
+
+
+def _generator_support_components(generators, degree):
+    """Return exact overlapping-support generator components."""
+    identity = tuple(range(int(degree)))
+    generators = tuple(dict.fromkeys(
+        tuple(map(int, generator)) for generator in generators
+        if tuple(map(int, generator)) != identity))
+    if not generators:
+        return ()
+    supports = [
+        {atom for atom, image in enumerate(generator) if atom != image}
+        for generator in generators
+    ]
+    parent = list(range(int(degree)))
+
+    def find(atom):
+        while parent[atom] != atom:
+            parent[atom] = parent[parent[atom]]
+            atom = parent[atom]
+        return atom
+
+    def union(left, right):
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    for support in supports:
+        ordered = tuple(sorted(support))
+        for atom in ordered[1:]:
+            union(ordered[0], atom)
+    components = defaultdict(list)
+    for generator, support in zip(generators, supports):
+        components[find(min(support))].append(generator)
+    return tuple(tuple(component) for _root, component in sorted(
+        components.items()))
+
+
+def _requires_compiled_relation_subgroup(generators, degree):
+    return any(
+        _PermutationGroupChain(component, degree).order
+        > DIRECT_ACTION_COMPONENT_MAX_ORDER
+        for component in _generator_support_components(generators, degree))
+
+
 def _point_stabilizer_generators(generators, point, degree):
     identity = tuple(range(int(degree)))
     generators = tuple(dict.fromkeys(
@@ -1573,8 +1674,8 @@ def _select_from_stored_aam_group(
         "status": "applied" if selected != source else "already_consistent",
         "solver": "stored_AAM_generator_group",
         "constraint_model": "AAM_mutable_affine_simplices",
-        "candidate_source": "stored_AAM_fragment_transporters",
-        "stored_aam_fragment_generator_count": len(stored_generators),
+        "candidate_source": "stored_AAM_branch_family_group",
+        "stored_aam_family_generator_count": len(stored_generators),
         "selected_fragment_count": fragment_count,
         "evaluated_constraint_action_count": evaluated_actions,
         "chirality_valid_atom_bijection_count": len(valid_bases),
@@ -1635,6 +1736,29 @@ def _select_from_stored_aam_group(
         metadata=metadata)
 
 
+def _compiled_relation_fragment_data(
+        source, branch_symmetry, static_context, anchor_map):
+    """Recover cheap adjacency metadata around an already-compiled relation."""
+    inverse = {p: r for r, p in source.items()}
+    fragments, _owner = _selected_fragments(
+        branch_symmetry, source,
+        fixed_singletons=dict(anchor_map or {}))
+    graph_R = static_context['graph_R']
+    graph_P = static_context['graph_P']
+    persistent_P = {p: set() for p in source.values()}
+    for fragment_R in fragments:
+        fragment_set = set(fragment_R)
+        for left_R in fragment_R:
+            for right_R in graph_R.neighbors(left_R):
+                if right_R not in fragment_set or left_R >= right_R:
+                    continue
+                left_P, right_P = source[left_R], source[right_R]
+                if graph_P.has_edge(left_P, right_P):
+                    persistent_P[left_P].add(right_P)
+                    persistent_P[right_P].add(left_P)
+    return persistent_P, inverse, fragments
+
+
 def select_index_chirality_assignment(
         source_mapping, branch_symmetry,
         elements_R: Sequence[str], coords_R, wbo_R,
@@ -1643,7 +1767,8 @@ def select_index_chirality_assignment(
         dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
         orientation_degeneracy_tol=ORIENTATION_DEGENERACY_TOL,
         anchor_map=None, group_chirality_frames=(), static_context=None,
-        branch_family_mappings=()):
+        branch_family_mappings=(), aam_family_generators=None,
+        compiled_aam_family=None):
     """Compose one AAM witness with one exact orientation-preserving automorph.
 
     The constraint is solved simultaneously as a colored relational-graph
@@ -1656,9 +1781,18 @@ def select_index_chirality_assignment(
         graph_floor=graph_floor,
         dwbo_threshold=dwbo_threshold,
         metal_dwbo_threshold=metal_dwbo_threshold)
-    has_stored_group, stored_generators = _stored_aam_generators(
-        branch_symmetry)
-    if has_stored_group:
+    if aam_family_generators is None:
+        has_stored_group, stored_generators = _stored_aam_generators(
+            branch_symmetry)
+    else:
+        has_stored_group = True
+        stored_generators = tuple(dict.fromkeys(
+            tuple(map(int, generator))
+            for generator in aam_family_generators))
+    if (has_stored_group and not (
+            compiled_aam_family is not None
+            and _requires_compiled_relation_subgroup(
+                stored_generators, len(source)))):
         return _select_from_stored_aam_group(
             source, branch_symmetry, stored_generators,
             elements_R, np.asarray(coords_R), np.asarray(wbo_R),
@@ -1671,11 +1805,21 @@ def select_index_chirality_assignment(
             group_chirality_frames=group_chirality_frames,
             branch_family_mappings=branch_family_mappings,
             static_context=static_context)
-    relation, persistent_P, inverse, fragments = _masked_relation_data(
-        source, branch_symmetry, elements_R, np.asarray(wbo_R),
-        elements_P, np.asarray(wbo_P), graph_floor,
-        symmetry_wbo_tol, dwbo_threshold, metal_dwbo_threshold,
-        anchor_map, static_context=static_context)
+    compiled_relation_reused = False
+    if compiled_aam_family is not None:
+        if dict(compiled_aam_family.source_mapping) != source:
+            raise IndexChiralityError(
+                "compiled AAM family does not match its branch mapping")
+        relation = compiled_aam_family.relation.clone()
+        compiled_relation_reused = True
+        persistent_P, inverse, fragments = _compiled_relation_fragment_data(
+            source, branch_symmetry, static_context, anchor_map)
+    else:
+        relation, persistent_P, inverse, fragments = _masked_relation_data(
+            source, branch_symmetry, elements_R, np.asarray(wbo_R),
+            elements_P, np.asarray(wbo_P), graph_floor,
+            symmetry_wbo_tol, dwbo_threshold, metal_dwbo_threshold,
+            anchor_map, static_context=static_context)
 
     group_frame_candidates = []
     for raw_frame in group_chirality_frames or ():
@@ -1987,11 +2131,17 @@ def select_index_chirality_assignment(
         "schema_version": INDEX_CHIRALITY_SCHEMA,
         "policy": "preserve",
         "status": "applied" if selected != source else "already_consistent",
-        "solver": "pynauty_colored_relational_isomorphism",
+        "solver": (
+            "compiled_AAM_relation_chirality_subgroup"
+            if compiled_relation_reused
+            else "pynauty_colored_relational_isomorphism"),
         "constraint_model": "simultaneous_affine_substituent_simplices",
         "orientation_degeneracy_tolerance": float(
             orientation_degeneracy_tol),
-        "candidate_source": "selected_AAM_masked_fragment_automorphism",
+        "candidate_source": (
+            "compiled_AAM_branch_family_relation"
+            if compiled_relation_reused
+            else "selected_AAM_masked_fragment_automorphism"),
         "allowed_automorphism_group_order": {
             "mantissa": float(group_mantissa),
             "decimal_exponent": int(group_exponent),

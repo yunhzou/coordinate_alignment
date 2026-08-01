@@ -10,6 +10,7 @@ from rxn_core.alignment.index_chirality import (
     _masked_relation_data,
     _minimum_rmsd_group_action,
     analytical_family_static_context,
+    compile_analytical_mapping_family,
     fixed_mapping_aligned_rmsd,
     select_group_chiral_witness,
     select_index_chirality_assignment,
@@ -167,7 +168,7 @@ def test_index_chiral_selector_chooses_consistent_final_automorphism():
         "pynauty_colored_relational_isomorphism")
 
 
-def test_finalized_aam_group_is_used_without_relational_reconstruction(
+def test_finalized_aam_branch_family_is_used_without_reconstruction(
         monkeypatch):
     elements, coords, wbo, identity, odd, _symmetry = _tetrahedral_case()
     swap = list(range(len(elements)))
@@ -175,7 +176,7 @@ def test_finalized_aam_group_is_used_without_relational_reconstruction(
     hierarchy = {"fragments": [{
         "fragment_index": 0,
         "fragment": list(range(len(elements))),
-        "symmetry": {"automorph_generators": [swap]},
+        "symmetry": {"automorph_generators": []},
     }]}
 
     def forbidden(*_args, **_kwargs):
@@ -188,11 +189,36 @@ def test_finalized_aam_group_is_used_without_relational_reconstruction(
         odd, hierarchy,
         elements, coords, wbo,
         elements, coords, wbo,
-        branch_family_mappings=[odd, identity])
+        branch_family_mappings=[odd, identity],
+        aam_family_generators=[swap])
 
     assert selection.selected_mapping == identity
     assert selection.metadata["solver"] == "stored_AAM_generator_group"
     assert selection.metadata["selected_index_chirality_violation_count"] == 0
+
+
+def test_entangled_group_reuses_compiled_aam_relation(monkeypatch):
+    elements, coords, wbo, identity, odd, symmetry = _tetrahedral_case()
+    family = compile_analytical_mapping_family(
+        odd, symmetry, elements, wbo, elements, wbo)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("compiled AAM relation must not be reconstructed")
+
+    monkeypatch.setattr(
+        index_chirality_module, "DIRECT_ACTION_COMPONENT_MAX_ORDER", 1)
+    monkeypatch.setattr(
+        index_chirality_module, "_masked_relation_data", forbidden)
+    selection = select_index_chirality_assignment(
+        odd, symmetry,
+        elements, coords, wbo,
+        elements, coords, wbo,
+        aam_family_generators=family.target_generators,
+        compiled_aam_family=family)
+
+    assert selection.selected_mapping == identity
+    assert selection.metadata["solver"] == (
+        "compiled_AAM_relation_chirality_subgroup")
 
 
 def test_exact_symmetry_freedom_corrects_orientation_without_display_block():

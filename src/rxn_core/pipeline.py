@@ -1808,6 +1808,8 @@ def _evaluate_analytical_branch_task(branch_index):
     cfg = context['cfg']
     branch_mapping = _int_mapping(branch['mapping'])
     branch_hierarchy = branch.get('hierarchy') or {}
+    branch_mapping_family = branch.get('mapping_family') or {}
+    compiled_mapping_family = branch.get('_mapping_family_object')
     branch_group_chirality = None
     branch_index_chirality = None
     try:
@@ -1834,6 +1836,11 @@ def _evaluate_analytical_branch_task(branch_index):
                 branch_family_mappings=[
                     candidate['mapping']
                     for candidate in context['branches']],
+                aam_family_generators=(
+                    branch_mapping_family.get('target_generators')
+                    if 'target_generators' in branch_mapping_family
+                    else None),
+                compiled_aam_family=compiled_mapping_family,
             )
             branch_mapping = selection.selected_mapping
             branch_index_chirality = selection.metadata
@@ -2060,6 +2067,7 @@ def _dedupe_analytical_mapping_families(
         branch['path_provenance'] = list(group['provenance'])
         branch['covered_path_count'] = len(branch['path_provenance'])
         branch['mapping_family'] = family.record()
+        branch['_mapping_family_object'] = family
         entries.append({'branch': branch, 'family': family})
 
     def merge_entry(kept, removed):
