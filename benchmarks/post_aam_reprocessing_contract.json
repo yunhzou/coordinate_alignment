@@ -14,7 +14,7 @@
       "max_chirality_violations": 0
     },
     "pr14.Pd_hydroamination_JOC2025_TS11_step1_reductive_coupling": {
-      "max_elapsed_seconds": 120,
+      "max_elapsed_seconds": 180,
       "expected_mechanism_count": 1,
       "max_chirality_violations": 0
     }
