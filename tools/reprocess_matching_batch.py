@@ -174,7 +174,8 @@ def _comparison(old, new, inputs):
     }
 
 
-def run_case(source: Path, output: Path, tier: str, task_index: int):
+def run_case(source: Path, output: Path, tier: str, task_index: int,
+             performance_contract: Path | None = None):
     started = time.time()
     case = _case(source, tier, task_index)
     step = str(case["step_id"])
@@ -234,6 +235,37 @@ def run_case(source: Path, output: Path, tier: str, task_index: int):
         "elapsed_seconds": time.time() - started,
         "comparisons": comparisons,
     }
+    if performance_contract is not None:
+        contract = _read(performance_contract)
+        expected = (contract.get("cases") or {}).get(step)
+        if expected is not None:
+            failures = []
+            if len(mechanisms) != int(expected["expected_mechanism_count"]):
+                failures.append(
+                    f"mechanism count {len(mechanisms)} != "
+                    f"{expected['expected_mechanism_count']}")
+            violation_count = sum(
+                int(((mechanism.get("index_chirality") or {}).get(
+                    "selected_index_chirality_violation_count") or 0))
+                for mechanism in mechanisms)
+            if violation_count > int(expected["max_chirality_violations"]):
+                failures.append(
+                    f"chirality violations {violation_count} > "
+                    f"{expected['max_chirality_violations']}")
+            if summary["elapsed_seconds"] > float(
+                    expected["max_elapsed_seconds"]):
+                failures.append(
+                    f"elapsed {summary['elapsed_seconds']:.3f}s > "
+                    f"{expected['max_elapsed_seconds']}s")
+            summary["performance_contract"] = {
+                "profile": contract.get("profile"),
+                "passed": not failures,
+                "failures": failures,
+            }
+            if failures:
+                _write_atomic(case_root / "summary.json", summary)
+                raise RuntimeError(
+                    f"{step} post-AAM regression: {'; '.join(failures)}")
     _write_atomic(case_root / "summary.json", summary)
     print(json.dumps(summary, indent=2))
 
@@ -378,12 +410,15 @@ def main():
     case.add_argument("--output", type=Path, required=True)
     case.add_argument("--tier", choices=TIERS, required=True)
     case.add_argument("--task-index", type=int, required=True)
+    case.add_argument("--performance-contract", type=Path)
     args = parser.parse_args()
     if args.command == "prepare":
         prepare(args.source.resolve(), args.output.resolve())
     elif args.command == "run-case":
         run_case(args.source.resolve(), args.output.resolve(),
-                 args.tier, args.task_index)
+                 args.tier, args.task_index,
+                 (args.performance_contract.resolve()
+                  if args.performance_contract else None))
     else:
         summarize(args.source.resolve(), args.output.resolve())
 

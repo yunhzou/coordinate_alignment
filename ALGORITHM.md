@@ -694,8 +694,23 @@ The current immutable compiler context precomputes once:
 
 It is shared by family compilation and chirality evaluation. Exact relation
 records are cached for containment checks. Families are compiled in process
-batches, with up to 32 workers for large branch sets, and the remaining
-maximal families are evaluated independently in parallel.
+batches, with up to 48 workers for large branch sets.
+
+The structural family `G` can contain several right cosets of the conservative
+event stabilizer `K`. Their quotient is constructed directly with a
+Schreier--Sims transversal, never by quadratic pairwise relation-membership
+tests. Concrete event signatures for the quotient representatives are checked
+in bounded vectorized batches. A retained member `K g` reuses the already
+compiled target subgroup `K`; changing `g` does not justify recompiling the
+pynauty relation. The compiled subgroup also proves that its complete action
+preserves the selected event, so only the final selected mapping requires an
+independent event assertion.
+
+After quotient construction, `(branch, event-coset)` pairs are independent
+exact work units. They are scheduled across up to 48 workers and reduced by
+the deterministic global order `(RMSD, mapping tuple, branch, coset)`. This is
+only a scheduling transformation: no family, constraint, or RMSD candidate is
+discarded.
 
 Measured on the 133-atom Pd TS12 case with eight CPUs:
 

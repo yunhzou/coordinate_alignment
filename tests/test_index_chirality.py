@@ -248,6 +248,35 @@ def test_entangled_group_reuses_compiled_aam_relation(monkeypatch):
         "compiled_AAM_relation_chirality_subgroup")
 
 
+def test_compiled_event_stabilizer_does_not_recheck_every_group_action(
+        monkeypatch):
+    elements, coords, wbo, identity, odd, symmetry = _tetrahedral_case()
+    family = compile_analytical_mapping_family(
+        odd, symmetry, elements, wbo, elements, wbo)
+    original = index_chirality_module.mapping_event_signature
+    calls = 0
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        index_chirality_module, "mapping_event_signature", counted)
+    selection = select_index_chirality_assignment(
+        odd, symmetry,
+        elements, coords, wbo,
+        elements, coords, wbo,
+        aam_family_generators=family.target_generators,
+        compiled_aam_family=family)
+
+    assert selection.selected_mapping == identity
+    # Once for the source and once for the independently verified result.
+    # The compiled target group already proves every intermediate action is
+    # inside the exact-event stabilizer.
+    assert calls == 2
+
+
 def test_compiled_family_cannot_drop_an_incompatible_ordinary_frame(
         monkeypatch):
     elements, coords, wbo, _identity, odd, symmetry = _tetrahedral_case()

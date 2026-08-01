@@ -596,6 +596,15 @@ def _generated_atom_permutations(raw_generators, degree):
 
 
 def _independent_atom_action_factors(raw_generators, degree):
+    """Return cached disjoint-support factors for one exact atom group."""
+    generators = tuple(dict.fromkeys(
+        tuple(map(int, generator)) for generator in raw_generators))
+    return _independent_atom_action_factors_cached(
+        generators, int(degree))
+
+
+@lru_cache(maxsize=256)
+def _independent_atom_action_factors_cached(raw_generators, degree):
     """Factor an atom action into exact disjoint-support subgroups.
 
     Generator supports that overlap belong to the same factor.  Distinct
@@ -954,6 +963,45 @@ class AnalyticalMappingFamily:
         """Fast canonical bucket; equality is still proven explicitly."""
         return (self.invariant, self.certificate_A, self.certificate_B)
 
+    def with_coset_representative(self, source_mapping):
+        """Reuse this exact target subgroup for another right-coset member.
+
+        If ``K`` is the compiled conservative target subgroup and ``g`` is a
+        structural quotient representative, the corresponding mapping family
+        is ``K g m``.  Its target automorphism group is still exactly ``K``;
+        only the R->P coset representative changes.  Build an A-side copy of
+        the compiled B relation so the identity A->B isomorphism represents
+        the new source, without rerunning graph construction or pynauty.
+        """
+        source = _int_mapping(source_mapping)
+        if (set(source) != set(range(self.degree))
+                or set(source.values()) != set(range(self.degree))):
+            raise IndexChiralityError(
+                "translated analytical coset mapping is not bijective")
+        relation = self.relation.clone()
+        relation.colors_A = list(relation.colors_B)
+        relation.relation_records_A = list(relation.relation_records_B)
+
+        translated = object.__new__(AnalyticalMappingFamily)
+        translated.source_mapping = source
+        translated.degree = self.degree
+        translated.relation = relation
+        translated.graph_A = relation.graph("A")
+        translated.graph_B = self.graph_B
+        translated.certificate_A = self.certificate_B
+        translated.certificate_B = self.certificate_B
+        translated.representative_mapping = dict(source)
+        translated.target_generators = self.target_generators
+        translated.target_orbits = self.target_orbits
+        translated.group_order = self.group_order
+        translated._membership_cache = {}
+        translated._relation_record_counts_B = (
+            self._relation_record_counts_B)
+        translated.structural_relation = None
+        translated.structural_target_generators = ()
+        translated.structural_group_order = self.group_order
+        return translated
+
     def contains(self, mapping):
         mapping = validate_mapping(
             mapping,
@@ -997,14 +1045,6 @@ class AnalyticalMappingFamily:
             for r in mapping
         }
 
-    def _same_conservative_event_coset(self, left_action, right_action):
-        """Whether two target actions lie in the same stabilizer coset."""
-        relative = _perm_compose(
-            _perm_inverse(tuple(right_action)), tuple(left_action))
-        transported = self._left_act(
-            relative, self.representative_mapping)
-        return self.contains(transported)
-
     def exact_event_coset_representatives(
             self, wbo_R, wbo_P, elements_R, *,
             dwbo_threshold=0.5, metal_dwbo_threshold=0.3):
@@ -1017,33 +1057,84 @@ class AnalyticalMappingFamily:
         broken/formed event.  This enumerates event families, never group
         elements or atom bijections.
         """
-        source_event = mapping_event_signature(
-            self.source_mapping, wbo_R, wbo_P, elements_R,
-            dwbo_threshold=dwbo_threshold,
-            metal_dwbo_threshold=metal_dwbo_threshold)
+        from sympy.combinatorics import Permutation, PermutationGroup
+
         identity = tuple(range(self.degree))
-        representatives = [identity]
-        queue_index = 0
-        while queue_index < len(representatives):
-            action = representatives[queue_index]
-            queue_index += 1
-            for generator in self.structural_target_generators:
-                # Right multiplication traverses left cosets K\\G.
-                candidate = _perm_compose(generator, action)
-                if any(self._same_conservative_event_coset(
-                        candidate, existing)
-                       for existing in representatives):
-                    continue
-                representatives.append(candidate)
+        structural_generators = (
+            self.structural_target_generators or (identity,))
+        conservative_generators = self.target_generators or (identity,)
+        structural_group = PermutationGroup([
+            Permutation(generator, size=self.degree)
+            for generator in structural_generators
+        ])
+        conservative_group = PermutationGroup([
+            Permutation(generator, size=self.degree)
+            for generator in conservative_generators
+        ])
+        # SymPy's deterministic Schreier--Sims transversal constructs the
+        # exact right quotient K\\G directly.  The previous breadth-first
+        # traversal compared every new representative with every old one by
+        # transporting the complete relation, making a q-element quotient
+        # O(q^2 * |relation|).
+        representatives = tuple(
+            tuple(int(representative(atom))
+                  for atom in range(self.degree))
+            for representative in structural_group.coset_transversal(
+                conservative_group)
+        )
+
+        # Filter quotient representatives against the concrete event in
+        # vectorized batches.  This is exactly mapping_event_signature for
+        # every representative, but avoids q repeated Python O(N^2) loops.
+        wbo_R = np.asarray(wbo_R)
+        wbo_P = np.asarray(wbo_P)
+        left, right, thresholds = [], [], []
+        for atom_left in range(self.degree):
+            for atom_right in range(atom_left + 1, self.degree):
+                left.append(atom_left)
+                right.append(atom_right)
+                thresholds.append(bond_event_threshold(
+                    elements_R, atom_left, atom_right,
+                    default_threshold=float(dwbo_threshold),
+                    metal_threshold=metal_dwbo_threshold))
+        left = np.asarray(left, dtype=int)
+        right = np.asarray(right, dtype=int)
+        thresholds = np.asarray(thresholds, dtype=float)
+        r_values = wbo_R[left, right]
+        source_classes = np.zeros(len(left), dtype=np.int8)
+        source_delta = r_values - wbo_P[
+            np.asarray([self.source_mapping[r] for r in left], dtype=int),
+            np.asarray([self.source_mapping[r] for r in right], dtype=int)]
+        source_classes[source_delta >= thresholds] = 1
+        source_classes[-source_delta >= thresholds] = -1
+
+        source_images = np.asarray([
+            self.source_mapping[r] for r in range(self.degree)], dtype=int)
+        valid_actions = []
+        batch_size = 256
+        for start in range(0, len(representatives), batch_size):
+            actions = np.asarray(
+                representatives[start:start + batch_size], dtype=int)
+            candidate_mappings = actions[:, source_images]
+            candidate_delta = (
+                r_values[None, :]
+                - wbo_P[candidate_mappings[:, left],
+                        candidate_mappings[:, right]])
+            candidate_classes = np.zeros(
+                candidate_delta.shape, dtype=np.int8)
+            candidate_classes[candidate_delta >= thresholds[None, :]] = 1
+            candidate_classes[
+                -candidate_delta >= thresholds[None, :]] = -1
+            valid = np.all(
+                candidate_classes == source_classes[None, :], axis=1)
+            valid_actions.extend(
+                tuple(map(int, action))
+                for action in actions[valid])
+
         mappings = []
         seen = set()
-        for action in representatives:
+        for action in valid_actions:
             mapping = self._left_act(action, self.source_mapping)
-            if mapping_event_signature(
-                    mapping, wbo_R, wbo_P, elements_R,
-                    dwbo_threshold=dwbo_threshold,
-                    metal_dwbo_threshold=metal_dwbo_threshold) != source_event:
-                continue
             key = tuple(mapping[r] for r in range(self.degree))
             if key not in seen:
                 seen.add(key)
@@ -1442,7 +1533,8 @@ def _select_from_stored_aam_group(
         elements_R, coords_R, wbo_R, elements_P, coords_P, wbo_P, *,
         graph_floor, dwbo_threshold, metal_dwbo_threshold,
         orientation_degeneracy_tol, anchor_map, group_chirality_frames,
-        branch_family_mappings, static_context):
+        branch_family_mappings, static_context,
+        event_invariant_group=False):
     """Filter and score the finalized AAM group without graph reconstruction."""
     degree = len(source)
     identity = tuple(range(degree))
@@ -1551,18 +1643,18 @@ def _select_from_stored_aam_group(
         dwbo_threshold=dwbo_threshold,
         metal_dwbo_threshold=metal_dwbo_threshold)
     event_sensitive_atoms = set()
-    for support, actions in factors:
-        if any(mapping_event_signature(
-                {r: int(action[source[r]]) for r in source},
-                wbo_R, wbo_P, elements_R,
-                dwbo_threshold=dwbo_threshold,
-                metal_dwbo_threshold=metal_dwbo_threshold)
-               != source_signature for action in actions):
-            # A generator can preserve the selected event while a product of
-            # generators in the same factor does not.  Classify the complete
-            # local factor, which is already enumerated for exact RMSD search,
-            # rather than sampling only its supplied generators.
-            event_sensitive_atoms.update(support)
+    if not event_invariant_group:
+        for support, actions in factors:
+            if any(mapping_event_signature(
+                    {r: int(action[source[r]]) for r in source},
+                    wbo_R, wbo_P, elements_R,
+                    dwbo_threshold=dwbo_threshold,
+                    metal_dwbo_threshold=metal_dwbo_threshold)
+                   != source_signature for action in actions):
+                # A generator can preserve the selected event while a product
+                # of generators in the same factor does not.  Classify the
+                # complete local factor rather than sampling only generators.
+                event_sensitive_atoms.update(support)
     constrained_atoms.update(event_sensitive_atoms)
     event_filter = bool(event_sensitive_atoms)
     anchor_filter = any(
@@ -1578,6 +1670,25 @@ def _select_from_stored_aam_group(
     unconstrained = [
         (support, actions) for support, actions in factors
         if not set(support) & constrained_atoms]
+
+    # A large group action frequently differs only on atoms outside a given
+    # local frame.  Chirality depends solely on the mapped center and mapped
+    # simplex, so cache that restriction instead of recomputing the same
+    # determinant once per full-group action.
+    frame_sign_cache = {}
+
+    def target_frame_sign(frame, mapping):
+        image = (
+            int(mapping[frame.center_R]),
+            *(int(mapping[r]) for r in frame.neighbors_R),
+        )
+        key = (frame.frame_id, image)
+        if key not in frame_sign_cache:
+            sign = _frame_measure_for_mapping(
+                frame, mapping, coords_P,
+                orientation_degeneracy_tol).sign
+            frame_sign_cache[key] = int(sign)
+        return frame_sign_cache[key]
 
     remaining_frames = []
     ordinary_frames = []
@@ -1606,10 +1717,9 @@ def _select_from_stored_aam_group(
         support, actions = constrained[factor_index]
         constrained[factor_index] = [support, [
             action for action in actions
-            if _frame_measure_for_mapping(
+            if target_frame_sign(
                 frame,
-                {r: int(action[source[r]]) for r in source},
-                coords_P, orientation_degeneracy_tol).sign == frame.sign_R
+                {r: int(action[source[r]]) for r in source}) == frame.sign_R
         ]]
     if any(not actions for _support, actions in constrained):
         raise IndexChiralityConflict(
@@ -1626,9 +1736,7 @@ def _select_from_stored_aam_group(
         for choice in choices:
             action = _perm_compose(action, choice)
         mapping = {r: int(action[source[r]]) for r in source}
-        if any(_frame_measure_for_mapping(
-                frame, mapping, coords_P,
-                orientation_degeneracy_tol).sign != frame.sign_R
+        if any(target_frame_sign(frame, mapping) != frame.sign_R
                for frame in remaining_frames):
             continue
         if (event_filter and mapping_event_signature(
@@ -1652,9 +1760,7 @@ def _select_from_stored_aam_group(
                 item.center_R, item.neighbors_R)):
         satisfying = [
             mapping for mapping in valid_bases
-            if _frame_measure_for_mapping(
-                frame, mapping, coords_P,
-                orientation_degeneracy_tol).sign == frame.sign_R
+            if target_frame_sign(frame, mapping) == frame.sign_R
         ]
         if satisfying:
             valid_bases = satisfying
@@ -1862,7 +1968,13 @@ def select_index_chirality_assignment(
             anchor_map=dict(anchor_map or {}),
             group_chirality_frames=group_chirality_frames,
             branch_family_mappings=branch_family_mappings,
-            static_context=static_context)
+            static_context=static_context,
+            # The target group of a compiled conservative relation is, by
+            # construction, a subgroup of the exact-event stabilizer.  Its
+            # complete action therefore cannot change the selected event.
+            # Rechecking every action costs O(|G| N^2) and is redundant; the
+            # selected mapping is still verified independently below.
+            event_invariant_group=(compiled_aam_family is not None))
     compiled_relation_reused = False
     if compiled_aam_family is not None:
         if dict(compiled_aam_family.source_mapping) != source:
