@@ -272,6 +272,72 @@ def test_exact_symmetry_freedom_corrects_orientation_without_display_block():
     assert selection.metadata["selected_index_chirality_violation_count"] == 0
 
 
+@pytest.mark.parametrize("reactant_coordination", [4, 5])
+@pytest.mark.parametrize("execution_route", ["stored", "compiled"])
+def test_coordination_change_preserves_mutable_four_ligand_intersection(
+        reactant_coordination, execution_route, monkeypatch):
+    elements = ["C", "F", "H", "H", "H", "H"]
+    coords_R = np.array([
+        [0.0, 0.0, 0.0],
+        [-0.9, -0.9, -0.9],
+        [0.9, 0.9, -0.9],
+        [0.9, -0.9, 0.9],
+        [-0.9, 0.9, 0.9],
+        [0.0, 0.0, 1.8],
+    ])
+    coords_P = coords_R.copy()
+    coords_P[[3, 4]] = coords_P[[4, 3]]
+    wbo_R = np.zeros((6, 6))
+    wbo_P = np.zeros((6, 6))
+    for neighbor in range(1, reactant_coordination + 1):
+        wbo_R[0, neighbor] = wbo_R[neighbor, 0] = 1.0
+    product_coordination = 9 - reactant_coordination
+    for neighbor in range(1, product_coordination + 1):
+        wbo_P[0, neighbor] = wbo_P[neighbor, 0] = 1.0
+    identity = {atom: atom for atom in range(6)}
+    swap = list(range(6))
+    swap[3], swap[4] = swap[4], swap[3]
+    hierarchy = {"fragments": [{
+        "fragment_index": 0,
+        "fragment": list(range(6)),
+        "symmetry": {"automorph_generators": [swap]},
+    }]}
+
+    family = None
+    generators = None
+    if execution_route == "compiled":
+        family = compile_analytical_mapping_family(
+            identity, hierarchy,
+            elements, wbo_R, elements, wbo_P)
+        generators = family.target_generators
+        monkeypatch.setattr(
+            index_chirality_module,
+            "_requires_compiled_relation_subgroup",
+            lambda _generators, _degree: True)
+
+    selection = select_index_chirality_assignment(
+        identity, hierarchy,
+        elements, coords_R, wbo_R,
+        elements, coords_P, wbo_P,
+        aam_family_generators=generators,
+        compiled_aam_family=family)
+
+    expected_solver = (
+        "stored_AAM_generator_group"
+        if execution_route == "stored"
+        else "compiled_AAM_relation_chirality_subgroup")
+    assert selection.metadata["solver"] == expected_solver
+    assert selection.selected_mapping[3] == 4
+    assert selection.selected_mapping[4] == 3
+    assert selection.metadata["selected_index_chirality_violation_count"] == 0
+    persistent = [
+        frame for frame in selection.metadata["active_frames"]
+        if frame["center_R"] == 0
+    ]
+    assert len(persistent) == 1
+    assert set(persistent[0]["neighbors_R_index_order"]) == {1, 2, 3, 4}
+
+
 def test_group_chirality_selects_between_distinct_aam_witnesses():
     elements, coords, wbo, identity, reversed_witness, witnesses = (
         _higher_coordinate_branch_case())

@@ -1384,58 +1384,6 @@ def _requires_compiled_relation_subgroup(generators, degree):
         for component in _generator_support_components(generators, degree))
 
 
-def _point_stabilizer_generators(generators, point, degree):
-    identity = tuple(range(int(degree)))
-    generators = tuple(dict.fromkeys(
-        tuple(map(int, generator)) for generator in generators
-        if tuple(map(int, generator)) != identity))
-    transversals = {int(point): identity}
-    queue = [int(point)]
-    while queue:
-        current = queue.pop(0)
-        transversal = transversals[current]
-        for generator in generators:
-            image = generator[current]
-            if image in transversals:
-                continue
-            transversals[image] = _perm_compose(transversal, generator)
-            queue.append(image)
-    stabilizers = []
-    seen = set()
-    for current, transversal in transversals.items():
-        for generator in generators:
-            image = generator[current]
-            stabilizer = _perm_compose(
-                _perm_compose(transversal, generator),
-                _perm_inverse(transversals[image]))
-            if stabilizer != identity and stabilizer not in seen:
-                seen.add(stabilizer)
-                stabilizers.append(stabilizer)
-    return tuple(stabilizers)
-
-
-def _generator_orbit_ids(atoms, generators):
-    parent = {int(atom): int(atom) for atom in atoms}
-
-    def find(atom):
-        while parent[atom] != atom:
-            parent[atom] = parent[parent[atom]]
-            atom = parent[atom]
-        return atom
-
-    def union(left, right):
-        left, right = find(left), find(right)
-        if left != right:
-            parent[right] = left
-
-    for generator in generators:
-        for atom in tuple(parent):
-            image = int(generator[atom])
-            if image in parent:
-                union(atom, image)
-    return {atom: find(atom) for atom in parent}
-
-
 def _stored_aam_generators(branch_symmetry):
     generators = []
     present = False
@@ -1465,16 +1413,25 @@ def _select_from_stored_aam_group(
         "automorph_generators" in (fragment.get("symmetry") or {})
         for fragment in dict(branch_symmetry or {}).get("fragments") or ())
 
+    factors = list(_independent_atom_action_factors(
+        stored_generators, degree))
+    persistent_shells_P = {}
     mutable_centers = set()
     for center_P in range(degree):
         neighbors_P = set(graph_P.neighbors(center_P))
-        if len(neighbors_P) < 2:
+        center_R = inverse[center_P]
+        mapped_neighbors_R = {
+            source[r] for r in graph_R.neighbors(center_R)}
+        persistent_P = tuple(sorted(neighbors_P & mapped_neighbors_R))
+        persistent_shells_P[center_P] = persistent_P
+        if len(persistent_P) < 3:
             continue
-        stabilizers = _point_stabilizer_generators(
-            stored_generators, center_P, degree)
-        orbit_ids = _generator_orbit_ids(neighbors_P, stabilizers)
-        sizes = Counter(orbit_ids.values())
-        if any(sizes[orbit_ids[atom]] > 1 for atom in neighbors_P):
+        persistent_set = set(persistent_P)
+        if any(
+                action[center_P] == center_P
+                and {action[p] for p in persistent_P} == persistent_set
+                and any(action[p] != p for p in persistent_P)
+                for _support, actions in factors for action in actions):
             mutable_centers.add(center_P)
 
     # Completed branch representatives are exact AAM families.  They expose
@@ -1487,9 +1444,10 @@ def _select_from_stored_aam_group(
             center_P = source[center_R]
             if alternative.get(center_R) != center_P:
                 continue
-            neighbors_R = tuple(graph_R.neighbors(center_R))
-            base = tuple(source[r] for r in neighbors_R)
-            other = tuple(alternative[r] for r in neighbors_R)
+            persistent_P = persistent_shells_P[center_P]
+            persistent_R = tuple(inverse[p] for p in persistent_P)
+            base = tuple(source[r] for r in persistent_R)
+            other = tuple(alternative[r] for r in persistent_R)
             if set(base) == set(other) and base != other:
                 mutable_centers.add(center_P)
 
@@ -1497,11 +1455,8 @@ def _select_from_stored_aam_group(
     nonstereogenic_frames = []
     for center_P in sorted(mutable_centers):
         center_R = inverse[center_P]
-        neighbors_P = set(graph_P.neighbors(center_P))
-        mapped_neighbors_R = {
-            source[r] for r in graph_R.neighbors(center_R)}
-        # A changing coordination shell is not a persistent index center.
-        if neighbors_P != mapped_neighbors_R or len(neighbors_P) < 3:
+        neighbors_P = persistent_shells_P[center_P]
+        if len(neighbors_P) < 3:
             continue
         simplex_size = 3 if len(neighbors_P) == 3 else 4
         for simplex_P in combinations(sorted(neighbors_P), simplex_size):
@@ -1555,8 +1510,6 @@ def _select_from_stored_aam_group(
         source, wbo_R, wbo_P, elements_R,
         dwbo_threshold=dwbo_threshold,
         metal_dwbo_threshold=metal_dwbo_threshold)
-    factors = list(_independent_atom_action_factors(
-        stored_generators, degree))
     event_sensitive_atoms = set()
     for support, actions in factors:
         if any(mapping_event_signature(
@@ -1591,7 +1544,7 @@ def _select_from_stored_aam_group(
     high_coordinate_frames = []
     for frame in local_frames:
         center_P = source[frame.center_R]
-        if len(tuple(graph_P.neighbors(center_P))) > 4:
+        if len(persistent_shells_P[center_P]) > 4:
             # Four-point affine simplices at one high-coordinate center are
             # dependent.  Select their maximal feasible basis below, exactly
             # as for explicit group-chirality triples, rather than making one

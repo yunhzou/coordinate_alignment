@@ -531,11 +531,18 @@ display color groups. Mutability comes from two exact AAM sources:
 1. point stabilizers of the finalized fragment automorphism generators;
 2. correlated assignments represented by the maximal branch families.
 
-A center is constrained only when its complete R neighbor shell maps onto the
-same P neighbor shell. Coordination-changing event centers are therefore not
-incorrectly rejected as persistent stereocenters. For every mutable persistent
-center, the algorithm constructs all defined affine simplices: three ligands
-at coordination three and four-ligand simplices at higher coordination.
+A center is constrained from the intersection of its mapped R neighbor shell
+and its P neighbor shell. Ligands on broken or formed coordination edges are
+excluded, while the surviving ligand assignment remains available as an
+index-orientation constraint. The persistent intersection is constrained only
+when the exact AAM family permits a nontrivial setwise permutation within it.
+
+For a persistent intersection of three or four ligands, its complete affine
+orientation is mandatory even when total coordination changes, such as 5→4
+or 4→5. If more than four ligands persist, all defined affine simplices are
+constructed for the dependent-basis treatment below. Thus coordination change
+does not erase surviving chirality, and it also does not impose orientation on
+the departing or arriving ligand.
 
 An ordinary persistent three- or four-coordinate frame is a hard constraint.
 If its orientation-colored subgroup is empty, that event coset fails; it can
