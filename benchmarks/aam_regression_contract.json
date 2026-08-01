@@ -1,0 +1,91 @@
+{
+  "schema_version": "rxn_core.aam_regression_contract/v1",
+  "baseline_revision": "7923d4d",
+  "notes": "Chemistry invariants are machine independent. Performance limits apply only to the named Slurm/worker profile.",
+  "cases": {
+    "pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult2": {
+      "atom_count": 82,
+      "selected_mechanism_count": 1,
+      "max_chirality_violations": 0,
+      "max_branches": 100,
+      "mechanism_events": [
+        {
+          "broken_bonds_R": [[12, 15], [12, 37]],
+          "formed_bonds_R": [[10, 12], [11, 12], [15, 37]]
+        }
+      ],
+      "hard_call_limits": {
+        "complete_chosen_automorphism_groups": 2
+      },
+      "target_call_limits": {
+        "complete_chosen_automorphism_groups": 1
+      },
+      "performance_profiles": {
+        "cpunodes_16": {
+          "total_seconds": 1100,
+          "peak_process_tree_rss_kb": 8388608
+        }
+      }
+    },
+    "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS2_prime_step2_redPath_mult5": {
+      "atom_count": 83,
+      "selected_mechanism_count": 1,
+      "max_chirality_violations": 0,
+      "max_branches": 100,
+      "mechanism_events": [
+        {
+          "broken_bonds_R": [[46, 59]],
+          "formed_bonds_R": [[59, 74]]
+        }
+      ],
+      "hard_call_limits": {
+        "complete_chosen_automorphism_groups": 2
+      },
+      "target_call_limits": {
+        "complete_chosen_automorphism_groups": 1
+      },
+      "performance_profiles": {
+        "cpunodes_16": {
+          "total_seconds": 1400,
+          "peak_process_tree_rss_kb": 8388608
+        }
+      }
+    },
+    "pr14.Pd_hydroamination_JOC2025_TS13_step3_bHelimination": {
+      "atom_count": 133,
+      "selected_mechanism_count": 1,
+      "max_chirality_violations": 0,
+      "max_branches": 100,
+      "mechanism_events": [
+        {
+          "broken_bonds_R": [[88, 95], [92, 99]],
+          "formed_bonds_R": [[88, 99], [92, 95]]
+        }
+      ],
+      "hard_call_limits": {
+        "complete_chosen_automorphism_groups": 2
+      },
+      "target_call_limits": {
+        "complete_chosen_automorphism_groups": 1
+      }
+    },
+    "pr9.carbene.rearr_ts41a-endo": {
+      "atom_count": 40,
+      "selected_mechanism_count": 1,
+      "max_chirality_violations": 0,
+      "max_branches": 100,
+      "mechanism_events": [
+        {
+          "broken_bonds_R": [[6, 38]],
+          "formed_bonds_R": [[5, 6], [5, 38]]
+        }
+      ],
+      "hard_call_limits": {
+        "complete_chosen_automorphism_groups": 2
+      },
+      "target_call_limits": {
+        "complete_chosen_automorphism_groups": 1
+      }
+    }
+  }
+}
