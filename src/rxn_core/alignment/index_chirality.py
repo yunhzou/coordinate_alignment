@@ -470,20 +470,18 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
         fragment_P = tuple(source[r] for r in fragment_R)
         sub_R = g_R.subgraph(fragment_R).copy()
         sub_P = g_P.subgraph(fragment_P).copy()
-        buckets_R, zero_R = _wbo_tolerance_bucket_lookup(
-            sub_R, float(symmetry_wbo_tol))
         buckets_P, zero_P = _wbo_tolerance_bucket_lookup(
             sub_P, float(symmetry_wbo_tol))
-        for (left_R, right_R), bucket in sorted(buckets_R.items()):
-            if bucket != zero_R:
-                relation.add_pair(
-                    source[left_R], source[right_R],
-                    ("masked_R_wbo", fragment_id, bucket))
+        # A completed AAM branch is a target-group coset acting on its
+        # validated R->P mapping.  Reimposing masked R automorphisms here
+        # would intersect Aut(R) with Aut(P) and delete valid target shuffles.
+        # Put the selected masked P relation identically on both sides; event
+        # and anchor relations below take the required stabilizers.
         for (left_P, right_P), bucket in sorted(buckets_P.items()):
             if bucket != zero_P:
                 relation.add_pair(
                     left_P, right_P,
-                    ("masked_P_wbo", fragment_id, bucket))
+                    ("masked_target_wbo", fragment_id, bucket))
         for left_R in fragment_R:
             for right_R in fragment_R:
                 if left_R >= right_R or not sub_R.has_edge(left_R, right_R):
