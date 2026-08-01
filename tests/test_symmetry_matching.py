@@ -564,10 +564,15 @@ def test_completed_candidate_groups_are_cached_after_branch_reduction(
 
     monkeypatch.setattr(
         _CandidateAutomorphismCanonicalizer, "atom_generators", measured)
-    completed = attach_completed_candidate_groups(
-        [branch, branch], graph, wbo_tol=1.0)
+    completed, metrics = attach_completed_candidate_groups(
+        [branch, branch], graph, wbo_tol=1.0, return_metrics=True)
 
     assert calls == 1
+    assert metrics == {
+        "completed_candidate_group_requests": 2,
+        "completed_candidate_group_calculations": 1,
+        "completed_candidate_group_cache_hits": 1,
+    }
     for item in completed:
         symmetry = item["hierarchy"]["fragments"][0]["symmetry"]
         assert symmetry["automorph_generators"] == [[1, 0]]

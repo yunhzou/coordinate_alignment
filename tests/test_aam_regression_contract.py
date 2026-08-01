@@ -32,6 +32,11 @@ def _healthy_record():
             "post_aam_call_counts": {
                 "complete_chosen_automorphism_groups": 1,
             },
+            "pipeline_post_aam_metrics": {
+                "completed_candidate_group_requests": 12,
+                "completed_candidate_group_calculations": 7,
+                "completed_candidate_group_cache_hits": 5,
+            },
         },
     }
 

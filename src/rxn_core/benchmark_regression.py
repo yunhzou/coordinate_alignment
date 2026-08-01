@@ -110,6 +110,19 @@ def evaluate_record(record, contract, performance_profile=None):
         if actual > int(maximum):
             advisories.append(f"{label} remains redundant: {actual}>{maximum}")
 
+    post_metrics = metrics.get("pipeline_post_aam_metrics") or {}
+    requests = post_metrics.get("completed_candidate_group_requests")
+    calculations = post_metrics.get(
+        "completed_candidate_group_calculations")
+    cache_hits = post_metrics.get("completed_candidate_group_cache_hits")
+    if requests is not None:
+        if calculations is None or cache_hits is None:
+            failures.append("completed candidate group cache metrics incomplete")
+        elif int(calculations) + int(cache_hits) != int(requests):
+            failures.append(
+                "completed candidate group cache accounting mismatch: "
+                f"{calculations}+{cache_hits}!={requests}")
+
     if performance_profile:
         profile = ((case.get("performance_profiles") or {})
                    .get(performance_profile))

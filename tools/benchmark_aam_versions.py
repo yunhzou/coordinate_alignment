@@ -279,6 +279,8 @@ def main():
         },
         "post_aam_call_counts": dict(sorted(ledger.calls.items())),
         "post_aam_call_seconds": dict(sorted(ledger.seconds.items())),
+        "pipeline_post_aam_metrics": (
+            (result.get("metrics") or {}).get("post_aam") or {}),
         **_pool_metrics(pool),
     }
     record = {

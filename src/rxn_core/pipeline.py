@@ -2123,6 +2123,7 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
     """Finalize Stage 1 from a full or merged cut-sweep pool."""
     post_start = time.time()
     phase_seconds = defaultdict(float)
+    post_aam_metrics = defaultdict(int)
     cfg = _rp_cfg(config)
     phase_start = time.time()
     rp_min = select_min_mechanisms(pool)
@@ -2154,9 +2155,16 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
             'hierarchy': info.get('branch_symmetry') or {},
             'encounter_count': int(info.get('dedup_count', 1)),
         }])
-        raw_analytical_branches = attach_completed_candidate_groups(
+        phase_start = time.time()
+        raw_analytical_branches, group_metrics = (
+            attach_completed_candidate_groups(
             raw_analytical_branches, g_P_full,
-            wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL))
+            wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
+            return_metrics=True))
+        phase_seconds['completed_candidate_group_seconds'] += (
+            time.time() - phase_start)
+        for key, value in group_metrics.items():
+            post_aam_metrics[key] += int(value)
         phase_start = time.time()
         analytical_branches = _dedupe_analytical_mapping_families(
             inputs, raw_analytical_branches, cfg,
@@ -2335,6 +2343,9 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         'config': cfg,
         'mechanisms': [_mechanism_for_view(m) for m in mechanisms],
         'rejected_index_chirality': rejected_index_chirality,
+        'metrics': {
+            'post_aam': dict(post_aam_metrics),
+        },
         'timing': {
             'rp_seconds': cut_sweep_seconds + post_aam_seconds,
             'cut_sweep_seconds': cut_sweep_seconds,

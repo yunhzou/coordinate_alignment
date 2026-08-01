@@ -928,7 +928,7 @@ def _candidate_from_symmetry_state(state):
 
 
 def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
-                                      node_policy=None):
+                                      node_policy=None, return_metrics=False):
     """Attach exact groups after completed branch-family reduction.
 
     The cache key is the complete locked prefix plus candidate state.  Live
@@ -936,22 +936,31 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
     """
     cache = {}
     completed = []
+    metrics = {
+        'completed_candidate_group_requests': 0,
+        'completed_candidate_group_calculations': 0,
+        'completed_candidate_group_cache_hits': 0,
+    }
     for raw_branch in branches:
         branch = copy.deepcopy(raw_branch)
         hierarchy = branch.get('hierarchy') or {}
         locked = {}
         for fragment in hierarchy.get('fragments') or ():
+            metrics['completed_candidate_group_requests'] += 1
             state = fragment.get('symmetry') or {}
             candidate = _candidate_from_symmetry_state(state)
             key = (tuple(sorted(locked.items())),
                    _freeze_analytical(state))
             generators = cache.get(key)
             if generators is None:
+                metrics['completed_candidate_group_calculations'] += 1
                 canonicalizer = _CandidateAutomorphismCanonicalizer(
                     g_P, locked_mapping=locked, node_policy=node_policy,
                     wbo_tol=float(wbo_tol))
                 generators = canonicalizer.atom_generators(candidate)
                 cache[key] = generators
+            else:
+                metrics['completed_candidate_group_cache_hits'] += 1
             state = dict(state)
             state['automorph_generators'] = [
                 list(generator) for generator in generators]
@@ -965,7 +974,7 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
                         "completed AAM fragment conflicts with locked prefix")
                 locked[int(r)] = int(p)
         completed.append(branch)
-    return completed
+    return (completed, metrics) if return_metrics else completed
 
 
 def _anchor_mapping_ok(mapping, anchor_map):
