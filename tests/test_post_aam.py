@@ -51,6 +51,50 @@ def test_post_aam_mechanism_ignores_concrete_witnesses():
     assert not hasattr(mechanism, "witnesses")
 
 
+def test_exact_group_availability_distinguishes_missing_from_trivial():
+    base = {
+        "mapping": {0: 0, 1: 1},
+        "branch_symmetry": {"fragments": [{
+            "fragment_index": 0,
+            "fragment": [0, 1],
+            "symmetry": {"blocks": []},
+        }]},
+    }
+    unavailable = PostAAMMechanism.from_pool_entry(((), ()), base)
+    fragment = unavailable.hierarchy.fragments[0]
+    assert fragment.target_generators is None
+    assert not fragment.has_exact_target_group
+    assert not unavailable.hierarchy.has_complete_exact_target_groups
+
+    base["branch_symmetry"]["fragments"][0]["symmetry"][
+        "automorph_generators"] = []
+    exact_trivial = PostAAMMechanism.from_pool_entry(((), ()), base)
+    fragment = exact_trivial.hierarchy.fragments[0]
+    assert fragment.target_generators == ()
+    assert fragment.has_exact_target_group
+    assert exact_trivial.hierarchy.has_complete_exact_target_groups
+
+
+def test_branch_owns_exact_cross_fragment_mapping_group_when_supplied():
+    entry = {
+        "mapping": {0: 0, 1: 1, 2: 2},
+        "branches": [{
+            "mapping": {0: 0, 1: 1, 2: 2},
+            "hierarchy": {"fragments": []},
+            "target_group_generators": [[1, 0, 2]],
+        }],
+    }
+    mechanism = PostAAMMechanism.from_pool_entry(((), ()), entry)
+    branch = mechanism.branches[0]
+
+    assert branch.has_exact_mapping_family
+    assert branch.target_group.generators == (
+        AtomPermutation((1, 0, 2)),)
+    record = mechanism.symmetry_record()["analytical_branches"][0]
+    assert record["exact_mapping_family_available"] is True
+    assert record["target_group_generators"] == [[1, 0, 2]]
+
+
 def test_bijection_group_action_is_target_o_mapping_o_source_inverse():
     mapping = AtomBijection((0, 1, 2, 3))
     source = AtomPermutation((1, 0, 2, 3))

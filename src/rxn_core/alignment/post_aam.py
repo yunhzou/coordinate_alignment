@@ -147,10 +147,17 @@ class PermutationGroup:
 
     @classmethod
     def from_generator_mappings(cls, degree: int, generators):
-        return cls(int(degree), tuple(
-            AtomPermutation.from_mapping(generator, degree)
-            for generator in generators
-        ))
+        permutations = []
+        for generator in generators:
+            if isinstance(generator, Mapping):
+                permutations.append(
+                    AtomPermutation.from_mapping(generator, degree))
+            else:
+                permutation = AtomPermutation(tuple(map(int, generator)))
+                if permutation.degree != int(degree):
+                    raise ValueError("group generator has the wrong degree")
+                permutations.append(permutation)
+        return cls(int(degree), tuple(permutations))
 
     def orbits(self):
         parent = list(range(self.degree))
@@ -195,6 +202,12 @@ class FragmentMatch:
     r_atoms: tuple[int, ...]
     deferred_edges: tuple[tuple[int, int], ...] = ()
     symmetry_domains: tuple[SymmetryDomain, ...] = ()
+    target_generators: tuple[AtomPermutation, ...] | None = None
+
+    @property
+    def has_exact_target_group(self):
+        """Whether AAM supplied the exact group (including a trivial one)."""
+        return self.target_generators is not None
 
 
 @dataclass(frozen=True)
@@ -207,6 +220,7 @@ class AAMHierarchy:
         for position, raw in enumerate(
                 dict(branch_symmetry or {}).get("fragments") or ()):
             symmetry = raw.get("symmetry") or {}
+            raw_generators = symmetry.get("automorph_generators")
             domains = []
             for block in symmetry.get("blocks") or ():
                 domains.append(SymmetryDomain(
@@ -220,8 +234,17 @@ class AAMHierarchy:
                 deferred_edges=tuple(
                     tuple(sorted(map(int, edge)))
                     for edge in raw.get("deferred_edges") or ()),
-                symmetry_domains=tuple(domains)))
+                symmetry_domains=tuple(domains),
+                target_generators=(
+                    None if raw_generators is None else tuple(
+                        AtomPermutation(tuple(map(int, generator)))
+                        for generator in raw_generators))))
         return cls(tuple(fragments))
+
+    @property
+    def has_complete_exact_target_groups(self):
+        return bool(self.fragments) and all(
+            fragment.has_exact_target_group for fragment in self.fragments)
 
 
 @dataclass(frozen=True)
@@ -235,6 +258,11 @@ class AAMBranch:
     covered_path_count: int = 1
     mapping_family: Mapping = field(default_factory=dict)
     path_provenance: tuple[Mapping, ...] = ()
+    target_group: PermutationGroup | None = None
+
+    @property
+    def has_exact_mapping_family(self):
+        return self.target_group is not None
 
 
 @dataclass(frozen=True)
@@ -266,19 +294,27 @@ class PostAAMMechanism:
         mapping = AtomBijection.from_mapping(entry["mapping"])
         symmetry = entry.get("branch_symmetry") or {}
         raw_branches = list(entry.get("branches") or ())
-        branches = tuple(AAMBranch(
-            representative=AtomBijection.from_mapping(
-                raw.get("mapping") or entry["mapping"], mapping.degree),
-            hierarchy=AAMHierarchy.from_record(
-                raw.get("hierarchy") or symmetry),
-            encounter_count=int(raw.get("encounter_count", 1)),
-            cuts=tuple(tuple(map(int, cut))
-                       for cut in raw.get("cuts") or ()),
-            covered_path_count=int(raw.get("covered_path_count", 1)),
-            mapping_family=dict(raw.get("mapping_family") or {}),
-            path_provenance=tuple(
-                dict(record) for record in raw.get("path_provenance") or ()),
-        ) for raw in raw_branches)
+        branches = []
+        for raw in raw_branches:
+            raw_group = raw.get("target_group_generators")
+            branches.append(AAMBranch(
+                representative=AtomBijection.from_mapping(
+                    raw.get("mapping") or entry["mapping"], mapping.degree),
+                hierarchy=AAMHierarchy.from_record(
+                    raw.get("hierarchy") or symmetry),
+                encounter_count=int(raw.get("encounter_count", 1)),
+                cuts=tuple(tuple(map(int, cut))
+                           for cut in raw.get("cuts") or ()),
+                covered_path_count=int(raw.get("covered_path_count", 1)),
+                mapping_family=dict(raw.get("mapping_family") or {}),
+                path_provenance=tuple(
+                    dict(record)
+                    for record in raw.get("path_provenance") or ()),
+                target_group=(
+                    None if raw_group is None else
+                    PermutationGroup.from_generator_mappings(
+                        mapping.degree, raw_group))))
+        branches = tuple(branches)
         if not branches:
             branches = (AAMBranch(
                 representative=mapping,
@@ -318,7 +354,7 @@ class PostAAMMechanism:
             endpoint_target_symmetry=target)
 
     def symmetry_record(self):
-        """Serializable analytical group record; contains no witnesses."""
+        """Serialize the typed analytical hierarchy and group availability."""
         return {
             "mechanism_key": self.mechanism_key,
             "representative_mapping": self.representative.as_dict(),
@@ -346,6 +382,13 @@ class PostAAMMechanism:
                 "mapping_family": dict(branch.mapping_family),
                 "path_provenance": [dict(record)
                                     for record in branch.path_provenance],
+                "exact_mapping_family_available": (
+                    branch.has_exact_mapping_family),
+                "target_group_generators": (
+                    None if branch.target_group is None else [
+                        list(generator.images)
+                        for generator in branch.target_group.generators
+                    ]),
                 "fragments": [{
                     "fragment_index": fragment.fragment_index,
                     "island_index": fragment.island_index,
@@ -357,6 +400,13 @@ class PostAAMMechanism:
                         "p_atoms": list(domain.p_atoms),
                         "source": domain.source,
                     } for domain in fragment.symmetry_domains],
+                    "exact_target_group_available": (
+                        fragment.has_exact_target_group),
+                    "target_generators": (
+                        None if fragment.target_generators is None else [
+                            list(generator.images)
+                            for generator in fragment.target_generators
+                        ]),
                 } for fragment in branch.hierarchy.fragments],
             } for branch in self.branches],
             "fragments": [{
@@ -369,6 +419,13 @@ class PostAAMMechanism:
                     "p_atoms": list(domain.p_atoms),
                     "source": domain.source,
                 } for domain in fragment.symmetry_domains],
+                "exact_target_group_available": (
+                    fragment.has_exact_target_group),
+                "target_generators": (
+                    None if fragment.target_generators is None else [
+                        list(generator.images)
+                        for generator in fragment.target_generators
+                    ]),
             } for fragment in self.hierarchy.fragments],
             "raw_branch_count": self.raw_branch_count,
         }
