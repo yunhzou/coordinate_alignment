@@ -514,7 +514,8 @@ def _stored_generator_orbit_map(atoms, generators):
 
 def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
                                         wbo_tol, *,
-                                        exact_target_generators=None):
+                                        exact_target_generators=None,
+                                        exact_branch_mappings=()):
     """Complete chosen-candidate display blocks using exact stabilizers.
 
     Growth blocks are a compressed search trace and can omit an atom assigned
@@ -535,6 +536,9 @@ def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
                or set(generator) != set(range(degree))
                for generator in exact_target_generators):
             raise ValueError("stored AAM target generator is not bijective")
+    exact_branch_mappings = tuple(
+        {int(r): int(p) for r, p in dict(candidate).items()}
+        for candidate in exact_branch_mappings or ())
 
     def stabilizer_orbits(g, center, cache):
         if center not in cache:
@@ -621,6 +625,61 @@ def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
                         'open': False,
                         'assignments': f"{len(pairs)}!",
                         'source': 'stored_AAM_branch_mapping_group',
+                    })
+            # Separate exact branch families can carry correlated assignment
+            # changes absent from every individual branch stabilizer.  Record
+            # only permutations directly witnessed between deduplicated AAM
+            # branch representatives with the same center and neighbor set.
+            for center_R in sorted(fragment_R):
+                center_P = mapping[center_R]
+                neighbors_R = tuple(sorted(sub_R.neighbors(center_R)))
+                selected_images = tuple(mapping[r] for r in neighbors_R)
+                selected_by_image = {
+                    mapping[r]: int(r) for r in neighbors_R}
+                local_parent = {int(r): int(r) for r in neighbors_R}
+
+                def local_find(atom):
+                    while local_parent[atom] != atom:
+                        local_parent[atom] = local_parent[local_parent[atom]]
+                        atom = local_parent[atom]
+                    return atom
+
+                def local_union(left, right):
+                    left, right = local_find(left), local_find(right)
+                    if left != right:
+                        local_parent[right] = left
+
+                for alternative in exact_branch_mappings:
+                    if alternative.get(center_R) != center_P:
+                        continue
+                    if any(r not in alternative for r in neighbors_R):
+                        continue
+                    alternative_images = tuple(
+                        alternative[r] for r in neighbors_R)
+                    if set(alternative_images) != set(selected_images):
+                        continue
+                    for r, image in zip(neighbors_R, alternative_images):
+                        local_union(int(r), selected_by_image[image])
+                groups = {}
+                for atom_R in neighbors_R:
+                    groups.setdefault(local_find(int(atom_R)), []).append(
+                        int(atom_R))
+                for r_atoms in groups.values():
+                    if len(r_atoms) <= 1:
+                        continue
+                    complete.append({
+                        'fragment_index': int(fragment.get(
+                            'fragment_index', fragment_position)),
+                        'island_idx': int(fragment.get(
+                            'island_idx', fragment_position)),
+                        'center_R': int(center_R),
+                        'center_P': int(center_P),
+                        'r_atoms': sorted(r_atoms),
+                        'p_atoms': sorted(mapping[r] for r in r_atoms),
+                        'extendable': False,
+                        'open': False,
+                        'assignments': 'exact_branch_relation',
+                        'source': 'AAM_cross_branch_assignment',
                     })
             continue
         r_cache = {}

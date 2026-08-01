@@ -499,6 +499,34 @@ def test_stored_branch_group_preserves_correlated_local_orbits():
                for block in complete["blocks"])
 
 
+def test_cross_branch_assignment_relation_preserves_observed_shuffles():
+    wbo = np.zeros((5, 5))
+    for atom in range(1, 5):
+        wbo[0, atom] = wbo[atom, 0] = 1.0
+    graph = build_graph(["M", "H", "H", "F", "F"], wbo, bond_cut=0.2)
+    hierarchy = {"fragments": [{
+        "fragment_index": 0,
+        "fragment": [0, 1, 2, 3, 4],
+    }]}
+    selected = {atom: atom for atom in range(5)}
+
+    complete = complete_chosen_automorphism_groups(
+        hierarchy, selected, graph, graph, 1.0,
+        exact_target_generators=[],
+        exact_branch_mappings=[
+            selected,
+            {0: 0, 1: 2, 2: 1, 3: 3, 4: 4},
+            {0: 0, 1: 1, 2: 2, 3: 4, 4: 3},
+        ])
+
+    cross_branch = {
+        (block["center_R"], tuple(block["r_atoms"]))
+        for block in complete["blocks"]
+        if block["source"] == "AAM_cross_branch_assignment"
+    }
+    assert cross_branch == {(0, (1, 2)), (0, (3, 4))}
+
+
 def test_completed_candidate_groups_are_cached_after_branch_reduction(
         monkeypatch):
     from rxn_core.matcher.canonical import (

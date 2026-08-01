@@ -2243,7 +2243,9 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         branch_symmetry = complete_chosen_automorphism_groups(
             raw_branch_symmetry, mapping_RP,
             g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL),
-            exact_target_generators=exact_target_generators)
+            exact_target_generators=exact_target_generators,
+            exact_branch_mappings=[
+                branch['mapping'] for branch in analytical_branches])
         if index_chirality is not None:
             index_chirality['selected_analytical_branch_index'] = int(
                 selected_branch_index)
