@@ -1,10 +1,13 @@
 import json
 from pathlib import Path
+import runpy
+from types import SimpleNamespace
 
 from rxn_core.benchmark_regression import evaluate_record, load_contract
 
 
 CONTRACT = Path(__file__).parents[1] / "benchmarks" / "aam_regression_contract.json"
+BENCHMARK_TOOL = Path(__file__).parents[1] / "tools" / "benchmark_aam_versions.py"
 CASE = "pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult2"
 
 
@@ -73,3 +76,33 @@ def test_duplicate_degeneracy_work_is_reported_separately_from_hard_failure():
 def test_contract_json_contains_no_environment_specific_paths():
     raw = json.loads(CONTRACT.read_text(encoding="utf-8"))
     assert "/h/" not in json.dumps(raw)
+
+
+def test_benchmark_instrumentation_counts_calls_and_pool_structure():
+    module = runpy.run_path(str(BENCHMARK_TOOL))
+    ledger = module["_CallLedger"]()
+    target = SimpleNamespace(work=lambda value: value + 1)
+    original = target.work
+    ledger.instrument(target, "work")
+    assert target.work(1) == 2
+    assert target.work(3) == 4
+    ledger.restore()
+    assert ledger.calls == {"work": 2}
+    assert ledger.seconds["work"] >= 0.0
+    assert target.work is original
+
+    metrics = module["_pool_metrics"]({
+        "event": {
+            "branches": [{
+                "branch_symmetry": {
+                    "fragments": [{"symmetry": {"blocks": [{}, {}]}}]
+                }
+            }]
+        }
+    })
+    assert metrics == {
+        "pool_branch_count": 1,
+        "max_branches_per_mechanism": 1,
+        "pool_fragment_record_count": 1,
+        "pool_symmetry_block_count": 2,
+    }
