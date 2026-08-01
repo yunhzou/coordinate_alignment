@@ -469,6 +469,35 @@ def test_chosen_automorphism_closure_recovers_early_singleton():
     }]
 
 
+def test_stored_branch_group_preserves_correlated_local_orbits():
+    wbo = np.zeros((5, 5))
+    for atom in range(1, 5):
+        wbo[0, atom] = wbo[atom, 0] = 1.0
+    graph = build_graph(["C", "H", "H", "F", "F"], wbo, bond_cut=0.2)
+    hierarchy = {"fragments": [{
+        "fragment_index": 0,
+        "island_idx": 1,
+        "fragment": [0, 1, 2, 3, 4],
+    }]}
+
+    complete = complete_chosen_automorphism_groups(
+        hierarchy, {atom: atom for atom in range(5)},
+        graph, graph, 1.0,
+        exact_target_generators=[
+            [0, 2, 1, 3, 4],
+            [0, 1, 2, 4, 3],
+        ])
+
+    groups = {
+        (block.get("center_R"), tuple(block["r_atoms"]))
+        for block in complete["blocks"]
+    }
+    assert (0, (1, 2)) in groups
+    assert (0, (3, 4)) in groups
+    assert all(block["source"] == "stored_AAM_branch_mapping_group"
+               for block in complete["blocks"])
+
+
 def test_nauty_orbits_drop_into_single_step_extension():
     pytest.importorskip("pynauty")
     wbo_r = np.zeros((3, 3))

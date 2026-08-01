@@ -11,6 +11,7 @@ import copy
 import json
 import multiprocessing as mp
 import time
+from collections import deque
 from pathlib import Path
 
 from ..frag import build_graph, classify_bonds, expand_mapping
@@ -443,8 +444,75 @@ def _generator_orbit_map(g, generators):
     return {atom: find(atom) for atom in parent}
 
 
+def _perm_compose(first, second):
+    """Return ``second o first`` for dense image permutations."""
+    return tuple(second[first[atom]] for atom in range(len(first)))
+
+
+def _perm_inverse(permutation):
+    inverse = [0] * len(permutation)
+    for atom, image in enumerate(permutation):
+        inverse[image] = atom
+    return tuple(inverse)
+
+
+def _point_stabilizer_generators(generators, point, degree):
+    """Exact Schreier generators for the subgroup fixing ``point``."""
+    identity = tuple(range(int(degree)))
+    generators = tuple(dict.fromkeys(
+        tuple(map(int, generator)) for generator in generators
+        if tuple(map(int, generator)) != identity
+    ))
+    transversals = {int(point): identity}
+    queue = deque([int(point)])
+    while queue:
+        current = queue.popleft()
+        transversal = transversals[current]
+        for generator in generators:
+            image = generator[current]
+            if image in transversals:
+                continue
+            transversals[image] = _perm_compose(transversal, generator)
+            queue.append(image)
+    stabilizers = []
+    seen = set()
+    for current, transversal in transversals.items():
+        for generator in generators:
+            image = generator[current]
+            stabilizer = _perm_compose(
+                _perm_compose(transversal, generator),
+                _perm_inverse(transversals[image]))
+            if stabilizer != identity and stabilizer not in seen:
+                seen.add(stabilizer)
+                stabilizers.append(stabilizer)
+    return tuple(stabilizers)
+
+
+def _stored_generator_orbit_map(atoms, generators):
+    parent = {int(atom): int(atom) for atom in atoms}
+
+    def find(atom):
+        while parent[atom] != atom:
+            parent[atom] = parent[parent[atom]]
+            atom = parent[atom]
+        return atom
+
+    def union(left, right):
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    for generator in generators:
+        for atom in tuple(parent):
+            image = int(generator[atom])
+            if image in parent:
+                union(atom, image)
+    return {atom: find(atom) for atom in parent}
+
+
 def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
-                                        wbo_tol):
+                                        wbo_tol, *,
+                                        exact_target_generators=None):
     """Complete chosen-candidate display blocks using exact stabilizers.
 
     Growth blocks are a compressed search trace and can omit an atom assigned
@@ -456,6 +524,15 @@ def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
     mapping = {int(r): int(p) for r, p in dict(mapping).items()}
     result = dict(branch_symmetry or {})
     complete = []
+    if exact_target_generators is not None:
+        degree = len(mapping)
+        exact_target_generators = tuple(dict.fromkeys(
+            tuple(map(int, generator))
+            for generator in exact_target_generators))
+        if any(len(generator) != degree
+               or set(generator) != set(range(degree))
+               for generator in exact_target_generators):
+            raise ValueError("stored AAM target generator is not bijective")
 
     def stabilizer_orbits(g, center, cache):
         if center not in cache:
@@ -482,6 +559,68 @@ def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
         # its boundary are masked, just as they were for the candidate.
         sub_R = g_R.subgraph(fragment_R).copy()
         sub_P = g_P.subgraph(fragment_P).copy()
+        if exact_target_generators is not None:
+            fragment_group_start = len(complete)
+            for center_R in sorted(fragment_R):
+                center_P = mapping[center_R]
+                neighbors_R = [
+                    int(atom) for atom in sub_R.neighbors(center_R)
+                    if mapping.get(int(atom)) in fragment_P
+                    and sub_P.has_edge(center_P, mapping[int(atom)])
+                ]
+                if len(neighbors_R) < 2:
+                    continue
+                stabilizers = _point_stabilizer_generators(
+                    exact_target_generators, center_P, degree)
+                orbit_map = _stored_generator_orbit_map(
+                    fragment_P, stabilizers)
+                groups = {}
+                for atom_R in neighbors_R:
+                    atom_P = mapping[atom_R]
+                    groups.setdefault(orbit_map[atom_P], []).append(
+                        (atom_R, atom_P))
+                for pairs in groups.values():
+                    if len(pairs) <= 1:
+                        continue
+                    complete.append({
+                        'fragment_index': int(fragment.get(
+                            'fragment_index', fragment_position)),
+                        'island_idx': int(fragment.get(
+                            'island_idx', fragment_position)),
+                        'center_R': int(center_R),
+                        'center_P': int(center_P),
+                        'r_atoms': sorted(r for r, _ in pairs),
+                        'p_atoms': sorted(p for _, p in pairs),
+                        'extendable': False,
+                        'open': False,
+                        'assignments': f"{len(pairs)}!",
+                        'source': 'stored_AAM_branch_mapping_group',
+                    })
+            if (len(complete) == fragment_group_start
+                    and len(fragment_R) > 1):
+                orbit_map = _stored_generator_orbit_map(
+                    fragment_P, exact_target_generators)
+                groups = {}
+                for atom_R in sorted(fragment_R):
+                    atom_P = mapping[atom_R]
+                    groups.setdefault(orbit_map[atom_P], []).append(
+                        (atom_R, atom_P))
+                for pairs in groups.values():
+                    if len(pairs) <= 1:
+                        continue
+                    complete.append({
+                        'fragment_index': int(fragment.get(
+                            'fragment_index', fragment_position)),
+                        'island_idx': int(fragment.get(
+                            'island_idx', fragment_position)),
+                        'r_atoms': sorted(r for r, _ in pairs),
+                        'p_atoms': sorted(p for _, p in pairs),
+                        'extendable': False,
+                        'open': False,
+                        'assignments': f"{len(pairs)}!",
+                        'source': 'stored_AAM_branch_mapping_group',
+                    })
+            continue
         r_cache = {}
         p_cache = {}
         fragment_group_start = len(complete)

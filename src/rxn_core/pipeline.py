@@ -2190,9 +2190,17 @@ def run_rp_stage_from_pool(inputs, pool, config=None, elapsed=None):
         (selected_rmsd, _mapping_key_for_rank, selected_branch_index,
          mapping_RP, raw_branch_symmetry, group_chirality,
          index_chirality) = evaluated_branches[0]
+        selected_family = dict(
+            analytical_branches[selected_branch_index].get(
+                'mapping_family') or {})
+        exact_target_generators = selected_family.get('target_generators')
+        if exact_target_generators is None:
+            raise RuntimeError(
+                "selected completed AAM branch lacks its exact mapping group")
         branch_symmetry = complete_chosen_automorphism_groups(
             raw_branch_symmetry, mapping_RP,
-            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL))
+            g_R_full, g_P_full, cfg.get('iso_tol', VIEW_ISO_TOL),
+            exact_target_generators=exact_target_generators)
         if index_chirality is not None:
             index_chirality['selected_analytical_branch_index'] = int(
                 selected_branch_index)

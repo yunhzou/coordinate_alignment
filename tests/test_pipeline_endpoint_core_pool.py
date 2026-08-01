@@ -799,6 +799,8 @@ def test_view_data_does_not_emit_endpoint_degeneracy_orbits():
 
 
 def test_rp_stage_carries_branch_symmetry_to_mechanism(monkeypatch):
+    import rxn_core.alignment.sweep as sweep_module
+
     wbo = np.zeros((2, 2))
     wbo[0, 1] = wbo[1, 0] = 0.9
     inputs = pipeline.step_inputs_from_arrays(
@@ -815,15 +817,22 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism(monkeypatch):
     cfg["symmetry_repair"] = False
 
     calls = 0
+    exact_group_supplied = False
     original = pipeline.complete_chosen_automorphism_groups
 
     def measured(*args, **kwargs):
-        nonlocal calls
+        nonlocal calls, exact_group_supplied
         calls += 1
+        exact_group_supplied = kwargs.get("exact_target_generators") is not None
         return original(*args, **kwargs)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError(
+            "stored exact branch group must avoid display recomputation")
 
     monkeypatch.setattr(
         pipeline, "complete_chosen_automorphism_groups", measured)
+    monkeypatch.setattr(sweep_module, "_nauty_atom_generators", forbidden)
 
     result = pipeline.run_rp_stage(inputs, config=cfg, inner_workers=0)
 
@@ -847,6 +856,7 @@ def test_rp_stage_carries_branch_symmetry_to_mechanism(monkeypatch):
     assert result["timing"]["analytical_family_dedupe_seconds"] >= 0.0
     assert result["timing"]["chirality_rmsd_seconds"] >= 0.0
     assert calls == len(result["mechanisms"]) == 1
+    assert exact_group_supplied
 
 
 def test_array_based_mechanism_discovery_returns_aligned_product():
