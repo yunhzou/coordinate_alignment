@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from itertools import combinations, permutations
+from itertools import combinations, permutations, product
 from typing import Mapping, Sequence
 
 import numpy as np
@@ -18,7 +18,7 @@ from ..frag import bond_event_threshold, build_graph
 from ..matcher.orbits import _wbo_tolerance_bucket_lookup
 
 
-INDEX_CHIRALITY_SCHEMA = "rxn_core.index_chirality/v3"
+INDEX_CHIRALITY_SCHEMA = "rxn_core.index_chirality/v4"
 ORIENTATION_DEGENERACY_TOL = 0.1
 # Group orientation is topological: only a determinant indistinguishable from
 # zero at working precision is undefined.  The local-center tolerance above
@@ -1206,6 +1206,392 @@ def _frame_measure_for_mapping(frame, mapping, coords_P, degeneracy_tol):
         tuple(mapping[r] for r in frame.neighbors_R), degeneracy_tol)
 
 
+def _perm_compose(first, second):
+    """Return ``second o first`` for dense image permutations."""
+    return tuple(second[first[atom]] for atom in range(len(first)))
+
+
+def _perm_inverse(permutation):
+    inverse = [0] * len(permutation)
+    for atom, image in enumerate(permutation):
+        inverse[image] = atom
+    return tuple(inverse)
+
+
+def _point_stabilizer_generators(generators, point, degree):
+    identity = tuple(range(int(degree)))
+    generators = tuple(dict.fromkeys(
+        tuple(map(int, generator)) for generator in generators
+        if tuple(map(int, generator)) != identity))
+    transversals = {int(point): identity}
+    queue = [int(point)]
+    while queue:
+        current = queue.pop(0)
+        transversal = transversals[current]
+        for generator in generators:
+            image = generator[current]
+            if image in transversals:
+                continue
+            transversals[image] = _perm_compose(transversal, generator)
+            queue.append(image)
+    stabilizers = []
+    seen = set()
+    for current, transversal in transversals.items():
+        for generator in generators:
+            image = generator[current]
+            stabilizer = _perm_compose(
+                _perm_compose(transversal, generator),
+                _perm_inverse(transversals[image]))
+            if stabilizer != identity and stabilizer not in seen:
+                seen.add(stabilizer)
+                stabilizers.append(stabilizer)
+    return tuple(stabilizers)
+
+
+def _generator_orbit_ids(atoms, generators):
+    parent = {int(atom): int(atom) for atom in atoms}
+
+    def find(atom):
+        while parent[atom] != atom:
+            parent[atom] = parent[parent[atom]]
+            atom = parent[atom]
+        return atom
+
+    def union(left, right):
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    for generator in generators:
+        for atom in tuple(parent):
+            image = int(generator[atom])
+            if image in parent:
+                union(atom, image)
+    return {atom: find(atom) for atom in parent}
+
+
+def _stored_aam_generators(branch_symmetry):
+    generators = []
+    present = False
+    for fragment in dict(branch_symmetry or {}).get("fragments") or ():
+        symmetry = fragment.get("symmetry") or {}
+        if "automorph_generators" not in symmetry:
+            continue
+        present = True
+        generators.extend(symmetry.get("automorph_generators") or ())
+    return present, tuple(dict.fromkeys(
+        tuple(map(int, generator)) for generator in generators))
+
+
+def _select_from_stored_aam_group(
+        source, branch_symmetry, stored_generators,
+        elements_R, coords_R, wbo_R, elements_P, coords_P, wbo_P, *,
+        graph_floor, dwbo_threshold, metal_dwbo_threshold,
+        orientation_degeneracy_tol, anchor_map, group_chirality_frames,
+        branch_family_mappings, static_context):
+    """Filter and score the finalized AAM group without graph reconstruction."""
+    degree = len(source)
+    identity = tuple(range(degree))
+    graph_R = static_context['graph_R']
+    graph_P = static_context['graph_P']
+    inverse = {p: r for r, p in source.items()}
+    fragment_count = sum(
+        "automorph_generators" in (fragment.get("symmetry") or {})
+        for fragment in dict(branch_symmetry or {}).get("fragments") or ())
+
+    mutable_centers = set()
+    for center_P in range(degree):
+        neighbors_P = set(graph_P.neighbors(center_P))
+        if len(neighbors_P) < 2:
+            continue
+        stabilizers = _point_stabilizer_generators(
+            stored_generators, center_P, degree)
+        orbit_ids = _generator_orbit_ids(neighbors_P, stabilizers)
+        sizes = Counter(orbit_ids.values())
+        if any(sizes[orbit_ids[atom]] > 1 for atom in neighbors_P):
+            mutable_centers.add(center_P)
+
+    # Completed branch representatives are exact AAM families.  They expose
+    # correlated assignment freedom that need not occur in one stabilizer.
+    for raw_alternative in branch_family_mappings or ():
+        alternative = _int_mapping(raw_alternative)
+        if set(alternative) != set(source):
+            continue
+        for center_R in range(degree):
+            center_P = source[center_R]
+            if alternative.get(center_R) != center_P:
+                continue
+            neighbors_R = tuple(graph_R.neighbors(center_R))
+            base = tuple(source[r] for r in neighbors_R)
+            other = tuple(alternative[r] for r in neighbors_R)
+            if set(base) == set(other) and base != other:
+                mutable_centers.add(center_P)
+
+    local_frames = []
+    nonstereogenic_frames = []
+    for center_P in sorted(mutable_centers):
+        center_R = inverse[center_P]
+        neighbors_P = set(graph_P.neighbors(center_P))
+        mapped_neighbors_R = {
+            source[r] for r in graph_R.neighbors(center_R)}
+        # A changing coordination shell is not a persistent index center.
+        if neighbors_P != mapped_neighbors_R or len(neighbors_P) < 3:
+            continue
+        simplex_size = 3 if len(neighbors_P) == 3 else 4
+        for simplex_P in combinations(sorted(neighbors_P), simplex_size):
+            simplex_R = tuple(inverse[p] for p in simplex_P)
+            measure_R = _simplex_measure(
+                coords_R, center_R, simplex_R,
+                orientation_degeneracy_tol)
+            measure_P = _simplex_measure(
+                coords_P, center_P, simplex_P,
+                orientation_degeneracy_tol)
+            frame = _OrientedFrame(
+                center_R=center_R, neighbors_R=simplex_R,
+                sign_R=measure_R.sign, sign_P_source=measure_P.sign,
+                normalized_R=measure_R.normalized,
+                normalized_P_source=measure_P.normalized)
+            if not measure_R.sign or not measure_P.sign:
+                nonstereogenic_frames.append({
+                    "id": frame.frame_id,
+                    "center_R": center_R,
+                    "neighbors_R_index_order": list(simplex_R),
+                    "reason": "nonstereogenic_endpoint",
+                })
+            else:
+                local_frames.append(frame)
+
+    group_frames = []
+    for raw in group_chirality_frames or ():
+        center_R = int(raw["center_R"])
+        neighbors_R = tuple(map(int, raw["neighbors_R_index_order"]))
+        measure_R = _orientation_measure(
+            coords_R, center_R, neighbors_R,
+            degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL)
+        measure_P = _orientation_measure(
+            coords_P, source[center_R],
+            tuple(source[r] for r in neighbors_R),
+            degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL)
+        if measure_R.sign:
+            group_frames.append((
+                min(abs(measure_R.normalized), abs(measure_P.normalized)),
+                center_R, neighbors_R, measure_R.sign))
+
+    constrained_atoms = set()
+    for frame in local_frames:
+        constrained_atoms.add(source[frame.center_R])
+        constrained_atoms.update(source[r] for r in frame.neighbors_R)
+    for _robustness, center_R, neighbors_R, _sign in group_frames:
+        constrained_atoms.add(source[center_R])
+        constrained_atoms.update(source[r] for r in neighbors_R)
+
+    source_signature = mapping_event_signature(
+        source, wbo_R, wbo_P, elements_R,
+        dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold)
+    event_sensitive_atoms = set()
+    for generator in stored_generators:
+        acted = {r: int(generator[source[r]]) for r in source}
+        if mapping_event_signature(
+                acted, wbo_R, wbo_P, elements_R,
+                dwbo_threshold=dwbo_threshold,
+                metal_dwbo_threshold=metal_dwbo_threshold) != source_signature:
+            event_sensitive_atoms.update(
+                atom for atom, image in enumerate(generator)
+                if atom != image)
+    constrained_atoms.update(event_sensitive_atoms)
+    event_filter = bool(event_sensitive_atoms)
+    anchor_filter = any(
+        any(generator[source[int(r)]] != int(p)
+            for generator in stored_generators)
+        for r, p in dict(anchor_map or {}).items())
+    if anchor_filter:
+        constrained_atoms.update(source[int(r)] for r in anchor_map)
+
+    factors = list(_independent_atom_action_factors(
+        stored_generators, degree))
+    constrained = [
+        [support, list(actions)] for support, actions in factors
+        if set(support) & constrained_atoms]
+    unconstrained = [
+        (support, actions) for support, actions in factors
+        if not set(support) & constrained_atoms]
+
+    remaining_frames = []
+    for frame in local_frames:
+        frame_atoms = {
+            source[frame.center_R],
+            *(source[r] for r in frame.neighbors_R),
+        }
+        touched = [
+            index for index, (support, _actions) in enumerate(constrained)
+            if set(support) & frame_atoms]
+        if len(touched) != 1:
+            remaining_frames.append(frame)
+            continue
+        factor_index = touched[0]
+        support, actions = constrained[factor_index]
+        constrained[factor_index] = [support, [
+            action for action in actions
+            if _frame_measure_for_mapping(
+                frame,
+                {r: int(action[source[r]]) for r in source},
+                coords_P, orientation_degeneracy_tol).sign == frame.sign_R
+        ]]
+    if any(not actions for _support, actions in constrained):
+        raise IndexChiralityConflict(
+            "stored AAM factor has no locally chirality-consistent action")
+
+    domains = [actions for _support, actions in constrained]
+    if not domains:
+        domains = [(identity,)]
+    valid_bases = []
+    evaluated_actions = 0
+    for choices in product(*domains):
+        evaluated_actions += 1
+        action = identity
+        for choice in choices:
+            action = _perm_compose(action, choice)
+        mapping = {r: int(action[source[r]]) for r in source}
+        if any(_frame_measure_for_mapping(
+                frame, mapping, coords_P,
+                orientation_degeneracy_tol).sign != frame.sign_R
+               for frame in remaining_frames):
+            continue
+        if (event_filter and mapping_event_signature(
+                mapping, wbo_R, wbo_P, elements_R,
+                dwbo_threshold=dwbo_threshold,
+                metal_dwbo_threshold=metal_dwbo_threshold)
+                != source_signature):
+            continue
+        if (anchor_filter and any(mapping[int(r)] != int(p)
+                                  for r, p in anchor_map.items())):
+            continue
+        valid_bases.append(mapping)
+
+    preserved_group_frames = []
+    reconfigured_group_frames = []
+    for robustness, center_R, neighbors_R, sign_R in sorted(
+            group_frames, key=lambda item: (-item[0], item[1], item[2])):
+        satisfying = [
+            mapping for mapping in valid_bases
+            if _orientation_measure(
+                coords_P, mapping[center_R],
+                tuple(mapping[r] for r in neighbors_R),
+                degeneracy_tol=GROUP_ORIENTATION_DEGENERACY_TOL).sign
+            == sign_R]
+        if satisfying:
+            valid_bases = satisfying
+            preserved_group_frames.append((center_R, neighbors_R, sign_R))
+        else:
+            reconfigured_group_frames.append({
+                "center_R": center_R,
+                "neighbors_R_index_order": list(neighbors_R),
+                "reactant_orientation_sign": sign_R,
+                "normalized_orientation_robustness": float(robustness),
+                "reason": "incompatible_with_stronger_group_frame_basis",
+            })
+    if not valid_bases:
+        raise IndexChiralityConflict(
+            "stored AAM fragment group has no chirality-consistent action",
+            diagnostics={
+                "stored_generator_count": len(stored_generators),
+                "local_frame_count": len(local_frames),
+                "evaluated_constraint_action_count": evaluated_actions,
+            })
+
+    unconstrained_generators = tuple(
+        action for _support, actions in unconstrained for action in actions
+        if action != identity)
+    ranked = []
+    for base in valid_bases:
+        selected, rmsd, search = _minimum_rmsd_group_action(
+            base, unconstrained_generators, coords_R, coords_P)
+        ranked.append((round(rmsd, 12), tuple(selected[r]
+                                              for r in range(degree)),
+                       selected, rmsd, search))
+    ranked.sort(key=lambda item: item[:2])
+    _rank, _key, selected, selected_rmsd, rmsd_search = ranked[0]
+    if mapping_event_signature(
+            selected, wbo_R, wbo_P, elements_R,
+            dwbo_threshold=dwbo_threshold,
+            metal_dwbo_threshold=metal_dwbo_threshold) != source_signature:
+        raise IndexChiralityConflict(
+            "internal invariant failure: stored AAM action changed the event")
+    if any(selected[int(r)] != int(p) for r, p in anchor_map.items()):
+        raise IndexChiralityConflict(
+            "internal invariant failure: stored AAM action moved an anchor")
+
+    source_violations = sum(
+        frame.sign_R != frame.sign_P_source for frame in local_frames)
+    metadata = {
+        "schema_version": INDEX_CHIRALITY_SCHEMA,
+        "policy": "preserve",
+        "status": "applied" if selected != source else "already_consistent",
+        "solver": "stored_AAM_generator_group",
+        "constraint_model": "AAM_mutable_affine_simplices",
+        "candidate_source": "stored_AAM_fragment_transporters",
+        "stored_aam_fragment_generator_count": len(stored_generators),
+        "selected_fragment_count": fragment_count,
+        "evaluated_constraint_action_count": evaluated_actions,
+        "chirality_valid_atom_bijection_count": len(valid_bases),
+        "rmsd_candidate_count": sum(
+            int(item[4]["group_order"]) for item in ranked),
+        "rmsd_evaluated_leaf_count": sum(
+            int(item[4]["evaluated_leaf_count"]) for item in ranked),
+        "rmsd_pruned_leaf_count": sum(
+            int(item[4]["pruned_leaf_count"]) for item in ranked),
+        "rmsd_symmetry_factor_orders": rmsd_search["factor_orders"],
+        "rmsd_covariance_factor_orders": rmsd_search.get(
+            "covariance_factor_orders", rmsd_search["factor_orders"]),
+        "rmsd_visited_action_node_count": rmsd_search.get(
+            "visited_action_node_count", 1),
+        "rmsd_search_method": rmsd_search.get(
+            "search_method", "trivial_group"),
+        "selected_fixed_mapping_aligned_rmsd": float(selected_rmsd),
+        "rmsd_policy": (
+            "stored_AAM_group_chirality_filter_then_exact_covariance_search"),
+        "source_index_chirality_violation_count": int(source_violations),
+        "selected_index_chirality_violation_count": 0,
+        "defined_frame_count": len(local_frames),
+        "nonstereogenic_frame_count": len(nonstereogenic_frames),
+        "reconfigured_frame_count": 0,
+        "preserved_group_chirality_frame_count": len(
+            preserved_group_frames),
+        "reconfigured_group_chirality_frame_count": len(
+            reconfigured_group_frames),
+        "switchable_r_atoms": sorted({
+            r for r, p in source.items()
+            if any(generator[p] != p for generator in stored_generators)}),
+        "mapping_changes": [{
+            "r_atom": r,
+            "source_p_atom": source[r],
+            "selected_p_atom": selected[r],
+        } for r in sorted(source) if source[r] != selected[r]],
+        "active_frames": [{
+            "id": frame.frame_id,
+            "center_R": frame.center_R,
+            "neighbors_R_index_order": list(frame.neighbors_R),
+            "reactant_orientation_sign": frame.sign_R,
+            "source_product_orientation_sign": frame.sign_P_source,
+            "reactant_normalized_orientation": frame.normalized_R,
+            "source_product_normalized_orientation": frame.normalized_P_source,
+        } for frame in local_frames],
+        "preserved_group_chirality_frames": [{
+            "center_R": center_R,
+            "neighbors_R_index_order": list(neighbors_R),
+            "reactant_orientation_sign": sign_R,
+        } for center_R, neighbors_R, sign_R in preserved_group_frames],
+        "reconfigured_group_chirality_frames": reconfigured_group_frames,
+        "nonstereogenic_frames": nonstereogenic_frames,
+        "reconfigured_frames": [],
+        "event_signature_unchanged": True,
+    }
+    return IndexChiralitySelection(
+        source_mapping=dict(source), selected_mapping=selected,
+        metadata=metadata)
+
+
 def select_index_chirality_assignment(
         source_mapping, branch_symmetry,
         elements_R: Sequence[str], coords_R, wbo_R,
@@ -1213,7 +1599,8 @@ def select_index_chirality_assignment(
         graph_floor=0.2, symmetry_wbo_tol=0.2,
         dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
         orientation_degeneracy_tol=ORIENTATION_DEGENERACY_TOL,
-        anchor_map=None, group_chirality_frames=(), static_context=None):
+        anchor_map=None, group_chirality_frames=(), static_context=None,
+        branch_family_mappings=()):
     """Compose one AAM witness with one exact orientation-preserving automorph.
 
     The constraint is solved simultaneously as a colored relational-graph
@@ -1221,6 +1608,26 @@ def select_index_chirality_assignment(
     capped orbit enumeration, or alternate matching path.
     """
     source = validate_mapping(source_mapping, elements_R, elements_P)
+    static_context = static_context or analytical_family_static_context(
+        elements_R, wbo_R, elements_P, wbo_P,
+        graph_floor=graph_floor,
+        dwbo_threshold=dwbo_threshold,
+        metal_dwbo_threshold=metal_dwbo_threshold)
+    has_stored_group, stored_generators = _stored_aam_generators(
+        branch_symmetry)
+    if has_stored_group:
+        return _select_from_stored_aam_group(
+            source, branch_symmetry, stored_generators,
+            elements_R, np.asarray(coords_R), np.asarray(wbo_R),
+            elements_P, np.asarray(coords_P), np.asarray(wbo_P),
+            graph_floor=graph_floor,
+            dwbo_threshold=dwbo_threshold,
+            metal_dwbo_threshold=metal_dwbo_threshold,
+            orientation_degeneracy_tol=orientation_degeneracy_tol,
+            anchor_map=dict(anchor_map or {}),
+            group_chirality_frames=group_chirality_frames,
+            branch_family_mappings=branch_family_mappings,
+            static_context=static_context)
     relation, persistent_P, inverse, fragments = _masked_relation_data(
         source, branch_symmetry, elements_R, np.asarray(wbo_R),
         elements_P, np.asarray(wbo_P), graph_floor,

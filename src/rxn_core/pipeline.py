@@ -1831,6 +1831,9 @@ def _evaluate_analytical_branch_task(branch_index):
                 group_chirality_frames=(
                     branch_group_chirality.defined_frames),
                 static_context=context['static_context'],
+                branch_family_mappings=[
+                    candidate['mapping']
+                    for candidate in context['branches']],
             )
             branch_mapping = selection.selected_mapping
             branch_index_chirality = selection.metadata

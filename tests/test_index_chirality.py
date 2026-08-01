@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import rxn_core.alignment.index_chirality as index_chirality_module
 import rxn_core.pipeline as pipeline
 from rxn_core.alignment.index_chirality import (
     IndexChiralityConflict,
@@ -164,6 +165,34 @@ def test_index_chiral_selector_chooses_consistent_final_automorphism():
     assert selection.metadata["switchable_r_atoms"] == [2, 3, 4]
     assert selection.metadata["solver"] == (
         "pynauty_colored_relational_isomorphism")
+
+
+def test_finalized_aam_group_is_used_without_relational_reconstruction(
+        monkeypatch):
+    elements, coords, wbo, identity, odd, _symmetry = _tetrahedral_case()
+    swap = list(range(len(elements)))
+    swap[3], swap[4] = swap[4], swap[3]
+    hierarchy = {"fragments": [{
+        "fragment_index": 0,
+        "fragment": list(range(len(elements))),
+        "symmetry": {"automorph_generators": [swap]},
+    }]}
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError(
+            "finalized AAM groups must not rebuild a relational graph")
+
+    monkeypatch.setattr(
+        index_chirality_module, "_masked_relation_data", forbidden)
+    selection = select_index_chirality_assignment(
+        odd, hierarchy,
+        elements, coords, wbo,
+        elements, coords, wbo,
+        branch_family_mappings=[odd, identity])
+
+    assert selection.selected_mapping == identity
+    assert selection.metadata["solver"] == "stored_AAM_generator_group"
+    assert selection.metadata["selected_index_chirality_violation_count"] == 0
 
 
 def test_exact_symmetry_freedom_corrects_orientation_without_display_block():
