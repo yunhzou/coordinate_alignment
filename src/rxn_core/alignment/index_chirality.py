@@ -19,7 +19,7 @@ from ..frag import bond_event_threshold, build_graph
 from ..matcher.orbits import _wbo_tolerance_bucket_lookup
 
 
-INDEX_CHIRALITY_SCHEMA = "rxn_core.index_chirality/v4"
+INDEX_CHIRALITY_SCHEMA = "rxn_core.index_chirality/v5"
 ORIENTATION_DEGENERACY_TOL = 0.1
 # Group orientation is topological: only a determinant indistinguishable from
 # zero at working precision is undefined.  The local-center tolerance above
@@ -439,7 +439,7 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
                           elements_P, wbo_P, graph_floor,
                           symmetry_wbo_tol, dwbo_threshold,
                           metal_dwbo_threshold, anchor_map,
-                          static_context=None):
+                          static_context=None, include_event_relations=True):
     atom_count = len(source)
     inverse = {p: r for r, p in source.items()}
     anchors = {int(r): int(p) for r, p in dict(anchor_map or {}).items()}
@@ -497,9 +497,20 @@ def _masked_relation_data(source, branch_symmetry, elements_R, wbo_R,
                     persistent_P[left_P].add(right_P)
                     persistent_P[right_P].add(left_P)
 
-    # These complete-pair colors are the coarsest endpoint scalar relations
-    # needed to make the broken/formed event classification invariant.  They
-    # split an iso-tolerance class only when crossing an actual event boundary.
+    if not include_event_relations:
+        return relation, persistent_P, inverse, fragments
+
+    # These complete-pair colors are a conservative exact-event stabilizer:
+    # they preserve the event classification against every endpoint scalar
+    # value, not merely the event realized by this representative.  The
+    # quotient between the structural group above and this stabilizer is
+    # handled analytically by AnalyticalMappingFamily; otherwise valid
+    # same-event cosets can be lost at a threshold boundary.
+    #
+    # Within this stabilizer, the complete-pair colors are the coarsest
+    # endpoint scalar relations needed to make every broken/formed event
+    # classification invariant.
+    # They split an iso-tolerance class only when crossing an event boundary.
     pair_records = []
     for left_P in range(atom_count):
         for right_P in range(left_P + 1, atom_count):
@@ -874,7 +885,7 @@ class AnalyticalMappingFamily:
     equality is proven by generator containment; no elements are enumerated.
     """
 
-    def __init__(self, source_mapping, relation):
+    def __init__(self, source_mapping, relation, structural_relation=None):
         import pynauty
 
         self.source_mapping = dict(source_mapping)
@@ -911,6 +922,28 @@ class AnalyticalMappingFamily:
         self._membership_cache = {}
         self._relation_record_counts_B = Counter(
             self.relation.relation_records_B)
+        self.structural_relation = structural_relation
+        self.structural_target_generators = ()
+        self.structural_group_order = self.group_order
+        if structural_relation is not None:
+            structural_A = structural_relation.graph("A")
+            structural_B = structural_relation.graph("B")
+            if _canonical_isomorphism(structural_A, structural_B) is None:
+                raise IndexChiralityConflict(
+                    "pre-event AAM branch relation has no endpoint "
+                    "isomorphism")
+            (structural_generators, structural_mantissa,
+             structural_exponent, _structural_orbits,
+             _structural_orbit_count) = pynauty.autgrp(structural_B)
+            self.structural_target_generators = tuple(dict.fromkeys(
+                tuple(int(generator[atom]) for atom in range(self.degree))
+                for generator in structural_generators
+                if tuple(int(generator[atom])
+                         for atom in range(self.degree)) != identity
+            ))
+            self.structural_group_order = (
+                round(float(structural_mantissa), 12),
+                int(structural_exponent))
 
     @property
     def invariant(self):
@@ -964,6 +997,59 @@ class AnalyticalMappingFamily:
             for r in mapping
         }
 
+    def _same_conservative_event_coset(self, left_action, right_action):
+        """Whether two target actions lie in the same stabilizer coset."""
+        relative = _perm_compose(
+            _perm_inverse(tuple(right_action)), tuple(left_action))
+        transported = self._left_act(
+            relative, self.representative_mapping)
+        return self.contains(transported)
+
+    def exact_event_coset_representatives(
+            self, wbo_R, wbo_P, elements_R, *,
+            dwbo_threshold=0.5, metal_dwbo_threshold=0.3):
+        """Return one mapping per same-event structural quotient coset.
+
+        The structural AAM group can be larger than the conservative colored
+        relation used to stabilize event thresholds.  We traverse the finite
+        left-coset quotient by Schreier-style generator steps and retain only
+        cosets whose representative realizes the source mapping's exact
+        broken/formed event.  This enumerates event families, never group
+        elements or atom bijections.
+        """
+        source_event = mapping_event_signature(
+            self.source_mapping, wbo_R, wbo_P, elements_R,
+            dwbo_threshold=dwbo_threshold,
+            metal_dwbo_threshold=metal_dwbo_threshold)
+        identity = tuple(range(self.degree))
+        representatives = [identity]
+        queue_index = 0
+        while queue_index < len(representatives):
+            action = representatives[queue_index]
+            queue_index += 1
+            for generator in self.structural_target_generators:
+                # Right multiplication traverses left cosets K\\G.
+                candidate = _perm_compose(generator, action)
+                if any(self._same_conservative_event_coset(
+                        candidate, existing)
+                       for existing in representatives):
+                    continue
+                representatives.append(candidate)
+        mappings = []
+        seen = set()
+        for action in representatives:
+            mapping = self._left_act(action, self.source_mapping)
+            if mapping_event_signature(
+                    mapping, wbo_R, wbo_P, elements_R,
+                    dwbo_threshold=dwbo_threshold,
+                    metal_dwbo_threshold=metal_dwbo_threshold) != source_event:
+                continue
+            key = tuple(mapping[r] for r in range(self.degree))
+            if key not in seen:
+                seen.add(key)
+                mappings.append(mapping)
+        return tuple(mappings)
+
     def equivalent(self, other):
         if not isinstance(other, AnalyticalMappingFamily):
             return False
@@ -1014,6 +1100,10 @@ class AnalyticalMappingFamily:
                 "mantissa": self.group_order[0],
                 "decimal_exponent": self.group_order[1],
             },
+            "pre_event_group_order": {
+                "mantissa": self.structural_group_order[0],
+                "decimal_exponent": self.structural_group_order[1],
+            },
         }
 
 
@@ -1032,7 +1122,16 @@ def compile_analytical_mapping_family(
         symmetry_wbo_tol, dwbo_threshold,
         metal_dwbo_threshold, anchor_map or {},
         static_context=static_context)
-    return AnalyticalMappingFamily(source, relation)
+    structural_relation, _persistent, _inverse, _fragments = (
+        _masked_relation_data(
+            source, branch_symmetry, elements_R, np.asarray(wbo_R),
+            elements_P, np.asarray(wbo_P), graph_floor,
+            symmetry_wbo_tol, dwbo_threshold,
+            metal_dwbo_threshold, anchor_map or {},
+            static_context=static_context,
+            include_event_relations=False))
+    return AnalyticalMappingFamily(
+        source, relation, structural_relation=structural_relation)
 
 
 def _simplex_measure(coords, center, neighbors, degeneracy_tol):

@@ -1801,53 +1801,129 @@ def _init_analytical_branch_eval_worker(context):
 
 
 def _evaluate_analytical_branch_task(branch_index):
-    """Evaluate one maximal family independently for chirality and RMSD."""
+    """Evaluate one maximal family independently for chirality and RMSD.
+
+    One completed AAM branch can contain several cosets of the conservative
+    threshold-event stabilizer that all realize the same concrete mechanism.
+    They are analytical quotient members, not branch witnesses or enumerated
+    bijections, and must all participate before the RMSD tie-break.
+    """
     context = _ANALYTICAL_BRANCH_EVAL_CONTEXT
     branch = context['branches'][branch_index]
     inputs = context['inputs']
     cfg = context['cfg']
     branch_mapping = _int_mapping(branch['mapping'])
     branch_hierarchy = branch.get('hierarchy') or {}
-    branch_mapping_family = branch.get('mapping_family') or {}
     compiled_mapping_family = branch.get('_mapping_family_object')
-    branch_group_chirality = None
-    branch_index_chirality = None
     try:
         if context['index_chirality_mode'] == 'preserve':
-            branch_group_chirality = analyze_group_chirality_branch(
-                branch_mapping,
-                inputs.elR, inputs.xyzR, inputs.wboR,
-                inputs.elP, inputs.xyzP, inputs.wboP,
-                graph_floor=cfg.get('graph_floor', 0.2),
-            )
-            selection = select_index_chirality_assignment(
-                branch_mapping, branch_hierarchy,
-                inputs.elR, inputs.xyzR, inputs.wboR,
-                inputs.elP, inputs.xyzP, inputs.wboP,
-                graph_floor=cfg.get('graph_floor', 0.2),
-                symmetry_wbo_tol=cfg.get('iso_tol', VIEW_ISO_TOL),
-                dwbo_threshold=cfg.get('dwbo_threshold', DWBO_THRESHOLD),
-                metal_dwbo_threshold=cfg.get(
-                    'metal_dwbo_threshold', METAL_DWBO_THRESHOLD),
-                anchor_map=cfg.get('anchor_map') or {},
-                group_chirality_frames=(
-                    branch_group_chirality.defined_frames),
-                static_context=context['static_context'],
-                branch_family_mappings=[
-                    candidate['mapping']
-                    for candidate in context['branches']],
-                aam_family_generators=(
-                    branch_mapping_family.get('target_generators')
-                    if 'target_generators' in branch_mapping_family
-                    else None),
-                compiled_aam_family=compiled_mapping_family,
-            )
-            branch_mapping = selection.selected_mapping
-            branch_index_chirality = selection.metadata
+            event_cosets = (
+                compiled_mapping_family.exact_event_coset_representatives(
+                    inputs.wboR, inputs.wboP, inputs.elR,
+                    dwbo_threshold=cfg.get(
+                        'dwbo_threshold', DWBO_THRESHOLD),
+                    metal_dwbo_threshold=cfg.get(
+                        'metal_dwbo_threshold', METAL_DWBO_THRESHOLD))
+                if compiled_mapping_family is not None
+                else (branch_mapping,))
+            evaluated_cosets = []
+            coset_failures = []
+            source_key = tuple(
+                branch_mapping[r] for r in sorted(branch_mapping))
+            for coset_index, coset_mapping in enumerate(event_cosets):
+                try:
+                    coset_key = tuple(
+                        coset_mapping[r] for r in sorted(coset_mapping))
+                    coset_family = compiled_mapping_family
+                    if coset_key != source_key:
+                        coset_family = compile_analytical_mapping_family(
+                            coset_mapping, branch_hierarchy,
+                            inputs.elR, inputs.wboR,
+                            inputs.elP, inputs.wboP,
+                            graph_floor=cfg.get('graph_floor', 0.2),
+                            symmetry_wbo_tol=cfg.get(
+                                'iso_tol', VIEW_ISO_TOL),
+                            dwbo_threshold=cfg.get(
+                                'dwbo_threshold', DWBO_THRESHOLD),
+                            metal_dwbo_threshold=cfg.get(
+                                'metal_dwbo_threshold',
+                                METAL_DWBO_THRESHOLD),
+                            anchor_map=cfg.get('anchor_map') or {},
+                            static_context=context['static_context'])
+                    group_chirality = analyze_group_chirality_branch(
+                        coset_mapping,
+                        inputs.elR, inputs.xyzR, inputs.wboR,
+                        inputs.elP, inputs.xyzP, inputs.wboP,
+                        graph_floor=cfg.get('graph_floor', 0.2),
+                    )
+                    selection = select_index_chirality_assignment(
+                        coset_mapping, branch_hierarchy,
+                        inputs.elR, inputs.xyzR, inputs.wboR,
+                        inputs.elP, inputs.xyzP, inputs.wboP,
+                        graph_floor=cfg.get('graph_floor', 0.2),
+                        symmetry_wbo_tol=cfg.get(
+                            'iso_tol', VIEW_ISO_TOL),
+                        dwbo_threshold=cfg.get(
+                            'dwbo_threshold', DWBO_THRESHOLD),
+                        metal_dwbo_threshold=cfg.get(
+                            'metal_dwbo_threshold',
+                            METAL_DWBO_THRESHOLD),
+                        anchor_map=cfg.get('anchor_map') or {},
+                        group_chirality_frames=(
+                            group_chirality.defined_frames),
+                        static_context=context['static_context'],
+                        branch_family_mappings=[
+                            candidate['mapping']
+                            for candidate in context['branches']],
+                        aam_family_generators=(
+                            coset_family.target_generators
+                            if coset_family is not None else None),
+                        compiled_aam_family=coset_family,
+                    )
+                    selected = selection.selected_mapping
+                    rmsd = fixed_mapping_aligned_rmsd(
+                        selected, inputs.xyzR, inputs.xyzP)
+                    evaluated_cosets.append((
+                        float(rmsd),
+                        tuple(selected[r] for r in sorted(selected)),
+                        int(coset_index), selected,
+                        group_chirality, selection.metadata))
+                except IndexChiralityConflict as exc:
+                    coset_failures.append({
+                        'event_coset_index': int(coset_index),
+                        'reason': str(exc),
+                        'diagnostics': getattr(exc, 'diagnostics', None),
+                    })
+            if not evaluated_cosets:
+                if len(coset_failures) == 1:
+                    failure = coset_failures[0]
+                    raise IndexChiralityConflict(
+                        failure['reason'],
+                        diagnostics=failure.get('diagnostics'))
+                raise IndexChiralityConflict(
+                    "no exact-event AAM coset satisfies chirality",
+                    diagnostics={
+                        'exact_event_coset_count': len(event_cosets),
+                        'event_coset_failures': coset_failures,
+                    })
+            evaluated_cosets.sort(key=lambda item: item[:3])
+            (rmsd, _mapping_key, selected_coset_index, branch_mapping,
+             branch_group_chirality,
+             branch_index_chirality) = evaluated_cosets[0]
             branch_index_chirality['group_chirality_branch'] = (
                 branch_group_chirality.metadata)
-        rmsd = fixed_mapping_aligned_rmsd(
-            branch_mapping, inputs.xyzR, inputs.xyzP)
+            branch_index_chirality['exact_event_coset_count'] = len(
+                event_cosets)
+            branch_index_chirality['chirality_valid_event_coset_count'] = len(
+                evaluated_cosets)
+            branch_index_chirality['selected_event_coset_index'] = int(
+                selected_coset_index)
+            branch_index_chirality['event_coset_failures'] = coset_failures
+        else:
+            branch_group_chirality = None
+            branch_index_chirality = None
+            rmsd = fixed_mapping_aligned_rmsd(
+                branch_mapping, inputs.xyzR, inputs.xyzP)
         return ('ok', (
             float(rmsd), tuple(branch_mapping[r]
                                for r in sorted(branch_mapping)),

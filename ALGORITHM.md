@@ -425,13 +425,15 @@ remain distinct mechanisms.
 Every completed branch is compiled into a colored relational isomorphism
 between endpoint A and endpoint B.
 
-The relation includes:
+Two nested relations are compiled from the same completed AAM branch:
 
 - atom element and fragment-owner colors;
 - selected fragment WBO relations at `iso_tol`;
 - anchors;
-- event-invariant pair colors;
-- later, signed orientation relations.
+- the structural relation stops here and represents the pre-event AAM group;
+- the conservative event stabilizer additionally contains event-invariant
+  pair colors;
+- signed orientation relations are added later during chirality selection.
 
 If `g` is one isomorphism and `G` is the target automorphism group of the
 relation, the branch represents the coset:
@@ -449,8 +451,22 @@ AnalyticalMappingFamily
 |- target_generators of G
 |- target_orbits
 |- group_order
+|- structural_target_generators
+|- structural_group_order
 `- colored relational records for exact membership
 ```
+
+The event-invariant colors preserve threshold behavior against every endpoint
+WBO value. That makes them a valid subgroup stabilizer, but occasionally
+stricter than preserving the concrete event realized by the selected mapping.
+The algorithm therefore traverses the finite quotient of the structural AAM
+group by this conservative stabilizer. It retains one representative for each
+quotient coset whose actual broken/formed event equals the mechanism event.
+Only these event-family representatives proceed to chirality and RMSD.
+
+This is a Schreier-style traversal of event cosets, not enumeration of group
+elements or atom bijections. TS01, for example, has two same-event quotient
+cosets even though the conservative stabilizer contains only one of them.
 
 ### 10.1 Membership
 
@@ -521,6 +537,12 @@ incorrectly rejected as persistent stereocenters. For every mutable persistent
 center, the algorithm constructs all defined affine simplices: three ligands
 at coordination three and four-ligand simplices at higher coordination.
 
+An ordinary persistent three- or four-coordinate frame is a hard constraint.
+If its orientation-colored subgroup is empty, that event coset fails; it can
+never be relabeled as geometric reconfiguration. Only dependent simplices at
+centers above coordination four participate in the maximal-feasible-basis
+rule below.
+
 There is no degree-four-only swap rule, sequential greedy shuffle, or sampled
 witness fallback.
 
@@ -578,7 +600,8 @@ all constraints remain as generators for exact RMSD minimization.
 
 Completed branch representatives contribute correlated mutability detection,
 but they are not treated as random RMSD candidates. Each maximal family is
-evaluated independently; only exact group actions are scored.
+evaluated independently across its same-event structural quotient cosets;
+within each coset, only exact chirality-valid group actions are scored.
 
 For any candidate mapping, RMSD uses immutable correspondence:
 

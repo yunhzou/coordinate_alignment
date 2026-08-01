@@ -12,6 +12,7 @@ from rxn_core.alignment.index_chirality import (
     analytical_family_static_context,
     compile_analytical_mapping_family,
     fixed_mapping_aligned_rmsd,
+    mapping_event_signature,
     select_group_chiral_witness,
     select_index_chirality_assignment,
 )
@@ -728,6 +729,36 @@ def test_event_relation_uses_lossless_sparse_baseline_encoding():
     assert orbits[0] == orbits[1]
     assert orbits[2] == orbits[3]
     assert orbits[0] != orbits[2]
+
+
+def test_actual_event_quotient_recovers_same_event_threshold_cosets():
+    elements = ["C"] * 3
+    wbo_R = np.zeros((3, 3))
+    wbo_P = np.zeros((3, 3))
+    for matrix in (wbo_R, wbo_P):
+        for (left, right), value in {
+                (0, 1): 0.6, (0, 2): 1.0, (1, 2): 0.2}.items():
+            matrix[left, right] = matrix[right, left] = value
+    identity = {atom: atom for atom in range(3)}
+    hierarchy = {"fragments": [{"fragment": [0, 1, 2]}]}
+
+    family = compile_analytical_mapping_family(
+        identity, hierarchy,
+        elements, wbo_R, elements, wbo_P,
+        graph_floor=0.1, symmetry_wbo_tol=0.5)
+    representatives = family.exact_event_coset_representatives(
+        wbo_R, wbo_P, elements)
+
+    # The conservative all-threshold relation separates the two assignments,
+    # while the actual selected event (no broken/formed bonds) does not.  The
+    # quotient must retain both analytical cosets without enumerating either
+    # group's individual bijections.
+    assert family.group_order == (1.0, 0)
+    assert family.structural_group_order == (2.0, 0)
+    assert len(representatives) == 2
+    assert all(mapping_event_signature(
+        mapping, wbo_R, wbo_P, elements) == ((), ())
+        for mapping in representatives)
 
 
 def test_cached_event_relation_is_identical_to_uncached_construction():
