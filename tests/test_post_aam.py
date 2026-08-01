@@ -95,6 +95,29 @@ def test_branch_owns_exact_cross_fragment_mapping_group_when_supplied():
     assert record["target_group_generators"] == [[1, 0, 2]]
 
 
+def test_branch_consumes_existing_exact_mapping_family_record():
+    entry = {
+        "mapping": {0: 0, 1: 1, 2: 2},
+        "branches": [{
+            "mapping": {0: 0, 1: 1, 2: 2},
+            "hierarchy": {"fragments": []},
+            "mapping_family": {
+                "representative_mapping": {0: 1, 1: 0, 2: 2},
+                "target_generators": [[1, 0, 2]],
+                "target_orbits": [[0, 1], [2]],
+                "group_order": {"mantissa": 2.0, "decimal_exponent": 0},
+            },
+        }],
+    }
+
+    mechanism = PostAAMMechanism.from_pool_entry(((), ()), entry)
+    branch = mechanism.branches[0]
+    assert branch.representative == AtomBijection((1, 0, 2))
+    assert branch.target_group == PermutationGroup(3, (
+        AtomPermutation((1, 0, 2)),))
+    assert branch.has_exact_mapping_family
+
+
 def test_bijection_group_action_is_target_o_mapping_o_source_inverse():
     mapping = AtomBijection((0, 1, 2, 3))
     source = AtomPermutation((1, 0, 2, 3))

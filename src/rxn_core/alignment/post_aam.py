@@ -296,17 +296,23 @@ class PostAAMMechanism:
         raw_branches = list(entry.get("branches") or ())
         branches = []
         for raw in raw_branches:
+            mapping_family = dict(raw.get("mapping_family") or {})
             raw_group = raw.get("target_group_generators")
+            if raw_group is None:
+                raw_group = mapping_family.get("target_generators")
+            family_representative = (
+                mapping_family.get("representative_mapping")
+                or raw.get("mapping") or entry["mapping"])
             branches.append(AAMBranch(
                 representative=AtomBijection.from_mapping(
-                    raw.get("mapping") or entry["mapping"], mapping.degree),
+                    family_representative, mapping.degree),
                 hierarchy=AAMHierarchy.from_record(
                     raw.get("hierarchy") or symmetry),
                 encounter_count=int(raw.get("encounter_count", 1)),
                 cuts=tuple(tuple(map(int, cut))
                            for cut in raw.get("cuts") or ()),
                 covered_path_count=int(raw.get("covered_path_count", 1)),
-                mapping_family=dict(raw.get("mapping_family") or {}),
+                mapping_family=mapping_family,
                 path_provenance=tuple(
                     dict(record)
                     for record in raw.get("path_provenance") or ()),
