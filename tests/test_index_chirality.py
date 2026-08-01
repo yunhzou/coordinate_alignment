@@ -319,6 +319,30 @@ def test_preserved_group_chirality_survives_final_automorphism():
     assert selection.metadata["selected_index_chirality_violation_count"] == 0
 
 
+def test_stored_group_keeps_maximal_feasible_high_coordinate_frame_basis():
+    elements, coords_R, wbo, identity, _reversed, _witnesses = (
+        _higher_coordinate_branch_case())
+    coords_P = coords_R.copy()
+    coords_P[:, 0] *= -1.0
+    swap = list(range(len(elements)))
+    swap[1], swap[2] = swap[2], swap[1]
+    hierarchy = {"fragments": [{
+        "fragment_index": 0,
+        "fragment": list(range(len(elements))),
+        "symmetry": {"automorph_generators": [swap]},
+    }]}
+
+    selection = select_index_chirality_assignment(
+        identity, hierarchy,
+        elements, coords_R, wbo,
+        elements, coords_P, wbo)
+
+    assert selection.metadata["solver"] == "stored_AAM_generator_group"
+    assert selection.metadata["defined_frame_count"] == 8
+    assert selection.metadata["reconfigured_frame_count"] == 7
+    assert selection.metadata["selected_index_chirality_violation_count"] == 0
+
+
 def test_rp_stage_index_chiral_mode_is_post_processing():
     elements, coords, wbo, identity, odd, symmetry = _tetrahedral_case()
     inputs = pipeline.step_inputs_from_arrays(

@@ -1421,7 +1421,18 @@ def _select_from_stored_aam_group(
         if not set(support) & constrained_atoms]
 
     remaining_frames = []
+    ordinary_frames = []
+    high_coordinate_frames = []
     for frame in local_frames:
+        center_P = source[frame.center_R]
+        if len(tuple(graph_P.neighbors(center_P))) > 4:
+            # Four-point affine simplices at one high-coordinate center are
+            # dependent.  Select their maximal feasible basis below, exactly
+            # as for explicit group-chirality triples, rather than making one
+            # reconfigured simplex reject the complete AAM family.
+            high_coordinate_frames.append(frame)
+            continue
+        ordinary_frames.append(frame)
         frame_atoms = {
             source[frame.center_R],
             *(source[r] for r in frame.neighbors_R),
@@ -1471,6 +1482,35 @@ def _select_from_stored_aam_group(
                                   for r, p in anchor_map.items())):
             continue
         valid_bases.append(mapping)
+
+    preserved_high_coordinate_frames = []
+    reconfigured_frames = []
+    for frame in sorted(
+            high_coordinate_frames,
+            key=lambda item: (
+                -min(abs(item.normalized_R),
+                     abs(item.normalized_P_source)),
+                item.center_R, item.neighbors_R)):
+        satisfying = [
+            mapping for mapping in valid_bases
+            if _frame_measure_for_mapping(
+                frame, mapping, coords_P,
+                orientation_degeneracy_tol).sign == frame.sign_R
+        ]
+        if satisfying:
+            valid_bases = satisfying
+            preserved_high_coordinate_frames.append(frame)
+        else:
+            reconfigured_frames.append({
+                "id": frame.frame_id,
+                "center_R": frame.center_R,
+                "neighbors_R_index_order": list(frame.neighbors_R),
+                "reactant_orientation_sign": frame.sign_R,
+                "source_product_orientation_sign": frame.sign_P_source,
+                "reason": (
+                    "high_coordination_dependent_frame_reconfiguration"),
+            })
+    local_frames = ordinary_frames + preserved_high_coordinate_frames
 
     preserved_group_frames = []
     reconfigured_group_frames = []
@@ -1558,7 +1598,7 @@ def _select_from_stored_aam_group(
         "selected_index_chirality_violation_count": 0,
         "defined_frame_count": len(local_frames),
         "nonstereogenic_frame_count": len(nonstereogenic_frames),
-        "reconfigured_frame_count": 0,
+        "reconfigured_frame_count": len(reconfigured_frames),
         "preserved_group_chirality_frame_count": len(
             preserved_group_frames),
         "reconfigured_group_chirality_frame_count": len(
@@ -1587,7 +1627,7 @@ def _select_from_stored_aam_group(
         } for center_R, neighbors_R, sign_R in preserved_group_frames],
         "reconfigured_group_chirality_frames": reconfigured_group_frames,
         "nonstereogenic_frames": nonstereogenic_frames,
-        "reconfigured_frames": [],
+        "reconfigured_frames": reconfigured_frames,
         "event_signature_unchanged": True,
     }
     return IndexChiralitySelection(
