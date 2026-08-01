@@ -64,6 +64,23 @@ def evaluate_record(record, contract, performance_profile=None):
                 "index chirality violations: expected "
                 f"{case.get('max_chirality_violations', 0)}, got {violations!r}")
 
+    observed_degeneracy = {
+        (group.get("center_R"),
+         tuple(sorted(map(int, group.get("r_atoms") or ()))))
+        for mechanism in record.get("mechanisms") or ()
+        for group in mechanism.get("degeneracy_groups") or ()
+    }
+    required_degeneracy = {
+        (group.get("center_R"),
+         tuple(sorted(map(int, group.get("r_atoms") or ()))))
+        for group in case.get("required_degeneracy_groups") or ()
+    }
+    missing_degeneracy = required_degeneracy - observed_degeneracy
+    if missing_degeneracy:
+        failures.append(
+            "required degeneracy groups are missing: "
+            f"{sorted(missing_degeneracy, key=repr)}")
+
     metrics = record.get("regression_metrics") or {}
     configured_cap = metrics.get("configured_max_branches")
     expected_cap = int(case.get("max_branches", 100))
@@ -75,6 +92,13 @@ def evaluate_record(record, contract, performance_profile=None):
     if max_live is not None and int(max_live) > expected_cap:
         failures.append(
             f"max_live_branches exceeded cap: {max_live}>{expected_cap}")
+    candidate_limit = case.get("max_growth_candidates")
+    max_candidates = metrics.get("max_growth_candidates")
+    if (candidate_limit is not None and max_candidates is not None
+            and int(max_candidates) > int(candidate_limit)):
+        failures.append(
+            "max_growth_candidates exceeded case ceiling: "
+            f"{max_candidates}>{candidate_limit}")
 
     calls = metrics.get("post_aam_call_counts") or {}
     for label, maximum in (case.get("hard_call_limits") or {}).items():

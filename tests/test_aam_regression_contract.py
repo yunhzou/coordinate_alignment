@@ -22,6 +22,7 @@ def _healthy_record():
             "broken_bonds_R": [[15, 12], [37, 12]],
             "formed_bonds_R": [[12, 10], [12, 11], [37, 15]],
             "index_chirality_violations": 0,
+            "degeneracy_groups": [],
         }],
         "regression_metrics": {
             "configured_max_branches": 100,
@@ -59,6 +60,17 @@ def test_contract_detects_chemistry_branch_memory_and_time_regressions():
     assert "max_live_branches exceeded" in text
     assert "total_seconds exceeded" in text
     assert "peak_process_tree_rss_kb exceeded" in text
+
+
+def test_contract_detects_missing_confirmed_degeneracy_group():
+    contract = load_contract(CONTRACT)
+    contract["cases"][CASE]["required_degeneracy_groups"] = [{
+        "center_R": 9,
+        "r_atoms": [7, 10],
+    }]
+    report = evaluate_record(_healthy_record(), contract)
+    assert report["passed"] is False
+    assert "required degeneracy groups are missing" in report["failures"][0]
 
 
 def test_duplicate_degeneracy_work_is_a_hard_regression():

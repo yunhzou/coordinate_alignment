@@ -50,6 +50,11 @@
       "selected_mechanism_count": 1,
       "max_chirality_violations": 0,
       "max_branches": 100,
+      "max_growth_candidates": 100,
+      "required_degeneracy_groups": [
+        {"center_R": 9, "r_atoms": [7, 10]},
+        {"center_R": 9, "r_atoms": [19, 23]}
+      ],
       "mechanism_events": [
         {
           "broken_bonds_R": [[88, 95], [92, 99]],
@@ -65,6 +70,7 @@
       "selected_mechanism_count": 1,
       "max_chirality_violations": 0,
       "max_branches": 100,
+      "max_growth_candidates": 700,
       "mechanism_events": [
         {
           "broken_bonds_R": [[6, 38]],

@@ -126,9 +126,12 @@ def _pool_metrics(pool):
     branch_counts = [len(entry.get("branches") or ()) for entry in entries]
     branches = [branch for entry in entries
                 for branch in entry.get("branches") or ()]
-    fragments = [fragment for branch in branches
-                 for fragment in ((branch.get("branch_symmetry") or {})
-                                  .get("fragments") or ())]
+    fragments = [
+        fragment for branch in branches
+        for fragment in ((branch.get("hierarchy")
+                          or branch.get("branch_symmetry") or {})
+                         .get("fragments") or ())
+    ]
     return {
         "pool_branch_count": sum(branch_counts),
         "max_branches_per_mechanism": max(branch_counts, default=0),
@@ -226,6 +229,13 @@ def main():
                    for r, p in mechanism["mapping_RP"].items()}
         index = mechanism.get("index_chirality") or {}
         post = mechanism.get("post_aam") or {}
+        degeneracy_groups = [{
+            "center_R": block.get("center_R"),
+            "r_atoms": sorted(map(int, block.get("r_atoms") or ())),
+            "p_atoms": sorted(map(int, block.get("p_atoms") or ())),
+            "source": block.get("source"),
+        } for block in ((mechanism.get("branch_symmetry") or {})
+                        .get("blocks") or ())]
         mechanisms.append({
             "id": int(mechanism["id"]),
             "broken_bonds_R": mechanism.get("broken_bonds_R") or [],
@@ -248,6 +258,7 @@ def main():
                 branch.get("covered_path_count")
                 for branch in post.get("analytical_branches") or ()
             ],
+            "degeneracy_groups": degeneracy_groups,
         })
 
     usage_self = resource.getrusage(resource.RUSAGE_SELF)
