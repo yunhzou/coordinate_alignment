@@ -297,6 +297,17 @@ class AAMBranch:
     path_provenance: tuple[Mapping, ...] = ()
     target_group: PermutationGroup | None = None
 
+    def __post_init__(self):
+        object.__setattr__(self, "encounter_count", int(self.encounter_count))
+        object.__setattr__(self, "cuts", tuple(sorted(
+            tuple(sorted(map(int, cut))) for cut in self.cuts)))
+        object.__setattr__(
+            self, "covered_path_count", int(self.covered_path_count))
+        object.__setattr__(
+            self, "mapping_family", dict(self.mapping_family or {}))
+        object.__setattr__(self, "path_provenance", tuple(
+            dict(item) for item in self.path_provenance))
+
     @property
     def has_exact_mapping_family(self):
         return self.target_group is not None

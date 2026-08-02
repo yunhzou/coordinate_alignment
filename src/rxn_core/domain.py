@@ -402,6 +402,9 @@ class CoreAAMResult:
         assignments = tuple(self.assignments)
         if any(item.source_atoms != core for item in assignments):
             raise ValueError("core assignment has the wrong source domain")
+        if any(target < 0 or target >= self.target.atom_count
+               for item in assignments for _source, target in item.pairs):
+            raise ValueError("core assignment lies outside the target molecule")
         object.__setattr__(self, "core_atoms", core)
         object.__setattr__(self, "branches", tuple(self.branches))
         object.__setattr__(self, "assignments", assignments)

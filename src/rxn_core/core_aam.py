@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from collections import Counter
 
 from .alignment.branch import BranchLimitExceeded, _generate_seed_orders, find_islands
 from .alignment.post_aam import AAMHierarchy
@@ -34,6 +35,8 @@ def search_core_assignments(
         raise ValueError("partial AAM requires a non-empty source core")
     if source.atom_count != target.atom_count:
         raise ValueError("partial AAM currently requires equal atom counts")
+    if Counter(source.elements) != Counter(target.elements):
+        raise ValueError("partial AAM requires equal endpoint compositions")
     started = time.perf_counter()
     graph_source = build_graph(
         source.elements, source.wbo, bond_cut=config.graph_floor)
@@ -88,6 +91,10 @@ def search_core_assignments(
                         assignment_limit, branch_count=len(unique),
                         stage="exact_core_assignment_union")
 
+    if capped and not typed_branches:
+        raise BranchLimitExceeded(
+            config.branch_limit, branch_count=config.branch_limit + 1,
+            stage="all_core_seed_paths_capped")
     return CoreAAMResult(
         source=source,
         target=target,

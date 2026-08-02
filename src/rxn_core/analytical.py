@@ -185,6 +185,12 @@ def _maximal_families(records, aam, workers, static_context):
         group["record"]["encounter_count"] = (
             int(group["record"].get("encounter_count", 1))
             + int(record.get("encounter_count", 1)))
+        cuts = {
+            tuple(map(int, cut))
+            for cut in group["record"].get("cuts") or ()}
+        cuts.update(tuple(map(int, cut))
+                    for cut in record.get("cuts") or ())
+        group["record"]["cuts"] = [list(cut) for cut in sorted(cuts)]
     grouped = list(groups.values())
     compiled = _compile_unique(
         [group["record"] for group in grouped], aam, workers, static_context)
@@ -202,6 +208,11 @@ def _maximal_families(records, aam, workers, static_context):
         kept[0].setdefault("path_provenance", []).extend(
             removed[0].get("path_provenance") or ())
         kept[0]["covered_path_count"] = len(kept[0]["path_provenance"])
+        cuts = {tuple(map(int, cut))
+                for cut in kept[0].get("cuts") or ()}
+        cuts.update(tuple(map(int, cut))
+                    for cut in removed[0].get("cuts") or ())
+        kept[0]["cuts"] = [list(cut) for cut in sorted(cuts)]
 
     buckets = defaultdict(list)
     unique = []

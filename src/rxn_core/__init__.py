@@ -36,6 +36,10 @@ from .domain import (
 )
 from .rp import align_reaction, select_rp_mappings
 from .ts import analyze_transition_state
+from .alignment.post_aam import (
+    AAMBranch, AAMHierarchy, AtomBijection, AtomPermutation,
+    FragmentMatch, PermutationGroup, SymmetryDomain,
+)
 
 # Stable graph/chemistry primitives remain public components; the removed API
 # is the competing orchestration and dictionary result model.
@@ -56,6 +60,8 @@ __all__ = [
     "CoreAAMResult", "MolecularEndpoint", "RPMechanism", "RPResult",
     "TSMechanismResult", "TSResult", "TSScore", "TSScoringConfig",
     "TransitionStateTarget", "VibrationalModes",
+    "AAMBranch", "AAMHierarchy", "AtomBijection", "AtomPermutation",
+    "FragmentMatch", "PermutationGroup", "SymmetryDomain",
     "search_aam", "compile_mapping_families", "search_core_assignments",
     "select_rp_mappings", "align_reaction", "analyze_transition_state",
     "WeightedGraph", "WeightedNode", "build_graph", "build_weighted_graph",

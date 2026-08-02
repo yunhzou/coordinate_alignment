@@ -12,6 +12,108 @@ The central principle is:
 > is provenance, not the solution. Mechanism identity, chirality, and RMSD
 > selection must operate on the exact family represented by graph symmetry.
 
+## Public computational architecture
+
+The public Python interface is typed and immutable. Dictionary records are
+not computational inputs or outputs; they exist only inside legacy artifact
+adapters. The dependency direction is deliberately one-way:
+
+```text
+MolecularEndpoint(R, P)
+        |
+        v
+ AAMProblem + AAMSearchConfig
+        |
+        v
+ search_aam -------------------------------> AAMResult
+                                                |
+                         +----------------------+
+                         | mechanism classes
+                         | completed branches
+                         | fragment hierarchy
+                         | exact fixed roles
+                         | assignment domains
+                         | target generators
+                         | cuts + provenance
+                         | search metrics
+                         v
+             compile_mapping_families
+                         |
+                         v
+                 AnalyticalAAMResult
+                         |
+                         v
+                 select_rp_mappings
+                         |
+                         v
+                       RPResult
+                         |
+             +-----------+-----------+
+             |                       |
+             v                       v
+      aligned endpoints      analyze_transition_state
+                                     |
+                    R->TS partial AAM + P->TS partial AAM
+                                     |
+                         exact core-tuple consensus
+                                     |
+                                     v
+                                  TSResult
+```
+
+`search_aam()` performs graph search and mechanism classification only.
+`compile_mapping_families()` turns the retained hierarchical relations into
+maximal exact cosets. `select_rp_mappings()` applies chirality constraints and
+then fixed-mapping RMSD ranking. `analyze_transition_state()` composes two
+partial AAM searches with mode scoring. None of these stages reads JSON,
+writes files, invokes the viewer, or silently recomputes an alternative atom
+mapping.
+
+The main result objects are:
+
+```text
+AAMResult
+`- AAMMechanism[]
+   `- AAMBranch[]
+      |- representative: AtomBijection
+      |- hierarchy: AAMHierarchy
+      |  `- FragmentMatch[]
+      |     |- representative_assignments
+      |     |- symmetry_domains
+      |     |- exact_fixed
+      |     |- automorph_domains
+      |     `- target_generators
+      |- cuts and encounter counts
+      `- path provenance
+
+AnalyticalAAMResult
+`- AnalyticalMechanism[]
+   `- AnalyticalBranch[]
+      |- original AAMBranch
+      `- exact AnalyticalMappingFamily
+
+RPResult
+`- RPMechanism[]
+   |- selected AtomBijection
+   |- broken/formed bonds and core atoms
+   |- chirality audit
+   `- exact fixed-mapping RMSD
+
+TSResult
+`- TSMechanismResult[]
+   |- reactant_core_aam: CoreAAMResult
+   |- product_core_aam: CoreAAMResult
+   |- exact scored core assignments
+   `- selected TSScore
+```
+
+The TS core search does not compress a multi-atom assignment to independent
+vertex orbits. A `CoreAAMBranch` retains the branch hierarchy and its exact
+correlated tuple orbit; `CoreAAMResult.assignments` is the deduplicated union
+of complete tuples. This is essential because membership of two target atoms
+in vertex orbits does not prove that their joint permutation is an
+automorphism.
+
 The primary implementation is in:
 
 - `src/rxn_core/matcher/`: compressed fragment candidate matching;
@@ -21,8 +123,13 @@ The primary implementation is in:
 - `src/rxn_core/alignment/post_aam.py`: typed post-AAM data model;
 - `src/rxn_core/alignment/index_chirality.py`: analytical families,
   chirality, and fixed-mapping RMSD selection;
-- `src/rxn_core/pipeline.py`: orchestration, parallelism, serialization, and
-  viewer generation.
+- `src/rxn_core/aam.py`: typed full AAM search;
+- `src/rxn_core/analytical.py`: exact coset compilation and containment;
+- `src/rxn_core/rp.py`: R/P composition;
+- `src/rxn_core/core_aam.py`: exact partial AAM for mechanism cores;
+- `src/rxn_core/ts.py`: typed TS composition and mode scoring;
+- `src/rxn_core/pipeline.py`: legacy artifact/CLI adapter, not a public
+  computational contract.
 
 ## 1. What the Investigation Changed
 
