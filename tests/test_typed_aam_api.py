@@ -66,6 +66,9 @@ def test_search_aam_returns_complete_typed_hierarchy():
     fragment = mechanism.branches[0].hierarchy.fragments[0]
     assert fragment.representative_assignments
     assert fragment.multiplicity >= 1
+    assert mechanism.branches[0].hierarchy.has_complete_exact_target_groups
+    assert result.metrics.completed_group_requests >= 1
+    assert result.metrics.completed_group_calculations >= 1
     assert result.metrics.retained_branch_count == sum(
         len(item.branches) for item in result.mechanisms)
 

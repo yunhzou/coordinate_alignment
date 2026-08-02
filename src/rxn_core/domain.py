@@ -139,6 +139,9 @@ class AAMSearchMetrics:
     subtree_branch_cap_count: int
     worker_returned_branch_count: int
     parent_merge_seconds: float
+    completed_group_requests: int = 0
+    completed_group_calculations: int = 0
+    completed_group_cache_hits: int = 0
 
     @classmethod
     def from_record(cls, record, elapsed_seconds):
@@ -155,6 +158,12 @@ class AAMSearchMetrics:
             worker_returned_branch_count=int(
                 record.get("worker_returned_branch_count", 0)),
             parent_merge_seconds=float(record.get("parent_merge_seconds", 0.0)),
+            completed_group_requests=int(record.get(
+                "completed_candidate_group_requests", 0)),
+            completed_group_calculations=int(record.get(
+                "completed_candidate_group_calculations", 0)),
+            completed_group_cache_hits=int(record.get(
+                "completed_candidate_group_cache_hits", 0)),
         )
 
 

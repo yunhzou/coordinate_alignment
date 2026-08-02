@@ -10,7 +10,6 @@ import numpy as np
 
 from .aam import _branch_from_record
 from .alignment.post_aam import AAMHierarchy
-from .alignment.sweep import attach_completed_candidate_groups
 from .alignment.index_chirality import (
     analytical_family_static_context,
     compile_analytical_mapping_family,
@@ -21,7 +20,6 @@ from .domain import (
     AnalyticalBranch,
     AnalyticalMechanism,
 )
-from .frag import build_graph
 
 
 def _domain_record(domain):
@@ -249,9 +247,6 @@ def compile_mapping_families(
         raise TypeError("compile_mapping_families requires an AAMResult")
     started = time.perf_counter()
     problem = aam.problem
-    graph_product = build_graph(
-        problem.product.elements, problem.product.wbo,
-        bond_cut=aam.config.graph_floor)
     static_context = analytical_family_static_context(
         problem.reactant.elements, problem.reactant.wbo,
         problem.product.elements, problem.product.wbo,
@@ -263,10 +258,7 @@ def compile_mapping_families(
         if minimum_events_only else aam.mechanisms)
     mechanisms = []
     for mechanism in sources:
-        raw = [_branch_record(branch) for branch in mechanism.branches]
-        completed = attach_completed_candidate_groups(
-            raw, graph_product,
-            wbo_tol=aam.config.iso_tolerance)
+        completed = [_branch_record(branch) for branch in mechanism.branches]
         maximal = _maximal_families(
             completed, aam, workers, static_context)
         branches = []

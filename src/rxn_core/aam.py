@@ -4,7 +4,10 @@ from __future__ import annotations
 import time
 
 from .alignment.post_aam import AAMBranch, AAMHierarchy, AtomBijection
-from .alignment.sweep import cut_sweep as _execute_cut_sweep
+from .alignment.sweep import (
+    attach_completed_candidate_groups,
+    cut_sweep as _execute_cut_sweep,
+)
 from .domain import (
     AAMMechanism,
     AAMProblem,
@@ -12,6 +15,33 @@ from .domain import (
     AAMSearchConfig,
     AAMSearchMetrics,
 )
+from .frag import build_graph
+
+
+def _attach_exact_fragment_groups(problem, config, pool, metrics):
+    """Finalize candidate-carried groups once, as part of AAM output."""
+    locations, raw_branches = [], []
+    for entry in pool.values():
+        branches = list(entry.get("branches") or ({
+            "mapping": entry["mapping"],
+            "hierarchy": entry.get("branch_symmetry") or {},
+            "encounter_count": entry.get("dedup_count", 1),
+        },))
+        locations.append((entry, len(branches)))
+        raw_branches.extend(branches)
+    graph_product = build_graph(
+        problem.product.elements, problem.product.wbo,
+        bond_cut=config.graph_floor)
+    completed, group_metrics = attach_completed_candidate_groups(
+        raw_branches, graph_product, wbo_tol=config.iso_tolerance,
+        return_metrics=True)
+    offset = 0
+    for entry, count in locations:
+        entry["branches"] = completed[offset:offset + count]
+        offset += count
+    metrics = dict(metrics or {})
+    metrics.update(group_metrics)
+    return pool, metrics
 
 
 def _branch_from_record(raw, fallback_hierarchy):
@@ -109,6 +139,8 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
         anchor_map=dict(config.anchors),
         return_metrics=True,
     )
+    pool, metrics = _attach_exact_fragment_groups(
+        problem, config, pool, metrics)
     return _result_from_pool(
         problem, config, pool, metrics,
         elapsed_seconds=time.perf_counter() - started)

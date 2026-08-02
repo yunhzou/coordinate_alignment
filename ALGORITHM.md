@@ -61,7 +61,11 @@ MolecularEndpoint(R, P)
                                   TSResult
 ```
 
-`search_aam()` performs graph search and mechanism classification only.
+`search_aam()` performs AAM graph search, mechanism classification, and no
+geometry-based selection.
+It also finalizes each retained fragment candidate's exact target generators
+after branch-family reduction; this is the terminal AAM operation, and its
+request/calculation/cache counts are part of `AAMSearchMetrics`.
 `compile_mapping_families()` turns the retained hierarchical relations into
 maximal exact cosets. `select_rp_mappings()` applies chirality constraints and
 then fixed-mapping RMSD ranking. `analyze_transition_state()` composes two
