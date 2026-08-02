@@ -140,6 +140,51 @@ def test_worker_local_cut_compression_is_exactly_serial_equivalent():
     assert compressed_parallel == serial
 
 
+def test_parallel_cut_sweep_consumes_results_in_cut_seed_order(monkeypatch):
+    import rxn_core.alignment.sweep as sweep_module
+
+    consumed_work = []
+
+    class OrderedPool:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def imap(self, _worker, work, chunksize=1):
+            assert chunksize == 1
+            consumed_work.extend(work)
+            return iter({'pool': {}} for _item in work)
+
+        def imap_unordered(self, *_args, **_kwargs):
+            raise AssertionError(
+                'completion-order merging changes retained representatives')
+
+    monkeypatch.setattr(sweep_module.mp, 'Pool', OrderedPool)
+    elements = ['C', 'O']
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    cfg = {
+        'cut_floor': 0.2,
+        'max_branches': 100,
+        'n_seeds': 3,
+        'chunksize': 1,
+    }
+
+    result = sweep_module._cut_sweep_parallel(
+        elements, wbo, elements, wbo, cfg, 2, (),
+        collect_metrics=False)
+
+    assert result == {}
+    assert [seed for _cut, seed, *_rest in consumed_work] == [
+        0, 1, 2, 0, 1, 2,
+    ]
+
+
 def test_live_branch_cap_discards_only_overflowing_parent_subtree(monkeypatch):
     g_r = build_graph(["C", "O"], np.zeros((2, 2)), bond_cut=0.2)
     g_p = build_graph(
