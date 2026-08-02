@@ -13,7 +13,7 @@ from typing import Any, Mapping
 
 import numpy as np
 
-from .alignment.post_aam import AAMBranch, AtomBijection
+from .alignment.post_aam import AAMBranch, AAMHierarchy, AtomBijection
 
 
 def _readonly_array(value, *, shape=None, ndim=None):
@@ -304,3 +304,155 @@ class RPResult:
         object.__setattr__(self, "mechanisms", tuple(self.mechanisms))
         object.__setattr__(self, "elapsed_seconds", float(self.elapsed_seconds))
 
+
+@dataclass(frozen=True)
+class VibrationalModes:
+    """Frequencies and Cartesian normal modes in one target atom order."""
+
+    frequencies: np.ndarray
+    displacements: np.ndarray
+
+    def __post_init__(self):
+        frequencies = _readonly_array(self.frequencies, ndim=1)
+        displacements = _readonly_array(self.displacements, ndim=3)
+        if displacements.shape[0] != frequencies.shape[0]:
+            raise ValueError("mode and frequency counts differ")
+        if displacements.shape[2] != 3:
+            raise ValueError("normal-mode displacements must be Cartesian")
+        object.__setattr__(self, "frequencies", frequencies)
+        object.__setattr__(self, "displacements", displacements)
+
+
+@dataclass(frozen=True)
+class TransitionStateTarget:
+    """A molecular target and its vibrational analysis."""
+
+    molecule: MolecularEndpoint
+    vibrations: VibrationalModes
+    kind: str = "candidate"
+
+    def __post_init__(self):
+        if self.vibrations.displacements.shape[1] != self.molecule.atom_count:
+            raise ValueError("normal modes and target atom counts differ")
+        object.__setattr__(self, "kind", str(self.kind))
+
+
+@dataclass(frozen=True)
+class AtomAssignment:
+    """An injective partial atom assignment with an explicit source domain."""
+
+    pairs: tuple[tuple[int, int], ...]
+
+    def __post_init__(self):
+        pairs = tuple(sorted((int(a), int(b)) for a, b in self.pairs))
+        if len({a for a, _ in pairs}) != len(pairs):
+            raise ValueError("partial assignment repeats a source atom")
+        if len({b for _, b in pairs}) != len(pairs):
+            raise ValueError("partial assignment repeats a target atom")
+        object.__setattr__(self, "pairs", pairs)
+
+    @classmethod
+    def from_mapping(cls, mapping):
+        return cls(tuple(dict(mapping).items()))
+
+    def as_dict(self):
+        return dict(self.pairs)
+
+    @property
+    def source_atoms(self):
+        return tuple(source for source, _target in self.pairs)
+
+
+@dataclass(frozen=True)
+class CoreAAMBranch:
+    """One partial-AAM growth branch and its exact correlated core orbit."""
+
+    representative: AtomAssignment
+    hierarchy: AAMHierarchy
+    exact_assignments: tuple[AtomAssignment, ...]
+    seed_index: int
+
+    def __post_init__(self):
+        exact = tuple(self.exact_assignments)
+        if not exact:
+            raise ValueError("a core branch must realize an exact assignment")
+        domain = self.representative.source_atoms
+        if any(item.source_atoms != domain for item in exact):
+            raise ValueError("core branch assignments disagree on their domain")
+        object.__setattr__(self, "exact_assignments", exact)
+        object.__setattr__(self, "seed_index", int(self.seed_index))
+
+
+@dataclass(frozen=True)
+class CoreAAMResult:
+    """Exact correlated core assignments from endpoint to target."""
+
+    source: MolecularEndpoint
+    target: MolecularEndpoint
+    core_atoms: tuple[int, ...]
+    branches: tuple[CoreAAMBranch, ...]
+    assignments: tuple[AtomAssignment, ...]
+    elapsed_seconds: float
+    capped_seed_count: int = 0
+
+    def __post_init__(self):
+        core = tuple(sorted(map(int, self.core_atoms)))
+        if any(atom < 0 or atom >= self.source.atom_count for atom in core):
+            raise ValueError("core atom lies outside the source molecule")
+        assignments = tuple(self.assignments)
+        if any(item.source_atoms != core for item in assignments):
+            raise ValueError("core assignment has the wrong source domain")
+        object.__setattr__(self, "core_atoms", core)
+        object.__setattr__(self, "branches", tuple(self.branches))
+        object.__setattr__(self, "assignments", assignments)
+        object.__setattr__(self, "elapsed_seconds", float(self.elapsed_seconds))
+        object.__setattr__(self, "capped_seed_count", int(self.capped_seed_count))
+
+
+@dataclass(frozen=True)
+class TSScore:
+    """Mode score for one exact mechanism-local core assignment."""
+
+    assignment: AtomAssignment
+    sources: frozenset[str]
+    score: float
+    overlap: float
+    wbo_progress: float
+    mode_index: int
+    frequency: float
+    event_terms: tuple[Mapping[str, Any], ...]
+
+
+@dataclass(frozen=True)
+class TSScoringConfig:
+    event_weight_power: float = 1.0
+    wbo_progress_power: float = 1.0
+    prefer_endpoint_consensus: bool = True
+    core_assignment_limit: int = 20_000
+
+    def __post_init__(self):
+        if self.event_weight_power < 0 or self.wbo_progress_power < 0:
+            raise ValueError("TS scoring powers cannot be negative")
+        if self.core_assignment_limit < 1:
+            raise ValueError("core assignment limit must be positive")
+
+
+@dataclass(frozen=True)
+class TSMechanismResult:
+    mechanism: RPMechanism
+    target: TransitionStateTarget
+    reactant_core_aam: CoreAAMResult
+    product_core_aam: CoreAAMResult
+    candidates: tuple[TSScore, ...]
+    selected: TSScore | None
+
+
+@dataclass(frozen=True)
+class TSResult:
+    rp: RPResult
+    mechanisms: tuple[TSMechanismResult, ...]
+    elapsed_seconds: float
+
+    def __post_init__(self):
+        object.__setattr__(self, "mechanisms", tuple(self.mechanisms))
+        object.__setattr__(self, "elapsed_seconds", float(self.elapsed_seconds))
