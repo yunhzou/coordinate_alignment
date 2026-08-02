@@ -16,9 +16,12 @@ from .domain import (
 
 def _branch_from_record(raw, fallback_hierarchy):
     mapping_family = dict(raw.get("mapping_family") or {})
-    representative = (
-        mapping_family.get("representative_mapping")
-        or raw.get("mapping"))
+    # The branch representative is the concrete AAM source mapping.  A
+    # canonical representative of a later compiled coset belongs to the
+    # analytical family object and must not overwrite branch provenance.
+    representative = raw.get("mapping")
+    if representative is None:
+        raise ValueError("AAM branch record lacks its representative mapping")
     raw_generators = raw.get("target_group_generators")
     if raw_generators is None:
         raw_generators = mapping_family.get("target_generators")
@@ -109,4 +112,3 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     return _result_from_pool(
         problem, config, pool, metrics,
         elapsed_seconds=time.perf_counter() - started)
-

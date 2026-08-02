@@ -3,6 +3,7 @@ import pytest
 
 from rxn_core.aam import search_aam
 from rxn_core.analytical import compile_mapping_families
+from rxn_core.rp import select_rp_mappings
 from rxn_core.domain import (
     AAMProblem,
     AAMSearchConfig,
@@ -71,3 +72,9 @@ def test_search_aam_returns_complete_typed_hierarchy():
     family = analytical.mechanisms[0].branches[0]
     assert family.family.contains(family.representative.as_dict())
     assert family.aam_branch.hierarchy.has_complete_exact_target_groups
+
+    rp = select_rp_mappings(analytical)
+    assert rp.mechanisms
+    assert rp.mechanisms[0].mapping.degree == problem.atom_count
+    assert rp.mechanisms[0].chirality[
+        "selected_index_chirality_violation_count"] == 0
