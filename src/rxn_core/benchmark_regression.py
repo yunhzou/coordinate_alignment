@@ -123,7 +123,7 @@ def evaluate_record(record, contract, performance_profile=None):
         if actual > int(maximum):
             advisories.append(f"{label} remains redundant: {actual}>{maximum}")
 
-    post_metrics = metrics.get("pipeline_post_aam_metrics") or {}
+    post_metrics = metrics.get("aam_metrics") or {}
     requests = post_metrics.get("completed_candidate_group_requests")
     calculations = post_metrics.get(
         "completed_candidate_group_calculations")

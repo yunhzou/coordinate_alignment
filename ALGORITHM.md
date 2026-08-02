@@ -14,9 +14,9 @@ The central principle is:
 
 ## Public computational architecture
 
-The public Python interface is typed and immutable. Dictionary records are
-not computational inputs or outputs; they exist only inside legacy artifact
-adapters. The dependency direction is deliberately one-way:
+The public Python interface is typed and immutable. Dictionary records occur
+only at the JSON artifact boundary. The dependency direction is deliberately
+one-way:
 
 ```text
 MolecularEndpoint(R, P)
@@ -132,8 +132,9 @@ The primary implementation is in:
 - `src/rxn_core/rp.py`: R/P composition;
 - `src/rxn_core/core_aam.py`: exact partial AAM for mechanism cores;
 - `src/rxn_core/ts.py`: typed TS composition and mode scoring;
-- `src/rxn_core/pipeline.py`: legacy artifact/CLI adapter, not a public
-  computational contract.
+- `src/rxn_core/cli.py`: typed command-line composition;
+- `src/rxn_core/artifacts.py`: JSON, aligned XYZ, and self-contained HTML
+  boundary adapters.
 
 ## 1. What the Investigation Changed
 
@@ -211,7 +212,7 @@ Two graph views are used:
 2. **Full WBO matrix.** This remains authoritative for weighted matching,
    event classification, and final scoring.
 
-The current pipeline intentionally uses one WBO tolerance for edge matching
+The algorithm intentionally uses one WBO tolerance for edge matching
 and pynauty WBO colors:
 
 ```text
@@ -219,7 +220,7 @@ symmetry_wbo_tolerance = iso_tol
 ```
 
 The default BGCP value is `1.0`. Using a different hidden tolerance for
-pynauty was one cause of missing degeneracy groups, so the pipeline now
+pynauty was one cause of missing degeneracy groups, so the configuration now
 normalizes both settings to the same value.
 
 Bond events use a separate threshold, normally `dwbo_threshold = 0.5`, with
@@ -880,7 +881,7 @@ The current code deliberately avoids the following shortcuts:
 - silently changing WBO tolerance between edge verification and pynauty.
 
 An analytical branch with no oriented isomorphism is rejected with diagnostics.
-If every minimum-event mechanism is rejected, the pipeline raises an
+If every minimum-event mechanism is rejected, R/P selection raises an
 `IndexChiralityConflict`; it does not silently return an unverified mapping.
 
 ## 17. Important Parameters

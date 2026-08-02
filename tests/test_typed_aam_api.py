@@ -36,7 +36,7 @@ def test_endpoint_owns_immutable_validated_arrays():
         endpoint.coordinates[0, 0] = 1.0
 
 
-def test_package_root_has_no_legacy_dictionary_pipeline_api():
+def test_package_root_exposes_only_typed_workflows():
     assert not hasattr(rxn_core, "run_rp_stage")
     assert not hasattr(rxn_core, "run_ts_stage")
     assert not hasattr(rxn_core, "cut_sweep")

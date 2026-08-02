@@ -67,9 +67,36 @@ For R/P only, `align_reaction(problem, workers=8)` is the convenience
 composition of the first three stages. The individual stages remain available
 when callers need to inspect, cache, audit, or transform AAM information.
 
-The package root deliberately does not export the former dictionary pipeline
-API. Serialization, cluster scheduling, CLI workflows, and self-contained
-HTML views are artifact adapters, not computational data models.
+Serialization, CLI workflows, and self-contained HTML views are typed
+artifact adapters, not computational data models.
+
+## CLI
+
+NPZ endpoint files contain `elements`, `coordinates`, and `wbo` arrays:
+
+```bash
+rxn-core \
+  --reactant-npz R.npz \
+  --product-npz P.npz \
+  --workers 48 \
+  --post-workers 8 \
+  --output alignment
+```
+
+Existing xTB cache directories containing one XYZ and a `wbo` file can be
+used directly:
+
+```bash
+rxn-core --reactant-cache cache/R --product-cache cache/P \
+  --workers 48 --output alignment
+```
+
+The output contains `rp.json`, one `R.xyz` and `P_aligned.xyz` pair per
+mechanism, and a self-contained `view.html`. Repeated `--target-npz` arguments
+add typed TS analyses; each target NPZ also contains `frequencies` and `modes`.
+
+The executed [tutorial notebook](docs/TUTORIAL.ipynb) demonstrates the staged
+Python API, CPU controls, AAM inspection, R/P alignment, and TS scoring.
 
 ## Result hierarchy
 

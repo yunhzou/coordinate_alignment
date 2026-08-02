@@ -22,11 +22,9 @@ def _attach_exact_fragment_groups(problem, config, pool, metrics):
     """Finalize candidate-carried groups once, as part of AAM output."""
     locations, raw_branches = [], []
     for entry in pool.values():
-        branches = list(entry.get("branches") or ({
-            "mapping": entry["mapping"],
-            "hierarchy": entry.get("branch_symmetry") or {},
-            "encounter_count": entry.get("dedup_count", 1),
-        },))
+        branches = list(entry.get("branches") or ())
+        if not branches:
+            raise ValueError("AAM mechanism lacks completed branch records")
         locations.append((entry, len(branches)))
         raw_branches.extend(branches)
     graph_product = build_graph(
@@ -44,7 +42,7 @@ def _attach_exact_fragment_groups(problem, config, pool, metrics):
     return pool, metrics
 
 
-def _branch_from_record(raw, fallback_hierarchy):
+def _branch_from_record(raw):
     mapping_family = dict(raw.get("mapping_family") or {})
     # The branch representative is the concrete AAM source mapping.  A
     # canonical representative of a later compiled coset belongs to the
@@ -52,6 +50,9 @@ def _branch_from_record(raw, fallback_hierarchy):
     representative = raw.get("mapping")
     if representative is None:
         raise ValueError("AAM branch record lacks its representative mapping")
+    hierarchy = raw.get("hierarchy")
+    if not hierarchy:
+        raise ValueError("AAM branch record lacks its fragment hierarchy")
     raw_generators = raw.get("target_group_generators")
     if raw_generators is None:
         raw_generators = mapping_family.get("target_generators")
@@ -62,8 +63,7 @@ def _branch_from_record(raw, fallback_hierarchy):
             len(representative), raw_generators)
     return AAMBranch(
         representative=AtomBijection.from_mapping(representative),
-        hierarchy=AAMHierarchy.from_record(
-            raw.get("hierarchy") or fallback_hierarchy),
+        hierarchy=AAMHierarchy.from_record(hierarchy),
         encounter_count=int(raw.get("encounter_count", 1)),
         cuts=tuple(tuple(map(int, cut)) for cut in raw.get("cuts") or ()),
         covered_path_count=int(raw.get("covered_path_count", 1)),
@@ -78,14 +78,10 @@ def _result_from_pool(problem, config, pool, metrics, elapsed_seconds):
     mechanisms = []
     for key, entry in pool.items():
         representative = AtomBijection.from_mapping(entry["mapping"])
-        fallback_hierarchy = entry.get("branch_symmetry") or {}
-        branches = tuple(
-            _branch_from_record(raw, fallback_hierarchy)
-            for raw in entry.get("branches") or ({
-                "mapping": entry["mapping"],
-                "hierarchy": fallback_hierarchy,
-                "encounter_count": entry.get("dedup_count", 1),
-            },))
+        raw_branches = tuple(entry.get("branches") or ())
+        if not raw_branches:
+            raise ValueError("AAM mechanism lacks completed branches")
+        branches = tuple(_branch_from_record(raw) for raw in raw_branches)
         mechanisms.append(AAMMechanism(
             key=tuple(key),
             representative=representative,

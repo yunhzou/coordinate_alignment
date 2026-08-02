@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rxn_core"
-version = "0.1.0"
+version = "0.2.0"
 description = "WBO-graph atom alignment + per-mode reactive scoring + ranked HTML viewer for transition-state initial guesses"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,14 +25,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "nbclient", "ipykernel"]
 smiles = ["rdkit>=2022.9"]
 sessions = ["pymongo>=4.6"]
 
 [project.scripts]
-rxn-core = "rxn_core.pipeline:main"
-rxn-core-pipeline = "rxn_core.pipeline:main"
-rxn-core-webapp = "rxn_core.webapp:main"
+rxn-core = "rxn_core.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/yunhzou/coordinate_alignment"

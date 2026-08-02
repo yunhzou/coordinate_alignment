@@ -263,8 +263,7 @@ def compile_mapping_families(
             completed, aam, workers, static_context)
         branches = []
         for record, family in maximal:
-            typed_branch = _branch_from_record(
-                record, record.get("hierarchy") or {})
+            typed_branch = _branch_from_record(record)
             branches.append(AnalyticalBranch(typed_branch, family))
         mechanisms.append(AnalyticalMechanism(
             source=mechanism, branches=tuple(branches)))

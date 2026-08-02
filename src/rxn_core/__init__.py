@@ -5,9 +5,8 @@ The public API has one direction of dependency::
     search_aam -> compile_mapping_families -> select_rp_mappings
                                          -> analyze_transition_state
 
-Serialization, command-line orchestration, and viewers are adapters outside
-these computational contracts.  Legacy dictionary pipeline entry points are
-intentionally not re-exported.
+Serialization, command-line orchestration, and viewers are typed boundary
+adapters outside these computational contracts.
 """
 from .aam import search_aam
 from .analytical import compile_mapping_families
@@ -36,13 +35,13 @@ from .domain import (
 )
 from .rp import align_reaction, select_rp_mappings
 from .ts import analyze_transition_state
+from .artifacts import rp_record, ts_record, write_rp_bundle, write_ts_record
 from .alignment.post_aam import (
     AAMBranch, AAMHierarchy, AtomBijection, AtomPermutation,
     FragmentMatch, PermutationGroup, SymmetryDomain,
 )
 
-# Stable graph/chemistry primitives remain public components; the removed API
-# is the competing orchestration and dictionary result model.
+# Stable graph and chemistry primitives are reusable public components.
 from .frag import (
     WeightedGraph,
     WeightedNode,
@@ -64,6 +63,7 @@ __all__ = [
     "FragmentMatch", "PermutationGroup", "SymmetryDomain",
     "search_aam", "compile_mapping_families", "search_core_assignments",
     "select_rp_mappings", "align_reaction", "analyze_transition_state",
+    "rp_record", "ts_record", "write_rp_bundle", "write_ts_record",
     "WeightedGraph", "WeightedNode", "build_graph", "build_weighted_graph",
     "classify_bonds", "bond_overlap_per_mode", "rxn_overlap_per_mode",
     "SubgraphMatch", "match_weighted_subgraph",

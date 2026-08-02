@@ -1417,21 +1417,21 @@ def analyze_group_chirality_branch(
     Both currently preserved and reversed frames are returned as constraints;
     the relational solver decides whether the branch family can satisfy them.
     """
-    legacy = select_group_chiral_witness(
+    analysis = select_group_chiral_witness(
         mapping, (), elements_R, coords_R, wbo_R,
         elements_P, coords_P, wbo_P,
         graph_floor=graph_floor,
         orientation_degeneracy_tol=orientation_degeneracy_tol)
-    metadata = dict(legacy.metadata)
+    metadata = dict(analysis.metadata)
     reversed_frames = list(metadata.pop('selected_reversed_frames', ()))
     metadata.pop('selected_witness_index', None)
     metadata.pop('candidate_witness_count', None)
     metadata['schema_version'] = "rxn_core.group_chirality_branch/v1"
     metadata['policy'] = "analytical_branch_constraint_construction"
-    frames = tuple(list(legacy.preserved_frames) + reversed_frames)
+    frames = tuple(list(analysis.preserved_frames) + reversed_frames)
     metadata['defined_constraint_frame_count'] = len(frames)
     return GroupChiralityBranchAnalysis(
-        mapping=dict(legacy.selected_mapping),
+        mapping=dict(analysis.selected_mapping),
         defined_frames=frames,
         metadata=metadata)
 

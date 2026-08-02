@@ -187,7 +187,7 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
     seen = {}
     for cand, certificate in zip(cands, certificates):
         # Exact active-graph automorphism is the primary hierarchy.  Preserve
-        # legacy deferred/full-WBO evidence only inside an automorphic class;
+        # deferred/full-WBO evidence only inside an automorphic class;
         # this catches sub-floor distinctions without comparing every pair of
         # unrelated candidates.
         boundary = ()

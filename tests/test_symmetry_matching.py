@@ -23,7 +23,6 @@ from rxn_core.alignment.sweep import (
     _orbit_bond_key,
     _pool_add,
     complete_chosen_automorphism_groups,
-    run_no_cut_core_branch_records,
 )
 import rxn_core.alignment.branch as branch_mod
 from rxn_core.matcher import (
@@ -248,22 +247,6 @@ def test_mapping_variation_blocks_capture_branch_dedupe_pool():
         "extendable": False,
         "open": False,
         "assignments": 2,
-    }]
-
-
-def test_core_branch_records_use_exact_target_orbits_not_growth_history():
-    wbo = np.zeros((2, 2))
-
-    records = run_no_cut_core_branch_records(
-        ["H", "H"], wbo, ["H", "H"], wbo, [0],
-        n_seeds=1, max_branches=100,
-    )
-
-    assert records
-    assert records[0]["blocks"] == [{
-        "r_atoms": [0],
-        "p_atoms": [0, 1],
-        "source": "pynauty_target_orbit",
     }]
 
 
