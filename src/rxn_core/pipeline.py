@@ -26,13 +26,17 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
-from rxn_core import (parse_xyz, classify_bonds, parse_g98_modes,
-                      core_atoms_in_R_frame,
-                      reindex_modes_to_R, bond_overlap_per_mode,
-                      build_graph, cut_sweep, cut_sweep_items,
-                      merge_cut_sweep_pools, run_cut_sweep_chunk,
-                      select_min_mechanisms, WeightedGraph,
-                      match_weighted_subgraph)
+from rxn_core.chemistry_computations import parse_xyz
+from rxn_core.frag import classify_bonds, build_graph, WeightedGraph
+from rxn_core.modes import (
+    parse_g98_modes, core_atoms_in_R_frame, reindex_modes_to_R,
+    bond_overlap_per_mode,
+)
+from rxn_core.alignment.sweep import (
+    cut_sweep, cut_sweep_items, merge_cut_sweep_pools,
+    run_cut_sweep_chunk, select_min_mechanisms,
+)
+from rxn_core.subgraph import match_weighted_subgraph
 from rxn_core.alignment.sweep import (
     attach_completed_candidate_groups,
     complete_chosen_automorphism_groups,

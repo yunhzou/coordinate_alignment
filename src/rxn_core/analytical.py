@@ -1,13 +1,20 @@
 """Compile completed AAM branches into exact analytical mapping families."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from types import SimpleNamespace
+import copy
+from collections import defaultdict
+import multiprocessing as mp
 import time
+
+import numpy as np
 
 from .aam import _branch_from_record
 from .alignment.post_aam import AAMHierarchy
 from .alignment.sweep import attach_completed_candidate_groups
+from .alignment.index_chirality import (
+    analytical_family_static_context,
+    compile_analytical_mapping_family,
+)
 from .domain import (
     AAMResult,
     AnalyticalAAMResult,
@@ -73,28 +80,151 @@ def _branch_record(branch):
     }
 
 
-def _pipeline_input_adapter(aam: AAMResult):
-    problem = aam.problem
-    return SimpleNamespace(
-        elR=list(problem.reactant.elements),
-        xyzR=problem.reactant.coordinates,
-        wboR=problem.reactant.wbo,
-        elP=list(problem.product.elements),
-        xyzP=problem.product.coordinates,
-        wboP=problem.product.wbo,
+def _payload_key(record):
+    mapping = tuple(sorted(
+        (int(source), int(target))
+        for source, target in record["mapping"].items()))
+    fragments = tuple(sorted(
+        tuple(sorted(map(int, fragment.get("fragment") or ())))
+        for fragment in (record.get("hierarchy") or {}).get("fragments") or ({
+            "fragment": [source for source, _target in mapping],
+        },)))
+    return mapping, fragments
+
+
+def _merge_fragment_generators(kept, incoming):
+    kept_fragments = {
+        tuple(sorted(map(int, item.get("fragment") or ()))): item
+        for item in (kept.get("hierarchy") or {}).get("fragments") or ()}
+    for item in (incoming.get("hierarchy") or {}).get("fragments") or ():
+        key = tuple(sorted(map(int, item.get("fragment") or ())))
+        target = kept_fragments.get(key)
+        if target is None:
+            continue
+        left = target.setdefault("symmetry", {})
+        right = item.get("symmetry") or {}
+        if ("automorph_generators" not in left
+                and "automorph_generators" not in right):
+            continue
+        generators = {
+            tuple(map(int, generator))
+            for generator in left.get("automorph_generators") or ()}
+        generators.update(tuple(map(int, generator)) for generator in
+                          right.get("automorph_generators") or ())
+        left["automorph_generators"] = [
+            list(generator) for generator in sorted(generators)]
+
+
+_COMPILER_CONTEXT = None
+
+
+def _init_compiler(context):
+    global _COMPILER_CONTEXT
+    _COMPILER_CONTEXT = context
+
+
+def _compile_payload(payload):
+    mapping, hierarchy = payload
+    context = _COMPILER_CONTEXT
+    return compile_analytical_mapping_family(
+        mapping, hierarchy,
+        context["elements_R"], context["wbo_R"],
+        context["elements_P"], context["wbo_P"],
+        graph_floor=context["graph_floor"],
+        symmetry_wbo_tol=context["symmetry_wbo_tol"],
+        dwbo_threshold=context["dwbo_threshold"],
+        metal_dwbo_threshold=context["metal_dwbo_threshold"],
+        anchor_map=context["anchor_map"],
+        static_context=context["static_context"],
     )
 
 
-def _pipeline_config(aam: AAMResult, workers):
-    config = aam.config
-    return {
+def _compile_unique(records, aam, workers, static_context):
+    problem, config = aam.problem, aam.config
+    context = {
+        "elements_R": problem.reactant.elements,
+        "wbo_R": problem.reactant.wbo,
+        "elements_P": problem.product.elements,
+        "wbo_P": problem.product.wbo,
         "graph_floor": config.graph_floor,
-        "iso_tol": config.iso_tolerance,
+        "symmetry_wbo_tol": config.iso_tolerance,
         "dwbo_threshold": config.event_threshold,
         "metal_dwbo_threshold": config.metal_event_threshold,
         "anchor_map": dict(config.anchors),
-        "post_aam_workers": max(1, int(workers)),
+        "static_context": static_context,
     }
+    payloads = [(record["mapping"], record["hierarchy"])
+                for record in records]
+    count = min(len(payloads), max(1, int(workers)),
+                48 if len(payloads) >= 128 else 8)
+    if count <= 1 or len(payloads) < 16 or mp.current_process().daemon:
+        _init_compiler(context)
+        return [_compile_payload(payload) for payload in payloads]
+    with mp.get_context("fork").Pool(
+            count, initializer=_init_compiler, initargs=(context,)) as pool:
+        return pool.map(_compile_payload, payloads)
+
+
+def _maximal_families(records, aam, workers, static_context):
+    """Compile once per exact relation and retain maximal exact cosets."""
+    groups = {}
+    for source_index, original in enumerate(records):
+        record = copy.deepcopy(original)
+        key = _payload_key(record)
+        provenance = {
+            "source_branch_index": source_index,
+            "cuts": copy.deepcopy(record.get("cuts") or ()),
+            "encounter_count": int(record.get("encounter_count", 1)),
+        }
+        group = groups.get(key)
+        if group is None:
+            groups[key] = {"record": record, "provenance": [provenance]}
+            continue
+        _merge_fragment_generators(group["record"], record)
+        group["provenance"].append(provenance)
+        group["record"]["encounter_count"] = (
+            int(group["record"].get("encounter_count", 1))
+            + int(record.get("encounter_count", 1)))
+    grouped = list(groups.values())
+    compiled = _compile_unique(
+        [group["record"] for group in grouped], aam, workers, static_context)
+    entries = []
+    for group, family in zip(grouped, compiled):
+        record = group["record"]
+        record["path_provenance"] = group["provenance"]
+        record["covered_path_count"] = len(group["provenance"])
+        entries.append([record, family])
+
+    def merge(kept, removed):
+        kept[0]["encounter_count"] = (
+            int(kept[0].get("encounter_count", 1))
+            + int(removed[0].get("encounter_count", 1)))
+        kept[0].setdefault("path_provenance", []).extend(
+            removed[0].get("path_provenance") or ())
+        kept[0]["covered_path_count"] = len(kept[0]["path_provenance"])
+
+    buckets = defaultdict(list)
+    unique = []
+    for entry in entries:
+        equivalent = next((candidate for candidate in
+                           buckets[entry[1].equivalence_bucket]
+                           if entry[1].equivalent(candidate[1])), None)
+        if equivalent is not None:
+            merge(equivalent, entry)
+        else:
+            buckets[entry[1].equivalence_bucket].append(entry)
+            unique.append(entry)
+    unique.sort(key=lambda entry: -(
+        np.log10(entry[1].group_order[0]) + entry[1].group_order[1]))
+    maximal = []
+    for entry in unique:
+        covering = next((candidate for candidate in maximal
+                         if entry[1].is_subset_of(candidate[1])), None)
+        if covering is not None:
+            merge(covering, entry)
+        else:
+            maximal.append(entry)
+    return maximal
 
 
 def compile_mapping_families(
@@ -106,21 +236,14 @@ def compile_mapping_families(
     """
     if not isinstance(aam, AAMResult):
         raise TypeError("compile_mapping_families requires an AAMResult")
-    # Imported here while the old orchestration module is being dismantled;
-    # these exact compilers will move intact into this module in the next
-    # refactor checkpoint.
-    from .pipeline import (
-        _dedupe_analytical_mapping_families,
-        analytical_family_static_context,
-    )
-
     started = time.perf_counter()
-    inputs = _pipeline_input_adapter(aam)
-    config = _pipeline_config(aam, workers)
+    problem = aam.problem
     graph_product = build_graph(
-        inputs.elP, inputs.wboP, bond_cut=aam.config.graph_floor)
+        problem.product.elements, problem.product.wbo,
+        bond_cut=aam.config.graph_floor)
     static_context = analytical_family_static_context(
-        inputs.elR, inputs.wboR, inputs.elP, inputs.wboP,
+        problem.reactant.elements, problem.reactant.wbo,
+        problem.product.elements, problem.product.wbo,
         graph_floor=aam.config.graph_floor,
         dwbo_threshold=aam.config.event_threshold,
         metal_dwbo_threshold=aam.config.metal_event_threshold)
@@ -133,14 +256,10 @@ def compile_mapping_families(
         completed = attach_completed_candidate_groups(
             raw, graph_product,
             wbo_tol=aam.config.iso_tolerance)
-        maximal = _dedupe_analytical_mapping_families(
-            inputs, completed, config, static_context=static_context)
+        maximal = _maximal_families(
+            completed, aam, workers, static_context)
         branches = []
-        for record in maximal:
-            family = record.get("_mapping_family_object")
-            if family is None:
-                raise RuntimeError(
-                    "analytical compiler omitted its exact family object")
+        for record, family in maximal:
             typed_branch = _branch_from_record(
                 record, record.get("hierarchy") or {})
             branches.append(AnalyticalBranch(typed_branch, family))
@@ -150,4 +269,3 @@ def compile_mapping_families(
         aam=aam,
         mechanisms=tuple(mechanisms),
         elapsed_seconds=time.perf_counter() - started)
-

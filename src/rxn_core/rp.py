@@ -4,6 +4,7 @@ from __future__ import annotations
 import time
 
 from .alignment.index_chirality import (
+    IndexChiralityConflict,
     analyze_group_chirality_branch,
     analytical_family_static_context,
     fixed_mapping_aligned_rmsd,
@@ -71,10 +72,7 @@ def _select_branch_mapping(result, mechanism):
                           for index in range(problem.atom_count)),
                     int(branch_index), int(coset_index),
                     dict(selected), dict(selection.metadata)))
-            except Exception as exc:
-                from .alignment.index_chirality import IndexChiralityConflict
-                if not isinstance(exc, IndexChiralityConflict):
-                    raise
+            except IndexChiralityConflict as exc:
                 failures.append({
                     "branch_index": int(branch_index),
                     "event_coset_index": int(coset_index),
@@ -82,7 +80,6 @@ def _select_branch_mapping(result, mechanism):
                     "diagnostics": getattr(exc, "diagnostics", None),
                 })
     if not successes:
-        from .alignment.index_chirality import IndexChiralityConflict
         raise IndexChiralityConflict(
             "no exact AAM event coset satisfies index chirality",
             diagnostics={"failures": failures})
@@ -156,4 +153,3 @@ def align_reaction(problem, *, search_config=None, workers=1,
     families = compile_mapping_families(
         aam, workers=post_workers or workers, minimum_events_only=True)
     return select_rp_mappings(families)
-
