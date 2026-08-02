@@ -136,3 +136,22 @@ def test_nonempty_ts_processing_uses_exact_endpoint_consensus():
         mechanism.mechanism.core_atoms)
     assert mechanism.reactant_core_aam.branches
     assert mechanism.product_core_aam.branches
+
+
+def test_no_event_mechanism_has_explicit_unscorable_ts_status():
+    problem = AAMProblem(_endpoint("R"), _endpoint("P"), name="no_event")
+    config = AAMSearchConfig(
+        seed_count=1, branch_limit=100, symmetry_repair=False)
+    rp = select_rp_mappings(compile_mapping_families(
+        search_aam(problem, config), minimum_events_only=True))
+    modes = np.zeros((1, 2, 3))
+    target = TransitionStateTarget(
+        _endpoint("TS"), VibrationalModes(np.array([-100.0]), modes))
+
+    result = analyze_transition_state(rp, target, search_config=config)
+
+    mechanism = result.mechanisms[0]
+    assert mechanism.status == "no_reaction_core"
+    assert mechanism.selected is None
+    assert mechanism.reactant_core_aam is None
+    assert mechanism.product_core_aam is None

@@ -453,10 +453,12 @@ class TSScoringConfig:
 class TSMechanismResult:
     mechanism: RPMechanism
     target: TransitionStateTarget
-    reactant_core_aam: CoreAAMResult
-    product_core_aam: CoreAAMResult
+    reactant_core_aam: CoreAAMResult | None
+    product_core_aam: CoreAAMResult | None
     candidates: tuple[TSScore, ...]
     selected: TSScore | None
+    status: str = "scored"
+    reason: str | None = None
 
 
 @dataclass(frozen=True)

@@ -52,8 +52,14 @@ def ts_record(result: TSResult):
         "elapsed_seconds": result.elapsed_seconds,
         "mechanisms": [{
             "id": index,
-            "reactant_core_assignments": len(item.reactant_core_aam.assignments),
-            "product_core_assignments": len(item.product_core_aam.assignments),
+            "status": item.status,
+            "reason": item.reason,
+            "reactant_core_assignments": (
+                0 if item.reactant_core_aam is None
+                else len(item.reactant_core_aam.assignments)),
+            "product_core_assignments": (
+                0 if item.product_core_aam is None
+                else len(item.product_core_aam.assignments)),
             "candidate_count": len(item.candidates),
             "selected": None if item.selected is None else {
                 "assignment": {str(a): int(b)

@@ -121,6 +121,20 @@ def analyze_transition_state(
     problem = rp.analytical.aam.problem
     for mechanism in rp.mechanisms:
         core_r = mechanism.core_atoms
+        if not core_r:
+            results.append(TSMechanismResult(
+                mechanism=mechanism,
+                target=target,
+                reactant_core_aam=None,
+                product_core_aam=None,
+                candidates=(),
+                selected=None,
+                status="no_reaction_core",
+                reason=(
+                    "the selected R/P mechanism has no broken or formed "
+                    "bonds, so reactive-mode scoring is undefined"),
+            ))
+            continue
         core_p = tuple(mechanism.mapping.images[atom] for atom in core_r)
         from_r = search_core_assignments(
             problem.reactant, target.molecule, core_r,
@@ -166,6 +180,7 @@ def analyze_transition_state(
             product_core_aam=from_p,
             candidates=scores,
             selected=selected,
+            status="scored",
         ))
     return TSResult(
         rp=rp,
