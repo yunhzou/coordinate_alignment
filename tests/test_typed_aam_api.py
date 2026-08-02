@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import rxn_core
 
 from rxn_core.aam import search_aam
 from rxn_core.analytical import compile_mapping_families
@@ -33,6 +34,12 @@ def test_endpoint_owns_immutable_validated_arrays():
     assert endpoint.coordinates[0, 0] == 0.0
     with pytest.raises(ValueError):
         endpoint.coordinates[0, 0] = 1.0
+
+
+def test_package_root_has_no_legacy_dictionary_pipeline_api():
+    assert not hasattr(rxn_core, "run_rp_stage")
+    assert not hasattr(rxn_core, "run_ts_stage")
+    assert not hasattr(rxn_core, "cut_sweep")
 
 
 def test_aam_problem_rejects_composition_mismatch():
