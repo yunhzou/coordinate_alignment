@@ -189,6 +189,7 @@ class SymmetryDomain:
     r_atoms: tuple[int, ...]
     p_atoms: tuple[int, ...]
     source: str
+    extendable: bool = False
 
     def __post_init__(self):
         object.__setattr__(self, "r_atoms", tuple(sorted(map(int, self.r_atoms))))
@@ -202,7 +203,28 @@ class FragmentMatch:
     r_atoms: tuple[int, ...]
     deferred_edges: tuple[tuple[int, int], ...] = ()
     symmetry_domains: tuple[SymmetryDomain, ...] = ()
+    representative_assignments: tuple[tuple[int, int], ...] = ()
+    exact_fixed: tuple[int, ...] = ()
+    multiplicity: int = 1
+    automorph_domains: tuple[SymmetryDomain, ...] = ()
     target_generators: tuple[AtomPermutation, ...] | None = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "r_atoms", tuple(sorted(map(int, self.r_atoms))))
+        object.__setattr__(self, "deferred_edges", tuple(sorted(
+            tuple(sorted(map(int, edge))) for edge in self.deferred_edges)))
+        object.__setattr__(self, "symmetry_domains", tuple(self.symmetry_domains))
+        object.__setattr__(self, "representative_assignments", tuple(sorted(
+            (int(source), int(target))
+            for source, target in self.representative_assignments)))
+        object.__setattr__(self, "exact_fixed", tuple(sorted(
+            map(int, self.exact_fixed))))
+        object.__setattr__(self, "multiplicity", int(self.multiplicity))
+        object.__setattr__(self, "automorph_domains", tuple(
+            self.automorph_domains))
+        if self.target_generators is not None:
+            object.__setattr__(self, "target_generators", tuple(
+                self.target_generators))
 
     @property
     def has_exact_target_group(self):
@@ -226,7 +248,14 @@ class AAMHierarchy:
                 domains.append(SymmetryDomain(
                     tuple(block.get("r_atoms") or ()),
                     tuple(block.get("p_atoms") or ()),
-                    str(block.get("source") or "sym_block")))
+                    str(block.get("source") or "sym_block"),
+                    bool(block.get("extendable", False))))
+            automorph_domains = tuple(SymmetryDomain(
+                tuple(block.get("r_atoms") or ()),
+                tuple(block.get("p_atoms") or ()),
+                str(block.get("source") or "exact_automorph_group"),
+                bool(block.get("extendable", False)))
+                for block in symmetry.get("automorph_blocks") or ())
             fragments.append(FragmentMatch(
                 fragment_index=int(raw.get("fragment_index", position)),
                 island_index=int(raw.get("island_idx", position)),
@@ -235,6 +264,14 @@ class AAMHierarchy:
                     tuple(sorted(map(int, edge)))
                     for edge in raw.get("deferred_edges") or ()),
                 symmetry_domains=tuple(domains),
+                representative_assignments=tuple(
+                    (int(source), int(target))
+                    for source, target in dict(
+                        symmetry.get("witness") or {}).items()),
+                exact_fixed=tuple(map(
+                    int, symmetry.get("exact_fixed") or ())),
+                multiplicity=int(symmetry.get("multiplicity", 1)),
+                automorph_domains=automorph_domains,
                 target_generators=(
                     None if raw_generators is None else tuple(
                         AtomPermutation(tuple(map(int, generator)))

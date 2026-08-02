@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from rxn_core.aam import search_aam
+from rxn_core.analytical import compile_mapping_families
 from rxn_core.domain import (
     AAMProblem,
     AAMSearchConfig,
@@ -58,5 +59,15 @@ def test_search_aam_returns_complete_typed_hierarchy():
     assert mechanism.branches
     assert mechanism.encounter_count >= 1
     assert all(branch.hierarchy.fragments for branch in mechanism.branches)
+    fragment = mechanism.branches[0].hierarchy.fragments[0]
+    assert fragment.representative_assignments
+    assert fragment.multiplicity >= 1
     assert result.metrics.retained_branch_count == sum(
         len(item.branches) for item in result.mechanisms)
+
+    analytical = compile_mapping_families(
+        result, workers=1, minimum_events_only=True)
+    assert analytical.mechanisms
+    family = analytical.mechanisms[0].branches[0]
+    assert family.family.contains(family.representative.as_dict())
+    assert family.aam_branch.hierarchy.has_complete_exact_target_groups

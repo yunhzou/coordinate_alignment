@@ -212,3 +212,53 @@ class AAMResult:
             mechanism for mechanism in self.mechanisms
             if mechanism.event_count == minimum)
 
+
+@dataclass(frozen=True)
+class AnalyticalBranch:
+    """One maximal exact mapping coset compiled from completed AAM paths."""
+
+    aam_branch: AAMBranch
+    family: Any
+
+    def __post_init__(self):
+        if self.family is None:
+            raise ValueError("an analytical branch requires an exact family")
+        if int(self.family.degree) != self.aam_branch.representative.degree:
+            raise ValueError("analytical family degree differs from AAM branch")
+
+    @property
+    def representative(self):
+        return AtomBijection.from_mapping(self.family.representative_mapping)
+
+
+@dataclass(frozen=True)
+class AnalyticalMechanism:
+    source: AAMMechanism
+    branches: tuple[AnalyticalBranch, ...]
+
+    def __post_init__(self):
+        branches = tuple(self.branches)
+        if not branches:
+            raise ValueError("an analytical mechanism must contain families")
+        object.__setattr__(self, "branches", branches)
+
+    @property
+    def key(self):
+        return self.source.key
+
+
+@dataclass(frozen=True)
+class AnalyticalAAMResult:
+    """AAM mechanisms after exact maximal-coset compilation."""
+
+    aam: AAMResult
+    mechanisms: tuple[AnalyticalMechanism, ...]
+    elapsed_seconds: float
+
+    def __post_init__(self):
+        mechanisms = tuple(self.mechanisms)
+        if len({mechanism.key for mechanism in mechanisms}) != len(mechanisms):
+            raise ValueError("analytical mechanism keys must be unique")
+        object.__setattr__(self, "mechanisms", mechanisms)
+        object.__setattr__(self, "elapsed_seconds", float(self.elapsed_seconds))
+
