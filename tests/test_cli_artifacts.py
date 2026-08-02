@@ -57,6 +57,20 @@ def test_typed_cli_writes_rp_ts_and_self_contained_view(tmp_path):
         "product", "reactant"]
     assert (output / "mechanism_001" / "R.xyz").exists()
     assert (output / "mechanism_001" / "P_aligned.xyz").exists()
+    assert (output / "reaction.json").exists()
     view = (output / "view.html").read_text()
     assert "$3Dmol.createViewer" in view
     assert "<script src=" not in view
+
+    ts_only = tmp_path / "ts_only"
+    main([
+        "--stage", "ts",
+        "--reactant-npz", str(reactant),
+        "--product-npz", str(product),
+        "--reaction-json", str(output / "reaction.json"),
+        "--target-npz", str(target),
+        "--output", str(ts_only),
+        "--seed-count", "1",
+    ])
+    assert (ts_only / "ts_001.json").exists()
+    assert not (ts_only / "rp.json").exists()

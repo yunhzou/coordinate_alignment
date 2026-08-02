@@ -26,6 +26,8 @@ from .domain import (
     MolecularEndpoint,
     RPMechanism,
     RPResult,
+    ReactionContext,
+    ResolvedMechanism,
     TSMechanismResult,
     TSResult,
     TSScore,
@@ -34,8 +36,11 @@ from .domain import (
     VibrationalModes,
 )
 from .rp import align_reaction, select_rp_mappings
-from .ts import analyze_transition_state
-from .artifacts import rp_record, ts_record, write_rp_bundle, write_ts_record
+from .ts import analyze_transition_state, reaction_context_from_rp
+from .artifacts import (
+    reaction_from_record, reaction_record, rp_record, ts_record,
+    write_rp_bundle, write_ts_record,
+)
 from .alignment.post_aam import (
     AAMBranch, AAMHierarchy, AtomBijection, AtomPermutation,
     FragmentMatch, PermutationGroup, SymmetryDomain,
@@ -57,13 +62,16 @@ __all__ = [
     "AAMSearchMetrics", "AnalyticalAAMResult", "AnalyticalBranch",
     "AnalyticalMechanism", "AtomAssignment", "CoreAAMBranch",
     "CoreAAMResult", "MolecularEndpoint", "RPMechanism", "RPResult",
+    "ReactionContext", "ResolvedMechanism",
     "TSMechanismResult", "TSResult", "TSScore", "TSScoringConfig",
     "TransitionStateTarget", "VibrationalModes",
     "AAMBranch", "AAMHierarchy", "AtomBijection", "AtomPermutation",
     "FragmentMatch", "PermutationGroup", "SymmetryDomain",
     "search_aam", "compile_mapping_families", "search_core_assignments",
     "select_rp_mappings", "align_reaction", "analyze_transition_state",
+    "reaction_context_from_rp",
     "rp_record", "ts_record", "write_rp_bundle", "write_ts_record",
+    "reaction_record", "reaction_from_record",
     "WeightedGraph", "WeightedNode", "build_graph", "build_weighted_graph",
     "classify_bonds", "bond_overlap_per_mode", "rxn_overlap_per_mode",
     "SubgraphMatch", "match_weighted_subgraph",

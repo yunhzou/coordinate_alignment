@@ -8,7 +8,11 @@ from pathlib import Path
 import numpy as np
 
 from .chemistry_computations import write_xyz_str
-from .domain import RPResult, TSResult
+from .alignment.post_aam import AtomBijection
+from .domain import (
+    AAMProblem, AAMSearchConfig, RPResult, ReactionContext,
+    ResolvedMechanism, TSResult,
+)
 
 
 def _mapping_record(mapping):
@@ -77,6 +81,46 @@ def ts_record(result: TSResult):
     }
 
 
+def reaction_record(reaction: ReactionContext):
+    """Serialize the exact R/P information required by the TS stage."""
+    return {
+        "schema": "rxn_core.resolved_reaction/v1",
+        "name": reaction.problem.name,
+        "atom_count": reaction.problem.atom_count,
+        "mechanisms": [{
+            "mapping": _mapping_record(item.mapping),
+            "broken_bonds": [list(bond) for bond in item.broken_bonds],
+            "formed_bonds": [list(bond) for bond in item.formed_bonds],
+            "core_atoms": list(item.core_atoms),
+        } for item in reaction.mechanisms],
+    }
+
+
+def reaction_from_record(record, problem: AAMProblem,
+                         config: AAMSearchConfig | None = None):
+    """Materialize a TS-stage context without executing R/P search."""
+    if record.get("schema") != "rxn_core.resolved_reaction/v1":
+        raise ValueError("unsupported resolved reaction schema")
+    if int(record.get("atom_count", -1)) != problem.atom_count:
+        raise ValueError("resolved reaction atom count differs from endpoints")
+    mechanisms = []
+    for raw in record.get("mechanisms") or ():
+        mechanisms.append(ResolvedMechanism(
+            mapping=AtomBijection.from_mapping(
+                {int(a): int(b) for a, b in raw["mapping"].items()},
+                degree=problem.atom_count),
+            broken_bonds=tuple(tuple(bond)
+                               for bond in raw.get("broken_bonds") or ()),
+            formed_bonds=tuple(tuple(bond)
+                               for bond in raw.get("formed_bonds") or ()),
+            core_atoms=tuple(raw.get("core_atoms") or ()),
+        ))
+    if not mechanisms:
+        raise ValueError("resolved reaction contains no mechanisms")
+    return ReactionContext(
+        problem, config or AAMSearchConfig(), tuple(mechanisms))
+
+
 def _json_dump(path, value):
     Path(path).write_text(json.dumps(value, indent=2, default=float))
 
@@ -125,6 +169,10 @@ def write_rp_bundle(result: RPResult, output_directory):
     output.mkdir(parents=True, exist_ok=True)
     problem = result.analytical.aam.problem
     _json_dump(output / "rp.json", rp_record(result))
+    from .ts import reaction_context_from_rp
+    _json_dump(
+        output / "reaction.json",
+        reaction_record(reaction_context_from_rp(result)))
     (output / "R.xyz").write_text(write_xyz_str(
         problem.reactant.elements, problem.reactant.coordinates, "Reactant"))
     for index, mechanism in enumerate(result.mechanisms, 1):

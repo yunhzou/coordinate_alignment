@@ -76,6 +76,7 @@ NPZ endpoint files contain `elements`, `coordinates`, and `wbo` arrays:
 
 ```bash
 rxn-core \
+  --stage rp \
   --reactant-npz R.npz \
   --product-npz P.npz \
   --workers 48 \
@@ -92,8 +93,19 @@ rxn-core --reactant-cache cache/R --product-cache cache/P \
 ```
 
 The output contains `rp.json`, one `R.xyz` and `P_aligned.xyz` pair per
-mechanism, and a self-contained `view.html`. Repeated `--target-npz` arguments
-add typed TS analyses; each target NPZ also contains `frequencies` and `modes`.
+mechanism, a reusable `reaction.json`, and a self-contained `view.html`.
+The TS verifier/scorer can then be entered independently without R/P search:
+
+```bash
+rxn-core --stage ts \
+  --reactant-npz R.npz --product-npz P.npz \
+  --reaction-json alignment/reaction.json \
+  --target-npz guess_1.npz --target-npz guess_2.npz \
+  --output ts_scores
+```
+
+Use `--stage full` to compose both stages in one process. Target NPZ files
+contain `elements`, `coordinates`, `wbo`, `frequencies`, and `modes`.
 
 The executed [tutorial notebook](docs/TUTORIAL.ipynb) demonstrates the staged
 Python API, CPU controls, AAM inspection, R/P alignment, and TS scoring.

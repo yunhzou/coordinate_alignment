@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import numpy as np
 
-from .artifacts import write_rp_bundle, write_ts_record
+from .artifacts import reaction_from_record, write_rp_bundle, write_ts_record
 from .chemistry_computations import load_cached_xtb
 from .domain import (
     AAMProblem, AAMSearchConfig, MolecularEndpoint, TransitionStateTarget,
@@ -58,6 +59,10 @@ def _parser():
     parser.add_argument("--reactant-cache")
     parser.add_argument("--product-cache")
     parser.add_argument("--target-npz", action="append", default=[])
+    parser.add_argument("--stage", choices=("rp", "ts", "full"),
+                        default="full")
+    parser.add_argument("--reaction-json",
+                        help="resolved reaction.json produced by the RP stage")
     parser.add_argument("--name", default="reaction")
     parser.add_argument("--output", default="rxn_core_output")
     parser.add_argument("--workers", type=int, default=1,
@@ -80,12 +85,27 @@ def main(argv=None):
     reactant = _endpoint(args, "reactant", "R")
     product = _endpoint(args, "product", "P")
     config = _config(args)
-    rp = align_reaction(
-        AAMProblem(reactant, product, name=args.name),
-        search_config=config,
-        workers=max(1, args.workers),
-        post_workers=args.post_workers)
-    output = write_rp_bundle(rp, args.output)
+    problem = AAMProblem(reactant, product, name=args.name)
+    output = Path(args.output)
+    if args.stage == "ts":
+        if not args.reaction_json:
+            raise SystemExit("--stage ts requires --reaction-json")
+        reaction = reaction_from_record(
+            json.loads(Path(args.reaction_json).read_text()),
+            problem, config)
+        output.mkdir(parents=True, exist_ok=True)
+    else:
+        rp = align_reaction(
+            problem,
+            search_config=config,
+            workers=max(1, args.workers),
+            post_workers=args.post_workers)
+        output = write_rp_bundle(rp, output)
+        from .ts import reaction_context_from_rp
+        reaction = reaction_context_from_rp(rp)
+    if args.stage == "rp":
+        print(output.resolve())
+        return
     for index, path in enumerate(args.target_npz, 1):
         with np.load(path, allow_pickle=False) as data:
             target = TransitionStateTarget(
@@ -94,7 +114,7 @@ def main(argv=None):
                     data["coordinates"], data["wbo"],
                     label=Path(path).stem),
                 VibrationalModes(data["frequencies"], data["modes"]))
-        ts = analyze_transition_state(rp, target, search_config=config)
+        ts = analyze_transition_state(reaction, target, search_config=config)
         write_ts_record(ts, output / f"ts_{index:03d}.json")
     print(output.resolve())
 

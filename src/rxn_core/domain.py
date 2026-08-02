@@ -315,6 +315,51 @@ class RPResult:
 
 
 @dataclass(frozen=True)
+class ResolvedMechanism:
+    """Geometry-selected R/P mechanism independent of AAM provenance.
+
+    This is the exact interface required by downstream TS processing.  It can
+    be constructed from an ``RPResult`` or a persisted, already validated R/P
+    selection without repeating the R/P search.
+    """
+
+    mapping: AtomBijection
+    broken_bonds: tuple[tuple[int, int], ...]
+    formed_bonds: tuple[tuple[int, int], ...]
+    core_atoms: tuple[int, ...]
+
+    def __post_init__(self):
+        object.__setattr__(self, "broken_bonds", tuple(sorted(
+            tuple(sorted(map(int, bond))) for bond in self.broken_bonds)))
+        object.__setattr__(self, "formed_bonds", tuple(sorted(
+            tuple(sorted(map(int, bond))) for bond in self.formed_bonds)))
+        expected_core = tuple(sorted({
+            atom for bond in (*self.broken_bonds, *self.formed_bonds)
+            for atom in bond
+        }))
+        core = tuple(sorted(map(int, self.core_atoms)))
+        if core != expected_core:
+            raise ValueError("resolved mechanism core differs from its events")
+        object.__setattr__(self, "core_atoms", core)
+
+
+@dataclass(frozen=True)
+class ReactionContext:
+    """Materialized endpoint pair and selected mechanisms consumed by TS."""
+
+    problem: AAMProblem
+    config: AAMSearchConfig
+    mechanisms: tuple[ResolvedMechanism, ...]
+
+    def __post_init__(self):
+        mechanisms = tuple(self.mechanisms)
+        if any(item.mapping.degree != self.problem.atom_count
+               for item in mechanisms):
+            raise ValueError("resolved mechanism has the wrong mapping degree")
+        object.__setattr__(self, "mechanisms", mechanisms)
+
+
+@dataclass(frozen=True)
 class VibrationalModes:
     """Frequencies and Cartesian normal modes in one target atom order."""
 
@@ -451,7 +496,7 @@ class TSScoringConfig:
 
 @dataclass(frozen=True)
 class TSMechanismResult:
-    mechanism: RPMechanism
+    mechanism: ResolvedMechanism
     target: TransitionStateTarget
     reactant_core_aam: CoreAAMResult | None
     product_core_aam: CoreAAMResult | None
@@ -463,7 +508,7 @@ class TSMechanismResult:
 
 @dataclass(frozen=True)
 class TSResult:
-    rp: RPResult
+    reaction: ReactionContext
     mechanisms: tuple[TSMechanismResult, ...]
     elapsed_seconds: float
 

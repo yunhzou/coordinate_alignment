@@ -12,11 +12,15 @@ from pathlib import Path
 from rxn_core import (
     AAMProblem,
     AAMSearchConfig,
+    AtomBijection,
     MolecularEndpoint,
+    ReactionContext,
+    ResolvedMechanism,
     TransitionStateTarget,
     VibrationalModes,
     align_reaction,
     analyze_transition_state,
+    reaction_context_from_rp,
     rp_record,
     ts_record,
     write_rp_bundle,
@@ -53,8 +57,31 @@ def _iteration(path):
     return int(match.group(1)) if match else -1
 
 
+def _load_resolved_reaction(path, problem, config):
+    """Load the validated R/P selections needed by TS; perform no R/P AAM."""
+    document = json.loads(Path(path).read_text())
+    if document.get("stage") != "rp":
+        raise ValueError(f"unsupported resolved R/P artifact: {path}")
+    mechanisms = []
+    for raw in document.get("mechanisms") or ():
+        mapping = {int(source): int(target)
+                   for source, target in raw["mapping_RP"].items()}
+        mechanisms.append(ResolvedMechanism(
+            mapping=AtomBijection.from_mapping(
+                mapping, degree=problem.atom_count),
+            broken_bonds=tuple(tuple(bond)
+                               for bond in raw.get("broken_bonds_R") or ()),
+            formed_bonds=tuple(tuple(bond)
+                               for bond in raw.get("formed_bonds_R") or ()),
+            core_atoms=tuple(raw.get("core_atoms") or ()),
+        ))
+    if not mechanisms:
+        raise ValueError(f"resolved R/P artifact contains no mechanisms: {path}")
+    return ReactionContext(problem, config, tuple(mechanisms))
+
+
 def run_case(case, *, work_root, benchmark_root, output_root, workers,
-             post_workers=None):
+             post_workers=None, resolved_rp_root=None):
     case_id = str(case["step_id"])
     started = time.perf_counter()
     case_work = Path(work_root) / case_id
@@ -64,15 +91,37 @@ def run_case(case, *, work_root, benchmark_root, output_root, workers,
 
     reactant = _endpoint(case_work / "endpoints" / "R", "R")
     product = _endpoint(case_work / "endpoints" / "P", "P")
-    rp_started = time.perf_counter()
-    rp = align_reaction(
-        AAMProblem(reactant, product, name=case_id),
-        search_config=config,
-        workers=max(1, int(workers)),
-        post_workers=max(1, int(post_workers or workers)),
-    )
-    rp_seconds = time.perf_counter() - rp_started
-    write_rp_bundle(rp, case_output / "rp")
+    problem = AAMProblem(reactant, product, name=case_id)
+    if resolved_rp_root is None:
+        rp_started = time.perf_counter()
+        rp = align_reaction(
+            problem,
+            search_config=config,
+            workers=max(1, int(workers)),
+            post_workers=max(1, int(post_workers or workers)),
+        )
+        rp_seconds = time.perf_counter() - rp_started
+        write_rp_bundle(rp, case_output / "rp")
+        reaction = reaction_context_from_rp(rp)
+        rp_document = rp_record(rp)
+        rp_source = "computed"
+    else:
+        artifact = (Path(resolved_rp_root) / "cases" / case_id
+                    / "rp_stage.json")
+        reaction = _load_resolved_reaction(artifact, problem, config)
+        rp_seconds = 0.0
+        rp_document = {
+            "schema": "rxn_core.resolved_reaction/v1",
+            "source": str(artifact),
+            "mechanisms": [{
+                "mapping": {str(a): int(b)
+                            for a, b in item.mapping.as_dict().items()},
+                "broken_bonds": [list(bond) for bond in item.broken_bonds],
+                "formed_bonds": [list(bond) for bond in item.formed_bonds],
+                "core_atoms": list(item.core_atoms),
+            } for item in reaction.mechanisms],
+        }
+        rp_source = "resolved_artifact"
 
     initial_guess = Path(benchmark_root) / case_id / "initial_guess"
     guess_files = {
@@ -103,7 +152,7 @@ def run_case(case, *, work_root, benchmark_root, output_root, workers,
         target = TransitionStateTarget(
             molecule, VibrationalModes(frequencies, modes), kind="initial_guess")
         result = analyze_transition_state(
-            rp, target, search_config=config)
+            reaction, target, search_config=config)
         record = ts_record(result)
         record.update({
             "iteration": iteration,
@@ -115,7 +164,7 @@ def run_case(case, *, work_root, benchmark_root, output_root, workers,
         target_records.append(record)
 
     rankings = []
-    for mechanism_index in range(len(rp.mechanisms)):
+    for mechanism_index in range(len(reaction.mechanisms)):
         scored = []
         for target in target_records:
             if target.get("status") != "ok":
@@ -142,9 +191,10 @@ def run_case(case, *, work_root, benchmark_root, output_root, workers,
         "atom_count": reactant.atom_count,
         "workers": int(workers),
         "post_workers": int(post_workers or workers),
+        "rp_source": rp_source,
         "rp_seconds": rp_seconds,
         "elapsed_seconds": time.perf_counter() - started,
-        "rp": rp_record(rp),
+        "rp": rp_document,
         "targets": target_records,
         "rankings": rankings,
     }
@@ -154,7 +204,7 @@ def run_case(case, *, work_root, benchmark_root, output_root, workers,
         "status": "ok",
         "case": case_id,
         "atom_count": reactant.atom_count,
-        "mechanism_count": len(rp.mechanisms),
+        "mechanism_count": len(reaction.mechanisms),
         "target_count": len(target_records),
         "scored_target_count": sum(
             target.get("status") == "ok" for target in target_records),
@@ -163,7 +213,9 @@ def run_case(case, *, work_root, benchmark_root, output_root, workers,
         "rp_seconds": rp_seconds,
         "elapsed_seconds": document["elapsed_seconds"],
         "scores": str(case_output / "ts_scores.json"),
-        "rp_view": str(case_output / "rp" / "view.html"),
+        "rp_view": (
+            str(case_output / "rp" / "view.html")
+            if rp_source == "computed" else None),
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "slurm_array_task_id": os.environ.get("SLURM_ARRAY_TASK_ID"),
     }
@@ -181,6 +233,7 @@ def main(argv=None):
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--workers", type=int, required=True)
     parser.add_argument("--post-workers", type=int, default=None)
+    parser.add_argument("--resolved-rp-root", default=None)
     args = parser.parse_args(argv)
     index = args.index
     if index is None:
@@ -193,6 +246,7 @@ def main(argv=None):
         output_root=args.output_root,
         workers=args.workers,
         post_workers=args.post_workers,
+        resolved_rp_root=args.resolved_rp_root,
     )
 
 
