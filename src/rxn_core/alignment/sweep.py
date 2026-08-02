@@ -1629,7 +1629,11 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
     metrics = _new_sweep_metrics(cfg['max_branches'])
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
-        for payload in proc_pool.imap_unordered(
+        # Workers may finish in any order, but pool insertion order determines
+        # the representative retained for analytically equivalent families.
+        # Consume results in the explicit cut/seed work order so parallel
+        # scheduling cannot change downstream chirality/RMSD representatives.
+        for payload in proc_pool.imap(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
             if collect_metrics:
                 _merge_sweep_metrics(metrics, payload['metrics'])
@@ -1652,7 +1656,10 @@ def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
     pool = {}
     with mp.Pool(n_workers, initializer=_cs_winit,
                  initargs=(elR, wboR, elT, wboT, cfg)) as proc_pool:
-        for payload in proc_pool.imap_unordered(
+        # Preserve the same logical cut/seed order as serial execution.  The
+        # work remains parallel; only parent-side result consumption is
+        # deterministic.
+        for payload in proc_pool.imap(
                 _cs_wrun, work, chunksize=max(1, int(cfg['chunksize']))):
             _emit_trace(trace_path, payload.get('events', []))
             _merge_compressed_pool(pool, payload['pool'])
