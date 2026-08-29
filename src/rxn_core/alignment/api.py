@@ -76,7 +76,7 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
                      symmetry_wbo_tol=0.2,
                      n_seeds=3, max_branches=1_000_000,
                      cut_edges=(), repair_symmetry=True,
-                     chirality=False, capture_events=False):
+                     chirality=False, capture_events=False, profile=None):
     """Symmetry-centric molecule match.
 
     This is the public low-level match function.  One match means:
@@ -107,7 +107,7 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
             dwbo_threshold=dwbo_threshold,
             metal_dwbo_threshold=metal_dwbo_threshold,
             symmetry_wbo_tol=symmetry_wbo_tol,
-            max_branches=max_branches, events=events)
+            max_branches=max_branches, events=events, profile=profile)
         for branch_index, branch in enumerate(branches):
             raw_mapping = expand_mapping(branch.mapping, g_R, g_P)
             mapping = dict(raw_mapping)

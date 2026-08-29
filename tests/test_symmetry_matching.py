@@ -1,3 +1,4 @@
+import json
 import math
 
 import numpy as np
@@ -120,6 +121,18 @@ def test_cut_sweep_compact_metrics_are_opt_in_and_respect_branch_cap():
     assert parallel_metrics["max_live_branches"] <= 2
 
 
+def test_heavy_only_cut_items_keep_hydrogens_but_do_not_cut_xh_edges():
+    from rxn_core.alignment.sweep import cut_sweep_items
+
+    elements = ["C", "C", "H", "H"]
+    wbo = np.zeros((4, 4))
+    for left, right in ((0, 1), (0, 2), (1, 3)):
+        wbo[left, right] = wbo[right, left] = 1.0
+
+    assert cut_sweep_items(
+        wbo, elements=elements, heavy_only=True) == [(), ((0, 1),)]
+
+
 def test_worker_local_cut_compression_is_exactly_serial_equivalent():
     elements = ["C", "O", "N"]
     wbo = np.zeros((3, 3))
@@ -137,6 +150,62 @@ def test_worker_local_cut_compression_is_exactly_serial_equivalent():
         elements, wbo, elements, wbo, n_workers=2, **kwargs)
 
     assert compressed_parallel == serial
+
+
+def test_parallel_cut_sweep_persists_disjoint_reduction_buckets(tmp_path):
+    elements = ["C", "O", "N"]
+    wbo = np.zeros((3, 3))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+    wbo[1, 2] = wbo[2, 1] = 1.0
+    kwargs = {
+        "n_seeds": 2,
+        "max_branches": 100,
+        "symmetry_repair": False,
+    }
+
+    serial = cut_sweep(
+        elements, wbo, elements, wbo, n_workers=0, **kwargs)
+    parallel = cut_sweep(
+        elements, wbo, elements, wbo, n_workers=2,
+        intermediate_dir=tmp_path, **kwargs)
+
+    assert parallel == serial
+    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    assert manifest["mechanism_count"] == len(serial)
+    assert manifest["worker_pool_entries"] >= len(serial)
+    assert list(tmp_path.glob("raw_bucket_*.pkl"))
+    assert list(tmp_path.glob("reduced_bucket_*.pkl"))
+
+
+def test_one_cut_chunk_parallelizes_across_seed_orders(monkeypatch):
+    import rxn_core.alignment.sweep as sweep_module
+
+    observed = {}
+
+    def fake_parallel(_el_r, _wbo_r, _el_t, _wbo_t, cfg, workers,
+                      _core_r, cuts, **_kwargs):
+        observed["workers"] = workers
+        observed["seeds"] = cfg["n_seeds"]
+        observed["cuts"] = cuts
+        return {}
+
+    monkeypatch.setattr(
+        sweep_module, "_cut_sweep_chunk_parallel", fake_parallel)
+    elements = ["C", "C"]
+    wbo = np.zeros((2, 2))
+    wbo[0, 1] = wbo[1, 0] = 1.0
+
+    result = run_cut_sweep_chunk(
+        elements, wbo, elements, wbo, [((0, 1),)],
+        n_workers=10, n_seeds=3, max_branches=10,
+        symmetry_repair=False)
+
+    assert result == {}
+    assert observed == {
+        "workers": 3,
+        "seeds": 3,
+        "cuts": [((0, 1),)],
+    }
 
 
 def test_parallel_cut_sweep_consumes_results_in_cut_seed_order(monkeypatch):
