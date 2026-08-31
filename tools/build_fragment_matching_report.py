@@ -170,7 +170,7 @@ class Report:
     def finish_page(self):
         self.pdf.setFillColor(MUTED)
         self.pdf.setFont("Helvetica", 8)
-        self.pdf.drawString(38, 18, "Graph-based fragment detection and assembly")
+        self.pdf.drawString(38, 18, "Building-block recommendation workflow")
         self.pdf.drawRightString(WIDTH - 38, 18, f"Page {self.page_number}")
 
     def save(self):
@@ -251,30 +251,39 @@ class Report:
 
 def _cover_page(report):
     report.new_page(
-        "Graph-Based Fragment Detection and Precursor Assembly",
-        "A 2D visual guide to the implemented single-step recommendation workflow")
+        "Finding Building Blocks for a Target Molecule",
+        "A visual explanation of the single-step precursor recommendation workflow")
     report.pdf.setFillColor(HexColor("#10243B"))
-    report.pdf.roundRect(38, 105, 766, 365, 18, fill=1, stroke=0)
+    report.pdf.roundRect(38, 90, 766, 380, 18, fill=1, stroke=0)
     report.pdf.setFillColor(white)
-    report.pdf.setFont("Helvetica-Bold", 28)
-    report.pdf.drawString(72, 405, "From inventory to precursor recommendations")
-    report.pdf.setFont("Helvetica", 13)
+    report.pdf.setFont("Helvetica-Bold", 16)
+    report.pdf.drawString(68, 430, "Objective")
+    report.pdf.setFont("Helvetica", 12)
     report.pdf.drawString(
-        74, 378,
-        "Recognize useful molecular pieces, then combine complementary pieces around a desired product.")
-    report.box(78, 205, 285, 125, "1. Fragment detection",
-               "Find coherent pieces of an available compound that are conserved in the desired product.",
-               color=CYAN)
-    report.box(479, 205, 285, 125, "2. Precursor assembly",
-               "Combine complementary pieces into complete, explainable product construction patterns.",
-               color=ORANGE)
-    report.arrow(375, 267, 466, 267, color=white, width=2.5)
+        68, 405,
+        "Given P_target and a bank of compounds, find small sets of building blocks whose")
+    report.pdf.drawString(
+        68, 386,
+        "conserved molecular pieces can be combined to account for the complete target.")
+    report.pdf.setFont("Helvetica-Bold", 16)
+    report.pdf.drawString(68, 346, "Workflow")
+    y = 205
+    report.box(60, y, 155, 105, "1. Search the bank",
+               "Compare every building block with P_target.", color=CYAN)
+    report.box(250, y, 155, 105, "2. Find useful pieces",
+               "Retain coherent fragments that occur in the target.", color=BLUE)
+    report.box(440, y, 155, 105, "3. Assemble coverage",
+               "Combine complementary pieces until P_target is covered.", color=PURPLE)
+    report.box(630, y, 155, 105, "4. Show alternatives",
+               "Return the best candidate from each distinct pattern.", color=ORANGE)
+    report.arrow(218, y + 52, 246, y + 52, color=white, width=2)
+    report.arrow(408, y + 52, 436, y + 52, color=white, width=2)
+    report.arrow(598, y + 52, 626, y + 52, color=white, width=2)
     report.pdf.setFillColor(white)
-    report.pdf.setFont("Helvetica-Bold", 8.5)
-    report.pdf.drawCentredString(421, 280, "mapped pieces")
     report.pdf.setFont("Helvetica", 10)
-    report.pdf.drawString(75, 150, "All colored molecular regions in this report come from computed atom mappings.")
-    report.pdf.drawString(75, 132, "The chemistry drawings are 2D for clarity; routine C-H labels are omitted.")
+    report.pdf.drawString(68, 150, "The next slides show the result directly as R1 + R2 to P_target mappings.")
+    report.pdf.drawString(68, 130, "Matching colors come from computed atom correspondences, not manual annotation.")
+    report.pdf.drawString(68, 110, "The output is a structural recommendation; chemical feasibility still requires review.")
     report.finish_page()
 
 
@@ -372,7 +381,7 @@ def _co2_page(report, config):
         target, target_colors, width=700, height=330)
 
     report.new_page(
-        "Example 1: one source contributes multiple fragments",
+        "Example 3: one building block contributes multiple pieces",
         "CO2 is recognized within the carboxyl group of phenylacetic acid")
     report.box(42, 405, 315, 80, "R: carbon dioxide",
                "The carbonyl piece is recognized first. The second oxygen is then retained as another useful piece of the same source.", color=CYAN)
@@ -392,9 +401,11 @@ def _co2_page(report, config):
     report.pdf.setFillColor(INK)
     report.pdf.setFont("Helvetica-Bold", 11)
     report.pdf.drawString(58, 152, "What the colors show")
-    report.text(58, 132,
-        "The cyan carbonyl piece is the largest connected match. The orange oxygen is then recognized as another valid part of the target carboxyl group. Together, all three CO2 atoms receive product positions; the rest of phenylacetic acid remains available for other precursors.",
-        width=720, size=9.6, leading=13)
+    report.bullets(58, 130, [
+        "The cyan carbonyl is the main connected match.",
+        "The orange oxygen is recognized as a second useful piece from the same R.",
+        "Together, the colored atoms account for the CO2 contribution; the uncolored target remains available to other building blocks.",
+    ], width=720, size=9.2, leading=11)
     report.finish_page()
 
 
@@ -471,27 +482,32 @@ def _suzuki_page(report, config):
     )
 
     report.new_page(
-        "Example 2: full R1 + R2 to P_target mapping",
+        "Example 1: two building blocks cover P_target",
         "Complete 2D molecules are shown; identical colors are assigned by the computed atom mapping")
     report.image(source_images[0], 65, 330, 280, 145)
     report.image(source_images[1], 495, 325, 290, 155)
     report.pdf.setFont("Helvetica-Bold", 10.5)
     report.pdf.setFillColor(BLUE)
-    report.pdf.drawCentredString(205, 485, "R1: Bromobenzene - inventory C0042016")
+    report.pdf.drawCentredString(205, 485, "R1: bromobenzene")
     report.pdf.setFillColor(ORANGE)
-    report.pdf.drawCentredString(640, 485, "R2: 4-Chlorophenylboronic acid - C0115718")
+    report.pdf.drawCentredString(640, 485, "R2: 4-chlorophenylboronic acid")
     report.pdf.setFillColor(INK)
     report.pdf.setFont("Helvetica-Bold", 24)
     report.pdf.drawCentredString(421, 387, "+")
-    report.arrow(285, 329, 365, 278, color=BLUE, width=2.5)
-    report.arrow(557, 329, 477, 278, color=ORANGE, width=2.5)
+    report.arrow(285, 329, 220, 278, color=BLUE, width=2.5)
+    report.arrow(557, 329, 340, 278, color=ORANGE, width=2.5)
     report.pdf.setFont("Helvetica-Bold", 11)
-    report.pdf.drawCentredString(421, 265, "P_target: 4-chlorobiphenyl")
-    report.image(target_png, 220, 88, 402, 175)
-    report.label(55, 72, "blue atoms map from R1", BLUE)
-    report.label(245, 72, "orange atoms map from R2", ORANGE)
-    report.label(470, 72, "red marks source material not retained", RED)
-    report.label(695, 72, "green is the new P bond", GREEN)
+    report.pdf.drawCentredString(255, 265, "P_target: 4-chlorobiphenyl")
+    report.image(target_png, 55, 75, 400, 185)
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(475, 82, 325, 165, 9, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(492, 222, "What the mapping shows")
+    report.label(492, 194, "blue atoms come from R1", BLUE)
+    report.label(492, 166, "orange atoms come from R2", ORANGE)
+    report.label(492, 138, "red source groups are not retained", RED)
+    report.label(492, 110, "green is the new bond joining the pieces", GREEN)
     report.finish_page()
 
 
@@ -582,7 +598,7 @@ def _alternative_patterns_page(report, config):
         ))
 
     report.new_page(
-        "Alternative construction patterns for one target",
+        "Example 2: alternative building-block patterns",
         "One best representative is shown for each distinct structural division of phenylacetic acid")
     row_y = (365, 225, 85)
     for (label, description, source_ids, source_pngs, target_png), y in zip(
@@ -613,10 +629,10 @@ def _alternative_patterns_page(report, config):
         report.pdf.setFillColor(INK)
         report.pdf.setFont("Helvetica-Bold", 8.5)
         report.pdf.drawCentredString(657, y + 104, "P_target: phenylacetic acid")
-    report.text(
-        48, 58,
-        "These are alternative structural explanations found in one candidate pool. They increase confidence that the coverage search is working, while chemical feasibility must still be judged separately.",
-        width=745, size=8.8, leading=11, color=MUTED)
+    report.bullets(48, 62, [
+        "Every row completely covers the same P_target, but divides it between R1 and R2 differently.",
+        "The workflow returns one representative per pattern; chemical feasibility is reviewed separately.",
+    ], width=745, size=8.3, leading=9)
     report.finish_page()
 
 
@@ -645,8 +661,8 @@ def _complex_page(report, config):
         formed_bonds=assembly.formed_bonds, width=1000, height=390)
 
     report.new_page(
-        "Example 3: a larger inventory-derived target",
-        "The algorithm colors atom ownership, not a hand-selected reaction template")
+        "Example 4: the same workflow on a larger target",
+        "R1 and R2 are mapped into a complete P_target using the same color convention")
     report.image(left_png, 35, 325, 220, 145)
     report.image(right_png, 225, 300, 330, 185)
     report.image(target_png, 570, 295, 255, 190)
@@ -654,9 +670,9 @@ def _complex_page(report, config):
     report.arrow(550, 371, 590, 371, color=ORANGE, width=2.4)
     report.pdf.setFillColor(BLUE)
     report.pdf.setFont("Helvetica-Bold", 9.5)
-    report.pdf.drawCentredString(145, 475, "R1: 1,3-Dibromobenzene - C0113869")
+    report.pdf.drawCentredString(145, 475, "R1: 1,3-dibromobenzene")
     report.pdf.setFillColor(ORANGE)
-    report.pdf.drawCentredString(390, 475, "R2: Triarylamine BPin - C0129716")
+    report.pdf.drawCentredString(390, 475, "R2: triarylamine BPin")
     report.pdf.setFillColor(INK)
     report.pdf.drawCentredString(697, 475, "P_target: assembled product")
     report.label(48, 270, "retained smaller aryl module", BLUE)
@@ -668,10 +684,10 @@ def _complex_page(report, config):
     report.pdf.setFont("Helvetica-Bold", 12)
     report.pdf.drawString(58, 204, "What this example demonstrates")
     report.bullets(58, 180, [
-        "The detector keeps the large triarylamine aryl system coherent instead of decomposing it into atom-wise matches.",
-        "The unused bromine and the BPin unit remain residual source material and are not colored as product ownership.",
-        "Together, the two colored candidates explain the complete target without overlapping ownership.",
-        "The same general approach works for both a simple coupling and this substantially larger structure.",
+        "The large triarylamine system remains one coherent orange contribution from R2.",
+        "The smaller blue aryl module comes from R1.",
+        "Unused bromine and the BPin unit are uncolored because they are not retained in P_target.",
+        "Together, the blue and orange regions cover the complete target; green marks their new bond.",
     ], width=720, size=9.6, leading=12)
     report.finish_page()
 
@@ -759,15 +775,10 @@ def main():
     )
     report = Report(output)
     _cover_page(report)
-    _architecture_page(report)
-    _detection_page(report)
-    _co2_page(report, config)
-    _assembly_page(report)
     _suzuki_page(report, config)
     _alternative_patterns_page(report, config)
+    _co2_page(report, config)
     _complex_page(report, config)
-    _inventory_page(report)
-    _references_page(report)
     report.save()
     print(output.resolve())
 
