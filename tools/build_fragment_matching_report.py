@@ -31,6 +31,9 @@ PURPLE = HexColor("#7857C6")
 GREEN = HexColor("#159A6B")
 RED = HexColor("#D64045")
 CYAN = HexColor("#2AA7A1")
+ALERT = HexColor("#B73522")
+ALERT_BG = HexColor("#FFF0E8")
+GOLD = HexColor("#F4B400")
 
 RD_BLUE = (0.16, 0.47, 0.82)
 RD_ORANGE = (0.93, 0.49, 0.13)
@@ -251,39 +254,45 @@ class Report:
 
 def _cover_page(report):
     report.new_page(
-        "Finding Building Blocks for a Target Molecule",
-        "A visual explanation of the single-step precursor recommendation workflow")
-    report.pdf.setFillColor(HexColor("#10243B"))
-    report.pdf.roundRect(38, 90, 766, 380, 18, fill=1, stroke=0)
-    report.pdf.setFillColor(white)
-    report.pdf.setFont("Helvetica-Bold", 16)
-    report.pdf.drawString(68, 430, "Objective")
-    report.pdf.setFont("Helvetica", 12)
-    report.pdf.drawString(
-        68, 405,
-        "Given P_target and a bank of compounds, find small sets of building blocks whose")
-    report.pdf.drawString(
-        68, 386,
-        "conserved molecular pieces can be combined to account for the complete target.")
-    report.pdf.setFont("Helvetica-Bold", 16)
-    report.pdf.drawString(68, 346, "Workflow")
-    y = 205
-    report.box(60, y, 155, 105, "1. Search the bank",
-               "Compare every building block with P_target.", color=CYAN)
-    report.box(250, y, 155, 105, "2. Find useful pieces",
-               "Retain coherent fragments that occur in the target.", color=BLUE)
-    report.box(440, y, 155, 105, "3. Assemble coverage",
-               "Combine complementary pieces until P_target is covered.", color=PURPLE)
-    report.box(630, y, 155, 105, "4. Show alternatives",
-               "Return the best candidate from each distinct pattern.", color=ORANGE)
-    report.arrow(218, y + 52, 246, y + 52, color=white, width=2)
-    report.arrow(408, y + 52, 436, y + 52, color=white, width=2)
-    report.arrow(598, y + 52, 626, y + 52, color=white, width=2)
-    report.pdf.setFillColor(white)
-    report.pdf.setFont("Helvetica", 10)
-    report.pdf.drawString(68, 150, "The next slides show the result directly as R1 + R2 to P_target mappings.")
-    report.pdf.drawString(68, 130, "Matching colors come from computed atom correspondences, not manual annotation.")
-    report.pdf.drawString(68, 110, "The output is a structural recommendation; chemical feasibility still requires review.")
+        "Purpose: Find Building Blocks for P_target",
+        "Use a reaction-bank pool to identify structural foundations for retrosynthesis")
+    report.box(
+        42, 410, 758, 72, "Purpose",
+        "Given P_target, find feasible building blocks whose conserved molecular pieces can serve as the foundation for retrosynthesis.",
+        color=BLUE)
+
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.drawString(42, 382, "General flow")
+    report.box(
+        48, 290, 175, 70, "Reaction bank",
+        "Pool of candidate building blocks.", color=CYAN)
+    report.box(
+        48, 205, 175, 65, "P_target",
+        "Desired product structure.", color=ORANGE)
+    report.box(
+        305, 245, 185, 95, "Geometric matching",
+        "Find coherent R fragments in P_target and assemble complete target coverage.",
+        color=PURPLE)
+    report.box(
+        580, 245, 215, 95, "Candidate foundations",
+        "Rank feasible building-block sets and retain distinct construction patterns.",
+        color=GREEN)
+    report.arrow(225, 325, 300, 300, color=CYAN, width=2.3)
+    report.arrow(225, 237, 300, 280, color=ORANGE, width=2.3)
+    report.arrow(495, 292, 575, 292, color=GREEN, width=2.5)
+
+    report.pdf.setFillColor(ALERT_BG)
+    report.pdf.setStrokeColor(ALERT)
+    report.pdf.roundRect(42, 82, 758, 90, 10, fill=1, stroke=1)
+    report.pdf.setFillColor(ALERT)
+    report.pdf.roundRect(42, 162, 758, 10, 5, fill=1, stroke=0)
+    report.pdf.setFont("Helvetica-Bold", 13)
+    report.pdf.drawString(58, 140, "CURRENT SCOPE: PURE MOLECULAR GEOMETRY")
+    report.text(
+        58, 118,
+        "The workflow identifies structurally compatible building blocks. It does not yet prove chemical reactivity or construct a complete multi-step synthesis route.",
+        width=720, size=10.3, leading=14, color=INK)
     report.finish_page()
 
 
@@ -692,6 +701,68 @@ def _complex_page(report, config):
     report.finish_page()
 
 
+def _next_questions_page(report):
+    report.new_page(
+        "Open Questions: From Geometry to Retrosynthesis",
+        "The geometric candidates are a foundation; two capabilities are still required")
+
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.setStrokeColor(GREEN)
+    report.pdf.roundRect(42, 410, 758, 72, 10, fill=1, stroke=1)
+    report.pdf.setFillColor(GREEN)
+    report.pdf.setFont("Helvetica-Bold", 13)
+    report.pdf.drawString(58, 456, "CURRENT OUTPUT")
+    report.text(
+        58, 434,
+        "Structurally compatible building-block sets that cover P_target from a pure geometrical perspective.",
+        width=720, size=10.5, leading=14)
+
+    report.pdf.setFillColor(ALERT_BG)
+    report.pdf.setStrokeColor(ALERT)
+    report.pdf.roundRect(42, 205, 360, 175, 10, fill=1, stroke=1)
+    report.pdf.setFillColor(ALERT)
+    report.pdf.roundRect(42, 368, 360, 12, 5, fill=1, stroke=0)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.drawString(58, 344, "1. Chemical reactivity rules")
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(58, 320, "Can the proposed transformation actually occur?")
+    report.bullets(60, 294, [
+        "Which bonds can be formed or broken by known chemistry?",
+        "Are functional groups, reagents, catalysts, and conditions compatible?",
+        "Will chemo-, regio-, and stereoselectivity be acceptable?",
+    ], width=320, size=9.3, leading=12)
+
+    report.pdf.setFillColor(HexColor("#FFF8DC"))
+    report.pdf.setStrokeColor(GOLD)
+    report.pdf.roundRect(440, 205, 360, 175, 10, fill=1, stroke=1)
+    report.pdf.setFillColor(GOLD)
+    report.pdf.roundRect(440, 368, 360, 12, 5, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.drawString(456, 344, "2. Multi-step route construction")
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(456, 320, "How do the foundations become a complete route?")
+    report.bullets(458, 294, [
+        "Use accepted building blocks or intermediates as new targets.",
+        "Connect validated single steps into a retrosynthesis path.",
+        "Control branching and rank complete routes by chemical feasibility.",
+    ], width=320, size=9.3, leading=12)
+
+    y = 85
+    report.box(48, y, 160, 70, "Geometric candidates",
+               "Current workflow", color=PURPLE)
+    report.box(250, y, 160, 70, "Chemical validation",
+               "Apply reactivity rules", color=ALERT)
+    report.box(452, y, 160, 70, "Multi-step expansion",
+               "Construct route paths", color=GOLD)
+    report.box(654, y, 140, 70, "Proposed routes",
+               "Rank for review", color=GREEN)
+    report.arrow(211, y + 35, 246, y + 35, color=MUTED, width=2)
+    report.arrow(413, y + 35, 448, y + 35, color=MUTED, width=2)
+    report.arrow(615, y + 35, 650, y + 35, color=MUTED, width=2)
+    report.finish_page()
+
+
 def _inventory_page(report):
     report.new_page(
         "Inventory integration and interpretation",
@@ -779,6 +850,7 @@ def main():
     _alternative_patterns_page(report, config)
     _co2_page(report, config)
     _complex_page(report, config)
+    _next_questions_page(report)
     report.save()
     print(output.resolve())
 
