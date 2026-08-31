@@ -107,7 +107,7 @@ def _rdkit_png(
     options = drawer.drawOptions()
     options.padding = 0.08
     options.bondLineWidth = 2.2
-    options.highlightBondWidthMultiplier = 14
+    options.highlightBondWidthMultiplier = 7
     options.atomHighlightsAreCircles = True
     options.addAtomIndices = atom_indices
     drawer.DrawMolecule(
@@ -116,7 +116,7 @@ def _rdkit_png(
         highlightAtomColors=colors,
         highlightBonds=sorted(set(highlighted_bonds)),
         highlightBondColors=bond_colors,
-        highlightAtomRadii={atom: 0.38 for atom in colors},
+        highlightAtomRadii={atom: 0.27 for atom in colors},
     )
     drawer.FinishDrawing()
     return drawer.GetDrawingText()
@@ -124,13 +124,6 @@ def _rdkit_png(
 
 def _source_colors(candidate, color):
     return {atom: color for atom in candidate.retained_atoms}
-
-
-def _target_colors(assembly, colors):
-    output = {}
-    for candidate, color in zip(assembly.candidates, colors):
-        output.update({atom: color for atom in candidate.covered_target_atoms})
-    return output
 
 
 def _target_colors_by_source(assembly, color_by_source):
@@ -381,13 +374,17 @@ def _co2_page(report, config):
     report.new_page(
         "Example 1: one source contributes multiple fragments",
         "CO2 is recognized within the carboxyl group of phenylacetic acid")
-    report.box(42, 405, 315, 80, "Source: carbon dioxide",
+    report.box(42, 405, 315, 80, "R: carbon dioxide",
                "The carbonyl piece is recognized first. The second oxygen is then retained as another useful piece of the same source.", color=CYAN)
-    report.box(485, 405, 315, 80, "Target: phenylacetic acid",
+    report.box(485, 405, 315, 80, "P_target: phenylacetic acid",
                "Only the colored carboxyl atoms are owned by this candidate. The aromatic side of P remains available to other sources.", color=ORANGE)
     report.image(source_png, 55, 225, 285, 170)
     report.image(target_png, 440, 215, 375, 190)
-    report.arrow(360, 310, 425, 310, color=GREEN, width=2.5)
+    report.arrow(360, 322, 425, 322, color=CYAN, width=2.5)
+    report.arrow(360, 298, 425, 298, color=ORANGE, width=2.5)
+    report.pdf.setFillColor(MUTED)
+    report.pdf.setFont("Helvetica", 8)
+    report.pdf.drawCentredString(392, 337, "R fragments mapped into P_target")
     report.label(60, 205, "initial retained fragment", CYAN)
     report.label(240, 205, "additional target-owned fragment", ORANGE)
     report.pdf.setFillColor(LIGHT)
@@ -486,7 +483,8 @@ def _suzuki_page(report, config):
     report.pdf.setFillColor(INK)
     report.pdf.setFont("Helvetica-Bold", 24)
     report.pdf.drawCentredString(421, 387, "+")
-    report.arrow(421, 320, 421, 285, color=GREEN, width=2.5)
+    report.arrow(285, 329, 365, 278, color=BLUE, width=2.5)
+    report.arrow(557, 329, 477, 278, color=ORANGE, width=2.5)
     report.pdf.setFont("Helvetica-Bold", 11)
     report.pdf.drawCentredString(421, 265, "P_target: 4-chlorobiphenyl")
     report.image(target_png, 220, 88, 402, 175)
@@ -601,19 +599,20 @@ def _alternative_patterns_page(report, config):
         report.image(source_pngs[0], 165, y + 22, 145, 83)
         report.pdf.setFillColor(BLUE)
         report.pdf.setFont("Helvetica-Bold", 8.5)
-        report.pdf.drawCentredString(237, y + 104, source_ids[0])
+        report.pdf.drawCentredString(237, y + 104, f"R1: {source_ids[0]}")
         report.pdf.setFillColor(INK)
         report.pdf.setFont("Helvetica-Bold", 15)
         report.pdf.drawCentredString(321, y + 57, "+")
         report.image(source_pngs[1], 330, y + 22, 135, 83)
         report.pdf.setFillColor(ORANGE)
         report.pdf.setFont("Helvetica-Bold", 8.5)
-        report.pdf.drawCentredString(397, y + 104, source_ids[1])
-        report.arrow(473, y + 60, 525, y + 60, color=GREEN, width=2)
+        report.pdf.drawCentredString(397, y + 104, f"R2: {source_ids[1]}")
+        report.arrow(473, y + 68, 525, y + 68, color=BLUE, width=2)
+        report.arrow(473, y + 51, 525, y + 51, color=ORANGE, width=2)
         report.image(target_png, 535, y + 14, 245, 96)
         report.pdf.setFillColor(INK)
         report.pdf.setFont("Helvetica-Bold", 8.5)
-        report.pdf.drawCentredString(657, y + 104, "same complete P_target")
+        report.pdf.drawCentredString(657, y + 104, "P_target: phenylacetic acid")
     report.text(
         48, 58,
         "These are alternative structural explanations found in one candidate pool. They increase confidence that the coverage search is working, while chemical feasibility must still be judged separately.",
@@ -637,24 +636,29 @@ def _complex_page(report, config):
     right_png = _rdkit_png(
         sources[1][1], _source_colors(right, RD_ORANGE),
         cut_bonds=right.boundary_bonds, width=900, height=360)
+    color_by_source = {
+        "1,3-dibromobenzene": RD_BLUE,
+        "triarylamine BPin": RD_ORANGE,
+    }
     target_png = _rdkit_png(
-        target, _target_colors(assembly, (RD_ORANGE, RD_BLUE)),
+        target, _target_colors_by_source(assembly, color_by_source),
         formed_bonds=assembly.formed_bonds, width=1000, height=390)
 
     report.new_page(
         "Example 3: a larger inventory-derived target",
         "The algorithm colors atom ownership, not a hand-selected reaction template")
-    report.image(left_png, 35, 325, 235, 145)
-    report.image(right_png, 240, 300, 340, 185)
-    report.arrow(585, 382, 625, 382, color=GREEN, width=2.4)
-    report.image(target_png, 605, 295, 205, 190)
+    report.image(left_png, 35, 325, 220, 145)
+    report.image(right_png, 225, 300, 330, 185)
+    report.image(target_png, 570, 295, 255, 190)
+    report.arrow(550, 393, 590, 393, color=BLUE, width=2.4)
+    report.arrow(550, 371, 590, 371, color=ORANGE, width=2.4)
     report.pdf.setFillColor(BLUE)
     report.pdf.setFont("Helvetica-Bold", 9.5)
-    report.pdf.drawCentredString(150, 475, "1,3-Dibromobenzene - C0113869")
+    report.pdf.drawCentredString(145, 475, "R1: 1,3-Dibromobenzene - C0113869")
     report.pdf.setFillColor(ORANGE)
-    report.pdf.drawCentredString(410, 475, "Triarylamine BPin - C0129716")
+    report.pdf.drawCentredString(390, 475, "R2: Triarylamine BPin - C0129716")
     report.pdf.setFillColor(INK)
-    report.pdf.drawCentredString(705, 475, "Assembled target")
+    report.pdf.drawCentredString(697, 475, "P_target: assembled product")
     report.label(48, 270, "retained smaller aryl module", BLUE)
     report.label(275, 270, "retained triarylamine module", ORANGE)
     report.label(585, 270, "new inter-module bond", GREEN)
