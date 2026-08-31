@@ -302,9 +302,9 @@ def main():
         ],
         "audit": {
             "core_attachment_target_atom": core_candidate[
-                "attachment_atoms_P"][0],
+                "attachment_atoms_target"][0],
             "side_attachment_target_atom": side_candidate[
-                "attachment_atoms_P"][0],
+                "attachment_atoms_target"][0],
             "c7_protection_target_atom": target_c7_oxygen,
             "sidechain_2p_protection_target_atom": target_2p_oxygen,
             "final_target_exact": target_key == report["target_smiles"]

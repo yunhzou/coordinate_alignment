@@ -9,11 +9,11 @@ from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-from rxn_core import (
-    RetroFragmentSearchConfig,
-    assemble_fragment_cover,
-    discover_retained_fragments,
+from rxn_core.fragment_matching import (
+    FragmentDetectionConfig,
+    detect_fragments,
 )
+from rxn_core.retrosynthesis import assemble_fragment_cover
 from rxn_core.smiles import smiles_to_weighted_graph
 
 
@@ -78,7 +78,7 @@ def _build_payload():
     target_smiles = "Clc1ccccc1-c1ccccc1"
     target_graph = smiles_to_weighted_graph(
         target_smiles, expand_hydrogens=False)
-    config = RetroFragmentSearchConfig(
+    config = FragmentDetectionConfig(
         minimum_fragment_size=3,
         branch_limit=100,
         candidate_limit=100,
@@ -92,10 +92,10 @@ def _build_payload():
     )
     results = []
     for key, name, smiles in definitions:
-        result = discover_retained_fragments(
+        result = detect_fragments(
             smiles_to_weighted_graph(smiles, expand_hydrogens=False),
             target_graph,
-            precursor_id=key,
+            source_id=key,
             config=config,
         )
         results.append(result)
@@ -108,7 +108,7 @@ def _build_payload():
     if not assembly_result.assemblies:
         raise RuntimeError("Suzuki demo did not produce an assembly")
     assembly = assembly_result.assemblies[0]
-    selected = {candidate.precursor_id: candidate for candidate in assembly.candidates}
+    selected = {candidate.source_id: candidate for candidate in assembly.candidates}
 
     models = {}
     for key, name, smiles in definitions:
@@ -135,7 +135,7 @@ def _build_payload():
     for candidate in assembly.candidates:
         product_styles.append({
             "indices": list(candidate.covered_target_atoms),
-            "color": COLORS[candidate.precursor_id],
+            "color": COLORS[candidate.source_id],
         })
     models["P"] = {
         "title": "P target: 2-chlorobiphenyl",
@@ -166,7 +166,7 @@ def _build_payload():
             "formed_bonds": [list(bond) for bond in assembly.formed_bonds],
             "broken_bonds": [list(bond) for bond in assembly.broken_bonds],
             "coverage": {
-                candidate.precursor_id: list(candidate.covered_target_atoms)
+                candidate.source_id: list(candidate.covered_target_atoms)
                 for candidate in assembly.candidates
             },
         },

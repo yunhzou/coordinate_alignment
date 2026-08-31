@@ -14,39 +14,19 @@ import time
 from collections import Counter
 from pathlib import Path
 
-import numpy as np
 from rdkit import Chem, RDLogger
 
-from rxn_core import (
-    RetroFragmentSearchConfig,
-    WeightedGraph,
-    discover_retained_fragments,
+from rxn_core.fragment_matching import (
+    FragmentDetectionConfig,
+    detect_fragments,
 )
+from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
+from rxn_core.fragment_matching.serialization import fragment_detection_to_record
 
 
 _TARGET = None
 _CONFIG = None
 _MINIMUM_TARGET_COVERAGE_SIZE = 1
-
-
-def _graph_from_mol(molecule):
-    size = molecule.GetNumAtoms()
-    matrix = np.zeros((size, size), dtype=float)
-    nodes = []
-    for atom in molecule.GetAtoms():
-        nodes.append({
-            "element": atom.GetSymbol(),
-            "features": {
-                "formal_charge": int(atom.GetFormalCharge()),
-                "aromatic": bool(atom.GetIsAromatic()),
-            },
-        })
-    for bond in molecule.GetBonds():
-        left = int(bond.GetBeginAtomIdx())
-        right = int(bond.GetEndAtomIdx())
-        weight = float(bond.GetBondTypeAsDouble()) or 1.0
-        matrix[left, right] = matrix[right, left] = weight
-    return WeightedGraph(nodes, matrix)
 
 
 def _worker_init(target_smiles, config_record,
@@ -57,29 +37,12 @@ def _worker_init(target_smiles, config_record,
     if target_implicit is None:
         raise ValueError(f"invalid target SMILES: {target_smiles!r}")
     target_molecule = Chem.AddHs(target_implicit)
-    _TARGET = _graph_from_mol(target_molecule)
+    _TARGET = molecule_to_weighted_graph(target_molecule)
     _MINIMUM_TARGET_COVERAGE_SIZE = (
         max(1, math.ceil(minimum_target_coverage_fraction
                          * target_molecule.GetNumAtoms()))
         if minimum_target_coverage_fraction is not None else 1)
-    _CONFIG = RetroFragmentSearchConfig(**config_record)
-
-
-def _candidate_record(candidate):
-    return {
-        "mapping": list(candidate.mapping),
-        "retained_atoms": list(candidate.retained_atoms),
-        "covered_target_atoms": list(candidate.covered_target_atoms),
-        "leftover_fragments": [list(item) for item in candidate.leftover_fragments],
-        "boundary_bonds": [list(item) for item in candidate.boundary_bonds],
-        "attachment_atoms_R": list(candidate.attachment_atoms_R),
-        "attachment_atoms_P": list(candidate.attachment_atoms_P),
-        "augmented_anchors": [list(item) for item in candidate.augmented_anchors],
-        "augmented_target_atom_count": candidate.augmented_target_atom_count,
-        "retained_fragments": [
-            list(item) for item in candidate.retained_fragments
-        ],
-    }
+    _CONFIG = FragmentDetectionConfig(**config_record)
 
 
 def _search_batch(batch):
@@ -92,10 +55,10 @@ def _search_batch(batch):
             continue
         molecule = Chem.AddHs(molecule_implicit)
         counts["searched"] += 1
-        result = discover_retained_fragments(
-            _graph_from_mol(molecule),
+        result = detect_fragments(
+            molecule_to_weighted_graph(molecule),
             _TARGET,
-            precursor_id=precursor_id,
+            source_id=precursor_id,
             config=_CONFIG,
         )
         if result.status == "capped":
@@ -111,19 +74,12 @@ def _search_batch(batch):
             continue
         counts["matched_precursors"] += 1
         counts["fragment_candidates"] += len(candidates)
-        records.append({
-            "schema": "rxn_core.retro_fragment_search/v1",
-            "row_index": row_index,
-            "precursor_id": precursor_id,
-            "smiles": smiles,
-            "status": result.status,
-            "complete": result.complete,
-            "branch_limit": result.branch_limit,
-            "maximum_branch_count": result.maximum_branch_count,
-            "capped_seed_count": result.capped_seed_count,
-            "best_fragment_size": result.best_fragment_size,
-            "candidates": [_candidate_record(item) for item in candidates],
-        })
+        records.append(fragment_detection_to_record(
+            result,
+            row_index=row_index,
+            representation=smiles,
+            candidates=candidates,
+        ))
     return dict(counts), records
 
 
@@ -134,7 +90,7 @@ def _batches(catalog, shard_index, shard_count, batch_size, limit,
     with gzip.open(catalog, "rt", encoding="utf-8", errors="replace") as stream:
         if catalog_format == "csv":
             rows = (
-                (row_index, row.get("SMILES"), row.get(id_column))
+                (row_index, row["SMILES"], row[id_column])
                 for row_index, row in enumerate(csv.DictReader(stream))
             )
         else:
@@ -242,8 +198,20 @@ def main(argv=None):
                         "rows_per_second": round(totals["rows"] / elapsed, 2),
                     }), flush=True)
     elapsed = time.perf_counter() - started
+    count_record = {
+        key: totals[key]
+        for key in (
+            "rows",
+            "parse_errors",
+            "searched",
+            "capped",
+            "target_coverage_filtered",
+            "matched_precursors",
+            "fragment_candidates",
+        )
+    }
     summary = {
-        "schema": "rxn_core.retro_catalog_summary/v1",
+        "schema": "rxn_core.retro_catalog_summary/v3",
         "target_smiles": args.target_smiles,
         "catalog": str(args.catalog),
         "output": str(output),
@@ -256,7 +224,7 @@ def main(argv=None):
         "derived_minimum_fragment_size": derived_minimum_fragment_size,
         "explicit_hydrogens": True,
         "elapsed_seconds": elapsed,
-        "counts": dict(totals),
+        "counts": count_record,
     }
     summary_path = output.with_suffix(output.suffix + ".summary.json")
     summary_path.write_text(json.dumps(summary, indent=2) + "\n")

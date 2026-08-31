@@ -56,15 +56,6 @@ from .frag import (
 )
 from .modes import bond_overlap_per_mode, rxn_overlap_per_mode
 from .subgraph import SubgraphMatch, match_weighted_subgraph
-from .retro import (
-    RetroAssembly,
-    RetroAssemblySearchResult,
-    RetroFragmentCandidate,
-    RetroFragmentSearchConfig,
-    RetroFragmentSearchResult,
-    assemble_fragment_cover,
-    discover_retained_fragments,
-)
 
 __all__ = [
     "AAMMechanism", "AAMProblem", "AAMResult", "AAMSearchConfig",
@@ -84,9 +75,6 @@ __all__ = [
     "WeightedGraph", "WeightedNode", "build_graph", "build_weighted_graph",
     "classify_bonds", "bond_overlap_per_mode", "rxn_overlap_per_mode",
     "SubgraphMatch", "match_weighted_subgraph",
-    "RetroAssembly", "RetroAssemblySearchResult", "RetroFragmentCandidate",
-    "RetroFragmentSearchConfig", "RetroFragmentSearchResult",
-    "assemble_fragment_cover", "discover_retained_fragments",
 ]
 
 __version__ = "0.2.0"

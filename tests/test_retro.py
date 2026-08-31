@@ -4,12 +4,14 @@ import numpy as np
 import pytest
 
 from rxn_core import (
-    RetroFragmentCandidate,
-    RetroFragmentSearchConfig,
     WeightedGraph,
-    assemble_fragment_cover,
-    discover_retained_fragments,
 )
+from rxn_core.fragment_matching import (
+    FragmentCandidate,
+    FragmentDetectionConfig,
+    detect_fragments,
+)
+from rxn_core.retrosynthesis import assemble_fragment_cover
 
 
 def _matrix(size, edges):
@@ -19,7 +21,7 @@ def _matrix(size, edges):
     return matrix
 
 
-def test_partial_fragment_uses_augmented_fallback_when_target_cannot_match():
+def test_partial_fragment_uses_augmented_copy_when_target_cannot_match():
     precursor = WeightedGraph(
         ["C", "Br"],
         _matrix(2, [(0, 1, 1.0)]),
@@ -29,11 +31,11 @@ def test_partial_fragment_uses_augmented_fallback_when_target_cannot_match():
         _matrix(2, [(0, 1, 1.0)]),
     )
 
-    result = discover_retained_fragments(
+    result = detect_fragments(
         precursor,
         target,
-        precursor_id="carbon-bromide",
-        config=RetroFragmentSearchConfig(
+        source_id="carbon-bromide",
+        config=FragmentDetectionConfig(
             minimum_fragment_size=1,
             branch_limit=8,
             maximum_boundary_bonds=1,
@@ -48,7 +50,7 @@ def test_partial_fragment_uses_augmented_fallback_when_target_cannot_match():
     candidate = result.candidates[0]
     assert candidate.leftover_fragments == ((1,),)
     assert candidate.boundary_bonds == ((0, 1),)
-    assert candidate.augmented_anchors == ((1, 2),)
+    assert candidate.copied_residual_placements == ((1, 2),)
     assert candidate.augmented_target_atom_count == 3
 
 
@@ -62,11 +64,11 @@ def test_augmented_leftover_competes_for_unused_target_atoms():
         _matrix(3, [(0, 1, 2.0), (1, 2, 1.0)]),
     )
 
-    result = discover_retained_fragments(
+    result = detect_fragments(
         precursor,
         target,
-        precursor_id="carbon-dioxide",
-        config=RetroFragmentSearchConfig(
+        source_id="carbon-dioxide",
+        config=FragmentDetectionConfig(
             minimum_fragment_size=1,
             iso_tolerance=0.5,
             branch_limit=100,
@@ -89,7 +91,7 @@ def test_augmented_leftover_competes_for_unused_target_atoms():
     )
     assert full[0].leftover_fragments == ()
     assert len(full[0].boundary_bonds) == 1
-    assert full[0].augmented_anchors == ()
+    assert full[0].copied_residual_placements == ()
 
 
 def test_branch_cap_is_reported_as_incomplete():
@@ -102,11 +104,11 @@ def test_branch_cap_is_reported_as_incomplete():
         _matrix(6, [(index, index + 1, 1.0) for index in range(5)]),
     )
 
-    result = discover_retained_fragments(
+    result = detect_fragments(
         precursor,
         target,
-        precursor_id="ambiguous-CC",
-        config=RetroFragmentSearchConfig(branch_limit=2),
+        source_id="ambiguous-CC",
+        config=FragmentDetectionConfig(branch_limit=2),
     )
 
     assert result.status == "capped"
@@ -133,23 +135,23 @@ def test_balanced_williamson_reaction_is_recovered_with_hidden_side_product():
     assert composition(reactant_smiles) == composition(product_smiles)
 
     target = smiles_to_weighted_graph("CCOC", expand_hydrogens=False)
-    config = RetroFragmentSearchConfig(
+    config = FragmentDetectionConfig(
         minimum_fragment_size=2,
         branch_limit=100,
         candidate_limit=100,
         maximum_boundary_bonds=1,
         maximum_leftover_fragments=1,
     )
-    bromoethane = discover_retained_fragments(
+    bromoethane = detect_fragments(
         smiles_to_weighted_graph("CCBr", expand_hydrogens=False),
         target,
-        precursor_id="bromoethane",
+        source_id="bromoethane",
         config=config,
     )
-    sodium_methoxide = discover_retained_fragments(
+    sodium_methoxide = detect_fragments(
         smiles_to_weighted_graph("C[O-].[Na+]", expand_hydrogens=False),
         target,
-        precursor_id="sodium-methoxide",
+        source_id="sodium-methoxide",
         config=config,
     )
 
@@ -183,16 +185,16 @@ def test_symmetric_cover_can_reuse_one_precursor_three_times():
     )
 
     def candidate(precursor_id, source, image):
-        return RetroFragmentCandidate(
-            precursor_id=precursor_id,
+        return FragmentCandidate(
+            source_id=precursor_id,
             mapping=((source, image),),
             retained_atoms=(source,),
             covered_target_atoms=(image,),
             leftover_fragments=(),
             boundary_bonds=(),
-            attachment_atoms_R=(source,),
-            attachment_atoms_P=(image,),
-            augmented_anchors=(),
+            attachment_atoms_source=(source,),
+            attachment_atoms_target=(image,),
+            copied_residual_placements=(),
             augmented_target_atom_count=4,
         )
 
@@ -222,14 +224,14 @@ def test_chloroform_plus_three_repeated_pyrazoles_covers_target():
     target = smiles_to_weighted_graph(
         "N1(C(N2C=CC=N2)N3N=CC=C3)N=CC=C1",
         expand_hydrogens=True)
-    config = RetroFragmentSearchConfig(
+    config = FragmentDetectionConfig(
         minimum_fragment_size=1, branch_limit=100, candidate_limit=1000)
-    core = discover_retained_fragments(
+    core = detect_fragments(
         smiles_to_weighted_graph("ClC(Cl)Cl", expand_hydrogens=True),
-        target, precursor_id="CHCl3", config=config)
-    ligand = discover_retained_fragments(
+        target, source_id="CHCl3", config=config)
+    ligand = detect_fragments(
         smiles_to_weighted_graph("c1cn[nH]c1", expand_hydrogens=True),
-        target, precursor_id="pyrazole", config=config)
+        target, source_id="pyrazole", config=config)
 
     result = assemble_fragment_cover(
         target, core.candidates + ligand.candidates,
@@ -262,22 +264,22 @@ def test_known_mcule_suzuki_precursors_cover_ortho_chlorobiphenyl():
         "BrC1=CC=CC=C1", expand_hydrogens=False)
     chlorophenylboronic_acid = smiles_to_weighted_graph(
         "C1(=CC=CC=C1Cl)B(O)O", expand_hydrogens=False)
-    config = RetroFragmentSearchConfig(
+    config = FragmentDetectionConfig(
         branch_limit=64,
         maximum_boundary_bonds=1,
         maximum_leftover_fragments=1,
     )
 
-    bromine_result = discover_retained_fragments(
+    bromine_result = detect_fragments(
         bromobenzene,
         target,
-        precursor_id="MCULE-5539191636",
+        source_id="MCULE-5539191636",
         config=config,
     )
-    boron_result = discover_retained_fragments(
+    boron_result = detect_fragments(
         chlorophenylboronic_acid,
         target,
-        precursor_id="MCULE-6011753091",
+        source_id="MCULE-6011753091",
         config=config,
     )
 

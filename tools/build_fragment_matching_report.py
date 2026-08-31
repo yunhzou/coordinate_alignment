@@ -1,0 +1,641 @@
+#!/usr/bin/env python3
+"""Build a graph-centered PDF explaining fragment detection and assembly."""
+from __future__ import annotations
+
+import argparse
+import io
+from pathlib import Path
+
+from rdkit import Chem
+from rdkit.Chem import AllChem, Draw
+from reportlab.lib.colors import HexColor, white
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfgen import canvas
+
+from rxn_core.fragment_matching import FragmentDetectionConfig, detect_fragments
+from rxn_core.retrosynthesis import assemble_fragment_cover
+from rxn_core.smiles import smiles_to_weighted_graph
+
+
+PAGE = landscape(A4)
+WIDTH, HEIGHT = PAGE
+INK = HexColor("#172033")
+MUTED = HexColor("#526273")
+LIGHT = HexColor("#F3F6F9")
+LINE = HexColor("#D7E0E8")
+BLUE = HexColor("#2878D0")
+ORANGE = HexColor("#E98524")
+PURPLE = HexColor("#7857C6")
+GREEN = HexColor("#159A6B")
+RED = HexColor("#D64045")
+CYAN = HexColor("#2AA7A1")
+
+RD_BLUE = (0.16, 0.47, 0.82)
+RD_ORANGE = (0.93, 0.49, 0.13)
+RD_PURPLE = (0.49, 0.34, 0.78)
+RD_GREEN = (0.08, 0.62, 0.39)
+RD_RED = (0.86, 0.18, 0.20)
+RD_CYAN = (0.10, 0.66, 0.64)
+
+
+def _graph(smiles):
+    return smiles_to_weighted_graph(smiles, expand_hydrogens=True)
+
+
+def _detect(source_id, smiles, target_smiles, config):
+    return detect_fragments(
+        _graph(smiles),
+        _graph(target_smiles),
+        source_id=source_id,
+        config=config,
+    )
+
+
+def _assembly(target_smiles, sources, config):
+    results = [
+        _detect(source_id, smiles, target_smiles, config)
+        for source_id, smiles in sources
+    ]
+    assembled = assemble_fragment_cover(
+        _graph(target_smiles),
+        tuple(candidate for result in results for candidate in result.candidates),
+        maximum_precursors=len(sources),
+        assembly_limit=100,
+        require_attachment_bonds=False,
+    )
+    if not assembled.assemblies:
+        raise RuntimeError("example did not produce a complete assembly")
+    return results, assembled.assemblies[0]
+
+
+def _rdkit_png(
+        smiles, atom_colors, *, cut_bonds=(), formed_bonds=(),
+        width=700, height=370, atom_indices=False):
+    molecule = Chem.MolFromSmiles(smiles)
+    AllChem.Compute2DCoords(molecule)
+    heavy_atom_count = molecule.GetNumAtoms()
+    colors = {
+        int(atom): color for atom, color in atom_colors.items()
+        if int(atom) < heavy_atom_count
+    }
+    bond_colors = {}
+    highlighted_bonds = []
+    for bond in molecule.GetBonds():
+        left = bond.GetBeginAtomIdx()
+        right = bond.GetEndAtomIdx()
+        if left in colors and right in colors and colors[left] == colors[right]:
+            highlighted_bonds.append(bond.GetIdx())
+            bond_colors[bond.GetIdx()] = colors[left]
+    for left, right in cut_bonds:
+        if left >= heavy_atom_count or right >= heavy_atom_count:
+            continue
+        bond = molecule.GetBondBetweenAtoms(int(left), int(right))
+        if bond is not None:
+            highlighted_bonds.append(bond.GetIdx())
+            bond_colors[bond.GetIdx()] = RD_RED
+    for left, right in formed_bonds:
+        if left >= heavy_atom_count or right >= heavy_atom_count:
+            continue
+        bond = molecule.GetBondBetweenAtoms(int(left), int(right))
+        if bond is not None:
+            highlighted_bonds.append(bond.GetIdx())
+            bond_colors[bond.GetIdx()] = RD_GREEN
+
+    drawer = Draw.MolDraw2DCairo(width, height)
+    options = drawer.drawOptions()
+    options.padding = 0.08
+    options.bondLineWidth = 2.2
+    options.highlightBondWidthMultiplier = 14
+    options.atomHighlightsAreCircles = True
+    options.addAtomIndices = atom_indices
+    drawer.DrawMolecule(
+        molecule,
+        highlightAtoms=sorted(colors),
+        highlightAtomColors=colors,
+        highlightBonds=sorted(set(highlighted_bonds)),
+        highlightBondColors=bond_colors,
+        highlightAtomRadii={atom: 0.38 for atom in colors},
+    )
+    drawer.FinishDrawing()
+    return drawer.GetDrawingText()
+
+
+def _source_colors(candidate, color):
+    return {atom: color for atom in candidate.retained_atoms}
+
+
+def _target_colors(assembly, colors):
+    output = {}
+    for candidate, color in zip(assembly.candidates, colors):
+        output.update({atom: color for atom in candidate.covered_target_atoms})
+    return output
+
+
+def _fragment_colors(candidate, colors):
+    source = {}
+    target = {}
+    mapping = dict(candidate.mapping)
+    for fragment, color in zip(candidate.retained_fragments, colors):
+        for atom in fragment:
+            source[atom] = color
+            target[mapping[atom]] = color
+    return source, target
+
+
+class Report:
+    def __init__(self, output):
+        self.output = output
+        self.pdf = canvas.Canvas(str(output), pagesize=PAGE)
+        self.page_number = 0
+
+    def new_page(self, title, subtitle=None):
+        if self.page_number:
+            self.pdf.showPage()
+        self.page_number += 1
+        self.pdf.setFillColor(INK)
+        self.pdf.setFont("Helvetica-Bold", 23)
+        self.pdf.drawString(38, HEIGHT - 46, title)
+        if subtitle:
+            self.pdf.setFillColor(MUTED)
+            self.pdf.setFont("Helvetica", 10.5)
+            self.pdf.drawString(40, HEIGHT - 63, subtitle)
+        self.pdf.setStrokeColor(LINE)
+        self.pdf.line(38, HEIGHT - 73, WIDTH - 38, HEIGHT - 73)
+
+    def finish_page(self):
+        self.pdf.setFillColor(MUTED)
+        self.pdf.setFont("Helvetica", 8)
+        self.pdf.drawString(38, 18, "Graph-based fragment detection and assembly")
+        self.pdf.drawRightString(WIDTH - 38, 18, f"Page {self.page_number}")
+
+    def save(self):
+        self.pdf.save()
+
+    def text(self, x, y, text, *, width=340, size=10.5, leading=14,
+             color=INK, bold=False):
+        self.pdf.setFillColor(color)
+        self.pdf.setFont("Helvetica-Bold" if bold else "Helvetica", size)
+        words = text.split()
+        lines = []
+        line = ""
+        for word in words:
+            trial = word if not line else f"{line} {word}"
+            if stringWidth(trial, "Helvetica", size) <= width:
+                line = trial
+            else:
+                lines.append(line)
+                line = word
+        if line:
+            lines.append(line)
+        for item in lines:
+            self.pdf.drawString(x, y, item)
+            y -= leading
+        return y
+
+    def bullets(self, x, y, items, *, width=350, size=10.2, leading=14):
+        for item in items:
+            self.pdf.setFillColor(BLUE)
+            self.pdf.circle(x + 3, y + 3, 2.2, fill=1, stroke=0)
+            y = self.text(
+                x + 13, y, item, width=width - 13, size=size,
+                leading=leading)
+            y -= 5
+        return y
+
+    def box(self, x, y, width, height, title, body="", *, color=BLUE):
+        self.pdf.setFillColor(LIGHT)
+        self.pdf.setStrokeColor(LINE)
+        self.pdf.roundRect(x, y, width, height, 9, fill=1, stroke=1)
+        self.pdf.setFillColor(color)
+        self.pdf.roundRect(x, y + height - 8, width, 8, 4, fill=1, stroke=0)
+        self.pdf.setFillColor(INK)
+        self.pdf.setFont("Helvetica-Bold", 12)
+        self.pdf.drawString(x + 13, y + height - 29, title)
+        if body:
+            self.text(
+                x + 13, y + height - 48, body,
+                width=width - 26, size=9.3, leading=12, color=MUTED)
+
+    def arrow(self, x1, y1, x2, y2, *, color=MUTED, width=1.8):
+        self.pdf.setStrokeColor(color)
+        self.pdf.setFillColor(color)
+        self.pdf.setLineWidth(width)
+        self.pdf.line(x1, y1, x2, y2)
+        angle = 6
+        if abs(x2 - x1) >= abs(y2 - y1):
+            direction = 1 if x2 > x1 else -1
+            self.pdf.line(x2, y2, x2 - direction * angle, y2 + 4)
+            self.pdf.line(x2, y2, x2 - direction * angle, y2 - 4)
+        else:
+            direction = 1 if y2 > y1 else -1
+            self.pdf.line(x2, y2, x2 + 4, y2 - direction * angle)
+            self.pdf.line(x2, y2, x2 - 4, y2 - direction * angle)
+
+    def image(self, png, x, y, width, height):
+        self.pdf.drawImage(
+            ImageReader(io.BytesIO(png)), x, y, width, height,
+            preserveAspectRatio=True, anchor="c", mask="auto")
+
+    def label(self, x, y, text, color):
+        self.pdf.setFillColor(color)
+        self.pdf.circle(x + 5, y + 4, 5, fill=1, stroke=0)
+        self.pdf.setFillColor(INK)
+        self.pdf.setFont("Helvetica", 9.5)
+        self.pdf.drawString(x + 16, y, text)
+
+
+def _cover_page(report):
+    report.new_page(
+        "Graph-Based Fragment Detection and Precursor Assembly",
+        "A 2D visual guide to the implemented single-step recommendation workflow")
+    report.pdf.setFillColor(HexColor("#10243B"))
+    report.pdf.roundRect(38, 105, 766, 365, 18, fill=1, stroke=0)
+    report.pdf.setFillColor(white)
+    report.pdf.setFont("Helvetica-Bold", 28)
+    report.pdf.drawString(72, 405, "From inventory to precursor recommendations")
+    report.pdf.setFont("Helvetica", 13)
+    report.pdf.drawString(
+        74, 378,
+        "Recognize useful molecular pieces, then combine complementary pieces around a desired product.")
+    report.box(78, 205, 285, 125, "1. Fragment detection",
+               "Find coherent pieces of an available compound that are conserved in the desired product.",
+               color=CYAN)
+    report.box(479, 205, 285, 125, "2. Precursor assembly",
+               "Combine complementary pieces into complete, explainable product construction patterns.",
+               color=ORANGE)
+    report.arrow(375, 267, 466, 267, color=white, width=2.5)
+    report.pdf.setFillColor(white)
+    report.pdf.setFont("Helvetica-Bold", 8.5)
+    report.pdf.drawCentredString(421, 280, "mapped pieces")
+    report.pdf.setFont("Helvetica", 10)
+    report.pdf.drawString(75, 150, "All colored molecular regions in this report come from computed atom mappings.")
+    report.pdf.drawString(75, 132, "The chemistry drawings are 2D for clarity; routine C-H labels are omitted.")
+    report.finish_page()
+
+
+def _architecture_page(report):
+    report.new_page(
+        "Objective and general approach",
+        "Recommend available starting materials whose conserved pieces can account for a desired product")
+    y = 380
+    report.box(42, y, 150, 95, "Inventory",
+               "Available compounds represented as molecular graphs.", color=CYAN)
+    report.box(226, y, 175, 95, "Detect useful pieces",
+               "Find coherent regions of each compound that occur in the target.", color=BLUE)
+    report.box(435, y, 155, 95, "Combine pieces",
+               "Select complementary candidates that account for the target.", color=PURPLE)
+    report.box(624, y, 175, 95, "Recommend",
+               "Present a small, diverse set of plausible precursor sets.", color=ORANGE)
+    report.arrow(194, y + 48, 222, y + 48)
+    report.arrow(403, y + 48, 431, y + 48)
+    report.arrow(592, y + 48, 620, y + 48)
+
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.drawString(42, 330, "What the workflow is trying to preserve")
+    report.bullets(44, 305, [
+        "Large, recognizable molecular pieces are preferred over scattered atom-by-atom coincidences.",
+        "Each product atom is assigned to one proposed source, giving the recommendation clear provenance.",
+        "Different ways of dividing the target remain visible as distinct construction patterns.",
+        "Every 2D color comes from the computed atom correspondence rather than manual annotation.",
+    ], width=745)
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 82, 757, 105, 10, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 13)
+    report.pdf.drawString(60, 160, "Important scope")
+    report.text(60, 138,
+        "This is a structural recommendation system. It proposes coherent atom sources and implied bond edits; it does not by itself prove kinetic feasibility, select catalysts, or guarantee a one-step laboratory reaction.",
+        width=715, size=10.5, leading=15)
+    report.finish_page()
+
+
+def _detection_page(report):
+    report.new_page(
+        "Stage 1: detect useful molecular pieces",
+        "Compare each available compound with the target and retain coherent shared regions")
+    xs = (80, 330, 580)
+    titles = (
+        "A. Find the main shared piece", "B. Account for the remainder",
+        "C. Record a colored candidate")
+    bodies = (
+        "Locate the largest connected region of the source that appears in the desired product.",
+        "Separate material that is not retained, while allowing another coherent source piece to match elsewhere.",
+        "Store which source atoms correspond to which target atoms. These mappings drive the colors.",
+    )
+    colors = (CYAN, PURPLE, ORANGE)
+    for x, title, body, color in zip(xs, titles, bodies, colors):
+        report.box(x, 355, 185, 135, title, body, color=color)
+    for left, right in zip(xs, xs[1:]):
+        report.arrow(left + 188, 422, right - 3, 422)
+
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.setFillColor(INK)
+    report.pdf.drawString(42, 325, "Graph interpretation")
+    report.pdf.setStrokeColor(LINE)
+    report.pdf.setLineWidth(2)
+    node_positions = [(95, 245), (155, 245), (215, 245), (275, 245)]
+    for index, (x, y) in enumerate(node_positions):
+        if index:
+            report.pdf.line(node_positions[index - 1][0] + 13, y, x - 13, y)
+        report.pdf.setFillColor(CYAN if index < 3 else LIGHT)
+        report.pdf.setStrokeColor(INK)
+        report.pdf.circle(x, y, 13, fill=1, stroke=1)
+    report.pdf.setStrokeColor(RED)
+    report.pdf.setLineWidth(4)
+    report.pdf.line(228, 245, 262, 245)
+    report.label(50, 205, "main shared piece", CYAN)
+    report.label(220, 205, "boundary of that piece", RED)
+    report.label(365, 205, "unused source material", PURPLE)
+    report.label(595, 205, "another recognized piece", ORANGE)
+    report.text(42, 165,
+        "The important idea is fragment-level conservation. A source can contribute more than one coherent piece, but atoms that do not belong in the product are not forced into arbitrary product positions.",
+        width=745, size=10.5, leading=15)
+    report.finish_page()
+
+
+def _co2_page(report, config):
+    target = "O=C(O)Cc1ccccc1"
+    result = _detect("carbon dioxide", "O=C=O", target, config)
+    candidate = max(result.candidates, key=lambda item: item.retained_size)
+    source_colors, target_colors = _fragment_colors(
+        candidate, (RD_CYAN, RD_ORANGE, RD_PURPLE))
+    source_png = _rdkit_png(
+        "O=C=O", source_colors, cut_bonds=candidate.boundary_bonds,
+        width=500, height=280)
+    target_png = _rdkit_png(
+        target, target_colors, width=700, height=330)
+
+    report.new_page(
+        "Example 1: one source contributes multiple fragments",
+        "CO2 is recognized within the carboxyl group of phenylacetic acid")
+    report.box(42, 405, 315, 80, "Source: carbon dioxide",
+               "The carbonyl piece is recognized first. The second oxygen is then retained as another useful piece of the same source.", color=CYAN)
+    report.box(485, 405, 315, 80, "Target: phenylacetic acid",
+               "Only the colored carboxyl atoms are owned by this candidate. The aromatic side of P remains available to other sources.", color=ORANGE)
+    report.image(source_png, 55, 225, 285, 170)
+    report.image(target_png, 440, 215, 375, 190)
+    report.arrow(360, 310, 425, 310, color=GREEN, width=2.5)
+    report.label(60, 205, "initial retained fragment", CYAN)
+    report.label(240, 205, "additional target-owned fragment", ORANGE)
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 82, 758, 95, 10, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(58, 152, "What the colors show")
+    report.text(58, 132,
+        "The cyan carbonyl piece is the largest connected match. The orange oxygen is then recognized as another valid part of the target carboxyl group. Together, all three CO2 atoms receive product positions; the rest of phenylacetic acid remains available for other precursors.",
+        width=720, size=9.6, leading=13)
+    report.finish_page()
+
+
+def _assembly_page(report):
+    report.new_page(
+        "Stage 2: assemble a complete product explanation",
+        "Combine complementary pieces so every target atom has one proposed source")
+    report.box(45, 405, 185, 90, "Candidate index",
+               "Collect useful target regions found across the inventory.", color=PURPLE)
+    report.box(328, 405, 185, 90, "Construction patterns",
+               "Explore distinct ways of dividing the target among sources.", color=BLUE)
+    report.box(611, 405, 185, 90, "Recommendation",
+               "Show the best precursor sets for each useful partition.", color=ORANGE)
+    report.arrow(235, 450, 322, 450)
+    report.arrow(518, 450, 605, 450)
+
+    report.pdf.setFont("Helvetica-Bold", 13)
+    report.pdf.setFillColor(INK)
+    report.pdf.drawString(48, 345, "A target atom has exactly one owner")
+    centers = [(115, 270), (185, 270), (255, 270), (325, 270),
+               (395, 270), (465, 270), (535, 270), (605, 270)]
+    module_colors = (BLUE, BLUE, BLUE, BLUE, ORANGE, ORANGE, ORANGE, ORANGE)
+    for index, ((x, y), color) in enumerate(zip(centers, module_colors)):
+        if index:
+            report.pdf.setStrokeColor(GREEN if index == 4 else INK)
+            report.pdf.setLineWidth(4 if index == 4 else 1.5)
+            report.pdf.line(centers[index - 1][0] + 14, y, x - 14, y)
+        report.pdf.setFillColor(color)
+        report.pdf.setStrokeColor(INK)
+        report.pdf.circle(x, y, 14, fill=1, stroke=1)
+        report.pdf.setFillColor(white)
+        report.pdf.setFont("Helvetica-Bold", 8)
+        report.pdf.drawCentredString(x, y - 3, str(index))
+    report.label(75, 220, "atoms owned by source 1", BLUE)
+    report.label(270, 220, "new bond between owners", GREEN)
+    report.label(500, 220, "atoms owned by source 2", ORANGE)
+    report.bullets(48, 175, [
+        "Selected pieces do not overlap: each product atom has one proposed source.",
+        "Together, the selected pieces explain the complete product graph.",
+        "A bond joining two colors is a proposed connection between source-derived modules.",
+        "The result is a recommendation for review, not a claim that reaction conditions are known.",
+    ], width=720, size=10.2, leading=13)
+    report.finish_page()
+
+
+def _suzuki_page(report, config):
+    target = "Clc1ccc(-c2ccccc2)cc1"
+    sources = (
+        ("bromobenzene", "Brc1ccccc1"),
+        ("4-chlorophenylboronic acid", "OB(O)c1ccc(Cl)cc1"),
+    )
+    _results, assembly = _assembly(target, sources, config)
+    selected = {candidate.source_id: candidate for candidate in assembly.candidates}
+    source_images = []
+    for (source_id, smiles), color in zip(sources, (RD_BLUE, RD_ORANGE)):
+        candidate = selected[source_id]
+        source_images.append(_rdkit_png(
+            smiles,
+            _source_colors(candidate, color),
+            cut_bonds=candidate.boundary_bonds,
+            width=570,
+            height=300,
+        ))
+    target_png = _rdkit_png(
+        target,
+        _target_colors(assembly, (RD_ORANGE, RD_BLUE)),
+        formed_bonds=assembly.formed_bonds,
+        width=760,
+        height=330,
+    )
+
+    report.new_page(
+        "Example 2: clean two-source assembly",
+        "Inventory compounds: bromobenzene and 4-chlorophenylboronic acid")
+    report.image(source_images[0], 35, 300, 270, 150)
+    report.image(source_images[1], 300, 300, 270, 150)
+    report.arrow(575, 375, 625, 375, color=GREEN, width=2.4)
+    report.image(target_png, 560, 270, 255, 190)
+    report.pdf.setFont("Helvetica-Bold", 10.5)
+    report.pdf.setFillColor(BLUE)
+    report.pdf.drawCentredString(170, 465, "Bromobenzene - inventory barcode C0042016")
+    report.pdf.setFillColor(ORANGE)
+    report.pdf.drawCentredString(435, 465, "4-Chlorophenylboronic acid - barcode C0115718")
+    report.pdf.setFillColor(INK)
+    report.pdf.drawCentredString(690, 465, "4-Chlorobiphenyl target")
+    report.label(50, 265, "blue source ownership", BLUE)
+    report.label(230, 265, "orange source ownership", ORANGE)
+    report.label(430, 265, "red source bond cut", RED)
+    report.label(600, 265, "green product bond formed", GREEN)
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 78, 758, 150, 10, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 12)
+    report.pdf.drawString(58, 202, "Computed result")
+    report.bullets(58, 178, [
+        "Each aryl ring remains a coherent colored module from its original inventory compound.",
+        "Bromine and the boronic-acid group are left uncolored because they are not retained in the target.",
+        "The two colors cover the complete product without competing for the same atom.",
+        "The green bond is the proposed connection between the two source-derived modules.",
+    ], width=720, size=9.5, leading=12)
+    report.finish_page()
+
+
+def _complex_page(report, config):
+    target = "Brc1cccc(-c2ccc(N(c3ccccc3)c3ccccc3)cc2)c1"
+    sources = (
+        ("1,3-dibromobenzene", "Brc1cccc(Br)c1"),
+        ("triarylamine BPin", "CC1(C)OB(c2ccc(N(c3ccccc3)c3ccccc3)cc2)OC1(C)C"),
+    )
+    _results, assembly = _assembly(target, sources, config)
+    selected = {candidate.source_id: candidate for candidate in assembly.candidates}
+    left = selected["1,3-dibromobenzene"]
+    right = selected["triarylamine BPin"]
+    left_png = _rdkit_png(
+        sources[0][1], _source_colors(left, RD_BLUE),
+        cut_bonds=left.boundary_bonds, width=600, height=320)
+    right_png = _rdkit_png(
+        sources[1][1], _source_colors(right, RD_ORANGE),
+        cut_bonds=right.boundary_bonds, width=900, height=360)
+    target_png = _rdkit_png(
+        target, _target_colors(assembly, (RD_ORANGE, RD_BLUE)),
+        formed_bonds=assembly.formed_bonds, width=1000, height=390)
+
+    report.new_page(
+        "Example 3: a larger inventory-derived target",
+        "The algorithm colors atom ownership, not a hand-selected reaction template")
+    report.image(left_png, 35, 325, 235, 145)
+    report.image(right_png, 240, 300, 340, 185)
+    report.arrow(585, 382, 625, 382, color=GREEN, width=2.4)
+    report.image(target_png, 605, 295, 205, 190)
+    report.pdf.setFillColor(BLUE)
+    report.pdf.setFont("Helvetica-Bold", 9.5)
+    report.pdf.drawCentredString(150, 475, "1,3-Dibromobenzene - C0113869")
+    report.pdf.setFillColor(ORANGE)
+    report.pdf.drawCentredString(410, 475, "Triarylamine BPin - C0129716")
+    report.pdf.setFillColor(INK)
+    report.pdf.drawCentredString(705, 475, "Assembled target")
+    report.label(48, 270, "retained smaller aryl module", BLUE)
+    report.label(275, 270, "retained triarylamine module", ORANGE)
+    report.label(585, 270, "new inter-module bond", GREEN)
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 75, 758, 155, 10, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 12)
+    report.pdf.drawString(58, 204, "What this example demonstrates")
+    report.bullets(58, 180, [
+        "The detector keeps the large triarylamine aryl system coherent instead of decomposing it into atom-wise matches.",
+        "The unused bromine and the BPin unit remain residual source material and are not colored as product ownership.",
+        "Together, the two colored candidates explain the complete target without overlapping ownership.",
+        "The same general approach works for both a simple coupling and this substantially larger structure.",
+    ], width=720, size=9.6, leading=12)
+    report.finish_page()
+
+
+def _inventory_page(report):
+    report.new_page(
+        "Inventory integration and interpretation",
+        "The structure bank provides candidates; graph matching supplies atom-level evidence")
+    report.box(42, 400, 170, 90, "3,059 containers",
+               "Physical inventory rows retained with barcode and location metadata.", color=CYAN)
+    report.box(237, 400, 170, 90, "2,769 resolved",
+               "Containers with a PubChem structure that parses in RDKit.", color=BLUE)
+    report.box(432, 400, 170, 90, "1,919 structures",
+               "Unique stereochemical SMILES in the deduplicated search bank.", color=PURPLE)
+    report.box(627, 400, 170, 90, "290 unresolved",
+               "Not-found or ambiguous identifiers remain excluded and auditable.", color=ORANGE)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.drawString(42, 350, "Recommended use")
+    report.bullets(44, 325, [
+        "Compare every resolved inventory structure with the desired target.",
+        "Collect compounds that contribute substantial coherent pieces.",
+        "Combine complementary pieces into several distinct construction patterns.",
+        "Review the leading recommendations with stereochemical and chemical knowledge.",
+    ], width=750)
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 92, 758, 120, 10, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 12)
+    report.pdf.drawString(58, 185, "Reading the colors")
+    report.text(58, 163,
+        "Blue, orange, and purple identify source ownership. Red marks a source boundary bond cut. Green marks a product bond connecting different owners. Uncolored atoms remain in a source residual or are not supplied by that candidate. Hydrogens participate explicitly in the computation, although routine C-H labels are hidden in the skeletal drawings for legibility.",
+        width=718, size=10, leading=14)
+    report.text(58, 112,
+        "Recommendations favor a small number of source structures that retain a large fraction of their atoms with few structural changes. This ordering is explainable but is not a substitute for reaction conditions or mechanistic judgment.",
+        width=718, size=9.5, leading=13, color=MUTED)
+    report.finish_page()
+
+
+def _references_page(report):
+    report.new_page("How to interpret the result")
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.drawString(42, 475, "What the report supports")
+    report.bullets(44, 450, [
+        "A visual explanation of which molecular pieces can be conserved in the target.",
+        "A transparent proposal for which inventory compounds supply each product region.",
+        "A compact set of structurally distinct precursor recommendations.",
+        "A starting point for a chemist to assess reactivity, conditions, selectivity, and availability.",
+    ], width=745)
+    report.pdf.setFont("Helvetica-Bold", 14)
+    report.pdf.setFillColor(INK)
+    report.pdf.drawString(42, 320, "References")
+    refs = [
+        "1. PubChem PUG REST: https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest",
+        "2. RDKit documentation: https://www.rdkit.org/docs/",
+        "3. Project design specification: RETROSYNTHESIS_DESIGN.md in the coordinate_alignment repository.",
+    ]
+    y = 290
+    for ref in refs:
+        y = report.text(55, y, ref, width=730, size=10, leading=14)
+        y -= 8
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 82, 758, 92, 10, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(58, 148, "Figure provenance")
+    report.text(58, 128,
+        "Regenerate this PDF with tools/build_fragment_matching_report.py. Molecular highlights are recomputed from the current detector and assembly implementation each time.",
+        width=718, size=9.7, leading=13)
+    report.finish_page()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", required=True)
+    args = parser.parse_args()
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    config = FragmentDetectionConfig(
+        minimum_fragment_size=1,
+        iso_tolerance=0.5,
+        branch_limit=500,
+        candidate_limit=500,
+    )
+    report = Report(output)
+    _cover_page(report)
+    _architecture_page(report)
+    _detection_page(report)
+    _co2_page(report, config)
+    _assembly_page(report)
+    _suzuki_page(report, config)
+    _complex_page(report, config)
+    _inventory_page(report)
+    _references_page(report)
+    report.save()
+    print(output.resolve())
+
+
+if __name__ == "__main__":
+    main()

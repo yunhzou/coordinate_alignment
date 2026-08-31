@@ -10,9 +10,6 @@ from build_retro_demo_viewer import _mol_3d
 
 
 COLORS = ("#2684ff", "#ff8b00", "#8b5cf6", "#00a896")
-DEFAULT_KNOWN_IDS = {"MCULE-5539191636", "MCULE-6011753091"}
-
-
 def _model(smiles, candidate, color, cache):
     if smiles not in cache:
         cache[smiles] = _mol_3d(
@@ -25,7 +22,7 @@ def _model(smiles, candidate, color, cache):
         "styles": [{"indices": candidate["retained_atoms"], "color": color}],
         "labels": [
             {"atom": int(source), "text": f"P{int(target)}"}
-            for source, target in candidate.get("mapping", [])
+            for source, target in candidate["mapping"]
         ],
         "broken": candidate["boundary_bonds"],
         "formed": [],
@@ -68,7 +65,7 @@ def _group_precursors(precursors):
         group["complete"] = all(item["complete"] for item in copies)
         group["multiplicity"] = len(copies)
         group["mapping"] = [
-            pair for item in copies for pair in item.get("mapping", [])
+            pair for item in copies for pair in item["mapping"]
         ]
     return groups
 
@@ -128,7 +125,7 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
         })
         assemblies.append({
             "rank": rank,
-            "pattern": assembly.get("construction_pattern"),
+            "pattern": assembly["construction_pattern"],
             "known": _matches_expected(
                 assembly, known_ids, expected_coverage),
             "score": assembly["score"],
@@ -150,12 +147,12 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
             "searched": report["scan_counts"]["searched"],
             "matched_precursors": report["scan_counts"]["matched_precursors"],
             "fragment_candidates": report["scan_counts"]["fragment_candidates"],
-            "capped": report["scan_counts"].get("capped", 0),
+            "capped": report["scan_counts"]["capped"],
             "assemblies": len(ranked),
             "known_rank": known_rank,
             "explicit_hydrogens": True,
         },
-        "patterns": report.get("construction_patterns", []),
+        "patterns": report["construction_patterns"],
         "assemblies": assemblies,
     }
 
