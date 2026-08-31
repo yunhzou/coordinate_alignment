@@ -133,6 +133,16 @@ def _target_colors(assembly, colors):
     return output
 
 
+def _target_colors_by_source(assembly, color_by_source):
+    output = {}
+    for candidate in assembly.candidates:
+        color = color_by_source[candidate.source_id]
+        output.update({
+            atom: color for atom in candidate.covered_target_atoms
+        })
+    return output
+
+
 def _fragment_colors(candidate, colors):
     source = {}
     target = {}
@@ -451,43 +461,163 @@ def _suzuki_page(report, config):
             width=570,
             height=300,
         ))
+    color_by_source = {
+        "bromobenzene": RD_BLUE,
+        "4-chlorophenylboronic acid": RD_ORANGE,
+    }
     target_png = _rdkit_png(
         target,
-        _target_colors(assembly, (RD_ORANGE, RD_BLUE)),
+        _target_colors_by_source(assembly, color_by_source),
         formed_bonds=assembly.formed_bonds,
-        width=760,
-        height=330,
+        width=900,
+        height=360,
     )
 
     report.new_page(
-        "Example 2: clean two-source assembly",
-        "Inventory compounds: bromobenzene and 4-chlorophenylboronic acid")
-    report.image(source_images[0], 35, 300, 270, 150)
-    report.image(source_images[1], 300, 300, 270, 150)
-    report.arrow(575, 375, 625, 375, color=GREEN, width=2.4)
-    report.image(target_png, 560, 270, 255, 190)
+        "Example 2: full R1 + R2 to P_target mapping",
+        "Complete 2D molecules are shown; identical colors are assigned by the computed atom mapping")
+    report.image(source_images[0], 65, 330, 280, 145)
+    report.image(source_images[1], 495, 325, 290, 155)
     report.pdf.setFont("Helvetica-Bold", 10.5)
     report.pdf.setFillColor(BLUE)
-    report.pdf.drawCentredString(170, 465, "Bromobenzene - inventory barcode C0042016")
+    report.pdf.drawCentredString(205, 485, "R1: Bromobenzene - inventory C0042016")
     report.pdf.setFillColor(ORANGE)
-    report.pdf.drawCentredString(435, 465, "4-Chlorophenylboronic acid - barcode C0115718")
+    report.pdf.drawCentredString(640, 485, "R2: 4-Chlorophenylboronic acid - C0115718")
     report.pdf.setFillColor(INK)
-    report.pdf.drawCentredString(690, 465, "4-Chlorobiphenyl target")
-    report.label(50, 265, "blue source ownership", BLUE)
-    report.label(230, 265, "orange source ownership", ORANGE)
-    report.label(430, 265, "red source bond cut", RED)
-    report.label(600, 265, "green product bond formed", GREEN)
-    report.pdf.setFillColor(LIGHT)
-    report.pdf.roundRect(42, 78, 758, 150, 10, fill=1, stroke=0)
-    report.pdf.setFillColor(INK)
-    report.pdf.setFont("Helvetica-Bold", 12)
-    report.pdf.drawString(58, 202, "Computed result")
-    report.bullets(58, 178, [
-        "Each aryl ring remains a coherent colored module from its original inventory compound.",
-        "Bromine and the boronic-acid group are left uncolored because they are not retained in the target.",
-        "The two colors cover the complete product without competing for the same atom.",
-        "The green bond is the proposed connection between the two source-derived modules.",
-    ], width=720, size=9.5, leading=12)
+    report.pdf.setFont("Helvetica-Bold", 24)
+    report.pdf.drawCentredString(421, 387, "+")
+    report.arrow(421, 320, 421, 285, color=GREEN, width=2.5)
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawCentredString(421, 265, "P_target: 4-chlorobiphenyl")
+    report.image(target_png, 220, 88, 402, 175)
+    report.label(55, 72, "blue atoms map from R1", BLUE)
+    report.label(245, 72, "orange atoms map from R2", ORANGE)
+    report.label(470, 72, "red marks source material not retained", RED)
+    report.label(695, 72, "green is the new P bond", GREEN)
+    report.finish_page()
+
+
+def _alternative_patterns_page(report, config):
+    target = "O=C(O)Cc1ccccc1"
+    source_smiles = {
+        "phenylacetyl chloride": "O=C(Cl)Cc1ccccc1",
+        "water": "O",
+        "benzyl bromide": "BrCc1ccccc1",
+        "formic acid": "O=CO",
+        "benzene": "c1ccccc1",
+        "acetic acid": "CC(=O)O",
+    }
+    detections = {
+        source_id: _detect(source_id, smiles, target, config)
+        for source_id, smiles in source_smiles.items()
+    }
+    candidates = tuple(
+        candidate
+        for detection in detections.values()
+        for candidate in detection.candidates
+    )
+    search = assemble_fragment_cover(
+        _graph(target),
+        candidates,
+        maximum_precursors=2,
+        assembly_limit=1_000,
+        require_attachment_bonds=False,
+    )
+    requested = (
+        (
+            "Pattern A",
+            "carbonyl framework retained",
+            ("phenylacetyl chloride", "water"),
+        ),
+        (
+            "Pattern B",
+            "benzyl and carboxyl modules",
+            ("benzyl bromide", "formic acid"),
+        ),
+        (
+            "Pattern C",
+            "aryl and acetic-acid modules",
+            ("benzene", "acetic acid"),
+        ),
+    )
+    rows = []
+    for label, description, source_ids in requested:
+        matches = [
+            assembly for assembly in search.assemblies
+            if frozenset(assembly.precursor_ids) == frozenset(source_ids)
+        ]
+        if not matches:
+            raise RuntimeError(f"missing alternative assembly: {source_ids}")
+        assembly = min(matches, key=lambda item: (
+            len(item.broken_bonds),
+            len(item.formed_bonds),
+            tuple(candidate.covered_target_atoms
+                  for candidate in item.candidates),
+        ))
+        selected = {
+            candidate.source_id: candidate
+            for candidate in assembly.candidates
+        }
+        color_by_source = {
+            source_ids[0]: RD_BLUE,
+            source_ids[1]: RD_ORANGE,
+        }
+        source_pngs = []
+        for source_id in source_ids:
+            candidate = selected[source_id]
+            source_pngs.append(_rdkit_png(
+                source_smiles[source_id],
+                _source_colors(candidate, color_by_source[source_id]),
+                cut_bonds=candidate.boundary_bonds,
+                width=500,
+                height=260,
+            ))
+        target_png = _rdkit_png(
+            target,
+            _target_colors_by_source(assembly, color_by_source),
+            formed_bonds=assembly.formed_bonds,
+            width=700,
+            height=280,
+        )
+        rows.append((
+            label, description, source_ids, source_pngs, target_png,
+        ))
+
+    report.new_page(
+        "Alternative construction patterns for one target",
+        "One best representative is shown for each distinct structural division of phenylacetic acid")
+    row_y = (365, 225, 85)
+    for (label, description, source_ids, source_pngs, target_png), y in zip(
+            rows, row_y):
+        report.pdf.setFillColor(LIGHT)
+        report.pdf.setStrokeColor(LINE)
+        report.pdf.roundRect(42, y, 758, 120, 9, fill=1, stroke=1)
+        report.pdf.setFillColor(INK)
+        report.pdf.setFont("Helvetica-Bold", 11)
+        report.pdf.drawString(56, y + 91, label)
+        report.text(
+            56, y + 73, description, width=105, size=8.5,
+            leading=11, color=MUTED)
+        report.image(source_pngs[0], 165, y + 22, 145, 83)
+        report.pdf.setFillColor(BLUE)
+        report.pdf.setFont("Helvetica-Bold", 8.5)
+        report.pdf.drawCentredString(237, y + 104, source_ids[0])
+        report.pdf.setFillColor(INK)
+        report.pdf.setFont("Helvetica-Bold", 15)
+        report.pdf.drawCentredString(321, y + 57, "+")
+        report.image(source_pngs[1], 330, y + 22, 135, 83)
+        report.pdf.setFillColor(ORANGE)
+        report.pdf.setFont("Helvetica-Bold", 8.5)
+        report.pdf.drawCentredString(397, y + 104, source_ids[1])
+        report.arrow(473, y + 60, 525, y + 60, color=GREEN, width=2)
+        report.image(target_png, 535, y + 14, 245, 96)
+        report.pdf.setFillColor(INK)
+        report.pdf.setFont("Helvetica-Bold", 8.5)
+        report.pdf.drawCentredString(657, y + 104, "same complete P_target")
+    report.text(
+        48, 58,
+        "These are alternative structural explanations found in one candidate pool. They increase confidence that the coverage search is working, while chemical feasibility must still be judged separately.",
+        width=745, size=8.8, leading=11, color=MUTED)
     report.finish_page()
 
 
@@ -630,6 +760,7 @@ def main():
     _co2_page(report, config)
     _assembly_page(report)
     _suzuki_page(report, config)
+    _alternative_patterns_page(report, config)
     _complex_page(report, config)
     _inventory_page(report)
     _references_page(report)
