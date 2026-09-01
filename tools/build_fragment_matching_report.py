@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 from pathlib import Path
 
 from rdkit import Chem
@@ -950,6 +951,108 @@ def _large_star_page(report, config):
     report.finish_page()
 
 
+def _extreme_star_page(report, result_path):
+    payload = json.loads(Path(result_path).read_text())
+    target_smiles = payload["target"]["smiles"]
+    assembly = payload["assembly"]["assemblies"][0]
+    source_smiles = {
+        detection["source_id"]: detection["representation"]
+        for detection in payload["detections"]
+    }
+    detection_candidates = {
+        (
+            detection["source_id"],
+            tuple(tuple(pair) for pair in candidate["mapping"]),
+        ): candidate
+        for detection in payload["detections"]
+        for candidate in detection["candidates"]
+    }
+    core = next(
+        candidate for candidate in assembly["candidate_mappings"]
+        if candidate["source_id"] == "1,3,5-tribromobenzene")
+    arms = sorted(
+        (candidate for candidate in assembly["candidate_mappings"]
+         if candidate["source_id"] == "large OLED boronic ester"),
+        key=lambda candidate: candidate["covered_target_atoms"],
+    )
+    colors = (RD_ORANGE, RD_PURPLE, RD_CYAN)
+
+    def source_png(candidate, color, width):
+        mapping = tuple(tuple(pair) for pair in candidate["mapping"])
+        detection_candidate = detection_candidates[
+            (candidate["source_id"], mapping)]
+        return _rdkit_png(
+            source_smiles[candidate["source_id"]],
+            {source: color for source, _target in mapping},
+            cut_bonds=tuple(
+                tuple(bond)
+                for bond in detection_candidate["boundary_bonds"]),
+            width=width,
+            height=320,
+        )
+
+    core_png = source_png(core, RD_BLUE, 500)
+    arm_pngs = [
+        source_png(candidate, color, 800)
+        for candidate, color in zip(arms, colors)
+    ]
+    target_colors = {
+        atom: RD_BLUE for atom in core["covered_target_atoms"]
+    }
+    for candidate, color in zip(arms, colors):
+        target_colors.update({
+            atom: color for atom in candidate["covered_target_atoms"]
+        })
+    target_png = _rdkit_png(
+        target_smiles,
+        target_colors,
+        formed_bonds=tuple(
+            tuple(bond) for bond in assembly["formed_bonds"]),
+        width=1_300,
+        height=600,
+    )
+
+    report.new_page(
+        "Extreme Size Test: 183 Explicit Atoms",
+        "A 108-heavy-atom target assembled from one core and three repeated OLED building blocks")
+    centers = (92, 280, 468, 656)
+    report.image(core_png, 22, 335, 140, 125)
+    for index, png in enumerate(arm_pngs):
+        report.image(png, 170 + index * 188, 325, 190, 140)
+    labels = (
+        ("R1: central core", BLUE),
+        ("R2: large arm, copy 1", ORANGE),
+        ("R3: large arm, copy 2", PURPLE),
+        ("R4: large arm, copy 3", CYAN),
+    )
+    for center, (label, color) in zip(centers, labels):
+        report.pdf.setFillColor(color)
+        report.pdf.setFont("Helvetica-Bold", 8.5)
+        report.pdf.drawCentredString(center, 470, label)
+    endpoints = (155, 245, 335, 425)
+    for center, endpoint, color in zip(
+            centers, endpoints, (BLUE, ORANGE, PURPLE, CYAN)):
+        report.arrow(center, 320, endpoint, 294, color=color, width=2)
+
+    report.image(target_png, 35, 72, 500, 220)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 10.5)
+    report.pdf.drawCentredString(
+        285, 296, "P_target: complete 108-heavy-atom product")
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(555, 78, 245, 215, 9, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(572, 268, "Saved computed result")
+    report.bullets(572, 244, [
+        "Complete coverage: 9 + 58 + 58 + 58 explicit atoms.",
+        "Three product bonds join the four source-derived modules.",
+        "Detection takes 147.6 seconds; final assembly takes 0.004 seconds.",
+        "Maximum branch count is four, with no cap hit: source scanning, not branching, is the bottleneck.",
+    ], width=210, size=8.7, leading=11)
+    report.finish_page()
+
+
 def _next_questions_page(report):
     report.new_page(
         "Open Questions: From Geometry to Retrosynthesis",
@@ -1084,6 +1187,10 @@ def _references_page(report):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--large-star-result",
+        default="reports/large_star_183_result.json",
+    )
     args = parser.parse_args()
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -1101,6 +1208,7 @@ def main():
     _complex_page(report, config)
     _multistep_page(report, config)
     _large_star_page(report, config)
+    _extreme_star_page(report, args.large_star_result)
     _next_questions_page(report)
     report.save()
     print(output.resolve())
