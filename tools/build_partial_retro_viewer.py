@@ -25,10 +25,22 @@ def main():
     raw_precursors = partial["best_partial_precursors"]
     precursors = []
     owner = {}
+    relinquished = 0
     for module, item in enumerate(raw_precursors):
         candidate = item["candidate"]
         molecule = Chem.AddHs(Chem.MolFromSmiles(item["smiles"]))
-        covered = candidate["covered_target_atoms"]
+        detected_coverage = candidate["covered_target_atoms"]
+        covered = [atom for atom in detected_coverage if atom not in owner]
+        relinquished += len(detected_coverage) - len(covered)
+        covered_set = set(covered)
+        retained_atoms = [
+            source for source, target_atom in candidate["mapping"]
+            if target_atom in covered_set
+        ]
+        mapping = [
+            pair for pair in candidate["mapping"]
+            if pair[1] in covered_set
+        ]
         for atom in covered:
             owner[int(atom)] = module
         precursors.append({
@@ -36,13 +48,13 @@ def main():
             "smiles": item["smiles"],
             "complete": item["complete"],
             "covered_target_atoms": covered,
-            "retained_atoms": candidate["retained_atoms"],
+            "retained_atoms": retained_atoms,
             "leftover_fragments": candidate["leftover_fragments"],
             "boundary_bonds": candidate["boundary_bonds"],
             "attachment_atoms_target": candidate[
                 "attachment_atoms_target"],
-            "mapping": candidate["mapping"],
-            "retained_atom_count": len(candidate["retained_atoms"]),
+            "mapping": mapping,
+            "retained_atom_count": len(retained_atoms),
             "total_atom_count": molecule.GetNumAtoms(),
         })
     formed = []
@@ -68,6 +80,7 @@ def main():
             sum(map(len, item["leftover_fragments"]))
             for item in precursors),
         "formed_bonds": len(formed),
+        "relinquished_overlap_atoms": relinquished,
     }
     report = {
         "target_smiles": partial["target_smiles"],
@@ -89,7 +102,9 @@ def main():
         }],
     }
     viewer_payload = _payload(
-        report, 1, set(), {}, args.title, "partial geometric cover")
+        report, 1, set(), {}, args.title,
+        ("overlap-tolerant recursive cover"
+         if partial.get("allow_overlap") else "partial geometric cover"))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(_html(viewer_payload))

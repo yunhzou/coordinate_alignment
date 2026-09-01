@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--maximum-precursors", type=int, default=12)
     parser.add_argument("--beam-width", type=int, default=20_000)
+    parser.add_argument("--allow-overlap", action="store_true")
     args = parser.parse_args()
 
     target = Chem.AddHs(Chem.MolFromSmiles(args.target_smiles))
@@ -56,9 +57,11 @@ def main():
         retained = sum(item["mask"].bit_count() for item in selected)
         source_atoms = sum(item["source_atom_count"] for item in selected)
         retention = retained / source_atoms if source_atoms else 0
+        overlap = retained - covered.bit_count()
         return (
             -covered.bit_count(),
             len({item["source_id"] for item in selected}),
+            overlap,
             -retention,
             sum(len(item["candidate"]["boundary_bonds"])
                 for item in selected),
@@ -70,9 +73,11 @@ def main():
         expanded = dict(states)
         for covered, selected in states.items():
             for item in items:
-                if item["mask"] & covered:
+                if not args.allow_overlap and item["mask"] & covered:
                     continue
                 new_covered = covered | item["mask"]
+                if new_covered == covered:
+                    continue
                 new_selected = selected + (item,)
                 current = expanded.get(new_covered)
                 if (current is None
@@ -96,6 +101,10 @@ def main():
         "target_atom_count": atom_count,
         "record_count": len(records),
         "candidate_count": len(items),
+        "allow_overlap": args.allow_overlap,
+        "best_partial_overlap_atom_count": (
+            sum(item["mask"].bit_count() for item in best_items)
+            - best_mask.bit_count()),
         "union_covered_target_atoms": [
             atom for atom in range(atom_count) if union_mask & (1 << atom)],
         "union_uncovered_target_atoms": union_uncovered,

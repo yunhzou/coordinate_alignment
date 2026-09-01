@@ -152,6 +152,11 @@ def _parser():
     parser.add_argument("--maximum-leftover-fragments", type=int)
     parser.add_argument("--save-all-results", action="store_true")
     parser.add_argument("--target-region-report")
+    parser.add_argument(
+        "--target-region-field",
+        choices=("best_partial_uncovered_target_atoms",
+                 "union_uncovered_target_atoms"),
+        default="best_partial_uncovered_target_atoms")
     return parser
 
 
@@ -177,8 +182,7 @@ def main(argv=None):
             Path(args.target_region_report).read_text())
         if region_report["target_smiles"] != args.target_smiles:
             raise ValueError("target-region report target does not match")
-        target_region_atoms = region_report[
-            "best_partial_uncovered_target_atoms"]
+        target_region_atoms = region_report[args.target_region_field]
     target_for_threshold = Chem.AddHs(Chem.MolFromSmiles(args.target_smiles))
     derived_minimum_fragment_size = (
         max(1, math.ceil(args.minimum_target_coverage_fraction
@@ -252,6 +256,7 @@ def main(argv=None):
         "explicit_hydrogens": True,
         "saved_all_results": args.save_all_results,
         "target_region_report": args.target_region_report,
+        "target_region_field": args.target_region_field,
         "target_region_atoms": target_region_atoms,
         "elapsed_seconds": elapsed,
         "counts": count_record,

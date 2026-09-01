@@ -1,0 +1,41 @@
+{
+  "schema": "rxn_core.recursive_decomposition_summary/v1",
+  "target": {
+    "name": "N-demethylvancomycin (norvancomycin)",
+    "mcule_id": "MCULE-3152543364",
+    "heavy_atom_count": 100,
+    "explicit_atom_count": 173,
+    "role": "nonterminal intermediate"
+  },
+  "policy": {
+    "exclude_target_identity": true,
+    "maximum_child_heavy_atom_fraction": 0.5,
+    "maximum_child_heavy_atoms": 50,
+    "gap_selection_rule": "ceil(sqrt(eligible bank size))",
+    "explicit_hydrogens": true,
+    "isomorphism_tolerance": 0.5,
+    "branch_limit": 100,
+    "seed_limit": 10,
+    "overlap_policy": "Allow duplicated target coverage only when one contributor relinquishes ownership; rank fewer unique structures and fewer relinquished atoms first."
+  },
+  "search": {
+    "stages": 7,
+    "persisted_records": 2866,
+    "searched_records": 2687,
+    "unresolved_records": 179,
+    "matched_precursors": 361,
+    "fragment_candidates": 888
+  },
+  "result": {
+    "target_atoms_covered": 173,
+    "target_atom_count": 173,
+    "exact_geometric_union": true,
+    "strict_disjoint_cover_found": false,
+    "overlap_tolerant_cover_found": true,
+    "placements": 17,
+    "unique_structures": 11,
+    "relinquished_overlap_atoms": 54,
+    "largest_selected_child_heavy_atoms": 46,
+    "interpretation": "The 100-heavy-atom norvancomycin endpoint has been rejected and replaced by a complete geometric cover from materially smaller catalog structures. The largest selected children remain intermediates if cost or availability rejects them; this result is not a chemically validated synthesis route."
+  }
+}
