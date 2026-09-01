@@ -22,6 +22,42 @@ COLORS = (
 )
 
 
+def _combine_source_models(sources):
+    combined = None
+    for index, source in enumerate(sources):
+        molecule = Chem.MolFromMolBlock(
+            source["model"]["mol"], removeHs=False)
+        conformer = molecule.GetConformer()
+        positions = [conformer.GetAtomPosition(atom)
+                     for atom in range(molecule.GetNumAtoms())]
+        center = (
+            sum(point.x for point in positions) / len(positions),
+            sum(point.y for point in positions) / len(positions),
+            sum(point.z for point in positions) / len(positions),
+        )
+        destination = ((index % 2) * 32.0, -(index // 2) * 24.0, 0.0)
+        for atom, point in enumerate(positions):
+            conformer.SetAtomPosition(atom, (
+                point.x + destination[0] - center[0],
+                point.y + destination[1] - center[1],
+                point.z + destination[2] - center[2],
+            ))
+        source["combined_offset"] = (
+            0 if combined is None else combined.GetNumAtoms())
+        combined = molecule if combined is None else Chem.CombineMols(
+            combined, molecule)
+
+    conformer = combined.GetConformer()
+    return {
+        "mol": Chem.MolToMolBlock(combined),
+        "coords": [
+            list(conformer.GetAtomPosition(atom))
+            for atom in range(combined.GetNumAtoms())
+        ],
+        "elements": [atom.GetSymbol() for atom in combined.GetAtoms()],
+    }
+
+
 def _validates_mapping(source, target, candidate, tolerance):
     mapping = {int(left): int(right) for left, right in candidate["mapping"]}
     retained = set(map(int, candidate["retained_atoms"]))
@@ -130,6 +166,7 @@ def _payload(records_path, bank_path, target_smiles, tolerance):
     )
     for source, choice in zip(sources, default_choices):
         source["default_candidate"] = choice
+    combined_sources = _combine_source_models(sources)
     defaults = [
         (source_index, source["candidates"][source["default_candidate"]])
         for source_index, source in enumerate(sources)
@@ -155,6 +192,7 @@ def _payload(records_path, bank_path, target_smiles, tolerance):
             "heavy_atom_count": heavy_count,
         },
         "sources": sources,
+        "combined_sources": combined_sources,
         "summary": {
             "source_count": len(sources),
             "candidate_count": sum(len(source["candidates"])
@@ -198,9 +236,9 @@ main{{min-width:0;display:grid;grid-template-rows:auto 1fr}}#info{{background:wh
 <main><div id="info"></div><div class="controls"><label><input id="labels" type="checkbox"> atom-map labels</label></div><div id="views"><section class="panel"><div class="label" id="RL"></div><div class="view" id="R"></div></section><section class="panel"><div class="label" id="PL"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data};let selected=-1,candidate=0;const viewers={{}};
 function pt(m,i){{return {{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}}
-function draw(id,m,styles,labels,broken=[]){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}if(m.mol){{v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.20}},sphere:{{color:s.color,scale:.35}}}}));broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));if(document.getElementById('labels').checked)labels.forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.75,inFront:true}}));v.zoomTo()}}v.render()}}
+function draw(id,m,styles,labels,broken=[],titles=[]){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}if(m.mol){{v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.20}},sphere:{{color:s.color,scale:.35}}}}));broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));titles.forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:14,fontColor:l.color,backgroundColor:'white',backgroundOpacity:.85,inFront:true}}));if(document.getElementById('labels').checked)labels.forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.75,inFront:true}}));v.zoomTo()}}v.render()}}
 function showSource(index,choice){{selected=index;candidate=choice;document.querySelectorAll('.source').forEach((b,i)=>b.classList.toggle('active',i===index));document.getElementById('all').classList.remove('active');const s=data.sources[index],c=s.candidates[choice],color=s.color;document.getElementById('candidates')?.remove();const box=document.createElement('div');box.id='candidates';s.candidates.forEach((x,i)=>{{const b=document.createElement('button');b.className='candidate'+(i===choice?' active':'');b.textContent='placement '+(i+1)+(x.chirality_violations?' · stereo ⚠':' · stereo ✓');b.onclick=()=>showSource(index,i);box.appendChild(b)}});document.querySelectorAll('.source')[index].after(box);document.getElementById('info').innerHTML='<b>'+s.name+'</b> · placement '+(choice+1)+'/'+s.candidates.length+' · '+c.retained_atoms.length+' explicit atoms mapped · '+c.retained_fragments.length+' intact connected fragment · element '+(c.element_match?'✓':'✗')+' · bonds '+(c.bond_match?'✓':'✗')+' · chirality violations '+c.chirality_violations;document.getElementById('RL').innerHTML='<b>R'+s.id+' · '+s.name+'</b><small>colored = intact matched fragment; original element colors = unmatched/protecting groups</small>';document.getElementById('PL').innerHTML='<b>P_target occupation by R'+s.id+'</b><small>'+c.covered_target_atoms.length+' of '+data.target.atom_count+' explicit target atoms</small>';draw('R',s.model,[{{indices:c.retained_atoms,color}}],c.mapping.map(x=>({{atom:x[0],text:'P'+x[1]}})),c.boundary_bonds);draw('P',data.target.model,[{{indices:c.covered_target_atoms,color}}],c.mapping.map(x=>({{atom:x[1],text:'R'+x[0]}})))}}
-function showAll(){{selected=-1;document.querySelectorAll('.source').forEach(b=>b.classList.remove('active'));document.getElementById('all').classList.add('active');document.getElementById('candidates')?.remove();const owners={{}};data.sources.forEach((s,i)=>s.candidates[s.default_candidate].covered_target_atoms.forEach(a=>(owners[a]??=[]).push(i)));const styles=[];data.sources.forEach((s,i)=>styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length===1&&owners[a][0]===i).map(Number),color:s.color}}));styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length>1).map(Number),color:'#d62828'}});document.getElementById('info').innerHTML='<b>Coverage-maximizing combination, one placement per R.</b> Red atoms are claimed by more than one R; uncolored atoms are not occupied. This is a union diagnostic, not a verified literature assignment.';document.getElementById('RL').innerHTML='<b>No combined R structure</b><small>Select an individual R to inspect its source mapping.</small>';document.getElementById('PL').innerHTML='<b>P_target combined occupation</b><small>'+data.summary.default_union_atoms+'/'+data.target.atom_count+' explicit atoms · '+data.summary.default_union_heavy_atoms+'/'+data.target.heavy_atom_count+' heavy atoms · '+data.summary.overlap_atoms.length+' overlap atoms · '+data.summary.default_chirality_violations+' chirality conflicts</small>';draw('R',{{mol:'',coords:[],elements:[]}},[],[]);draw('P',data.target.model,styles,[])}}
+function showAll(){{selected=-1;document.querySelectorAll('.source').forEach(b=>b.classList.remove('active'));document.getElementById('all').classList.add('active');document.getElementById('candidates')?.remove();const owners={{}};data.sources.forEach((s,i)=>s.candidates[s.default_candidate].covered_target_atoms.forEach(a=>(owners[a]??=[]).push(i)));const styles=[];data.sources.forEach((s,i)=>styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length===1&&owners[a][0]===i).map(Number),color:s.color}}));styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length>1).map(Number),color:'#d62828'}});const rstyles=[],rlabels=[],rbroken=[],rtitles=[];data.sources.forEach(s=>{{const c=s.candidates[s.default_candidate],o=s.combined_offset;rstyles.push({{indices:c.retained_atoms.map(a=>a+o),color:s.color}});rtitles.push({{atom:o,text:'R'+s.id,color:s.color}});c.mapping.forEach(x=>rlabels.push({{atom:x[0]+o,text:'R'+s.id+'→P'+x[1]}}));c.boundary_bonds.forEach(b=>rbroken.push([b[0]+o,b[1]+o]))}});document.getElementById('info').innerHTML='<b>Coverage-maximizing combination, one placement per R.</b> The left panel contains every intact R and the right panel shows their occupations on P. Red P atoms are claimed by more than one R; uncolored P atoms are not occupied. This is not a verified literature assignment.';document.getElementById('RL').innerHTML='<b>All seven R structures</b><small>spatially separated · colored = selected intact mapped fragment · original colors = unmatched groups</small>';document.getElementById('PL').innerHTML='<b>P_target combined occupation</b><small>'+data.summary.default_union_atoms+'/'+data.target.atom_count+' explicit atoms · '+data.summary.default_union_heavy_atoms+'/'+data.target.heavy_atom_count+' heavy atoms · '+data.summary.overlap_atoms.length+' overlap atoms · '+data.summary.default_chirality_violations+' chirality conflicts</small>';draw('R',data.combined_sources,rstyles,rlabels,rbroken,rtitles);draw('P',data.target.model,styles,[])}}
 const list=document.getElementById('sources');data.sources.forEach((s,i)=>{{const b=document.createElement('button');b.className='source';b.innerHTML='<b><span style="color:'+s.color+'">R'+s.id+'</span> · '+s.name+'</b><div class="small">'+s.candidates.length+' placement'+(s.candidates.length===1?'':'s')+' · best '+s.candidates[s.default_candidate].retained_atoms.length+' atoms · branch max '+s.maximum_branch_count+'</div>';b.onclick=()=>showSource(i,s.default_candidate);list.appendChild(b)}});document.getElementById('summary').textContent=data.summary.candidate_count+' saved placements; '+data.summary.cap_hits+' cap hits; default union '+data.summary.default_union_atoms+'/'+data.target.atom_count+' explicit atoms.';document.getElementById('all').onclick=showAll;document.getElementById('labels').onchange=()=>selected<0?showAll():showSource(selected,candidate);showAll();window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
 
 
