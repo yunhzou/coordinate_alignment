@@ -1,0 +1,47 @@
+{
+  "schema": "rxn_core.target_similarity_catalog/v1",
+  "source_catalog": "data/mcule/mcule_fast_and_natural_merged_deduplicated.csv.gz",
+  "target_smiles": "CN[C@H](CC(C)C)C(=O)N[C@H]1C(=O)N[C@@H](CC(N)=O)C(=O)N[C@H]2C(=O)N[C@H]3C(=O)N[C@H](C(=O)N[C@H](C(=O)O)c4cc(O)cc(O)c4-c4cc3ccc4O)[C@H](O)c3ccc(c(Cl)c3)Oc3cc2cc(c3O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@H]2C[C@](C)(N)[C@H](O)[C@H](C)O2)Oc2ccc(cc2Cl)[C@H]1O",
+  "fingerprint": {
+    "type": "Morgan",
+    "radius": 2,
+    "bits": 2048
+  },
+  "coverage_report": "reports/vancomycin_combined_partial.json",
+  "region_target_atoms": [
+    9,
+    17,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    32,
+    33,
+    41,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    80,
+    81,
+    87,
+    90
+  ],
+  "excluded_catalog": null,
+  "excluded_structures": 0,
+  "selection_rule": "sqrt",
+  "retained_fraction": 0.0024277136476397554,
+  "source_structures": 169707,
+  "selected_structures": 412,
+  "parse_errors": 0,
+  "similarity_range": {
+    "highest": 0.3125,
+    "cutoff": 0.19298245614035087
+  }
+}

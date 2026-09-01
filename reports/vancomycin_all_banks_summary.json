@@ -1,0 +1,57 @@
+{
+  "schema": "rxn_core.recursive_natural_product_summary/v1",
+  "target": {
+    "name": "Vancomycin",
+    "pubchem_cid": 14969,
+    "formula": "C66H75Cl2N9O24",
+    "heavy_atom_count": 101,
+    "explicit_atom_count": 176
+  },
+  "banks": {
+    "uploaded_inventory_unique_structures": 1919,
+    "mcule_fast_delivery_unique_structures": 154759,
+    "mcule_natural_products_unique_structures": 17678,
+    "mcule_merged_unique_structures": 169707,
+    "mcule_cross_catalog_duplicates_removed": 2730
+  },
+  "rough_detection": {
+    "explicit_hydrogens": true,
+    "isomorphism_tolerance": 0.5,
+    "branch_limit": 100,
+    "seed_limit": 10,
+    "chirality_ranking": false,
+    "merged_mcule_gap_shortlist_rule": "ceil(sqrt(bank size))",
+    "merged_mcule_gap_shortlist_size": 412,
+    "merged_mcule_completed": 398,
+    "merged_mcule_unresolved": 14
+  },
+  "result": {
+    "candidate_union_covered_atoms": 176,
+    "best_nonoverlapping_partial_covered_atoms": 172,
+    "target_atom_count": 176,
+    "exact_nonoverlapping_cover_found": false,
+    "best_hit": {
+      "id": "MCULE-3152543364",
+      "source_catalog": "natural_products",
+      "formula": "C65H73Cl2N9O24",
+      "explicit_atom_count": 173,
+      "covered_target_atoms": 172,
+      "uncovered_target_atoms": [0, 101, 102, 103],
+      "uncovered_composition": "CH3"
+    },
+    "interpretation": "The best hit is a demethylated vancomycin-like compound. It is a near-target intermediate, not a terminal building block. Large or expensive recommendations must be recursively decomposed."
+  },
+  "methyl_completion_probe": {
+    "tested": [
+      "dimethyl carbonate",
+      "methyl tosylate",
+      "methyl triflate"
+    ],
+    "result": "Methyl triflate produced a four-atom methyl mapping, but it overlapped the 172-atom hit instead of covering the uniquely missing CH3 site. No exact nonoverlapping completion was established."
+  },
+  "recursive_policy": {
+    "terminal_candidates": "Small practical building blocks",
+    "intermediate_candidates": "Large, complex, rare, or expensive-looking hits",
+    "action": "Use each intermediate as the next target and repeat detection and assembly while preserving the parent-child route."
+  }
+}

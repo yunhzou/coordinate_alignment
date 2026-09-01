@@ -1,0 +1,20 @@
+{
+  "schema": "rxn_core.merged_mcule_banks/v1",
+  "inputs": {
+    "fast_delivery": "data/mcule/mcule_fast_delivery_bb_cls_2_260820_deduplicated.csv.gz",
+    "natural_products": "data/mcule/mcule_natural_products_instock_library_260801_deduplicated.csv.gz"
+  },
+  "input_rows": {
+    "fast_delivery": 154759,
+    "natural_products": 17678
+  },
+  "unique_stereochemical_structures": 169707,
+  "source_membership": {
+    "fast_delivery": 152029,
+    "fast_delivery;natural_products": 2730,
+    "natural_products": 14948
+  },
+  "cross_catalog_duplicates_removed": 2730,
+  "parse_errors": 0,
+  "output": "data/mcule/mcule_fast_and_natural_merged_deduplicated.csv.gz"
+}

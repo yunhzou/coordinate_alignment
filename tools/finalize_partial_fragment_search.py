@@ -27,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--parts", required=True)
     parser.add_argument("--catalog", required=True)
+    parser.add_argument("--id-column", default="Inventory ID")
     parser.add_argument("--target-smiles", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--branch-limit", type=int, required=True)
@@ -44,7 +45,7 @@ def main():
     records = []
     unresolved = []
     for row_index, row in enumerate(catalog_rows):
-        source_id = row["Inventory ID"]
+        source_id = row[args.id_column]
         record = recovered.get(source_id)
         if record is None:
             unresolved.append(source_id)

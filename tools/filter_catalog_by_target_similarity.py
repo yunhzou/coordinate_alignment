@@ -18,11 +18,14 @@ def main():
     parser.add_argument("--catalog", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--target-smiles", required=True)
-    parser.add_argument("--retained-fraction", required=True, type=float)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--retained-fraction", type=float)
+    selection.add_argument("--selection-rule", choices=("sqrt",))
     parser.add_argument("--coverage-report")
     parser.add_argument("--exclude-catalog")
     args = parser.parse_args()
-    if not 0 < args.retained_fraction <= 1:
+    if (args.retained_fraction is not None
+            and not 0 < args.retained_fraction <= 1):
         raise ValueError("retained fraction must be in (0, 1]")
 
     target = Chem.MolFromSmiles(args.target_smiles)
@@ -76,7 +79,10 @@ def main():
                 row,
             ))
     rows.sort(key=lambda item: item[:3])
-    retained_count = math.ceil(args.retained_fraction * len(rows))
+    retained_count = (
+        math.ceil(math.sqrt(len(rows)))
+        if args.selection_rule == "sqrt"
+        else math.ceil(args.retained_fraction * len(rows)))
     selected = rows[:retained_count]
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -99,7 +105,8 @@ def main():
         "region_target_atoms": sorted(region_atoms) if region_atoms else None,
         "excluded_catalog": args.exclude_catalog,
         "excluded_structures": len(excluded_ids),
-        "retained_fraction": args.retained_fraction,
+        "selection_rule": args.selection_rule,
+        "retained_fraction": retained_count / len(rows),
         "source_structures": len(rows),
         "selected_structures": len(selected),
         "parse_errors": parse_errors,
