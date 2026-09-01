@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -11,6 +12,7 @@ class FragmentDetectionConfig:
     minimum_fragment_size: int = 1
     branch_limit: int = 100
     candidate_limit: int = 512
+    seed_limit: int | None = None
     maximum_boundary_bonds: int | None = None
     maximum_leftover_fragments: int | None = None
 
@@ -22,6 +24,19 @@ class FragmentDetectionConfig:
             raise ValueError("minimum fragment size must be positive")
         if self.branch_limit < 1 or self.candidate_limit < 1:
             raise ValueError("branch and candidate limits must be positive")
+        if self.seed_limit is not None and self.seed_limit < 1:
+            raise ValueError("seed limit must be positive")
+
+
+@dataclass(frozen=True)
+class FragmentTargetContext:
+    """Reusable target graph and symmetry data for bank-scale detection."""
+
+    graph: Any
+    atom_orbits: Any
+    automorphism_generators: tuple
+    graph_floor: float
+    iso_tolerance: float
 
 
 @dataclass(frozen=True)

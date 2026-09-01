@@ -16,12 +16,16 @@ from .models import (
     FragmentCandidate,
     FragmentDetectionConfig,
     FragmentDetectionResult,
+    FragmentTargetContext,
 )
 
 
-def _initial_fragment_placements(source, target, config):
+def _initial_fragment_placements(
+        source, target, config, *, target_orbits=None):
     source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
-    target_orbits = _nauty_orbits(target, wbo_tol=config.iso_tolerance)
+    if target_orbits is None:
+        target_orbits = _nauty_orbits(
+            target, wbo_tol=config.iso_tolerance)
     placements_by_identity = {}
     capped_seed_count = 0
     maximum_branch_count = 0
@@ -35,6 +39,11 @@ def _initial_fragment_placements(source, target, config):
             int(atom),
         ),
     )
+    seed_limited = (
+        config.seed_limit is not None
+        and len(seed_order) > config.seed_limit)
+    if config.seed_limit is not None:
+        seed_order = seed_order[:config.seed_limit]
     for seed in seed_order:
         try:
             placements = grow_island(
@@ -75,6 +84,23 @@ def _initial_fragment_placements(source, target, config):
         capped_seed_count,
         maximum_branch_count,
         candidate_capped,
+        seed_limited,
+    )
+
+
+def prepare_fragment_target(
+        target, *, config: FragmentDetectionConfig | None = None):
+    """Prepare target-owned symmetry data once for repeated source searches."""
+    config = config or FragmentDetectionConfig()
+    target_graph = _coerce_graph(target, config.graph_floor)
+    return FragmentTargetContext(
+        graph=target_graph,
+        atom_orbits=_nauty_orbits(
+            target_graph, wbo_tol=config.iso_tolerance),
+        automorphism_generators=_nauty_atom_generators(
+            target_graph, wbo_tol=config.iso_tolerance),
+        graph_floor=config.graph_floor,
+        iso_tolerance=config.iso_tolerance,
     )
 
 
@@ -112,15 +138,24 @@ def detect_fragments(
     """Generate augmented fragment candidates for one source-target pair."""
     config = config or FragmentDetectionConfig()
     source_graph = _coerce_graph(source, config.graph_floor)
-    target_graph = _coerce_graph(target, config.graph_floor)
-    target_generators = _nauty_atom_generators(
-        target_graph, wbo_tol=config.iso_tolerance)
+    if isinstance(target, FragmentTargetContext):
+        if (target.graph_floor != config.graph_floor
+                or target.iso_tolerance != config.iso_tolerance):
+            raise ValueError(
+                "prepared target context and detection config disagree")
+        target_context = target
+    else:
+        target_context = prepare_fragment_target(target, config=config)
+    target_graph = target_context.graph
     (
         initial_placements,
         capped_seed_count,
         maximum_branch_count,
         candidate_capped,
-    ) = _initial_fragment_placements(source_graph, target_graph, config)
+        seed_limited,
+    ) = _initial_fragment_placements(
+        source_graph, target_graph, config,
+        target_orbits=target_context.atom_orbits)
 
     best_initial_size = max(
         (len(retained) for retained, _mapping in initial_placements),
@@ -211,7 +246,7 @@ def detect_fragments(
                 retained_fragments=retained_fragments,
             )
             for variant in _target_automorphism_variants(
-                    candidate, target_generators):
+                    candidate, target_context.automorphism_generators):
                 identity = _candidate_identity(variant)
                 if identity in seen_candidates:
                     continue
@@ -234,10 +269,12 @@ def detect_fragments(
         (candidate.retained_size for candidate in candidates),
         default=best_initial_size,
     )
-    incomplete = bool(capped_seed_count or candidate_capped)
+    cap_hit = bool(capped_seed_count or candidate_capped)
+    incomplete = bool(cap_hit or seed_limited)
     status = (
-        "capped" if incomplete
-        else ("matched" if candidates else "no_match")
+        "capped" if cap_hit
+        else ("seed_limited" if seed_limited
+              else ("matched" if candidates else "no_match"))
     )
     return FragmentDetectionResult(
         source_id=str(source_id),

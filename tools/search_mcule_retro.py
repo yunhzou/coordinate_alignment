@@ -19,6 +19,7 @@ from rdkit import Chem, RDLogger
 from rxn_core.fragment_matching import (
     FragmentDetectionConfig,
     detect_fragments,
+    prepare_fragment_target,
 )
 from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from rxn_core.fragment_matching.serialization import fragment_detection_to_record
@@ -27,22 +28,26 @@ from rxn_core.fragment_matching.serialization import fragment_detection_to_recor
 _TARGET = None
 _CONFIG = None
 _MINIMUM_TARGET_COVERAGE_SIZE = 1
+_SAVE_ALL_RESULTS = False
 
 
 def _worker_init(target_smiles, config_record,
-                 minimum_target_coverage_fraction):
+                 minimum_target_coverage_fraction, save_all_results):
     global _TARGET, _CONFIG, _MINIMUM_TARGET_COVERAGE_SIZE
+    global _SAVE_ALL_RESULTS
     RDLogger.DisableLog("rdApp.*")
     target_implicit = Chem.MolFromSmiles(target_smiles)
     if target_implicit is None:
         raise ValueError(f"invalid target SMILES: {target_smiles!r}")
     target_molecule = Chem.AddHs(target_implicit)
-    _TARGET = molecule_to_weighted_graph(target_molecule)
+    _CONFIG = FragmentDetectionConfig(**config_record)
+    _TARGET = prepare_fragment_target(
+        molecule_to_weighted_graph(target_molecule), config=_CONFIG)
     _MINIMUM_TARGET_COVERAGE_SIZE = (
         max(1, math.ceil(minimum_target_coverage_fraction
                          * target_molecule.GetNumAtoms()))
         if minimum_target_coverage_fraction is not None else 1)
-    _CONFIG = FragmentDetectionConfig(**config_record)
+    _SAVE_ALL_RESULTS = bool(save_all_results)
 
 
 def _search_batch(batch):
@@ -70,10 +75,11 @@ def _search_batch(batch):
         ]
         if result.candidates and not candidates:
             counts["target_coverage_filtered"] += 1
-        if not candidates:
+        if not candidates and not _SAVE_ALL_RESULTS:
             continue
-        counts["matched_precursors"] += 1
-        counts["fragment_candidates"] += len(candidates)
+        if candidates:
+            counts["matched_precursors"] += 1
+            counts["fragment_candidates"] += len(candidates)
         records.append(fragment_detection_to_record(
             result,
             row_index=row_index,
@@ -134,8 +140,10 @@ def _parser():
     parser.add_argument("--iso-tolerance", type=float, default=0.5)
     parser.add_argument("--branch-limit", type=int, default=100)
     parser.add_argument("--candidate-limit", type=int, default=100)
+    parser.add_argument("--seed-limit", type=int)
     parser.add_argument("--maximum-boundary-bonds", type=int)
     parser.add_argument("--maximum-leftover-fragments", type=int)
+    parser.add_argument("--save-all-results", action="store_true")
     return parser
 
 
@@ -151,6 +159,7 @@ def main(argv=None):
         "iso_tolerance": args.iso_tolerance,
         "branch_limit": args.branch_limit,
         "candidate_limit": args.candidate_limit,
+        "seed_limit": args.seed_limit,
         "maximum_boundary_bonds": args.maximum_boundary_bonds,
         "maximum_leftover_fragments": args.maximum_leftover_fragments,
     }
@@ -172,7 +181,8 @@ def main(argv=None):
                 processes=max(1, args.workers),
                 initializer=_worker_init,
                 initargs=(args.target_smiles, config_record,
-                          args.minimum_target_coverage_fraction)) as pool:
+                          args.minimum_target_coverage_fraction,
+                          args.save_all_results)) as pool:
             iterator = pool.imap_unordered(
                 _search_batch,
                 _batches(
@@ -185,6 +195,7 @@ def main(argv=None):
                 totals.update(counts)
                 for record in records:
                     sink.write(json.dumps(record, separators=(",", ":")) + "\n")
+                sink.flush()
                 processed_batches += 1
                 if processed_batches % 100 == 0:
                     elapsed = time.perf_counter() - started
@@ -223,6 +234,7 @@ def main(argv=None):
             args.minimum_target_coverage_fraction),
         "derived_minimum_fragment_size": derived_minimum_fragment_size,
         "explicit_hydrogens": True,
+        "saved_all_results": args.save_all_results,
         "elapsed_seconds": elapsed,
         "counts": count_record,
     }

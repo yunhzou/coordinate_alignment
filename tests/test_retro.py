@@ -10,8 +10,36 @@ from rxn_core.fragment_matching import (
     FragmentCandidate,
     FragmentDetectionConfig,
     detect_fragments,
+    prepare_fragment_target,
 )
 from rxn_core.retrosynthesis import assemble_fragment_cover
+from rxn_core.smiles import smiles_to_weighted_graph
+
+
+def test_prepared_fragment_target_matches_direct_detection():
+    config = FragmentDetectionConfig(candidate_limit=100)
+    source = smiles_to_weighted_graph(
+        "CCBr", expand_hydrogens=True)
+    target = smiles_to_weighted_graph(
+        "CCO", expand_hydrogens=True)
+
+    direct = detect_fragments(source, target, config=config)
+    prepared = prepare_fragment_target(target, config=config)
+    reused = detect_fragments(source, prepared, config=config)
+
+    assert reused == direct
+
+
+def test_fragment_detection_seed_limit_is_reported_as_incomplete():
+    config = FragmentDetectionConfig(seed_limit=1)
+    result = detect_fragments(
+        smiles_to_weighted_graph("CCBr", expand_hydrogens=True),
+        smiles_to_weighted_graph("CCO", expand_hydrogens=True),
+        config=config,
+    )
+
+    assert not result.complete
+    assert result.status == "seed_limited"
 
 
 def _matrix(size, edges):

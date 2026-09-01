@@ -9,7 +9,11 @@ from pathlib import Path
 from build_retro_demo_viewer import _mol_3d
 
 
-COLORS = ("#2684ff", "#ff8b00", "#8b5cf6", "#00a896")
+COLORS = (
+    "#2684ff", "#ff8b00", "#8b5cf6", "#00a896", "#e83e8c",
+    "#795548", "#00acc1", "#7cb342", "#f4511e", "#5c6bc0",
+    "#c0a000", "#6d4c91",
+)
 def _model(smiles, candidate, color, cache):
     if smiles not in cache:
         cache[smiles] = _mol_3d(
