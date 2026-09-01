@@ -12,6 +12,7 @@ from rxn_core.fragment_matching import (
     detect_fragments,
     prepare_fragment_target,
 )
+from rxn_core.fragment_matching.augmentation import match_augmented_residuals
 from rxn_core.retrosynthesis import assemble_fragment_cover
 from rxn_core.smiles import smiles_to_weighted_graph
 
@@ -80,6 +81,32 @@ def test_partial_fragment_uses_augmented_copy_when_target_cannot_match():
     assert candidate.boundary_bonds == ((0, 1),)
     assert candidate.copied_residual_placements == ((1, 2),)
     assert candidate.augmented_target_atom_count == 3
+
+
+def test_augmented_copy_baseline_survives_invalid_greedy_target_mapping():
+    source = WeightedGraph(
+        ["C", "O"],
+        _matrix(2, [(0, 1, 1.0)]),
+    ).to_networkx()
+    target = WeightedGraph(
+        ["C", "O"],
+        _matrix(2, []),
+    ).to_networkx()
+
+    mappings, capped, _branches, augmented_size = match_augmented_residuals(
+        source,
+        target,
+        {0: 0},
+        {1},
+        ((0, 1),),
+        graph_floor=0.2,
+        iso_tolerance=0.5,
+        branch_limit=100,
+    )
+
+    assert not capped
+    assert augmented_size == 3
+    assert mappings == (((0, 0), (1, 2)),)
 
 
 def test_augmented_leftover_competes_for_unused_target_atoms():

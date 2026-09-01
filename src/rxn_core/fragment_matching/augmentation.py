@@ -50,7 +50,7 @@ def match_augmented_residuals(
     except IslandBranchLimitExceeded as exc:
         return (), True, int(exc.count), augmented_size
 
-    mappings = tuple(
+    discovered_mappings = tuple(
         tuple(sorted(
             (int(source_atom), int(target_atom))
             for source_atom, target_atom in match.mapping.items()
@@ -61,6 +61,13 @@ def match_augmented_residuals(
             for source_atom, target_atom in fixed_mapping.items()
         )
     )
+    copied_baseline = tuple(sorted(
+        tuple(fixed_mapping.items())
+        + tuple((atom, copied_index[atom]) for atom in outside_order)
+    ))
+    mappings = tuple(dict.fromkeys(
+        (copied_baseline,) + discovered_mappings
+    ))
     target_matrix = weight_matrix(target)
 
     def preserves_cut_attachments(mapping):
