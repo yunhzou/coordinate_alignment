@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import html
 import itertools
 import json
 from collections import Counter
@@ -61,6 +62,12 @@ def _combine_source_models(sources):
 def _validates_mapping(source, target, candidate, tolerance):
     mapping = {int(left): int(right) for left, right in candidate["mapping"]}
     retained = set(map(int, candidate["retained_atoms"]))
+    fragment_for_atom = {
+        int(atom): fragment_index
+        for fragment_index, fragment in enumerate(
+            candidate["retained_fragments"])
+        for atom in fragment
+    }
     elements_match = all(
         source.GetAtomWithIdx(left).GetAtomicNum()
         == target.GetAtomWithIdx(right).GetAtomicNum()
@@ -71,6 +78,8 @@ def _validates_mapping(source, target, candidate, tolerance):
         left, right = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
         if left not in retained or right not in retained:
             continue
+        if fragment_for_atom[left] != fragment_for_atom[right]:
+            continue
         target_bond = target.GetBondBetweenAtoms(mapping[left], mapping[right])
         if (target_bond is None
                 or abs(bond.GetBondTypeAsDouble()
@@ -80,7 +89,8 @@ def _validates_mapping(source, target, candidate, tolerance):
     return elements_match, bonds_match
 
 
-def _payload(records_path, bank_path, target_smiles, tolerance):
+def _payload(records_path, bank_path, target_smiles, tolerance, *, title,
+             description, verified_assignment):
     names = {}
     with open(bank_path, newline="", encoding="utf-8") as stream:
         for row in csv.DictReader(stream):
@@ -101,7 +111,8 @@ def _payload(records_path, bank_path, target_smiles, tolerance):
         source = Chem.AddHs(Chem.MolFromSmiles(record["representation"]))
         Chem.AssignStereochemistry(source, cleanIt=True, force=True)
         source_block, source_coords, source_elements = _mol_3d(
-            record["representation"], show_hydrogens=True)
+            record["representation"], spread_ions=True,
+            show_hydrogens=True)
         candidates = []
         for candidate_index, candidate in enumerate(record["candidates"]):
             elements_match, bonds_match = _validates_mapping(
@@ -181,6 +192,9 @@ def _payload(records_path, bank_path, target_smiles, tolerance):
             heavy_occupancy.add(atom)
     heavy_count = target.GetNumHeavyAtoms()
     return {
+        "title": title,
+        "description": description,
+        "verified_assignment": verified_assignment,
         "target": {
             "smiles": target_smiles,
             "model": {
@@ -218,7 +232,7 @@ def _html(payload):
                "3Dmol-min.js").read_text()
     data = json.dumps(payload, separators=(",", ":"))
     return f"""<!doctype html><html><head><meta charset="utf-8">
-<title>Literature component occupations</title><style>
+<title>{html.escape(payload['title'])}</title><style>
 *{{box-sizing:border-box}}body{{margin:0;height:100vh;overflow:hidden;font:13px system-ui;color:#172033;background:#f3f5f8}}
 header{{height:88px;background:#101828;color:white;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}}
 h1{{font-size:19px;margin:0 0 5px}}.sub{{color:#b8c4d8}}.warning{{color:#ffd38a;font-weight:700;max-width:590px;text-align:right}}
@@ -231,14 +245,14 @@ main{{min-width:0;display:grid;grid-template-rows:auto 1fr}}#info{{background:wh
 .label{{position:absolute;z-index:3;left:10px;top:10px;background:#ffffffdf;border:1px solid #dbe2ea;border-radius:7px;padding:6px 9px;max-width:78%}}.label small{{display:block;color:#64748b;margin-top:2px}}
 .controls{{position:absolute;z-index:5;right:18px;top:99px;background:#ffffffdf;border:1px solid #dbe2ea;border-radius:7px;padding:5px 8px}}
 </style><script>{library}</script></head><body>
-<header><div><h1>Seven literature components → final vancomycin aglycon</h1><div class="sub">Saved blind explicit-H AAM results · tolerance 0.5 · intact detected fragments</div></div><div class="warning">DETECTION-ONLY VIEW: occupations may overlap and do not constitute a one-step assembly.</div></header>
-<div id="layout"><aside><div class="summary"><b>All seven produced structural matches.</b><br><span id="summary"></span><br>Choose an R to inspect every equal-size placement. The combined view maximizes union coverage; it is not a ground-truth assignment.</div><button class="all" id="all">Coverage-maximizing occupations</button><div id="sources"></div></aside>
+<header><div><h1>{html.escape(payload['title'])}</h1><div class="sub">{html.escape(payload['description'])}</div></div><div class="warning">BLIND EXPLICIT-H FRAGMENT DETECTION · tolerance {payload['summary']['tolerance']}</div></header>
+<div id="layout"><aside><div class="summary"><b>All {payload['summary']['source_count']} sources produced structural matches.</b><br><span id="summary"></span><br>Choose an R to inspect every placement. The combined view selects one intact placement per source.</div><button class="all" id="all">Combined source occupations</button><div id="sources"></div></aside>
 <main><div id="info"></div><div class="controls"><label><input id="labels" type="checkbox"> atom-map labels</label></div><div id="views"><section class="panel"><div class="label" id="RL"></div><div class="view" id="R"></div></section><section class="panel"><div class="label" id="PL"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data};let selected=-1,candidate=0;const viewers={{}};
 function pt(m,i){{return {{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}}
 function draw(id,m,styles,labels,broken=[],titles=[]){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}if(m.mol){{v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.20}},sphere:{{color:s.color,scale:.35}}}}));broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));titles.forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:14,fontColor:l.color,backgroundColor:'white',backgroundOpacity:.85,inFront:true}}));if(document.getElementById('labels').checked)labels.forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.75,inFront:true}}));v.zoomTo()}}v.render()}}
 function showSource(index,choice){{selected=index;candidate=choice;document.querySelectorAll('.source').forEach((b,i)=>b.classList.toggle('active',i===index));document.getElementById('all').classList.remove('active');const s=data.sources[index],c=s.candidates[choice],color=s.color;document.getElementById('candidates')?.remove();const box=document.createElement('div');box.id='candidates';s.candidates.forEach((x,i)=>{{const b=document.createElement('button');b.className='candidate'+(i===choice?' active':'');b.textContent='placement '+(i+1)+(x.chirality_violations?' · stereo ⚠':' · stereo ✓');b.onclick=()=>showSource(index,i);box.appendChild(b)}});document.querySelectorAll('.source')[index].after(box);document.getElementById('info').innerHTML='<b>'+s.name+'</b> · placement '+(choice+1)+'/'+s.candidates.length+' · '+c.retained_atoms.length+' explicit atoms mapped · '+c.retained_fragments.length+' intact connected fragment · element '+(c.element_match?'✓':'✗')+' · bonds '+(c.bond_match?'✓':'✗')+' · chirality violations '+c.chirality_violations;document.getElementById('RL').innerHTML='<b>R'+s.id+' · '+s.name+'</b><small>colored = intact matched fragment; original element colors = unmatched/protecting groups</small>';document.getElementById('PL').innerHTML='<b>P_target occupation by R'+s.id+'</b><small>'+c.covered_target_atoms.length+' of '+data.target.atom_count+' explicit target atoms</small>';draw('R',s.model,[{{indices:c.retained_atoms,color}}],c.mapping.map(x=>({{atom:x[0],text:'P'+x[1]}})),c.boundary_bonds);draw('P',data.target.model,[{{indices:c.covered_target_atoms,color}}],c.mapping.map(x=>({{atom:x[1],text:'R'+x[0]}})))}}
-function showAll(){{selected=-1;document.querySelectorAll('.source').forEach(b=>b.classList.remove('active'));document.getElementById('all').classList.add('active');document.getElementById('candidates')?.remove();const owners={{}};data.sources.forEach((s,i)=>s.candidates[s.default_candidate].covered_target_atoms.forEach(a=>(owners[a]??=[]).push(i)));const styles=[];data.sources.forEach((s,i)=>styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length===1&&owners[a][0]===i).map(Number),color:s.color}}));styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length>1).map(Number),color:'#d62828'}});const rstyles=[],rlabels=[],rbroken=[],rtitles=[];data.sources.forEach(s=>{{const c=s.candidates[s.default_candidate],o=s.combined_offset;rstyles.push({{indices:c.retained_atoms.map(a=>a+o),color:s.color}});rtitles.push({{atom:o,text:'R'+s.id,color:s.color}});c.mapping.forEach(x=>rlabels.push({{atom:x[0]+o,text:'R'+s.id+'→P'+x[1]}}));c.boundary_bonds.forEach(b=>rbroken.push([b[0]+o,b[1]+o]))}});document.getElementById('info').innerHTML='<b>Coverage-maximizing combination, one placement per R.</b> The left panel contains every intact R and the right panel shows their occupations on P. Red P atoms are claimed by more than one R; uncolored P atoms are not occupied. This is not a verified literature assignment.';document.getElementById('RL').innerHTML='<b>All seven R structures</b><small>spatially separated · colored = selected intact mapped fragment · original colors = unmatched groups</small>';document.getElementById('PL').innerHTML='<b>P_target combined occupation</b><small>'+data.summary.default_union_atoms+'/'+data.target.atom_count+' explicit atoms · '+data.summary.default_union_heavy_atoms+'/'+data.target.heavy_atom_count+' heavy atoms · '+data.summary.overlap_atoms.length+' overlap atoms · '+data.summary.default_chirality_violations+' chirality conflicts</small>';draw('R',data.combined_sources,rstyles,rlabels,rbroken,rtitles);draw('P',data.target.model,styles,[])}}
+function showAll(){{selected=-1;document.querySelectorAll('.source').forEach(b=>b.classList.remove('active'));document.getElementById('all').classList.add('active');document.getElementById('candidates')?.remove();const owners={{}};data.sources.forEach((s,i)=>s.candidates[s.default_candidate].covered_target_atoms.forEach(a=>(owners[a]??=[]).push(i)));const styles=[];data.sources.forEach((s,i)=>styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length===1&&owners[a][0]===i).map(Number),color:s.color}}));styles.push({{indices:Object.keys(owners).filter(a=>owners[a].length>1).map(Number),color:'#d62828'}});const rstyles=[],rlabels=[],rbroken=[],rtitles=[];data.sources.forEach(s=>{{const c=s.candidates[s.default_candidate],o=s.combined_offset;rstyles.push({{indices:c.retained_atoms.map(a=>a+o),color:s.color}});rtitles.push({{atom:o,text:'R'+s.id,color:s.color}});c.mapping.forEach(x=>rlabels.push({{atom:x[0]+o,text:'R'+s.id+'→P'+x[1]}}));c.boundary_bonds.forEach(b=>rbroken.push([b[0]+o,b[1]+o]))}});const verdict=data.verified_assignment?'The selected occupations agree with the documented source roles.':'This is a geometric assignment and has not been verified against atom provenance.';document.getElementById('info').innerHTML='<b>Combined result, one intact placement per R.</b> The left panel contains every R and the right panel shows their occupations on P. Red P atoms are claimed by more than one R; uncolored P atoms are not occupied. '+verdict;document.getElementById('RL').innerHTML='<b>All '+data.sources.length+' R structures</b><small>spatially separated · colored = selected intact mapped fragment · original colors = unmatched groups</small>';document.getElementById('PL').innerHTML='<b>P_target combined occupation</b><small>'+data.summary.default_union_atoms+'/'+data.target.atom_count+' explicit atoms · '+data.summary.default_union_heavy_atoms+'/'+data.target.heavy_atom_count+' heavy atoms · '+data.summary.overlap_atoms.length+' overlap atoms · '+data.summary.default_chirality_violations+' chirality conflicts</small>';draw('R',data.combined_sources,rstyles,rlabels,rbroken,rtitles);draw('P',data.target.model,styles,[])}}
 const list=document.getElementById('sources');data.sources.forEach((s,i)=>{{const b=document.createElement('button');b.className='source';b.innerHTML='<b><span style="color:'+s.color+'">R'+s.id+'</span> · '+s.name+'</b><div class="small">'+s.candidates.length+' placement'+(s.candidates.length===1?'':'s')+' · best '+s.candidates[s.default_candidate].retained_atoms.length+' atoms · branch max '+s.maximum_branch_count+'</div>';b.onclick=()=>showSource(i,s.default_candidate);list.appendChild(b)}});document.getElementById('summary').textContent=data.summary.candidate_count+' saved placements; '+data.summary.cap_hits+' cap hits; default union '+data.summary.default_union_atoms+'/'+data.target.atom_count+' explicit atoms.';document.getElementById('all').onclick=showAll;document.getElementById('labels').onchange=()=>selected<0?showAll():showSource(selected,candidate);showAll();window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
 
 
@@ -249,9 +263,17 @@ def main():
     parser.add_argument("--target-smiles", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--tolerance", type=float, default=0.5)
+    parser.add_argument("--title", default="Fragment occupation viewer")
+    parser.add_argument(
+        "--description",
+        default="Saved blind fragment-detection results")
+    parser.add_argument("--verified-assignment", action="store_true")
     args = parser.parse_args()
     payload = _payload(
-        args.records, args.bank, args.target_smiles, args.tolerance)
+        args.records, args.bank, args.target_smiles, args.tolerance,
+        title=args.title,
+        description=args.description,
+        verified_assignment=args.verified_assignment)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(_html(payload), encoding="utf-8")

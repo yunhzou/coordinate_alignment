@@ -1,0 +1,4 @@
+Literature ID,Name,SMILES,Role
+1,Benzyl bromide,BrCc1ccccc1,benzyl fragment
+2,Sodium azide,[Na+].[N-]=[N+]=[N-],triazole nitrogen atoms
+3,Phenylacetylene,C#Cc1ccccc1,phenyl and triazole carbon atoms
