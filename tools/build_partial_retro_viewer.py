@@ -85,6 +85,7 @@ def main():
     report = {
         "target_smiles": partial["target_smiles"],
         "scan_counts": scan["scan_counts"],
+        "recommendation_search_truncated": False,
         "construction_patterns": [{
             "pattern": 1,
             "coverage_atom_sets": [

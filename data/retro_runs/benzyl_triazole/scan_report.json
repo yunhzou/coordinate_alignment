@@ -1,0 +1,9 @@
+{
+  "scan_counts": {
+    "rows": 3,
+    "searched": 3,
+    "matched_precursors": 3,
+    "fragment_candidates": 4,
+    "capped": 0
+  }
+}

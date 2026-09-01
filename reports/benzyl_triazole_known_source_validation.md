@@ -44,4 +44,4 @@ reagent.
 - target: `docs/example_runs/benzyl_triazole_target.smi`
 - blind records: `data/retro_runs/benzyl_triazole/blind_fragment_records.jsonl.gz`
 - full-cover assembly: `data/retro_runs/benzyl_triazole/assembly_coverage.json`
-- viewer: `reports/benzyl_triazole_known_source_occupations.html`
+- assembled viewer: `reports/benzyl_triazole_assembled_view.html`
