@@ -45,13 +45,16 @@ Therefore the cross-validation establishes that the fragment detector can now
 discover every published starting subunit once it is present.  It does not
 claim that the seven structures alone form a balanced one-step reaction.
 
+No assembly viewer is generated for this result because the detected subunits
+do not cover every target atom.  A viewer is valid only after one selected set
+of R placements collectively covers the complete P target.
+
 ## Saved artifacts
 
 - validation bank: `docs/example_runs/vancomycin_literature_validation_bank.csv`
 - target: `docs/example_runs/vancomycin_aglycon_pubchem_445835.smi`
 - complete detection records: `data/retro_runs/vancomycin_literature_validation/blind_fixed_fragment_records.jsonl.gz`
 - detection summary: `data/retro_runs/vancomycin_literature_validation/blind_fixed_fragment_records.jsonl.gz.summary.json`
-- all-subunit viewer: `reports/vancomycin_literature_validation_results.html`
 
 Primary source: M. J. Moore et al., *J. Am. Chem. Soc.* 2020, 142,
 16039-16050, DOI: 10.1021/jacs.0c07433.  Structures 11-17 are transcribed from
