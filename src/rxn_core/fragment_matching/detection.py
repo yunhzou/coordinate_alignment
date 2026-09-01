@@ -21,7 +21,8 @@ from .models import (
 
 
 def _initial_fragment_placements(
-        source, target, config, *, target_orbits=None):
+        source, target, config, *, target_orbits=None,
+        target_region_atoms=None):
     source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
     if target_orbits is None:
         target_orbits = _nauty_orbits(
@@ -71,6 +72,10 @@ def _initial_fragment_placements(
                 for source_atom, target_atom in placement.items()
                 if source_atom in placement.fragment
             ))
+            if (target_region_atoms is not None
+                    and not target_region_atoms.intersection(
+                        target_atom for _source_atom, target_atom in mapping)):
+                continue
             placements_by_identity.setdefault(
                 (retained, mapping), (retained, mapping))
             if len(placements_by_identity) >= config.candidate_limit:
@@ -134,7 +139,8 @@ def _target_automorphism_variants(candidate, generators):
 
 def detect_fragments(
         source, target, *, source_id="",
-        config: FragmentDetectionConfig | None = None):
+        config: FragmentDetectionConfig | None = None,
+        target_region_atoms=None):
     """Generate augmented fragment candidates for one source-target pair."""
     config = config or FragmentDetectionConfig()
     source_graph = _coerce_graph(source, config.graph_floor)
@@ -147,6 +153,13 @@ def detect_fragments(
     else:
         target_context = prepare_fragment_target(target, config=config)
     target_graph = target_context.graph
+    region = (
+        frozenset(map(int, target_region_atoms))
+        if target_region_atoms is not None else None
+    )
+    if region is not None and (
+            not region or not region.issubset(set(map(int, target_graph)))):
+        raise ValueError("target region must be a nonempty target-atom subset")
     (
         initial_placements,
         capped_seed_count,
@@ -155,17 +168,27 @@ def detect_fragments(
         seed_limited,
     ) = _initial_fragment_placements(
         source_graph, target_graph, config,
-        target_orbits=target_context.atom_orbits)
+        target_orbits=target_context.atom_orbits,
+        target_region_atoms=region)
 
+    def placement_score(placement):
+        retained, mapping = placement
+        if region is None:
+            return (len(retained),)
+        images = {target for _source, target in mapping}
+        return (len(images & region), len(retained))
+
+    best_initial_score = max(
+        map(placement_score, initial_placements), default=(0,))
     best_initial_size = max(
-        (len(retained) for retained, _mapping in initial_placements),
-        default=0,
-    )
+        (len(retained) for retained, _mapping in initial_placements
+         if placement_score((retained, _mapping)) == best_initial_score),
+        default=0)
     candidates = []
     seen_candidates = set()
 
     for retained, mapping_pairs in initial_placements:
-        if len(retained) != best_initial_size:
+        if placement_score((retained, mapping_pairs)) != best_initial_score:
             continue
         outside, boundary, _fragments = partition_at_retained_fragment(
             source_graph, retained)
@@ -187,6 +210,7 @@ def detect_fragments(
             graph_floor=config.graph_floor,
             iso_tolerance=config.iso_tolerance,
             branch_limit=config.branch_limit,
+            target_region_atoms=region,
         )
         maximum_branch_count = max(
             maximum_branch_count, augmented_branch_count)
@@ -247,6 +271,10 @@ def detect_fragments(
             )
             for variant in _target_automorphism_variants(
                     candidate, target_context.automorphism_generators):
+                if (region is not None
+                        and not region.intersection(
+                            variant.covered_target_atoms)):
+                    continue
                 identity = _candidate_identity(variant)
                 if identity in seen_candidates:
                     continue

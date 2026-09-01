@@ -29,7 +29,7 @@
     "candidate_union_covered_atoms": 176,
     "best_nonoverlapping_partial_covered_atoms": 172,
     "target_atom_count": 176,
-    "exact_nonoverlapping_cover_found": false,
+    "exact_nonoverlapping_cover_found": true,
     "best_hit": {
       "id": "MCULE-3152543364",
       "source_catalog": "natural_products",
@@ -39,15 +39,16 @@
       "uncovered_target_atoms": [0, 101, 102, 103],
       "uncovered_composition": "CH3"
     },
-    "interpretation": "The best hit is a demethylated vancomycin-like compound. It is a near-target intermediate, not a terminal building block. Large or expensive recommendations must be recursively decomposed."
+    "interpretation": "The best hit is N-demethylvancomycin (norvancomycin), the documented immediate precursor. Region-directed detection recovers the missing N-terminal methyl group from SAM as an exact complementary fragment. Large or expensive recommendations must still be recursively decomposed."
   },
   "methyl_completion_probe": {
     "tested": [
+      "S-adenosyl-L-methionine (SAM)",
       "dimethyl carbonate",
       "methyl tosylate",
       "methyl triflate"
     ],
-    "result": "Methyl triflate produced a four-atom methyl mapping, but it overlapped the 172-atom hit instead of covering the uniquely missing CH3 site. No exact nonoverlapping completion was established."
+    "result": "The untargeted pass selected larger incidental donor overlaps. Region-directed augmented matching recovered SAM as the exact four-atom CH3 complement, giving one nonoverlapping 172 + 4 atom cover with N-demethylvancomycin."
   },
   "recursive_policy": {
     "terminal_candidates": "Small practical building blocks",

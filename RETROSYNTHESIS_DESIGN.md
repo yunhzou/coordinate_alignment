@@ -46,6 +46,23 @@ RETROSYNTHESIS(P, catalog, policies):
 
     index = BUILD_CANDIDATE_INDEX(candidate_store, target)
 
+    partial = BEST_NONOVERLAPPING_PARTIAL_COVER(target, index)
+    if partial is incomplete:
+        missing_region = target.atoms - partial.covered_atoms
+        gap_pool = SELECT_COMPOSITION_PLAUSIBLE_GAP_POOL(
+            catalog, missing_region)
+
+        parallel for precursor in gap_pool:
+            result = DETECT_FRAGMENTS(
+                source = precursor,
+                target,
+                target_region = missing_region,
+                policies.detection,
+            )
+            persist result immediately
+
+        index = BUILD_CANDIDATE_INDEX(candidate_store, target)
+
     patterns = ENUMERATE_COVERAGE_PATTERNS(
         target,
         index.coverage_groups,
@@ -96,13 +113,15 @@ rxn_core.fragment_matching
 Public operation:
 
 ```text
-detect_fragments(source, target, source_id, config) -> FragmentDetectionResult
+detect_fragments(
+    source, target, source_id, config, target_region_atoms = none
+) -> FragmentDetectionResult
 ```
 
 ### 3. Fragment candidate generation
 
 ```text
-DETECT_FRAGMENTS(source, target, policy):
+DETECT_FRAGMENTS(source, target, policy, target_region = none):
     diagnostics = new SearchDiagnostics(policy limits)
     initial_placements = empty deduplicated set
 
@@ -120,6 +139,9 @@ DETECT_FRAGMENTS(source, target, policy):
             diagnostics.mark_incomplete(stage = initial_growth)
             continue
 
+        if target_region is set and placement does not touch it:
+            continue
+
         retain one compressed witness per automorphism class
         if candidate cap is reached:
             diagnostics.mark_incomplete(stage = candidate_collection)
@@ -128,9 +150,13 @@ DETECT_FRAGMENTS(source, target, policy):
     before assembly, materialize the symmetry-equivalent target coverage
     variants represented by each compressed witness, bounded by candidate cap
 
-    best_initial_size = maximum connected size in initial_placements
+    if target_region is not set:
+        best_initial = maximum connected size in initial_placements
+    else:
+        best_initial = lexicographic maximum of:
+            (number of target-region atoms covered, connected size)
 
-    for initial in placements of best_initial_size:
+    for initial in placements having best_initial score:
         partition = CUT_INITIAL_FRAGMENT(source, initial.source_atoms)
 
         if partition violates configured fragmentation bounds:
@@ -186,14 +212,25 @@ COMPETITIVE_AUGMENTED_MATCH(R, P, initial, partition, policy):
             continue
         valid.append(match)
 
-    best_target_ownership = maximum number of R atoms mapped into original P
-    return all valid matches having best_target_ownership
+    if target_region is not set:
+        best_ownership = maximum number of R atoms mapped into original P
+    else:
+        best_ownership = lexicographic maximum of:
+            (atoms owned inside target_region,
+             negative atoms owned outside target_region)
+    return all valid matches having best_ownership
 ```
 
 Residual copies are competitors, never anchors.  A residual component may map
 into unused atoms of `P` when it fits; otherwise it remains on its appended
 copy.  This is why carbon dioxide can contribute a carbonyl fragment plus
 a second oxygen fragment to a carboxyl group at tolerance 0.5.
+
+Region-directed detection is the second-stage gap operation.  It prevents a
+large incidental overlap elsewhere in `P` from suppressing a smaller fragment
+that exactly supplies the uncovered region.  The complete target remains
+present during matching; the region changes candidate ownership priority, not
+the molecular graph.
 
 ### 5. Candidate projection
 

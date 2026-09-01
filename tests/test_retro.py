@@ -122,6 +122,41 @@ def test_augmented_leftover_competes_for_unused_target_atoms():
     assert full[0].copied_residual_placements == ()
 
 
+def test_target_region_recovers_small_donor_despite_larger_incidental_match():
+    target = smiles_to_weighted_graph(
+        "CNC(=O)CO", expand_hydrogens=True)
+    donor = smiles_to_weighted_graph(
+        "CSCC(=O)CO", expand_hydrogens=True)
+    target_graph = target.to_networkx()
+    methyl_carbon = 0
+    methyl_region = {methyl_carbon} | {
+        neighbor for neighbor in target_graph.neighbors(methyl_carbon)
+        if target_graph.nodes[neighbor]["element"] == "H"
+    }
+    config = FragmentDetectionConfig(
+        minimum_fragment_size=1,
+        branch_limit=100,
+        candidate_limit=512,
+    )
+
+    untargeted = detect_fragments(donor, target, config=config)
+    targeted = detect_fragments(
+        donor,
+        target,
+        config=config,
+        target_region_atoms=methyl_region,
+    )
+
+    assert all(
+        not methyl_region.issubset(candidate.covered_target_atoms)
+        for candidate in untargeted.candidates
+    )
+    assert any(
+        set(candidate.covered_target_atoms) == methyl_region
+        for candidate in targeted.candidates
+    )
+
+
 def test_branch_cap_is_reported_as_incomplete():
     precursor = WeightedGraph(
         ["C", "C"],

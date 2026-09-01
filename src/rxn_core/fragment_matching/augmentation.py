@@ -12,7 +12,7 @@ from .graph_ops import weight_matrix, weighted_graph_from_nx
 
 def match_augmented_residuals(
         source, target, retained_mapping, outside, boundary, *,
-        graph_floor, iso_tolerance, branch_limit):
+        graph_floor, iso_tolerance, branch_limit, target_region_atoms=None):
     source_matrix = np.array(weight_matrix(source), copy=True)
     for left, right in boundary:
         source_matrix[left, right] = source_matrix[right, left] = 0.0
@@ -74,14 +74,25 @@ def match_augmented_residuals(
 
     mappings = tuple(filter(preserves_cut_attachments, mappings))
     if mappings:
-        maximum_target_ownership = max(
-            sum(image < target_atom_count for _source, image in mapping)
-            for mapping in mappings
-        )
+        region = (frozenset(map(int, target_region_atoms))
+                  if target_region_atoms is not None else None)
+
+        def ownership(mapping):
+            target_images = {
+                image for _source, image in mapping
+                if image < target_atom_count
+            }
+            if region is None:
+                return (len(target_images),)
+            return (
+                len(target_images & region),
+                -len(target_images - region),
+            )
+
+        best_ownership = max(map(ownership, mappings))
         mappings = tuple(
             mapping for mapping in mappings
-            if sum(image < target_atom_count for _source, image in mapping)
-            == maximum_target_ownership
+            if ownership(mapping) == best_ownership
         )
     return mappings, False, len(matches), augmented_size
 

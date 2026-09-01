@@ -35,4 +35,5 @@ PYTHONPATH=src srun "$PYTHON_BIN" tools/search_mcule_retro.py \
   --branch-limit 100 \
   --candidate-limit 100 \
   --seed-limit 10 \
+  --target-region-report reports/vancomycin_all_banks_partial.json \
   --save-all-results

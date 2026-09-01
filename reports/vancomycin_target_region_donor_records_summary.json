@@ -1,0 +1,39 @@
+{
+  "schema": "rxn_core.retro_catalog_summary/v3",
+  "target_smiles": "CN[C@H](CC(C)C)C(=O)N[C@H]1C(=O)N[C@@H](CC(N)=O)C(=O)N[C@H]2C(=O)N[C@H]3C(=O)N[C@H](C(=O)N[C@H](C(=O)O)c4cc(O)cc(O)c4-c4cc3ccc4O)[C@H](O)c3ccc(c(Cl)c3)Oc3cc2cc(c3O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@H]2C[C@](C)(N)[C@H](O)[C@H](C)O2)Oc2ccc(cc2Cl)[C@H]1O",
+  "catalog": "docs/example_runs/vancomycin_methyl_donors.csv.gz",
+  "output": "data/retro_runs/vancomycin_methyl_donors/targeted_part_0.jsonl.gz",
+  "shard_index": 0,
+  "shard_count": 1,
+  "workers": 4,
+  "config": {
+    "minimum_fragment_size": 1,
+    "iso_tolerance": 0.5,
+    "branch_limit": 100,
+    "candidate_limit": 100,
+    "seed_limit": 10,
+    "maximum_boundary_bonds": null,
+    "maximum_leftover_fragments": null
+  },
+  "minimum_target_coverage_fraction": null,
+  "derived_minimum_fragment_size": 1,
+  "explicit_hydrogens": true,
+  "saved_all_results": true,
+  "target_region_report": "reports/vancomycin_all_banks_partial.json",
+  "target_region_atoms": [
+    0,
+    101,
+    102,
+    103
+  ],
+  "elapsed_seconds": 6.663393560796976,
+  "counts": {
+    "rows": 4,
+    "parse_errors": 0,
+    "searched": 4,
+    "capped": 0,
+    "target_coverage_filtered": 0,
+    "matched_precursors": 2,
+    "fragment_candidates": 2
+  }
+}

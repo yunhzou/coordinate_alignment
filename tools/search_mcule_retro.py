@@ -29,12 +29,15 @@ _TARGET = None
 _CONFIG = None
 _MINIMUM_TARGET_COVERAGE_SIZE = 1
 _SAVE_ALL_RESULTS = False
+_TARGET_REGION_ATOMS = None
 
 
 def _worker_init(target_smiles, config_record,
-                 minimum_target_coverage_fraction, save_all_results):
+                 minimum_target_coverage_fraction, save_all_results,
+                 target_region_atoms):
     global _TARGET, _CONFIG, _MINIMUM_TARGET_COVERAGE_SIZE
     global _SAVE_ALL_RESULTS
+    global _TARGET_REGION_ATOMS
     RDLogger.DisableLog("rdApp.*")
     target_implicit = Chem.MolFromSmiles(target_smiles)
     if target_implicit is None:
@@ -48,6 +51,9 @@ def _worker_init(target_smiles, config_record,
                          * target_molecule.GetNumAtoms()))
         if minimum_target_coverage_fraction is not None else 1)
     _SAVE_ALL_RESULTS = bool(save_all_results)
+    _TARGET_REGION_ATOMS = (
+        frozenset(map(int, target_region_atoms))
+        if target_region_atoms is not None else None)
 
 
 def _search_batch(batch):
@@ -65,6 +71,7 @@ def _search_batch(batch):
             _TARGET,
             source_id=precursor_id,
             config=_CONFIG,
+            target_region_atoms=_TARGET_REGION_ATOMS,
         )
         if result.status == "capped":
             counts["capped"] += 1
@@ -144,6 +151,7 @@ def _parser():
     parser.add_argument("--maximum-boundary-bonds", type=int)
     parser.add_argument("--maximum-leftover-fragments", type=int)
     parser.add_argument("--save-all-results", action="store_true")
+    parser.add_argument("--target-region-report")
     return parser
 
 
@@ -163,6 +171,14 @@ def main(argv=None):
         "maximum_boundary_bonds": args.maximum_boundary_bonds,
         "maximum_leftover_fragments": args.maximum_leftover_fragments,
     }
+    target_region_atoms = None
+    if args.target_region_report:
+        region_report = json.loads(
+            Path(args.target_region_report).read_text())
+        if region_report["target_smiles"] != args.target_smiles:
+            raise ValueError("target-region report target does not match")
+        target_region_atoms = region_report[
+            "best_partial_uncovered_target_atoms"]
     target_for_threshold = Chem.AddHs(Chem.MolFromSmiles(args.target_smiles))
     derived_minimum_fragment_size = (
         max(1, math.ceil(args.minimum_target_coverage_fraction
@@ -182,7 +198,7 @@ def main(argv=None):
                 initializer=_worker_init,
                 initargs=(args.target_smiles, config_record,
                           args.minimum_target_coverage_fraction,
-                          args.save_all_results)) as pool:
+                          args.save_all_results, target_region_atoms)) as pool:
             iterator = pool.imap_unordered(
                 _search_batch,
                 _batches(
@@ -235,6 +251,8 @@ def main(argv=None):
         "derived_minimum_fragment_size": derived_minimum_fragment_size,
         "explicit_hydrogens": True,
         "saved_all_results": args.save_all_results,
+        "target_region_report": args.target_region_report,
+        "target_region_atoms": target_region_atoms,
         "elapsed_seconds": elapsed,
         "counts": count_record,
     }
