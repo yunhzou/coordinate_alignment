@@ -13,7 +13,6 @@ class CoverageEnumerationConfig:
     beam_width: int = 200
     patterns_per_coverage: int = 4
     state_limit: int = 100_000
-    allow_overlaps: bool = False
 
     def __post_init__(self):
         if self.maximum_precursors < 1:
@@ -49,8 +48,7 @@ def enumerate_coverage_patterns(
     """Enumerate disjoint coverage-mask tuples that exactly cover a target.
 
     ``rank_pattern(pattern, covered_atom_count)`` ranks partial and complete
-    paths but does not control their validity.  With ``allow_overlaps``, masks
-    describe available target atoms; exact ownership is resolved afterwards.
+    paths but does not control their validity.
     """
     config = config or CoverageEnumerationConfig()
     masks = tuple(sorted(set(masks), key=lambda mask: (
@@ -66,19 +64,14 @@ def enumerate_coverage_patterns(
         uncovered = full_mask ^ covered
         if not uncovered:
             return True
-        compatible = [
-            mask for mask in masks
-            if (mask & uncovered)
-            and (config.allow_overlaps or not (mask & covered))
-        ]
+        compatible = [mask for mask in masks if not (mask & covered)]
         if not compatible or slots == 0:
             return False
         possible = 0
         sizes = []
         for mask in compatible:
-            contribution = mask & uncovered
-            possible |= contribution
-            sizes.append(contribution.bit_count())
+            possible |= mask
+            sizes.append(mask.bit_count())
         if uncovered & ~possible:
             return False
         sizes.sort(reverse=True)
@@ -96,7 +89,7 @@ def enumerate_coverage_patterns(
         uncovered = full_mask ^ covered
         pivot = (uncovered & -uncovered).bit_length() - 1
         for mask in masks_by_atom[pivot]:
-            if not config.allow_overlaps and mask & covered:
+            if mask & covered:
                 continue
             yield from exhaustive(covered | mask, selected + (mask,))
 
@@ -110,7 +103,7 @@ def enumerate_coverage_patterns(
                 uncovered = full_mask ^ covered
                 pivot = (uncovered & -uncovered).bit_length() - 1
                 for mask in masks_by_atom[pivot]:
-                    if not config.allow_overlaps and mask & covered:
+                    if mask & covered:
                         continue
                     new_covered = covered | mask
                     new_selected = selected + (mask,)
@@ -144,7 +137,7 @@ def enumerate_coverage_patterns(
                 pivot = (uncovered & -uncovered).bit_length() - 1
                 for selected in paths:
                     for mask in masks_by_atom[pivot]:
-                        if not config.allow_overlaps and mask & covered:
+                        if mask & covered:
                             continue
                         new_covered = covered | mask
                         new_selected = selected + (mask,)

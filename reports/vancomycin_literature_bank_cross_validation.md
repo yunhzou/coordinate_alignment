@@ -47,15 +47,11 @@ claim that the seven structures alone form a balanced one-step reaction.
 
 The seven records alone still have no full cover, so no partial assembly is
 shown.  Their uncovered region was instead used to select an adaptive gap bank
-from the merged MCule inventory.  Joint assembly of the saved literature and
-gap detections found eight ranked recommendations.  Every saved recommendation
-assigns each of the 132 explicit target atoms to exactly one R placement.
-
-The joint stage permits detected R mappings to overlap before assembly.  It
-then assigns each overlapped target atom to one R, rebuilds the retained and
-discarded regions of every selected R, and applies the normal set ranking.
-Anything short of a disjoint 132/132 assignment is rejected before viewer
-generation.
+from the merged MCule inventory.  The combined detections reach every target
+atom as a union, but they do not contain a disjoint full cover when each
+detected fragment is kept intact.  No assembly viewer is therefore valid for
+this bank.  Atomwise trimming of overlapping matched fragments is explicitly
+forbidden because it can turn one detected fragment into unsupported islands.
 
 ## Saved artifacts
 
@@ -64,8 +60,6 @@ generation.
 - complete detection records: `data/retro_runs/vancomycin_literature_validation/blind_fixed_fragment_records.jsonl.gz`
 - detection summary: `data/retro_runs/vancomycin_literature_validation/blind_fixed_fragment_records.jsonl.gz.summary.json`
 - adaptive gap detection: `data/retro_runs/vancomycin_literature_gap/part_0.jsonl.gz`
-- full-cover ranking: `reports/vancomycin_full_cover_assembly.json`
-- validated full-cover viewer: `reports/vancomycin_full_cover_results.html`
 
 Primary source: M. J. Moore et al., *J. Am. Chem. Soc.* 2020, 142,
 16039-16050, DOI: 10.1021/jacs.0c07433.  Structures 11-17 are transcribed from
