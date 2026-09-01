@@ -838,6 +838,118 @@ def _multistep_page(report, config):
     report.finish_page()
 
 
+def _large_star_page(report, config):
+    target = (
+        "c1ccc(-c2ccc(-c3cc(-c4ccc(-c5ccccc5)cc4)cc"
+        "(-c4ccc(-c5ccccc5)cc4)c3)cc2)cc1"
+    )
+    core_smiles = "Brc1cc(Br)cc(Br)c1"
+    arm_smiles = "CN1CC(=O)OB(c2ccc(-c3ccccc3)cc2)OC(=O)C1"
+    target_graph = _graph(target)
+    core_result = _detect(
+        "1,3,5-tribromobenzene", core_smiles, target, config)
+    arm_result = _detect(
+        "4-biphenylboronic acid MIDA ester",
+        arm_smiles,
+        target,
+        config,
+    )
+    search = assemble_fragment_cover(
+        target_graph,
+        core_result.candidates + arm_result.candidates,
+        maximum_precursors=4,
+        assembly_limit=1_000,
+        allow_repeated_precursors=True,
+        require_attachment_bonds=False,
+    )
+    if not search.assemblies:
+        raise RuntimeError("large repeated-arm example did not assemble")
+    assembly = search.assemblies[0]
+    core = next(
+        candidate for candidate in assembly.candidates
+        if candidate.source_id == "1,3,5-tribromobenzene")
+    arms = sorted(
+        (candidate for candidate in assembly.candidates
+         if candidate.source_id ==
+         "4-biphenylboronic acid MIDA ester"),
+        key=lambda candidate: candidate.covered_target_atoms,
+    )
+    arm_colors = (RD_ORANGE, RD_PURPLE, RD_CYAN)
+    core_png = _rdkit_png(
+        core_smiles,
+        _source_colors(core, RD_BLUE),
+        cut_bonds=core.boundary_bonds,
+        width=500,
+        height=300,
+    )
+    arm_pngs = [
+        _rdkit_png(
+            arm_smiles,
+            _source_colors(candidate, color),
+            cut_bonds=candidate.boundary_bonds,
+            width=650,
+            height=300,
+        )
+        for candidate, color in zip(arms, arm_colors)
+    ]
+    target_colors = {
+        atom: RD_BLUE for atom in core.covered_target_atoms
+    }
+    for candidate, color in zip(arms, arm_colors):
+        target_colors.update({
+            atom: color for atom in candidate.covered_target_atoms
+        })
+    target_png = _rdkit_png(
+        target,
+        target_colors,
+        formed_bonds=assembly.formed_bonds,
+        width=1_050,
+        height=450,
+    )
+
+    report.new_page(
+        "Really Difficult Example: Seven-Ring Star Target",
+        "One central building block plus three repeated biphenyl-arm building blocks")
+    centers = (100, 285, 470, 655)
+    report.image(core_png, 25, 335, 150, 120)
+    for index, png in enumerate(arm_pngs):
+        report.image(png, 185 + index * 185, 330, 180, 130)
+    labels = (
+        ("R1: tribromobenzene core", BLUE),
+        ("R2: biphenyl arm, copy 1", ORANGE),
+        ("R3: biphenyl arm, copy 2", PURPLE),
+        ("R4: biphenyl arm, copy 3", CYAN),
+    )
+    for center, (label, color) in zip(centers, labels):
+        report.pdf.setFillColor(color)
+        report.pdf.setFont("Helvetica-Bold", 8.5)
+        report.pdf.drawCentredString(center, 470, label)
+    endpoints = (155, 245, 335, 425)
+    for center, endpoint, color in zip(
+            centers, endpoints, (BLUE, ORANGE, PURPLE, CYAN)):
+        report.arrow(
+            center, 325, endpoint, 300,
+            color=color, width=2)
+
+    report.image(target_png, 45, 90, 460, 200)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 10.5)
+    report.pdf.drawCentredString(
+        275, 292, "P_target: complete seven-ring product")
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(525, 92, 275, 195, 9, fill=1, stroke=0)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 11)
+    report.pdf.drawString(542, 262, "Computed result")
+    report.bullets(542, 238, [
+        "42 heavy atoms and 72 explicit atoms are fully covered.",
+        "Four R copies are selected: one core and three identical arm structures.",
+        "Three inter-module bonds are formed; all searches finish below branch cap 100.",
+        "This gives the foundations, but does not choose the order or chemistry of the three coupling stages.",
+    ], width=240, size=8.8, leading=11)
+    report.finish_page()
+
+
 def _next_questions_page(report):
     report.new_page(
         "Open Questions: From Geometry to Retrosynthesis",
@@ -988,6 +1100,7 @@ def main():
     _co2_page(report, config)
     _complex_page(report, config)
     _multistep_page(report, config)
+    _large_star_page(report, config)
     _next_questions_page(report)
     report.save()
     print(output.resolve())

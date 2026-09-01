@@ -284,6 +284,63 @@ def test_two_step_triphenylamine_route_materializes_symmetric_placements():
     }
 
 
+def test_large_symmetric_star_uses_three_repeated_biphenyl_arms():
+    pytest.importorskip("rdkit")
+    from rxn_core.smiles import smiles_to_weighted_graph
+
+    def graph(smiles):
+        return smiles_to_weighted_graph(smiles, expand_hydrogens=True)
+
+    target_smiles = (
+        "c1ccc(-c2ccc(-c3cc(-c4ccc(-c5ccccc5)cc4)cc"
+        "(-c4ccc(-c5ccccc5)cc4)c3)cc2)cc1"
+    )
+    sources = (
+        ("1,3,5-tribromobenzene", "Brc1cc(Br)cc(Br)c1"),
+        (
+            "4-biphenylboronic acid MIDA ester",
+            "CN1CC(=O)OB(c2ccc(-c3ccccc3)cc2)OC(=O)C1",
+        ),
+    )
+    target = graph(target_smiles)
+    config = FragmentDetectionConfig(
+        minimum_fragment_size=1,
+        iso_tolerance=0.5,
+        branch_limit=100,
+        candidate_limit=512,
+    )
+    detections = [
+        detect_fragments(
+            graph(source_smiles),
+            target,
+            source_id=source_id,
+            config=config,
+        )
+        for source_id, source_smiles in sources
+    ]
+    result = assemble_fragment_cover(
+        target,
+        tuple(
+            candidate
+            for detection in detections
+            for candidate in detection.candidates
+        ),
+        maximum_precursors=4,
+        allow_repeated_precursors=True,
+        require_attachment_bonds=False,
+    )
+
+    assert all(detection.complete for detection in detections)
+    assert result.status == "matched"
+    assembly = result.assemblies[0]
+    assert Counter(assembly.precursor_ids) == {
+        "1,3,5-tribromobenzene": 1,
+        "4-biphenylboronic acid MIDA ester": 3,
+    }
+    assert len(assembly.formed_bonds) == 3
+    assert len(assembly.broken_bonds) == 6
+
+
 def test_chloroform_plus_three_repeated_pyrazoles_covers_target():
     pytest.importorskip("rdkit")
     from rxn_core.smiles import smiles_to_weighted_graph
