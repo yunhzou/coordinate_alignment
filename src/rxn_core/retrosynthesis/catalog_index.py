@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from functools import lru_cache
 
 import networkx as nx
 from rdkit import Chem
@@ -23,17 +24,21 @@ def _cip(atom):
 
 
 def chirality_violations(candidate, source, target):
+    return len(chirality_violation_target_atoms(
+        candidate, source, target))
+
+
+def chirality_violation_target_atoms(candidate, source, target):
     reaction_center = {int(edge[0]) for edge in candidate["boundary_bonds"]}
-    violations = 0
-    for source_atom, target_atom in candidate["mapping"]:
-        if int(source_atom) in reaction_center:
-            continue
-        source_cip = _cip(source.GetAtomWithIdx(int(source_atom)))
-        target_cip = _cip(target.GetAtomWithIdx(int(target_atom)))
-        if ((source_cip is not None or target_cip is not None)
-                and source_cip != target_cip):
-            violations += 1
-    return violations
+    return sorted(
+        int(target_atom)
+        for source_atom, target_atom in candidate["mapping"]
+        if int(source_atom) not in reaction_center
+        and ((_cip(source.GetAtomWithIdx(int(source_atom))) is not None
+              or _cip(target.GetAtomWithIdx(int(target_atom))) is not None)
+             and _cip(source.GetAtomWithIdx(int(source_atom)))
+             != _cip(target.GetAtomWithIdx(int(target_atom))))
+    )
 
 
 def candidate_entry(
@@ -74,7 +79,82 @@ def candidate_entry(
         "chirality_violations": (
             chirality_violations(candidate, explicit_molecule, target)
             if chirality_ranking else 0),
+        "chirality_violation_target_atoms": (
+            chirality_violation_target_atoms(
+                candidate, explicit_molecule, target)
+            if chirality_ranking else []),
     }
+
+
+@lru_cache(maxsize=None)
+def _explicit_molecule(smiles):
+    return Chem.AddHs(Chem.MolFromSmiles(smiles))
+
+
+def assign_owned_target_atoms(entry, owned_target_atoms):
+    """Rebuild an entry after joint assembly assigns its target atoms."""
+    owned = set(map(int, owned_target_atoms))
+    molecule = _explicit_molecule(entry["smiles"])
+    mapping = {
+        int(source): int(target) for source, target in entry["mapping"]
+        if int(target) in owned
+    }
+    retained = set(mapping)
+    outside = set(range(molecule.GetNumAtoms())) - retained
+    retained_graph = nx.Graph()
+    retained_graph.add_nodes_from(retained)
+    outside_graph = nx.Graph()
+    outside_graph.add_nodes_from(outside)
+    boundary = []
+    attachments = set()
+    for bond in molecule.GetBonds():
+        left, right = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        if left in retained and right in retained:
+            retained_graph.add_edge(left, right)
+        elif left in outside and right in outside:
+            outside_graph.add_edge(left, right)
+        elif left in retained:
+            boundary.append([left, right])
+            attachments.add(left)
+        else:
+            boundary.append([right, left])
+            attachments.add(right)
+    attachments.update(
+        atom for atom in retained
+        if molecule.GetAtomWithIdx(atom).GetFormalCharge() != 0)
+    retained_fragments = [
+        sorted(component)
+        for component in nx.connected_components(retained_graph)
+    ]
+    leftovers = [
+        sorted(component)
+        for component in nx.connected_components(outside_graph)
+    ]
+    retained_heavy_atoms = sum(
+        molecule.GetAtomWithIdx(atom).GetAtomicNum() > 1 for atom in retained)
+    removed_targets = (
+        set(map(int, entry["covered_target_atoms"])) - owned)
+    rebuilt = dict(entry)
+    rebuilt.update({
+        "mapping": [list(item) for item in sorted(mapping.items())],
+        "retained_atoms": sorted(retained),
+        "covered_target_atoms": sorted(owned),
+        "retained_fragments": retained_fragments,
+        "leftover_fragments": leftovers,
+        "boundary_bonds": sorted(boundary),
+        "attachment_atoms_target": sorted(
+            mapping[atom] for atom in attachments if atom in mapping),
+        "leftover_atom_count": len(outside),
+        "retained_heavy_atoms": retained_heavy_atoms,
+        "retained_atom_count": len(retained),
+        "heavy_atom_retention": (
+            retained_heavy_atoms / entry["total_heavy_atoms"]),
+        "atom_retention": len(retained) / entry["total_atom_count"],
+        "attachment_trimmed_target_atoms": sorted(removed_targets),
+        "chirality_violations": len(
+            owned & set(entry["chirality_violation_target_atoms"])),
+    })
+    return rebuilt
 
 
 def attachment_trim_variants(candidate, molecule):

@@ -106,6 +106,14 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
     for rank in selected_ranks:
         assembly = ranked[rank - 1]
         raw_precursors = assembly["precursors"]
+        regions = [
+            set(map(int, item["covered_target_atoms"]))
+            for item in raw_precursors
+        ]
+        if (set().union(*regions) != set(range(len(target_elements)))
+                or sum(map(len, regions)) != len(target_elements)):
+            raise ValueError(
+                f"assembly {rank} is not a disjoint full target cover")
         precursors = _group_precursors(raw_precursors)
         models = [
             _model(item["smiles"], item, COLORS[index], cache)
@@ -155,6 +163,7 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
             "assemblies": len(ranked),
             "known_rank": known_rank,
             "explicit_hydrogens": True,
+            "search_truncated": report["recommendation_search_truncated"],
         },
         "patterns": report["construction_patterns"],
         "assemblies": assemblies,
@@ -190,7 +199,7 @@ main{{display:grid;grid-template-rows:1fr 1fr;min-width:0}} #reactants{{display:
 </style><script>{library}</script></head><body>
 <header><div><h1>{payload['summary']['title']}</h1><div class="muted">Explicit-H fragment mappings · select an assembly to inspect it in 3D</div></div>
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
-<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors. <span style="color:#d33">Red = broken</span>; <span style="color:#159447">green = formed</span>.<br><br>Cap-hit precursors: {payload['summary']['capped']:,}.</div><div id="list"></div></aside>
+<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors. <span style="color:#d33">Red = broken</span>; <span style="color:#159447">green = formed</span>.<br><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
 <main><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><br><label><input id="labels" type="checkbox"> mapped P# identities</label></div><div id="reactants"></div>
 <div id="productWrap"><section class="panel" id="Ppanel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data}, colors={json.dumps(COLORS)}, viewers={{}};

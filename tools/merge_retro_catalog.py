@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge catalog shards and rank complementary two-precursor covers."""
+"""Merge fragment detections and rank joint full-target assemblies."""
 from __future__ import annotations
 
 import argparse
@@ -27,6 +27,7 @@ from rxn_core.retrosynthesis.ranking import (
     build_ranked_assembly as _assembly,
     validate_atom_ownership as _formed_bonds,
 )
+from rxn_core.retrosynthesis.ownership import resolve_overlapping_ownership
 
 
 def main():
@@ -58,6 +59,8 @@ def main():
                         action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--chirality-ranking",
                         action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--joint-ownership",
+                        action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
 
     target_implicit = Chem.MolFromSmiles(args.target_smiles)
@@ -163,6 +166,7 @@ def main():
             beam_width=args.beam_width,
             patterns_per_coverage=args.patterns_per_coverage,
             state_limit=args.modular_state_limit,
+            allow_overlaps=args.joint_ownership,
         ),
     )
     covers = coverage_search.patterns
@@ -180,7 +184,9 @@ def main():
         seen = set()
         for assembly in sorted(items, key=_assembly_rank):
             combination = tuple(
-                item["precursor_id"] for item in assembly["precursors"])
+                (item["precursor_id"],
+                 tuple(item["covered_target_atoms"]))
+                for item in assembly["precursors"])
             if combination in seen:
                 continue
             seen.add(combination)
@@ -193,8 +199,6 @@ def main():
     retain_during_search = max(args.assembly_limit * 2, 5_000)
     for cover in covers:
         cover_count += 1
-        pattern_key = construction_pattern_signature(cover)
-        representative_pattern.setdefault(pattern_key, tuple(sorted(cover)))
         pattern_assemblies = []
         pools = [groups[mask] for mask in cover]
         if args.search_mode == "recommendation":
@@ -216,16 +220,36 @@ def main():
             if (not args.allow_repeated_precursors and
                     len(set(ids)) != len(ids)):
                 continue
-            formed = _formed_bonds(
-                items, target_edges, args.require_attachment_bonds)
-            if formed is not None:
-                pattern_assemblies.append(_assembly(items, formed))
-                assembly_mapping_variants += 1
+            if args.joint_ownership:
+                resolution = resolve_overlapping_ownership(
+                    items,
+                    atom_count,
+                    target_edges,
+                    beam_width=args.combination_beam_width,
+                    assembly_limit=args.recommendations_per_pattern,
+                    require_attachment_bonds=args.require_attachment_bonds,
+                )
+                beam_truncated |= resolution.truncated
+                pattern_assemblies.extend(resolution.assemblies)
+                assembly_mapping_variants += len(resolution.assemblies)
+            else:
+                formed = _formed_bonds(
+                    items, target_edges, args.require_attachment_bonds)
+                if formed is not None:
+                    pattern_assemblies.append(_assembly(items, formed))
+                    assembly_mapping_variants += 1
             if len(pattern_assemblies) >= prune_at:
                 pattern_assemblies = retain_best(
                     pattern_assemblies, retain_during_search)
-        assemblies_by_pattern[pattern_key].extend(retain_best(
-            pattern_assemblies, args.recommendations_per_pattern))
+        for assembly in retain_best(
+                pattern_assemblies, args.recommendations_per_pattern):
+            owned_pattern = tuple(sorted(
+                _mask(item["covered_target_atoms"])
+                for item in assembly["precursors"]
+            ))
+            pattern_key = construction_pattern_signature(owned_pattern)
+            representative_pattern.setdefault(pattern_key, owned_pattern)
+            assemblies_by_pattern[pattern_key].append(assembly)
 
     ranked_patterns = sorted(
         ((pattern, retain_best(items, args.recommendations_per_pattern))
@@ -287,6 +311,7 @@ def main():
     report = {
         "schema": "rxn_core.retro_catalog_assembly/v3",
         "target_smiles": args.target_smiles,
+        "target_atom_count": atom_count,
         "part_count": len(part_paths),
         "scan_counts": {
             key: scan_counts[key]
@@ -312,6 +337,7 @@ def main():
         "allow_repeated_precursors": args.allow_repeated_precursors,
         "attachment_trim_variants": args.attachment_trim_variants,
         "chirality_ranking": args.chirality_ranking,
+        "joint_ownership": args.joint_ownership,
         "search_mode": args.search_mode,
         "beam_width": args.beam_width,
         "combination_beam_width": args.combination_beam_width,
