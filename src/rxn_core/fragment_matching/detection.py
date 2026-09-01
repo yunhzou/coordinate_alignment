@@ -1,8 +1,14 @@
 """Detect target-owned fragments from one source graph."""
 from __future__ import annotations
 
+from dataclasses import replace
+
 from ..growth import IslandBranchLimitExceeded, grow_island
-from ..matcher import _nauty_orbits
+from ..matcher import (
+    _atom_tuple_orbit,
+    _nauty_atom_generators,
+    _nauty_orbits,
+)
 from ..subgraph import _coerce_graph
 from .augmentation import match_augmented_residuals, project_augmented_placement
 from .graph_ops import partition_at_retained_fragment
@@ -83,6 +89,23 @@ def _candidate_identity(candidate):
     )
 
 
+def _target_automorphism_variants(candidate, generators):
+    source_order = tuple(source for source, _target in candidate.mapping)
+    target_images = tuple(target for _source, target in candidate.mapping)
+    for images in _atom_tuple_orbit(target_images, generators):
+        mapping = dict(zip(source_order, images))
+        yield replace(
+            candidate,
+            mapping=tuple(sorted(mapping.items())),
+            covered_target_atoms=tuple(sorted(mapping.values())),
+            attachment_atoms_target=tuple(sorted({
+                mapping[source]
+                for source in candidate.attachment_atoms_source
+                if source in mapping
+            })),
+        )
+
+
 def detect_fragments(
         source, target, *, source_id="",
         config: FragmentDetectionConfig | None = None):
@@ -90,6 +113,8 @@ def detect_fragments(
     config = config or FragmentDetectionConfig()
     source_graph = _coerce_graph(source, config.graph_floor)
     target_graph = _coerce_graph(target, config.graph_floor)
+    target_generators = _nauty_atom_generators(
+        target_graph, wbo_tol=config.iso_tolerance)
     (
         initial_placements,
         capped_seed_count,
@@ -185,13 +210,17 @@ def detect_fragments(
                 augmented_target_atom_count=augmented_atom_count,
                 retained_fragments=retained_fragments,
             )
-            identity = _candidate_identity(candidate)
-            if identity in seen_candidates:
-                continue
-            seen_candidates.add(identity)
-            candidates.append(candidate)
-            if len(candidates) >= config.candidate_limit:
-                candidate_capped = True
+            for variant in _target_automorphism_variants(
+                    candidate, target_generators):
+                identity = _candidate_identity(variant)
+                if identity in seen_candidates:
+                    continue
+                seen_candidates.add(identity)
+                candidates.append(variant)
+                if len(candidates) >= config.candidate_limit:
+                    candidate_capped = True
+                    break
+            if candidate_capped:
                 break
         if len(candidates) >= config.candidate_limit:
             break

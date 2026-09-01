@@ -217,6 +217,73 @@ def test_symmetric_cover_can_reuse_one_precursor_three_times():
     assert distinct_only.status == "no_cover"
 
 
+def test_two_step_triphenylamine_route_materializes_symmetric_placements():
+    pytest.importorskip("rdkit")
+    from rxn_core.smiles import smiles_to_weighted_graph
+
+    def graph(smiles):
+        return smiles_to_weighted_graph(smiles, expand_hydrogens=True)
+    config = FragmentDetectionConfig(
+        minimum_fragment_size=1,
+        iso_tolerance=0.5,
+        branch_limit=100,
+        candidate_limit=512,
+    )
+    bromobenzene_smiles = "Brc1ccccc1"
+    aniline_smiles = "Nc1ccccc1"
+    diphenylamine_smiles = "c1ccc(Nc2ccccc2)cc1"
+    triphenylamine_smiles = "c1ccc(N(c2ccccc2)c2ccccc2)cc1"
+
+    def cover(target_smiles, sources, maximum_precursors):
+        target = graph(target_smiles)
+        candidates = tuple(
+            candidate
+            for source_id, source_smiles in sources
+            for candidate in detect_fragments(
+                graph(source_smiles),
+                target,
+                source_id=source_id,
+                config=config,
+            ).candidates
+        )
+        return assemble_fragment_cover(
+            target,
+            candidates,
+            maximum_precursors=maximum_precursors,
+            allow_repeated_precursors=True,
+            require_attachment_bonds=False,
+        )
+
+    step_one = cover(diphenylamine_smiles, (
+        ("aniline", aniline_smiles),
+        ("bromobenzene", bromobenzene_smiles),
+    ), 2)
+    step_two = cover(triphenylamine_smiles, (
+        ("diphenylamine", diphenylamine_smiles),
+        ("bromobenzene", bromobenzene_smiles),
+    ), 2)
+    direct = cover(triphenylamine_smiles, (
+        ("aniline", aniline_smiles),
+        ("bromobenzene", bromobenzene_smiles),
+    ), 3)
+
+    assert step_one.status == "matched"
+    assert Counter(step_one.assemblies[0].precursor_ids) == {
+        "aniline": 1,
+        "bromobenzene": 1,
+    }
+    assert step_two.status == "matched"
+    assert Counter(step_two.assemblies[0].precursor_ids) == {
+        "diphenylamine": 1,
+        "bromobenzene": 1,
+    }
+    assert direct.status == "matched"
+    assert Counter(direct.assemblies[0].precursor_ids) == {
+        "aniline": 1,
+        "bromobenzene": 2,
+    }
+
+
 def test_chloroform_plus_three_repeated_pyrazoles_covers_target():
     pytest.importorskip("rdkit")
     from rxn_core.smiles import smiles_to_weighted_graph
@@ -248,7 +315,8 @@ def test_chloroform_plus_three_repeated_pyrazoles_covers_target():
         "CHCl3": 1, "pyrazole": 3}
     assert len(assembly.formed_bonds) == 3
     assert len(assembly.broken_bonds) == 6
-    assert strict_first_pass.status == "no_cover"
+    assert strict_first_pass.status == "matched"
+    assert len(strict_first_pass.assemblies[0].formed_bonds) == 3
 
 
 def test_known_mcule_suzuki_precursors_cover_ortho_chlorobiphenyl():

@@ -701,6 +701,143 @@ def _complex_page(report, config):
     report.finish_page()
 
 
+def _multistep_page(report, config):
+    aniline = "Nc1ccccc1"
+    bromobenzene = "Brc1ccccc1"
+    diphenylamine = "c1ccc(Nc2ccccc2)cc1"
+    triphenylamine = "c1ccc(N(c2ccccc2)c2ccccc2)cc1"
+
+    _step_one_results, step_one = _assembly(
+        diphenylamine,
+        (("aniline", aniline), ("bromobenzene", bromobenzene)),
+        config,
+    )
+    step_one_selected = {
+        candidate.source_id: candidate for candidate in step_one.candidates
+    }
+    step_one_colors = {
+        "aniline": RD_BLUE,
+        "bromobenzene": RD_ORANGE,
+    }
+    aniline_png = _rdkit_png(
+        aniline,
+        _source_colors(step_one_selected["aniline"], RD_BLUE),
+        cut_bonds=step_one_selected["aniline"].boundary_bonds,
+        width=500,
+        height=280,
+    )
+    first_bromobenzene_png = _rdkit_png(
+        bromobenzene,
+        _source_colors(step_one_selected["bromobenzene"], RD_ORANGE),
+        cut_bonds=step_one_selected["bromobenzene"].boundary_bonds,
+        width=500,
+        height=280,
+    )
+    intermediate_colors = _target_colors_by_source(
+        step_one, step_one_colors)
+    intermediate_png = _rdkit_png(
+        diphenylamine,
+        intermediate_colors,
+        formed_bonds=step_one.formed_bonds,
+        width=760,
+        height=300,
+    )
+
+    _step_two_results, step_two = _assembly(
+        triphenylamine,
+        (("diphenylamine", diphenylamine),
+         ("bromobenzene", bromobenzene)),
+        config,
+    )
+    step_two_selected = {
+        candidate.source_id: candidate for candidate in step_two.candidates
+    }
+    intermediate_candidate = step_two_selected["diphenylamine"]
+    final_colors = {
+        target_atom: intermediate_colors[source_atom]
+        for source_atom, target_atom in intermediate_candidate.mapping
+        if source_atom in intermediate_colors
+    }
+    final_colors.update({
+        target_atom: RD_PURPLE
+        for target_atom in step_two_selected[
+            "bromobenzene"].covered_target_atoms
+    })
+    intermediate_as_source_png = _rdkit_png(
+        diphenylamine,
+        intermediate_colors,
+        cut_bonds=intermediate_candidate.boundary_bonds,
+        formed_bonds=step_one.formed_bonds,
+        width=760,
+        height=300,
+    )
+    second_bromobenzene_png = _rdkit_png(
+        bromobenzene,
+        _source_colors(
+            step_two_selected["bromobenzene"], RD_PURPLE),
+        cut_bonds=step_two_selected["bromobenzene"].boundary_bonds,
+        width=500,
+        height=280,
+    )
+    final_png = _rdkit_png(
+        triphenylamine,
+        final_colors,
+        formed_bonds=step_two.formed_bonds,
+        width=850,
+        height=320,
+    )
+
+    report.new_page(
+        "Harder Example: Two Steps with Multiple R",
+        "The same geometric workflow is applied recursively; bromobenzene is used twice")
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 12)
+    report.pdf.drawString(45, 480, "Step 1: construct the intermediate")
+    report.image(aniline_png, 45, 330, 165, 125)
+    report.image(first_bromobenzene_png, 235, 330, 165, 125)
+    report.image(intermediate_png, 515, 320, 280, 140)
+    report.pdf.setFont("Helvetica-Bold", 9)
+    report.pdf.setFillColor(BLUE)
+    report.pdf.drawCentredString(127, 462, "R1: aniline")
+    report.pdf.setFillColor(ORANGE)
+    report.pdf.drawCentredString(317, 462, "R2: bromobenzene, copy 1")
+    report.pdf.setFillColor(INK)
+    report.pdf.drawCentredString(655, 462, "P1: diphenylamine")
+    report.pdf.setFont("Helvetica-Bold", 17)
+    report.pdf.drawCentredString(220, 385, "+")
+    report.arrow(415, 401, 495, 401, color=BLUE, width=2)
+    report.arrow(415, 381, 495, 381, color=ORANGE, width=2)
+
+    report.pdf.setStrokeColor(LINE)
+    report.pdf.line(42, 305, 800, 305)
+    report.pdf.setFillColor(INK)
+    report.pdf.setFont("Helvetica-Bold", 12)
+    report.pdf.drawString(45, 280, "Step 2: expand the intermediate to P_target")
+    report.image(intermediate_as_source_png, 45, 145, 280, 125)
+    report.image(second_bromobenzene_png, 350, 145, 150, 125)
+    report.image(final_png, 585, 135, 210, 140)
+    report.pdf.setFont("Helvetica-Bold", 9)
+    report.pdf.setFillColor(INK)
+    report.pdf.drawCentredString(185, 270, "R1: P1 intermediate")
+    report.pdf.setFillColor(PURPLE)
+    report.pdf.drawCentredString(425, 270, "R3: bromobenzene, copy 2")
+    report.pdf.setFillColor(INK)
+    report.pdf.drawCentredString(690, 270, "P_target: triphenylamine")
+    report.pdf.setFont("Helvetica-Bold", 17)
+    report.pdf.drawCentredString(337, 205, "+")
+    report.arrow(510, 221, 565, 221, color=BLUE, width=2)
+    report.arrow(510, 201, 565, 201, color=ORANGE, width=2)
+    report.arrow(510, 181, 565, 181, color=PURPLE, width=2)
+
+    report.pdf.setFillColor(LIGHT)
+    report.pdf.roundRect(42, 55, 758, 66, 9, fill=1, stroke=0)
+    report.bullets(58, 98, [
+        "Both stages independently achieve complete explicit-H target coverage without a branch-cap hit.",
+        "The direct foundation search also recovers aniline plus two copies of bromobenzene; a route planner is needed to introduce P1 as the intermediate.",
+    ], width=720, size=8.8, leading=10)
+    report.finish_page()
+
+
 def _next_questions_page(report):
     report.new_page(
         "Open Questions: From Geometry to Retrosynthesis",
@@ -850,6 +987,7 @@ def main():
     _alternative_patterns_page(report, config)
     _co2_page(report, config)
     _complex_page(report, config)
+    _multistep_page(report, config)
     _next_questions_page(report)
     report.save()
     print(output.resolve())

@@ -120,10 +120,13 @@ DETECT_FRAGMENTS(source, target, policy):
             diagnostics.mark_incomplete(stage = initial_growth)
             continue
 
-        retain symmetry-distinct placements in initial_placements
+        retain one compressed witness per automorphism class
         if candidate cap is reached:
             diagnostics.mark_incomplete(stage = candidate_collection)
             break
+
+    before assembly, materialize the symmetry-equivalent target coverage
+    variants represented by each compressed witness, bounded by candidate cap
 
     best_initial_size = maximum connected size in initial_placements
 
