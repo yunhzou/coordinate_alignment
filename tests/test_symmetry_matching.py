@@ -27,7 +27,6 @@ from rxn_core.alignment.sweep import (
 )
 import rxn_core.alignment.branch as branch_mod
 from rxn_core.matcher import (
-    _SymCandidateLimitExceeded,
     _SymBlock,
     _SymCand,
     _cand_map,
@@ -90,34 +89,29 @@ def test_fragment_branch_cap_is_loud_and_allows_exact_limit():
 
 def test_incremental_extension_enforces_cap_after_symmetry_deduplication():
     g_r = build_graph(
-        ["C", "N"], np.array([[0.0, 1.0], [1.0, 0.0]]), bond_cut=0.2)
-    wbo = np.zeros((12, 12))
-    for carbon, nitrogen, marker in (
-            (0, 4, 8), (1, 5, 9), (2, 6, 10), (3, 7, 11)):
-        wbo[carbon, nitrogen] = wbo[nitrogen, carbon] = 1.0
+        ["Si", "N"], np.array([[0.0, 1.0], [1.0, 0.0]]), bond_cut=0.2)
+    wbo = np.zeros((9, 9))
+    for nitrogen, marker in ((1, 5), (2, 6), (3, 7), (4, 8)):
+        wbo[0, nitrogen] = wbo[nitrogen, 0] = 1.0
         wbo[nitrogen, marker] = wbo[marker, nitrogen] = 1.0
     g_p = build_graph(
-        ["C", "C", "C", "C", "N", "N", "N", "N",
-         "O", "F", "Cl", "Br"],
+        ["Si", "N", "N", "N", "N", "O", "F", "Cl", "Br"],
         wbo,
         bond_cut=0.2,
     )
-    parents = [_SymCand({0: carbon}) for carbon in range(4)]
 
-    with pytest.raises(_SymCandidateLimitExceeded) as exc_info:
-        _extend_sym_cands(
-            parents,
-            {0},
-            1,
+    with pytest.raises(IslandBranchLimitExceeded) as exc_info:
+        grow_island(
             g_r,
             g_p,
+            0,
             {},
-            0.5,
-            None,
-            max_candidates=2,
+            max_branches=2,
+            r_orbits=_nauty_orbits(g_r),
+            p_orbits=_nauty_orbits(g_p),
         )
 
-    assert exc_info.value.count == 3
+    assert exc_info.value.count == 4
     assert exc_info.value.limit == 2
 
 
