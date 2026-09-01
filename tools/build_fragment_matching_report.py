@@ -1189,7 +1189,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument(
         "--large-star-result",
-        default="reports/large_star_183_result.json",
+        default="docs/example_runs/large_star_183_result.json",
     )
     args = parser.parse_args()
     output = Path(args.output)
