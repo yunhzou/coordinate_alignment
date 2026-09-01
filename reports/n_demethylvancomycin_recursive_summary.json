@@ -36,6 +36,20 @@
     "unique_structures": 11,
     "relinquished_overlap_atoms": 54,
     "largest_selected_child_heavy_atoms": 46,
-    "interpretation": "The 100-heavy-atom norvancomycin endpoint has been rejected and replaced by a complete geometric cover from materially smaller catalog structures. The largest selected children remain intermediates if cost or availability rejects them; this result is not a chemically validated synthesis route."
+    "interpretation": "The 100-heavy-atom norvancomycin endpoint has been rejected and replaced by a complete geometric cover from materially smaller catalog structures. Literature comparison shows that this cover is not a known synthetic route: its flavonoid and glycoside matches are geometric coincidences rather than the protected amino-acid subunits used in vancomycin total synthesis."
+  },
+  "literature_comparison": {
+    "performed": true,
+    "matches_published_route": false,
+    "validated_step": "N-demethylvancomycin plus SAM to vancomycin by MtfA/Vmt N-methylation",
+    "published_total_synthesis": "Vancomycin aglycon assembled from seven amino-acid subunits followed by two-step enzymatic glycosylation",
+    "missing_from_geometric_cover": [
+      "literature amino-acid subunit correspondence",
+      "AB biaryl ring-closing sequence",
+      "CD and DE diaryl-ether closures",
+      "aglycon-to-vancomycin glycosylation logic",
+      "reactivity and protecting-group compatibility"
+    ],
+    "verdict": "Geometric coverage demonstration only; reject as a retrosynthetic route."
   }
 }
