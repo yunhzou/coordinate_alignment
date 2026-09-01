@@ -32,14 +32,26 @@ to its copied competitor fragment.  The repair adds that canonical copied
 placement to every augmented search.  Subunits 14 and 15 then recover without
 a target-region hint.
 
-## Assembly interpretation
+## Occupation interpretation
 
-The seven starting subunits collectively map 107 of 132 explicit-H target
-atoms, including 64 of 80 heavy atoms.  They do not directly cover the complete
-aglycon, which is expected: the cited synthesis is a 17-step route, not a
-single-step assembly.  Oxidation, nitrile conversion, aromatic substitution,
-chlorination, macrocyclization, deprotection, and other reagents change or add
-atoms between these starting subunits and the final aglycon.
+Every saved placement preserves atom elements and all retained bonds at the
+configured tolerance.  Each subunit also has at least one placement with no
+CIP conflict.  However, selecting those stereochemically clean placements
+independently makes analogous amino-acid subunits compete for the same target
+regions.
+
+Across all 192 combinations containing one intact placement per subunit, the
+coverage-maximizing combination maps 104 of 132 explicit-H target atoms,
+including 63 of 80 heavy atoms.  It also has 20 multiply claimed target atoms
+and two CIP conflicts.  Thus geometry detects plausible conserved regions but
+does not uniquely recover the literature atom occupations through all 17
+steps.
+
+The seven subunits do not directly cover the complete aglycon, which is
+expected: the cited synthesis is a 17-step route, not a single-step assembly.
+Oxidation, nitrile conversion, aromatic substitution, chlorination,
+macrocyclization, deprotection, and other reagents change or add atoms between
+these starting subunits and the final aglycon.
 
 Therefore the cross-validation establishes that the fragment detector can now
 discover every published starting subunit once it is present.  It does not
@@ -59,6 +71,7 @@ forbidden because it can turn one detected fragment into unsupported islands.
 - target: `docs/example_runs/vancomycin_aglycon_pubchem_445835.smi`
 - complete detection records: `data/retro_runs/vancomycin_literature_validation/blind_fixed_fragment_records.jsonl.gz`
 - detection summary: `data/retro_runs/vancomycin_literature_validation/blind_fixed_fragment_records.jsonl.gz.summary.json`
+- interactive occupation viewer: `reports/vancomycin_literature_occupations.html`
 - adaptive gap detection: `data/retro_runs/vancomycin_literature_gap/part_0.jsonl.gz`
 
 Primary source: M. J. Moore et al., *J. Am. Chem. Soc.* 2020, 142,
