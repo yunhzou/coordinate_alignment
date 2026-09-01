@@ -11,7 +11,7 @@ The package is intentionally split by responsibility:
 from __future__ import annotations
 
 from .dedupe import _boundary_signature, _dedup_sym_cands, _p_relation_signature
-from .extend import _extend_sym_cands
+from .extend import _SymCandidateLimitExceeded, _extend_sym_cands
 from .policy import (
     DEFAULT_NODE_POLICY,
     AttributeNodeMatchPolicy,

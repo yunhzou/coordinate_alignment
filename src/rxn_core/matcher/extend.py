@@ -40,6 +40,16 @@ EdgeKey = tuple[Node, Node]
 TargetEntry = tuple[Node, Support, bool]
 
 
+class _SymCandidateLimitExceeded(RuntimeError):
+    """The symmetry-quotiented live candidate set exceeded its limit."""
+
+    def __init__(self, count: int, limit: int):
+        self.count = int(count)
+        self.limit = int(limit)
+        super().__init__(
+            f"live symmetry candidate cap hit: {self.count}>{self.limit}")
+
+
 
 
 def _extend_sym_cands(
@@ -59,6 +69,7 @@ def _extend_sym_cands(
     dedupe_edges: Iterable[EdgeKey] | None = None,
     node_policy=None,
     defer_boundary_dedupe: bool = False,
+    max_candidates: int | None = None,
 ) -> list[_SymCand]:
     """Symmetry-compressed incremental extension.
 
@@ -117,6 +128,10 @@ def _extend_sym_cands(
     defer_boundary_dedupe
         Diagnostic mode that postpones automorphism quotienting until fragment
         saturation. Exact duplicate states are still combined.
+    max_candidates
+        Maximum number of canonical-distinct live child states.  Enforcement
+        happens after the active symmetry quotient, so equivalent concrete
+        mappings do not consume the limit.
 
     Returns
     -------
@@ -133,13 +148,27 @@ def _extend_sym_cands(
     if ctx is None:
         return []
 
+    if max_candidates is not None and max_candidates < 1:
+        raise ValueError("max_candidates must be positive")
+
+    def dedupe(values: list[_SymCand]) -> list[_SymCand]:
+        if defer_boundary_dedupe:
+            return _dedupe_children_exact(values)
+        return _dedupe_children(values, ctx)
+
     children: list[_SymCand] = []
     for raw_cand in cands:
         cand = raw_cand if isinstance(raw_cand, _SymCand) else _SymCand(raw_cand)
         children.extend(_extend_one_candidate(cand, ctx))
-    if defer_boundary_dedupe:
-        return _dedupe_children_exact(children)
-    return _dedupe_children(children, ctx)
+        if max_candidates is not None and len(children) > max_candidates:
+            children = dedupe(children)
+            if len(children) > max_candidates:
+                raise _SymCandidateLimitExceeded(
+                    len(children), max_candidates)
+    children = dedupe(children)
+    if max_candidates is not None and len(children) > max_candidates:
+        raise _SymCandidateLimitExceeded(len(children), max_candidates)
+    return children
 
 
 

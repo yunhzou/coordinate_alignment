@@ -14,7 +14,7 @@ class _IsoResult(dict):
 
 
 class IslandBranchLimitExceeded(RuntimeError):
-    """One parent branch produced too many saturated fragment results."""
+    """One fragment-growth seed exceeded its live canonical branch limit."""
 
     def __init__(self, count, limit, *, seed=None):
         self.count = int(count)

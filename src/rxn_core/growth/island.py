@@ -5,6 +5,7 @@ import heapq
 import time
 
 from ..matcher import (
+    _SymCandidateLimitExceeded,
     _SymBlock,
     _SymCand,
     _cand_map,
@@ -165,6 +166,20 @@ def grow_island(g_R, g_P, seed, mapping,
             'cand_patterns': cands_pattern_sample(cands, 5),
         })
 
+    if len(cands) > max_branches:
+        _finish_profile('live_branch_cap', len(cands), fragment, len(cands))
+        if record:
+            events.append({
+                'type': 'seed_end',
+                'result': 'live_branch_cap',
+                'final_cands': len(cands),
+                'max_branches': int(max_branches),
+                'fragment': sorted(int(x) for x in fragment),
+                'iso': None,
+            })
+        raise IslandBranchLimitExceeded(
+            len(cands), max_branches, seed=int(seed))
+
     while heap:
         neg_w, u, n = heapq.heappop(heap)
         if prof is not None:
@@ -239,11 +254,27 @@ def grow_island(g_R, g_P, seed, mapping,
         # element/WBO checks as the concrete incremental matcher, but groups
         # target atoms by local orbit/context before constructing children.
         extend_t0 = time.perf_counter() if prof is not None else None
-        new_cands = _extend_sym_cands(
-            cands, fragment, n, g_R, g_P, mapping,
-            iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
-            deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo,
-            dedupe_edges=dedupe_edges, node_policy=node_policy)
+        try:
+            new_cands = _extend_sym_cands(
+                cands, fragment, n, g_R, g_P, mapping,
+                iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
+                deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo,
+                dedupe_edges=dedupe_edges, node_policy=node_policy,
+                max_candidates=max_branches)
+        except _SymCandidateLimitExceeded as exc:
+            _finish_profile(
+                'live_branch_cap', exc.count, candidate_fragment, exc.count)
+            if record:
+                events.append({
+                    'type': 'seed_end',
+                    'result': 'live_branch_cap',
+                    'final_cands': exc.count,
+                    'max_branches': int(max_branches),
+                    'fragment': sorted(int(x) for x in candidate_fragment),
+                    'iso': None,
+                })
+            raise IslandBranchLimitExceeded(
+                exc.count, max_branches, seed=int(seed)) from None
         if prof is not None:
             extend_elapsed = time.perf_counter() - extend_t0
             prof['extend_elapsed_sec'] += extend_elapsed
