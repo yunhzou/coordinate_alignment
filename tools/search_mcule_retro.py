@@ -18,7 +18,9 @@ from rdkit import Chem, RDLogger
 
 from rxn_core.fragment_matching import (
     FragmentDetectionConfig,
+    FragmentDetectionExecution,
     detect_fragments,
+    detect_fragments_parallel,
     prepare_fragment_target,
 )
 from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
@@ -56,44 +58,84 @@ def _worker_init(target_smiles, config_record,
         if target_region_atoms is not None else None)
 
 
-def _search_batch(batch):
-    records = []
-    counts = Counter(rows=len(batch))
-    for row_index, smiles, precursor_id in batch:
-        molecule_implicit = Chem.MolFromSmiles(smiles)
-        if molecule_implicit is None:
-            counts["parse_errors"] += 1
-            continue
-        molecule = Chem.AddHs(molecule_implicit)
-        counts["searched"] += 1
+def _search_one(row, *, seed_workers=1):
+    row_index, smiles, precursor_id = row
+    counts = Counter(rows=1)
+    molecule_implicit = Chem.MolFromSmiles(smiles)
+    if molecule_implicit is None:
+        counts["parse_errors"] += 1
+        return counts, None
+    molecule = Chem.AddHs(molecule_implicit)
+    counts["searched"] += 1
+    source = molecule_to_weighted_graph(molecule)
+    if seed_workers == 1:
         result = detect_fragments(
-            molecule_to_weighted_graph(molecule),
+            source,
             _TARGET,
             source_id=precursor_id,
             config=_CONFIG,
             target_region_atoms=_TARGET_REGION_ATOMS,
         )
-        if result.status == "capped":
-            counts["capped"] += 1
-        candidates = [
-            candidate for candidate in result.candidates
-            if len(candidate.covered_target_atoms)
-            >= _MINIMUM_TARGET_COVERAGE_SIZE
-        ]
-        if result.candidates and not candidates:
-            counts["target_coverage_filtered"] += 1
-        if not candidates and not _SAVE_ALL_RESULTS:
-            continue
-        if candidates:
-            counts["matched_precursors"] += 1
-            counts["fragment_candidates"] += len(candidates)
-        records.append(fragment_detection_to_record(
-            result,
-            row_index=row_index,
-            representation=smiles,
-            candidates=candidates,
-        ))
+    else:
+        result = detect_fragments_parallel(
+            source,
+            _TARGET,
+            source_id=precursor_id,
+            config=_CONFIG,
+            execution=FragmentDetectionExecution(
+                seed_workers=seed_workers),
+            target_region_atoms=_TARGET_REGION_ATOMS,
+        )
+    if result.status == "capped":
+        counts["capped"] += 1
+    candidates = [
+        candidate for candidate in result.candidates
+        if len(candidate.covered_target_atoms)
+        >= _MINIMUM_TARGET_COVERAGE_SIZE
+    ]
+    if result.candidates and not candidates:
+        counts["target_coverage_filtered"] += 1
+    if not candidates and not _SAVE_ALL_RESULTS:
+        return counts, None
+    if candidates:
+        counts["matched_precursors"] += 1
+        counts["fragment_candidates"] += len(candidates)
+    record = fragment_detection_to_record(
+        result,
+        row_index=row_index,
+        representation=smiles,
+        candidates=candidates,
+    )
+    return counts, record
+
+
+def _search_batch(batch):
+    records = []
+    counts = Counter()
+    for row in batch:
+        row_counts, record = _search_one(row)
+        counts.update(row_counts)
+        if record is not None:
+            records.append(record)
     return dict(counts), records
+
+
+def _explicit_atom_count(row):
+    molecule = Chem.MolFromSmiles(row[1])
+    return 0 if molecule is None else Chem.AddHs(molecule).GetNumAtoms()
+
+
+def _adaptive_partition(rows, workers):
+    """Separate pairs whose seed work exceeds one worker's fair share."""
+    weighted = [(row, _explicit_atom_count(row)) for row in rows]
+    fair_share = sum(weight for _, weight in weighted) / max(1, workers)
+    ordinary = [row for row, weight in weighted if weight <= fair_share]
+    outliers = [
+        row for row, weight in sorted(
+            weighted, key=lambda item: (-item[1], item[0][0]))
+        if weight > fair_share
+    ]
+    return ordinary, outliers, fair_share
 
 
 def _batches(catalog, shard_index, shard_count, batch_size, limit,
@@ -138,6 +180,9 @@ def _parser():
     parser.add_argument("--id-column", default="Mcule ID")
     parser.add_argument("--output", required=True)
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument(
+        "--scheduling", choices=("precursor", "adaptive"),
+        default="precursor")
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -201,28 +246,53 @@ def main(argv=None):
     totals = Counter()
     started = time.perf_counter()
     processed_batches = 0
+    outlier_count = 0
+    fair_share_atoms = None
+    raw_batches = _batches(
+        args.catalog, args.shard_index, args.shard_count,
+        args.batch_size, args.limit, args.catalog_format,
+        args.id_column)
+    outliers = []
+    if args.scheduling == "adaptive":
+        rows = [row for batch in raw_batches for row in batch]
+        ordinary, outliers, fair_share_atoms = _adaptive_partition(
+            rows, args.workers)
+        outlier_count = len(outliers)
+        batches = (
+            ordinary[index:index + args.batch_size]
+            for index in range(0, len(ordinary), args.batch_size)
+        )
+    else:
+        batches = raw_batches
+
+    def write_result(sink, counts, records):
+        nonlocal processed_batches
+        totals.update(counts)
+        for record in records:
+            sink.write(json.dumps(record, separators=(",", ":")) + "\n")
+        sink.flush()
+        processed_batches += 1
+
     context = mp.get_context("fork")
     with gzip.open(output, "wt", encoding="utf-8") as sink:
+        if args.scheduling == "adaptive":
+            print(json.dumps({
+                "shard": args.shard_index,
+                "scheduling": args.scheduling,
+                "outlier_count": outlier_count,
+                "fair_share_explicit_atoms": fair_share_atoms,
+            }), flush=True)
         with context.Pool(
-                processes=max(1, args.workers),
-                initializer=_worker_init,
-                initargs=(args.target_smiles, config_record,
-                          args.minimum_target_coverage_fraction,
-                          args.save_all_results, target_region_atoms)) as pool:
+            processes=max(1, args.workers),
+            initializer=_worker_init,
+            initargs=(args.target_smiles, config_record,
+                      args.minimum_target_coverage_fraction,
+                      args.save_all_results, target_region_atoms),
+        ) as pool:
             iterator = pool.imap_unordered(
-                _search_batch,
-                _batches(
-                    args.catalog, args.shard_index, args.shard_count,
-                    args.batch_size, args.limit, args.catalog_format,
-                    args.id_column),
-                chunksize=1,
-            )
+                _search_batch, batches, chunksize=1)
             for counts, records in iterator:
-                totals.update(counts)
-                for record in records:
-                    sink.write(json.dumps(record, separators=(",", ":")) + "\n")
-                sink.flush()
-                processed_batches += 1
+                write_result(sink, counts, records)
                 if processed_batches % 100 == 0:
                     elapsed = time.perf_counter() - started
                     print(json.dumps({
@@ -234,6 +304,26 @@ def main(argv=None):
                         "capped": totals["capped"],
                         "rows_per_second": round(totals["rows"] / elapsed, 2),
                     }), flush=True)
+        if outliers:
+            _worker_init(
+                args.target_smiles, config_record,
+                args.minimum_target_coverage_fraction,
+                args.save_all_results, target_region_atoms)
+            for outlier_index, row in enumerate(outliers, 1):
+                outlier_started = time.perf_counter()
+                counts, record = _search_one(
+                    row, seed_workers=max(1, args.workers))
+                write_result(
+                    sink, counts, [] if record is None else [record])
+                print(json.dumps({
+                    "shard": args.shard_index,
+                    "adaptive_outlier": outlier_index,
+                    "outlier_count": outlier_count,
+                    "row_index": row[0],
+                    "precursor_id": row[2],
+                    "elapsed_seconds": round(
+                        time.perf_counter() - outlier_started, 3),
+                }), flush=True)
     elapsed = time.perf_counter() - started
     count_record = {
         key: totals[key]
@@ -255,6 +345,9 @@ def main(argv=None):
         "shard_index": args.shard_index,
         "shard_count": args.shard_count,
         "workers": args.workers,
+        "scheduling": args.scheduling,
+        "adaptive_outlier_count": outlier_count,
+        "adaptive_fair_share_explicit_atoms": fair_share_atoms,
         "config": config_record,
         "minimum_target_coverage_fraction": (
             args.minimum_target_coverage_fraction),
