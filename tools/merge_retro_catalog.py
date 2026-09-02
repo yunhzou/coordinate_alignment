@@ -135,12 +135,17 @@ def main():
 
     def item_set_rank(items, covered_atom_count=0):
         structures = {item["structure_key"] for item in items}
+        symmetry_retained = sum(
+            item["symmetry_retained_atom_count"] for item in items)
         retained = sum(item["retained_atom_count"] for item in items)
         total = sum(item["total_atom_count"] for item in items)
+        symmetry_retention = (
+            Fraction(symmetry_retained, total) if total else Fraction())
         set_retention = Fraction(retained, total) if total else Fraction()
         return (
             sum(item["chirality_violations"] for item in items),
             len(structures),
+            -symmetry_retention,
             -set_retention,
             -covered_atom_count,
             sum(not item["complete"] for item in items),

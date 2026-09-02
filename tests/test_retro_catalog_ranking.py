@@ -2,12 +2,20 @@ from rxn_core.retrosynthesis.ranking import (
     assembly_rank,
     build_ranked_assembly,
 )
+from rxn_core.retrosynthesis.catalog_index import _symmetry_copy_capacity
 
 
 def _item(precursor_id, structure_key, retained, total,
-          retained_atoms=None, total_atoms=None):
+          retained_atoms=None, total_atoms=None, symmetry_retained_atoms=None,
+          symmetry_retained_heavy_atoms=None):
     retained_atoms = retained if retained_atoms is None else retained_atoms
     total_atoms = total if total_atoms is None else total_atoms
+    symmetry_retained_atoms = (
+        retained_atoms if symmetry_retained_atoms is None
+        else symmetry_retained_atoms)
+    symmetry_retained_heavy_atoms = (
+        retained if symmetry_retained_heavy_atoms is None
+        else symmetry_retained_heavy_atoms)
     return {
         "precursor_id": precursor_id,
         "structure_key": structure_key,
@@ -15,6 +23,8 @@ def _item(precursor_id, structure_key, retained, total,
         "total_heavy_atoms": total,
         "retained_atom_count": retained_atoms,
         "total_atom_count": total_atoms,
+        "symmetry_retained_atom_count": symmetry_retained_atoms,
+        "symmetry_retained_heavy_atoms": symmetry_retained_heavy_atoms,
         "complete": True,
         "chirality_violations": 0,
         "boundary_bonds": [],
@@ -65,3 +75,31 @@ def test_unique_structure_count_precedes_retention():
     ], [])
 
     assert assembly_rank(one_structure) < assembly_rank(two_structures)
+
+
+def test_symmetric_disassembly_precedes_equal_direct_retention():
+    symmetric = build_ranked_assembly([
+        _item(
+            "symmetric-dimer", "symmetric-dimer", 2, 8,
+            symmetry_retained_atoms=8,
+            symmetry_retained_heavy_atoms=8),
+    ], [])
+    asymmetric = build_ranked_assembly([
+        _item("asymmetric", "asymmetric", 2, 8),
+    ], [])
+
+    assert symmetric["score"]["set_atom_retention"] == 0.25
+    assert symmetric["score"]["set_symmetry_atom_retention"] == 1.0
+    assert assembly_rank(symmetric) < assembly_rank(asymmetric)
+
+
+def test_symmetry_copy_capacity_is_limited_by_the_rarest_required_orbit():
+    source_orbits = {
+        0: "repeated-carbon", 1: "repeated-carbon",
+        2: "repeated-hydrogen", 3: "repeated-hydrogen",
+        4: "repeated-hydrogen", 5: "repeated-hydrogen",
+        6: "unique-anchor",
+    }
+
+    assert _symmetry_copy_capacity((0, 2, 3), source_orbits) == 2
+    assert _symmetry_copy_capacity((0, 2, 3, 6), source_orbits) == 1

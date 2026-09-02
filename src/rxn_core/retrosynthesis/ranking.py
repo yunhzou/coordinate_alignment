@@ -9,6 +9,7 @@ def candidate_entry_rank(entry):
     return (
         entry["chirality_violations"],
         not entry["complete"],
+        -entry["symmetry_atom_retention"],
         -entry["atom_retention"],
         len(entry["boundary_bonds"]),
         entry["leftover_atom_count"],
@@ -65,6 +66,18 @@ def build_ranked_assembly(items, formed_bonds):
         sum(item["retained_atom_count"] for item in precursors),
         sum(item["total_atom_count"] for item in precursors),
     )
+    set_symmetry_atom_retention = Fraction(
+        sum(item.get(
+            "symmetry_retained_atom_count", item["retained_atom_count"])
+            for item in precursors),
+        sum(item["total_atom_count"] for item in precursors),
+    )
+    set_symmetry_heavy_atom_retention = Fraction(
+        sum(item.get(
+            "symmetry_retained_heavy_atoms", item["retained_heavy_atoms"])
+            for item in precursors),
+        sum(item["total_heavy_atoms"] for item in precursors),
+    )
     return {
         "precursors": precursors,
         "precursor_stoichiometry": dict(sorted(stoichiometry.items())),
@@ -74,6 +87,10 @@ def build_ranked_assembly(items, formed_bonds):
                 item["chirality_violations"] for item in precursors),
             "unique_precursor_structures": len(retention_by_structure),
             "set_atom_retention": float(set_atom_retention),
+            "set_symmetry_atom_retention": float(
+                set_symmetry_atom_retention),
+            "set_symmetry_heavy_atom_retention": float(
+                set_symmetry_heavy_atom_retention),
             "set_heavy_atom_retention": float(set_retention),
             "worst_heavy_atom_retention": float(worst_retention),
             "mean_heavy_atom_retention": float(mean_retention),
@@ -93,6 +110,8 @@ def assembly_rank(assembly):
     return (
         score["chirality_violations"],
         score["unique_precursor_structures"],
+        -score.get(
+            "set_symmetry_atom_retention", score["set_atom_retention"]),
         -score["set_atom_retention"],
         score["capped_precursors"],
         score["broken_bonds"],

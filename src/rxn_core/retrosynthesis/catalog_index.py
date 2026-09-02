@@ -14,7 +14,7 @@ from ..fragment_matching.serialization import (
     fragment_candidate_from_record,
     fragment_candidate_to_record,
 )
-from ..matcher import _nauty_atom_generators
+from ..matcher import _nauty_atom_generators, _nauty_orbits
 from ..subgraph import _coerce_graph
 from .ranking import candidate_entry_rank
 
@@ -44,9 +44,26 @@ def chirality_violations(candidate, source, target):
     return violations
 
 
+def _symmetry_copy_capacity(retained_atoms, source_orbits):
+    """Return how many disjoint retained atom inventories symmetry permits.
+
+    A source automorphism orbit is an exact pool of interchangeable atoms.  A
+    repeated copy of a retained fragment consumes the same number of atoms
+    from every orbit as the observed copy.  The smallest orbit capacity is
+    therefore the structural upper bound on symmetric product copies.
+    """
+    orbit_sizes = Counter(source_orbits.values())
+    retained_orbits = Counter(
+        source_orbits[int(atom)] for atom in retained_atoms)
+    return min(
+        orbit_sizes[orbit] // count
+        for orbit, count in retained_orbits.items()
+    )
+
+
 def candidate_entry(
         record, candidate, explicit_molecule, structure_key, target,
-        chirality_ranking):
+        chirality_ranking, source_orbits):
     leftovers = candidate["leftover_fragments"]
     retained_heavy_atoms = sum(
         explicit_molecule.GetAtomWithIdx(int(atom)).GetAtomicNum() > 1
@@ -55,6 +72,12 @@ def candidate_entry(
     retained_atom_count = len(candidate["retained_atoms"])
     total_atom_count = explicit_molecule.GetNumAtoms()
     total_heavy_atoms = explicit_molecule.GetNumHeavyAtoms()
+    symmetry_copy_capacity = _symmetry_copy_capacity(
+        candidate["retained_atoms"], source_orbits)
+    symmetry_retained_atoms = min(
+        total_atom_count, retained_atom_count * symmetry_copy_capacity)
+    symmetry_retained_heavy_atoms = min(
+        total_heavy_atoms, retained_heavy_atoms * symmetry_copy_capacity)
     return {
         "precursor_id": record["source_id"],
         "smiles": record["representation"],
@@ -77,6 +100,13 @@ def candidate_entry(
         "retained_atom_count": retained_atom_count,
         "total_atom_count": total_atom_count,
         "atom_retention": retained_atom_count / total_atom_count,
+        "symmetry_copy_capacity": symmetry_copy_capacity,
+        "symmetry_retained_atom_count": symmetry_retained_atoms,
+        "symmetry_retained_heavy_atoms": symmetry_retained_heavy_atoms,
+        "symmetry_atom_retention": (
+            symmetry_retained_atoms / total_atom_count),
+        "symmetry_heavy_atom_retention": (
+            symmetry_retained_heavy_atoms / total_heavy_atoms),
         "attachment_trimmed_target_atoms": candidate[
             "attachment_trimmed_target_atoms"],
         "chirality_violations": (
@@ -216,6 +246,10 @@ def build_candidate_index(records, target, target_key, *, config=None):
         counts["matched_precursors"] += 1
         counts["capped_precursors"] += record["status"] == "capped"
         explicit_molecule = Chem.AddHs(molecule)
+        source_graph = _coerce_graph(
+            molecule_to_weighted_graph(explicit_molecule), 0.2)
+        source_orbits = _nauty_orbits(
+            source_graph, wbo_tol=config.iso_tolerance)
         if config.chirality_ranking:
             Chem.AssignStereochemistry(
                 explicit_molecule, cleanIt=True, force=True)
@@ -253,6 +287,7 @@ def build_candidate_index(records, target, target_key, *, config=None):
                 molecule_key,
                 target,
                 config.chirality_ranking,
+                source_orbits,
             )
             mask = coverage_mask(item["covered_target_atoms"])
             bucket = groups[mask]
