@@ -1,0 +1,37 @@
+{
+  "schema": "rxn_core.retro_catalog_summary/v3",
+  "target_smiles": "CC(C)C1=CC=CC(C(C)C)=C1/N=C2/C(C3=C4C(C=CC=C42)=CC=C3)=N/C5=C(C(C)C)C=CC=C5C(C)C",
+  "catalog": "data/inventory/processed/inventory_structure_bank.csv.gz",
+  "output": "/h/399/yunhengzou/coordinate_alignment/data/retro_runs/bulky_bian_inventory_exact_accelerated/parts/part_16.jsonl.gz",
+  "shard_index": 16,
+  "shard_count": 28,
+  "workers": 48,
+  "config": {
+    "minimum_fragment_size": 1,
+    "iso_tolerance": 0.5,
+    "branch_limit": 100,
+    "candidate_limit": 100,
+    "seed_limit": null,
+    "seed_mode": "all",
+    "rough_retention_threshold": 0.5,
+    "maximum_boundary_bonds": null,
+    "maximum_leftover_fragments": null
+  },
+  "minimum_target_coverage_fraction": null,
+  "derived_minimum_fragment_size": 1,
+  "explicit_hydrogens": true,
+  "saved_all_results": true,
+  "target_region_report": null,
+  "target_region_field": "best_partial_uncovered_target_atoms",
+  "target_region_atoms": null,
+  "elapsed_seconds": 36.13273883797228,
+  "counts": {
+    "rows": 68,
+    "parse_errors": 0,
+    "searched": 68,
+    "capped": 0,
+    "target_coverage_filtered": 0,
+    "matched_precursors": 64,
+    "fragment_candidates": 190
+  }
+}
