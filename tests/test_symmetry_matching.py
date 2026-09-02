@@ -131,6 +131,8 @@ def test_partial_mapping_certificate_requires_exact_endpoint_transporter():
 
     assert left_end == right_end
     assert left_end != center
+    assert canonicalizer.equivalent({0: 0}, {0: 2})
+    assert not canonicalizer.equivalent({0: 0}, {0: 1})
 
 
 def test_cut_sweep_compact_metrics_are_opt_in_and_respect_branch_cap():

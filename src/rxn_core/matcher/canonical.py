@@ -1,9 +1,10 @@
 """Exact automorphism certificates for hierarchical partial mappings."""
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from .orbits import (
+    _nauty_atom_generators,
     _nauty_colored_wbo_graph,
     _wbo_tolerance_bucket_lookup,
 )
@@ -175,6 +176,113 @@ class _PartialMappingCanonicalizer:
                 colors.items(), key=lambda item: repr(item[0]))
         )
         return pynauty.certificate(graph), color_profile
+
+    @staticmethod
+    def _moved_generators(graph, tolerance, node_policy):
+        return tuple(
+            {
+                int(atom): int(image)
+                for atom, image in generator.items()
+                if atom != image
+            }
+            for generator in _nauty_atom_generators(
+                graph, wbo_tol=tolerance, node_policy=node_policy)
+        )
+
+    def _ensure_relation_generators(self):
+        generators = getattr(self, "_relation_generators", None)
+        if generators is None:
+            generators = (
+                self._moved_generators(
+                    self.g_R, self.wbo_tol, self.node_policy),
+                self._moved_generators(
+                    self.g_P, self.wbo_tol, self.node_policy),
+            )
+            self._relation_generators = generators
+        return generators
+
+    def _cached_certificate(self, mapping):
+        cache = getattr(self, "_equivalence_certificates", None)
+        if cache is None:
+            cache = {}
+            self._equivalence_certificates = cache
+        certificate = cache.get(mapping)
+        if certificate is None:
+            certificate = self.certificate(dict(mapping))
+            cache[mapping] = certificate
+        return certificate
+
+    def equivalent(self, left, right):
+        """Test exact equivalence under independent endpoint automorphisms.
+
+        The nauty generators span the complete source and target
+        automorphism groups.  Applying those generators to a partial
+        relation and exhausting its orbit is therefore the exact transporter
+        test, without rebuilding and canonicalizing both endpoint graphs for
+        every relation.
+        """
+        left = tuple(sorted((int(source), int(target))
+                            for source, target in dict(left).items()))
+        right = tuple(sorted((int(source), int(target))
+                             for source, target in dict(right).items()))
+        if left == right:
+            return True
+        if len(left) != len(right):
+            return False
+        if (len({source for source, _target in left}) != len(left)
+                or len({target for _source, target in left}) != len(left)
+                or len({source for source, _target in right}) != len(right)
+                or len({target for _source, target in right}) != len(right)):
+            raise ValueError("partial mapping must be injective")
+
+        if self.base_vertex_count <= len(left) * len(left):
+            return (self._cached_certificate(left)
+                    == self._cached_certificate(right))
+        source_generators, target_generators = (
+            self._ensure_relation_generators())
+
+        queue = deque((left,))
+        seen = {left}
+        orbit_budget = max(
+            1,
+            sum(map(len, source_generators))
+            + sum(map(len, target_generators)),
+        )
+        while queue:
+            state = queue.popleft()
+            source_atoms = {source for source, _target in state}
+            target_atoms = {target for _source, target in state}
+            for generator in source_generators:
+                if source_atoms.isdisjoint(generator):
+                    continue
+                candidate = tuple(sorted(
+                    (generator.get(source, source), target)
+                    for source, target in state
+                ))
+                if candidate == right:
+                    return True
+                if candidate not in seen:
+                    seen.add(candidate)
+                    if len(seen) >= orbit_budget:
+                        return (self._cached_certificate(left)
+                                == self._cached_certificate(right))
+                    queue.append(candidate)
+            for generator in target_generators:
+                if target_atoms.isdisjoint(generator):
+                    continue
+                candidate = tuple(sorted(
+                    (source, generator.get(target, target))
+                    for source, target in state
+                ))
+                if candidate == right:
+                    return True
+                if candidate not in seen:
+                    seen.add(candidate)
+                    if len(seen) >= orbit_budget:
+                        return (self._cached_certificate(left)
+                                == self._cached_certificate(right))
+                    queue.append(candidate)
+        return False
 
 
 class _CandidateAutomorphismCanonicalizer:

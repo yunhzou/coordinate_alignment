@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import multiprocessing as mp
 
-from ..matcher import _PartialMappingCanonicalizer, _nauty_orbits
+from ..matcher import _nauty_orbits
 from .detection import (
     _InitialFamilyAccumulator,
     _augment_initial_family,
@@ -27,15 +27,13 @@ class FragmentDetectionExecution:
 
 
 _SEED_STATE = None
-_CERTIFICATE_CANONICALIZER = None
 
 
 def _initialize_seed_worker(
         source, target, config, source_orbits, target_orbits, region):
-    global _SEED_STATE, _CERTIFICATE_CANONICALIZER
+    global _SEED_STATE
     _SEED_STATE = (
         source, target, config, source_orbits, target_orbits, region)
-    _CERTIFICATE_CANONICALIZER = None
 
 
 def _run_seed(seed):
@@ -49,22 +47,6 @@ def _run_augmentation(placement):
         _SEED_STATE)
     return _augment_initial_family(
         source, target, placement, config, region)
-
-
-def _run_certificate(mapping):
-    global _CERTIFICATE_CANONICALIZER
-    source, target, config, _source_orbits, _target_orbits, region = (
-        _SEED_STATE)
-    if _CERTIFICATE_CANONICALIZER is None:
-        _CERTIFICATE_CANONICALIZER = _PartialMappingCanonicalizer(
-            source,
-            target,
-            wbo_tol=config.iso_tolerance,
-            target_atom_tags=(
-                {int(atom): "requested_region" for atom in region}
-                if region is not None else None),
-        )
-    return _CERTIFICATE_CANONICALIZER.certificate(mapping)
 
 
 def _parallel_initial_fragment_placements(
@@ -102,16 +84,6 @@ def _parallel_initial_fragment_placements(
             for start in range(0, len(seed_order), worker_count):
                 wave = seed_order[start:start + worker_count]
                 results = pool.map(_run_seed, wave, chunksize=1)
-                placements = [
-                    placement
-                    for seed_placements, _capped, _branch_count in results
-                    for placement in seed_placements
-                ]
-                accumulator.prime_certificates(
-                    placements,
-                    lambda mappings: pool.map(
-                        _run_certificate, mappings, chunksize=1),
-                )
                 yield results
 
         stop = False

@@ -156,8 +156,6 @@ class _InitialFamilyAccumulator:
         self.families = {}
         self.literal_families = {}
         self.coarse_buckets = {}
-        self.certificates = {}
-        self.mapping_certificates = {}
         self.canonicalizer = _PartialMappingCanonicalizer(
             source,
             target,
@@ -167,52 +165,6 @@ class _InitialFamilyAccumulator:
                  for atom in target_region_atoms}
                 if target_region_atoms is not None else None),
         )
-
-    def prime_certificates(self, placements, certificate_runner):
-        """Precompute exact certificates for coarse-colliding mappings."""
-        new_by_coarse = {}
-        for placement in placements:
-            retained = tuple(sorted(map(int, placement.fragment)))
-            mapping = tuple(sorted(
-                (int(source_atom), int(target_atom))
-                for source_atom, target_atom in placement.items()
-                if source_atom in placement.fragment
-            ))
-            if (self.target_region_atoms is not None
-                    and not self.target_region_atoms.intersection(
-                        target_atom for _source_atom, target_atom in mapping)):
-                continue
-            if (retained, mapping) in self.literal_families:
-                continue
-            coarse = _paired_mapping_invariant(
-                mapping,
-                self.source_orbits,
-                self.target_orbits,
-                self.canonicalizer.g_R,
-                self.canonicalizer.g_P,
-            )
-            new_by_coarse.setdefault(coarse, {})[mapping] = None
-
-        needed = {}
-        for coarse, new_mappings in new_by_coarse.items():
-            prior_ids = self.coarse_buckets.get(coarse, ())
-            if len(prior_ids) + len(new_mappings) <= 1:
-                continue
-            needed.update(new_mappings)
-            for prior_id in prior_ids:
-                if prior_id in self.certificates:
-                    continue
-                prior_mapping = self.families[
-                    prior_id].representative_mapping
-                needed[prior_mapping] = None
-        missing = [
-            mapping for mapping in needed
-            if mapping not in self.mapping_certificates
-        ]
-        if not missing:
-            return
-        certificates = certificate_runner(missing)
-        self.mapping_certificates.update(zip(missing, certificates))
 
     def add(self, placements):
         for placement in placements:
@@ -243,24 +195,11 @@ class _InitialFamilyAccumulator:
             bucket = self.coarse_buckets.setdefault(coarse, [])
             family_id = None
             if bucket:
-                certificate = self.mapping_certificates.get(mapping)
-                if certificate is None:
-                    certificate = self.canonicalizer.certificate(mapping)
-                    self.mapping_certificates[mapping] = certificate
                 for prior_id in bucket:
-                    prior_certificate = self.certificates.get(prior_id)
-                    if prior_certificate is None:
-                        prior_mapping = self.families[
-                            prior_id].representative_mapping
-                        prior_certificate = self.mapping_certificates.get(
-                            prior_mapping)
-                        if prior_certificate is None:
-                            prior_certificate = self.canonicalizer.certificate(
-                                prior_mapping)
-                            self.mapping_certificates[
-                                prior_mapping] = prior_certificate
-                        self.certificates[prior_id] = prior_certificate
-                    if prior_certificate == certificate:
+                    prior_mapping = self.families[
+                        prior_id].representative_mapping
+                    if self.canonicalizer.equivalent(
+                            dict(prior_mapping), dict(mapping)):
                         family_id = prior_id
                         break
             if family_id is None:
@@ -272,8 +211,6 @@ class _InitialFamilyAccumulator:
                 )
                 bucket.append(family_id)
                 self.literal_families[literal_key] = family_id
-                if len(bucket) > 1:
-                    self.certificates[family_id] = certificate
             else:
                 family = self.families[family_id]
                 self.families[family_id] = replace(
