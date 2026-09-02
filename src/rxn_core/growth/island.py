@@ -17,7 +17,12 @@ from ..matcher import (
 )
 from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
 from ..matcher.policy import as_node_match_policy
-from .frontier import _frontier_boundary_edges, _push_edges_from, _set_unique
+from .frontier import (
+    _advance_frontier,
+    _frontier_boundary_edges,
+    _push_edges_from,
+    _set_unique,
+)
 from .result import IslandBranchLimitExceeded, _IsoResult
 from .trace import (
     cand_possible_values,
@@ -152,6 +157,9 @@ def grow_island(g_R, g_P, seed, mapping,
         g_P, p_orbits=p_orbits, locked_mapping=mapping,
         node_policy=node_policy)
     deferred_edges = {tuple(sorted(e)) for e in (prior_deferred_edges or ())}
+    # Frontier of the committed fragment, advanced per pop by the atoms the
+    # pop adds instead of being rescanned from the whole fragment.
+    frontier_edges = _frontier_boundary_edges(g_R, fragment, graph_floor)
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
     if prof is not None:
@@ -246,18 +254,21 @@ def grow_island(g_R, g_P, seed, mapping,
         if prof is not None:
             prof['max_cands_before'] = max(
                 int(prof['max_cands_before']), int(old_count))
-        old_fragment = set(fragment)
+        # ``fragment`` is only ever rebound (never mutated in place), so the
+        # pre-pop set needs no copy.
+        old_fragment = fragment
         candidate_fragment = fragment | {n}
-        dedupe_fragment = set(candidate_fragment)
+        whole_island = None
         if n_in_mapping and islands_R is not None and n in islands_R:
             target_iid = islands_R[n]
-            dedupe_fragment |= {
-                r for r, k in islands_R.items() if k == target_iid
-            }
-        dedupe_edges = (
-            set(deferred_edges) |
-            _frontier_boundary_edges(g_R, dedupe_fragment, graph_floor)
-        )
+            whole_island = [r for r, k in islands_R.items() if k == target_iid]
+            dedupe_fragment = candidate_fragment | set(whole_island)
+        else:
+            dedupe_fragment = candidate_fragment
+        pop_frontier = _advance_frontier(
+            frontier_edges, g_R, dedupe_fragment,
+            dedupe_fragment - fragment, graph_floor)
+        dedupe_edges = deferred_edges | pop_frontier
         # Symmetry-compressed incremental extension.  It applies the same
         # element/WBO checks as the concrete incremental matcher, but groups
         # target atoms by local orbit/context before constructing children.
@@ -308,14 +319,16 @@ def grow_island(g_R, g_P, seed, mapping,
                     int(prof['max_cands_after']), int(len(new_cands)))
             cands = new_cands
             ref_dist = distance.get(u, 0) + 1
-            if n_in_mapping and islands_R is not None and n in islands_R:
-                target_iid = islands_R[n]
-                whole_island = [r for r, k in islands_R.items() if k == target_iid]
-                candidate_fragment = candidate_fragment | set(whole_island)
+            if whole_island is not None:
+                # Same set as ``candidate_fragment | set(whole_island)``.
+                candidate_fragment = dedupe_fragment
                 added_extra = [r for r in whole_island if r not in distance]
                 for r in added_extra:
                     distance[r] = ref_dist
             fragment = candidate_fragment
+            # The committed fragment is exactly the tentative one, so its
+            # frontier is the one already advanced for this pop.
+            frontier_edges = pop_frontier
             for r in fragment - old_fragment:
                 if r not in distance:
                     distance[r] = ref_dist

@@ -507,10 +507,37 @@ def _target_join_info(
     return join_idx, can_extend
 
 
+def _compact_signature_applicable(p_orbits, g_P) -> bool:
+    """True when the compact relation signature partitions target atoms
+    exactly like the dense one for ``(p_orbits, g_P)``.
+
+    The dense signature records one bucket per mapped atom; the compact one
+    records the mapped domain plus the nonzero buckets of ``g_P`` neighbours
+    and treats every other pair as the orbit map's structural zero bucket.
+    ``_orbit_wbo_bucket`` already returns that zero bucket for pairs absent
+    from the bucket table, so the two agree exactly when every pair with a
+    nonzero bucket is a ``g_P`` edge.  That is checked once per (orbit map,
+    graph) and cached on the orbit map.
+    """
+    zero = getattr(p_orbits, 'zero_bucket', None)
+    if zero is None or not hasattr(p_orbits, '__dict__'):
+        return False
+    cache = p_orbits.__dict__.setdefault('_compact_signature_graphs', {})
+    verdict = cache.get(g_P)
+    if verdict is None:
+        has_edge = g_P.has_edge
+        verdict = all(
+            has_edge(a, b)
+            for (a, b), bucket in p_orbits.wbo_buckets.items()
+            if bucket != zero)
+        cache[g_P] = verdict
+    return verdict
+
+
 def _collect_free_target_entries(
     cand: _SymCand,
     ctx: _ExtensionContext,
-) -> tuple[dict[int, list[TargetEntry]], dict[Any, list[TargetEntry]]]:
+) -> tuple[dict[int, list[TargetEntry]], list[list[TargetEntry]]]:
     """Find every target atom that can support free ``ctx.n`` extension.
 
     Results are split into two groups:
@@ -518,13 +545,17 @@ def _collect_free_target_entries(
     - ``block_join``: target atom lies inside an existing open symmetry block.
       The child either extends that block or refines it under a correlated
       support assignment.
-    - ``by_group``: target atom is outside existing blocks.  Entries are
-      grouped by element/orbit/context signature so equivalent target atoms can
-      become one new `_SymBlock`.
+    - ``groups``: target atoms outside existing blocks, grouped by
+      element/orbit/context signature so equivalent target atoms can become
+      one new `_SymBlock`, in the order ``str`` of the dense relation
+      signature sorts the groups.
 
     Only atoms in ``_admissible_targets`` can pass the support check, so the
     loop visits those; it keeps the graph's own node order so witness choice
-    and child order are unchanged.
+    and child order are unchanged.  Grouping uses the compact relation
+    signature when ``_compact_signature_applicable`` proves it induces the
+    same partition; the dense signature is then computed once per group, and
+    only when there is more than one group to order.
     """
     block_join: dict[int, list[TargetEntry]] = defaultdict(list)
     by_group: dict[Any, list[TargetEntry]] = defaultdict(list)
@@ -533,11 +564,12 @@ def _collect_free_target_entries(
     if admissible is None:
         targets = ctx.g_P.nodes()
     elif not admissible:
-        return block_join, by_group
+        return block_join, []
     else:
         targets = [v for v in ctx.g_P.nodes() if v in admissible]
     cm_items = None
     blocks = cand.blocks if isinstance(cand, _SymCand) else ()
+    compact = None
     for v in targets:
         if v in ctx.locked_p_atoms:
             continue
@@ -554,11 +586,28 @@ def _collect_free_target_entries(
                 # The signature's witness view is candidate-constant; build
                 # it once instead of once per target atom.
                 cm_items = tuple(sorted(_cand_map(cand).items()))
+                compact = _compact_signature_applicable(ctx.p_orbits, ctx.g_P)
             sig = _p_relation_signature_from_parts(
                 cand, v, ctx.g_P, ctx.p_orbits, cm_items=cm_items,
-                blocks=blocks, node_policy=ctx.node_policy)
+                blocks=blocks, node_policy=ctx.node_policy, compact=compact)
             by_group[sig].append((v, support, True))
-    return block_join, by_group
+    if len(by_group) <= 1:
+        # Nothing to order; sorted() of one item is that item.
+        return block_join, list(by_group.values())
+    if compact:
+        # Every member of a group shares one dense signature; order the
+        # groups (in first-seen order, as before) by that key from any member.
+        keyed = [
+            (_p_relation_signature_from_parts(
+                cand, entries[0][0], ctx.g_P, ctx.p_orbits,
+                cm_items=cm_items, blocks=blocks,
+                node_policy=ctx.node_policy), entries)
+            for entries in by_group.values()
+        ]
+    else:
+        keyed = list(by_group.items())
+    keyed.sort(key=lambda kv: str(kv[0]))
+    return block_join, [entries for _, entries in keyed]
 
 
 def _children_from_block_join(
@@ -634,7 +683,15 @@ def _children_from_context_group(
         child = cand.with_new_block(n, group, extendable=True)
     else:
         child = cand.with_fixed(n, witness_v)
-    if child is not None and isinstance(child, _SymCand):
+    if child is not None and n in cand.mapping:
+        # Degenerate input (``n`` already carried an image): keep the
+        # explicit re-witnessing.  In the regular case below it is a no-op:
+        # every independent target lies outside all block pools and fixed
+        # images (its support check passed with no join block), so
+        # ``with_new_block`` seeds the new block with ``group[0] ==
+        # witness_v`` and ``with_fixed`` records exactly ``witness_v``;
+        # re-validating that same mapping reproduces the same fields in the
+        # same order.
         support = dict(support)
         support[n] = witness_v
         child = child.with_witness(support)
@@ -645,11 +702,11 @@ def _children_from_context_group(
 
 def _extend_free_atom(cand: _SymCand, ctx: _ExtensionContext) -> list[_SymCand]:
     """Extend by an unmapped atom using all valid same-element target atoms."""
-    block_join, by_group = _collect_free_target_entries(cand, ctx)
+    block_join, groups = _collect_free_target_entries(cand, ctx)
     children: list[_SymCand] = []
     for join_idx, entries in sorted(block_join.items()):
         children.extend(_children_from_block_join(cand, ctx.n, join_idx, entries))
-    for _, entries in sorted(by_group.items(), key=lambda kv: str(kv[0])):
+    for entries in groups:
         children.extend(_children_from_context_group(cand, ctx.n, entries))
     return children
 
