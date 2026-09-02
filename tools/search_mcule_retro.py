@@ -138,6 +138,31 @@ def _adaptive_partition(rows, workers):
     return ordinary, outliers, fair_share
 
 
+def _outlier_worker_budgets(rows, workers):
+    weights = [max(1, _explicit_atom_count(row)) for row in rows]
+    remaining = max(0, workers - len(rows))
+    total_weight = sum(weights)
+    shares = [remaining * weight / total_weight for weight in weights]
+    budgets = [1 + math.floor(share) for share in shares]
+    unassigned = workers - sum(budgets)
+    order = sorted(
+        range(len(rows)),
+        key=lambda index: (-(shares[index] - math.floor(shares[index])),
+                           rows[index][0]),
+    )
+    for index in order[:unassigned]:
+        budgets[index] += 1
+    return tuple(budgets)
+
+
+def _search_outlier(row, worker_budget, queue):
+    started = time.perf_counter()
+    seed_workers = 1 if worker_budget <= 2 else worker_budget - 1
+    counts, record = _search_one(row, seed_workers=seed_workers)
+    queue.put((row, counts, record, time.perf_counter() - started,
+               seed_workers))
+
+
 def _batches(catalog, shard_index, shard_count, batch_size, limit,
              catalog_format, id_column):
     batch = []
@@ -309,21 +334,37 @@ def main(argv=None):
                 args.target_smiles, config_record,
                 args.minimum_target_coverage_fraction,
                 args.save_all_results, target_region_atoms)
-            for outlier_index, row in enumerate(outliers, 1):
-                outlier_started = time.perf_counter()
-                counts, record = _search_one(
-                    row, seed_workers=max(1, args.workers))
+            budgets = _outlier_worker_budgets(outliers, args.workers)
+            queue = context.Queue()
+            processes = [
+                context.Process(
+                    target=_search_outlier,
+                    args=(row, budget, queue),
+                )
+                for row, budget in zip(outliers, budgets)
+            ]
+            for process in processes:
+                process.start()
+            outlier_positions = {
+                row[0]: index
+                for index, row in enumerate(outliers, 1)
+            }
+            for _ in processes:
+                row, counts, record, outlier_elapsed, seed_workers = (
+                    queue.get())
                 write_result(
                     sink, counts, [] if record is None else [record])
                 print(json.dumps({
                     "shard": args.shard_index,
-                    "adaptive_outlier": outlier_index,
+                    "adaptive_outlier": outlier_positions[row[0]],
                     "outlier_count": outlier_count,
                     "row_index": row[0],
                     "precursor_id": row[2],
-                    "elapsed_seconds": round(
-                        time.perf_counter() - outlier_started, 3),
+                    "seed_workers": seed_workers,
+                    "elapsed_seconds": round(outlier_elapsed, 3),
                 }), flush=True)
+            for process in processes:
+                process.join()
     elapsed = time.perf_counter() - started
     count_record = {
         key: totals[key]

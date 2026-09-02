@@ -55,13 +55,12 @@ def _wbo_rows(g, nodes):
 
 def source_graph(g_R):
     """Native view of the (possibly cut) reactant graph, cached on the graph."""
+    cached = g_R.graph.get("_native_source")
+    if cached is not None and cached[0] is g_R:
+        return cached[1]
     nodes = tuple(sorted(map(int, g_R.nodes())))
     index = {atom: position for position, atom in enumerate(nodes)}
     edges = tuple(_graph_edges(g_R, index))
-    signature = (nodes, edges)
-    cached = g_R.graph.get("_native_source")
-    if cached is not None and cached[0] == signature:
-        return cached[1]
     rows = _wbo_rows(g_R, nodes)
     if rows is None:
         return None
@@ -69,7 +68,7 @@ def source_graph(g_R):
     native = _engine.SourceGraph(elements, rows, float(g_R.graph.get("bond_cut", 0.2)),
                                  edges)
     view = _NativeGraphView(native, nodes, index)
-    g_R.graph["_native_source"] = (signature, view)
+    g_R.graph["_native_source"] = (g_R, view)
     return view
 
 

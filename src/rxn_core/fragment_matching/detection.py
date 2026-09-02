@@ -129,7 +129,7 @@ def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
             signatures.append(
                 (colors[left], tuple(sorted(neighborhood))))
         refined = compact(signatures)
-        if refined == colors:
+        if len(set(refined)) == len(set(colors)):
             break
         colors = refined
     color_counts = tuple(sorted(Counter(colors).items()))

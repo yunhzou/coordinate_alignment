@@ -64,3 +64,4 @@ build/
 dist/
 *.egg
 *.so
+.nfs*

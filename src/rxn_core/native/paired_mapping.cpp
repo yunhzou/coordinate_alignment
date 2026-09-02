@@ -234,7 +234,12 @@ PyObject* paired_mapping_invariant(PyObject*, PyObject* args) {
                 ", " + tuple_repr(entries) + ")");
         }
         std::vector<int> refined = compact(signatures);
-        if (refined == colors) {
+        // Every signature contains its previous color, so refinement can only
+        // split a class.  An unchanged class count therefore means the
+        // partition is stable even when compact labels were renumbered.
+        const int refined_class_count = refined.empty()
+            ? 0 : (*std::max_element(refined.begin(), refined.end()) + 1);
+        if (refined_class_count == static_cast<int>(class_counts.size())) {
             break;
         }
         colors = std::move(refined);
