@@ -156,6 +156,7 @@ class _ExtensionContext:
     g_P: Any
     mapping: Mapping[Node, Node]
     locked_p_atoms: frozenset[Node]
+    compatible_p_atoms: tuple[Node, ...]
     iso_tol: float
     islands_R: Mapping[Node, int] | None
     p_orbits: OrbitMap
@@ -265,6 +266,11 @@ def _make_extension_context(
     if not bonded_in_frag:
         return None
     locked_p_atoms = frozenset(mapping.values())
+    compatible_p_atoms = tuple(
+        v for v in g_P.nodes()
+        if v not in locked_p_atoms
+        and node_policy.compatible(g_R, n, g_P, v)
+    )
     return _ExtensionContext(
         fragment_old=frozenset(fragment_old),
         n=n,
@@ -273,6 +279,7 @@ def _make_extension_context(
         g_P=g_P,
         mapping=mapping,
         locked_p_atoms=locked_p_atoms,
+        compatible_p_atoms=compatible_p_atoms,
         iso_tol=iso_tol,
         islands_R=islands_R,
         p_orbits=p_orbits,
@@ -440,11 +447,7 @@ def _collect_free_target_entries(
     """
     block_join: dict[int, list[TargetEntry]] = defaultdict(list)
     by_group: dict[Any, list[TargetEntry]] = defaultdict(list)
-    for v in ctx.g_P.nodes():
-        if v in ctx.locked_p_atoms:
-            continue
-        if not ctx.node_policy.compatible(ctx.g_R, ctx.n, ctx.g_P, v):
-            continue
+    for v in ctx.compatible_p_atoms:
         join_idx, can_extend = _target_join_info(cand, ctx, v)
         support = _supported_value(cand, ctx, v, join_idx)
         if support is None:
