@@ -1,8 +1,0 @@
-Literature ID,Name,SMILES,Source DOI,Bank status,Existing Mcule ID
-11,"Boger C-ring amino-acid subunit 11","COC(=O)[C@@H](N)[C@H](O[Si](C(C)C)(C(C)C)C(C)C)c1ccc(F)c([N+](=O)[O-])c1",10.1021/jacs.0c07433,added for validation,
-12,"Boger D-ring amino-acid subunit 12","CC(C)(C)OC(=O)N[C@H](C(=O)O)c1cc(O)c(OC)c(O)c1",10.1021/jacs.0c07433,added for validation,
-13,"Boger E-ring amino-acid subunit 13","CCOC(=O)[C@@H](N)[C@H](O)c1ccc(F)c([N+](=O)[O-])c1",10.1021/jacs.0c07433,added for validation,
-14,"Boger A-ring amino-alcohol subunit 14","COCCOCOC[C@@H](NC(=O)OCC1=CC=CC=C1)c1c(B(O)O)c(OC)cc(OC)c1",10.1021/jacs.0c07433,added for validation,
-15,"Boger B-ring amino-acid subunit 15","CC(C)(C)OC(=O)N[C@H](C(=O)O)c1ccc(Br)c(OC)c1",10.1021/jacs.0c07433,added for validation,
-16,"Boger residue-3 amino-acid subunit 16","COC(=O)[C@@H](N)CC#N",10.1021/jacs.0c07433,added for validation,
-17,"Boger N-methyl-D-leucine subunit 17","CC(C)C[C@H](C(=O)O)N(C)C(=O)OC(C)(C)C",10.1021/jacs.0c07433,present in merged bank,MCULE-7118794312

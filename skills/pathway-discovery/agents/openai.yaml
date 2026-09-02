@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pathway Discovery"
-  short_description: "Rank xTB/AAM pathway moves"
-  default_prompt: "Use $pathway-discovery to propose and verify the next intermediate from xTB descriptors and AAM."
