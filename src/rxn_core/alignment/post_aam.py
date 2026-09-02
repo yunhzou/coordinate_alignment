@@ -19,8 +19,10 @@ class AtomPermutation:
     images: tuple[int, ...]
 
     def __post_init__(self):
-        images = tuple(int(value) for value in self.images)
-        if set(images) != set(range(len(images))):
+        images = tuple(map(int, self.images))
+        # bijective onto range(n) <=> n distinct values all inside [0, n)
+        n = len(images)
+        if n and (len(set(images)) != n or min(images) < 0 or max(images) >= n):
             raise ValueError("atom permutation is not bijective")
         object.__setattr__(self, "images", images)
 
@@ -237,24 +239,45 @@ class AAMHierarchy:
     fragments: tuple[FragmentMatch, ...]
 
     @classmethod
-    def from_record(cls, branch_symmetry):
+    def from_record(cls, branch_symmetry, _memo=None):
+        """Typed hierarchy from an AAM branch record.
+
+        ``_memo`` (optional dict) lets a caller converting many records share
+        the immutable permutation and domain objects that recur across them;
+        equal raw inputs always produce equal (frozen, value-compared)
+        objects, so sharing an instance is indistinguishable from rebuilding it.
+        """
+        memo = {} if _memo is None else _memo
+
+        def permutation(generator):
+            key = ("perm", tuple(generator))
+            obj = memo.get(key)
+            if obj is None:
+                obj = AtomPermutation(tuple(map(int, generator)))
+                memo[key] = obj
+            return obj
+
+        def domain(block, default_source):
+            r_atoms = tuple(block.get("r_atoms") or ())
+            p_atoms = tuple(block.get("p_atoms") or ())
+            source = str(block.get("source") or default_source)
+            extendable = bool(block.get("extendable", False))
+            key = ("dom", r_atoms, p_atoms, source, extendable)
+            obj = memo.get(key)
+            if obj is None:
+                obj = SymmetryDomain(r_atoms, p_atoms, source, extendable)
+                memo[key] = obj
+            return obj
+
         fragments = []
         for position, raw in enumerate(
                 dict(branch_symmetry or {}).get("fragments") or ()):
             symmetry = raw.get("symmetry") or {}
             raw_generators = symmetry.get("automorph_generators")
-            domains = []
-            for block in symmetry.get("blocks") or ():
-                domains.append(SymmetryDomain(
-                    tuple(block.get("r_atoms") or ()),
-                    tuple(block.get("p_atoms") or ()),
-                    str(block.get("source") or "sym_block"),
-                    bool(block.get("extendable", False))))
-            automorph_domains = tuple(SymmetryDomain(
-                tuple(block.get("r_atoms") or ()),
-                tuple(block.get("p_atoms") or ()),
-                str(block.get("source") or "exact_automorph_group"),
-                bool(block.get("extendable", False)))
+            domains = [domain(block, "sym_block")
+                       for block in symmetry.get("blocks") or ()]
+            automorph_domains = tuple(
+                domain(block, "exact_automorph_group")
                 for block in symmetry.get("automorph_blocks") or ())
             fragments.append(FragmentMatch(
                 fragment_index=int(raw.get("fragment_index", position)),
@@ -274,7 +297,7 @@ class AAMHierarchy:
                 automorph_domains=automorph_domains,
                 target_generators=(
                     None if raw_generators is None else tuple(
-                        AtomPermutation(tuple(map(int, generator)))
+                        permutation(generator)
                         for generator in raw_generators))))
         return cls(tuple(fragments))
 

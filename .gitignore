@@ -67,3 +67,7 @@ dist/
 # optional compiled matcher kernels (bench/build_fast.py)
 src/rxn_core/matcher/_fast*.so
 build/
+
+# native growth engine build (native/build_engine.py) and its downloaded sources
+src/rxn_core/_engine*.so
+native/third_party/

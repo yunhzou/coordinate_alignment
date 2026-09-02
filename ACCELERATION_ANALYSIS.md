@@ -7,6 +7,14 @@ ALGORITHM.md section 18 and committed run artifacts; everything else is an
 estimate from operation counts and should be confirmed by the instrumentation
 in section 4 before large engineering commitments.
 
+
+> **Status (branch `Fable_AAM_Opt`):** the Layer 0 engine now runs as a
+> compiled extension and the Layer 1 tails were trimmed; measured,
+> output-identical results are in `LAYER0_CORE_AAM_ACCELERATION.md`, section 6
+> (12 workers: TEMPO 72x, tetraphenylmethane 124x, tetra-tert-butylmethane
+> 123x versus the original serial time; serial 20x, 35x, 27x).  The tiers below are the original
+> analysis and ranking.
+
 ## 1. Where the time actually goes
 
 ### 1.1 Correct the baseline first

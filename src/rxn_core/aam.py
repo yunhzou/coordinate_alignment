@@ -6,8 +6,10 @@ import time
 from .alignment.post_aam import AAMBranch, AAMHierarchy, AtomBijection
 from .alignment.sweep import (
     _candidate_from_symmetry_state,
+    _completed_branch_with_groups,
     _freeze_analytical,
     attach_completed_candidate_groups,
+    completed_candidate_group_generators,
     cut_sweep as _execute_cut_sweep,
 )
 from .domain import (
@@ -23,12 +25,57 @@ from .frag import build_graph
 _ATTACH_PARALLEL_MIN_BRANCHES = 64
 
 
-def _attach_chunk(args):
-    """Worker: finalize one contiguous chunk of branches."""
-    branches, elements, wbo, graph_floor, wbo_tol = args
+_ATTACH_STATE = None
+
+
+def _attach_init(branches, elements, wbo, graph_floor, wbo_tol):
+    """Worker initializer: the branch list and product graph for this pool.
+
+    Under the fork start method the branches are inherited by memory instead
+    of being pickled per task; under spawn they are pickled once per worker.
+    """
+    global _ATTACH_STATE
     graph_product = build_graph(elements, wbo, bond_cut=graph_floor)
-    return attach_completed_candidate_groups(
-        branches, graph_product, wbo_tol=wbo_tol)
+    _ATTACH_STATE = (branches, graph_product, wbo_tol)
+
+
+def _attach_range(bounds):
+    """Worker: exact groups for one contiguous range of branches.
+
+    Returns the per-fragment generator sequences of every branch in the range
+    and the fragments' cache keys in processing order.  The parent applies the
+    generators to its own copies of the branches, so no branch record travels
+    back.
+    """
+    start, stop = bounds
+    branches, graph_product, wbo_tol = _ATTACH_STATE
+    keys = []
+    groups = list(completed_candidate_group_generators(
+        branches[start:stop], graph_product, wbo_tol=wbo_tol, key_sink=keys))
+    return groups, keys
+
+
+def _attach_metrics_from_keys(keys):
+    """Serial cache accounting replayed over the fragments' cache keys.
+
+    The serial pass keys its generator cache by (locked prefix, frozen
+    fragment state) and processes fragments in branch order; walking the same
+    keys in the same order reproduces its request/calculation/hit counts.
+    """
+    metrics = {
+        'completed_candidate_group_requests': 0,
+        'completed_candidate_group_calculations': 0,
+        'completed_candidate_group_cache_hits': 0,
+    }
+    seen = set()
+    for key in keys:
+        metrics['completed_candidate_group_requests'] += 1
+        if key in seen:
+            metrics['completed_candidate_group_cache_hits'] += 1
+        else:
+            metrics['completed_candidate_group_calculations'] += 1
+            seen.add(key)
+    return metrics
 
 
 def _serial_attach_metrics(raw_branches):
@@ -90,14 +137,22 @@ def _attach_exact_fragment_groups(problem, config, pool, metrics, workers=1):
             stop = start + size + (1 if index < extra else 0)
             chunks.append(raw_branches[start:stop])
             start = stop
-        payload = [
-            (chunk, tuple(problem.product.elements), problem.product.wbo,
-             config.graph_floor, config.iso_tolerance)
-            for chunk in chunks if chunk]
-        with mp.Pool(len(payload)) as attach_pool:
-            results = attach_pool.map(_attach_chunk, payload, chunksize=1)
-        completed = [branch for chunk in results for branch in chunk]
-        group_metrics = _serial_attach_metrics(raw_branches)
+        bounds, start = [], 0
+        for chunk in chunks:
+            if chunk:
+                bounds.append((start, start + len(chunk)))
+            start += len(chunk)
+        with mp.Pool(len(bounds), initializer=_attach_init,
+                     initargs=(raw_branches, tuple(problem.product.elements),
+                               problem.product.wbo, config.graph_floor,
+                               config.iso_tolerance)) as attach_pool:
+            results = attach_pool.map(_attach_range, bounds, chunksize=1)
+        groups = [group for chunk_groups, _ in results for group in chunk_groups]
+        completed = [
+            _completed_branch_with_groups(raw_branch, fragment_generators)
+            for raw_branch, fragment_generators in zip(raw_branches, groups)]
+        group_metrics = _attach_metrics_from_keys(
+            [key for _, keys in results for key in keys])
     else:
         graph_product = build_graph(
             problem.product.elements, problem.product.wbo,
@@ -114,7 +169,15 @@ def _attach_exact_fragment_groups(problem, config, pool, metrics, workers=1):
     return pool, metrics
 
 
-def _branch_from_record(raw):
+def _branch_from_record(raw, memo=None):
+    """Typed branch from a pool record.
+
+    ``memo`` (optional dict) shares the immutable permutation groups,
+    permutations and domains that recur across the records of one result;
+    equal raw inputs give equal frozen objects, so this changes nothing but
+    the construction cost.
+    """
+    memo = {} if memo is None else memo
     mapping_family = dict(raw.get("mapping_family") or {})
     # The branch representative is the concrete AAM source mapping.  A
     # canonical representative of a later compiled coset belongs to the
@@ -131,11 +194,20 @@ def _branch_from_record(raw):
     target_group = None
     if raw_generators is not None:
         from .alignment.post_aam import PermutationGroup
-        target_group = PermutationGroup.from_generator_mappings(
-            len(representative), raw_generators)
+        group_key = None
+        if all(isinstance(generator, (list, tuple))
+               for generator in raw_generators):
+            group_key = ("grp", len(representative),
+                         tuple(tuple(generator) for generator in raw_generators))
+            target_group = memo.get(group_key)
+        if target_group is None:
+            target_group = PermutationGroup.from_generator_mappings(
+                len(representative), raw_generators)
+            if group_key is not None:
+                memo[group_key] = target_group
     return AAMBranch(
         representative=AtomBijection.from_mapping(representative),
-        hierarchy=AAMHierarchy.from_record(hierarchy),
+        hierarchy=AAMHierarchy.from_record(hierarchy, _memo=memo),
         encounter_count=int(raw.get("encounter_count", 1)),
         cuts=tuple(tuple(map(int, cut)) for cut in raw.get("cuts") or ()),
         covered_path_count=int(raw.get("covered_path_count", 1)),
@@ -148,12 +220,13 @@ def _branch_from_record(raw):
 
 def _result_from_pool(problem, config, pool, metrics, elapsed_seconds):
     mechanisms = []
+    memo = {}
     for key, entry in pool.items():
         representative = AtomBijection.from_mapping(entry["mapping"])
         raw_branches = tuple(entry.get("branches") or ())
         if not raw_branches:
             raise ValueError("AAM mechanism lacks completed branches")
-        branches = tuple(_branch_from_record(raw) for raw in raw_branches)
+        branches = tuple(_branch_from_record(raw, memo) for raw in raw_branches)
         mechanisms.append(AAMMechanism(
             key=tuple(key),
             representative=representative,

@@ -23,6 +23,7 @@ from .frontier import (
     _push_edges_from,
     _set_unique,
 )
+from . import native
 from .result import IslandBranchLimitExceeded, _IsoResult
 from .trace import (
     cand_possible_values,
@@ -63,6 +64,18 @@ def grow_island(g_R, g_P, seed, mapping,
     existing trace_run.HTML viewer.
     """
     node_policy = as_node_match_policy(node_policy)
+    if native.applicable(g_R, g_P, p_orbits, node_policy, events):
+        # compiled engine (rxn_core._engine): same algorithm, same outputs;
+        # returns None when the inputs fall outside what the port covers
+        out = native.grow_island(
+            g_R, g_P, seed, mapping, graph_floor=graph_floor, iso_tol=iso_tol,
+            min_lock_size=min_lock_size, max_branches=max_branches,
+            islands_R=islands_R, p_orbits=p_orbits,
+            prior_deferred_edges=prior_deferred_edges,
+            allow_mapped_seed=allow_mapped_seed, profile=profile,
+            profile_context=profile_context)
+        if out is not None:
+            return out
     record = events is not None
     prof = None
     profile_t0 = None

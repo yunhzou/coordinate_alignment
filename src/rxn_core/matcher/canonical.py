@@ -1,6 +1,7 @@
 """Exact automorphism certificates for hierarchical partial mappings."""
 from __future__ import annotations
 
+import os
 from collections import Counter, defaultdict
 
 from .orbits import (
@@ -14,6 +15,50 @@ from .policy import (
 )
 from .primitives import _load_fast_kernels
 from .state import _VERIFY_ROLES, _SymCand, _cand_roles_from_scratch
+
+try:  # pragma: no cover - depends on the build
+    from .. import _engine
+except ImportError:  # pragma: no cover
+    _engine = None
+
+# native/src/autgrp.cpp: pynauty.autgrp(...)[0] on a fixed, recoloured graph
+_AutGraph = getattr(_engine, "AutGraph", None)
+
+
+def _native_autgrp_available():
+    """True when ``rxn_core._engine.AutGraph`` is built and
+    ``RXN_CORE_NATIVE`` is not ``"0"`` (the growth engine's switch)."""
+    return (_AutGraph is not None
+            and os.environ.get("RXN_CORE_NATIVE", "1") != "0")
+
+
+def _pynauty_partition_cells(n_vertices, vertex_coloring):
+    """The cells nautywrap's ``set_partition`` would read, as lists.
+
+    Reproduces ``pynauty.Graph.set_vertex_coloring`` step by step: the
+    caller's set objects are kept as-is (in order), vertices missing from
+    every set form one extra trailing cell built by the same ``vs -= p``
+    operations, and a colouring that ends up with a single cell is dropped
+    (``[]`` -> nauty's default partition).  Each set is then converted with
+    ``list(cell)``, which is exactly the iteration order the C loop
+    (``PyObject_GetIter`` / ``PyIter_Next``) sees for that set object, so
+    the native ``lab`` matches pynauty's element for element.
+    """
+    if not vertex_coloring:
+        return []
+    cells = []
+    vs = set(range(n_vertices))
+    for p in vertex_coloring:
+        if p <= vs:
+            cells.append(p)
+            vs -= p
+        else:
+            raise ValueError('Invalid partition: %s' % vertex_coloring)
+    if vs:
+        cells.append(vs)
+    if len(cells) == 1:
+        return []
+    return [list(cell) for cell in cells]
 
 
 class _PartialMappingCanonicalizer:
@@ -209,6 +254,18 @@ class _CandidateAutomorphismCanonicalizer:
                 cache[cache_key] = base
         (self.nodes, self.atom_index, self.n_atoms, self.atom_base_color,
          self.n_vertices, self.adjacency, self.edge_color_classes) = base
+        # repr of a colour key is a pure function of the key, so the memo can
+        # be shared by every canonicalizer built on the same base cache
+        # (one is constructed per fragment during group finalisation).
+        self._color_repr_cache = (
+            cache.setdefault('color_repr', {}) if cache is not None else {})
+        # vertex index -> atom (None for edge vertices), for generator decoding
+        atom_by_index = [None] * self.n_vertices
+        for atom, index in self.atom_index.items():
+            atom_by_index[index] = int(atom)
+        self._atom_by_index = atom_by_index
+        self._atom_index_items = [
+            (int(atom), index) for atom, index in self.atom_index.items()]
 
         locked_roles = defaultdict(list)
         for r, p in sorted((int(r), int(p))
@@ -242,7 +299,7 @@ class _CandidateAutomorphismCanonicalizer:
     def _color_order_key(self, color):
         """repr of a colour key, memoised: cell order must be a function of
         the key alone and the same keys recur across candidates."""
-        cache = self.__dict__.setdefault('_color_repr_cache', {})
+        cache = self._color_repr_cache
         key = cache.get(color)
         if key is None:
             key = repr(color)
@@ -384,25 +441,76 @@ class _CandidateAutomorphismCanonicalizer:
         # multiset directly instead of sorting nested tuples by repr.
         return frozenset(Counter(items).items()), singleton
 
-    def atom_generators(self, cand):
-        """Exact generators for a bounded completed candidate state."""
+    def _reusable_autgraph(self):
+        """Native counterpart of ``_reusable_graph``: one ``AutGraph`` over
+        the fixed base adjacency (every directed pair of the adjacency
+        dictionary, as ``_make_nygraph`` reads it), recoloured per call."""
+        graph = self.__dict__.get('_reusable_autgraph_object')
+        if graph is None:
+            graph = _AutGraph(
+                self.n_vertices,
+                [(vertex, neighbor)
+                 for vertex, neighbors in self.adjacency.items()
+                 for neighbor in neighbors])
+            self._reusable_autgraph_object = graph
+        return graph
+
+    def _raw_atom_generators_pynauty(self, colored_vertices):
+        """``pynauty.autgrp(...)[0]`` on the recoloured reusable graph."""
         import pynauty
 
-        raw_generators = pynauty.autgrp(
-            self.graph(cand, group_domains=True))[0]
-        atom_by_index = {
-            index: atom for atom, index in self.atom_index.items()}
+        # Same recoloured reusable graph as certificate_from_roles: the
+        # partition handed to nauty (cell order and the vertices of each cell
+        # in set iteration order) is exactly what ``graph()`` would build.
+        graph = self._reusable_graph()
+        graph.set_vertex_coloring(
+            [set(vertices) for _, vertices in colored_vertices])
+        return pynauty.autgrp(graph)[0]
+
+    def _raw_atom_generators_native(self, colored_vertices):
+        """Same generators, same order, from ``_engine.AutGraph``: the cells
+        are the very sets pynauty would receive, in its iteration order."""
+        cells = _pynauty_partition_cells(
+            self.n_vertices,
+            [set(vertices) for _, vertices in colored_vertices])
+        return self._reusable_autgraph().generators(cells)
+
+    def _atom_generators_pynauty(self, cand):
+        """pynauty path of :meth:`atom_generators` (fallback and the
+        reference of tests/test_autgrp_native.py)."""
+        colored_vertices = self._colored_vertices(cand, group_domains=True)
+        return self._atom_generators_from_raw(
+            self._raw_atom_generators_pynauty(colored_vertices))
+
+    def _atom_generators_native(self, cand):
+        colored_vertices = self._colored_vertices(cand, group_domains=True)
+        return self._atom_generators_from_raw(
+            self._raw_atom_generators_native(colored_vertices))
+
+    def atom_generators(self, cand):
+        """Exact generators for a bounded completed candidate state."""
+        if _native_autgrp_available():
+            return self._atom_generators_native(cand)
+        return self._atom_generators_pynauty(cand)
+
+    def _atom_generators_from_raw(self, raw_generators):
+        """Atom permutations of the raw vertex generators (identity and
+        duplicates dropped, first occurrence order kept)."""
+        atom_by_index = self._atom_by_index
+        atom_index_items = self._atom_index_items
         identity = tuple(range(self.n_atoms))
         generators = []
         seen = set()
         for raw in raw_generators:
             permutation = list(identity)
-            for atom, index in self.atom_index.items():
+            for atom, index in atom_index_items:
                 image_index = int(raw[index])
-                if image_index not in atom_by_index:
+                image_atom = (atom_by_index[image_index]
+                              if 0 <= image_index < len(atom_by_index) else None)
+                if image_atom is None:
                     raise RuntimeError(
                         "candidate automorphism mixed atom/edge vertices")
-                permutation[int(atom)] = int(atom_by_index[image_index])
+                permutation[atom] = image_atom
             permutation = tuple(permutation)
             if permutation != identity and permutation not in seen:
                 seen.add(permutation)

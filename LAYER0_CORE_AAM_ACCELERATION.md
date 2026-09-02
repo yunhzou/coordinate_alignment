@@ -204,81 +204,80 @@ recorded.
 ## 6. Results (branch `Fable_AAM_Opt`, measured)
 
 Every change was accepted only with an identical pool (mechanisms, branches,
-hierarchies, encounter counts, cuts), identical running digests of every
-extension, dedupe and growth result, and identical search metrics against the
-recording made with the original code (`bench/replay_harness.py`).  The
-default path is pure Python; `RXN_CORE_FAST=1` enables optional Cython leaf
-kernels built with `bench/build_fast.py`.  Timings on this Mac (14 cores),
-CPython 3.9; "12 workers" uses fork start-up, the Linux default.
+hierarchies, encounter counts, cuts) and identical search metrics against the
+recording made with the original code (`bench/replay_harness.py`), and the
+compiled growth engine additionally replays every recorded `grow_island` call
+of the three cases (4,572 calls: mappings, deferred edges, fragments,
+symmetry states, cap behaviour) bit-identically (`bench/record_grow_calls.py`,
+`bench/compare_grow_calls.py`; `tests/test_native_engine.py` repeats the
+differential check on every growth call of a full search).  Timings on this
+Mac (14 logical cores), CPython 3.9; "12 workers" uses fork start-up, the
+Linux default.  With 12 workers the machine is CPU-saturated (each work unit
+runs about twice as slowly as it does alone), so the parallel wall time is set
+by total CPU work, not by scheduling.
 
-| Case | Original serial | Now serial | Now serial, compiled kernels | Original 12 workers | Now 12 workers | Now 12 workers, compiled kernels |
-|---|---:|---:|---:|---:|---:|---:|
-| TEMPO, 57 atoms, 177 work units | 18.8 s | 5.6 s (3.4x) | 4.8 s (3.9x) | 2.66 s | 0.90 s (3.0x) | 0.80 s (3.3x) |
-| Tetraphenylmethane H-shift, 45 atoms, 4 equivalent rings | 16.1 s | 4.0 s (4.0x) | 3.2 s (5.0x) | 2.06 s | 0.52 s (4.0x) | 0.47 s (4.4x) |
-| Tetra-tert-butylmethane H-shift, 53 atoms, 36 equivalent H, 2562 branches | 176.1 s | 40.9 s (4.3x) | 36.6 s (4.8x) | 21.9 s | 6.0 s (3.6x) | 5.4 s (4.1x) |
-
-Certificate calls: TEMPO 31,749 to 8,611; tetraphenyl 53,598 to 12,341;
-tetra-tert-butyl 214,272 to 46,373.  In all three cases 74 to 89% of the
-remaining certificates produce a merge, so the nauty count is at the floor of
-this algorithm; the remaining calls are genuine symmetry collisions.
+| Case | Original serial | Now serial | Original 12 workers | Now 12 workers | vs original serial |
+|---|---:|---:|---:|---:|---:|
+| TEMPO, 57 atoms, 177 work units | 18.8 s | 0.96 s (20x) | 2.66 s | 0.26 s (10x) | 72x |
+| Tetraphenylmethane H-shift, 45 atoms, 4 equivalent rings | 16.1 s | 0.46 s (35x) | 2.06 s | 0.13 s (16x) | 124x |
+| Tetra-tert-butylmethane H-shift, 53 atoms, 36 equivalent H, 2562 branches | 176.1 s | 6.5 s (27x) | 21.9 s | 1.43 s (15x) | 123x |
 
 ### What landed (all bit-identical)
 
-Layer 0 (engine): singleton dedupe early-out; orbit-role bucketing before
-nauty with a per-graph applicability check; admissible-neighbourhood candidate
-generation with a per-graph edge/bond-cut consistency check; boundary
-signature context hoisted per dedupe call with per-target static data cached
-on the orbit map and pools cached per island; one pynauty graph recoloured
-per certificate; roles cached on candidates and derived incrementally (with an
-assertion mode, `RXN_CORE_VERIFY_ROLES=1`); compact-signature grouping with
-dense ordering keys; incremental frontier bookkeeping; block-compatibility
-memo per candidate and block; WBO matrix read through an exact list view;
-optional compiled kernels for relation signatures, support witness, pool
-target signatures, role key and coloured vertices.
+Compiled growth engine (`rxn_core._engine`, `native/src/engine.cpp`, built
+by `native/build_engine.py` against a vendored nauty 2.8.8): a C++ port of
+`grow_island`, `_extend_sym_cands`, `_dedup_sym_cands` and the `_SymCand`
+state, dispatched from `grow_island` whenever the inputs are covered (default
+element policy, exact orbit map, no trace events; `RXN_CORE_NATIVE=0`
+disables it and the Python engine remains the reference).  Inside it: nauty
+through the C API on one persistent graph per target; an exact certificate
+memo keyed by the ordered cell partition (77 to 80% hit rate); interned role
+and colour ids instead of per-atom key vectors; candidate moves instead of
+copies.  Group ordering, heap tie order, witness back-fill, automorph merges
+and the symmetry-state records reproduce the Python semantics exactly
+(including Python `str()` ordering of dense signatures).
 
-Layer 1 (sweep), exact and included because it sat on the wall-clock path:
-per-process memo of the branch score (repair plus mechanism signature) keyed
-by the complete mapping; memoised automorphism generators and cached graph
-skeletons; vectorised bond classification with a reference test; shared event
-canonicaliser per worker; streaming parent merge (no bucket files, no second
-pool); worker-computed branch keys reused by the parent; minimal copies
-instead of deep copies; single seed order generated per unit; fragment-group
-finalisation across workers with the serial cache metrics replayed exactly.
+Compiled kernels next to the engine, each with its Python original kept as
+the reference and fallback: the per-group search of `symmetry_repair_mapping`
+(orbit enumeration under the generators, lexicographic ordering, the exact
+elementwise scoring with strict left-to-right summation and CPython's own
+12-place rounding; `RXN_CORE_VERIFY_REPAIR=1` runs both and asserts);
+`_freeze_analytical` with Python object semantics (5x); nauty automorphism
+generators for fragment groups through the same nauty options, worksize and
+cell order pynauty uses (identical generators in identical order).
 
-### Where the remaining time is (tetra-tert-butyl, serial 40.9 s)
+Python side, exact: seed iterations that cannot change any live branch are
+skipped; the branch state signature is memoised across the fork loop; the
+fragment-group finalisation workers inherit the branch records and return
+only the generators and cache keys, the parent applying them to its own
+copies; the typed result shares the immutable permutation, group and domain
+records that recur across branches; automorphism generators use the
+recoloured persistent pynauty graph; metal-element lookups memoised.
+Earlier Layer 0/Layer 1 work (singleton dedupe early-out, orbit-role
+bucketing, admissible-neighbourhood generation, boundary context hoisting,
+roles cache, incremental frontier, score memo, vectorised bond
+classification, streaming parent merge, worker-computed branch keys) is still
+in place and is what the Python fallback runs.
 
-| Term | Seconds | Note |
-|---|---:|---|
-| nauty certificates | 5.0 | floor: every remaining call is a genuine collision |
-| Python around certificates and role keys | 6.5 | colouring, partition validation, hashed multisets |
-| boundary signatures | 5.1 | per candidate per collision class |
-| candidate generation and child construction | 14.0 | support checks, refinement, `_SymCand` objects |
-| in-sweep scoring, finalisation, pool, typed result | 5.0 | Layer 1 |
-| everything else | 5.3 | heap, frontier, branch bookkeeping |
+### Where the remaining time is
 
-At 12 workers the heavy case spends 4.1 s in the sweep itself (37.4 s of
-serial work over 12 processes plus ~1 s of imbalance), 1.05 s finalising
-groups, 0.68 s converting the pool to typed objects.
+Serial tetra-tert-butyl (6.5 s): compiled engine 3.4 s (candidate
+construction and dedupe bookkeeping; nauty itself is now ~0.1 s), fragment
+group finalisation 1.3 s (Python colourings and generator decoding around
+nauty), branch bookkeeping in `find_islands` ~0.6 s, bond classification and
+mechanism signatures ~0.6 s, typed result 0.14 s.  Serial TEMPO (0.96 s):
+engine 0.36 s, finalisation 0.17 s, the rest sweep bookkeeping.
 
-### The exact-only ceiling
+At 12 workers: tetra-tert-butyl 1.43 s = sweep 0.91 s (CPU-bound) +
+finalisation 0.37 s + typed result 0.14 s; TEMPO 0.26 s = sweep 0.16 s +
+finalisation 0.06 s + typed result 0.03 s.
 
-Under the constraint that every change is output-identical and the search
-definition (no-cut plus one unit per R edge, three seed orders, the branch
-cap, the exact certificate quotient) is untouched, the remaining levers are:
+### What is left under the exact-only constraint
 
-- a native array-based engine (integer candidate state, bitset adjacency,
-  nauty through its C API on a persistent recoloured graph): the measured
-  leaf-kernel experiment shows container-building code gains only 1.3-1.7x
-  from transcription, so the representation itself has to change; expected
-  another 5 to 10x on the engine, i.e. heavy case serial ~8 to 12 s;
-- Layer 1 tail (typed conversion, finalisation, imbalance): ~1.5 s of the
-  6 s parallel heavy-case wall;
-- more cores: useful up to roughly the work-unit count (3N), then bounded by
-  the slowest unit until intra-unit fork-join is added.
-
-Composing all of them gives roughly 15 to 25x at equal core count on these
-cases and 30 to 50x on branch-heavy cases; 100x at equal core count is not
-reachable without computing less, because every work unit still grows the
-molecule once and every genuine symmetry collision still needs one nauty call.
-Relative to the original serial time, the current branch already delivers
-23x, 34x and 33x on the three cases when 12 cores are used.
+- mechanism signature and bond classification as compiled kernels;
+- candidate state with shared block storage inside the engine (another 20 to
+  30% of the engine);
+- fragment group finalisation entirely in the engine (the Python colouring
+  and generator decoding per fragment are now most of its cost);
+- more cores: the sweep is CPU-bound, so wall time scales with cores up to
+  roughly the work-unit count (3N).

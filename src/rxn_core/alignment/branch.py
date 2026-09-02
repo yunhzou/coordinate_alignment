@@ -1,6 +1,7 @@
 """Branch scheduling, mechanism-state dedupe, and symmetry repair."""
 from __future__ import annotations
 
+import os
 import random
 from collections import Counter, defaultdict, deque
 
@@ -19,6 +20,21 @@ from ..matcher import (
 )
 
 SYM_REPAIR_MAX_EVALS = 20000
+
+try:  # optional compiled kernel for the per-group repair search
+    from .. import _engine as _repair_engine
+except ImportError:  # pragma: no cover - depends on the build
+    _repair_engine = None
+if _repair_engine is not None and not hasattr(_repair_engine, "repair_group"):
+    _repair_engine = None
+
+
+def _native_repair_enabled():
+    return (_repair_engine is not None
+            and os.environ.get("RXN_CORE_NATIVE", "1") != "0")
+
+
+_VERIFY_REPAIR = os.environ.get("RXN_CORE_VERIFY_REPAIR") == "1"
 # States scored per vectorised batch inside symmetry_repair_mapping; bounds the
 # transient (states x local pairs) work arrays.
 _SYM_REPAIR_SCORE_CHUNK = 512
@@ -552,46 +568,81 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
             g_P, wbo_tol=float(getattr(p_orbits, 'wbo_tol', 0.2)),
             atom_color_tags=atom_tags)
 
-        states = {targets}
-        queue = deque([targets])
-        while queue and stats['evaluated'] < max_evals:
-            state = queue.popleft()
-            for generator in generators:
-                # map(get, state, state) calls get(p, p) per atom exactly as
-                # the former generator expression did, without a frame per
-                # element.
-                image = tuple(map(generator.get, state, state))
-                if image in states:
-                    continue
-                states.add(image)
-                queue.append(image)
-                if len(states) + stats['evaluated'] >= max_evals:
-                    stats['capped'] = bool(queue)
-                    break
-
-        best_score = current_score
-        best_state = None
         rs_array = np.asarray(rs, dtype=np.intp)
-        ordered_states = sorted(states)
-        # The former loop checked ``evaluated >= max_evals`` before each state
-        # in this sorted order, so it scored exactly the first ``budget``
-        # states and flagged the cap iff a state was left over.  Scoring them
-        # in batches reproduces the same scores in the same order; the
-        # ``score < best_score`` scan below is unchanged.
-        budget = max_evals - stats['evaluated']
-        if len(ordered_states) > budget:
+
+        def _repair_group_python(evaluated):
+            """The group search as written for the interpreter."""
+            capped = False
+            states = {targets}
+            queue = deque([targets])
+            while queue and evaluated < max_evals:
+                state = queue.popleft()
+                for generator in generators:
+                    # map(get, state, state) calls get(p, p) per atom exactly
+                    # as the former generator expression did, without a frame
+                    # per element.
+                    image = tuple(map(generator.get, state, state))
+                    if image in states:
+                        continue
+                    states.add(image)
+                    queue.append(image)
+                    if len(states) + evaluated >= max_evals:
+                        capped = bool(queue)
+                        break
+            best = current_score
+            best_state = None
+            ordered_states = sorted(states)
+            # The former loop checked ``evaluated >= max_evals`` before each
+            # state in this sorted order, so it scored exactly the first
+            # ``budget`` states and flagged the cap iff a state was left
+            # over.  Scoring them in batches reproduces the same scores in
+            # the same order; the ``score < best_score`` scan is unchanged.
+            budget = max_evals - evaluated
+            if len(ordered_states) > budget:
+                capped = True
+            to_score = ordered_states[:max(budget, 0)]
+            for start in range(0, len(to_score), _SYM_REPAIR_SCORE_CHUNK):
+                chunk = to_score[start:start + _SYM_REPAIR_SCORE_CHUNK]
+                image_rows = np.repeat(
+                    current_images[None, :], len(chunk), axis=0)
+                image_rows[:, rs_array] = np.asarray(chunk, dtype=np.intp)
+                for state, score in zip(chunk, local_scores(image_rows)):
+                    if score < best:
+                        best = score
+                        best_state = state
+            return best_state, best, len(to_score), capped
+
+        def _repair_group_native(evaluated):
+            """The same search in the compiled kernel (``native/src/repair.cpp``).
+
+            Generators are handed over as full image arrays, which is what
+            ``generator.get(p, p)`` evaluates to for every target atom.
+            """
+            n_targets = int(wbo_P_array.shape[0])
+            generator_rows = np.array(
+                [[generator.get(p, p) for p in range(n_targets)]
+                 for generator in generators],
+                dtype=np.int64).reshape(len(generators), n_targets)
+            best_state, best, scored, capped = _repair_engine.repair_group(
+                current_images, rs_array, generator_rows, pair_i, pair_j,
+                pair_wbo_R, pair_threshold, pair_r_active, wbo_P_array,
+                bond_floor_value, int(evaluated), int(max_evals),
+                int(current_score[0]), float(current_score[1]))
+            return best_state, best, scored, capped
+
+        if _native_repair_enabled():
+            outcome = _repair_group_native(stats['evaluated'])
+            if _VERIFY_REPAIR:
+                expected = _repair_group_python(stats['evaluated'])
+                assert outcome == expected, (
+                    "native symmetry repair disagrees with Python",
+                    outcome, expected)
+        else:
+            outcome = _repair_group_python(stats['evaluated'])
+        best_state, best_score, scored, capped = outcome
+        if capped:
             stats['capped'] = True
-        to_score = ordered_states[:max(budget, 0)]
-        for start in range(0, len(to_score), _SYM_REPAIR_SCORE_CHUNK):
-            chunk = to_score[start:start + _SYM_REPAIR_SCORE_CHUNK]
-            image_rows = np.repeat(
-                current_images[None, :], len(chunk), axis=0)
-            image_rows[:, rs_array] = np.asarray(chunk, dtype=np.intp)
-            for state, score in zip(chunk, local_scores(image_rows)):
-                if score < best_score:
-                    best_score = score
-                    best_state = state
-        stats['evaluated'] += len(to_score)
+        stats['evaluated'] += scored
         if best_state is not None:
             current.update(zip(rs, best_state))
             current_images[rs_array] = best_state
@@ -739,6 +790,22 @@ def find_islands(g_R, g_P, seed_order,
             events.append({'type': 'pass_start', 'pass': pass_no,
                            'mapped': len(branches[0].mapping)})
         for seed in seed_order:
+            # Exact shortcut: a seed every live branch already maps (and that
+            # is not an anchor, which may still seed) puts each branch through
+            # the unchanged-branch path below.  Live branches are unique by
+            # state signature and already sorted by mapped size, so that
+            # iteration would rebuild the identical list without progress;
+            # only the core-mapped stop check at its end can still fire.
+            if seed not in anchor_map and all(seed in b.mapping for b in branches):
+                if (stop_when_core_mapped and core_R and branches and
+                        all(_core_complete(b.mapping) for b in branches)):
+                    if events is not None:
+                        events.append({'type': 'done',
+                                       'mapped': len(branches[0].mapping),
+                                       'stop_reason': 'core_mapped',
+                                       'core_size': len(core_R)})
+                    return branches
+                continue
             new_branches = []
             pending_seen = {}
 
@@ -837,12 +904,16 @@ def find_islands(g_R, g_P, seed_order,
                 deduped_isos = list(isos)
                 subtree = []
                 subtree_progressed = False
+                # _branch_signature is _progress_key memoised on the branch:
+                # the parent's key is the same for every iso, and caching the
+                # child's key here lets _admit_subtree reuse it (commit()
+                # clears the copied cache, so a child never inherits it).
+                before_state = _branch_signature(b)
                 for ii, iso in enumerate(deduped_isos):
-                    before_state = _progress_key(b)
                     b2 = b.fork()
                     b2.commit(iso, g_R,
                               events=events if (bi == 0 and ii == 0) else None)
-                    after_state = _progress_key(b2)
+                    after_state = _branch_signature(b2)
                     if after_state == before_state:
                         subtree.append(b)
                     else:

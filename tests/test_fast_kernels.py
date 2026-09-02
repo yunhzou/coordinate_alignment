@@ -268,6 +268,10 @@ def recorded():
     _CandidateAutomorphismCanonicalizer.role_key_from_roles = rec["role_key"]
     _CandidateAutomorphismCanonicalizer._colored_vertices_from_roles = rec["colors"]
     _SymCand.__init__ = rec["init"]
+    # These recordings exercise the Python kernels, so the compiled growth
+    # engine (which bypasses them entirely) is disabled for the growth calls.
+    native_setting = os.environ.get("RXN_CORE_NATIVE")
+    os.environ["RXN_CORE_NATIVE"] = "0"
     try:
         # A free growth from the central carbon and from a ring hydrogen, plus
         # one with a locked prefix so locked roles and merges are exercised.
@@ -275,6 +279,10 @@ def recorded():
             grow_island(g_R, g_P, seed, dict(mapping), graph_floor=0.2,
                         iso_tol=0.5, p_orbits=p_orbits, r_orbits=r_orbits)
     finally:
+        if native_setting is None:
+            os.environ.pop("RXN_CORE_NATIVE", None)
+        else:
+            os.environ["RXN_CORE_NATIVE"] = native_setting
         (extend_mod._p_relation_signature_from_parts,
          dedupe_mod._p_relation_signature_from_parts,
          dedupe_mod._pool_target_signatures,

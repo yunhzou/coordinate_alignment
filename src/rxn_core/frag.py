@@ -36,14 +36,33 @@ METAL_ELEMENTS = frozenset({
 })
 
 
-def is_metal_element(element):
-    """Return True for elements treated with the metal WBO-event cutoff."""
+def _is_metal_element_uncached(element):
     if element is None:
         return False
     s = str(element).strip()
     if not s:
         return False
     return s[0].upper() + s[1:].lower() in METAL_ELEMENTS
+
+
+_METAL_ELEMENT_MEMO = {}
+_METAL_ELEMENT_MEMO_MAX = 4096
+
+
+def is_metal_element(element):
+    """Return True for elements treated with the metal WBO-event cutoff.
+
+    A pure function of the element symbol; results for plain strings are
+    memoised because the same few symbols are queried per atom pair.
+    """
+    if element.__class__ is str:
+        hit = _METAL_ELEMENT_MEMO.get(element)
+        if hit is None:
+            hit = _is_metal_element_uncached(element)
+            if len(_METAL_ELEMENT_MEMO) < _METAL_ELEMENT_MEMO_MAX:
+                _METAL_ELEMENT_MEMO[element] = hit
+        return hit
+    return _is_metal_element_uncached(element)
 
 
 def bond_event_threshold(elements, i, j, *,

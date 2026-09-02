@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import json
 import multiprocessing as mp
+import os
 import pickle
 import time
 from collections import OrderedDict, deque
@@ -41,6 +42,11 @@ from .branch import (
     find_islands,
     symmetry_repair_mapping,
 )
+
+try:  # pragma: no cover - depends on the build
+    from .. import _engine
+except ImportError:  # pragma: no cover
+    _engine = None
 
 
 def _canon_pair(a, b):
@@ -733,16 +739,26 @@ def complete_chosen_automorphism_groups(branch_symmetry, mapping, g_R, g_P,
     return result
 
 
-def _freeze_analytical(value):
+def _freeze_analytical_py(value):
     if isinstance(value, dict):
-        return tuple(sorted((str(key), _freeze_analytical(item))
+        return tuple(sorted((str(key), _freeze_analytical_py(item))
                             for key, item in value.items()))
     if isinstance(value, (list, tuple)):
-        return tuple(_freeze_analytical(item) for item in value)
+        return tuple(_freeze_analytical_py(item) for item in value)
     if isinstance(value, (set, frozenset)):
-        return tuple(sorted((_freeze_analytical(item) for item in value),
+        return tuple(sorted((_freeze_analytical_py(item) for item in value),
                             key=repr))
     return value
+
+
+# native/src/freeze.cpp is an exact port of _freeze_analytical_py (same
+# values, container types and ordering; tests/test_freeze_native.py is the
+# differential test).  Use it when the extension is built and not disabled.
+if (_engine is not None and hasattr(_engine, 'freeze_analytical')
+        and os.environ.get("RXN_CORE_NATIVE", "1") != "0"):
+    _freeze_analytical = _engine.freeze_analytical
+else:
+    _freeze_analytical = _freeze_analytical_py
 
 
 def _analytical_branch(mapping, cuts, branch_symmetry=None, count=1):
@@ -996,41 +1012,69 @@ def _candidate_from_symmetry_state(state):
         automorph_blocks=automorph_blocks)
 
 
-def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
-                                      node_policy=None, return_metrics=False):
-    """Attach exact groups after completed branch-family reduction.
+_COMPLETED_GROUP_SOURCE = 'completed_candidate_after_branch_family_reduction'
 
-    The cache key is the complete locked prefix plus candidate state.  Live
-    candidates and discarded growth paths never enter this bounded stage.
+
+def _completed_branch_with_groups(raw_branch, fragment_generators):
+    """Copy of ``raw_branch`` with exact groups attached to its fragments.
+
+    Minimal structural copy: only fragment['symmetry'] is rebound to a fresh
+    dict, so copy the branch, its hierarchy, the fragments container and each
+    fragment dict; every other nested object is shared read-only with the raw
+    branch.  ``fragment_generators`` holds one generator sequence per
+    fragment in hierarchy order.
+    """
+    branch = dict(raw_branch)
+    hierarchy = branch.get('hierarchy') or {}
+    raw_fragments = hierarchy.get('fragments') or ()
+    if raw_fragments:
+        hierarchy = dict(hierarchy)
+        hierarchy['fragments'] = type(raw_fragments)(
+            dict(fragment) for fragment in raw_fragments)
+        branch['hierarchy'] = hierarchy
+    fragments = hierarchy.get('fragments') or ()
+    if len(fragments) != len(fragment_generators):
+        raise RuntimeError("fragment group count disagrees with hierarchy")
+    for fragment, generators in zip(fragments, fragment_generators):
+        state = dict(fragment.get('symmetry') or {})
+        state['automorph_generators'] = [
+            list(generator) for generator in generators]
+        state['automorph_group_source'] = _COMPLETED_GROUP_SOURCE
+        fragment['symmetry'] = state
+    return branch
+
+
+def completed_candidate_group_generators(branches, g_P, *, wbo_tol,
+                                         node_policy=None, key_sink=None,
+                                         metrics=None):
+    """Exact fragment groups for completed branches, without copying them.
+
+    Yields, per branch, the tuple of generator sequences of its fragments in
+    hierarchy order.  The cache key is the complete locked prefix plus
+    candidate state.  ``key_sink`` (optional list) receives every fragment's
+    cache key in processing order; ``metrics`` (optional dict) accumulates
+    the request/calculation/hit counts.
     """
     cache = {}
     canonical_base_cache = {}
-    completed = []
-    metrics = {
-        'completed_candidate_group_requests': 0,
-        'completed_candidate_group_calculations': 0,
-        'completed_candidate_group_cache_hits': 0,
-    }
+    if metrics is None:
+        metrics = {}
+    for name in ('completed_candidate_group_requests',
+                 'completed_candidate_group_calculations',
+                 'completed_candidate_group_cache_hits'):
+        metrics.setdefault(name, 0)
     for raw_branch in branches:
-        # Minimal structural copy: the loop below only rebinds
-        # fragment['symmetry'] to a fresh dict, so copy the branch, its
-        # hierarchy, the fragments container and each fragment dict; every
-        # other nested object is shared read-only with the raw branch.
-        branch = dict(raw_branch)
-        hierarchy = branch.get('hierarchy') or {}
-        raw_fragments = hierarchy.get('fragments') or ()
-        if raw_fragments:
-            hierarchy = dict(hierarchy)
-            hierarchy['fragments'] = type(raw_fragments)(
-                dict(fragment) for fragment in raw_fragments)
-            branch['hierarchy'] = hierarchy
+        hierarchy = raw_branch.get('hierarchy') or {}
         locked = {}
+        per_fragment = []
         for fragment in hierarchy.get('fragments') or ():
             metrics['completed_candidate_group_requests'] += 1
             state = fragment.get('symmetry') or {}
             candidate = _candidate_from_symmetry_state(state)
             key = (tuple(sorted(locked.items())),
                    _freeze_analytical(state))
+            if key_sink is not None:
+                key_sink.append(key)
             generators = cache.get(key)
             if generators is None:
                 metrics['completed_candidate_group_calculations'] += 1
@@ -1042,19 +1086,36 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
                 cache[key] = generators
             else:
                 metrics['completed_candidate_group_cache_hits'] += 1
-            state = dict(state)
-            state['automorph_generators'] = [
-                list(generator) for generator in generators]
-            state['automorph_group_source'] = (
-                'completed_candidate_after_branch_family_reduction')
-            fragment['symmetry'] = state
+            per_fragment.append(generators)
             for r, p in candidate.mapping.items():
                 prior = locked.get(int(r))
                 if prior is not None and prior != int(p):
                     raise RuntimeError(
                         "completed AAM fragment conflicts with locked prefix")
                 locked[int(r)] = int(p)
-        completed.append(branch)
+        yield tuple(per_fragment)
+
+
+def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
+                                      node_policy=None, return_metrics=False,
+                                      key_sink=None):
+    """Attach exact groups after completed branch-family reduction.
+
+    The cache key is the complete locked prefix plus candidate state.  Live
+    candidates and discarded growth paths never enter this bounded stage.
+    ``key_sink``, when given, receives every fragment's cache key in
+    processing order so a caller can reproduce the cache accounting without
+    recomputing the keys.
+    """
+    metrics = {}
+    completed = []
+    branches = list(branches)
+    generator_stream = completed_candidate_group_generators(
+        branches, g_P, wbo_tol=wbo_tol, node_policy=node_policy,
+        key_sink=key_sink, metrics=metrics)
+    for raw_branch, fragment_generators in zip(branches, generator_stream):
+        completed.append(
+            _completed_branch_with_groups(raw_branch, fragment_generators))
     return (completed, metrics) if return_metrics else completed
 
 
