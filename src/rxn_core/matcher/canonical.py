@@ -1,7 +1,7 @@
 """Exact automorphism certificates for hierarchical partial mappings."""
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from .orbits import (
     _nauty_colored_wbo_graph,
@@ -149,6 +149,7 @@ class _CandidateAutomorphismCanonicalizer:
         tolerance = float(
             wbo_tol if wbo_tol is not None else
             (getattr(p_orbits, 'wbo_tol', 0.2) or 0.2))
+        self.wbo_tol = tolerance
         # A cut worker reuses one immutable product graph and orbit object but
         # constructs many canonicalizers as the locked prefix changes.  The
         # subdivision graph is independent of that prefix, so retain it on the
@@ -290,7 +291,79 @@ class _CandidateAutomorphismCanonicalizer:
         # authoritative equivalence test.
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
-        return pynauty.certificate(self.graph(cand)), color_profile
+        # Build the graph from the colouring computed above instead of
+        # recomputing it through ``self.graph``; the cells are identical.
+        graph = pynauty.Graph(
+            self.n_vertices,
+            directed=False,
+            adjacency_dict=self.adjacency,
+            vertex_coloring=[set(vertices)
+                             for _, vertices in colored_vertices],
+        )
+        return pynauty.certificate(graph), color_profile
+
+    def role_keys_applicable(self, orbits):
+        """True when ``orbits`` is the exact orbit map of this target graph.
+
+        The orbit-role key below is valid only for the automorphism orbits of
+        the same WBO-coloured graph at the same tolerance and node policy that
+        this canonicalizer colours.  The check compares the orbit map's own
+        pair-bucket table with a fresh bucket lookup of ``g_P``; the verdict
+        is cached on the orbit map per base graph, so the O(N^2) comparison
+        runs once per worker.
+        """
+        from .orbits import _OrbitMap
+
+        if not isinstance(orbits, _OrbitMap) or orbits.wbo_tol is None:
+            return False
+        if not isinstance(self.node_policy,
+                          (ElementNodeMatchPolicy, AttributeNodeMatchPolicy)):
+            return False
+        verdicts = getattr(orbits, '_role_key_bases', None)
+        if verdicts is None:
+            verdicts = {}
+            orbits._role_key_bases = verdicts
+        base_id = id(self.adjacency)
+        verdict = verdicts.get(base_id)
+        if verdict is None:
+            pair_buckets, zero_bucket = _wbo_tolerance_bucket_lookup(
+                self.g_P, self.wbo_tol)
+            verdict = bool(
+                float(orbits.wbo_tol) == self.wbo_tol
+                and orbits.zero_bucket == zero_bucket
+                and set(orbits) == set(self.atom_index)
+                and orbits.wbo_buckets == pair_buckets)
+            verdicts[base_id] = verdict
+        return verdict
+
+    def role_key(self, cand, orbits):
+        """Automorphism-invariant key of one candidate's role colouring.
+
+        Two candidates merge only when a colour-preserving isomorphism maps
+        one role colouring onto the other.  Such an isomorphism preserves the
+        underlying WBO-coloured target graph, hence is one of its
+        automorphisms and maps every atom into its own exact orbit while
+        preserving locked and candidate roles.  Equal certificates therefore
+        imply equal keys; the key is a necessary condition and never a merge
+        rule by itself.  The returned flag is True when every role-carrying
+        atom lies in a singleton orbit, in which case an equal key identifies
+        the colouring atom by atom and the certificates are equal without
+        running nauty.
+        """
+        sizes = getattr(orbits, '_orbit_sizes', None)
+        if sizes is None:
+            sizes = Counter(orbits.values())
+            orbits._orbit_sizes = sizes
+        locked_roles = self.locked_roles
+        singleton = True
+        items = []
+        for p, role in self._candidate_roles(cand).items():
+            orbit = orbits[p]
+            if sizes[orbit] > 1:
+                singleton = False
+            items.append((orbit, locked_roles.get(p, ()), role))
+        items.sort(key=repr)
+        return tuple(items), singleton
 
     def atom_generators(self, cand):
         """Exact generators for a bounded completed candidate state."""

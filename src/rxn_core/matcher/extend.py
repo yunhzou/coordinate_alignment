@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional, Union
 
 from .dedupe import _dedup_sym_cands, _p_relation_signature
 from .policy import DEFAULT_NODE_POLICY, as_node_match_policy
@@ -34,8 +34,8 @@ from .support import (
 Node = int
 Wbo = float
 Support = dict[Node, Node]
-SymCandidate = _SymCand | Mapping[Node, Node]
-OrbitMap = Mapping[Node, int] | None
+SymCandidate = Union[_SymCand, Mapping[Node, Node]]
+OrbitMap = Optional[Mapping[Node, int]]
 EdgeKey = tuple[Node, Node]
 TargetEntry = tuple[Node, Support, bool]
 

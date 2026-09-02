@@ -174,15 +174,52 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
     return tuple(out)
 
 
+def _dedupe_certificates(canonicalizer, cands, p_orbits):
+    """Certificate keys for ``cands``; nauty runs only where a merge is possible.
+
+    Two candidates merge only when their exact coloured certificates and colour
+    profiles agree.  Candidates are first grouped by the automorphism-invariant
+    orbit-role key (``role_key``): equal certificates imply equal keys, so a
+    class of size one cannot merge with anything, and a class whose role atoms
+    all lie in singleton orbits has identical colourings throughout.  Neither
+    needs a nauty call; the class key stands in for the certificate.  All other
+    classes are certified exactly as before.  The stand-in is a tuple headed by
+    a string and can never equal a real ``(bytes, profile)`` certificate, so
+    the per-certificate counts used for boundary signatures are unchanged.
+    """
+    if not canonicalizer.role_keys_applicable(p_orbits):
+        return [canonicalizer.certificate(cand) for cand in cands]
+    keys = [canonicalizer.role_key(cand, p_orbits) for cand in cands]
+    classes = defaultdict(list)
+    for index, (key, _singleton) in enumerate(keys):
+        classes[key].append(index)
+    certificates = [None] * len(cands)
+    for key, members in classes.items():
+        if len(members) == 1 or keys[members[0]][1]:
+            stand_in = ('orbit_role_key', key)
+            for index in members:
+                certificates[index] = stand_in
+        else:
+            for index in members:
+                certificates[index] = canonicalizer.certificate(cands[index])
+    return certificates
+
+
 def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
                      fragment=None, deferred_edges=(), locked_mapping=None,
                      node_policy=None):
     if not cands:
         return cands
+    if len(cands) == 1:
+        # One candidate cannot merge with anything.  The general path below
+        # would compute a certificate, see a class of size one, skip the
+        # boundary signature, and return this same object; skip straight to
+        # that result.
+        return list(cands)
     canonicalizer = _CandidateAutomorphismCanonicalizer(
         g_P, p_orbits=p_orbits, locked_mapping=locked_mapping,
         node_policy=node_policy)
-    certificates = [canonicalizer.certificate(cand) for cand in cands]
+    certificates = _dedupe_certificates(canonicalizer, cands, p_orbits)
     certificate_counts = Counter(certificates)
     seen = {}
     for cand, certificate in zip(cands, certificates):
