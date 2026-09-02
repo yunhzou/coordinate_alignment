@@ -483,6 +483,7 @@ def _target_join_info(
     ctx: _ExtensionContext,
     v: Node,
     block_indexes=None,
+    compat_cache=None,
 ) -> tuple[int | None, bool]:
     """Return the open block containing ``v`` and whether it can grow freely.
 
@@ -490,6 +491,11 @@ def _target_join_info(
     If it fails, exact support checking may still prove that ``ctx.n -> v`` is
     valid.  In that case the child must refine/fix the assignment instead of
     enlarging the block as a symmetric set-to-set choice.
+
+    ``compat_cache`` may be a per-candidate dict: the block-compatibility
+    predicate depends on ``(cand, block, ctx.n, fragment, g_R, r_orbits)``
+    only, not on ``v``, so it is evaluated once per open block instead of once
+    per pool atom.
     """
     if block_indexes is None:
         _, p_to_block = _sym_block_indexes(cand)
@@ -501,6 +507,14 @@ def _target_join_info(
     block = cand.blocks[join_idx]
     if not block.open:
         return None, False
+    if compat_cache is not None:
+        can_extend = compat_cache.get(join_idx)
+        if can_extend is None:
+            can_extend = _r_compatible_with_block(
+                cand, join_idx, ctx.n, set(ctx.fragment_old),
+                ctx.g_R, ctx.r_orbits)
+            compat_cache[join_idx] = can_extend
+        return join_idx, can_extend
     can_extend = _r_compatible_with_block(
         cand, join_idx, ctx.n, set(ctx.fragment_old),
         ctx.g_R, ctx.r_orbits)
@@ -570,12 +584,14 @@ def _collect_free_target_entries(
     cm_items = None
     blocks = cand.blocks if isinstance(cand, _SymCand) else ()
     compact = None
+    compat_cache = {}
     for v in targets:
         if v in ctx.locked_p_atoms:
             continue
         if not ctx.node_policy.compatible(ctx.g_R, ctx.n, ctx.g_P, v):
             continue
-        join_idx, can_extend = _target_join_info(cand, ctx, v, block_indexes)
+        join_idx, can_extend = _target_join_info(
+            cand, ctx, v, block_indexes, compat_cache)
         support = _supported_value(cand, ctx, v, join_idx, block_indexes)
         if support is None:
             continue

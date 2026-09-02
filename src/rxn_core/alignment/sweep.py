@@ -777,8 +777,11 @@ def _analytical_branch_key(branch):
     )
 
 
-def _merge_analytical_branch(branches, incoming, key_index=None):
-    key = _analytical_branch_key(incoming)
+def _merge_analytical_branch(branches, incoming, key_index=None, key=None):
+    # ``key`` may be the branch key already computed by the worker that
+    # produced ``incoming``; it is a pure function of the record.
+    if key is None:
+        key = _analytical_branch_key(incoming)
     if key_index is not None:
         branch = key_index.get(key)
         candidates = () if branch is None else (branch,)
@@ -894,13 +897,22 @@ def _merge_compressed_entry(target, sig, raw_entry, *, take_ownership=False,
     mutating its own pool afterwards, which cannot be proven safe here.
     """
     entry = target.get(sig)
+    incoming_keys = None
+    raw_index = raw_entry.get('_branch_key_index')
+    if raw_index is not None and len(raw_index) == len(
+            raw_entry.get('branches') or ()):
+        # Worker-computed keys: a pure function of each branch record.
+        incoming_keys = {id(branch): key for key, branch in raw_index.items()}
     if entry is None:
         entry = raw_entry if take_ownership else copy.deepcopy(raw_entry)
         branches = entry.setdefault('branches', [])
-        entry['_branch_key_index'] = {
-            _analytical_branch_key(branch): branch
-            for branch in branches
-        }
+        if take_ownership and incoming_keys is not None:
+            entry['_branch_key_index'] = dict(raw_index)
+        else:
+            entry['_branch_key_index'] = {
+                _analytical_branch_key(branch): branch
+                for branch in branches
+            }
         target[sig] = entry
         return
 
@@ -930,8 +942,12 @@ def _merge_compressed_entry(target, sig, raw_entry, *, take_ownership=False,
     for raw_branch in raw_entry.get('branches') or ():
         incoming_branch = (
             raw_branch if take_ownership else copy.deepcopy(raw_branch))
+        known_key = (
+            incoming_keys.get(id(raw_branch))
+            if take_ownership and incoming_keys is not None else None)
         changed = (_merge_analytical_branch(
-            branches, incoming_branch, key_index=key_index) or changed)
+            branches, incoming_branch, key_index=key_index,
+            key=known_key) or changed)
     if changed:
         if refresh:
             _refresh_entry_branch_symmetry(entry)
@@ -1609,7 +1625,9 @@ def _cs_wrun(args):
         branch_symmetry = result[3] if len(result) > 3 else None
         _pool_add(
             local_pool, sig, dict(mapping_items), cut, branch_symmetry)
-    local_pool = _public_pool(local_pool)
+    # Keep each entry's ``_branch_key_index`` in the payload: the parent
+    # merge reuses those keys instead of re-freezing every hierarchy, and
+    # drops the index when it publishes the pool.
     metrics['worker_returned_branch_count'] = sum(
         len(entry.get('branches') or ())
         for entry in local_pool.values())

@@ -5,6 +5,8 @@ import time
 
 from .alignment.post_aam import AAMBranch, AAMHierarchy, AtomBijection
 from .alignment.sweep import (
+    _candidate_from_symmetry_state,
+    _freeze_analytical,
     attach_completed_candidate_groups,
     cut_sweep as _execute_cut_sweep,
 )
@@ -18,8 +20,59 @@ from .domain import (
 from .frag import build_graph
 
 
-def _attach_exact_fragment_groups(problem, config, pool, metrics):
-    """Finalize candidate-carried groups once, as part of AAM output."""
+_ATTACH_PARALLEL_MIN_BRANCHES = 64
+
+
+def _attach_chunk(args):
+    """Worker: finalize one contiguous chunk of branches."""
+    branches, elements, wbo, graph_floor, wbo_tol = args
+    graph_product = build_graph(elements, wbo, bond_cut=graph_floor)
+    return attach_completed_candidate_groups(
+        branches, graph_product, wbo_tol=wbo_tol)
+
+
+def _serial_attach_metrics(raw_branches):
+    """Request/calculation/hit counts exactly as the serial pass reports them.
+
+    The serial finalization keys its generator cache by (locked prefix,
+    frozen fragment state).  Walking the same keys in the same order without
+    running nauty reproduces its accounting, so a chunked parallel run can
+    report identical metrics even though every chunk keeps its own cache.
+    """
+    metrics = {
+        'completed_candidate_group_requests': 0,
+        'completed_candidate_group_calculations': 0,
+        'completed_candidate_group_cache_hits': 0,
+    }
+    seen = set()
+    for raw_branch in raw_branches:
+        locked = {}
+        hierarchy = raw_branch.get('hierarchy') or {}
+        for fragment in hierarchy.get('fragments') or ():
+            metrics['completed_candidate_group_requests'] += 1
+            state = fragment.get('symmetry') or {}
+            candidate = _candidate_from_symmetry_state(state)
+            key = (tuple(sorted(locked.items())), _freeze_analytical(state))
+            if key in seen:
+                metrics['completed_candidate_group_cache_hits'] += 1
+            else:
+                metrics['completed_candidate_group_calculations'] += 1
+                seen.add(key)
+            for r, p in candidate.mapping.items():
+                locked[int(r)] = int(p)
+    return metrics
+
+
+def _attach_exact_fragment_groups(problem, config, pool, metrics, workers=1):
+    """Finalize candidate-carried groups once, as part of AAM output.
+
+    Each branch's generators depend only on that branch (its fragments are
+    processed in order with the locked prefix they define), so branches are
+    finalized in contiguous chunks across ``workers`` processes when there are
+    enough of them; concatenating the chunks reproduces the serial order and
+    contents, and the cache metrics are computed by replaying the serial
+    cache walk.
+    """
     locations, raw_branches = [], []
     for entry in pool.values():
         branches = list(entry.get("branches") or ())
@@ -27,12 +80,31 @@ def _attach_exact_fragment_groups(problem, config, pool, metrics):
             raise ValueError("AAM mechanism lacks completed branch records")
         locations.append((entry, len(branches)))
         raw_branches.extend(branches)
-    graph_product = build_graph(
-        problem.product.elements, problem.product.wbo,
-        bond_cut=config.graph_floor)
-    completed, group_metrics = attach_completed_candidate_groups(
-        raw_branches, graph_product, wbo_tol=config.iso_tolerance,
-        return_metrics=True)
+    workers = max(1, int(workers))
+    if workers > 1 and len(raw_branches) >= _ATTACH_PARALLEL_MIN_BRANCHES:
+        import multiprocessing as mp
+        chunk_count = min(workers, max(1, len(raw_branches) // 32))
+        size, extra = divmod(len(raw_branches), chunk_count)
+        chunks, start = [], 0
+        for index in range(chunk_count):
+            stop = start + size + (1 if index < extra else 0)
+            chunks.append(raw_branches[start:stop])
+            start = stop
+        payload = [
+            (chunk, tuple(problem.product.elements), problem.product.wbo,
+             config.graph_floor, config.iso_tolerance)
+            for chunk in chunks if chunk]
+        with mp.Pool(len(payload)) as attach_pool:
+            results = attach_pool.map(_attach_chunk, payload, chunksize=1)
+        completed = [branch for chunk in results for branch in chunk]
+        group_metrics = _serial_attach_metrics(raw_branches)
+    else:
+        graph_product = build_graph(
+            problem.product.elements, problem.product.wbo,
+            bond_cut=config.graph_floor)
+        completed, group_metrics = attach_completed_candidate_groups(
+            raw_branches, graph_product, wbo_tol=config.iso_tolerance,
+            return_metrics=True)
     offset = 0
     for entry, count in locations:
         entry["branches"] = completed[offset:offset + count]
@@ -136,7 +208,7 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
         return_metrics=True,
     )
     pool, metrics = _attach_exact_fragment_groups(
-        problem, config, pool, metrics)
+        problem, config, pool, metrics, workers=max(1, int(workers)))
     return _result_from_pool(
         problem, config, pool, metrics,
         elapsed_seconds=time.perf_counter() - started)
