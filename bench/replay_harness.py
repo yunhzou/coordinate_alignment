@@ -231,6 +231,12 @@ if __name__ == "__main__":
             case = args[args.index("--case") + 1]
         if "--workers" in args:
             workers = int(args[args.index("--workers") + 1])
+        if "--fork" in args:
+            # Emulate the Linux default: workers inherit the imported package
+            # instead of re-importing it (spawn is the macOS default and adds
+            # roughly a second of interpreter start-up per pool).
+            import multiprocessing
+            multiprocessing.set_start_method("fork", force=True)
         record(sys.argv[2], case=case, workers=workers)
     elif mode == "compare":
         compare(sys.argv[2], sys.argv[3])
