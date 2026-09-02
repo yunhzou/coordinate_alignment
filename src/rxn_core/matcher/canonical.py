@@ -207,6 +207,12 @@ class _CandidateAutomorphismCanonicalizer:
                 cache[cache_key] = base
         (self.nodes, self.atom_index, self.n_atoms, self.atom_base_color,
          self.n_vertices, self.adjacency, self.edge_color_classes) = base
+        import pynauty
+        self.nauty_graph = pynauty.Graph(
+            self.n_vertices,
+            directed=False,
+            adjacency_dict=self.adjacency,
+        )
 
         locked_roles = defaultdict(list)
         for r, p in sorted((int(r), int(p))
@@ -268,18 +274,13 @@ class _CandidateAutomorphismCanonicalizer:
             for color, vertices in sorted(
                 colors.items(), key=lambda item: repr(item[0])))
 
-    def graph(self, cand, *, group_domains=False):
-        import pynauty
-
-        colored_vertices = self._colored_vertices(
-            cand, group_domains=group_domains)
-        return pynauty.Graph(
-            self.n_vertices,
-            directed=False,
-            adjacency_dict=self.adjacency,
-            vertex_coloring=[set(vertices)
-                             for _, vertices in colored_vertices],
-        )
+    def graph(self, cand, *, group_domains=False, colored_vertices=None):
+        if colored_vertices is None:
+            colored_vertices = self._colored_vertices(
+                cand, group_domains=group_domains)
+        self.nauty_graph.set_vertex_coloring([
+            set(vertices) for _, vertices in colored_vertices])
+        return self.nauty_graph
 
     def certificate(self, cand):
         import pynauty
@@ -290,7 +291,11 @@ class _CandidateAutomorphismCanonicalizer:
         # authoritative equivalence test.
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
-        return pynauty.certificate(self.graph(cand)), color_profile
+        return (
+            pynauty.certificate(self.graph(
+                cand, colored_vertices=colored_vertices)),
+            color_profile,
+        )
 
     def atom_generators(self, cand):
         """Exact generators for a bounded completed candidate state."""
