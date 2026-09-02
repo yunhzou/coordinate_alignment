@@ -41,6 +41,7 @@ class _InitialFamilyAccumulator:
         self.source_orbits = source_orbits
         self.target_orbits = target_orbits
         self.families = {}
+        self.literal_families = {}
         self.coarse_buckets = {}
         self.certificates = {}
         self.canonicalizer = _PartialMappingCanonicalizer(
@@ -64,6 +65,13 @@ class _InitialFamilyAccumulator:
             if (self.target_region_atoms is not None
                     and not self.target_region_atoms.intersection(
                         target_atom for _source_atom, target_atom in mapping)):
+                continue
+            literal_key = (retained, mapping)
+            family_id = self.literal_families.get(literal_key)
+            if family_id is not None:
+                family = self.families[family_id]
+                self.families[family_id] = replace(
+                    family, encounter_count=family.encounter_count + 1)
                 continue
             coarse = tuple(sorted(
                 (self.source_orbits[source_atom],
@@ -92,12 +100,14 @@ class _InitialFamilyAccumulator:
                     symmetry=dict(placement.symmetry or {}),
                 )
                 bucket.append(family_id)
+                self.literal_families[literal_key] = family_id
                 if len(bucket) > 1:
                     self.certificates[family_id] = certificate
             else:
                 family = self.families[family_id]
                 self.families[family_id] = replace(
                     family, encounter_count=family.encounter_count + 1)
+                self.literal_families[literal_key] = family_id
             if len(self.families) >= self.config.candidate_limit:
                 return True
         return False
