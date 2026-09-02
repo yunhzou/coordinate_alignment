@@ -362,8 +362,9 @@ class _CandidateAutomorphismCanonicalizer:
             if sizes[orbit] > 1:
                 singleton = False
             items.append((orbit, locked_roles.get(p, ()), role))
-        items.sort(key=repr)
-        return tuple(items), singleton
+        # The key is only hashed and compared for equality, so represent the
+        # multiset directly instead of sorting nested tuples by repr.
+        return frozenset(Counter(items).items()), singleton
 
     def atom_generators(self, cand):
         """Exact generators for a bounded completed candidate state."""
