@@ -61,6 +61,7 @@ def main():
     parser.add_argument("--profile")
     parser.add_argument("--profile-lines", type=int, default=40)
     parser.add_argument("--seed-workers", type=int, default=1)
+    parser.add_argument("--seed-limit", type=int)
     args = parser.parse_args()
     if args.repeats < 1:
         raise ValueError("repeats must be positive")
@@ -72,6 +73,7 @@ def main():
         iso_tolerance=0.5,
         branch_limit=100,
         candidate_limit=100,
+        seed_limit=args.seed_limit,
         seed_mode=args.seed_mode,
         rough_retention_threshold=0.5,
     )

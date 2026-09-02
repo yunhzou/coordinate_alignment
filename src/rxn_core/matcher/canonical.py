@@ -25,13 +25,47 @@ class _PartialMappingCanonicalizer:
     """
 
     def __init__(self, g_R, g_P, *, wbo_tol=0.2, node_policy=None,
-                 source_atom_tags=None, target_atom_tags=None):
+                 source_atom_tags=None, target_atom_tags=None,
+                 base_cache=None):
         self.g_R = g_R
         self.g_P = g_P
         self.node_policy = as_node_match_policy(node_policy)
         self.wbo_tol = float(wbo_tol)
         source_atom_tags = dict(source_atom_tags or {})
         target_atom_tags = dict(target_atom_tags or {})
+        policy_key = None
+        if isinstance(self.node_policy, ElementNodeMatchPolicy):
+            policy_key = ('element',)
+        elif isinstance(self.node_policy, AttributeNodeMatchPolicy):
+            policy_key = ('attributes', self.node_policy.fields)
+        cache = base_cache
+        if (cache is None and policy_key is not None
+                and hasattr(g_R, 'graph')):
+            cache = g_R.graph.setdefault(
+                '_partial_mapping_canonical_bases', {})
+        cache_key = None
+        if cache is not None and policy_key is not None:
+            cache_key = (
+                g_P,
+                self.wbo_tol,
+                policy_key,
+                tuple(sorted(source_atom_tags.items())),
+                tuple(sorted(target_atom_tags.items())),
+            )
+        base = cache.get(cache_key) if cache_key is not None else None
+        if base is not None:
+            (
+                self.r_nodes,
+                self.p_nodes,
+                self.r_index,
+                self.p_index,
+                self.atom_vertex_count,
+                self.base_vertex_count,
+                self.base_adjacency,
+                self.base_colors,
+            ) = base
+            return
+
         self.r_nodes = tuple(sorted(g_R.nodes()))
         self.p_nodes = tuple(sorted(g_P.nodes()))
         self.r_index = {atom: index
@@ -80,6 +114,17 @@ class _PartialMappingCanonicalizer:
         self.base_colors = {
             color: set(vertices) for color, vertices in colors.items()
         }
+        if cache_key is not None:
+            cache[cache_key] = (
+                self.r_nodes,
+                self.p_nodes,
+                self.r_index,
+                self.p_index,
+                self.atom_vertex_count,
+                self.base_vertex_count,
+                self.base_adjacency,
+                self.base_colors,
+            )
 
     def certificate(self, mapping):
         """Return the exact endpoint-automorphism certificate of ``mapping``."""
