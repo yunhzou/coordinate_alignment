@@ -1,14 +1,17 @@
 """Detect target-owned fragments from one source graph."""
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, replace
 
 from ..alignment.branch import _generate_seed_orders
 from ..growth import IslandBranchLimitExceeded, grow_island
 from ..matcher import (
     _PartialMappingCanonicalizer,
+    _edge_wbo,
     _nauty_atom_generators,
     _nauty_orbits,
+    _orbit_wbo_bucket,
 )
 from ..subgraph import _coerce_graph
 from .augmentation import match_augmented_residuals, project_augmented_placement
@@ -29,6 +32,63 @@ class _InitialFragmentFamily:
     representative_mapping: tuple[tuple[int, int], ...]
     symmetry: dict
     encounter_count: int = 1
+
+
+def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
+                              source, target):
+    """Exact-invariant WL partition of a partial endpoint relation."""
+    pairs = tuple(mapping)
+    colors = [
+        (source_orbits[source_atom], target_orbits[target_atom])
+        for source_atom, target_atom in pairs
+    ]
+
+    def compact(values):
+        classes = {
+            value: index for index, value in enumerate(
+                sorted(set(values), key=repr))
+        }
+        return [classes[value] for value in values]
+
+    colors = compact(colors)
+    relations = {}
+    for left in range(len(pairs)):
+        source_left, target_left = pairs[left]
+        for right in range(left + 1, len(pairs)):
+            source_right, target_right = pairs[right]
+            relations[(left, right)] = (
+                _orbit_wbo_bucket(
+                    source_orbits, source_left, source_right,
+                    _edge_wbo(source, source_left, source_right)),
+                _orbit_wbo_bucket(
+                    target_orbits, target_left, target_right,
+                    _edge_wbo(target, target_left, target_right)),
+            )
+    for _ in pairs:
+        signatures = []
+        for left in range(len(pairs)):
+            neighborhood = []
+            for right in range(len(pairs)):
+                if left == right:
+                    continue
+                edge = relations[tuple(sorted((left, right)))]
+                neighborhood.append((edge, colors[right]))
+            signatures.append(
+                (colors[left], tuple(sorted(neighborhood))))
+        refined = compact(signatures)
+        if refined == colors:
+            break
+        colors = refined
+    color_counts = tuple(sorted(Counter(colors).items()))
+    relation_counts = tuple(sorted(Counter(
+        (
+            min(colors[left], colors[right]),
+            max(colors[left], colors[right]),
+            relation,
+        )
+        for (left, right), relation in relations.items()
+    ).items()))
+    return color_counts, relation_counts
 
 
 class _InitialFamilyAccumulator:
@@ -73,11 +133,13 @@ class _InitialFamilyAccumulator:
                 self.families[family_id] = replace(
                     family, encounter_count=family.encounter_count + 1)
                 continue
-            coarse = tuple(sorted(
-                (self.source_orbits[source_atom],
-                 self.target_orbits[target_atom])
-                for source_atom, target_atom in mapping
-            ))
+            coarse = _paired_mapping_invariant(
+                mapping,
+                self.source_orbits,
+                self.target_orbits,
+                self.canonicalizer.g_R,
+                self.canonicalizer.g_P,
+            )
             bucket = self.coarse_buckets.setdefault(coarse, [])
             family_id = None
             if bucket:
