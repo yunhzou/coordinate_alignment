@@ -142,13 +142,11 @@ DETECT_FRAGMENTS(source, target, policy, target_region = none):
         if target_region is set and placement does not touch it:
             continue
 
-        retain one compressed witness per automorphism class
+        retain one compressed AAM family only when a joint colored
+        source-target certificate proves an exact endpoint transporter
         if candidate cap is reached:
             diagnostics.mark_incomplete(stage = candidate_collection)
             break
-
-    before assembly, materialize the symmetry-equivalent target coverage
-    variants represented by each compressed witness, bounded by candidate cap
 
     if target_region is not set:
         best_initial = maximum connected size in initial_placements
@@ -172,45 +170,58 @@ DETECT_FRAGMENTS(source, target, policy, target_region = none):
 
         diagnostics.observe(validations)
 
-        for validation in validations:
+        for compressed validation family in validations:
             candidate = PROJECT_CANDIDATE(
-                source, target, partition, validation)
+                source, target, partition, compressed validation family)
             if candidate violates configured leftover bounds:
                 continue
-            emit candidate unless structurally equivalent to one already emitted
+            persist its representative mapping and complete AAM hierarchy
+            unless exactly equivalent to one already emitted
 
     return SearchResult(candidates, diagnostics)
 ```
 
-The maximum applies only to the initial connected island.  Competitive
+The maximum applies only to the initial connected island. Competitive
 augmentation may discover additional target-owned fragments from the same
-precursor.
+precursor. Detection does not enumerate target-automorphic atom mappings.
+It persists one representative plus the AAM hierarchy. Assembly later applies
+the exact target generators and materializes only distinct ownership and
+attachment states; permutations internal to one ownership state stay
+compressed.
 
 ### 4. Competitive augmented matching
 
 ```text
 COMPETITIVE_AUGMENTED_MATCH(R, P, initial, partition, policy):
-    cut_query = copy R
-    remove every initial-fragment boundary bond from cut_query
+    residual_components = connected components outside the initial fragment
+                          after removing its boundary bonds
+    states = { initial compressed AAM family }
 
-    residual_copies = disconnected copies of atoms outside the initial fragment
-    augmented_target = disjoint_union(P, residual_copies)
+    for component in residual_components, largest first:
+        if component composition cannot fit unused P:
+            continue  # its competitor-copy placement is the only possibility
 
-    matches = COMPLETE_SUBGRAPH_MATCH(
-        query = cut_query,
-        target = augmented_target,
-        fixed_mapping = initial R-to-P mapping,
-        tolerance = policy.isomorphism_tolerance,
-        branch_cap = policy.branch_cap,
-    )
+        if component is one atom:
+            placements = exact compatible P atoms satisfying cut attachments
+        else:
+            placements = COMPLETE_SUBGRAPH_MATCH(
+                query = component,
+                target = unused atoms of P,
+                tolerance = policy.isomorphism_tolerance,
+                branch_cap = policy.branch_cap,
+            )
 
-    valid = []
-    for match in matches:
-        if match changes the fixed initial mapping:
-            continue
-        if a cut boundary has both endpoints in P but they are not adjacent in P:
-            continue
-        valid.append(match)
+        next_states = states  # component remains on its competitor copy
+        for state in states:
+            for placement in placements disjoint from state ownership:
+                add state plus placement
+
+        quotient next_states by exact joint source-target certificates
+        if the compressed state cap is exceeded:
+            report augmentation incomplete
+        states = next_states
+
+    valid = states
 
     if target_region is not set:
         best_ownership = maximum number of R atoms mapped into original P
@@ -221,10 +232,14 @@ COMPETITIVE_AUGMENTED_MATCH(R, P, initial, partition, policy):
     return all valid matches having best_ownership
 ```
 
-Residual copies are competitors, never anchors.  A residual component may map
-into unused atoms of `P` when it fits; otherwise it remains on its appended
-copy.  This is why carbon dioxide can contribute a carbonyl fragment plus
-a second oxygen fragment to a carboxyl group at tolerance 0.5.
+This component factorization is exactly equivalent to constructing the
+disjoint union `P + residual copies`: disconnected query components interact
+only through exclusive ownership of P atoms. It avoids constructing or
+searching competitor components that provably cannot contribute. Residual
+copies remain competitors, never anchors. This is why carbon dioxide can
+contribute a carbonyl fragment plus a second oxygen fragment to a carboxyl
+group at tolerance 0.5, while an isolated leaving atom with no compatible P
+image is recorded as leftover without entering graph search.
 
 Region-directed detection is the second-stage gap operation.  It prevents a
 large incidental overlap elsewhere in `P` from suppressing a smaller fragment

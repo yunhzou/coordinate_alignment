@@ -3,13 +3,133 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .orbits import _nauty_colored_wbo_graph
+from .orbits import (
+    _nauty_colored_wbo_graph,
+    _wbo_tolerance_bucket_lookup,
+)
 from .policy import (
     AttributeNodeMatchPolicy,
     ElementNodeMatchPolicy,
     as_node_match_policy,
 )
 from .state import _SymCand
+
+
+class _PartialMappingCanonicalizer:
+    """Exact joint certificate for a partial source-to-target relation.
+
+    Source and target graphs retain distinct colors.  A subdivision vertex
+    represents each mapped pair, so certificate equality proves that exact
+    endpoint automorphisms transport one complete partial relation to the
+    other.  Atom-orbit labels are never used as a substitute for that proof.
+    """
+
+    def __init__(self, g_R, g_P, *, wbo_tol=0.2, node_policy=None,
+                 source_atom_tags=None, target_atom_tags=None):
+        self.g_R = g_R
+        self.g_P = g_P
+        self.node_policy = as_node_match_policy(node_policy)
+        self.wbo_tol = float(wbo_tol)
+        source_atom_tags = dict(source_atom_tags or {})
+        target_atom_tags = dict(target_atom_tags or {})
+        self.r_nodes = tuple(sorted(g_R.nodes()))
+        self.p_nodes = tuple(sorted(g_P.nodes()))
+        self.r_index = {atom: index
+                        for index, atom in enumerate(self.r_nodes)}
+        p_offset = len(self.r_nodes)
+        self.p_index = {atom: p_offset + index
+                        for index, atom in enumerate(self.p_nodes)}
+        self.atom_vertex_count = len(self.r_nodes) + len(self.p_nodes)
+
+        adjacency = defaultdict(set)
+        colors = defaultdict(set)
+        for atom, vertex in self.r_index.items():
+            colors[(
+                'atom', 'source', self.node_policy.key(g_R, atom),
+                source_atom_tags.get(atom),
+            )].add(vertex)
+        for atom, vertex in self.p_index.items():
+            colors[(
+                'atom', 'target', self.node_policy.key(g_P, atom),
+                target_atom_tags.get(atom),
+            )].add(vertex)
+
+        next_vertex = self.atom_vertex_count
+        for side, graph, atom_index in (
+                ('source', g_R, self.r_index),
+                ('target', g_P, self.p_index)):
+            pair_buckets, zero_bucket = _wbo_tolerance_bucket_lookup(
+                graph, self.wbo_tol)
+            for (left, right), bucket in sorted(pair_buckets.items()):
+                if bucket == zero_bucket:
+                    continue
+                vertex = next_vertex
+                next_vertex += 1
+                left_vertex = atom_index[left]
+                right_vertex = atom_index[right]
+                adjacency[vertex].update((left_vertex, right_vertex))
+                adjacency[left_vertex].add(vertex)
+                adjacency[right_vertex].add(vertex)
+                colors[('bond', side, bucket)].add(vertex)
+
+        self.base_vertex_count = next_vertex
+        self.base_adjacency = {
+            vertex: set(adjacency.get(vertex, ()))
+            for vertex in range(next_vertex)
+        }
+        self.base_colors = {
+            color: set(vertices) for color, vertices in colors.items()
+        }
+
+    def certificate(self, mapping):
+        """Return the exact endpoint-automorphism certificate of ``mapping``."""
+        import pynauty
+
+        pairs = tuple(sorted((int(source), int(target))
+                             for source, target in dict(mapping).items()))
+        if len({source for source, _target in pairs}) != len(pairs):
+            raise ValueError("partial mapping repeats a source atom")
+        if len({target for _source, target in pairs}) != len(pairs):
+            raise ValueError("partial mapping repeats a target atom")
+        adjacency = {
+            vertex: set(neighbors)
+            for vertex, neighbors in self.base_adjacency.items()
+        }
+        colors = {
+            color: set(vertices)
+            for color, vertices in self.base_colors.items()
+        }
+        next_vertex = self.base_vertex_count
+        for source, target in pairs:
+            if source not in self.r_index or target not in self.p_index:
+                raise ValueError("partial mapping atom lies outside an endpoint")
+            vertex = next_vertex
+            next_vertex += 1
+            source_vertex = self.r_index[source]
+            target_vertex = self.p_index[target]
+            adjacency[vertex] = {source_vertex, target_vertex}
+            adjacency[source_vertex].add(vertex)
+            adjacency[target_vertex].add(vertex)
+            colors.setdefault(('partial_mapping',), set()).add(vertex)
+        graph = pynauty.Graph(
+            next_vertex,
+            directed=False,
+            adjacency_dict={
+                vertex: sorted(adjacency.get(vertex, ()))
+                for vertex in range(next_vertex)
+            },
+            vertex_coloring=[
+                set(vertices)
+                for _color, vertices in sorted(
+                    colors.items(), key=lambda item: repr(item[0]))
+            ],
+        )
+        color_profile = tuple(
+            (repr(color), len(vertices))
+            for color, vertices in sorted(
+                colors.items(), key=lambda item: repr(item[0]))
+        )
+        return pynauty.certificate(graph), color_profile
 
 
 class _CandidateAutomorphismCanonicalizer:

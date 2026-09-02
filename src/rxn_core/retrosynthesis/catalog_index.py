@@ -7,8 +7,16 @@ from dataclasses import dataclass
 import networkx as nx
 from rdkit import Chem
 
+from ..fragment_matching import materialize_target_coverage_orbit
+from ..fragment_matching.rdkit_adapter import molecule_to_weighted_graph
+from ..fragment_matching.serialization import (
+    FRAGMENT_DETECTION_SCHEMA,
+    fragment_candidate_from_record,
+    fragment_candidate_to_record,
+)
+from ..matcher import _nauty_atom_generators
+from ..subgraph import _coerce_graph
 from .ranking import candidate_entry_rank
-from ..fragment_matching.serialization import FRAGMENT_DETECTION_SCHEMA
 
 
 def coverage_mask(atoms):
@@ -155,6 +163,14 @@ class CandidateIndexConfig:
     attachment_trim_variants: bool = False
     chirality_ranking: bool = False
     expected_ids: tuple[str, ...] = ()
+    orbit_limit: int = 100_000
+    iso_tolerance: float = 0.5
+
+    def __post_init__(self):
+        if self.per_mask_limit < 1 or self.orbit_limit < 1:
+            raise ValueError("candidate index limits must be positive")
+        if self.iso_tolerance <= 0:
+            raise ValueError("isomorphism tolerance must be positive")
 
 
 @dataclass(frozen=True)
@@ -171,6 +187,9 @@ def build_candidate_index(records, target, target_key, *, config=None):
     expected = defaultdict(list)
     direct_target_matches = []
     counts = Counter()
+    target_graph = _coerce_graph(molecule_to_weighted_graph(target), 0.2)
+    target_generators = _nauty_atom_generators(
+        target_graph, wbo_tol=config.iso_tolerance)
 
     for record in records:
         if record["schema"] != FRAGMENT_DETECTION_SCHEMA:
@@ -200,7 +219,20 @@ def build_candidate_index(records, target, target_key, *, config=None):
         if config.chirality_ranking:
             Chem.AssignStereochemistry(
                 explicit_molecule, cleanIt=True, force=True)
-        candidates = record["candidates"]
+        candidates = []
+        for raw_candidate in record["candidates"]:
+            typed = fragment_candidate_from_record(dict(
+                raw_candidate, source_id=record["source_id"]))
+            candidates.extend(
+                fragment_candidate_to_record(variant)
+                for variant in materialize_target_coverage_orbit(
+                    typed,
+                    target_graph,
+                    iso_tolerance=config.iso_tolerance,
+                    limit=config.orbit_limit,
+                    generators=target_generators,
+                )
+            )
         if config.attachment_trim_variants:
             candidates = [
                 variant

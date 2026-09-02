@@ -1,10 +1,11 @@
 """Strict serialization for fragment-detection records."""
 from __future__ import annotations
 
+from ..alignment.post_aam import AAMHierarchy
 from .models import FragmentCandidate, FragmentDetectionResult
 
 
-FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v1"
+FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v2"
 
 
 def fragment_candidate_to_record(candidate: FragmentCandidate):
@@ -25,7 +26,39 @@ def fragment_candidate_to_record(candidate: FragmentCandidate):
         "retained_fragments": [
             list(item) for item in candidate.retained_fragments
         ],
+        "aam_hierarchy": candidate.aam_hierarchy.to_record(),
     }
+
+
+def fragment_candidate_from_record(record):
+    return FragmentCandidate(
+        source_id=str(record.get("source_id", "")),
+        mapping=tuple(tuple(map(int, item))
+                      for item in record.get("mapping") or ()),
+        retained_atoms=tuple(map(int, record.get("retained_atoms") or ())),
+        covered_target_atoms=tuple(map(
+            int, record.get("covered_target_atoms") or ())),
+        leftover_fragments=tuple(
+            tuple(map(int, item))
+            for item in record.get("leftover_fragments") or ()),
+        boundary_bonds=tuple(
+            tuple(map(int, item))
+            for item in record.get("boundary_bonds") or ()),
+        attachment_atoms_source=tuple(map(
+            int, record.get("attachment_atoms_source") or ())),
+        attachment_atoms_target=tuple(map(
+            int, record.get("attachment_atoms_target") or ())),
+        copied_residual_placements=tuple(
+            tuple(map(int, item))
+            for item in record.get("copied_residual_placements") or ()),
+        augmented_target_atom_count=int(
+            record.get("augmented_target_atom_count", 0)),
+        retained_fragments=tuple(
+            tuple(map(int, item))
+            for item in record.get("retained_fragments") or ()),
+        aam_hierarchy=AAMHierarchy.from_record(
+            record.get("aam_hierarchy") or {}),
+    )
 
 
 def fragment_detection_to_record(
@@ -43,6 +76,9 @@ def fragment_detection_to_record(
         "maximum_branch_count": result.maximum_branch_count,
         "capped_seed_count": result.capped_seed_count,
         "best_fragment_size": result.best_fragment_size,
+        "initial_placement_encounters": result.initial_placement_encounters,
+        "initial_family_count": result.initial_family_count,
+        "best_initial_family_count": result.best_initial_family_count,
         "candidates": [
             fragment_candidate_to_record(candidate) for candidate in selected
         ],

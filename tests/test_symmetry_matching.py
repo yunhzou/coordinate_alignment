@@ -27,6 +27,7 @@ from rxn_core.alignment.sweep import (
 )
 import rxn_core.alignment.branch as branch_mod
 from rxn_core.matcher import (
+    _PartialMappingCanonicalizer,
     _SymBlock,
     _SymCand,
     _cand_map,
@@ -113,6 +114,23 @@ def test_incremental_extension_enforces_cap_after_symmetry_deduplication():
 
     assert exc_info.value.count == 4
     assert exc_info.value.limit == 2
+
+
+def test_partial_mapping_certificate_requires_exact_endpoint_transporter():
+    source = build_graph(["C"], np.zeros((1, 1)), bond_cut=0.2)
+    target_wbo = np.zeros((3, 3))
+    target_wbo[0, 1] = target_wbo[1, 0] = 1.0
+    target_wbo[1, 2] = target_wbo[2, 1] = 1.0
+    target = build_graph(["C", "C", "C"], target_wbo, bond_cut=0.2)
+    canonicalizer = _PartialMappingCanonicalizer(
+        source, target, wbo_tol=0.5)
+
+    left_end = canonicalizer.certificate({0: 0})
+    right_end = canonicalizer.certificate({0: 2})
+    center = canonicalizer.certificate({0: 1})
+
+    assert left_end == right_end
+    assert left_end != center
 
 
 def test_cut_sweep_compact_metrics_are_opt_in_and_respect_branch_cap():

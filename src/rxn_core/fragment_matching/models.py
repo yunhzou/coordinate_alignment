@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field
 from typing import Any
+
+from ..alignment.post_aam import AAMHierarchy
 
 
 @dataclass(frozen=True)
@@ -54,6 +57,8 @@ class FragmentCandidate:
     copied_residual_placements: tuple[tuple[int, int], ...]
     augmented_target_atom_count: int
     retained_fragments: tuple[tuple[int, ...], ...] = ()
+    aam_hierarchy: AAMHierarchy = field(
+        default_factory=lambda: AAMHierarchy(()))
 
     @property
     def atom_mapping(self):
@@ -74,3 +79,6 @@ class FragmentDetectionResult:
     maximum_branch_count: int
     capped_seed_count: int
     best_fragment_size: int
+    initial_placement_encounters: int
+    initial_family_count: int
+    best_initial_family_count: int

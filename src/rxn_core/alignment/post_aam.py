@@ -283,6 +283,49 @@ class AAMHierarchy:
         return bool(self.fragments) and all(
             fragment.has_exact_target_group for fragment in self.fragments)
 
+    def to_record(self):
+        def domain_record(domain):
+            return {
+                "r_atoms": list(domain.r_atoms),
+                "p_atoms": list(domain.p_atoms),
+                "source": domain.source,
+                "extendable": bool(domain.extendable),
+            }
+
+        fragments = []
+        for fragment in self.fragments:
+            symmetry = {
+                "witness": dict(fragment.representative_assignments),
+                "blocks": [
+                    domain_record(domain)
+                    for domain in fragment.symmetry_domains
+                ],
+                "exact_fixed": list(fragment.exact_fixed),
+                "multiplicity": int(fragment.multiplicity),
+                "automorph_blocks": [
+                    domain_record(domain)
+                    for domain in fragment.automorph_domains
+                ],
+            }
+            if fragment.target_generators is not None:
+                symmetry["automorph_generators"] = [
+                    list(generator.images)
+                    for generator in fragment.target_generators
+                ]
+            fragments.append({
+                "fragment_index": int(fragment.fragment_index),
+                "island_idx": int(fragment.island_index),
+                "fragment": list(fragment.r_atoms),
+                "deferred_edges": [
+                    list(edge) for edge in fragment.deferred_edges],
+                "symmetry": symmetry,
+            })
+        return {
+            "rule": "typed_aam_hierarchy",
+            "fragments": fragments,
+            "blocks": [],
+        }
+
 
 @dataclass(frozen=True)
 class AAMBranch:

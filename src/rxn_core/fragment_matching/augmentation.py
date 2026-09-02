@@ -1,92 +1,222 @@
 """Competitive augmented matching and placement projection."""
 from __future__ import annotations
 
-import networkx as nx
-import numpy as np
+from collections import Counter
+from dataclasses import dataclass
 
-from ..frag import WeightedGraph
-from ..growth import IslandBranchLimitExceeded
+import networkx as nx
+
+from ..alignment.post_aam import AAMHierarchy
+from ..matcher import _PartialMappingCanonicalizer
 from ..subgraph import match_weighted_subgraph
-from .graph_ops import weight_matrix, weighted_graph_from_nx
+from .graph_ops import weight_matrix
+
+
+@dataclass(frozen=True)
+class AugmentedFragmentPlacement:
+    mapping: tuple[tuple[int, int], ...]
+    hierarchy: AAMHierarchy
+
+
+def _hierarchy_with(base, extension):
+    return AAMHierarchy(base.fragments + extension.fragments)
+
+
+def _component_graph(source, atoms, graph_floor):
+    graph = source.subgraph(atoms).copy()
+    graph.graph["wbo_matrix"] = weight_matrix(source)
+    graph.graph["bond_cut"] = float(graph_floor)
+    return graph
+
+
+def _composition_fits(component, target):
+    source_counts = Counter(
+        component.nodes[atom].get("element") for atom in component)
+    target_counts = Counter(
+        target.nodes[atom].get("element") for atom in target)
+    return all(count <= target_counts[element]
+               for element, count in source_counts.items())
+
+
+def _component_placements(
+        component, target, retained_mapping, boundary, *, graph_floor,
+        iso_tolerance, branch_limit):
+    if not _composition_fits(component, target):
+        return ()
+    retained_images = set(map(int, retained_mapping.values()))
+    available_atoms = tuple(
+        atom for atom in target if atom not in retained_images)
+    if len(component) > len(available_atoms):
+        return ()
+    if len(component) == 1:
+        source_atom = int(next(iter(component)))
+        element = component.nodes[source_atom].get("element")
+        attached_retained = []
+        for left, right in boundary:
+            if left == source_atom and right in retained_mapping:
+                attached_retained.append(right)
+            elif right == source_atom and left in retained_mapping:
+                attached_retained.append(left)
+        placements = []
+        for target_atom in available_atoms:
+            if target.nodes[target_atom].get("element") != element:
+                continue
+            if not all(target.has_edge(
+                    target_atom, retained_mapping[retained_atom])
+                       for retained_atom in attached_retained):
+                continue
+            hierarchy = AAMHierarchy.from_record({
+                "fragments": ({
+                    "fragment_index": 0,
+                    "island_idx": 0,
+                    "fragment": [source_atom],
+                    "deferred_edges": [],
+                    "symmetry": {
+                        "witness": {source_atom: int(target_atom)},
+                        "blocks": [],
+                    },
+                },),
+            })
+            placements.append(AugmentedFragmentPlacement(
+                mapping=((source_atom, int(target_atom)),),
+                hierarchy=hierarchy,
+            ))
+        return tuple(placements)
+    available_target = target.subgraph(available_atoms).copy()
+    available_target.graph["wbo_matrix"] = weight_matrix(target)
+    available_target.graph["bond_cut"] = float(graph_floor)
+    seed_order = sorted(component, key=lambda atom: (
+        -component.degree(atom),
+        str(component.nodes[atom].get("element")),
+        int(atom),
+    ))
+    matches = match_weighted_subgraph(
+        component,
+        available_target,
+        graph_floor=graph_floor,
+        iso_tol=iso_tolerance,
+        max_branches=branch_limit,
+        seed_order=seed_order,
+    )
+
+    component_atoms = set(component)
+    relevant_boundary = tuple(
+        (left, right) for left, right in boundary
+        if left in component_atoms or right in component_atoms)
+
+    def attachment_ok(mapping):
+        for left, right in relevant_boundary:
+            if left in component_atoms:
+                component_atom, retained_atom = left, right
+            else:
+                component_atom, retained_atom = right, left
+            if retained_atom not in retained_mapping:
+                continue
+            if not target.has_edge(
+                    mapping[component_atom],
+                    retained_mapping[retained_atom]):
+                return False
+        return True
+
+    placements = []
+    for match in matches:
+        mapping = {int(source): int(image)
+                   for source, image in match.mapping.items()}
+        if not attachment_ok(mapping):
+            continue
+        placements.append(AugmentedFragmentPlacement(
+            mapping=tuple(sorted(mapping.items())),
+            hierarchy=AAMHierarchy.from_record({
+                "fragments": match.symmetry_fragments,
+            }),
+        ))
+    return tuple(placements)
 
 
 def match_augmented_residuals(
         source, target, retained_mapping, outside, boundary, *,
-        graph_floor, iso_tolerance, branch_limit, target_region_atoms=None):
-    source_matrix = np.array(weight_matrix(source), copy=True)
-    for left, right in boundary:
-        source_matrix[left, right] = source_matrix[right, left] = 0.0
-    query = weighted_graph_from_nx(source, source_matrix)
-
+        graph_floor, iso_tolerance, branch_limit, target_region_atoms=None,
+        retained_symmetry=None):
     target_atom_count = len(target)
-    outside_order = tuple(sorted(outside))
-    copied_index = {
-        atom: target_atom_count + offset
-        for offset, atom in enumerate(outside_order)
-    }
-    target_nodes = [dict(target.nodes[index]) for index in sorted(target)]
-    target_nodes.extend(dict(source.nodes[atom]) for atom in outside_order)
-    augmented_size = target_atom_count + len(outside_order)
-    augmented_matrix = np.zeros((augmented_size, augmented_size), dtype=float)
-    augmented_matrix[:target_atom_count, :target_atom_count] = weight_matrix(
-        target)
-    full_source_matrix = weight_matrix(source)
-    for left in outside_order:
-        for right in outside_order:
-            augmented_matrix[copied_index[left], copied_index[right]] = (
-                full_source_matrix[left, right])
-    augmented_target = WeightedGraph(target_nodes, augmented_matrix)
-
     fixed_mapping = dict(retained_mapping)
-    try:
-        matches = match_weighted_subgraph(
-            query,
-            augmented_target,
-            anchor_map=fixed_mapping,
-            graph_floor=graph_floor,
-            iso_tol=iso_tolerance,
-            max_branches=branch_limit,
-        )
-    except IslandBranchLimitExceeded as exc:
-        return (), True, int(exc.count), augmented_size
-
-    discovered_mappings = tuple(
-        tuple(sorted(
-            (int(source_atom), int(target_atom))
-            for source_atom, target_atom in match.mapping.items()
-        ))
-        for match in matches
-        if all(
-            match.mapping.get(source_atom) == target_atom
-            for source_atom, target_atom in fixed_mapping.items()
-        )
+    baseline_hierarchy = AAMHierarchy.from_record({
+        "fragments": ({
+            "fragment_index": 0,
+            "island_idx": 0,
+            "fragment": sorted(map(int, retained_mapping)),
+            "deferred_edges": [list(map(int, edge)) for edge in boundary],
+            "symmetry": dict(retained_symmetry or {
+                "witness": dict(retained_mapping),
+                "blocks": [],
+            }),
+        },),
+    })
+    states = (AugmentedFragmentPlacement(
+        mapping=tuple(sorted(fixed_mapping.items())),
+        hierarchy=baseline_hierarchy,
+    ),)
+    canonicalizer = _PartialMappingCanonicalizer(
+        source, target, wbo_tol=iso_tolerance)
+    cut_graph = source.subgraph(outside).copy()
+    components = sorted(
+        (tuple(sorted(map(int, component)))
+         for component in nx.connected_components(cut_graph)),
+        key=lambda atoms: (-len(atoms), atoms),
     )
-    copied_baseline = tuple(sorted(
-        tuple(fixed_mapping.items())
-        + tuple((atom, copied_index[atom]) for atom in outside_order)
-    ))
-    mappings = tuple(dict.fromkeys(
-        (copied_baseline,) + discovered_mappings
-    ))
-    target_matrix = weight_matrix(target)
-
-    def preserves_cut_attachments(mapping):
-        placement = dict(mapping)
-        return all(
-            not (placement[left] < target_atom_count
-                 and placement[right] < target_atom_count)
-            or target_matrix[placement[left], placement[right]] >= graph_floor
-            for left, right in boundary
+    maximum_branch_count = 1
+    competitive_atom_count = 0
+    for atoms in components:
+        component = _component_graph(source, atoms, graph_floor)
+        options = _component_placements(
+            component,
+            target,
+            fixed_mapping,
+            boundary,
+            graph_floor=graph_floor,
+            iso_tolerance=iso_tolerance,
+            branch_limit=branch_limit,
         )
+        maximum_branch_count = max(maximum_branch_count, len(options))
+        if not options:
+            continue
+        competitive_atom_count += len(atoms)
+        next_states = {}
+        for state in states:
+            next_states.setdefault(
+                canonicalizer.certificate(dict(state.mapping)), state)
+            state_mapping = dict(state.mapping)
+            used_target = set(state_mapping.values())
+            for option in options:
+                option_mapping = dict(option.mapping)
+                if used_target.intersection(option_mapping.values()):
+                    continue
+                combined_mapping = dict(state_mapping)
+                combined_mapping.update(option_mapping)
+                combined = AugmentedFragmentPlacement(
+                    mapping=tuple(sorted(combined_mapping.items())),
+                    hierarchy=_hierarchy_with(
+                        state.hierarchy, option.hierarchy),
+                )
+                next_states.setdefault(
+                    canonicalizer.certificate(combined_mapping), combined)
+        maximum_branch_count = max(
+            maximum_branch_count, len(next_states))
+        if len(next_states) > branch_limit:
+            return (
+                (), True, len(next_states),
+                target_atom_count + competitive_atom_count,
+            )
+        states = tuple(next_states.values())
 
-    mappings = tuple(filter(preserves_cut_attachments, mappings))
-    if mappings:
+    placements = states
+    augmented_size = target_atom_count + competitive_atom_count
+    if placements:
         region = (frozenset(map(int, target_region_atoms))
                   if target_region_atoms is not None else None)
 
-        def ownership(mapping):
+        def ownership(candidate):
             target_images = {
-                image for _source, image in mapping
+                image for _source, image in candidate.mapping
                 if image < target_atom_count
             }
             if region is None:
@@ -96,12 +226,12 @@ def match_augmented_residuals(
                 -len(target_images - region),
             )
 
-        best_ownership = max(map(ownership, mappings))
-        mappings = tuple(
-            mapping for mapping in mappings
-            if ownership(mapping) == best_ownership
+        best_ownership = max(map(ownership, placements))
+        placements = tuple(
+            placement for placement in placements
+            if ownership(placement) == best_ownership
         )
-    return mappings, False, len(matches), augmented_size
+    return placements, False, maximum_branch_count, augmented_size
 
 
 def project_augmented_placement(

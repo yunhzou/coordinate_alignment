@@ -7,12 +7,18 @@ from .models import (
     FragmentDetectionResult,
     FragmentTargetContext,
 )
+from .symmetry import (
+    FragmentOrbitLimitExceeded,
+    materialize_target_coverage_orbit,
+)
 
 __all__ = [
     "FragmentCandidate",
     "FragmentDetectionConfig",
     "FragmentDetectionResult",
     "FragmentTargetContext",
+    "FragmentOrbitLimitExceeded",
     "detect_fragments",
+    "materialize_target_coverage_orbit",
     "prepare_fragment_target",
 ]

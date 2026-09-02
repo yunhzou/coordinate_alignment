@@ -10,6 +10,7 @@ from rxn_core.fragment_matching import (
     FragmentCandidate,
     FragmentDetectionConfig,
     detect_fragments,
+    materialize_target_coverage_orbit,
     prepare_fragment_target,
 )
 from rxn_core.fragment_matching.augmentation import match_augmented_residuals
@@ -50,7 +51,7 @@ def _matrix(size, edges):
     return matrix
 
 
-def test_partial_fragment_uses_augmented_copy_when_target_cannot_match():
+def test_noncompetitive_singleton_is_recorded_without_augmented_copy():
     precursor = WeightedGraph(
         ["C", "Br"],
         _matrix(2, [(0, 1, 1.0)]),
@@ -79,8 +80,8 @@ def test_partial_fragment_uses_augmented_copy_when_target_cannot_match():
     candidate = result.candidates[0]
     assert candidate.leftover_fragments == ((1,),)
     assert candidate.boundary_bonds == ((0, 1),)
-    assert candidate.copied_residual_placements == ((1, 2),)
-    assert candidate.augmented_target_atom_count == 3
+    assert candidate.copied_residual_placements == ()
+    assert candidate.augmented_target_atom_count == 2
 
 
 def test_augmented_copy_baseline_survives_invalid_greedy_target_mapping():
@@ -105,8 +106,9 @@ def test_augmented_copy_baseline_survives_invalid_greedy_target_mapping():
     )
 
     assert not capped
-    assert augmented_size == 3
-    assert mappings == (((0, 0), (1, 2)),)
+    assert augmented_size == 2
+    assert tuple(item.mapping for item in mappings) == (((0, 0),),)
+    assert mappings[0].hierarchy.fragments
 
 
 def test_augmented_leftover_competes_for_unused_target_atoms():
@@ -205,6 +207,29 @@ def test_branch_cap_is_reported_as_incomplete():
     assert not result.complete
     assert result.capped_seed_count > 0
     assert result.maximum_branch_count > result.branch_limit
+
+
+def test_detection_keeps_target_automorphism_family_compressed_until_assembly():
+    precursor = WeightedGraph(["N"], _matrix(1, []))
+    target = WeightedGraph(
+        ["C", "N", "N", "N"],
+        _matrix(4, [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0)]),
+    )
+
+    result = detect_fragments(
+        precursor,
+        target,
+        source_id="symmetric-ligand",
+        config=FragmentDetectionConfig(candidate_limit=100),
+    )
+
+    assert len(result.candidates) == 1
+    variants = materialize_target_coverage_orbit(
+        result.candidates[0], target)
+    assert {candidate.covered_target_atoms for candidate in variants} == {
+        (1,), (2,), (3,),
+    }
+    assert result.candidates[0].aam_hierarchy.fragments
 
 
 def test_balanced_williamson_reaction_is_recovered_with_hidden_side_product():

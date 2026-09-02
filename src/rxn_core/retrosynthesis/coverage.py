@@ -1,6 +1,8 @@
 """Target-coverage assembly from precursor fragment candidates."""
 from __future__ import annotations
 
+from ..fragment_matching import materialize_target_coverage_orbit
+from ..matcher import _nauty_atom_generators
 from ..subgraph import _coerce_graph
 from .models import (
     RetroAssembly,
@@ -11,13 +13,26 @@ from .models import (
 def assemble_fragment_cover(
         target, candidates, *, maximum_precursors=2,
         assembly_limit=1_000, require_attachment_bonds=False,
-        allow_repeated_precursors=True):
+        allow_repeated_precursors=True, orbit_limit=100_000,
+        iso_tolerance=0.5):
     """Combine candidates into non-overlapping complete target covers."""
     if maximum_precursors < 1 or assembly_limit < 1:
         raise ValueError("precursor and assembly limits must be positive")
     graph_P = _coerce_graph(target, 0.2)
     target_atoms = frozenset(map(int, graph_P.nodes()))
-    ordered = sorted(candidates, key=lambda candidate: (
+    generators = _nauty_atom_generators(
+        graph_P, wbo_tol=iso_tolerance)
+    expanded = []
+    for candidate in candidates:
+        variants = materialize_target_coverage_orbit(
+            candidate,
+            graph_P,
+            iso_tolerance=iso_tolerance,
+            limit=orbit_limit,
+            generators=generators,
+        )
+        expanded.extend(variants)
+    ordered = sorted(expanded, key=lambda candidate: (
         -candidate.retained_size,
         candidate.source_id,
         candidate.covered_target_atoms,

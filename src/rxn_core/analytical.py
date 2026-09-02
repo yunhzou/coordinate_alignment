@@ -22,49 +22,8 @@ from .domain import (
 )
 
 
-def _domain_record(domain):
-    return {
-        "r_atoms": list(domain.r_atoms),
-        "p_atoms": list(domain.p_atoms),
-        "source": domain.source,
-        "extendable": bool(domain.extendable),
-    }
-
-
 def _hierarchy_record(hierarchy: AAMHierarchy):
-    fragments = []
-    for fragment in hierarchy.fragments:
-        symmetry = {
-            "witness": dict(fragment.representative_assignments),
-            "blocks": [
-                _domain_record(domain)
-                for domain in fragment.symmetry_domains
-            ],
-            "exact_fixed": list(fragment.exact_fixed),
-            "multiplicity": int(fragment.multiplicity),
-            "automorph_blocks": [
-                _domain_record(domain)
-                for domain in fragment.automorph_domains
-            ],
-        }
-        if fragment.target_generators is not None:
-            symmetry["automorph_generators"] = [
-                list(generator.images)
-                for generator in fragment.target_generators
-            ]
-        fragments.append({
-            "fragment_index": int(fragment.fragment_index),
-            "island_idx": int(fragment.island_index),
-            "fragment": list(fragment.r_atoms),
-            "deferred_edges": [
-                list(edge) for edge in fragment.deferred_edges],
-            "symmetry": symmetry,
-        })
-    return {
-        "rule": "typed_aam_hierarchy",
-        "fragments": fragments,
-        "blocks": [],
-    }
+    return hierarchy.to_record()
 
 
 def _branch_record(branch):

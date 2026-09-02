@@ -1,11 +1,11 @@
 """Detect target-owned fragments from one source graph."""
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 from ..growth import IslandBranchLimitExceeded, grow_island
 from ..matcher import (
-    _atom_tuple_orbit,
+    _PartialMappingCanonicalizer,
     _nauty_atom_generators,
     _nauty_orbits,
 )
@@ -20,6 +20,16 @@ from .models import (
 )
 
 
+@dataclass(frozen=True)
+class _InitialFragmentFamily:
+    """One exact endpoint-automorphism family from AAM island growth."""
+
+    retained_atoms: tuple[int, ...]
+    representative_mapping: tuple[tuple[int, int], ...]
+    symmetry: dict
+    encounter_count: int = 1
+
+
 def _initial_fragment_placements(
         source, target, config, *, target_orbits=None,
         target_region_atoms=None):
@@ -27,7 +37,15 @@ def _initial_fragment_placements(
     if target_orbits is None:
         target_orbits = _nauty_orbits(
             target, wbo_tol=config.iso_tolerance)
-    placements_by_identity = {}
+    placement_families = {}
+    canonicalizer = _PartialMappingCanonicalizer(
+        source,
+        target,
+        wbo_tol=config.iso_tolerance,
+        target_atom_tags=(
+            {int(atom): 'requested_region' for atom in target_region_atoms}
+            if target_region_atoms is not None else None),
+    )
     capped_seed_count = 0
     maximum_branch_count = 0
     candidate_capped = False
@@ -76,16 +94,25 @@ def _initial_fragment_placements(
                     and not target_region_atoms.intersection(
                         target_atom for _source_atom, target_atom in mapping)):
                 continue
-            placements_by_identity.setdefault(
-                (retained, mapping), (retained, mapping))
-            if len(placements_by_identity) >= config.candidate_limit:
+            certificate = canonicalizer.certificate(mapping)
+            family = placement_families.get(certificate)
+            if family is None:
+                placement_families[certificate] = _InitialFragmentFamily(
+                    retained_atoms=retained,
+                    representative_mapping=mapping,
+                    symmetry=dict(placement.symmetry or {}),
+                )
+            else:
+                placement_families[certificate] = replace(
+                    family, encounter_count=family.encounter_count + 1)
+            if len(placement_families) >= config.candidate_limit:
                 candidate_capped = True
                 break
         if candidate_capped:
             break
 
     return (
-        tuple(placements_by_identity.values()),
+        tuple(placement_families.values()),
         capped_seed_count,
         maximum_branch_count,
         candidate_capped,
@@ -118,23 +145,6 @@ def _candidate_identity(candidate):
         candidate.boundary_bonds,
         candidate.attachment_atoms_target,
     )
-
-
-def _target_automorphism_variants(candidate, generators):
-    source_order = tuple(source for source, _target in candidate.mapping)
-    target_images = tuple(target for _source, target in candidate.mapping)
-    for images in _atom_tuple_orbit(target_images, generators):
-        mapping = dict(zip(source_order, images))
-        yield replace(
-            candidate,
-            mapping=tuple(sorted(mapping.items())),
-            covered_target_atoms=tuple(sorted(mapping.values())),
-            attachment_atoms_target=tuple(sorted({
-                mapping[source]
-                for source in candidate.attachment_atoms_source
-                if source in mapping
-            })),
-        )
 
 
 def detect_fragments(
@@ -172,7 +182,8 @@ def detect_fragments(
         target_region_atoms=region)
 
     def placement_score(placement):
-        retained, mapping = placement
+        retained = placement.retained_atoms
+        mapping = placement.representative_mapping
         if region is None:
             return (len(retained),)
         images = {target for _source, target in mapping}
@@ -181,15 +192,22 @@ def detect_fragments(
     best_initial_score = max(
         map(placement_score, initial_placements), default=(0,))
     best_initial_size = max(
-        (len(retained) for retained, _mapping in initial_placements
-         if placement_score((retained, _mapping)) == best_initial_score),
+        (len(placement.retained_atoms) for placement in initial_placements
+         if placement_score(placement) == best_initial_score),
         default=0)
+    initial_placement_encounters = sum(
+        placement.encounter_count for placement in initial_placements)
+    best_initial_family_count = sum(
+        placement_score(placement) == best_initial_score
+        for placement in initial_placements)
     candidates = []
     seen_candidates = set()
 
-    for retained, mapping_pairs in initial_placements:
-        if placement_score((retained, mapping_pairs)) != best_initial_score:
+    for placement in initial_placements:
+        if placement_score(placement) != best_initial_score:
             continue
+        retained = placement.retained_atoms
+        mapping_pairs = placement.representative_mapping
         outside, boundary, _fragments = partition_at_retained_fragment(
             source_graph, retained)
         if (config.maximum_boundary_bonds is not None
@@ -211,6 +229,7 @@ def detect_fragments(
             iso_tolerance=config.iso_tolerance,
             branch_limit=config.branch_limit,
             target_region_atoms=region,
+            retained_symmetry=placement.symmetry,
         )
         maximum_branch_count = max(
             maximum_branch_count, augmented_branch_count)
@@ -219,11 +238,11 @@ def detect_fragments(
         if not augmented_mappings:
             continue
 
-        for augmented_pairs in augmented_mappings:
-            augmented_mapping = dict(augmented_pairs)
+        for augmented_placement in augmented_mappings:
+            augmented_mapping = dict(augmented_placement.mapping)
             target_mapping = {
                 source_atom: target_atom
-                for source_atom, target_atom in augmented_pairs
+                for source_atom, target_atom in augmented_placement.mapping
                 if target_atom < len(target_graph)
             }
             retained_atoms = tuple(sorted(target_mapping))
@@ -268,21 +287,20 @@ def detect_fragments(
                 copied_residual_placements=copied_residual_placements,
                 augmented_target_atom_count=augmented_atom_count,
                 retained_fragments=retained_fragments,
+                aam_hierarchy=augmented_placement.hierarchy,
             )
-            for variant in _target_automorphism_variants(
-                    candidate, target_context.automorphism_generators):
-                if (region is not None
-                        and not region.intersection(
-                            variant.covered_target_atoms)):
-                    continue
-                identity = _candidate_identity(variant)
-                if identity in seen_candidates:
-                    continue
-                seen_candidates.add(identity)
-                candidates.append(variant)
-                if len(candidates) >= config.candidate_limit:
-                    candidate_capped = True
-                    break
+            if (region is not None
+                    and not region.intersection(
+                        candidate.covered_target_atoms)):
+                continue
+            identity = _candidate_identity(candidate)
+            if identity in seen_candidates:
+                continue
+            seen_candidates.add(identity)
+            candidates.append(candidate)
+            if len(candidates) >= config.candidate_limit:
+                candidate_capped = True
+                break
             if candidate_capped:
                 break
         if len(candidates) >= config.candidate_limit:
@@ -313,4 +331,7 @@ def detect_fragments(
         maximum_branch_count=maximum_branch_count,
         capped_seed_count=capped_seed_count + int(candidate_capped),
         best_fragment_size=best_fragment_size,
+        initial_placement_encounters=initial_placement_encounters,
+        initial_family_count=len(initial_placements),
+        best_initial_family_count=best_initial_family_count,
     )
