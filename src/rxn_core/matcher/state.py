@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .primitives import _orbit_id
+from .primitives import _load_fast_kernels, _orbit_id
 
 
 @dataclass(frozen=True)
@@ -312,3 +312,13 @@ def _sym_block_indexes(cand):
             for p in block.p_atoms:
                 p_to_block[p] = idx
     return r_to_block, p_to_block
+
+
+# The pure-Python constructor stays reachable (the differential test compares
+# against it); ``__init__`` is rebound only when RXN_CORE_FAST=1 selects the
+# compiled extension.  This runs last so the extension, which imports names
+# from this module, sees a fully initialised module.
+_SymCand.__init___py = _SymCand.__init__
+_fast = _load_fast_kernels()
+if _fast is not None:
+    _SymCand.__init__ = _fast.symcand_init
