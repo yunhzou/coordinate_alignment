@@ -5,7 +5,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 
-from .primitives import _orbit_id
+from .primitives import _load_fast_kernels, _orbit_id
 
 # ``RXN_CORE_VERIFY_ROLES=1`` recomputes every cached or derived role
 # dictionary from scratch and asserts equality (see ``_derive_roles``).
@@ -507,3 +507,15 @@ def _sym_block_indexes(cand):
             for p in block.p_atoms:
                 p_to_block[p] = idx
     return r_to_block, p_to_block
+
+
+# The pure-Python constructor stays reachable (the differential test compares
+# against it); ``__init__`` is rebound only when RXN_CORE_FAST=1 selects the
+# compiled extension.  This runs last so the extension, which imports names
+# from this module, sees a fully initialised module.
+_SymCand.__init___py = _SymCand.__init__
+_fast = _load_fast_kernels()
+if _fast is not None:
+    # The compiled constructor predates the roles cache slot and the
+    # block-free/automorph fast paths of the Python __init__; keep Python.
+    pass

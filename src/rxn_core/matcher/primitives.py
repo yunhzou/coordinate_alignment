@@ -1,7 +1,26 @@
 """Low-level WBO and orbit-id primitives for graph matching."""
 from __future__ import annotations
 
+import os
+
 SYM_SUPPORT_MAX_STATES = 4096
+
+
+def _load_fast_kernels():
+    """Compiled ``_fast`` kernels when ``RXN_CORE_FAST=1`` and they import.
+
+    The pure-Python functions remain the default.  A matcher module calls
+    this once at import time and rebinds its leaf functions only when the
+    optional extension (built by ``bench/build_fast.py``) is present and the
+    variable is set; otherwise it returns None and nothing changes.
+    """
+    if os.environ.get("RXN_CORE_FAST") != "1":
+        return None
+    try:
+        from . import _fast
+    except ImportError:
+        return None
+    return _fast
 
 
 def _edge_wbo(g, a, b):

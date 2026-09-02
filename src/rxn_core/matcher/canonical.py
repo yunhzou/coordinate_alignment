@@ -12,6 +12,7 @@ from .policy import (
     ElementNodeMatchPolicy,
     as_node_match_policy,
 )
+from .primitives import _load_fast_kernels
 from .state import _VERIFY_ROLES, _SymCand, _cand_roles_from_scratch
 
 
@@ -407,3 +408,23 @@ class _CandidateAutomorphismCanonicalizer:
                 seen.add(permutation)
                 generators.append(permutation)
         return tuple(generators)
+
+
+# The pure-Python role kernels stay reachable under ``*_py`` names (the
+# differential test compares against them); the methods themselves are
+# rebound only when RXN_CORE_FAST=1 selects the compiled extension.
+_CandidateAutomorphismCanonicalizer._candidate_roles_py = (
+    _CandidateAutomorphismCanonicalizer._candidate_roles)
+_CandidateAutomorphismCanonicalizer.role_key_from_roles_py = (
+    _CandidateAutomorphismCanonicalizer.role_key_from_roles)
+_CandidateAutomorphismCanonicalizer._colored_vertices_from_roles_py = (
+    _CandidateAutomorphismCanonicalizer._colored_vertices_from_roles)
+_fast = _load_fast_kernels()
+if _fast is not None:
+    # ``_candidate_roles`` stays in Python: it now serves the per-candidate
+    # roles cache (``_SymCand._roles``) that the compiled from-scratch kernel
+    # does not know about.
+    _CandidateAutomorphismCanonicalizer.role_key_from_roles = (
+        _fast.role_key_from_roles)
+    _CandidateAutomorphismCanonicalizer._colored_vertices_from_roles = (
+        _fast.colored_vertices_from_roles)

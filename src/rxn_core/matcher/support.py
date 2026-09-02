@@ -3,7 +3,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .primitives import SYM_SUPPORT_MAX_STATES, _edge_wbo, _growth_edge_supported, _orbit_id, _wbo_bucket
+from .primitives import (
+    SYM_SUPPORT_MAX_STATES,
+    _edge_wbo,
+    _growth_edge_supported,
+    _load_fast_kernels,
+    _orbit_id,
+    _wbo_bucket,
+)
 from .state import (
     _SymBlock,
     _SymCand,
@@ -297,3 +304,13 @@ def _force_sym_value(cand, r, p, fragment, g_R, r_orbits, p_orbits):
     if p in fixed_used:
         return None
     return cand.with_fixed(r, p)
+
+
+# The pure-Python witness search stays available under a fixed name (the
+# compiled kernel delegates to it for inputs it does not cover, and the
+# differential test compares against it); the public name is rebound only
+# when RXN_CORE_FAST=1 selects the compiled extension.
+_support_witness_for_value_py = _support_witness_for_value
+_fast = _load_fast_kernels()
+if _fast is not None:
+    _support_witness_for_value = _fast.support_witness_for_value

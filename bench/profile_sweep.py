@@ -3,13 +3,14 @@ import cProfile, pstats, sys, time, io
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from rxn_core.cli import _endpoint_cache
 from rxn_core.domain import AAMProblem, AAMSearchConfig
 from rxn_core.aam import search_aam
+sys.path.insert(0, str(ROOT / "bench"))
+from cases import CASES
 
-R = _endpoint_cache(str(ROOT / "docs/example_runs/pr1.tempo_ts3/work/endpoints/R"), "R")
-P = _endpoint_cache(str(ROOT / "docs/example_runs/pr1.tempo_ts3/work/endpoints/P"), "P")
-problem = AAMProblem(R, P, name="tempo")
+case = sys.argv[1] if len(sys.argv) > 1 else "tempo"
+R, P = CASES[case]()
+problem = AAMProblem(R, P, name=case)
 prof = cProfile.Profile()
 t0 = time.perf_counter()
 prof.enable()

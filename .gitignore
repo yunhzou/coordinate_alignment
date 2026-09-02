@@ -63,3 +63,7 @@ out/bgcp_alignment_eval*.json
 build/
 dist/
 *.egg
+
+# optional compiled matcher kernels (bench/build_fast.py)
+src/rxn_core/matcher/_fast*.so
+build/

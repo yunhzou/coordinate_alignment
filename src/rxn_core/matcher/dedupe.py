@@ -10,7 +10,7 @@ from .policy import (
     ElementNodeMatchPolicy,
     as_node_match_policy,
 )
-from .primitives import _edge_wbo, _orbit_id, _wbo_bucket
+from .primitives import _edge_wbo, _load_fast_kernels, _orbit_id, _wbo_bucket
 from .state import _SymCand, _cand_map, _cand_possible_p_atoms
 
 
@@ -200,6 +200,48 @@ class _BoundaryContext:
         return cached
 
 
+def _pool_target_signatures(pool, used_possible, inverse, mapped_r, blocks,
+                            target_static, general):
+    """Multiset of compact relation signatures of the free atoms of ``pool``.
+
+    This is the per-pool-atom inner loop of :func:`_boundary_signature`, kept
+    as its own function so the compiled kernel can replace it.  ``general(v)``
+    is the exact general-path signature, used when ``v`` has no static entry
+    (dense orbit map) or is itself a witness image.
+    """
+    target_sigs = []
+    for v in pool:
+        if v in used_possible:
+            continue
+        static = target_static.get(v)
+        if static is None or v in inverse:
+            target_sigs.append(general(v))
+            continue
+        v_key, v_orbit, neighbours = static
+        rel = []
+        neighbor_buckets = {}
+        for p, bucket in neighbours:
+            neighbor_buckets[p] = bucket
+            r = inverse.get(p)
+            if r is not None:
+                rel.append((r, bucket))
+        block_rel = []
+        for i, b in enumerate(blocks):
+            member = v in b.p_atoms
+            edge_wbos = tuple(sorted(
+                neighbor_buckets[p] for p in b.p_atoms
+                if p != v and p in neighbor_buckets))
+            block_rel.append(
+                (i, member, len(b.p_atoms) - int(member), edge_wbos))
+        target_sigs.append((
+            v_key, v_orbit, ('sparse', mapped_r, tuple(sorted(rel))),
+            tuple(block_rel)))
+    # This is a multiset used only for hashing/equality.  Sorting its very
+    # large nested signatures by their string representation was the main
+    # cost in large fragments and carries no semantic information.
+    return frozenset(Counter(target_sigs).items())
+
+
 def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
                         r_orbits=None, p_orbits=None, locked_mapping=None,
                         node_policy=None, context=None, memo=None):
@@ -238,44 +280,19 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
     target_static = context.target_static
     p_vec_by_pool = {}
 
+    def general(v):
+        # Dense orbit map or unexpected image: exact general path.
+        return _p_relation_signature_from_parts(
+            cand, v, g_P, p_orbits, cm_items=cm_items, blocks=blocks,
+            node_policy=node_policy, compact=True)
+
     def p_vec_for_pool(pool_key):
         cached = p_vec_by_pool.get(pool_key)
         if cached is not None:
             return cached
-        target_sigs = []
-        for v in context.pools[pool_key]:
-            if v in used_possible:
-                continue
-            static = target_static.get(v)
-            if static is None or v in inverse:
-                # Dense orbit map or unexpected image: exact general path.
-                target_sigs.append(_p_relation_signature_from_parts(
-                    cand, v, g_P, p_orbits, cm_items=cm_items, blocks=blocks,
-                    node_policy=node_policy, compact=True))
-                continue
-            v_key, v_orbit, neighbours = static
-            rel = []
-            neighbor_buckets = {}
-            for p, bucket in neighbours:
-                neighbor_buckets[p] = bucket
-                r = inverse.get(p)
-                if r is not None:
-                    rel.append((r, bucket))
-            block_rel = []
-            for i, b in enumerate(blocks):
-                member = v in b.p_atoms
-                edge_wbos = tuple(sorted(
-                    neighbor_buckets[p] for p in b.p_atoms
-                    if p != v and p in neighbor_buckets))
-                block_rel.append(
-                    (i, member, len(b.p_atoms) - int(member), edge_wbos))
-            target_sigs.append((
-                v_key, v_orbit, ('sparse', mapped_r, tuple(sorted(rel))),
-                tuple(block_rel)))
-        # This is a multiset used only for hashing/equality.  Sorting its very
-        # large nested signatures by their string representation was the main
-        # cost in large fragments and carries no semantic information.
-        p_vec = frozenset(Counter(target_sigs).items())
+        p_vec = _pool_target_signatures(
+            context.pools[pool_key], used_possible, inverse, mapped_r,
+            blocks, target_static, general)
         p_vec_by_pool[pool_key] = p_vec
         return p_vec
 
@@ -401,3 +418,16 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
             # completed AAM fragment relation.
             seen[sig] = seen[sig].with_automorph_equivalent(cand)
     return list(seen.values())
+
+
+# The pure-Python kernels stay available under fixed names (the differential
+# test compares against them); the public names are rebound only when
+# RXN_CORE_FAST=1 selects the compiled extension.  ``extend`` imports the
+# public names after this module has finished loading, so it sees the
+# selected implementation.
+_p_relation_signature_from_parts_py = _p_relation_signature_from_parts
+_pool_target_signatures_py = _pool_target_signatures
+_fast = _load_fast_kernels()
+if _fast is not None:
+    _p_relation_signature_from_parts = _fast.p_relation_signature_from_parts
+    _pool_target_signatures = _fast.pool_target_signatures
