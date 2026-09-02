@@ -70,3 +70,59 @@ def tetraphenyl():
 
 
 CASES = {"tempo": tempo, "tetraphenyl": tetraphenyl}
+
+
+def _tetra_tbu_methane():
+    """C(C(CH3)3)4: a quaternary carbon carrying four tert-butyl groups.
+
+    53 atoms, 36 equivalent-looking hydrogens in 12 equivalent methyls; the
+    heaviest symmetry the compressed matcher sees on ordinary organics.
+    """
+    elements = ["C"]
+    bonds = []
+    methyls = []
+    for _arm in range(4):
+        quaternary = len(elements)
+        elements.append("C")
+        bonds.append((0, quaternary, 1.0))
+        for _methyl in range(3):
+            carbon = len(elements)
+            elements.append("C")
+            bonds.append((quaternary, carbon, 1.0))
+            hydrogens = []
+            for _h in range(3):
+                h = len(elements)
+                elements.append("H")
+                bonds.append((carbon, h, 1.0))
+                hydrogens.append(h)
+            methyls.append((carbon, hydrogens))
+    return elements, bonds, methyls
+
+
+def tetratbu():
+    """1,3-hydrogen shift between two methyls of the same tert-butyl arm."""
+    from rxn_core.domain import MolecularEndpoint
+    elements, bonds, methyls = _tetra_tbu_methane()
+    n = len(elements)
+    rng = random.Random(11)
+    coords = np.array([[rng.uniform(-6, 6) for _ in range(3)] for _ in range(n)])
+
+    def matrix(bond_list):
+        w = np.zeros((n, n))
+        for a, b, v in bond_list:
+            w[a, b] = w[b, a] = v
+        return w
+
+    reactant = MolecularEndpoint(tuple(elements), coords, matrix(bonds), label="R")
+    (carbon_a, hydrogens_a), (carbon_b, _hydrogens_b) = methyls[0], methyls[1]
+    moved_h = hydrogens_a[0]
+    product_bonds = [
+        (a, b, v) for a, b, v in bonds
+        if not (a == carbon_a and b == moved_h)]
+    product_bonds.append((carbon_b, moved_h, 1.0))
+    product = MolecularEndpoint(
+        tuple(elements), coords + 0.05, matrix(product_bonds), label="P")
+    return reactant, product
+
+
+CASES["tetratbu"] = tetratbu
