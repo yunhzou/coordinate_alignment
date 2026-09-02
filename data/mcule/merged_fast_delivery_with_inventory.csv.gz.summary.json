@@ -1,0 +1,25 @@
+{
+  "schema": "rxn_core.merged_fast_delivery_with_inventory/v1",
+  "inputs": {
+    "fast_delivery_class_1": "data/mcule/mcule_fast_delivery_bb_cls_1_260820_TCBHqb.csv.gz",
+    "fast_delivery_class_2": "data/mcule/mcule_fast_delivery_bb_cls_2_260820_augmented.csv.gz",
+    "inventory": "data/inventory/processed/inventory_structure_bank.csv.gz"
+  },
+  "input_rows": {
+    "fast_delivery_class_1": 68138,
+    "fast_delivery_class_2": 154763,
+    "inventory": 1919
+  },
+  "valid_input_rows": 224820,
+  "unique_stereochemical_structures": 155303,
+  "duplicate_rows_removed": 69517,
+  "source_membership": {
+    "fast_delivery_class_1;fast_delivery_class_2": 66549,
+    "fast_delivery_class_1;fast_delivery_class_2;inventory": 1095,
+    "fast_delivery_class_2": 86835,
+    "fast_delivery_class_2;inventory": 284,
+    "inventory": 540
+  },
+  "parse_errors": 0,
+  "output": "data/mcule/merged_fast_delivery_with_inventory.csv.gz"
+}
