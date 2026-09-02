@@ -38,10 +38,11 @@ def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
                               source, target):
     """Exact-invariant WL partition of a partial endpoint relation."""
     pairs = tuple(mapping)
-    colors = [
+    raw_colors = [
         (source_orbits[source_atom], target_orbits[target_atom])
         for source_atom, target_atom in pairs
     ]
+    initial_color_counts = tuple(sorted(Counter(raw_colors).items()))
 
     def compact(values):
         classes = {
@@ -50,7 +51,7 @@ def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
         }
         return [classes[value] for value in values]
 
-    colors = compact(colors)
+    colors = compact(raw_colors)
     relations = {}
     for left in range(len(pairs)):
         source_left, target_left = pairs[left]
@@ -88,7 +89,7 @@ def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
         )
         for (left, right), relation in relations.items()
     ).items()))
-    return color_counts, relation_counts
+    return initial_color_counts, color_counts, relation_counts
 
 
 class _InitialFamilyAccumulator:

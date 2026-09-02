@@ -23,6 +23,7 @@ def main():
     parser.add_argument("--inventory", required=True)
     parser.add_argument("--source-id", required=True)
     parser.add_argument("--workers", type=int, required=True)
+    parser.add_argument("--seed-limit", type=int)
     parser.add_argument("--id-column", default="Inventory ID")
     args = parser.parse_args()
     with gzip.open(args.inventory, "rt", encoding="utf-8") as stream:
@@ -35,6 +36,7 @@ def main():
         iso_tolerance=0.5,
         branch_limit=100,
         candidate_limit=100,
+        seed_limit=args.seed_limit,
         seed_mode="all",
     )
     target = prepare_fragment_target(
