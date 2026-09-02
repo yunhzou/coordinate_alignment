@@ -2,7 +2,7 @@
 
 The native engine is a C++ port of :func:`rxn_core.growth.island.grow_island`
 and the matcher step it drives.  It is used only when the extension is
-importable, ``RXN_CORE_NATIVE`` is not ``"0"``, and the call is one the port
+importable, ``RXN_CORE_NATIVE=1``, and the call is one the port
 covers (default element policy, exact nauty orbit map with a structural zero
 bucket, no trace events).  Its outputs are the same ``_IsoResult`` objects the
 Python engine returns; bench/compare_grow_calls.py replays recorded Python
@@ -23,8 +23,12 @@ except ImportError:  # pragma: no cover
     _engine = None
 
 
+def built():
+    return _engine is not None
+
+
 def available():
-    return _engine is not None and os.environ.get("RXN_CORE_NATIVE", "1") != "0"
+    return built() and os.environ.get("RXN_CORE_NATIVE") == "1"
 
 
 def _graph_edges(g):

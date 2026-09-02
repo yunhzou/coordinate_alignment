@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "bench"))
 from rxn_core.growth import native  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
-    not native.available(), reason="native growth engine not built")
+    not native.built(), reason="native growth engine not built")
 
 
 def _iso_key(isos):
