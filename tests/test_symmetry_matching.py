@@ -1113,6 +1113,61 @@ def test_classify_bonds_uses_lower_metal_event_threshold():
     assert metal[1] == [(0, 1, 0.0, 0.35)]
 
 
+def test_classify_bonds_vectorised_matches_reference():
+    """Vectorised classify_bonds must be record-for-record identical to the
+    scalar reference on random matrices, metal elements and unmapped atoms."""
+    import random
+    from rxn_core.frag import _classify_bonds_reference
+
+    rng = random.Random(1234)
+    pool = ["C", "H", "O", "N", "Pd", "Fe", "Li", None]
+    for trial in range(300):
+        n_r = rng.randint(0, 9)
+        n_p = rng.randint(0, 9)
+        w_r = np.zeros((n_r, n_r))
+        w_p = np.zeros((n_p, n_p))
+        for w in (w_r, w_p):
+            n = w.shape[0]
+            for i in range(n):
+                for j in range(i + 1, n):
+                    if rng.random() < 0.6:
+                        v = rng.choice([0.0, 0.05, 0.19, 0.2, 0.3, 0.31, 0.5,
+                                        0.5 + 1e-13, 0.74, 1.0, 1.5, 2.0,
+                                        rng.uniform(0.0, 2.5)])
+                        w[i, j] = w[j, i] = v
+        rs = list(range(n_r))
+        ps = list(range(n_p))
+        rng.shuffle(rs)
+        rng.shuffle(ps)
+        k = rng.randint(0, min(n_r, n_p))
+        mapping = dict(zip(rs[:k], ps[:k]))
+        if rng.random() < 0.3 and mapping:
+            # non-injective and out-of-range entries are ignored/handled the
+            # same way by both implementations
+            extra = rng.choice(list(mapping))
+            mapping[extra] = mapping[rng.choice(list(mapping))]
+            mapping[n_r + 5] = n_p + 5
+        if rng.random() < 0.3 and n_r and n_p:
+            mapping[rng.choice(range(n_r))] = -1
+        el_r = [rng.choice(pool) for _ in range(n_r)]
+        el_p = [rng.choice(pool) for _ in range(n_p)]
+        kwargs = dict(
+            dwbo_threshold=rng.choice([0.5, 0.3, 0.74, 1.0]),
+            elements_R=el_r if rng.random() < 0.7 else None,
+            elements_P=el_p if rng.random() < 0.7 else None,
+            metal_dwbo_threshold=rng.choice([None, 0.3, 0.2, 0.05]),
+        )
+        ref = _classify_bonds_reference(mapping, w_r, w_p, **kwargs)
+        fast = classify_bonds(mapping, w_r, w_p, **kwargs)
+        assert fast == ref, (trial, mapping, kwargs)
+        for side in (0, 1):
+            for a, b in zip(fast[side], ref[side]):
+                assert [type(x) for x in a] == [type(x) for x in b]
+        # numpy-typed keys/values behave like ints
+        np_mapping = {np.int64(r): np.int64(p) for r, p in mapping.items()}
+        assert classify_bonds(np_mapping, w_r, w_p, **kwargs) == ref
+
+
 def test_mechanism_certificate_distinguishes_pair_orbits_not_vertex_orbits():
     # A distance-colored K5 is vertex-transitive, but cycle edges and
     # diagonals are different pair orbits.  Endpoint-orbit IDs alone conflate

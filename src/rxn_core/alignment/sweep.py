@@ -12,8 +12,10 @@ import json
 import multiprocessing as mp
 import pickle
 import time
-from collections import deque
+from collections import OrderedDict, deque
 from pathlib import Path
+
+import numpy as np
 
 from ..frag import build_graph, classify_bonds, expand_mapping
 from ..matcher import (
@@ -25,7 +27,12 @@ from ..matcher import (
     _sym_block_assignment_expr,
 )
 from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
-from ..matcher.orbits import _nauty_colored_wbo_graph
+from ..matcher.orbits import (
+    _graph_cache_key,
+    _nauty_colored_wbo_graph,
+    _weak_cache_lookup,
+    _weak_cache_store,
+)
 from .branch import (
     BranchLimitExceeded,
     _generate_seed_order,
@@ -199,6 +206,32 @@ class _MechanismEventCanonicalizer:
         return certificate
 
 
+# (graph id, node count, edge count, tolerance) -> weakref-guarded shared
+# canonicalizer, so its certificate cache spans every work unit of a process.
+_EVENT_CANONICALIZER_CACHE = OrderedDict()
+_EVENT_CANONICALIZER_CACHE_MAX = 8
+
+
+def _shared_event_canonicalizer(g_R_full, wbo_tol):
+    """One _MechanismEventCanonicalizer per (reactant graph, tolerance).
+
+    Exact because the canonicalizer's base graph and every certificate it
+    produces are pure functions of the full reactant graph and the tolerance;
+    the graph is built once per sweep/worker and never mutated, and the weak
+    reference guard rejects a recycled ``id()`` of a different graph object.
+    """
+    key = _graph_cache_key(g_R_full, wbo_tol)
+    cached = _weak_cache_lookup(_EVENT_CANONICALIZER_CACHE, key, g_R_full)
+    if cached is not None:
+        return cached
+    canonicalizer = _MechanismEventCanonicalizer(
+        g_R_full, wbo_tol=float(wbo_tol))
+    _weak_cache_store(
+        _EVENT_CANONICALIZER_CACHE, key, g_R_full, canonicalizer,
+        _EVENT_CANONICALIZER_CACHE_MAX)
+    return canonicalizer
+
+
 def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
                          dwbo_threshold=0.5,
                          elements_R=None, elements_P=None,
@@ -237,8 +270,8 @@ def _mechanism_signature(mapping, wboR, wboT, r_orbits, p_orbits,
         return br, tuple(sorted(fm))
 
     event_canonicalizer = event_canonicalizer or (
-        _MechanismEventCanonicalizer(
-            g_R_full, wbo_tol=float(symmetry_wbo_tol)))
+        _shared_event_canonicalizer(
+            g_R_full, float(symmetry_wbo_tol)))
     certificate = event_canonicalizer.certificate(br_pairs, fm_r_pairs)
     return (
         tuple('broken' for _ in br_pairs),
@@ -1036,6 +1069,42 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
     )
 
 
+# Per-process memo for _score_branch_mapping.  ``_SCORE_MEMO_CONTEXT`` holds
+# the per-sweep constant objects the score depends on (compared by identity);
+# whenever any of them changes the memo is reset, so an entry can only be
+# served to a call made with the very same graphs, matrices, orbits, element
+# lists and canonicalizer it was computed from.
+_SCORE_MEMO_CONTEXT = None
+_SCORE_MEMO = OrderedDict()
+_SCORE_MEMO_MAX = 8192
+
+
+def _score_memo_key(mapping, core_R, cfg):
+    anchor_map = cfg.get('anchor_map') or {}
+    return (
+        tuple(sorted(mapping.items())),
+        tuple(core_R or ()),
+        float(cfg['dwbo_threshold']),
+        cfg.get('metal_dwbo_threshold'),
+        bool(cfg['symmetry_repair']),
+        int(cfg['symmetry_repair_min_changes']),
+        int(cfg['symmetry_repair_max_evals']),
+        float(cfg['symmetry_wbo_tol']),
+        int(cfg['n_atoms']),
+        tuple(sorted(anchor_map.items())),
+    )
+
+
+def _score_memo_entries(context):
+    global _SCORE_MEMO_CONTEXT
+    current = _SCORE_MEMO_CONTEXT
+    if (current is None or len(current) != len(context)
+            or any(a is not b for a, b in zip(current, context))):
+        _SCORE_MEMO.clear()
+        _SCORE_MEMO_CONTEXT = context
+    return _SCORE_MEMO
+
+
 def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
                           g_R_full, p_orbits, r_orbits, core_R, cfg,
                           elR=None, elT=None,
@@ -1054,6 +1123,24 @@ def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
         return None
     if not _anchor_mapping_ok(mapping, anchor_map):
         return None
+    memo = None
+    memo_key = None
+    if not return_repair_stats:
+        # Symmetry repair and the mechanism signature are deterministic pure
+        # functions of the complete mapping given the per-sweep constants
+        # (g_R, the cut graph, is not read below), so an identical mapping
+        # reached from another branch, seed order or cut scores identically.
+        # The repaired mapping keeps the input's key set and insertion order,
+        # so it is rebuilt from the caller's key order as a fresh dict.
+        memo = _score_memo_entries(
+            (g_P, wboR, wboT, g_R_full, p_orbits, r_orbits, elR, elT,
+             event_canonicalizer))
+        memo_key = _score_memo_key(mapping, core_R, cfg)
+        cached = memo.get(memo_key)
+        if cached is not None:
+            memo.move_to_end(memo_key)
+            sig, images = cached
+            return sig, {r: images[r] for r in mapping}
     repair_stats = None
     if cfg['symmetry_repair']:
         base_mapping = dict(mapping)
@@ -1089,7 +1176,43 @@ def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
         symmetry_wbo_tol=float(cfg['symmetry_wbo_tol']),
         event_canonicalizer=event_canonicalizer)
     scored = (sig, mapping)
+    if memo is not None:
+        memo[memo_key] = (sig, dict(mapping))
+        while len(memo) > _SCORE_MEMO_MAX:
+            memo.popitem(last=False)
     return (*scored, repair_stats) if return_repair_stats else scored
+
+
+def _cut_graph(elR, wboR, graph_floor, g_R_full):
+    """Uncut reactant graph for one work unit.
+
+    ``build_graph(elR, wboR, graph_floor)`` is deterministic, so when
+    ``g_R_full`` was built from exactly these inputs (same float WBO matrix
+    object, same floor, same elements, no extra node/edge attributes)
+    ``g_R_full.copy()`` is node-for-node, edge-for-edge and attribute-for-
+    attribute identical to rebuilding it, including adjacency iteration order
+    (Graph.copy re-adds edges in the same i<j order build_graph used).  The
+    graph-level dict is reset to exactly the two keys build_graph sets so no
+    lazily cached verdict is inherited.  Anything else falls back to
+    build_graph.
+    """
+    matrix = np.asarray(wboR, dtype=float)
+    floor = float(graph_floor)
+    if (g_R_full is not None
+            and g_R_full.graph.get('wbo_matrix') is matrix
+            and float(g_R_full.graph.get('bond_cut', -1.0)) == floor
+            and g_R_full.number_of_nodes() == len(elR)
+            and all(
+                node in g_R_full
+                and g_R_full.nodes[node].get('element') == element
+                and set(g_R_full.nodes[node]) == {'element'}
+                for node, element in enumerate(elR))
+            and all(set(data) == {'wbo'}
+                    for _u, _v, data in g_R_full.edges(data=True))):
+        g_R = g_R_full.copy()
+        g_R.graph = {'wbo_matrix': matrix, 'bond_cut': floor}
+        return g_R
+    return build_graph(elR, wboR, bond_cut=graph_floor)
 
 
 def _cut_json(cut):
@@ -1199,9 +1322,9 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
 
     graph_t0 = time.perf_counter()
     graph_floor = float(cfg['graph_floor'])
-    event_canonicalizer = _MechanismEventCanonicalizer(
-        g_R_full, wbo_tol=float(cfg['symmetry_wbo_tol']))
-    g_R = build_graph(elR, wboR, bond_cut=graph_floor)
+    event_canonicalizer = _shared_event_canonicalizer(
+        g_R_full, float(cfg['symmetry_wbo_tol']))
+    g_R = _cut_graph(elR, wboR, graph_floor, g_R_full)
     for i, j in cut:
         if g_R.has_edge(i, j):
             g_R.remove_edge(i, j)
