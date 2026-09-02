@@ -8,6 +8,10 @@ import rxn_core.aam as aam_mod
 from rxn_core.domain import AAMProblem, AAMSearchConfig
 
 def main():
+    if "--fork" in sys.argv:
+        import multiprocessing
+        multiprocessing.set_start_method("fork", force=True)
+        sys.argv.remove("--fork")
     case = sys.argv[1] if len(sys.argv) > 1 else "tempo"
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 1
     R, P = CASES[case]()
