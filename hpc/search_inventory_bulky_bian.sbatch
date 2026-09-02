@@ -16,6 +16,7 @@ REPO_ROOT=/h/399/yunhengzou/coordinate_alignment
 PYTHON_BIN=/h/399/yunhengzou/micromamba/envs/el-agente/bin/python
 RUN_ROOT="$REPO_ROOT/data/retro_runs/bulky_bian_inventory_rough"
 TARGET_SMILES=$(cut -d ' ' -f1 "$REPO_ROOT/docs/example_runs/bulky_bian_target.smi")
+SHARD_COUNT=28
 
 mkdir -p "$RUN_ROOT/logs" "$RUN_ROOT/parts"
 cd "$REPO_ROOT"
@@ -28,7 +29,7 @@ PYTHONPATH=src srun "$PYTHON_BIN" tools/search_mcule_retro.py \
   --output "$RUN_ROOT/parts/part_${SLURM_ARRAY_TASK_ID}.jsonl.gz" \
   --workers "$SLURM_CPUS_PER_TASK" \
   --shard-index "$SLURM_ARRAY_TASK_ID" \
-  --shard-count "$SLURM_ARRAY_TASK_COUNT" \
+  --shard-count "$SHARD_COUNT" \
   --batch-size 1 \
   --minimum-fragment-size 1 \
   --iso-tolerance 0.5 \
