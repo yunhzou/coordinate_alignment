@@ -24,12 +24,14 @@ from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from rxn_core.fragment_matching.serialization import fragment_candidate_to_record
 
 
-def _inventory_row(path, source_id, id_column):
+def _inventory_row(path, source_id, row_index, id_column):
     with gzip.open(path, "rt", encoding="utf-8", errors="replace") as stream:
-        for row in csv.DictReader(stream):
-            if row[id_column] == source_id:
+        for index, row in enumerate(csv.DictReader(stream)):
+            if ((source_id is not None and row[id_column] == source_id)
+                    or (row_index is not None and index == row_index)):
                 return row
-    raise ValueError(f"inventory source not found: {source_id}")
+    requested = source_id if source_id is not None else row_index
+    raise ValueError(f"inventory source not found: {requested}")
 
 
 def _result_digest(result):
@@ -53,7 +55,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target-smiles", required=True)
     parser.add_argument("--inventory", required=True)
-    parser.add_argument("--source-id", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--source-id")
+    source.add_argument("--row-index", type=int)
     parser.add_argument("--id-column", default="Inventory ID")
     parser.add_argument("--seed-mode", choices=("all", "fragment_cover"),
                         default="all")
@@ -67,7 +71,9 @@ def main():
     if args.repeats < 1:
         raise ValueError("repeats must be positive")
 
-    row = _inventory_row(args.inventory, args.source_id, args.id_column)
+    row = _inventory_row(
+        args.inventory, args.source_id, args.row_index, args.id_column)
+    source_id = row[args.id_column]
     source_molecule = Chem.AddHs(Chem.MolFromSmiles(row["SMILES"]))
     target_molecule = Chem.AddHs(Chem.MolFromSmiles(args.target_smiles))
     config = FragmentDetectionConfig(
@@ -95,14 +101,14 @@ def main():
             result = detect_fragments(
                 source,
                 target,
-                source_id=args.source_id,
+                source_id=source_id,
                 config=config,
             )
         else:
             result = detect_fragments_parallel(
                 source,
                 target,
-                source_id=args.source_id,
+                source_id=source_id,
                 config=config,
                 execution=FragmentDetectionExecution(
                     seed_workers=args.seed_workers),
@@ -117,7 +123,7 @@ def main():
         raise RuntimeError("benchmark repetitions produced different results")
     result = results[-1]
     print(json.dumps({
-        "source_id": args.source_id,
+        "source_id": source_id,
         "source_explicit_atoms": source_molecule.GetNumAtoms(),
         "target_explicit_atoms": target_molecule.GetNumAtoms(),
         "seed_mode": args.seed_mode,
