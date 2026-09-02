@@ -8,11 +8,9 @@ broken/formed-event certificates.
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 import multiprocessing as mp
 import pickle
-import tempfile
 import time
 from collections import deque
 from pathlib import Path
@@ -30,6 +28,7 @@ from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
 from ..matcher.orbits import _nauty_colored_wbo_graph
 from .branch import (
     BranchLimitExceeded,
+    _generate_seed_order,
     _generate_seed_orders,
     _mapping_variation_blocks,
     find_islands,
@@ -715,11 +714,19 @@ def _freeze_analytical(value):
 
 def _analytical_branch(mapping, cuts, branch_symmetry=None, count=1):
     """One unique completed branch family retained below a mechanism."""
+    # A top-level copy is the minimal isolating copy: the pool only rebinds
+    # branch-level keys ('encounter_count', 'cuts'), and every hierarchy
+    # reader (_refresh_entry_branch_symmetry, _freeze_analytical,
+    # complete_chosen_automorphism_groups, attach_completed_candidate_groups,
+    # AAMHierarchy.from_record, index_chirality) copies before it writes, so
+    # the nested fragment/block dicts (built fresh by _symmetry_state and
+    # _branch_symmetry_record with int/str leaves, never written afterwards)
+    # are shared instead of deep-copied.
     return {
         'mapping': {int(r): int(p) for r, p in dict(mapping).items()},
         'cuts': _cut_record(cuts),
         'encounter_count': int(count),
-        'hierarchy': copy.deepcopy(branch_symmetry or {
+        'hierarchy': dict(branch_symmetry or {
             'rule': 'branch_symmetry_blocks',
             'fragments': [],
             'blocks': [],
@@ -773,7 +780,10 @@ def _refresh_entry_branch_symmetry(entry):
         branch for branch in branches
         if _mapping_key(branch.get('mapping') or {}) == representative_key
     ), branches[0] if branches else None)
-    hierarchy = copy.deepcopy(
+    # Only top-level keys are rebound or popped below, and 'blocks' /
+    # 'color_groups' are rebuilt as new lists, so a shallow copy isolates the
+    # branch hierarchy; the shared nested dicts are never written by anyone.
+    hierarchy = dict(
         (selected or {}).get('hierarchy') or {
             'fragments': [], 'blocks': [],
         })
@@ -843,7 +853,13 @@ def _public_pool(pool):
 
 def _merge_compressed_entry(target, sig, raw_entry, *, take_ownership=False,
                             refresh=True):
-    """Merge one compressed entry, optionally consuming the incoming value."""
+    """Merge one compressed entry, optionally consuming the incoming value.
+
+    Without ``take_ownership`` (caller-owned pools from
+    ``merge_cut_sweep_pools``) the deep copy stays: the merge rebinds entry
+    and branch keys and appends to ``branches``, and the caller may keep
+    mutating its own pool afterwards, which cannot be proven safe here.
+    """
     entry = target.get(sig)
     if entry is None:
         entry = raw_entry if take_ownership else copy.deepcopy(raw_entry)
@@ -947,8 +963,18 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
         'completed_candidate_group_cache_hits': 0,
     }
     for raw_branch in branches:
-        branch = copy.deepcopy(raw_branch)
+        # Minimal structural copy: the loop below only rebinds
+        # fragment['symmetry'] to a fresh dict, so copy the branch, its
+        # hierarchy, the fragments container and each fragment dict; every
+        # other nested object is shared read-only with the raw branch.
+        branch = dict(raw_branch)
         hierarchy = branch.get('hierarchy') or {}
+        raw_fragments = hierarchy.get('fragments') or ()
+        if raw_fragments:
+            hierarchy = dict(hierarchy)
+            hierarchy['fragments'] = type(raw_fragments)(
+                dict(fragment) for fragment in raw_fragments)
+            branch['hierarchy'] = hierarchy
         locked = {}
         for fragment in hierarchy.get('fragments') or ():
             metrics['completed_candidate_group_requests'] += 1
@@ -1182,12 +1208,15 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
     r_orbits_cut = _nauty_orbits(
         g_R, wbo_tol=float(cfg['symmetry_wbo_tol']))
     graph_elapsed = time.perf_counter() - graph_t0
-    if orders is None or isinstance(orders, int):
-        generated_orders = _generate_seed_orders(
-            g_R, n_trials=int(cfg['n_seeds']))
-        orders = (
-            generated_orders
-            if orders is None else [generated_orders[int(orders)]])
+    if orders is None:
+        orders = _generate_seed_orders(g_R, n_trials=int(cfg['n_seeds']))
+    elif isinstance(orders, int):
+        # Seed order ``idx`` depends only on the shared base ordering and its
+        # own generator (rng_seed + idx + 1), so building it alone equals
+        # ``_generate_seed_orders(g_R, n_seeds)[idx]``; ``range`` keeps the
+        # original list-index semantics (negative index, IndexError).
+        orders = [_generate_seed_order(
+            g_R, range(int(cfg['n_seeds']))[int(orders)])]
     else:
         orders = list(orders)
     if return_trace:
@@ -1492,6 +1521,12 @@ def _new_sweep_metrics(max_branches):
         'max_growth_candidates': 0,
         'raw_result_count': 0,
         'worker_returned_branch_count': 0,
+        # Parent-side phases of the parallel sweep (see _stream_merge_pool):
+        #   parent_route_seconds    incremental in-parent merge of worker pools
+        #   parallel_reduce_seconds one-shot refresh of changed mechanisms
+        #   parent_load_seconds     intermediate-file persistence I/O
+        #   worker_stream_seconds   time spent waiting on worker results
+        #   parent_merge_seconds    sum of the three parent-side phases
         'parent_merge_seconds': 0.0,
         'parent_route_seconds': 0.0,
         'parallel_reduce_seconds': 0.0,
@@ -1500,84 +1535,70 @@ def _new_sweep_metrics(max_branches):
     }
 
 
-def _signature_bucket(signature, bucket_count):
-    payload = pickle.dumps(signature, protocol=pickle.HIGHEST_PROTOCOL)
-    digest = hashlib.blake2b(payload, digest_size=8).digest()
-    return int.from_bytes(digest, 'little') % int(bucket_count)
+def _stream_merge_pool(payloads, *, metrics, directory=None,
+                       persistent=False, after_stream=None):
+    """Merge ordered worker pools into the parent pool as they arrive.
 
-
-def _reduce_pool_bucket(task):
-    """Merge one disjoint signature bucket and persist its reduced pool."""
-    raw_path, reduced_path = map(Path, task)
+    Results are consumed with ordered ``imap`` (chunksize 1), so merging each
+    payload's entries in arrival order is exactly the serial ``_pool_add``
+    order: a mechanism's representative and branch list depend only on the
+    relative order of that mechanism's entries, which is the work order in
+    both cases.  No bucket files, second process pool, or reload remain; with
+    ``persistent`` the raw entry stream and the merged pool are still written
+    next to a manifest for inspection.
+    """
     pool = {}
-    with raw_path.open('rb') as handle:
-        while True:
-            try:
-                sig, entry = pickle.load(handle)
-            except EOFError:
-                break
-            _merge_compressed_entry(
-                pool, sig, entry, take_ownership=True, refresh=False)
-    _finalize_compressed_pool(pool)
-    with reduced_path.open('xb') as handle:
-        pickle.dump(pool, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    return str(reduced_path), len(pool)
-
-
-def _parallel_bucket_reduce(payloads, *, n_workers, directory, metrics,
-                            persistent=False, before_reduce=None):
-    """Route ordered worker pools to persistent shards, then reduce in parallel."""
-    directory = Path(directory)
-    directory.mkdir(parents=True, exist_ok=True)
-    bucket_count = max(1, int(n_workers))
-    raw_paths = [
-        directory / f'raw_bucket_{index:03d}.pkl'
-        for index in range(bucket_count)
-    ]
-    handles = [path.open('xb') for path in raw_paths]
     entry_count = 0
+    raw_paths = []
+    raw_handle = None
+    if persistent:
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        raw_paths = [directory / 'raw_bucket_000.pkl']
+        raw_handle = raw_paths[0].open('xb')
     stream_started = time.perf_counter()
-    route_seconds = 0.0
+    merge_seconds = 0.0
+    persist_seconds = 0.0
     try:
         for payload in payloads:
-            if metrics is not None:
-                _merge_sweep_metrics(metrics, payload.get('metrics') or {})
-            route_started = time.perf_counter()
-            for sig, entry in (payload.get('pool') or {}).items():
-                bucket = _signature_bucket(sig, bucket_count)
-                pickle.dump(
-                    (sig, entry), handles[bucket],
-                    protocol=pickle.HIGHEST_PROTOCOL)
+            _merge_sweep_metrics(metrics, payload.get('metrics') or {})
+            entries = payload.get('pool') or {}
+            if raw_handle is not None:
+                persist_started = time.perf_counter()
+                for sig, entry in entries.items():
+                    pickle.dump((sig, entry), raw_handle,
+                                protocol=pickle.HIGHEST_PROTOCOL)
+                persist_seconds += time.perf_counter() - persist_started
+            merge_started = time.perf_counter()
+            for sig, entry in entries.items():
+                _merge_compressed_entry(
+                    pool, sig, entry, take_ownership=True, refresh=False)
                 entry_count += 1
-            route_seconds += time.perf_counter() - route_started
+            merge_seconds += time.perf_counter() - merge_started
     finally:
-        for handle in handles:
-            handle.close()
+        if raw_handle is not None:
+            raw_handle.close()
     stream_elapsed = time.perf_counter() - stream_started
-    metrics['parent_route_seconds'] += route_seconds
-    metrics['worker_stream_seconds'] += max(0.0, stream_elapsed - route_seconds)
+    if after_stream is not None:
+        after_stream()
 
-    tasks = []
-    for index, raw_path in enumerate(raw_paths):
-        if raw_path.stat().st_size:
-            tasks.append((raw_path, directory / f'reduced_bucket_{index:03d}.pkl'))
-    if before_reduce is not None:
-        before_reduce()
-    reduce_started = time.perf_counter()
-    if len(tasks) > 1:
-        with mp.Pool(min(int(n_workers), len(tasks))) as reduce_pool:
-            reduced = reduce_pool.map(_reduce_pool_bucket, tasks, chunksize=1)
-    else:
-        reduced = [_reduce_pool_bucket(task) for task in tasks]
-    metrics['parallel_reduce_seconds'] += time.perf_counter() - reduce_started
+    finalize_started = time.perf_counter()
+    _finalize_compressed_pool(pool)
+    finalize_seconds = time.perf_counter() - finalize_started
 
-    load_started = time.perf_counter()
-    pool = {}
-    for reduced_path, _count in reduced:
-        with Path(reduced_path).open('rb') as handle:
-            # Buckets are disjoint by construction; no analytical merge remains.
-            pool.update(pickle.load(handle))
-    metrics['parent_load_seconds'] += time.perf_counter() - load_started
+    reduced_paths = []
+    if persistent:
+        persist_started = time.perf_counter()
+        reduced_paths = [directory / 'reduced_bucket_000.pkl']
+        with reduced_paths[0].open('xb') as handle:
+            pickle.dump(pool, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        persist_seconds += time.perf_counter() - persist_started
+
+    metrics['parent_route_seconds'] += merge_seconds
+    metrics['worker_stream_seconds'] += max(
+        0.0, stream_elapsed - merge_seconds - persist_seconds)
+    metrics['parallel_reduce_seconds'] += finalize_seconds
+    metrics['parent_load_seconds'] += persist_seconds
     metrics['parent_merge_seconds'] = (
         metrics['parent_route_seconds']
         + metrics['parallel_reduce_seconds']
@@ -1586,11 +1607,11 @@ def _parallel_bucket_reduce(payloads, *, n_workers, directory, metrics,
     if persistent:
         manifest = {
             'schema': 'rxn_core.cut_sweep_intermediate/v1',
-            'bucket_count': bucket_count,
+            'bucket_count': 1,
             'worker_pool_entries': entry_count,
             'mechanism_count': len(pool),
             'raw_buckets': [path.name for path in raw_paths],
-            'reduced_buckets': [Path(path).name for path, _ in reduced],
+            'reduced_buckets': [path.name for path in reduced_paths],
             'metrics': dict(metrics),
         }
         (directory / 'manifest.json').write_text(
@@ -1703,10 +1724,6 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
         for seed_index in range(int(cfg['n_seeds']))
     ]
     metrics = _new_sweep_metrics(cfg['max_branches'])
-    temporary = None
-    if intermediate_dir is None:
-        temporary = tempfile.TemporaryDirectory(prefix='rxn_core_sweep_')
-        intermediate_dir = temporary.name
     proc_pool = mp.Pool(n_workers, initializer=_cs_winit,
                         initargs=(elR, wboR, elT, wboT, cfg))
     pool_closed = False
@@ -1724,14 +1741,12 @@ def _cut_sweep_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
         # scheduling cannot change downstream chirality/RMSD representatives.
         payloads = proc_pool.imap(
             _cs_wrun, work, chunksize=max(1, int(cfg['chunksize'])))
-        pool = _parallel_bucket_reduce(
-            payloads, n_workers=n_workers, directory=intermediate_dir,
-            metrics=metrics, persistent=temporary is None,
-            before_reduce=finish_search_pool)
+        pool = _stream_merge_pool(
+            payloads, metrics=metrics, directory=intermediate_dir,
+            persistent=intermediate_dir is not None,
+            after_stream=finish_search_pool)
     finally:
         finish_search_pool()
-        if temporary is not None:
-            temporary.cleanup()
     metrics['cuts'] = len(cuts)
     public = _public_pool(pool)
     return (public, metrics) if collect_metrics else public
@@ -1746,10 +1761,6 @@ def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
         for seed_index in range(int(cfg['n_seeds']))
     ]
     metrics = _new_sweep_metrics(cfg['max_branches'])
-    temporary = None
-    if intermediate_dir is None:
-        temporary = tempfile.TemporaryDirectory(prefix='rxn_core_sweep_')
-        intermediate_dir = temporary.name
     proc_pool = mp.Pool(n_workers, initializer=_cs_winit,
                         initargs=(elR, wboR, elT, wboT, cfg))
     pool_closed = False
@@ -1771,14 +1782,12 @@ def _cut_sweep_chunk_parallel(elR, wboR, elT, wboT, cfg, n_workers, core_R,
                 _emit_trace(trace_path, payload.get('events', []))
                 yield payload
 
-        pool = _parallel_bucket_reduce(
-            payloads(), n_workers=n_workers, directory=intermediate_dir,
-            metrics=metrics, persistent=temporary is None,
-            before_reduce=finish_search_pool)
+        pool = _stream_merge_pool(
+            payloads(), metrics=metrics, directory=intermediate_dir,
+            persistent=intermediate_dir is not None,
+            after_stream=finish_search_pool)
     finally:
         finish_search_pool()
-        if temporary is not None:
-            temporary.cleanup()
     metrics['cuts'] = len(cuts)
     metrics['seed_orders'] = len(work)
     public = _public_pool(pool)
