@@ -1,7 +1,8 @@
 """Exact automorphism certificates for hierarchical partial mappings."""
 from __future__ import annotations
 
-from collections import defaultdict
+import os
+from collections import Counter, defaultdict
 
 from .orbits import (
     _nauty_colored_wbo_graph,
@@ -12,7 +13,52 @@ from .policy import (
     ElementNodeMatchPolicy,
     as_node_match_policy,
 )
-from .state import _SymCand
+from .primitives import _load_fast_kernels
+from .state import _VERIFY_ROLES, _SymCand, _cand_roles_from_scratch
+
+try:  # pragma: no cover - depends on the build
+    from .. import _engine
+except ImportError:  # pragma: no cover
+    _engine = None
+
+# native/src/autgrp.cpp: pynauty.autgrp(...)[0] on a fixed, recoloured graph
+_AutGraph = getattr(_engine, "AutGraph", None)
+
+
+def _native_autgrp_available():
+    """True when ``rxn_core._engine.AutGraph`` is built and
+    ``RXN_CORE_NATIVE`` is not ``"0"`` (the growth engine's switch)."""
+    return (_AutGraph is not None
+            and os.environ.get("RXN_CORE_NATIVE", "1") != "0")
+
+
+def _pynauty_partition_cells(n_vertices, vertex_coloring):
+    """The cells nautywrap's ``set_partition`` would read, as lists.
+
+    Reproduces ``pynauty.Graph.set_vertex_coloring`` step by step: the
+    caller's set objects are kept as-is (in order), vertices missing from
+    every set form one extra trailing cell built by the same ``vs -= p``
+    operations, and a colouring that ends up with a single cell is dropped
+    (``[]`` -> nauty's default partition).  Each set is then converted with
+    ``list(cell)``, which is exactly the iteration order the C loop
+    (``PyObject_GetIter`` / ``PyIter_Next``) sees for that set object, so
+    the native ``lab`` matches pynauty's element for element.
+    """
+    if not vertex_coloring:
+        return []
+    cells = []
+    vs = set(range(n_vertices))
+    for p in vertex_coloring:
+        if p <= vs:
+            cells.append(p)
+            vs -= p
+        else:
+            raise ValueError('Invalid partition: %s' % vertex_coloring)
+    if vs:
+        cells.append(vs)
+    if len(cells) == 1:
+        return []
+    return [list(cell) for cell in cells]
 
 
 class _PartialMappingCanonicalizer:
@@ -25,47 +71,13 @@ class _PartialMappingCanonicalizer:
     """
 
     def __init__(self, g_R, g_P, *, wbo_tol=0.2, node_policy=None,
-                 source_atom_tags=None, target_atom_tags=None,
-                 base_cache=None):
+                 source_atom_tags=None, target_atom_tags=None):
         self.g_R = g_R
         self.g_P = g_P
         self.node_policy = as_node_match_policy(node_policy)
         self.wbo_tol = float(wbo_tol)
         source_atom_tags = dict(source_atom_tags or {})
         target_atom_tags = dict(target_atom_tags or {})
-        policy_key = None
-        if isinstance(self.node_policy, ElementNodeMatchPolicy):
-            policy_key = ('element',)
-        elif isinstance(self.node_policy, AttributeNodeMatchPolicy):
-            policy_key = ('attributes', self.node_policy.fields)
-        cache = base_cache
-        if (cache is None and policy_key is not None
-                and hasattr(g_R, 'graph')):
-            cache = g_R.graph.setdefault(
-                '_partial_mapping_canonical_bases', {})
-        cache_key = None
-        if cache is not None and policy_key is not None:
-            cache_key = (
-                g_P,
-                self.wbo_tol,
-                policy_key,
-                tuple(sorted(source_atom_tags.items())),
-                tuple(sorted(target_atom_tags.items())),
-            )
-        base = cache.get(cache_key) if cache_key is not None else None
-        if base is not None:
-            (
-                self.r_nodes,
-                self.p_nodes,
-                self.r_index,
-                self.p_index,
-                self.atom_vertex_count,
-                self.base_vertex_count,
-                self.base_adjacency,
-                self.base_colors,
-            ) = base
-            return
-
         self.r_nodes = tuple(sorted(g_R.nodes()))
         self.p_nodes = tuple(sorted(g_P.nodes()))
         self.r_index = {atom: index
@@ -114,17 +126,6 @@ class _PartialMappingCanonicalizer:
         self.base_colors = {
             color: set(vertices) for color, vertices in colors.items()
         }
-        if cache_key is not None:
-            cache[cache_key] = (
-                self.r_nodes,
-                self.p_nodes,
-                self.r_index,
-                self.p_index,
-                self.atom_vertex_count,
-                self.base_vertex_count,
-                self.base_adjacency,
-                self.base_colors,
-            )
 
     def certificate(self, mapping):
         """Return the exact endpoint-automorphism certificate of ``mapping``."""
@@ -194,6 +195,7 @@ class _CandidateAutomorphismCanonicalizer:
         tolerance = float(
             wbo_tol if wbo_tol is not None else
             (getattr(p_orbits, 'wbo_tol', 0.2) or 0.2))
+        self.wbo_tol = tolerance
         # A cut worker reuses one immutable product graph and orbit object but
         # constructs many canonicalizers as the locked prefix changes.  The
         # subdivision graph is independent of that prefix, so retain it on the
@@ -252,12 +254,18 @@ class _CandidateAutomorphismCanonicalizer:
                 cache[cache_key] = base
         (self.nodes, self.atom_index, self.n_atoms, self.atom_base_color,
          self.n_vertices, self.adjacency, self.edge_color_classes) = base
-        import pynauty
-        self.nauty_graph = pynauty.Graph(
-            self.n_vertices,
-            directed=False,
-            adjacency_dict=self.adjacency,
-        )
+        # repr of a colour key is a pure function of the key, so the memo can
+        # be shared by every canonicalizer built on the same base cache
+        # (one is constructed per fragment during group finalisation).
+        self._color_repr_cache = (
+            cache.setdefault('color_repr', {}) if cache is not None else {})
+        # vertex index -> atom (None for edge vertices), for generator decoding
+        atom_by_index = [None] * self.n_vertices
+        for atom, index in self.atom_index.items():
+            atom_by_index[index] = int(atom)
+        self._atom_by_index = atom_by_index
+        self._atom_index_items = [
+            (int(atom), index) for atom, index in self.atom_index.items()]
 
         locked_roles = defaultdict(list)
         for r, p in sorted((int(r), int(p))
@@ -268,107 +276,263 @@ class _CandidateAutomorphismCanonicalizer:
             p: tuple(roles) for p, roles in locked_roles.items()
         }
     def _candidate_roles(self, cand, *, group_domains=False):
-        if isinstance(cand, _SymCand):
-            mapping = cand.mapping
-            blocks = cand.blocks
-        else:
-            mapping = dict(cand)
-            blocks = ()
+        """Role dictionary of ``cand`` (see ``_cand_roles_from_scratch``).
 
-        roles = defaultdict(list)
-        block_r = {r for block in blocks for r in block.r_atoms}
-        if group_domains and isinstance(cand, _SymCand):
-            block_r.update(
-                r for block in cand.automorph_blocks
-                for r in block.r_atoms)
-        for r, p in sorted(mapping.items()):
-            if r not in block_r:
-                roles[int(p)].append(('mapped', int(r)))
-        for block in blocks:
-            block_role = (
-                'pool', tuple(int(r) for r in block.r_atoms),
-                bool(block.extendable),
-            )
-            for p in block.p_atoms:
-                roles[int(p)].append(block_role)
-        if isinstance(cand, _SymCand):
-            for block in cand.automorph_blocks:
-                group_role = (
-                    'automorph_domain', tuple(int(r) for r in block.r_atoms)
-                )
-                for p in block.p_atoms:
-                    roles[int(p)].append(group_role)
-        return {p: tuple(sorted(items, key=repr))
-                for p, items in roles.items()}
+        The dictionary depends on the candidate alone, and ``_SymCand`` is
+        immutable, so the ``group_domains=False`` result is cached on the
+        candidate; child constructors derive it from the parent's cached copy
+        when one exists.  ``RXN_CORE_VERIFY_ROLES=1`` recomputes and asserts.
+        """
+        if group_domains or not isinstance(cand, _SymCand):
+            return _cand_roles_from_scratch(cand, group_domains=group_domains)
+        roles = cand._roles
+        if roles is None:
+            roles = _cand_roles_from_scratch(cand)
+            cand._roles = roles
+        elif _VERIFY_ROLES:
+            expected = _cand_roles_from_scratch(cand)
+            assert roles == expected, (
+                "cached candidate roles differ from the from-scratch roles",
+                roles, expected)
+        return roles
 
-    def _colored_vertices(self, cand, *, group_domains=False):
-        candidate_roles = self._candidate_roles(
-            cand, group_domains=group_domains)
+    def _color_order_key(self, color):
+        """repr of a colour key, memoised: cell order must be a function of
+        the key alone and the same keys recur across candidates."""
+        cache = self._color_repr_cache
+        key = cache.get(color)
+        if key is None:
+            key = repr(color)
+            cache[color] = key
+        return key
+
+    def _colored_vertices_from_roles(self, candidate_roles):
         colors = defaultdict(set)
-        for p in self.nodes:
-            vertex = self.atom_index[p]
+        locked_roles = self.locked_roles
+        atom_base_color = self.atom_base_color
+        for p, vertex in self.atom_index.items():
             role = (
-                self.locked_roles.get(p, ()),
+                locked_roles.get(p, ()),
                 candidate_roles.get(p, ()),
             )
-            colors[('atom', self.atom_base_color[vertex], role)].add(vertex)
+            colors[('atom', atom_base_color[vertex], role)].add(vertex)
         for color_index, vertices in self.edge_color_classes:
             colors[('edge', color_index)].update(vertices)
+        order = self._color_order_key
         return tuple(
             (color, frozenset(vertices))
             for color, vertices in sorted(
-                colors.items(), key=lambda item: repr(item[0])))
+                colors.items(), key=lambda item: order(item[0])))
 
-    def graph(self, cand, *, group_domains=False, colored_vertices=None):
-        if colored_vertices is None:
-            colored_vertices = self._colored_vertices(
-                cand, group_domains=group_domains)
-        self.nauty_graph.set_vertex_coloring([
-            set(vertices) for _, vertices in colored_vertices])
-        return self.nauty_graph
+    def _colored_vertices(self, cand, *, group_domains=False):
+        return self._colored_vertices_from_roles(
+            self._candidate_roles(cand, group_domains=group_domains))
 
-    def certificate(self, cand):
-        colored_vertices, color_profile = self.coloring_profile(cand)
-        return self.certificate_from_coloring(
-            colored_vertices, color_profile)
+    def graph(self, cand, *, group_domains=False):
+        import pynauty
 
-    def coloring_profile(self, cand):
-        """Return the exact vertex coloring and its cheap role profile."""
-        colored_vertices = self._colored_vertices(cand)
+        colored_vertices = self._colored_vertices(
+            cand, group_domains=group_domains)
+        return pynauty.Graph(
+            self.n_vertices,
+            directed=False,
+            adjacency_dict=self.adjacency,
+            vertex_coloring=[set(vertices)
+                             for _, vertices in colored_vertices],
+        )
+
+    def _reusable_graph(self):
+        """One pynauty graph over the fixed base adjacency, recoloured per
+        certificate.  ``Graph.__init__`` validates the adjacency dictionary on
+        every construction; ``set_vertex_coloring`` is the same call the
+        constructor makes and replaces the partition completely, so a
+        recoloured graph is indistinguishable from a freshly built one."""
+        import pynauty
+        graph = self.__dict__.get('_reusable_graph_object')
+        if graph is None:
+            graph = pynauty.Graph(
+                self.n_vertices, directed=False,
+                adjacency_dict=self.adjacency)
+            self._reusable_graph_object = graph
+        return graph
+
+    def certificate_from_roles(self, candidate_roles):
+        import pynauty
+        colored_vertices = self._colored_vertices_from_roles(candidate_roles)
+        # pynauty canonicalizes a partition, whose cells are not themselves
+        # named.  Preserve the semantic role attached to every cell as part of
+        # the coarse certificate; the exact transporter below remains the
+        # authoritative equivalence test.
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
-        return colored_vertices, color_profile
+        graph = self._reusable_graph()
+        graph.set_vertex_coloring(
+            [set(vertices) for _, vertices in colored_vertices])
+        return pynauty.certificate(graph), color_profile
 
-    def certificate_from_coloring(self, colored_vertices, color_profile):
-        """Canonicalize one already prepared candidate coloring."""
+    def certificate(self, cand):
+        return self.certificate_from_roles(self._candidate_roles(cand))
+
+    def role_keys_applicable(self, orbits):
+        """True when ``orbits`` is the exact orbit map of this target graph.
+
+        The orbit-role key below is valid only for the automorphism orbits of
+        the same WBO-coloured graph at the same tolerance and node policy that
+        this canonicalizer colours.  The check compares the orbit map's own
+        pair-bucket table with a fresh bucket lookup of ``g_P``; the verdict
+        is cached on the orbit map per base graph, so the O(N^2) comparison
+        runs once per worker.
+        """
+        from .orbits import _OrbitMap
+
+        if not isinstance(orbits, _OrbitMap) or orbits.wbo_tol is None:
+            return False
+        if not isinstance(self.node_policy,
+                          (ElementNodeMatchPolicy, AttributeNodeMatchPolicy)):
+            return False
+        verdicts = getattr(orbits, '_role_key_bases', None)
+        if verdicts is None:
+            verdicts = {}
+            orbits._role_key_bases = verdicts
+        base_id = id(self.adjacency)
+        verdict = verdicts.get(base_id)
+        if verdict is None:
+            pair_buckets, zero_bucket = _wbo_tolerance_bucket_lookup(
+                self.g_P, self.wbo_tol)
+            verdict = bool(
+                float(orbits.wbo_tol) == self.wbo_tol
+                and orbits.zero_bucket == zero_bucket
+                and set(orbits) == set(self.atom_index)
+                and orbits.wbo_buckets == pair_buckets)
+            verdicts[base_id] = verdict
+        return verdict
+
+    def role_key(self, cand, orbits):
+        """Automorphism-invariant key of one candidate's role colouring.
+
+        Two candidates merge only when a colour-preserving isomorphism maps
+        one role colouring onto the other.  Such an isomorphism preserves the
+        underlying WBO-coloured target graph, hence is one of its
+        automorphisms and maps every atom into its own exact orbit while
+        preserving locked and candidate roles.  Equal certificates therefore
+        imply equal keys; the key is a necessary condition and never a merge
+        rule by itself.  The returned flag is True when every role-carrying
+        atom lies in a singleton orbit, in which case an equal key identifies
+        the colouring atom by atom and the certificates are equal without
+        running nauty.
+        """
+        return self.role_key_from_roles(self._candidate_roles(cand), orbits)
+
+    def role_key_from_roles(self, candidate_roles, orbits):
+        """See :meth:`role_key`; takes an already computed role dictionary."""
+        sizes = getattr(orbits, '_orbit_sizes', None)
+        if sizes is None:
+            sizes = Counter(orbits.values())
+            orbits._orbit_sizes = sizes
+        locked_roles = self.locked_roles
+        singleton = True
+        items = []
+        for p, role in candidate_roles.items():
+            orbit = orbits[p]
+            if sizes[orbit] > 1:
+                singleton = False
+            items.append((orbit, locked_roles.get(p, ()), role))
+        # The key is only hashed and compared for equality, so represent the
+        # multiset directly instead of sorting nested tuples by repr.
+        return frozenset(Counter(items).items()), singleton
+
+    def _reusable_autgraph(self):
+        """Native counterpart of ``_reusable_graph``: one ``AutGraph`` over
+        the fixed base adjacency (every directed pair of the adjacency
+        dictionary, as ``_make_nygraph`` reads it), recoloured per call."""
+        graph = self.__dict__.get('_reusable_autgraph_object')
+        if graph is None:
+            graph = _AutGraph(
+                self.n_vertices,
+                [(vertex, neighbor)
+                 for vertex, neighbors in self.adjacency.items()
+                 for neighbor in neighbors])
+            self._reusable_autgraph_object = graph
+        return graph
+
+    def _raw_atom_generators_pynauty(self, colored_vertices):
+        """``pynauty.autgrp(...)[0]`` on the recoloured reusable graph."""
         import pynauty
-        return (
-            pynauty.certificate(self.graph(
-                None, colored_vertices=colored_vertices)),
-            color_profile,
-        )
+
+        # Same recoloured reusable graph as certificate_from_roles: the
+        # partition handed to nauty (cell order and the vertices of each cell
+        # in set iteration order) is exactly what ``graph()`` would build.
+        graph = self._reusable_graph()
+        graph.set_vertex_coloring(
+            [set(vertices) for _, vertices in colored_vertices])
+        return pynauty.autgrp(graph)[0]
+
+    def _raw_atom_generators_native(self, colored_vertices):
+        """Same generators, same order, from ``_engine.AutGraph``: the cells
+        are the very sets pynauty would receive, in its iteration order."""
+        cells = _pynauty_partition_cells(
+            self.n_vertices,
+            [set(vertices) for _, vertices in colored_vertices])
+        return self._reusable_autgraph().generators(cells)
+
+    def _atom_generators_pynauty(self, cand):
+        """pynauty path of :meth:`atom_generators` (fallback and the
+        reference of tests/test_autgrp_native.py)."""
+        colored_vertices = self._colored_vertices(cand, group_domains=True)
+        return self._atom_generators_from_raw(
+            self._raw_atom_generators_pynauty(colored_vertices))
+
+    def _atom_generators_native(self, cand):
+        colored_vertices = self._colored_vertices(cand, group_domains=True)
+        return self._atom_generators_from_raw(
+            self._raw_atom_generators_native(colored_vertices))
 
     def atom_generators(self, cand):
         """Exact generators for a bounded completed candidate state."""
-        import pynauty
+        if _native_autgrp_available():
+            return self._atom_generators_native(cand)
+        return self._atom_generators_pynauty(cand)
 
-        raw_generators = pynauty.autgrp(
-            self.graph(cand, group_domains=True))[0]
-        atom_by_index = {
-            index: atom for atom, index in self.atom_index.items()}
+    def _atom_generators_from_raw(self, raw_generators):
+        """Atom permutations of the raw vertex generators (identity and
+        duplicates dropped, first occurrence order kept)."""
+        atom_by_index = self._atom_by_index
+        atom_index_items = self._atom_index_items
         identity = tuple(range(self.n_atoms))
         generators = []
         seen = set()
         for raw in raw_generators:
             permutation = list(identity)
-            for atom, index in self.atom_index.items():
+            for atom, index in atom_index_items:
                 image_index = int(raw[index])
-                if image_index not in atom_by_index:
+                image_atom = (atom_by_index[image_index]
+                              if 0 <= image_index < len(atom_by_index) else None)
+                if image_atom is None:
                     raise RuntimeError(
                         "candidate automorphism mixed atom/edge vertices")
-                permutation[int(atom)] = int(atom_by_index[image_index])
+                permutation[atom] = image_atom
             permutation = tuple(permutation)
             if permutation != identity and permutation not in seen:
                 seen.add(permutation)
                 generators.append(permutation)
         return tuple(generators)
+
+
+# The pure-Python role kernels stay reachable under ``*_py`` names (the
+# differential test compares against them); the methods themselves are
+# rebound only when RXN_CORE_FAST=1 selects the compiled extension.
+_CandidateAutomorphismCanonicalizer._candidate_roles_py = (
+    _CandidateAutomorphismCanonicalizer._candidate_roles)
+_CandidateAutomorphismCanonicalizer.role_key_from_roles_py = (
+    _CandidateAutomorphismCanonicalizer.role_key_from_roles)
+_CandidateAutomorphismCanonicalizer._colored_vertices_from_roles_py = (
+    _CandidateAutomorphismCanonicalizer._colored_vertices_from_roles)
+_fast = _load_fast_kernels()
+if _fast is not None:
+    # ``_candidate_roles`` stays in Python: it now serves the per-candidate
+    # roles cache (``_SymCand._roles``) that the compiled from-scratch kernel
+    # does not know about.
+    _CandidateAutomorphismCanonicalizer.role_key_from_roles = (
+        _fast.role_key_from_roles)
+    _CandidateAutomorphismCanonicalizer._colored_vertices_from_roles = (
+        _fast.colored_vertices_from_roles)

@@ -1,7 +1,8 @@
 """Orbit grouping for WBO graphs."""
 from __future__ import annotations
 
-from collections import defaultdict, deque
+import weakref
+from collections import OrderedDict, defaultdict, deque
 
 import networkx as nx
 
@@ -79,15 +80,46 @@ def _color_refine_orbits(g, iters=20):
     return colors
 
 
-def _wbo_tolerance_bucket_lookup(g, tolerance):
-    """Return a pair->bucket lookup for the complete WBO graph.
+def _graph_cache_key(g, tolerance):
+    return (id(g), g.number_of_nodes(), g.number_of_edges(), float(tolerance))
 
-    Buckets are formed by greedy tolerance clustering of the WBO values present
-    in this graph. This avoids a hard grid boundary, so values such as 1.0 and
-    1.1 land in the same bucket when ``tolerance=0.2``.
+
+def _weak_cache_lookup(cache, key, g):
+    """Return the cached payload for ``g`` or None.
+
+    Entries store a weak reference to the graph they were computed from; a hit
+    requires that reference to still point at the very same object, so a
+    recycled ``id()`` of a freed graph can never return another graph's data.
     """
-    if tolerance <= 0:
-        raise ValueError("tolerance must be positive")
+    entry = cache.get(key)
+    if entry is not None and entry[0]() is g:
+        cache.move_to_end(key)
+        return entry[1]
+    return None
+
+
+def _weak_cache_store(cache, key, g, payload, max_entries):
+    """Store ``payload`` for ``g``; drop the entry when ``g`` is collected."""
+    def _evict(ref, _key=key, _cache=cache):
+        entry = _cache.get(_key)
+        if entry is not None and entry[0] is ref:
+            del _cache[_key]
+    try:
+        ref = weakref.ref(g, _evict)
+    except TypeError:
+        return
+    cache[key] = (ref, payload)
+    cache.move_to_end(key)
+    while len(cache) > max_entries:
+        cache.popitem(last=False)
+
+
+def _compute_wbo_tolerance_bucket_lookup(g, tolerance):
+    """Uncached body of :func:`_wbo_tolerance_bucket_lookup`.
+
+    Greedy ascending clustering with ``eps`` and Python ``round(x, 12)`` is
+    kept verbatim; only the caching wrapper around it is new.
+    """
     nodes = sorted(g.nodes())
     # Zero is structural: it means that no edge subdivision vertex is
     # emitted below.  Never tolerance-cluster a real edge into that class,
@@ -124,28 +156,33 @@ def _wbo_tolerance_bucket_lookup(g, tolerance):
     }, 0
 
 
-def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None,
-                             node_policy=None):
-    try:
-        import pynauty
-    except ImportError as exc:
-        raise RuntimeError(
-            "pynauty is required for nauty symmetry operations; install "
-            "pynauty or use _color_refine_orbits"
-        ) from exc
+# (graph id, node count, edge count, tolerance) -> weakref-guarded skeleton
+# of the subdivision graph: everything in _nauty_colored_wbo_graph that does
+# not depend on the atom colouring.
+_WBO_SKELETON_CACHE = OrderedDict()
+_WBO_SKELETON_CACHE_MAX = 64
 
-    atom_color_tags = dict(atom_color_tags or {})
+
+def _wbo_skeleton(g, tolerance):
+    """Atom-colouring-independent part of the nauty subdivision graph.
+
+    Exact because the bucket lookup, the subdivision vertices, their adjacency
+    and their ``('wbo', bucket)`` colour cells are pure functions of the graph
+    topology, the edge WBO values and the tolerance; the graph objects handled
+    here are built once and never mutated afterwards, and the weak reference
+    guard rejects any lookup by a different graph object.
+    """
+    key = _graph_cache_key(g, tolerance)
+    cached = _weak_cache_lookup(_WBO_SKELETON_CACHE, key, g)
+    if cached is not None:
+        return cached
     nodes = sorted(g.nodes())
     atom_index = {node: idx for idx, node in enumerate(nodes)}
-    pair_buckets, zero_bucket = _wbo_tolerance_bucket_lookup(g, wbo_tol)
-    node_policy = as_node_match_policy(node_policy)
+    pair_buckets, zero_bucket = _compute_wbo_tolerance_bucket_lookup(
+        g, tolerance)
 
     adjacency = defaultdict(set)
-    vertex_colors = defaultdict(set)
-    for node, idx in atom_index.items():
-        tag = atom_color_tags.get(node)
-        vertex_colors[('atom', node_policy.key(g, node), tag)].add(idx)
-
+    edge_colors = {}
     next_idx = len(nodes)
     for (a, b), bucket in sorted(pair_buckets.items()):
         if bucket == zero_bucket:
@@ -157,21 +194,79 @@ def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None,
         adjacency[ai].add(edge_idx)
         adjacency[bi].add(edge_idx)
         adjacency[edge_idx].update((ai, bi))
-        vertex_colors[('wbo', bucket)].add(edge_idx)
+        edge_colors.setdefault(('wbo', bucket), set()).add(edge_idx)
 
     adjacency_dict = {
         idx: sorted(adjacency.get(idx, ()))
         for idx in range(next_idx)
     }
+    payload = (
+        tuple(nodes), atom_index, pair_buckets, zero_bucket,
+        next_idx, adjacency_dict,
+        tuple((color, frozenset(cell)) for color, cell in edge_colors.items()),
+    )
+    _weak_cache_store(
+        _WBO_SKELETON_CACHE, key, g, payload, _WBO_SKELETON_CACHE_MAX)
+    return payload
+
+
+def _wbo_tolerance_bucket_lookup(g, tolerance):
+    """Return a pair->bucket lookup for the complete WBO graph.
+
+    Buckets are formed by greedy tolerance clustering of the WBO values present
+    in this graph. This avoids a hard grid boundary, so values such as 1.0 and
+    1.1 land in the same bucket when ``tolerance=0.2``.
+
+    The result is served from the per-graph skeleton cache; callers receive a
+    fresh dict so the cached copy can never be mutated.
+    """
+    if tolerance <= 0:
+        raise ValueError("tolerance must be positive")
+    _nodes, _index, pair_buckets, zero_bucket, *_rest = _wbo_skeleton(
+        g, tolerance)
+    return dict(pair_buckets), zero_bucket
+
+
+def _nauty_colored_wbo_graph(g, wbo_tol=0.2, atom_color_tags=None,
+                             node_policy=None):
+    try:
+        import pynauty
+    except ImportError as exc:
+        raise RuntimeError(
+            "pynauty is required for nauty symmetry operations; install "
+            "pynauty or use _color_refine_orbits"
+        ) from exc
+
+    atom_color_tags = dict(atom_color_tags or {})
+    if wbo_tol <= 0:
+        raise ValueError("tolerance must be positive")
+    (nodes, atom_index, pair_buckets, zero_bucket, next_idx,
+     adjacency_dict, edge_colors) = _wbo_skeleton(g, wbo_tol)
+    node_policy = as_node_match_policy(node_policy)
+
+    # Only the atom colouring depends on the policy and tags.  Cells are
+    # inserted in the same order as before (atoms in atom_index order, then
+    # WBO cells in first-appearance order) so the stable str-keyed sort below
+    # yields the identical partition sequence.
+    vertex_colors = {}
+    for node, idx in atom_index.items():
+        tag = atom_color_tags.get(node)
+        vertex_colors.setdefault(
+            ('atom', node_policy.key(g, node), tag), set()).add(idx)
+    for color, cell in edge_colors:
+        vertex_colors[color] = set(cell)
+
     coloring = [
         set(vertices)
         for _, vertices in sorted(vertex_colors.items(), key=lambda item: str(item[0]))
     ]
+    # pynauty copies both inputs (list(set(vs)) per vertex; the partition
+    # cells are appended as given), so the cached adjacency is never mutated.
     nauty_graph = pynauty.Graph(
         next_idx, directed=False,
         adjacency_dict=adjacency_dict,
         vertex_coloring=coloring)
-    return nodes, atom_index, nauty_graph, pair_buckets, zero_bucket
+    return list(nodes), dict(atom_index), nauty_graph, dict(pair_buckets), zero_bucket
 
 
 def _nauty_orbits(g, wbo_tol=0.2, node_policy=None):
@@ -204,15 +299,12 @@ def _nauty_orbits(g, wbo_tol=0.2, node_policy=None):
         zero_bucket=zero_bucket, wbo_tol=wbo_tol)
 
 
-def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None,
-                           node_policy=None):
-    """Atom-level automorphism generators for a colored WBO graph.
+# (graph id, node count, edge count, tolerance, policy, tags) -> generators.
+_ATOM_GENERATOR_MEMO = OrderedDict()
+_ATOM_GENERATOR_MEMO_MAX = 4096
 
-    ``atom_color_tags`` refines the atom coloring before nauty is run.  This
-    lets callers ask for the subgroup that fixes branch-specific atoms or
-    preserves branch-specific target pools, then generate only strict
-    automorphism variants for that branch.
-    """
+
+def _compute_nauty_atom_generators(g, wbo_tol, atom_color_tags, node_policy):
     nodes, atom_index, nauty_graph, _pair_buckets, _zero_bucket = (
         _nauty_colored_wbo_graph(
             g, wbo_tol, atom_color_tags=atom_color_tags,
@@ -237,6 +329,43 @@ def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None,
             seen.add(key)
             out.append(perm)
     return tuple(out)
+
+
+def _nauty_atom_generators(g, wbo_tol=0.2, atom_color_tags=None,
+                           node_policy=None):
+    """Atom-level automorphism generators for a colored WBO graph.
+
+    ``atom_color_tags`` refines the atom coloring before nauty is run.  This
+    lets callers ask for the subgroup that fixes branch-specific atoms or
+    preserves branch-specific target pools, then generate only strict
+    automorphism variants for that branch.
+
+    Memoised per process: the generators are a pure function of the graph
+    (topology, WBO edge values, node attributes read by the policy), the
+    tolerance, the normalised policy and the tag dict, and the same query
+    recurs across branches, seed orders and cuts (repair tags depend only on
+    the target set).  The weak reference guard rejects recycled graph ids, and
+    callers get fresh permutation dicts so the memo is never aliased.
+    """
+    node_policy = as_node_match_policy(node_policy)
+    tags = dict(atom_color_tags or {})
+    memo_key = None
+    try:
+        memo_key = (
+            id(g), g.number_of_nodes(), g.number_of_edges(), float(wbo_tol),
+            node_policy, frozenset(tags.items()))
+        hash(memo_key)
+    except TypeError:
+        memo_key = None
+    if memo_key is not None:
+        cached = _weak_cache_lookup(_ATOM_GENERATOR_MEMO, memo_key, g)
+        if cached is not None:
+            return tuple(dict(perm) for perm in cached)
+    out = _compute_nauty_atom_generators(g, wbo_tol, tags, node_policy)
+    if memo_key is not None:
+        _weak_cache_store(
+            _ATOM_GENERATOR_MEMO, memo_key, g, out, _ATOM_GENERATOR_MEMO_MAX)
+    return tuple(dict(perm) for perm in out)
 
 
 def _atom_tuple_orbit(seed, generators):

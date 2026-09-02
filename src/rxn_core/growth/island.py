@@ -15,8 +15,15 @@ from ..matcher import (
     _orbit_id,
     _symmetry_state,
 )
+from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
 from ..matcher.policy import as_node_match_policy
-from .frontier import _frontier_boundary_edges, _push_edges_from, _set_unique
+from .frontier import (
+    _advance_frontier,
+    _frontier_boundary_edges,
+    _push_edges_from,
+    _set_unique,
+)
+from . import native
 from .result import IslandBranchLimitExceeded, _IsoResult
 from .trace import (
     cand_possible_values,
@@ -57,6 +64,18 @@ def grow_island(g_R, g_P, seed, mapping,
     existing trace_run.HTML viewer.
     """
     node_policy = as_node_match_policy(node_policy)
+    if native.applicable(g_R, g_P, p_orbits, node_policy, events):
+        # compiled engine (rxn_core._engine): same algorithm, same outputs;
+        # returns None when the inputs fall outside what the port covers
+        out = native.grow_island(
+            g_R, g_P, seed, mapping, graph_floor=graph_floor, iso_tol=iso_tol,
+            min_lock_size=min_lock_size, max_branches=max_branches,
+            islands_R=islands_R, p_orbits=p_orbits,
+            prior_deferred_edges=prior_deferred_edges,
+            allow_mapped_seed=allow_mapped_seed, profile=profile,
+            profile_context=profile_context)
+        if out is not None:
+            return out
     record = events is not None
     prof = None
     profile_t0 = None
@@ -142,7 +161,18 @@ def grow_island(g_R, g_P, seed, mapping,
     fragment = {seed}
     distance = {seed: 0}
     used_edges = set()
+    # The candidate canonicalizer depends only on the target graph, its orbit
+    # map, the locked mapping and the node policy, none of which change while
+    # this island grows.  Share one across every extension step so its
+    # pynauty graph, colour-order and target-pool caches persist; each dedupe
+    # call would otherwise rebuild an identical object.
+    canonicalizer = _CandidateAutomorphismCanonicalizer(
+        g_P, p_orbits=p_orbits, locked_mapping=mapping,
+        node_policy=node_policy)
     deferred_edges = {tuple(sorted(e)) for e in (prior_deferred_edges or ())}
+    # Frontier of the committed fragment, advanced per pop by the atoms the
+    # pop adds instead of being rescanned from the whole fragment.
+    frontier_edges = _frontier_boundary_edges(g_R, fragment, graph_floor)
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
     if prof is not None:
@@ -237,18 +267,21 @@ def grow_island(g_R, g_P, seed, mapping,
         if prof is not None:
             prof['max_cands_before'] = max(
                 int(prof['max_cands_before']), int(old_count))
-        old_fragment = set(fragment)
+        # ``fragment`` is only ever rebound (never mutated in place), so the
+        # pre-pop set needs no copy.
+        old_fragment = fragment
         candidate_fragment = fragment | {n}
-        dedupe_fragment = set(candidate_fragment)
+        whole_island = None
         if n_in_mapping and islands_R is not None and n in islands_R:
             target_iid = islands_R[n]
-            dedupe_fragment |= {
-                r for r, k in islands_R.items() if k == target_iid
-            }
-        dedupe_edges = (
-            set(deferred_edges) |
-            _frontier_boundary_edges(g_R, dedupe_fragment, graph_floor)
-        )
+            whole_island = [r for r, k in islands_R.items() if k == target_iid]
+            dedupe_fragment = candidate_fragment | set(whole_island)
+        else:
+            dedupe_fragment = candidate_fragment
+        pop_frontier = _advance_frontier(
+            frontier_edges, g_R, dedupe_fragment,
+            dedupe_fragment - fragment, graph_floor)
+        dedupe_edges = deferred_edges | pop_frontier
         # Symmetry-compressed incremental extension.  It applies the same
         # element/WBO checks as the concrete incremental matcher, but groups
         # target atoms by local orbit/context before constructing children.
@@ -257,7 +290,8 @@ def grow_island(g_R, g_P, seed, mapping,
             cands, fragment, n, g_R, g_P, mapping,
             iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
             deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo,
-            dedupe_edges=dedupe_edges, node_policy=node_policy)
+            dedupe_edges=dedupe_edges, node_policy=node_policy,
+            canonicalizer=canonicalizer)
         if len(new_cands) > max_branches:
             _finish_profile(
                 'live_branch_cap', len(new_cands), candidate_fragment,
@@ -298,14 +332,16 @@ def grow_island(g_R, g_P, seed, mapping,
                     int(prof['max_cands_after']), int(len(new_cands)))
             cands = new_cands
             ref_dist = distance.get(u, 0) + 1
-            if n_in_mapping and islands_R is not None and n in islands_R:
-                target_iid = islands_R[n]
-                whole_island = [r for r, k in islands_R.items() if k == target_iid]
-                candidate_fragment = candidate_fragment | set(whole_island)
+            if whole_island is not None:
+                # Same set as ``candidate_fragment | set(whole_island)``.
+                candidate_fragment = dedupe_fragment
                 added_extra = [r for r in whole_island if r not in distance]
                 for r in added_extra:
                     distance[r] = ref_dist
             fragment = candidate_fragment
+            # The committed fragment is exactly the tentative one, so its
+            # frontier is the one already advanced for this pop.
+            frontier_edges = pop_frontier
             for r in fragment - old_fragment:
                 if r not in distance:
                     distance[r] = ref_dist
@@ -373,7 +409,8 @@ def grow_island(g_R, g_P, seed, mapping,
     cands = _dedup_sym_cands(
         cands, g_R, g_P, r_orbits=r_orbits, p_orbits=p_orbits,
         fragment=fragment, deferred_edges=deferred_edges,
-        locked_mapping=mapping, node_policy=node_policy)
+        locked_mapping=mapping, node_policy=node_policy,
+        canonicalizer=canonicalizer)
 
     # heap empty
     if not cands or len(fragment) < min_lock_size:

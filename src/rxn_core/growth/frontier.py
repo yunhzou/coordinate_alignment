@@ -50,3 +50,23 @@ def _frontier_boundary_edges(g_R, fragment, graph_floor):
             if g_R[atom][nb]['wbo'] >= graph_floor:
                 edges.add(tuple(sorted((atom, nb))))
     return edges
+
+
+def _advance_frontier(edges, g_R, fragment, added, graph_floor):
+    """``_frontier_boundary_edges(g_R, fragment, graph_floor)`` computed from
+    ``edges``, the frontier of ``fragment - added``.
+
+    Only edges at an added atom can change status: an edge into the enlarged
+    fragment is no longer (or never was) a frontier edge, an edge leaving it
+    at or above the floor becomes one, and every edge between two unchanged
+    atoms keeps its status.  Returns a new set; ``edges`` is not modified.
+    """
+    out = set(edges)
+    for atom in added:
+        for nb in g_R.neighbors(atom):
+            edge = tuple(sorted((atom, nb)))
+            if nb in fragment:
+                out.discard(edge)
+            elif g_R[atom][nb]['wbo'] >= graph_floor:
+                out.add(edge)
+    return out

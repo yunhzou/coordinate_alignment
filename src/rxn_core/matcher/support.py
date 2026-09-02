@@ -3,8 +3,21 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .primitives import SYM_SUPPORT_MAX_STATES, _edge_wbo, _growth_edge_supported, _orbit_id, _wbo_bucket
-from .state import _SymBlock, _SymCand, _sym_block_indexes
+from .primitives import (
+    SYM_SUPPORT_MAX_STATES,
+    _edge_wbo,
+    _growth_edge_supported,
+    _load_fast_kernels,
+    _orbit_id,
+    _wbo_bucket,
+)
+from .state import (
+    _SymBlock,
+    _SymCand,
+    _derive_roles,
+    _pool_role,
+    _sym_block_indexes,
+)
 
 
 def _r_compatible_with_block(cand, block_idx, n, fragment, g_R, r_orbits):
@@ -83,15 +96,63 @@ def _refine_sym_assignments(cand, assignments):
                 m[r] = p
                 used.add(p)
             continue
-        new_blocks.append(_SymBlock(remaining_r, remaining_p,
-                                    extendable=block.extendable))
+        if remaining_r == block.r_atoms and remaining_p == block.p_atoms:
+            # Untouched block: a rebuilt one would be equal field by field
+            # (both atom tuples are already sorted and unique).
+            new_blocks.append(block)
+        else:
+            new_blocks.append(_SymBlock(remaining_r, remaining_p,
+                                        extendable=block.extendable))
     exact_fixed = set(cand.exact_fixed)
     try:
-        return _SymCand(m, tuple(new_blocks), exact_fixed=exact_fixed,
-                        multiplicity=cand.multiplicity,
-                        automorph_blocks=cand.automorph_blocks)
+        child = _SymCand(m, tuple(new_blocks), exact_fixed=exact_fixed,
+                         multiplicity=cand.multiplicity,
+                         automorph_blocks=cand.automorph_blocks)
     except ValueError:
         return None
+    if cand._roles is not None:
+        child._roles = _derive_roles(
+            cand, child,
+            *_refined_role_delta(cand, child, new_blocks, assignments,
+                                 block_r))
+    return child
+
+
+def _refined_role_delta(cand, child, new_blocks, assignments, old_block_r):
+    """``(removed, added)`` fixed/pool role items between ``cand`` and its
+    ``_refine_sym_assignments`` child.
+
+    Blocks kept by identity contribute nothing; every other old block loses
+    its pool role on its whole pool and every rebuilt block gains its own.  A
+    fixed pair can only appear, disappear or change for an assigned atom or
+    for a block atom whose block dissolved: unassigned atoms outside every
+    block keep their image, and atoms inside a surviving block carry no
+    mapped role in either candidate.
+    """
+    removed = []
+    added = []
+    for block in cand.blocks:
+        if any(block is kept for kept in new_blocks):
+            continue
+        role = _pool_role(block)
+        removed.extend((p, role) for p in block.p_atoms)
+    for block in new_blocks:
+        if any(block is old for old in cand.blocks):
+            continue
+        role = _pool_role(block)
+        added.extend((p, role) for p in block.p_atoms)
+    new_block_r = {r for block in new_blocks for r in block.r_atoms}
+    for r in set(assignments) | (old_block_r - new_block_r):
+        old_p = cand.mapping.get(r) if r not in old_block_r else None
+        new_p = child.mapping.get(r) if r not in new_block_r else None
+        if old_p == new_p:
+            continue
+        role = ('mapped', int(r))
+        if old_p is not None:
+            removed.append((old_p, role))
+        if new_p is not None:
+            added.append((new_p, role))
+    return removed, added
 
 
 def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
@@ -104,7 +165,8 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
     `_SymCand` blocks represent a pool of legal P atoms, but the stored
     mapping is only one witness.  Extension must therefore ask whether some
     assignment inside each unresolved block can satisfy the new edge pattern,
-    not whether the current witness happens to satisfy it.
+    not whether the current witness happens to satisfy it.  ``block_indexes``
+    may carry the candidate's precomputed ``_sym_block_indexes`` result.
     """
     strict_by_r = dict(strict_r_wbos or ())
     graph_floor = float(g_P.graph.get("bond_cut", 0.2))
@@ -131,10 +193,10 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
                 return None
         return support
 
-    r_to_block, p_to_block = (
-        _sym_block_indexes(cand)
-        if block_indexes is None else block_indexes
-    )
+    if block_indexes is None:
+        r_to_block, p_to_block = _sym_block_indexes(cand)
+    else:
+        r_to_block, p_to_block = block_indexes
     block_r = set(r_to_block)
     fixed_used = {p for r, p in cand.mapping.items() if r not in block_r}
     if v_n in fixed_used and cand.get(n) != v_n:
@@ -242,3 +304,13 @@ def _force_sym_value(cand, r, p, fragment, g_R, r_orbits, p_orbits):
     if p in fixed_used:
         return None
     return cand.with_fixed(r, p)
+
+
+# The pure-Python witness search stays available under a fixed name (the
+# compiled kernel delegates to it for inputs it does not cover, and the
+# differential test compares against it); the public name is rebound only
+# when RXN_CORE_FAST=1 selects the compiled extension.
+_support_witness_for_value_py = _support_witness_for_value
+_fast = _load_fast_kernels()
+if _fast is not None:
+    _support_witness_for_value = _fast.support_witness_for_value
