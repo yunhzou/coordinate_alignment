@@ -63,3 +63,4 @@ out/bgcp_alignment_eval*.json
 build/
 dist/
 *.egg
+*.so

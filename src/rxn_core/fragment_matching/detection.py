@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, replace
 
+from .._native import paired_mapping_invariant as _native_paired_invariant
 from ..alignment.branch import _generate_seed_orders
 from ..growth import IslandBranchLimitExceeded, grow_island
 from ..matcher import (
@@ -42,16 +43,6 @@ def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
         (source_orbits[source_atom], target_orbits[target_atom])
         for source_atom, target_atom in pairs
     ]
-    initial_color_counts = tuple(sorted(Counter(raw_colors).items()))
-
-    def compact(values):
-        classes = {
-            value: index for index, value in enumerate(
-                sorted(set(values), key=repr))
-        }
-        return [classes[value] for value in values]
-
-    colors = compact(raw_colors)
     source_zero = getattr(source_orbits, "zero_bucket", None)
     target_zero = getattr(target_orbits, "zero_bucket", None)
     if source_zero is not None and target_zero is not None:
@@ -94,59 +85,25 @@ def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
             for pair, relation in relations.items()
             if relation != zero_relation
         }
-        active_by_position = [[] for _pair in pairs]
-        for (left, right), relation in relations.items():
-            active_by_position[left].append((right, relation))
-            active_by_position[right].append((left, relation))
-
-        for _ in pairs:
-            class_counts = Counter(colors)
-            signatures = []
-            for left in range(len(pairs)):
-                neighborhood = Counter({
-                    (zero_relation, color): count
-                    for color, count in class_counts.items()
-                })
-                neighborhood[(zero_relation, colors[left])] -= 1
-                for right, relation in active_by_position[left]:
-                    neighbor_color = colors[right]
-                    neighborhood[(zero_relation, neighbor_color)] -= 1
-                    neighborhood[(relation, neighbor_color)] += 1
-                signatures.append((
-                    colors[left],
-                    tuple(sorted(
-                        (key, count) for key, count in neighborhood.items()
-                        if count)),
-                ))
-            refined = compact(signatures)
-            if refined == colors:
-                break
-            colors = refined
-
-        color_counts = tuple(sorted(Counter(colors).items()))
-        refined_counts = Counter(colors)
-        relation_counts = Counter()
-        for left_color, left_count in refined_counts.items():
-            relation_counts[(
-                left_color, left_color, zero_relation)] += (
-                    left_count * (left_count - 1) // 2)
-            for right_color, right_count in refined_counts.items():
-                if left_color < right_color:
-                    relation_counts[(
-                        left_color, right_color, zero_relation)] += (
-                            left_count * right_count)
-        for (left, right), relation in relations.items():
-            color_pair = tuple(sorted((colors[left], colors[right])))
-            relation_counts[(*color_pair, zero_relation)] -= 1
-            relation_counts[(*color_pair, relation)] += 1
-        return (
-            initial_color_counts,
-            color_counts,
-            tuple(sorted(
-                (key, count) for key, count in relation_counts.items()
-                if count)),
+        return _native_paired_invariant(
+            raw_colors,
+            zero_relation,
+            tuple(
+                (left, right, relation[0], relation[1])
+                for (left, right), relation in relations.items()
+            ),
         )
 
+    initial_color_counts = tuple(sorted(Counter(raw_colors).items()))
+
+    def compact(values):
+        classes = {
+            value: index for index, value in enumerate(
+                sorted(set(values), key=repr))
+        }
+        return [classes[value] for value in values]
+
+    colors = compact(raw_colors)
     relations = {}
     for left in range(len(pairs)):
         source_left, target_left = pairs[left]
