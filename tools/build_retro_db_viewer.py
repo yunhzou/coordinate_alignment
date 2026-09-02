@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from build_retro_demo_viewer import _mol_3d
+from molecule_3d import mol_3d
 
 
 COLORS = (
@@ -16,7 +16,7 @@ COLORS = (
 )
 def _model(smiles, candidate, color, cache):
     if smiles not in cache:
-        cache[smiles] = _mol_3d(
+        cache[smiles] = mol_3d(
             smiles, spread_ions=True, show_hydrogens=True)
     block, coords, elements = cache[smiles]
     return {
@@ -24,6 +24,9 @@ def _model(smiles, candidate, color, cache):
         "coords": coords,
         "elements": elements,
         "styles": [{"indices": candidate["retained_atoms"], "color": color}],
+        "symmetryStyles": [{
+            "indices": candidate["symmetry_retained_atoms"], "color": color,
+        }],
         "labels": [
             {"atom": int(source), "text": f"P{int(target)}"}
             for source, target in candidate["mapping"]
@@ -55,6 +58,9 @@ def _group_precursors(precursors):
         group["retained_atoms"] = sorted({
             atom for item in copies for atom in item["retained_atoms"]
         })
+        group["symmetry_retained_atoms"] = sorted({
+            atom for item in copies for atom in item["symmetry_retained_atoms"]
+        })
         group["covered_target_atoms"] = sorted({
             atom for item in copies for atom in item["covered_target_atoms"]
         })
@@ -71,6 +77,12 @@ def _group_precursors(precursors):
         group["mapping"] = [
             pair for item in copies for pair in item["mapping"]
         ]
+        group["symmetry_target_atoms"] = sorted({
+            int(target)
+            for item in copies
+            for _source, targets in item["target_domains"]
+            for target in targets
+        })
     return groups
 
 
@@ -90,7 +102,7 @@ def _matches_expected(assembly, known_ids, expected_coverage):
 def _payload(report, top_count, known_ids, expected_coverage, title, known_label):
     target_smiles = report["target_smiles"]
     cache = {}
-    target_block, target_coords, target_elements = _mol_3d(
+    target_block, target_coords, target_elements = mol_3d(
         target_smiles, show_hydrogens=True)
     ranked = report["assemblies"]
     known_rank = next(
@@ -123,11 +135,16 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
             {"indices": item["covered_target_atoms"], "color": COLORS[index]}
             for index, item in enumerate(precursors)
         ]
+        product_symmetry_styles = [
+            {"indices": item["symmetry_target_atoms"], "color": COLORS[index]}
+            for index, item in enumerate(precursors)
+        ]
         models.append({
             "mol": target_block,
             "coords": target_coords,
             "elements": target_elements,
             "styles": product_styles,
+            "symmetryStyles": product_symmetry_styles,
             "labels": [
                 {"atom": atom, "text": f"P{atom}"}
                 for atom in range(len(target_elements))
@@ -148,6 +165,7 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
                 "unmatched": item["leftover_atoms"],
                 "complete": item["complete"],
                 "multiplicity": item["multiplicity"],
+                "symmetry_positions": len(item["symmetry_target_atoms"]),
             } for item in precursors],
             "models": models,
         })
@@ -199,13 +217,13 @@ main{{display:grid;grid-template-rows:1fr 1fr;min-width:0}} #reactants{{display:
 </style><script>{library}</script></head><body>
 <header><div><h1>{payload['summary']['title']}</h1><div class="muted">Explicit-H fragment mappings · select an assembly to inspect it in 3D</div></div>
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
-<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors. <span style="color:#d33">Red = broken</span>; <span style="color:#159447">green = formed</span>.<br><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
-<main><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><br><label><input id="labels" type="checkbox"> mapped P# identities</label></div><div id="reactants"></div>
+<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors. Symmetry mode colors every R position in the retained source orbits and every P position allowed by the compressed target domains. These are alternative matchable positions, not extra simultaneous assignments. <span style="color:#d33">Red = broken</span>; <span style="color:#159447">green = formed</span>.<br><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
+<main><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><br><label><input id="symmetry" type="checkbox"> show symmetry domains</label><br><label><input id="labels" type="checkbox"> sampled P# identities</label></div><div id="reactants"></div>
 <div id="productWrap"><section class="panel" id="Ppanel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data}, colors={json.dumps(COLORS)}, viewers={{}};
 function pt(m,i){{return {{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}}
 function showModel(id,m){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}
- v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});if(document.getElementById('fragments').checked)m.styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.19}},sphere:{{color:s.color,scale:.34}}}}));
+ v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});if(document.getElementById('fragments').checked){{const symmetry=document.getElementById('symmetry').checked;const styles=symmetry&&(m.symmetryStyles||[]).length?m.symmetryStyles:m.styles;styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.19}},sphere:{{color:s.color,scale:.34}}}}))}}
  m.broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));m.formed.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.11,color:'#16a34a'}}));
  if(document.getElementById('labels').checked)(m.labels||[]).forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.72,inFront:true}}));v.zoomTo();v.render()}}
 function patternInfo(id){{return data.patterns.find(x=>x.pattern===id)}}
@@ -213,7 +231,7 @@ function patternText(id){{const p=patternInfo(id);return p?(p.fragment_sizes.len
 function select(i){{const a=data.assemblies[i];document.querySelectorAll('.result').forEach(x=>x.classList.toggle('active',Number(x.dataset.index)===i));Object.keys(viewers).filter(k=>k.startsWith('R')).forEach(k=>delete viewers[k]);const wrap=document.getElementById('reactants');wrap.innerHTML='';a.precursors.forEach((r,j)=>{{const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<div class="label" id="L'+j+'"></div><div class="view" id="R'+j+'"></div>';wrap.appendChild(panel);const mult=r.multiplicity>1?' ×'+r.multiplicity:'';document.getElementById('L'+j).innerHTML='<b><span style="color:'+colors[j%colors.length]+'">R'+(j+1)+'</span> · '+r.id+mult+'</b><small>'+r.smiles+'</small><small>retained '+r.retained.length+' atom positions; unmatched '+r.unmatched+' across copies</small>';showModel('R'+j,a.models[j])}});
  const retention=a.score.set_atom_retention===undefined?'':(' · direct retention '+(100*a.score.set_atom_retention).toFixed(1)+'%');const symmetryRetention=a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%');const chiral=a.score.chirality_violations===undefined?'':(' · chirality violations '+a.score.chirality_violations);document.getElementById('LP').innerHTML='<b>P target · Pattern '+a.pattern+': '+patternText(a.pattern)+'</b><small>recommendation '+a.rank+' · '+a.score.broken_bonds+' broken, '+a.score.leftover_atoms+' unmatched, '+a.score.formed_bonds+' formed'+retention+symmetryRetention+chiral+'</small>';showModel('P',a.models[a.precursors.length])}}
 const list=document.getElementById('list');let lastPattern=null;data.assemblies.forEach((a,i)=>{{if(a.pattern!==lastPattern){{const h=document.createElement('div');h.className='patternhead';h.innerHTML='Pattern '+a.pattern+'<small>'+patternText(a.pattern)+' · colored regions on P define this construction</small>';list.appendChild(h);lastPattern=a.pattern}}const b=document.createElement('button');b.className='result';b.dataset.index=i;b.innerHTML='<span class="rank">recommendation '+a.rank+'</span>'+(a.known?'<span class="badge">KNOWN '+data.summary.known_label.toUpperCase()+'</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">direct retention '+(a.score.set_atom_retention===undefined?'n/a':(100*a.score.set_atom_retention).toFixed(1)+'%')+(a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%'))+' · broken '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · formed '+a.score.formed_bonds+(a.score.chirality_violations===undefined?'':' · chirality '+a.score.chirality_violations)+'</div>';b.onclick=()=>select(i);list.appendChild(b)}});
-function redraw(){{select([...document.querySelectorAll('.result')].findIndex(x=>x.classList.contains('active')))}}document.getElementById('labels').onchange=redraw;document.getElementById('fragments').onchange=redraw;if(data.assemblies.length){{const knownIndex=data.assemblies.findIndex(x=>x.known);select(knownIndex>=0?knownIndex:0)}}window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
+function redraw(){{select([...document.querySelectorAll('.result')].findIndex(x=>x.classList.contains('active')))}}document.getElementById('labels').onchange=redraw;document.getElementById('fragments').onchange=redraw;document.getElementById('symmetry').onchange=redraw;if(data.assemblies.length){{const knownIndex=data.assemblies.findIndex(x=>x.known);select(knownIndex>=0?knownIndex:0)}}window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
 
 
 def main():

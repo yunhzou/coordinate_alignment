@@ -71,6 +71,13 @@ def candidate_entry(
     total_heavy_atoms = explicit_molecule.GetNumHeavyAtoms()
     symmetry_copy_capacity = _symmetry_copy_capacity(
         candidate["retained_atoms"], source_orbits)
+    retained_orbits = {
+        source_orbits[int(atom)] for atom in candidate["retained_atoms"]
+    }
+    symmetry_retained_atom_indices = sorted(
+        int(atom) for atom, orbit in source_orbits.items()
+        if orbit in retained_orbits
+    )
     symmetry_retained_atoms = min(
         total_atom_count, retained_atom_count * symmetry_copy_capacity)
     symmetry_retained_heavy_atoms = min(
@@ -100,6 +107,7 @@ def candidate_entry(
         "total_atom_count": total_atom_count,
         "atom_retention": retained_atom_count / total_atom_count,
         "symmetry_copy_capacity": symmetry_copy_capacity,
+        "symmetry_retained_atoms": symmetry_retained_atom_indices,
         "symmetry_retained_atom_count": symmetry_retained_atoms,
         "symmetry_retained_heavy_atoms": symmetry_retained_heavy_atoms,
         "symmetry_atom_retention": (

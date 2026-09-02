@@ -9,7 +9,7 @@ from pathlib import Path
 
 from rdkit import Chem
 
-from build_retro_demo_viewer import _mol_3d
+from molecule_3d import mol_3d
 
 
 COLORS = {"mapped": "#1565c0", "leaving": "#c62828",
@@ -17,7 +17,7 @@ COLORS = {"mapped": "#1565c0", "leaving": "#c62828",
 
 
 def _model(smiles, mapped, *, target=False):
-    block, coords, elements = _mol_3d(smiles, show_hydrogens=True)
+    block, coords, elements = mol_3d(smiles, show_hydrogens=True)
     size = len(elements)
     mapped = set(map(int, mapped))
     classes = {
