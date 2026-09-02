@@ -1258,6 +1258,27 @@ def test_generate_seed_orders_honors_trial_cap():
     assert all(g.degree[order[0]] > 0 for order in orders)
 
 
+def test_generate_seed_order_matches_full_list_element():
+    # Six bonded atoms plus two isolated H (ambiguous: 'H' occurs four times),
+    # so atoms 6 and 7 are not anchors and orders 6, 7 wrap around to anchor
+    # positions 0 and 1.
+    elements = ["C", "C", "C", "C", "H", "H", "H", "H"]
+    wbo = np.zeros((8, 8))
+    for i, j in [(0, 1), (1, 2), (2, 3), (0, 4), (3, 5)]:
+        wbo[i, j] = wbo[j, i] = 1.0
+    g = build_graph(elements, wbo, bond_cut=0.2)
+
+    orders = _generate_seed_orders(g, n_trials=8)
+
+    assert len(orders) == 8
+    for idx in range(8):
+        assert branch_mod._generate_seed_order(g, idx) == orders[idx]
+    assert branch_mod._generate_seed_order(
+        g, 2, rng_seed=7) == _generate_seed_orders(g, 3, rng_seed=7)[2]
+    with pytest.raises(IndexError):
+        branch_mod._generate_seed_order(g, -1)
+
+
 def test_generate_seed_orders_deprioritizes_common_isolated_atoms():
     elements = ["C", "C", "C", "H", "H", "H", "H"]
     wbo = np.zeros((7, 7))

@@ -913,16 +913,8 @@ def _ordered_seed_nodes(g_R, rng, common_element_threshold=3):
     return contextual + ambiguous
 
 
-def _generate_seed_orders(g_R, n_trials, rng_seed=42,
-                          common_element_threshold=1):
-    """Generate at most `n_trials` deterministic seed orderings.
-
-    Seeds are deterministic random orderings, not chemistry/core-prioritized
-    rankings.  The only special case is an isolated atom whose element occurs
-    multiple times: that atom has no graph context, so it is retained but kept
-    behind contextual atoms and is not used as an anchor unless no contextual
-    anchor exists.
-    """
+def _seed_anchor_candidates(g_R, rng_seed, common_element_threshold):
+    """Base ordering under ``rng_seed`` minus ambiguous isolated atoms."""
     nodes = _ordered_seed_nodes(
         g_R,
         random.Random(rng_seed),
@@ -935,20 +927,58 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42,
         element = g_R.nodes[n].get('element')
         return int(g_R.degree[n]) == 0 and element_counts[element] > threshold
 
-    anchors = [n for n in nodes if not ambiguous_isolated(n)] or nodes
+    return [n for n in nodes if not ambiguous_isolated(n)] or nodes
+
+
+def _seed_order_at(g_R, anchors, idx, rng_seed, common_element_threshold):
+    """Order ``idx``: its anchor first, then a fresh shuffle seeded per idx."""
+    anchor = anchors[idx % len(anchors)]
+    rest = [
+        n for n in _ordered_seed_nodes(
+            g_R,
+            random.Random(rng_seed + idx + 1),
+            common_element_threshold=common_element_threshold,
+        )
+        if n != anchor
+    ]
+    return [anchor] + rest
+
+
+def _generate_seed_orders(g_R, n_trials, rng_seed=42,
+                          common_element_threshold=1):
+    """Generate at most `n_trials` deterministic seed orderings.
+
+    Seeds are deterministic random orderings, not chemistry/core-prioritized
+    rankings.  The only special case is an isolated atom whose element occurs
+    multiple times: that atom has no graph context, so it is retained but kept
+    behind contextual atoms and is not used as an anchor unless no contextual
+    anchor exists.
+    """
+    anchors = _seed_anchor_candidates(g_R, rng_seed, common_element_threshold)
     orders = []
     n_trials = max(0, int(n_trials))
     if not anchors:
         return orders
     for idx in range(n_trials):
-        anchor = anchors[idx % len(anchors)]
-        rest = [
-            n for n in _ordered_seed_nodes(
-                g_R,
-                random.Random(rng_seed + idx + 1),
-                common_element_threshold=common_element_threshold,
-            )
-            if n != anchor
-        ]
-        orders.append([anchor] + rest)
+        orders.append(_seed_order_at(
+            g_R, anchors, idx, rng_seed, common_element_threshold))
     return orders
+
+
+def _generate_seed_order(g_R, index, rng_seed=42,
+                         common_element_threshold=1):
+    """Return ``_generate_seed_orders(g_R, n)[index]`` for any ``n > index``.
+
+    Order ``index`` depends only on the shared base ordering (``rng_seed``)
+    and its own generator (``rng_seed + index + 1``), so it is built without
+    generating the other orders.  Raises ``IndexError`` where indexing the
+    full list would (negative index, or a graph without seed anchors).
+    """
+    index = int(index)
+    if index < 0:
+        raise IndexError("seed order index must be non-negative")
+    anchors = _seed_anchor_candidates(g_R, rng_seed, common_element_threshold)
+    if not anchors:
+        raise IndexError("no seed anchors are available")
+    return _seed_order_at(g_R, anchors, index, rng_seed,
+                          common_element_threshold)
