@@ -192,8 +192,15 @@ def record(out_path, case="tempo", workers=1):
 def compare(a_path, b_path):
     a = json.loads(Path(a_path).read_text())
     b = json.loads(Path(b_path).read_text())
-    same_pool = a["pool"] == b["pool"]
+    # Mechanism key order depends on the merge path (the parallel bucket
+    # reduce yields a different dict order than the serial pool); compare
+    # contents keyed by mechanism and report order separately.
+    def keyed(pool):
+        return {m["key"]: m for m in pool}
+    same_pool = keyed(a["pool"]) == keyed(b["pool"]) and len(a["pool"]) == len(b["pool"])
+    same_order = [m["key"] for m in a["pool"]] == [m["key"] for m in b["pool"]]
     print("pool identical           :", same_pool)
+    print("mechanism order identical:", same_order)
     for key in ("digest_extend", "digest_grow", "digest_find_islands"):
         print(f"{key:25s}:", "identical" if a[key] == b[key] else "DIFFERENT")
     print(f"elapsed  {a['elapsed_seconds']:.2f} s -> {b['elapsed_seconds']:.2f} s  "
@@ -204,10 +211,12 @@ def compare(a_path, b_path):
         if a["counts"][k] != b["counts"].get(k):
             print(f"  count {k:22s} {a['counts'][k]} -> {b['counts'].get(k)}")
     if not same_pool:
-        # locate first difference
-        for i, (ma, mb) in enumerate(zip(a["pool"], b["pool"])):
-            if ma != mb:
-                print("first differing mechanism index", i, "key", ma["key"][:80])
+        kb = keyed(b["pool"])
+        for i, ma in enumerate(a["pool"]):
+            mb = kb.get(ma["key"])
+            if mb != ma:
+                print("first differing mechanism index", i, "key", ma["key"][:80],
+                      "(missing in second)" if mb is None else "")
                 break
         sys.exit(1)
 

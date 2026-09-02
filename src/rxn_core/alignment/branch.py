@@ -6,7 +6,7 @@ from collections import Counter, defaultdict, deque
 
 import numpy as np
 
-from ..frag import bond_event_threshold, classify_bonds
+from ..frag import classify_bonds, is_metal_element
 from ..growth import IslandBranchLimitExceeded, grow_island
 from ..matcher import (
     _boundary_signature,
@@ -19,6 +19,9 @@ from ..matcher import (
 )
 
 SYM_REPAIR_MAX_EVALS = 20000
+# States scored per vectorised batch inside symmetry_repair_mapping; bounds the
+# transient (states x local pairs) work arrays.
+_SYM_REPAIR_SCORE_CHUNK = 512
 
 
 class BranchLimitExceeded(RuntimeError):
@@ -309,6 +312,16 @@ def _alignment_state_signature(mapping, deferred_edges, g_R, g_P,
     return tuple(fixed), tuple(sorted(internal_pairs)), boundary
 
 
+def _change_score_from_events(broken, formed):
+    """Score of an already classified event set (former loop, unchanged)."""
+    delta = 0.0
+    for a, b, wR, wP in broken:
+        delta += abs(float(wR or 0.0) - float(wP or 0.0))
+    for a, b, wR, wP in formed:
+        delta += abs(float(wP or 0.0) - float(wR or 0.0))
+    return (len(broken) + len(formed), round(delta, 12))
+
+
 def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
                           elements_R=None, elements_P=None,
                           metal_dwbo_threshold=None):
@@ -316,12 +329,7 @@ def _mapping_change_score(mapping, wbo_R, wbo_P, dwbo_threshold=0.5,
         mapping, wbo_R, wbo_P, dwbo_threshold=dwbo_threshold,
         elements_R=elements_R, elements_P=elements_P,
         metal_dwbo_threshold=metal_dwbo_threshold)
-    delta = 0.0
-    for a, b, wR, wP in broken:
-        delta += abs(float(wR or 0.0) - float(wP or 0.0))
-    for a, b, wR, wP in formed:
-        delta += abs(float(wP or 0.0) - float(wR or 0.0))
-    return (len(broken) + len(formed), round(delta, 12))
+    return _change_score_from_events(broken, formed)
 
 
 def _normalize_anchor_map(anchor_map, g_R, g_P):
@@ -433,65 +441,91 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
     if not groups:
         return (mapping0, stats) if return_stats else mapping0
 
-    local_pairs = []
     nR = wbo_R.shape[0]
-    for i in range(nR):
-        for j in range(i + 1, nR):
-            if i not in mapping0 or j not in mapping0:
-                continue
-            if i not in local and j not in local:
-                continue
-            local_pairs.append((
-                i, j, float(wbo_R[i, j]),
-                bond_event_threshold(
-                    elements_R, i, j,
-                    default_threshold=dwbo_threshold,
-                    metal_threshold=metal_dwbo_threshold)))
-
-    pair_i = np.fromiter(
-        (item[0] for item in local_pairs), dtype=np.intp,
-        count=len(local_pairs))
-    pair_j = np.fromiter(
-        (item[1] for item in local_pairs), dtype=np.intp,
-        count=len(local_pairs))
-    pair_wbo_R = np.fromiter(
-        (item[2] for item in local_pairs), dtype=float,
-        count=len(local_pairs))
-    pair_threshold = np.fromiter(
-        (item[3] for item in local_pairs), dtype=float,
-        count=len(local_pairs))
+    # Vectorised form of the former O(N^2) local_pairs loop.  Exact because
+    # np.triu_indices enumerates the same i<j row-major pair order, the mask
+    # applies the same "both mapped and at least one local" test, the WBO
+    # values are the same float64 entries, and the threshold column applies
+    # bond_event_threshold's rule (metal cutoff iff either endpoint is a
+    # metal, else default) with the same float() conversions.
+    mapped_mask = np.zeros(nR, dtype=bool)
+    for r in mapping0:
+        r = int(r)
+        if 0 <= r < nR:
+            mapped_mask[r] = True
+    local_mask = np.zeros(nR, dtype=bool)
+    for r in local:
+        r = int(r)
+        if 0 <= r < nR:
+            local_mask[r] = True
+    upper_i, upper_j = np.triu_indices(nR, 1)
+    keep = (
+        mapped_mask[upper_i] & mapped_mask[upper_j]
+        & (local_mask[upper_i] | local_mask[upper_j]))
+    pair_i = upper_i[keep].astype(np.intp)
+    pair_j = upper_j[keep].astype(np.intp)
+    pair_wbo_R = np.asarray(wbo_R)[pair_i, pair_j].astype(float)
+    if elements_R is None or metal_dwbo_threshold is None:
+        pair_threshold = np.full(pair_i.shape, float(dwbo_threshold))
+    else:
+        metal_mask = np.array(
+            [is_metal_element(element) for element in elements_R],
+            dtype=bool)
+        pair_threshold = np.where(
+            metal_mask[pair_i] | metal_mask[pair_j],
+            float(metal_dwbo_threshold), float(dwbo_threshold))
     pair_r_active = pair_wbo_R >= float(bond_floor)
     current_images = np.full(nR, -1, dtype=np.intp)
     for r, p in mapping0.items():
         current_images[int(r)] = int(p)
+    wbo_P_array = np.asarray(wbo_P)
+    bond_floor_value = float(bond_floor)
 
-    def local_score(images):
-        """Exact former score with pair classification vectorized.
+    def local_scores(image_rows):
+        """Exact former single-state score applied to every row at once.
 
-        ``sum(list, 0.0)`` intentionally retains the former left-to-right
-        floating-point accumulation before the 12-place rounding tie-break.
+        Each row undergoes the same elementwise IEEE operations the former
+        per-state version used (subtract, abs, compare, select, scale by
+        0.01), so a row's contribution vector is bit-identical to scoring that
+        state alone; only the per-call interpreter overhead is shared.
+        ``|d| >= t`` replaces ``(d >= t) | (-d >= t)``: the two agree for every
+        double, including NaN, infinities and signed zero.  The former
+        ``sum(contribution.tolist(), 0.0)`` was a strict left-to-right chain of
+        double additions; ``np.add.accumulate`` along each row performs the
+        identical chain (``out[i] = out[i-1] + x[i]``, no pairwise
+        reassociation), and its last column is therefore the same double.  The
+        leading ``0.0 +`` of ``sum`` is inert because contributions are
+        ``abs`` values, ``abs * 0.01`` or the literal ``0.0`` (never ``-0.0``).
+        The 12-place rounding tie-break is applied to that same double.
         """
-        pair_wbo_P = np.asarray(wbo_P)[
-            images[pair_i], images[pair_j]]
+        pair_wbo_P = wbo_P_array[
+            image_rows[:, pair_i], image_rows[:, pair_j]]
         difference = pair_wbo_R - pair_wbo_P
-        changed_mask = (
-            (difference >= pair_threshold)
-            | (-difference >= pair_threshold)
-        )
+        magnitude = np.abs(difference)
+        changed_mask = magnitude >= pair_threshold
         contribution = np.where(
             changed_mask,
-            np.abs(difference),
+            magnitude,
             np.where(
-                pair_r_active | (pair_wbo_P >= float(bond_floor)),
-                np.abs(difference) * 0.01,
+                pair_r_active | (pair_wbo_P >= bond_floor_value),
+                magnitude * 0.01,
                 0.0,
             ),
         )
-        delta = sum(contribution.tolist(), 0.0)
-        return (int(np.count_nonzero(changed_mask)), round(delta, 12))
+        if contribution.shape[1]:
+            totals = np.add.accumulate(contribution, axis=1)[:, -1]
+        else:
+            totals = np.zeros(contribution.shape[0])
+        return [
+            (int(count), round(total, 12))
+            for count, total in zip(
+                np.count_nonzero(changed_mask, axis=1).tolist(),
+                totals.tolist())
+        ]
 
     current = dict(mapping0)
-    current_score = local_score(current_images)
+    current_score = local_scores(current_images[None, :])[0]
+    repaired_any = False
     for key, rs in sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])):
         stats['groups'].append({
             'element': key[0],
@@ -523,7 +557,10 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
         while queue and stats['evaluated'] < max_evals:
             state = queue.popleft()
             for generator in generators:
-                image = tuple(generator.get(p, p) for p in state)
+                # map(get, state, state) calls get(p, p) per atom exactly as
+                # the former generator expression did, without a frame per
+                # element.
+                image = tuple(map(generator.get, state, state))
                 if image in states:
                     continue
                 states.add(image)
@@ -535,35 +572,47 @@ def symmetry_repair_mapping(mapping, wbo_R, wbo_P, g_R, g_P, p_orbits,
         best_score = current_score
         best_state = None
         rs_array = np.asarray(rs, dtype=np.intp)
-        base_images = current_images.copy()
-        for state in sorted(states):
-            if stats['evaluated'] >= max_evals:
-                stats['capped'] = True
-                break
-            current_images[rs_array] = state
-            score = local_score(current_images)
-            stats['evaluated'] += 1
-            if score < best_score:
-                best_score = score
-                best_state = state
+        ordered_states = sorted(states)
+        # The former loop checked ``evaluated >= max_evals`` before each state
+        # in this sorted order, so it scored exactly the first ``budget``
+        # states and flagged the cap iff a state was left over.  Scoring them
+        # in batches reproduces the same scores in the same order; the
+        # ``score < best_score`` scan below is unchanged.
+        budget = max_evals - stats['evaluated']
+        if len(ordered_states) > budget:
+            stats['capped'] = True
+        to_score = ordered_states[:max(budget, 0)]
+        for start in range(0, len(to_score), _SYM_REPAIR_SCORE_CHUNK):
+            chunk = to_score[start:start + _SYM_REPAIR_SCORE_CHUNK]
+            image_rows = np.repeat(
+                current_images[None, :], len(chunk), axis=0)
+            image_rows[:, rs_array] = np.asarray(chunk, dtype=np.intp)
+            for state, score in zip(chunk, local_scores(image_rows)):
+                if score < best_score:
+                    best_score = score
+                    best_state = state
+        stats['evaluated'] += len(to_score)
         if best_state is not None:
             current.update(zip(rs, best_state))
             current_images[rs_array] = best_state
             current_score = best_score
-        else:
-            current_images = base_images
+            repaired_any = True
 
     best = current
-    best_score = _mapping_change_score(best, wbo_R, wbo_P,
-                                       dwbo_threshold=dwbo_threshold,
-                                       elements_R=elements_R,
-                                       elements_P=elements_P,
-                                       metal_dwbo_threshold=metal_dwbo_threshold)
-    base_score = _mapping_change_score(mapping0, wbo_R, wbo_P,
-                                       dwbo_threshold=dwbo_threshold,
-                                       elements_R=elements_R,
-                                       elements_P=elements_P,
-                                       metal_dwbo_threshold=metal_dwbo_threshold)
+    # base_broken/base_formed were classified from mapping0 with exactly the
+    # arguments _mapping_change_score(mapping0, ...) would pass, so scoring
+    # them reproduces that call; when no group replaced an image, ``best``
+    # holds the identical items as mapping0 and therefore the same score.
+    base_score = _change_score_from_events(base_broken, base_formed)
+    if repaired_any:
+        best_score = _mapping_change_score(
+            best, wbo_R, wbo_P,
+            dwbo_threshold=dwbo_threshold,
+            elements_R=elements_R,
+            elements_P=elements_P,
+            metal_dwbo_threshold=metal_dwbo_threshold)
+    else:
+        best_score = base_score
     stats['best_changes'] = int(best_score[0])
     if best_score < base_score:
         stats['repaired'] = True
