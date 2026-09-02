@@ -7,14 +7,14 @@
 #SBATCH --mem=120G
 #SBATCH --time=02:00:00
 #SBATCH --array=0-27
-#SBATCH --output=data/retro_runs/bulky_bian_inventory/logs/%A_%a.out
-#SBATCH --error=data/retro_runs/bulky_bian_inventory/logs/%A_%a.err
+#SBATCH --output=data/retro_runs/bulky_bian_inventory_v2/logs/%A_%a.out
+#SBATCH --error=data/retro_runs/bulky_bian_inventory_v2/logs/%A_%a.err
 
 set -euo pipefail
 
 REPO_ROOT=/h/399/yunhengzou/coordinate_alignment
 PYTHON_BIN=/h/399/yunhengzou/micromamba/envs/el-agente/bin/python
-RUN_ROOT="$REPO_ROOT/data/retro_runs/bulky_bian_inventory"
+RUN_ROOT="$REPO_ROOT/data/retro_runs/bulky_bian_inventory_v2"
 TARGET_SMILES=$(cut -d ' ' -f1 "$REPO_ROOT/docs/example_runs/bulky_bian_target.smi")
 
 mkdir -p "$RUN_ROOT/logs" "$RUN_ROOT/parts"
