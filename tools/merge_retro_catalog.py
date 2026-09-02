@@ -254,21 +254,19 @@ def main():
     assemblies = assemblies[:args.assembly_limit]
 
     expected_assembly = None
-    if len(args.expected_id) == 2:
-        for left in expected.get(args.expected_id[0], ()):
-            left_mask = _mask(left["covered_target_atoms"])
-            for right in expected.get(args.expected_id[1], ()):
-                if (left_mask | _mask(right["covered_target_atoms"])) != full_mask:
-                    continue
-                if left_mask & _mask(right["covered_target_atoms"]):
-                    continue
-                formed = _formed_bonds(
-                    (left, right), target_edges,
-                    args.require_attachment_bonds)
-                if formed is not None:
-                    expected_assembly = _assembly((left, right), formed)
-                    break
-            if expected_assembly:
+    if args.expected_id:
+        expected_pools = [expected.get(item, ()) for item in args.expected_id]
+        for items in itertools.product(*expected_pools):
+            masks = [_mask(item["covered_target_atoms"]) for item in items]
+            if any(left & right for index, left in enumerate(masks)
+                   for right in masks[index + 1:]):
+                continue
+            if sum(masks) != full_mask:
+                continue
+            formed = _formed_bonds(
+                items, target_edges, args.require_attachment_bonds)
+            if formed is not None:
+                expected_assembly = _assembly(items, formed)
                 break
 
     summaries = []
@@ -328,7 +326,7 @@ def main():
         "expected_ids_found": {
             item: bool(expected.get(item)) for item in args.expected_id
         },
-        "expected_pair_recovered": expected_assembly is not None,
+        "expected_assembly_recovered": expected_assembly is not None,
         "expected_assembly": expected_assembly,
         "assemblies": assemblies,
     }
@@ -340,7 +338,8 @@ def main():
         "scan_counts": dict(scan_counts),
         "assemblies": len(assemblies),
         "expected_ids_found": report["expected_ids_found"],
-        "expected_pair_recovered": report["expected_pair_recovered"],
+        "expected_assembly_recovered": report[
+            "expected_assembly_recovered"],
     }, indent=2))
 
 
