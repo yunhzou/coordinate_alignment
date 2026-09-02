@@ -34,10 +34,15 @@ class _InitialFragmentFamily:
 class _InitialFamilyAccumulator:
     """Exact cross-seed quotient for initial AAM fragment families."""
 
-    def __init__(self, source, target, config, target_region_atoms):
+    def __init__(self, source, target, config, target_region_atoms,
+                 source_orbits, target_orbits):
         self.config = config
         self.target_region_atoms = target_region_atoms
+        self.source_orbits = source_orbits
+        self.target_orbits = target_orbits
         self.families = {}
+        self.coarse_buckets = {}
+        self.certificates = {}
         self.canonicalizer = _PartialMappingCanonicalizer(
             source,
             target,
@@ -60,16 +65,38 @@ class _InitialFamilyAccumulator:
                     and not self.target_region_atoms.intersection(
                         target_atom for _source_atom, target_atom in mapping)):
                 continue
-            certificate = self.canonicalizer.certificate(mapping)
-            family = self.families.get(certificate)
-            if family is None:
-                self.families[certificate] = _InitialFragmentFamily(
+            coarse = tuple(sorted(
+                (self.source_orbits[source_atom],
+                 self.target_orbits[target_atom])
+                for source_atom, target_atom in mapping
+            ))
+            bucket = self.coarse_buckets.setdefault(coarse, [])
+            family_id = None
+            if bucket:
+                certificate = self.canonicalizer.certificate(mapping)
+                for prior_id in bucket:
+                    prior_certificate = self.certificates.get(prior_id)
+                    if prior_certificate is None:
+                        prior_certificate = self.canonicalizer.certificate(
+                            self.families[
+                                prior_id].representative_mapping)
+                        self.certificates[prior_id] = prior_certificate
+                    if prior_certificate == certificate:
+                        family_id = prior_id
+                        break
+            if family_id is None:
+                family_id = len(self.families)
+                self.families[family_id] = _InitialFragmentFamily(
                     retained_atoms=retained,
                     representative_mapping=mapping,
                     symmetry=dict(placement.symmetry or {}),
                 )
+                bucket.append(family_id)
+                if len(bucket) > 1:
+                    self.certificates[family_id] = certificate
             else:
-                self.families[certificate] = replace(
+                family = self.families[family_id]
+                self.families[family_id] = replace(
                     family, encounter_count=family.encounter_count + 1)
             if len(self.families) >= self.config.candidate_limit:
                 return True
@@ -124,7 +151,8 @@ def _initial_fragment_placements(
         target_orbits = _nauty_orbits(
             target, wbo_tol=config.iso_tolerance)
     accumulator = _InitialFamilyAccumulator(
-        source, target, config, target_region_atoms)
+        source, target, config, target_region_atoms,
+        source_orbits, target_orbits)
     capped_seed_count = 0
     maximum_branch_count = 0
     candidate_capped = False

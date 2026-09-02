@@ -60,7 +60,8 @@ def _parallel_initial_fragment_placements(
         source, wbo_tol=config.iso_tolerance)
     seed_order, seed_limited = _initial_seed_order(source, config)
     accumulator = _InitialFamilyAccumulator(
-        source, target, config, target_region_atoms)
+        source, target, config, target_region_atoms,
+        source_orbits, target_orbits)
     capped_seed_count = 0
     maximum_branch_count = 0
     candidate_capped = False
