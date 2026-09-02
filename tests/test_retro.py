@@ -9,7 +9,9 @@ from rxn_core import (
 from rxn_core.fragment_matching import (
     FragmentCandidate,
     FragmentDetectionConfig,
+    FragmentDetectionExecution,
     detect_fragments,
+    detect_fragments_parallel,
     materialize_target_coverage_orbit,
     prepare_fragment_target,
 )
@@ -257,6 +259,33 @@ def test_rough_seed_mode_stops_after_majority_source_fragment():
     assert result.rough_stop_hit
     assert result.status == "rough"
     assert not result.complete
+
+
+def test_parallel_seed_execution_preserves_exact_detection_result():
+    precursor = WeightedGraph(
+        ["C", "C", "O", "H", "H"],
+        _matrix(5, [
+            (0, 1, 1.0), (1, 2, 1.0), (0, 3, 1.0), (1, 4, 1.0),
+        ]),
+    )
+    target = WeightedGraph(
+        ["C", "C", "O", "H", "H", "N"],
+        _matrix(6, [
+            (0, 1, 1.0), (1, 2, 1.0), (0, 3, 1.0), (1, 4, 1.0),
+            (2, 5, 1.0),
+        ]),
+    )
+    config = FragmentDetectionConfig(seed_mode="all")
+
+    sequential = detect_fragments(precursor, target, config=config)
+    parallel = detect_fragments_parallel(
+        precursor,
+        target,
+        config=config,
+        execution=FragmentDetectionExecution(seed_workers=2),
+    )
+
+    assert parallel == sequential
 
 
 def test_balanced_williamson_reaction_is_recovered_with_hidden_side_product():

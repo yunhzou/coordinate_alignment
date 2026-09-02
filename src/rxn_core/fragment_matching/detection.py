@@ -31,26 +31,52 @@ class _InitialFragmentFamily:
     encounter_count: int = 1
 
 
-def _initial_fragment_placements(
-        source, target, config, *, target_orbits=None,
-        target_region_atoms=None):
-    source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
-    if target_orbits is None:
-        target_orbits = _nauty_orbits(
-            target, wbo_tol=config.iso_tolerance)
-    placement_families = {}
-    canonicalizer = _PartialMappingCanonicalizer(
-        source,
-        target,
-        wbo_tol=config.iso_tolerance,
-        target_atom_tags=(
-            {int(atom): 'requested_region' for atom in target_region_atoms}
-            if target_region_atoms is not None else None),
-    )
-    capped_seed_count = 0
-    maximum_branch_count = 0
-    candidate_capped = False
+class _InitialFamilyAccumulator:
+    """Exact cross-seed quotient for initial AAM fragment families."""
 
+    def __init__(self, source, target, config, target_region_atoms):
+        self.config = config
+        self.target_region_atoms = target_region_atoms
+        self.families = {}
+        self.canonicalizer = _PartialMappingCanonicalizer(
+            source,
+            target,
+            wbo_tol=config.iso_tolerance,
+            target_atom_tags=(
+                {int(atom): "requested_region"
+                 for atom in target_region_atoms}
+                if target_region_atoms is not None else None),
+        )
+
+    def add(self, placements):
+        for placement in placements:
+            retained = tuple(sorted(map(int, placement.fragment)))
+            mapping = tuple(sorted(
+                (int(source_atom), int(target_atom))
+                for source_atom, target_atom in placement.items()
+                if source_atom in placement.fragment
+            ))
+            if (self.target_region_atoms is not None
+                    and not self.target_region_atoms.intersection(
+                        target_atom for _source_atom, target_atom in mapping)):
+                continue
+            certificate = self.canonicalizer.certificate(mapping)
+            family = self.families.get(certificate)
+            if family is None:
+                self.families[certificate] = _InitialFragmentFamily(
+                    retained_atoms=retained,
+                    representative_mapping=mapping,
+                    symmetry=dict(placement.symmetry or {}),
+                )
+            else:
+                self.families[certificate] = replace(
+                    family, encounter_count=family.encounter_count + 1)
+            if len(self.families) >= self.config.candidate_limit:
+                return True
+        return False
+
+
+def _initial_seed_order(source, config):
     if config.seed_mode == "fragment_cover":
         seed_order = _generate_seed_orders(source, n_trials=1)[0]
     else:
@@ -67,6 +93,43 @@ def _initial_fragment_placements(
         and len(seed_order) > config.seed_limit)
     if config.seed_limit is not None:
         seed_order = seed_order[:config.seed_limit]
+    return tuple(seed_order), seed_limited
+
+
+def _grow_initial_seed(
+        source, target, seed, config, source_orbits, target_orbits):
+    try:
+        placements = grow_island(
+            source,
+            target,
+            seed,
+            {},
+            graph_floor=config.graph_floor,
+            iso_tol=config.iso_tolerance,
+            min_lock_size=config.minimum_fragment_size,
+            max_branches=config.branch_limit,
+            p_orbits=target_orbits,
+            r_orbits=source_orbits,
+        )
+    except IslandBranchLimitExceeded as exc:
+        return (), True, int(exc.count)
+    return placements, False, len(placements)
+
+
+def _initial_fragment_placements(
+        source, target, config, *, target_orbits=None,
+        target_region_atoms=None):
+    source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
+    if target_orbits is None:
+        target_orbits = _nauty_orbits(
+            target, wbo_tol=config.iso_tolerance)
+    accumulator = _InitialFamilyAccumulator(
+        source, target, config, target_region_atoms)
+    capped_seed_count = 0
+    maximum_branch_count = 0
+    candidate_capped = False
+
+    seed_order, seed_limited = _initial_seed_order(source, config)
     remaining_seeds = set(seed_order)
     seed_attempt_count = 0
     rough_stop_hit = False
@@ -74,51 +137,16 @@ def _initial_fragment_placements(
         if seed not in remaining_seeds:
             continue
         seed_attempt_count += 1
-        try:
-            placements = grow_island(
-                source,
-                target,
-                seed,
-                {},
-                graph_floor=config.graph_floor,
-                iso_tol=config.iso_tolerance,
-                min_lock_size=config.minimum_fragment_size,
-                max_branches=config.branch_limit,
-                p_orbits=target_orbits,
-                r_orbits=source_orbits,
-            )
-        except IslandBranchLimitExceeded as exc:
+        placements, capped, branch_count = _grow_initial_seed(
+            source, target, seed, config, source_orbits, target_orbits)
+        if capped:
             capped_seed_count += 1
-            maximum_branch_count = max(maximum_branch_count, exc.count)
+            maximum_branch_count = max(maximum_branch_count, branch_count)
             remaining_seeds.discard(seed)
             continue
 
-        maximum_branch_count = max(maximum_branch_count, len(placements))
-        for placement in placements:
-            retained = tuple(sorted(map(int, placement.fragment)))
-            mapping = tuple(sorted(
-                (int(source_atom), int(target_atom))
-                for source_atom, target_atom in placement.items()
-                if source_atom in placement.fragment
-            ))
-            if (target_region_atoms is not None
-                    and not target_region_atoms.intersection(
-                        target_atom for _source_atom, target_atom in mapping)):
-                continue
-            certificate = canonicalizer.certificate(mapping)
-            family = placement_families.get(certificate)
-            if family is None:
-                placement_families[certificate] = _InitialFragmentFamily(
-                    retained_atoms=retained,
-                    representative_mapping=mapping,
-                    symmetry=dict(placement.symmetry or {}),
-                )
-            else:
-                placement_families[certificate] = replace(
-                    family, encounter_count=family.encounter_count + 1)
-            if len(placement_families) >= config.candidate_limit:
-                candidate_capped = True
-                break
+        maximum_branch_count = max(maximum_branch_count, branch_count)
+        candidate_capped = accumulator.add(placements)
         if candidate_capped:
             break
         if config.seed_mode == "fragment_cover" and placements:
@@ -130,7 +158,7 @@ def _initial_fragment_placements(
                 break
 
     return (
-        tuple(placement_families.values()),
+        tuple(accumulator.families.values()),
         capped_seed_count,
         maximum_branch_count,
         candidate_capped,
@@ -168,12 +196,8 @@ def _candidate_identity(candidate):
     )
 
 
-def detect_fragments(
-        source, target, *, source_id="",
-        config: FragmentDetectionConfig | None = None,
-        target_region_atoms=None):
-    """Generate augmented fragment candidates for one source-target pair."""
-    config = config or FragmentDetectionConfig()
+def _prepare_fragment_detection(
+        source, target, config, target_region_atoms=None):
     source_graph = _coerce_graph(source, config.graph_floor)
     if isinstance(target, FragmentTargetContext):
         if (target.graph_floor != config.graph_floor
@@ -191,6 +215,13 @@ def detect_fragments(
     if region is not None and (
             not region or not region.issubset(set(map(int, target_graph)))):
         raise ValueError("target region must be a nonempty target-atom subset")
+    return source_graph, target_context, region
+
+
+def _detect_fragments_from_initial(
+        source_graph, target_context, initial_search, *, source_id, config,
+        region):
+    target_graph = target_context.graph
     (
         initial_placements,
         capped_seed_count,
@@ -200,10 +231,7 @@ def detect_fragments(
         seed_attempt_count,
         seed_pruned_count,
         rough_stop_hit,
-    ) = _initial_fragment_placements(
-        source_graph, target_graph, config,
-        target_orbits=target_context.atom_orbits,
-        target_region_atoms=region)
+    ) = initial_search
 
     def placement_score(placement):
         retained = placement.retained_atoms
@@ -365,4 +393,29 @@ def detect_fragments(
         seed_attempt_count=seed_attempt_count,
         seed_pruned_count=seed_pruned_count,
         rough_stop_hit=rough_stop_hit,
+    )
+
+
+def detect_fragments(
+        source, target, *, source_id="",
+        config: FragmentDetectionConfig | None = None,
+        target_region_atoms=None):
+    """Generate augmented fragment candidates for one source-target pair."""
+    config = config or FragmentDetectionConfig()
+    source_graph, target_context, region = _prepare_fragment_detection(
+        source, target, config, target_region_atoms)
+    initial_search = _initial_fragment_placements(
+        source_graph,
+        target_context.graph,
+        config,
+        target_orbits=target_context.atom_orbits,
+        target_region_atoms=region,
+    )
+    return _detect_fragments_from_initial(
+        source_graph,
+        target_context,
+        initial_search,
+        source_id=str(source_id),
+        config=config,
+        region=region,
     )

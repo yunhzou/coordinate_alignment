@@ -15,7 +15,9 @@ from rdkit import Chem
 
 from rxn_core.fragment_matching import (
     FragmentDetectionConfig,
+    FragmentDetectionExecution,
     detect_fragments,
+    detect_fragments_parallel,
     prepare_fragment_target,
 )
 from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
@@ -58,6 +60,7 @@ def main():
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--profile")
     parser.add_argument("--profile-lines", type=int, default=40)
+    parser.add_argument("--seed-workers", type=int, default=1)
     args = parser.parse_args()
     if args.repeats < 1:
         raise ValueError("repeats must be positive")
@@ -85,12 +88,22 @@ def main():
         if profiler is not None:
             profiler.enable()
         started = time.perf_counter()
-        result = detect_fragments(
-            source,
-            target,
-            source_id=args.source_id,
-            config=config,
-        )
+        if args.seed_workers == 1:
+            result = detect_fragments(
+                source,
+                target,
+                source_id=args.source_id,
+                config=config,
+            )
+        else:
+            result = detect_fragments_parallel(
+                source,
+                target,
+                source_id=args.source_id,
+                config=config,
+                execution=FragmentDetectionExecution(
+                    seed_workers=args.seed_workers),
+            )
         durations.append(time.perf_counter() - started)
         if profiler is not None:
             profiler.disable()
@@ -105,6 +118,7 @@ def main():
         "source_explicit_atoms": source_molecule.GetNumAtoms(),
         "target_explicit_atoms": target_molecule.GetNumAtoms(),
         "seed_mode": args.seed_mode,
+        "seed_workers": args.seed_workers,
         "target_preparation_seconds": target_seconds,
         "seconds": durations,
         "best_seconds": min(durations),
