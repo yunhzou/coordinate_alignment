@@ -1,0 +1,8 @@
+t01_fluorinated_phosphorus_ligand	FC(C(C=C1)=CC=C1N2CP(C3CCCCC3)CN(C4=CC=C(C(F)(F)F)C=C4)CP(C5CCCCC5)C2)(F)F
+t02_chloro_quinoline_alcohol	OC(C1=CC=C(Cl)C=C1)C2=CC3=CC=CN=C3C=C2
+t03_aryl_magnesium_bromide	CC(C)(C)C1=CC=C([Mg]Br)C=C1
+t04_dimethyl_azobenzene	CC1=CC=C(/N=N/C2=CC=C(C)C=C2)C=C1
+t05_cyano_thiazole_amidine	C/C(NC1=C(C(C)C)C=CC=C1C(C)C)=C/C(C)=N/C2=NC3=C(C=C(C#N)C=C3)S2
+t06_phenyl_cyclooctadiene	C1(/C2=CC=CC=C2)=C\CC/C=C\CC1
+t07_acetophenone	CC(C1=CC=CC=C1)=O
+t08_cyclohexene	C1CCCC=C1

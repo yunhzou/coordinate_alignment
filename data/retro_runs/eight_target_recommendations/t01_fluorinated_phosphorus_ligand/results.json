@@ -1,0 +1,43 @@
+{
+  "schema": "rxn_core.retro_catalog_assembly/v5",
+  "target_smiles": "FC(C(C=C1)=CC=C1N2CP(C3CCCCC3)CN(C4=CC=C(C(F)(F)F)C=C4)CP(C5CCCCC5)C2)(F)F",
+  "target_atom_count": 78,
+  "part_count": 28,
+  "scan_counts": {
+    "rows": 1919,
+    "parse_errors": 0,
+    "searched": 1919,
+    "capped": 5,
+    "target_coverage_filtered": 0,
+    "matched_precursors": 1852,
+    "fragment_candidates": 5729
+  },
+  "merge_counts": {
+    "matched_precursors": 1919,
+    "capped_precursors": 5,
+    "fragment_candidates": 5729
+  },
+  "coverage_domain_families": 1181,
+  "per_domain_limit": 200,
+  "assembly_limit": 20,
+  "maximum_precursors": 6,
+  "recommended_cover_count": 0,
+  "candidate_choice_evaluations": 0,
+  "require_attachment_bonds": false,
+  "exclude_target_identity": true,
+  "allow_repeated_precursors": true,
+  "attachment_trim_variants": false,
+  "chirality_ranking": false,
+  "frontier_limit": 200,
+  "recommendation_search_truncated": true,
+  "pattern_limit": 4,
+  "recommendations_per_pattern": 4,
+  "construction_patterns": [],
+  "direct_target_matches": [],
+  "assembly_mapping_variants": 0,
+  "expected_ids": [],
+  "expected_ids_found": {},
+  "expected_assembly_recovered": false,
+  "expected_assembly": null,
+  "assemblies": []
+}
