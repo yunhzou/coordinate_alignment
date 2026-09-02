@@ -12,7 +12,7 @@ from .policy import (
     ElementNodeMatchPolicy,
     as_node_match_policy,
 )
-from .state import _SymCand
+from .state import _VERIFY_ROLES, _SymCand, _cand_roles_from_scratch
 
 
 class _PartialMappingCanonicalizer:
@@ -218,40 +218,25 @@ class _CandidateAutomorphismCanonicalizer:
             p: tuple(roles) for p, roles in locked_roles.items()
         }
     def _candidate_roles(self, cand, *, group_domains=False):
-        if isinstance(cand, _SymCand):
-            mapping = cand.mapping
-            blocks = cand.blocks
-        else:
-            mapping = dict(cand)
-            blocks = ()
+        """Role dictionary of ``cand`` (see ``_cand_roles_from_scratch``).
 
-        roles = defaultdict(list)
-        block_r = {r for block in blocks for r in block.r_atoms}
-        if group_domains and isinstance(cand, _SymCand):
-            block_r.update(
-                r for block in cand.automorph_blocks
-                for r in block.r_atoms)
-        for r, p in sorted(mapping.items()):
-            if r not in block_r:
-                roles[int(p)].append(('mapped', int(r)))
-        for block in blocks:
-            block_role = (
-                'pool', tuple(int(r) for r in block.r_atoms),
-                bool(block.extendable),
-            )
-            for p in block.p_atoms:
-                roles[int(p)].append(block_role)
-        if isinstance(cand, _SymCand):
-            for block in cand.automorph_blocks:
-                group_role = (
-                    'automorph_domain', tuple(int(r) for r in block.r_atoms)
-                )
-                for p in block.p_atoms:
-                    roles[int(p)].append(group_role)
-        # A single role needs no ordering; sorted() of one item is that item.
-        return {p: (tuple(items) if len(items) == 1
-                    else tuple(sorted(items, key=repr)))
-                for p, items in roles.items()}
+        The dictionary depends on the candidate alone, and ``_SymCand`` is
+        immutable, so the ``group_domains=False`` result is cached on the
+        candidate; child constructors derive it from the parent's cached copy
+        when one exists.  ``RXN_CORE_VERIFY_ROLES=1`` recomputes and asserts.
+        """
+        if group_domains or not isinstance(cand, _SymCand):
+            return _cand_roles_from_scratch(cand, group_domains=group_domains)
+        roles = cand._roles
+        if roles is None:
+            roles = _cand_roles_from_scratch(cand)
+            cand._roles = roles
+        elif _VERIFY_ROLES:
+            expected = _cand_roles_from_scratch(cand)
+            assert roles == expected, (
+                "cached candidate roles differ from the from-scratch roles",
+                roles, expected)
+        return roles
 
     def _color_order_key(self, color):
         """repr of a colour key, memoised: cell order must be a function of

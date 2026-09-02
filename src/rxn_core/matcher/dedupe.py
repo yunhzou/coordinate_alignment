@@ -302,14 +302,24 @@ def _dedupe_certificates(canonicalizer, cands, p_orbits):
     a string and can never equal a real ``(bytes, profile)`` certificate, so
     the per-certificate counts used for boundary signatures are unchanged.
     """
+    return _dedupe_certificates_with_flag(canonicalizer, cands, p_orbits)[0]
+
+
+def _dedupe_certificates_with_flag(canonicalizer, cands, p_orbits):
+    """``(certificates, mergeable)``; see :func:`_dedupe_certificates`.
+
+    ``mergeable`` is False only when every role-key class has one member, in
+    which case all certificates are pairwise-distinct stand-ins.
+    """
     if not canonicalizer.role_keys_applicable(p_orbits):
-        return [canonicalizer.certificate(cand) for cand in cands]
+        return [canonicalizer.certificate(cand) for cand in cands], True
     roles = [canonicalizer._candidate_roles(cand) for cand in cands]
     keys = [canonicalizer.role_key_from_roles(item, p_orbits) for item in roles]
     classes = defaultdict(list)
     for index, (key, _singleton) in enumerate(keys):
         classes[key].append(index)
     certificates = [None] * len(cands)
+    mergeable = len(classes) < len(cands)
     # Identical role dictionaries colour the graph identically and therefore
     # have identical certificates; compute each distinct colouring once.
     by_roles = {}
@@ -327,7 +337,7 @@ def _dedupe_certificates(canonicalizer, cands, p_orbits):
                         roles[index])
                     by_roles[roles_key] = certificate
                 certificates[index] = certificate
-    return certificates
+    return certificates, mergeable
 
 
 def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
@@ -353,7 +363,13 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
         canonicalizer = _CandidateAutomorphismCanonicalizer(
             g_P, p_orbits=p_orbits, locked_mapping=locked_mapping,
             node_policy=node_policy)
-    certificates = _dedupe_certificates(canonicalizer, cands, p_orbits)
+    certificates, mergeable = _dedupe_certificates_with_flag(
+        canonicalizer, cands, p_orbits)
+    if not mergeable:
+        # Every certificate is a distinct stand-in: each count below would be
+        # one, no boundary signature would be built and ``seen`` would hold
+        # every candidate in input order.
+        return list(cands)
     certificate_counts = Counter(certificates)
     seen = {}
     boundary_context = None
