@@ -1,6 +1,7 @@
 """Parallel execution policy for exact R–P fragment detection."""
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 import multiprocessing as mp
 
@@ -80,9 +81,19 @@ def _parallel_initial_fragment_placements(
                     or len(seed_order) <= config.candidate_limit):
                 yield pool.imap(_run_seed, seed_order, chunksize=1)
                 return
-            for start in range(0, len(seed_order), worker_count):
-                wave = seed_order[start:start + worker_count]
-                yield pool.map(_run_seed, wave, chunksize=1)
+            pending = deque()
+            next_seed = 0
+            while next_seed < min(worker_count, len(seed_order)):
+                pending.append(pool.apply_async(
+                    _run_seed, (seed_order[next_seed],)))
+                next_seed += 1
+            while pending:
+                result = pending.popleft().get()
+                if next_seed < len(seed_order):
+                    pending.append(pool.apply_async(
+                        _run_seed, (seed_order[next_seed],)))
+                    next_seed += 1
+                yield (result,)
 
         stop = False
         for results in result_waves():
