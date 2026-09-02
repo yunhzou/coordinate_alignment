@@ -29,7 +29,8 @@ Python.
 
 ## Switches
 
-- `RXN_CORE_NATIVE=0` disables every native kernel (pure Python).
+- `RXN_CORE_NATIVE=1` enables the native growth engine; Python remains the
+  default when the variable is unset.
 - `RXN_CORE_VERIFY_REPAIR=1` runs the repair kernel and the Python search side
   by side and asserts they agree.
 - `RXN_CORE_VERIFY_ROLES=1` asserts the incremental role cache of the Python
