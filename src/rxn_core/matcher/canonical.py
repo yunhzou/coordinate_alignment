@@ -248,26 +248,42 @@ class _CandidateAutomorphismCanonicalizer:
                 )
                 for p in block.p_atoms:
                     roles[int(p)].append(group_role)
-        return {p: tuple(sorted(items, key=repr))
+        # A single role needs no ordering; sorted() of one item is that item.
+        return {p: (tuple(items) if len(items) == 1
+                    else tuple(sorted(items, key=repr)))
                 for p, items in roles.items()}
 
-    def _colored_vertices(self, cand, *, group_domains=False):
-        candidate_roles = self._candidate_roles(
-            cand, group_domains=group_domains)
+    def _color_order_key(self, color):
+        """repr of a colour key, memoised: cell order must be a function of
+        the key alone and the same keys recur across candidates."""
+        cache = self.__dict__.setdefault('_color_repr_cache', {})
+        key = cache.get(color)
+        if key is None:
+            key = repr(color)
+            cache[color] = key
+        return key
+
+    def _colored_vertices_from_roles(self, candidate_roles):
         colors = defaultdict(set)
-        for p in self.nodes:
-            vertex = self.atom_index[p]
+        locked_roles = self.locked_roles
+        atom_base_color = self.atom_base_color
+        for p, vertex in self.atom_index.items():
             role = (
-                self.locked_roles.get(p, ()),
+                locked_roles.get(p, ()),
                 candidate_roles.get(p, ()),
             )
-            colors[('atom', self.atom_base_color[vertex], role)].add(vertex)
+            colors[('atom', atom_base_color[vertex], role)].add(vertex)
         for color_index, vertices in self.edge_color_classes:
             colors[('edge', color_index)].update(vertices)
+        order = self._color_order_key
         return tuple(
             (color, frozenset(vertices))
             for color, vertices in sorted(
-                colors.items(), key=lambda item: repr(item[0])))
+                colors.items(), key=lambda item: order(item[0])))
+
+    def _colored_vertices(self, cand, *, group_domains=False):
+        return self._colored_vertices_from_roles(
+            self._candidate_roles(cand, group_domains=group_domains))
 
     def graph(self, cand, *, group_domains=False):
         import pynauty
@@ -282,25 +298,37 @@ class _CandidateAutomorphismCanonicalizer:
                              for _, vertices in colored_vertices],
         )
 
-    def certificate(self, cand):
+    def _reusable_graph(self):
+        """One pynauty graph over the fixed base adjacency, recoloured per
+        certificate.  ``Graph.__init__`` validates the adjacency dictionary on
+        every construction; ``set_vertex_coloring`` is the same call the
+        constructor makes and replaces the partition completely, so a
+        recoloured graph is indistinguishable from a freshly built one."""
         import pynauty
-        colored_vertices = self._colored_vertices(cand)
+        graph = self.__dict__.get('_reusable_graph_object')
+        if graph is None:
+            graph = pynauty.Graph(
+                self.n_vertices, directed=False,
+                adjacency_dict=self.adjacency)
+            self._reusable_graph_object = graph
+        return graph
+
+    def certificate_from_roles(self, candidate_roles):
+        import pynauty
+        colored_vertices = self._colored_vertices_from_roles(candidate_roles)
         # pynauty canonicalizes a partition, whose cells are not themselves
         # named.  Preserve the semantic role attached to every cell as part of
         # the coarse certificate; the exact transporter below remains the
         # authoritative equivalence test.
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
-        # Build the graph from the colouring computed above instead of
-        # recomputing it through ``self.graph``; the cells are identical.
-        graph = pynauty.Graph(
-            self.n_vertices,
-            directed=False,
-            adjacency_dict=self.adjacency,
-            vertex_coloring=[set(vertices)
-                             for _, vertices in colored_vertices],
-        )
+        graph = self._reusable_graph()
+        graph.set_vertex_coloring(
+            [set(vertices) for _, vertices in colored_vertices])
         return pynauty.certificate(graph), color_profile
+
+    def certificate(self, cand):
+        return self.certificate_from_roles(self._candidate_roles(cand))
 
     def role_keys_applicable(self, orbits):
         """True when ``orbits`` is the exact orbit map of this target graph.
@@ -350,6 +378,10 @@ class _CandidateAutomorphismCanonicalizer:
         the colouring atom by atom and the certificates are equal without
         running nauty.
         """
+        return self.role_key_from_roles(self._candidate_roles(cand), orbits)
+
+    def role_key_from_roles(self, candidate_roles, orbits):
+        """See :meth:`role_key`; takes an already computed role dictionary."""
         sizes = getattr(orbits, '_orbit_sizes', None)
         if sizes is None:
             sizes = Counter(orbits.values())
@@ -357,7 +389,7 @@ class _CandidateAutomorphismCanonicalizer:
         locked_roles = self.locked_roles
         singleton = True
         items = []
-        for p, role in self._candidate_roles(cand).items():
+        for p, role in candidate_roles.items():
             orbit = orbits[p]
             if sizes[orbit] > 1:
                 singleton = False

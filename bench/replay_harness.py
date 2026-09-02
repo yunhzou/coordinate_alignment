@@ -23,16 +23,11 @@ import rxn_core.alignment.branch as branch_mod  # noqa: E402
 import rxn_core.growth.island as island_mod  # noqa: E402
 import rxn_core.matcher.extend as extend_mod  # noqa: E402
 from rxn_core.aam import search_aam  # noqa: E402
-from rxn_core.cli import _endpoint_cache  # noqa: E402
 from rxn_core.domain import AAMProblem, AAMSearchConfig  # noqa: E402
 from rxn_core.matcher.state import _SymCand  # noqa: E402
 
-CASES = {
-    "tempo": (
-        ROOT / "docs/example_runs/pr1.tempo_ts3/work/endpoints/R",
-        ROOT / "docs/example_runs/pr1.tempo_ts3/work/endpoints/P",
-    ),
-}
+sys.path.insert(0, str(ROOT / "bench"))
+from cases import CASES  # noqa: E402
 
 
 def _cand_key(cand):
@@ -167,9 +162,7 @@ def pool_record(result):
 
 
 def record(out_path, case="tempo", workers=1):
-    r_dir, p_dir = CASES[case]
-    reactant = _endpoint_cache(str(r_dir), "R")
-    product = _endpoint_cache(str(p_dir), "P")
+    reactant, product = CASES[case]()
     problem = AAMProblem(reactant, product, name=case)
     rec = Recorder()
     rec.install()

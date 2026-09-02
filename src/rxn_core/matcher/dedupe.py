@@ -284,11 +284,15 @@ def _dedupe_certificates(canonicalizer, cands, p_orbits):
     """
     if not canonicalizer.role_keys_applicable(p_orbits):
         return [canonicalizer.certificate(cand) for cand in cands]
-    keys = [canonicalizer.role_key(cand, p_orbits) for cand in cands]
+    roles = [canonicalizer._candidate_roles(cand) for cand in cands]
+    keys = [canonicalizer.role_key_from_roles(item, p_orbits) for item in roles]
     classes = defaultdict(list)
     for index, (key, _singleton) in enumerate(keys):
         classes[key].append(index)
     certificates = [None] * len(cands)
+    # Identical role dictionaries colour the graph identically and therefore
+    # have identical certificates; compute each distinct colouring once.
+    by_roles = {}
     for key, members in classes.items():
         if len(members) == 1 or keys[members[0]][1]:
             stand_in = ('orbit_role_key', key)
@@ -296,7 +300,13 @@ def _dedupe_certificates(canonicalizer, cands, p_orbits):
                 certificates[index] = stand_in
         else:
             for index in members:
-                certificates[index] = canonicalizer.certificate(cands[index])
+                roles_key = tuple(sorted(roles[index].items()))
+                certificate = by_roles.get(roles_key)
+                if certificate is None:
+                    certificate = canonicalizer.certificate_from_roles(
+                        roles[index])
+                    by_roles[roles_key] = certificate
+                certificates[index] = certificate
     return certificates
 
 
