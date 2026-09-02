@@ -136,3 +136,40 @@ def test_reused_target_rejects_source_elements_introduced_later():
         )
         assert result["capped"] is False
         assert result["isos"]
+
+
+def test_sparse_atom_ids_use_native_engine_and_restore_original_ids():
+    """Augmented component graphs retain parent atom IDs across native calls."""
+    import networkx as nx
+    import numpy as np
+
+    from rxn_core.matcher.orbits import _nauty_orbits
+
+    source = nx.Graph()
+    source.add_nodes_from(((10, {"element": "C"}),
+                           (20, {"element": "O"})))
+    source.add_edge(10, 20, wbo=1.0)
+    source_wbo = np.zeros((21, 21))
+    source_wbo[10, 20] = source_wbo[20, 10] = 1.0
+    source.graph.update(wbo_matrix=source_wbo, bond_cut=0.2)
+
+    target = nx.Graph()
+    target.add_nodes_from(((100, {"element": "C"}),
+                           (110, {"element": "O"}),
+                           (120, {"element": "C"})))
+    target.add_edge(100, 110, wbo=1.0)
+    target_wbo = np.zeros((121, 121))
+    target_wbo[100, 110] = target_wbo[110, 100] = 1.0
+    target.graph.update(wbo_matrix=target_wbo, bond_cut=0.2)
+
+    result = native.grow_island(
+        source, target, 10, {}, graph_floor=0.2, iso_tol=0.5,
+        min_lock_size=1, max_branches=100, islands_R=None,
+        p_orbits=_nauty_orbits(target, wbo_tol=0.5),
+        prior_deferred_edges=None, allow_mapped_seed=False,
+        profile=None, profile_context=None,
+    )
+
+    assert result is not None
+    assert [dict(match) for match in result] == [{10: 100, 20: 110}]
+    assert result[0].fragment == frozenset({10, 20})
