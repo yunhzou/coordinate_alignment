@@ -105,7 +105,7 @@ class _BoundaryContext:
     """
 
     def __init__(self, g_R, g_P, fragment, deferred_edges, r_orbits,
-                 p_orbits, locked_mapping, node_policy):
+                 p_orbits, locked_mapping, node_policy, canonicalizer=None):
         node_policy = as_node_match_policy(node_policy)
         self.g_R = g_R
         self.g_P = g_P
@@ -114,6 +114,18 @@ class _BoundaryContext:
         self.node_policy = node_policy
         self.fragment = set(fragment)
         locked_p_atoms = set((locked_mapping or {}).values())
+        # The compatible target pools depend on (g_P, policy, locked atoms),
+        # all fixed for the lifetime of a canonicalizer (one grow_island), and
+        # the per-target static data depends only on (g_P, policy, orbits).
+        # Both are cached on those longer-lived objects when available.
+        pool_cache = None
+        if canonicalizer is not None:
+            pool_cache = canonicalizer.__dict__.setdefault(
+                '_boundary_pool_cache', {})
+        static_cache = None
+        if hasattr(p_orbits, '__dict__'):
+            static_cache = p_orbits.__dict__.setdefault(
+                '_boundary_target_static', {})
         boundary = set()
         deferred_by_outside = defaultdict(list)
         for raw in deferred_edges or ():
@@ -134,7 +146,7 @@ class _BoundaryContext:
         # it keeps a pool per concrete atom.
         key_equality = isinstance(
             node_policy, (ElementNodeMatchPolicy, AttributeNodeMatchPolicy))
-        pools = {}
+        pools = pool_cache if pool_cache is not None else {}
         self.entries = []
         for x in sorted(boundary):
             x_key = node_policy.key(g_R, x)
@@ -154,18 +166,26 @@ class _BoundaryContext:
         self.structural_zero = getattr(p_orbits, 'zero_bucket', None)
         # Per target atom: policy key, orbit id and the nonzero-bucket
         # neighbour list, all candidate independent.
-        self.target_static = {}
-        if self.structural_zero is not None:
-            for v in g_P.nodes():
-                neighbours = []
-                for p in g_P.neighbors(v):
-                    bucket = _orbit_wbo_bucket(
-                        p_orbits, p, v, _edge_wbo(g_P, p, v))
-                    if bucket != self.structural_zero:
-                        neighbours.append((p, bucket))
-                self.target_static[v] = (
-                    node_policy.key(g_P, v), _orbit_id(p_orbits, v),
-                    tuple(neighbours))
+        static_key = (id(g_P), type(node_policy).__name__,
+                      getattr(node_policy, 'fields', None))
+        target_static = (
+            static_cache.get(static_key) if static_cache is not None else None)
+        if target_static is None:
+            target_static = {}
+            if self.structural_zero is not None:
+                for v in g_P.nodes():
+                    neighbours = []
+                    for p in g_P.neighbors(v):
+                        bucket = _orbit_wbo_bucket(
+                            p_orbits, p, v, _edge_wbo(g_P, p, v))
+                        if bucket != self.structural_zero:
+                            neighbours.append((p, bucket))
+                    target_static[v] = (
+                        node_policy.key(g_P, v), _orbit_id(p_orbits, v),
+                        tuple(neighbours))
+            if static_cache is not None and key_equality:
+                static_cache[static_key] = target_static
+        self.target_static = target_static
         self._r_vec_cache = {}
 
     def r_vec(self, x, mapped_rs):
@@ -312,7 +332,15 @@ def _dedupe_certificates(canonicalizer, cands, p_orbits):
 
 def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
                      fragment=None, deferred_edges=(), locked_mapping=None,
-                     node_policy=None):
+                     node_policy=None, canonicalizer=None):
+    """Quotient ``cands`` by exact automorphic equivalence plus boundary state.
+
+    ``canonicalizer`` may be a ``_CandidateAutomorphismCanonicalizer`` built
+    for the same ``(g_P, p_orbits, locked_mapping, node_policy)``; the growth
+    loop passes one per island so its graph, colour and pool caches persist
+    across extension steps.  Its contents are exactly what this function would
+    build itself.
+    """
     if not cands:
         return cands
     if len(cands) == 1:
@@ -321,9 +349,10 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
         # boundary signature, and return this same object; skip straight to
         # that result.
         return list(cands)
-    canonicalizer = _CandidateAutomorphismCanonicalizer(
-        g_P, p_orbits=p_orbits, locked_mapping=locked_mapping,
-        node_policy=node_policy)
+    if canonicalizer is None:
+        canonicalizer = _CandidateAutomorphismCanonicalizer(
+            g_P, p_orbits=p_orbits, locked_mapping=locked_mapping,
+            node_policy=node_policy)
     certificates = _dedupe_certificates(canonicalizer, cands, p_orbits)
     certificate_counts = Counter(certificates)
     seen = {}
@@ -339,7 +368,7 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
             if boundary_context is None and fragment:
                 boundary_context = _BoundaryContext(
                     g_R, g_P, fragment, deferred_edges, r_orbits, p_orbits,
-                    locked_mapping, node_policy)
+                    locked_mapping, node_policy, canonicalizer=canonicalizer)
             boundary = _boundary_signature(
                 cand, g_R, g_P, fragment=fragment,
                 deferred_edges=deferred_edges, r_orbits=r_orbits,

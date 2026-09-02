@@ -15,6 +15,7 @@ from ..matcher import (
     _orbit_id,
     _symmetry_state,
 )
+from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
 from ..matcher.policy import as_node_match_policy
 from .frontier import _frontier_boundary_edges, _push_edges_from, _set_unique
 from .result import IslandBranchLimitExceeded, _IsoResult
@@ -142,6 +143,14 @@ def grow_island(g_R, g_P, seed, mapping,
     fragment = {seed}
     distance = {seed: 0}
     used_edges = set()
+    # The candidate canonicalizer depends only on the target graph, its orbit
+    # map, the locked mapping and the node policy, none of which change while
+    # this island grows.  Share one across every extension step so its
+    # pynauty graph, colour-order and target-pool caches persist; each dedupe
+    # call would otherwise rebuild an identical object.
+    canonicalizer = _CandidateAutomorphismCanonicalizer(
+        g_P, p_orbits=p_orbits, locked_mapping=mapping,
+        node_policy=node_policy)
     deferred_edges = {tuple(sorted(e)) for e in (prior_deferred_edges or ())}
     heap = []
     _push_edges_from(heap, used_edges, g_R, seed, fragment, graph_floor)
@@ -257,7 +266,8 @@ def grow_island(g_R, g_P, seed, mapping,
             cands, fragment, n, g_R, g_P, mapping,
             iso_tol, islands_R, p_orbits=p_orbits, r_orbits=r_orbits,
             deferred_edges=deferred_edges, anchor_u=u, anchor_wbo=wbo,
-            dedupe_edges=dedupe_edges, node_policy=node_policy)
+            dedupe_edges=dedupe_edges, node_policy=node_policy,
+            canonicalizer=canonicalizer)
         if len(new_cands) > max_branches:
             _finish_profile(
                 'live_branch_cap', len(new_cands), candidate_fragment,
@@ -373,7 +383,8 @@ def grow_island(g_R, g_P, seed, mapping,
     cands = _dedup_sym_cands(
         cands, g_R, g_P, r_orbits=r_orbits, p_orbits=p_orbits,
         fragment=fragment, deferred_edges=deferred_edges,
-        locked_mapping=mapping, node_policy=node_policy)
+        locked_mapping=mapping, node_policy=node_policy,
+        canonicalizer=canonicalizer)
 
     # heap empty
     if not cands or len(fragment) < min_lock_size:

@@ -19,10 +19,14 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
-from .dedupe import _dedup_sym_cands, _p_relation_signature
+from .dedupe import (
+    _dedup_sym_cands,
+    _p_relation_signature,
+    _p_relation_signature_from_parts,
+)
 from .policy import DEFAULT_NODE_POLICY, as_node_match_policy
 from .primitives import _edge_wbo, _growth_edge_supported
-from .state import _SymCand, _sym_block_indexes
+from .state import _SymCand, _cand_map, _sym_block_indexes
 from .support import (
     _force_sym_value,
     _refine_sym_assignments,
@@ -57,6 +61,7 @@ def _extend_sym_cands(
     dedupe_edges: Iterable[EdgeKey] | None = None,
     node_policy=None,
     defer_boundary_dedupe: bool = False,
+    canonicalizer=None,
 ) -> list[_SymCand]:
     """Symmetry-compressed incremental extension.
 
@@ -115,6 +120,10 @@ def _extend_sym_cands(
     defer_boundary_dedupe
         Diagnostic mode that postpones automorphism quotienting until fragment
         saturation. Exact duplicate states are still combined.
+    canonicalizer
+        Optional ``_CandidateAutomorphismCanonicalizer`` for ``(g_P, p_orbits,
+        mapping, node_policy)`` shared across the extension steps of one
+        island; dedupe builds an identical one per call otherwise.
     Returns
     -------
     list[_SymCand]
@@ -126,7 +135,7 @@ def _extend_sym_cands(
     ctx = _make_extension_context(
         fragment_old, n, g_R, g_P, mapping, iso_tol, islands_R,
         p_orbits, r_orbits, deferred_edges, anchor_u, anchor_wbo,
-        dedupe_edges, node_policy)
+        dedupe_edges, node_policy, canonicalizer)
     if ctx is None:
         return []
 
@@ -169,6 +178,7 @@ class _ExtensionContext:
     strict_r_wbos: Mapping[Node, Wbo]
     island_atoms: tuple[Node, ...]
     node_policy: Any = DEFAULT_NODE_POLICY
+    canonicalizer: Any = None
 
     @property
     def is_merge(self) -> bool:
@@ -259,6 +269,7 @@ def _make_extension_context(
     anchor_wbo: Wbo | None,
     dedupe_edges: Iterable[EdgeKey] | None,
     node_policy,
+    canonicalizer=None,
 ) -> _ExtensionContext | None:
     """Collect repeated extension inputs into one typed context."""
     bonded_in_frag = _active_fragment_neighbors(fragment_old, g_R, n)
@@ -288,6 +299,7 @@ def _make_extension_context(
             fragment_old, anchor_u, anchor_wbo, g_R, n),
         island_atoms=_locked_island_atoms(n, fragment_old, mapping, islands_R),
         node_policy=node_policy,
+        canonicalizer=canonicalizer,
     )
 
 
@@ -524,6 +536,8 @@ def _collect_free_target_entries(
         return block_join, by_group
     else:
         targets = [v for v in ctx.g_P.nodes() if v in admissible]
+    cm_items = None
+    blocks = cand.blocks if isinstance(cand, _SymCand) else ()
     for v in targets:
         if v in ctx.locked_p_atoms:
             continue
@@ -536,9 +550,13 @@ def _collect_free_target_entries(
         if join_idx is not None:
             block_join[join_idx].append((v, support, can_extend))
         else:
-            sig = _p_relation_signature(
-                cand, v, ctx.g_P, ctx.p_orbits,
-                node_policy=ctx.node_policy)
+            if cm_items is None:
+                # The signature's witness view is candidate-constant; build
+                # it once instead of once per target atom.
+                cm_items = tuple(sorted(_cand_map(cand).items()))
+            sig = _p_relation_signature_from_parts(
+                cand, v, ctx.g_P, ctx.p_orbits, cm_items=cm_items,
+                blocks=blocks, node_policy=ctx.node_policy)
             by_group[sig].append((v, support, True))
     return block_join, by_group
 
@@ -658,6 +676,7 @@ def _dedupe_children(children: list[_SymCand], ctx: _ExtensionContext) -> list[_
         deferred_edges=ctx.boundary_edges,
         locked_mapping=ctx.mapping,
         node_policy=ctx.node_policy,
+        canonicalizer=ctx.canonicalizer,
     )
 
 
