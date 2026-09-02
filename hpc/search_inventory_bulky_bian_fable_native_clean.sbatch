@@ -7,14 +7,14 @@
 #SBATCH --mem=100G
 #SBATCH --time=01:00:00
 #SBATCH --array=0-27
-#SBATCH --output=data/retro_runs/bulky_bian_fable_native_precursor_pool/logs/%A_%a.out
-#SBATCH --error=data/retro_runs/bulky_bian_fable_native_precursor_pool/logs/%A_%a.err
+#SBATCH --output=data/retro_runs/bulky_bian_fable_symmetry_orbit/logs/%A_%a.out
+#SBATCH --error=data/retro_runs/bulky_bian_fable_symmetry_orbit/logs/%A_%a.err
 
 set -euo pipefail
 
 REPO_ROOT=/h/399/yunhengzou/coordinate_alignment
 PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
-RUN_ROOT="$REPO_ROOT/data/retro_runs/bulky_bian_fable_native_precursor_pool"
+RUN_ROOT="$REPO_ROOT/data/retro_runs/bulky_bian_fable_symmetry_orbit"
 TARGET_SMILES="CC(C)C1=CC=CC(C(C)C)=C1/N=C2/C(C3=C4C(C=CC=C42)=CC=C3)=N/C5=C(C(C)C)C=CC=C5C(C)C"
 SHARD_COUNT=28
 
