@@ -218,9 +218,98 @@ def _prepare_fragment_detection(
     return source_graph, target_context, region
 
 
+def _augment_initial_family(
+        source_graph, target_graph, placement, config, region):
+    retained = placement.retained_atoms
+    mapping_pairs = placement.representative_mapping
+    outside, boundary, _fragments = partition_at_retained_fragment(
+        source_graph, retained)
+    if (config.maximum_boundary_bonds is not None
+            and len(boundary) > config.maximum_boundary_bonds):
+        return (), False, 0
+
+    (
+        augmented_mappings,
+        augmented_capped,
+        augmented_branch_count,
+        augmented_atom_count,
+    ) = match_augmented_residuals(
+        source_graph,
+        target_graph,
+        dict(mapping_pairs),
+        outside,
+        boundary,
+        graph_floor=config.graph_floor,
+        iso_tolerance=config.iso_tolerance,
+        branch_limit=config.branch_limit,
+        target_region_atoms=region,
+        retained_symmetry=placement.symmetry,
+    )
+    candidates = []
+    for augmented_placement in augmented_mappings:
+        augmented_mapping = dict(augmented_placement.mapping)
+        target_mapping = {
+            source_atom: target_atom
+            for source_atom, target_atom in augmented_placement.mapping
+            if target_atom < len(target_graph)
+        }
+        retained_atoms = tuple(sorted(target_mapping))
+        (
+            retained_fragments,
+            leftover_fragments,
+            copied_residual_placements,
+            attachment_atoms_source,
+        ) = project_augmented_placement(
+            source_graph,
+            target_mapping,
+            boundary,
+            augmented_mapping,
+            len(target_graph),
+        )
+        if (config.maximum_leftover_fragments is not None
+                and len(leftover_fragments)
+                > config.maximum_leftover_fragments):
+            continue
+
+        attachment_atoms_source = tuple(sorted(
+            set(attachment_atoms_source) | {
+                atom for atom in retained_atoms
+                if int((source_graph.nodes[atom].get("features") or {}).get(
+                    "formal_charge", 0) or 0) != 0
+            }
+        ))
+        attachment_atoms_target = tuple(sorted({
+            target_mapping[atom]
+            for atom in attachment_atoms_source
+            if atom in target_mapping
+        }))
+        candidate = FragmentCandidate(
+            source_id="",
+            mapping=tuple(sorted(target_mapping.items())),
+            retained_atoms=retained_atoms,
+            covered_target_atoms=tuple(sorted(target_mapping.values())),
+            leftover_fragments=leftover_fragments,
+            boundary_bonds=boundary,
+            attachment_atoms_source=attachment_atoms_source,
+            attachment_atoms_target=attachment_atoms_target,
+            copied_residual_placements=copied_residual_placements,
+            augmented_target_atom_count=augmented_atom_count,
+            retained_fragments=retained_fragments,
+            aam_hierarchy=augmented_placement.hierarchy,
+        )
+        if (region is None
+                or region.intersection(candidate.covered_target_atoms)):
+            candidates.append(candidate)
+    return (
+        tuple(candidates),
+        augmented_capped,
+        augmented_branch_count,
+    )
+
+
 def _detect_fragments_from_initial(
         source_graph, target_context, initial_search, *, source_id, config,
-        region):
+        region, augmentation_runner=None):
     target_graph = target_context.graph
     (
         initial_placements,
@@ -252,99 +341,28 @@ def _detect_fragments_from_initial(
     best_initial_family_count = sum(
         placement_score(placement) == best_initial_score
         for placement in initial_placements)
+    best_placements = tuple(
+        placement for placement in initial_placements
+        if placement_score(placement) == best_initial_score)
+    if augmentation_runner is None:
+        augmentation_results = (
+            _augment_initial_family(
+                source_graph, target_graph, placement, config, region)
+            for placement in best_placements
+        )
+    else:
+        augmentation_results = augmentation_runner(best_placements)
+
     candidates = []
     seen_candidates = set()
-
-    for placement in initial_placements:
-        if placement_score(placement) != best_initial_score:
-            continue
-        retained = placement.retained_atoms
-        mapping_pairs = placement.representative_mapping
-        outside, boundary, _fragments = partition_at_retained_fragment(
-            source_graph, retained)
-        if (config.maximum_boundary_bonds is not None
-                and len(boundary) > config.maximum_boundary_bonds):
-            continue
-
-        (
-            augmented_mappings,
-            augmented_capped,
-            augmented_branch_count,
-            augmented_atom_count,
-        ) = match_augmented_residuals(
-            source_graph,
-            target_graph,
-            dict(mapping_pairs),
-            outside,
-            boundary,
-            graph_floor=config.graph_floor,
-            iso_tolerance=config.iso_tolerance,
-            branch_limit=config.branch_limit,
-            target_region_atoms=region,
-            retained_symmetry=placement.symmetry,
-        )
+    for family_candidates, augmented_capped, augmented_branch_count in (
+            augmentation_results):
         maximum_branch_count = max(
             maximum_branch_count, augmented_branch_count)
         if augmented_capped:
             capped_seed_count += 1
-        if not augmented_mappings:
-            continue
-
-        for augmented_placement in augmented_mappings:
-            augmented_mapping = dict(augmented_placement.mapping)
-            target_mapping = {
-                source_atom: target_atom
-                for source_atom, target_atom in augmented_placement.mapping
-                if target_atom < len(target_graph)
-            }
-            retained_atoms = tuple(sorted(target_mapping))
-            (
-                retained_fragments,
-                leftover_fragments,
-                copied_residual_placements,
-                attachment_atoms_source,
-            ) = project_augmented_placement(
-                source_graph,
-                target_mapping,
-                boundary,
-                augmented_mapping,
-                len(target_graph),
-            )
-            if (config.maximum_leftover_fragments is not None
-                    and len(leftover_fragments)
-                    > config.maximum_leftover_fragments):
-                continue
-
-            attachment_atoms_source = tuple(sorted(
-                set(attachment_atoms_source) | {
-                    atom for atom in retained_atoms
-                    if int((source_graph.nodes[atom].get("features") or {}).get(
-                        "formal_charge", 0) or 0) != 0
-                }
-            ))
-            attachment_atoms_target = tuple(sorted({
-                target_mapping[atom]
-                for atom in attachment_atoms_source
-                if atom in target_mapping
-            }))
-            candidate = FragmentCandidate(
-                source_id=str(source_id),
-                mapping=tuple(sorted(target_mapping.items())),
-                retained_atoms=retained_atoms,
-                covered_target_atoms=tuple(sorted(target_mapping.values())),
-                leftover_fragments=leftover_fragments,
-                boundary_bonds=boundary,
-                attachment_atoms_source=attachment_atoms_source,
-                attachment_atoms_target=attachment_atoms_target,
-                copied_residual_placements=copied_residual_placements,
-                augmented_target_atom_count=augmented_atom_count,
-                retained_fragments=retained_fragments,
-                aam_hierarchy=augmented_placement.hierarchy,
-            )
-            if (region is not None
-                    and not region.intersection(
-                        candidate.covered_target_atoms)):
-                continue
+        for raw_candidate in family_candidates:
+            candidate = replace(raw_candidate, source_id=str(source_id))
             identity = _candidate_identity(candidate)
             if identity in seen_candidates:
                 continue

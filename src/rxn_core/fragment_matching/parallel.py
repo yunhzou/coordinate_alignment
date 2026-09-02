@@ -7,6 +7,7 @@ import multiprocessing as mp
 from ..matcher import _nauty_orbits
 from .detection import (
     _InitialFamilyAccumulator,
+    _augment_initial_family,
     _detect_fragments_from_initial,
     _grow_initial_seed,
     _initial_seed_order,
@@ -29,16 +30,23 @@ _SEED_STATE = None
 
 
 def _initialize_seed_worker(
-        source, target, config, source_orbits, target_orbits):
+        source, target, config, source_orbits, target_orbits, region):
     global _SEED_STATE
     _SEED_STATE = (
-        source, target, config, source_orbits, target_orbits)
+        source, target, config, source_orbits, target_orbits, region)
 
 
 def _run_seed(seed):
-    source, target, config, source_orbits, target_orbits = _SEED_STATE
+    source, target, config, source_orbits, target_orbits, _region = _SEED_STATE
     return _grow_initial_seed(
         source, target, seed, config, source_orbits, target_orbits)
+
+
+def _run_augmentation(placement):
+    source, target, config, _source_orbits, _target_orbits, region = (
+        _SEED_STATE)
+    return _augment_initial_family(
+        source, target, placement, config, region)
 
 
 def _parallel_initial_fragment_placements(
@@ -63,7 +71,8 @@ def _parallel_initial_fragment_placements(
         worker_count,
         initializer=_initialize_seed_worker,
         initargs=(
-            source, target, config, source_orbits, target_orbits),
+            source, target, config, source_orbits, target_orbits,
+            target_region_atoms),
     )
     try:
         results = pool.imap(_run_seed, seed_order, chunksize=1)
@@ -95,6 +104,23 @@ def _parallel_initial_fragment_placements(
     )
 
 
+def _parallel_augmentation_results(
+        source, target, config, region, placements, workers):
+    if len(placements) < 2:
+        return tuple(
+            _augment_initial_family(
+                source, target, placement, config, region)
+            for placement in placements)
+    worker_count = min(int(workers), len(placements))
+    context = mp.get_context("fork")
+    with context.Pool(
+            worker_count,
+            initializer=_initialize_seed_worker,
+            initargs=(source, target, config, None, None, region)) as pool:
+        return tuple(pool.imap(
+            _run_augmentation, placements, chunksize=1))
+
+
 def detect_fragments_parallel(
         source, target, *, source_id="",
         config: FragmentDetectionConfig | None = None,
@@ -121,6 +147,14 @@ def detect_fragments_parallel(
         region,
         execution.seed_workers,
     )
+    augmentation_runner = lambda placements: _parallel_augmentation_results(
+        source_graph,
+        target_context.graph,
+        config,
+        region,
+        placements,
+        execution.seed_workers,
+    )
     return _detect_fragments_from_initial(
         source_graph,
         target_context,
@@ -128,4 +162,5 @@ def detect_fragments_parallel(
         source_id=str(source_id),
         config=config,
         region=region,
+        augmentation_runner=augmentation_runner,
     )
