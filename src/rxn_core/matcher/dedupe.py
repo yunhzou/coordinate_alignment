@@ -27,7 +27,8 @@ def _p_relation_signature_from_parts(cand, v, g_P, p_orbits,
         cm_items = tuple(sorted(_cand_map(cand).items()))
     if blocks is None:
         blocks = cand.blocks if isinstance(cand, _SymCand) else ()
-    node_policy = as_node_match_policy(node_policy)
+    if not hasattr(node_policy, 'key'):
+        node_policy = as_node_match_policy(node_policy)
 
     # Exact nauty orbit maps give structural zero its own bucket.  In that
     # representation all absent graph edges contribute the same zero value,
@@ -132,6 +133,27 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
     # concrete-node caching for those policies to preserve exact semantics.
     compatibility_is_key_equality = isinstance(
         node_policy, (ElementNodeMatchPolicy, AttributeNodeMatchPolicy))
+    target_atoms_by_key = None
+    if compatibility_is_key_equality:
+        policy_key = (
+            ('element',) if isinstance(node_policy, ElementNodeMatchPolicy)
+            else ('attributes', node_policy.fields)
+        )
+        cache = getattr(p_orbits, '_target_atoms_by_policy_key', None)
+        if cache is None and hasattr(p_orbits, '__dict__'):
+            cache = {}
+            p_orbits._target_atoms_by_policy_key = cache
+        cache_key = (g_P, policy_key)
+        target_atoms_by_key = cache.get(cache_key) if cache is not None else None
+        if target_atoms_by_key is None:
+            grouped = defaultdict(list)
+            for v in g_P.nodes():
+                grouped[node_policy.key(g_P, v)].append(v)
+            target_atoms_by_key = {
+                key: tuple(atoms) for key, atoms in grouped.items()
+            }
+            if cache is not None:
+                cache[cache_key] = target_atoms_by_key
     p_vec_by_node = {}
 
     def p_vec_for_node(x):
@@ -143,10 +165,15 @@ def _boundary_signature(cand, g_R, g_P, fragment=None, deferred_edges=(),
         if cached is not None:
             return cached
         target_sigs = []
-        for v in g_P.nodes():
+        target_atoms = (
+            target_atoms_by_key.get(node_policy.key(g_R, x), ())
+            if compatibility_is_key_equality else g_P.nodes()
+        )
+        for v in target_atoms:
             if v in locked_p_atoms or v in used_possible:
                 continue
-            if not node_policy.compatible(g_R, x, g_P, v):
+            if (not compatibility_is_key_equality
+                    and not node_policy.compatible(g_R, x, g_P, v)):
                 continue
             target_sigs.append(_p_relation_signature_from_parts(
                 cand, v, g_P, p_orbits, cm_items=cm_items, blocks=blocks,
