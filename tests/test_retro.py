@@ -261,6 +261,29 @@ def test_rough_seed_mode_stops_after_majority_source_fragment():
     assert not result.complete
 
 
+def test_orbit_representative_seed_mode_is_explicitly_rough():
+    precursor = WeightedGraph(
+        ["C", "C", "C", "C"],
+        _matrix(4, [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)]),
+    )
+    target = WeightedGraph(
+        ["C", "C", "C", "C"],
+        _matrix(4, [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)]),
+    )
+
+    result = detect_fragments(
+        precursor,
+        target,
+        config=FragmentDetectionConfig(seed_mode="orbit_representatives"),
+    )
+
+    assert result.best_fragment_size == 4
+    assert result.seed_attempt_count == 2
+    assert result.seed_pruned_count == 2
+    assert result.status == "rough"
+    assert not result.complete
+
+
 def test_parallel_seed_execution_preserves_exact_detection_result():
     precursor = WeightedGraph(
         ["C", "C", "O", "H", "H"],

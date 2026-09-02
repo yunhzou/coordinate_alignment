@@ -52,9 +52,10 @@ def _run_augmentation(placement):
 def _parallel_initial_fragment_placements(
         source, target, config, target_orbits, target_region_atoms,
         seed_workers):
-    if config.seed_mode != "all":
+    if config.seed_mode not in {"all", "orbit_representatives"}:
         raise ValueError(
-            "parallel seed execution requires the exact all-seed mode")
+            "parallel seed execution requires all seeds or orbit "
+            "representatives")
     source_orbits = _nauty_orbits(
         source, wbo_tol=config.iso_tolerance)
     seed_order, seed_limited, symmetry_pruned = _initial_seed_order(

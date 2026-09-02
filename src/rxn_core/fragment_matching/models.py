@@ -31,8 +31,11 @@ class FragmentDetectionConfig:
             raise ValueError("branch and candidate limits must be positive")
         if self.seed_limit is not None and self.seed_limit < 1:
             raise ValueError("seed limit must be positive")
-        if self.seed_mode not in {"all", "fragment_cover"}:
-            raise ValueError("seed mode must be 'all' or 'fragment_cover'")
+        if self.seed_mode not in {
+                "all", "fragment_cover", "orbit_representatives"}:
+            raise ValueError(
+                "seed mode must be 'all', 'fragment_cover', or "
+                "'orbit_representatives'")
         if not 0 < self.rough_retention_threshold <= 1:
             raise ValueError("rough retention threshold must be in (0, 1]")
 

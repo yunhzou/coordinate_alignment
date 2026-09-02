@@ -59,7 +59,9 @@ def main():
     source.add_argument("--source-id")
     source.add_argument("--row-index", type=int)
     parser.add_argument("--id-column", default="Inventory ID")
-    parser.add_argument("--seed-mode", choices=("all", "fragment_cover"),
+    parser.add_argument("--seed-mode",
+                        choices=("all", "fragment_cover",
+                                 "orbit_representatives"),
                         default="all")
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--profile")

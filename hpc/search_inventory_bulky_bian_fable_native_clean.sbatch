@@ -35,5 +35,5 @@ PYTHONPATH=src RXN_CORE_NATIVE=1 srun "$PYTHON_BIN" tools/search_mcule_retro.py 
   --iso-tolerance 0.5 \
   --branch-limit 100 \
   --candidate-limit 100 \
-  --seed-mode all \
+  --seed-mode orbit_representatives \
   --save-all-results

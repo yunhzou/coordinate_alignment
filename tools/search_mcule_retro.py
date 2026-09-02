@@ -219,7 +219,9 @@ def _parser():
     parser.add_argument("--candidate-limit", type=int, default=100)
     parser.add_argument("--seed-limit", type=int)
     parser.add_argument(
-        "--seed-mode", choices=("all", "fragment_cover"), default="all")
+        "--seed-mode",
+        choices=("all", "fragment_cover", "orbit_representatives"),
+        default="all")
     parser.add_argument(
         "--rough-retention-threshold", type=float, default=0.5)
     parser.add_argument("--maximum-boundary-bonds", type=int)

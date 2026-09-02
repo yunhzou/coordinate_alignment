@@ -233,7 +233,8 @@ def _initial_seed_order(source, config, source_orbits=None):
                 int(atom),
             ),
         )
-        if source_orbits is not None:
+        if (config.seed_mode == "orbit_representatives"
+                and source_orbits is not None):
             representatives = {}
             for atom in seed_order:
                 representatives.setdefault(source_orbits[atom], atom)
@@ -540,7 +541,7 @@ def _detect_fragments_from_initial(
     )
     cap_hit = bool(capped_seed_count or candidate_capped)
     approximate = bool(
-        config.seed_mode == "fragment_cover"
+        config.seed_mode in {"fragment_cover", "orbit_representatives"}
         and (seed_pruned_count or rough_stop_hit))
     incomplete = bool(cap_hit or seed_limited or approximate)
     status = (
