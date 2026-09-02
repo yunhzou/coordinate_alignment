@@ -29,8 +29,15 @@ Python.
 
 ## Switches
 
-- `RXN_CORE_NATIVE=1` enables the native growth engine; Python remains the
-  default when the variable is unset.
+- The native growth engine is used automatically when it is built.
+- `RXN_CORE_NATIVE=0` selects the pure-Python reference engine.
+
+## Catalog validation
+
+The explicit-hydrogen BIAN inventory benchmark searches all 1,919 precursors
+with 28 shards and 48 CPUs per shard. The integrated native engine completed
+in 73.17 seconds versus 78.32 seconds for the previous exact implementation.
+All 1,919 serialized chemistry records were identical.
 - `RXN_CORE_VERIFY_REPAIR=1` runs the repair kernel and the Python search side
   by side and asserts they agree.
 - `RXN_CORE_VERIFY_ROLES=1` asserts the incremental role cache of the Python

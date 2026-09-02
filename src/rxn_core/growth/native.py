@@ -28,7 +28,7 @@ def built():
 
 
 def available():
-    return built() and os.environ.get("RXN_CORE_NATIVE") == "1"
+    return built() and os.environ.get("RXN_CORE_NATIVE", "1") != "0"
 
 
 def _graph_edges(g):

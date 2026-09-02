@@ -6,7 +6,7 @@ Compiles the vendored nauty core (native/nauty, Apache-2.0) together with
 native/src/engine.cpp, freeze.cpp, autgrp.cpp and repair.cpp into
 src/rxn_core/_engine.<abi>.so.  Requires pybind11
 and a C++17 compiler.  The extension is optional: rxn_core falls back to the
-pure-Python engine unless the extension is present and RXN_CORE_NATIVE=1.
+pure-Python engine when the extension is absent or RXN_CORE_NATIVE=0.
 """
 import shutil
 import sys
