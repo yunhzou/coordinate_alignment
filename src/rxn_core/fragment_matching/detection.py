@@ -109,10 +109,18 @@ class _InitialFamilyAccumulator:
             source,
             target,
             wbo_tol=config.iso_tolerance,
-            target_atom_tags=(
-                {int(atom): "requested_region"
-                 for atom in target_region_atoms}
-                if target_region_atoms is not None else None),
+            source_atom_tags={
+                int(atom): ('exact_orbit', int(source_orbits[atom]))
+                for atom in source
+            },
+            target_atom_tags={
+                int(atom): (
+                    'exact_orbit', int(target_orbits[atom]),
+                    bool(target_region_atoms is not None
+                         and atom in target_region_atoms),
+                )
+                for atom in target
+            },
         )
 
     def add(self, placements):
