@@ -97,13 +97,15 @@ def _refine_sym_assignments(cand, assignments):
 def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
                                g_P, iso_tol, join_block_idx=None,
                                strict_r_wbos=None,
-                               max_states=SYM_SUPPORT_MAX_STATES):
+                               max_states=SYM_SUPPORT_MAX_STATES,
+                               block_indexes=None):
     """Find a concrete witness that supports R[n] -> P[v_n].
 
     `_SymCand` blocks represent a pool of legal P atoms, but the stored
     mapping is only one witness.  Extension must therefore ask whether some
     assignment inside each unresolved block can satisfy the new edge pattern,
-    not whether the current witness happens to satisfy it.
+    not whether the current witness happens to satisfy it.  ``block_indexes``
+    may carry the candidate's precomputed ``_sym_block_indexes`` result.
     """
     strict_by_r = dict(strict_r_wbos or ())
     graph_floor = float(g_P.graph.get("bond_cut", 0.2))
@@ -130,7 +132,10 @@ def _support_witness_for_value(cand, n, v_n, bonded_in_frag, r_wbos,
                 return None
         return support
 
-    r_to_block, p_to_block = _sym_block_indexes(cand)
+    if block_indexes is None:
+        r_to_block, p_to_block = _sym_block_indexes(cand)
+    else:
+        r_to_block, p_to_block = block_indexes
     block_r = set(r_to_block)
     fixed_used = {p for r, p in cand.mapping.items() if r not in block_r}
     if v_n in fixed_used and cand.get(n) != v_n:

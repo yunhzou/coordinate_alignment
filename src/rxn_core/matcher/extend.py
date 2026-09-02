@@ -301,13 +301,16 @@ def _supported_value(
     ctx: _ExtensionContext,
     v: Node,
     join_block_idx: int | None,
+    block_indexes=None,
 ) -> Support | None:
     """Return support assignments proving ``ctx.n -> v`` is valid.
 
     This is where active R-pair WBO validity enters the extension step.  The
     helper searches inside unresolved symmetry blocks instead of trusting the
     stored witness, so an arbitrary witness cannot incorrectly reject a valid
-    correlated assignment.
+    correlated assignment.  ``block_indexes`` may carry the candidate's
+    precomputed ``_sym_block_indexes`` so the per-target loop does not rebuild
+    them.
     """
     return _support_witness_for_value(
         cand,
@@ -319,7 +322,72 @@ def _supported_value(
         ctx.iso_tol,
         join_block_idx=join_block_idx,
         strict_r_wbos=ctx.strict_r_wbos,
+        block_indexes=block_indexes,
     )
+
+
+def _edges_match_bond_cut(g_P) -> bool:
+    """True when ``g_P`` has an edge exactly for pairs at or above ``bond_cut``.
+
+    ``build_graph``/``build_weighted_graph`` guarantee this, and every internal
+    subgraph copy preserves it.  The verdict is cached on the graph so the
+    O(N^2) check runs once per graph object.  When it fails (a caller-supplied
+    graph with an unrelated edge set), the neighbourhood restriction below is
+    disabled and the full target scan runs as before.
+    """
+    verdict = g_P.graph.get('_edges_match_bond_cut')
+    if verdict is None:
+        matrix = g_P.graph.get('wbo_matrix')
+        if matrix is None:
+            # ``_edge_wbo`` then reads edge weights and returns 0.0 for
+            # non-edges, so a non-edge can never reach the floor.
+            verdict = True
+        else:
+            floor = float(g_P.graph.get('bond_cut', 0.2))
+            nodes = list(g_P.nodes())
+            verdict = True
+            for index, left in enumerate(nodes):
+                row = matrix[left]
+                for right in nodes[index + 1:]:
+                    if (float(row[right]) >= floor) != g_P.has_edge(left, right):
+                        verdict = False
+                        break
+                if not verdict:
+                    break
+        g_P.graph['_edges_match_bond_cut'] = bool(verdict)
+    return verdict
+
+
+def _admissible_targets(cand: _SymCand, ctx: _ExtensionContext, r_to_block):
+    """Target atoms that can pass the active-edge support check for ``ctx.n``.
+
+    For every fragment atom ``u`` bonded to ``n`` the support predicate
+    requires ``WBO_P[image(u), v] >= graph_floor`` (``support._pair_ok`` ->
+    ``_growth_edge_supported``), and ``g_P`` has an edge exactly for the pairs
+    at or above that floor (checked by ``_edges_match_bond_cut``).  A fixed
+    ``u`` has the single image ``cand.mapping[u]``; a block member is matched
+    against its whole pool, so ``v`` must neighbour some pool atom.  The
+    intersection over bonded atoms is therefore a superset of every target the
+    exact check accepts.  Nothing is decided here: survivors still run the
+    unchanged support, join and grouping code.  Returns ``None`` when the
+    restriction cannot be applied.
+    """
+    if not _edges_match_bond_cut(ctx.g_P):
+        return None
+    adjacency = ctx.g_P.adj
+    admissible = None
+    for u in ctx.bonded_in_frag:
+        block_index = r_to_block.get(u)
+        if block_index is None:
+            reach = set(adjacency[cand.mapping[u]])
+        else:
+            reach = set()
+            for p in cand.blocks[block_index].p_atoms:
+                reach.update(adjacency[p])
+        admissible = reach if admissible is None else admissible & reach
+        if not admissible:
+            break
+    return admissible if admissible is not None else set()
 
 
 def _force_required_image(
@@ -402,6 +470,7 @@ def _target_join_info(
     cand: _SymCand,
     ctx: _ExtensionContext,
     v: Node,
+    block_indexes=None,
 ) -> tuple[int | None, bool]:
     """Return the open block containing ``v`` and whether it can grow freely.
 
@@ -410,7 +479,10 @@ def _target_join_info(
     valid.  In that case the child must refine/fix the assignment instead of
     enlarging the block as a symmetric set-to-set choice.
     """
-    _, p_to_block = _sym_block_indexes(cand)
+    if block_indexes is None:
+        _, p_to_block = _sym_block_indexes(cand)
+    else:
+        _, p_to_block = block_indexes
     join_idx = p_to_block.get(v)
     if join_idx is None:
         return None, False
@@ -437,16 +509,28 @@ def _collect_free_target_entries(
     - ``by_group``: target atom is outside existing blocks.  Entries are
       grouped by element/orbit/context signature so equivalent target atoms can
       become one new `_SymBlock`.
+
+    Only atoms in ``_admissible_targets`` can pass the support check, so the
+    loop visits those; it keeps the graph's own node order so witness choice
+    and child order are unchanged.
     """
     block_join: dict[int, list[TargetEntry]] = defaultdict(list)
     by_group: dict[Any, list[TargetEntry]] = defaultdict(list)
-    for v in ctx.g_P.nodes():
+    block_indexes = _sym_block_indexes(cand)
+    admissible = _admissible_targets(cand, ctx, block_indexes[0])
+    if admissible is None:
+        targets = ctx.g_P.nodes()
+    elif not admissible:
+        return block_join, by_group
+    else:
+        targets = [v for v in ctx.g_P.nodes() if v in admissible]
+    for v in targets:
         if v in ctx.locked_p_atoms:
             continue
         if not ctx.node_policy.compatible(ctx.g_R, ctx.n, ctx.g_P, v):
             continue
-        join_idx, can_extend = _target_join_info(cand, ctx, v)
-        support = _supported_value(cand, ctx, v, join_idx)
+        join_idx, can_extend = _target_join_info(cand, ctx, v, block_indexes)
+        support = _supported_value(cand, ctx, v, join_idx, block_indexes)
         if support is None:
             continue
         if join_idx is not None:
