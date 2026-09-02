@@ -221,7 +221,7 @@ class _InitialFamilyAccumulator:
         return False
 
 
-def _initial_seed_order(source, config):
+def _initial_seed_order(source, config, source_orbits=None):
     if config.seed_mode == "fragment_cover":
         seed_order = _generate_seed_orders(source, n_trials=1)[0]
     else:
@@ -233,12 +233,18 @@ def _initial_seed_order(source, config):
                 int(atom),
             ),
         )
+        if source_orbits is not None:
+            representatives = {}
+            for atom in seed_order:
+                representatives.setdefault(source_orbits[atom], atom)
+            seed_order = list(representatives.values())
+    symmetry_pruned = len(source) - len(seed_order)
     seed_limited = (
         config.seed_limit is not None
         and len(seed_order) > config.seed_limit)
     if config.seed_limit is not None:
         seed_order = seed_order[:config.seed_limit]
-    return tuple(seed_order), seed_limited
+    return tuple(seed_order), seed_limited, symmetry_pruned
 
 
 def _grow_initial_seed(
@@ -275,7 +281,8 @@ def _initial_fragment_placements(
     maximum_branch_count = 0
     candidate_capped = False
 
-    seed_order, seed_limited = _initial_seed_order(source, config)
+    seed_order, seed_limited, symmetry_pruned = _initial_seed_order(
+        source, config, source_orbits)
     remaining_seeds = set(seed_order)
     seed_attempt_count = 0
     rough_stop_hit = False
@@ -310,7 +317,7 @@ def _initial_fragment_placements(
         candidate_capped,
         seed_limited,
         seed_attempt_count,
-        len(seed_order) - seed_attempt_count,
+        symmetry_pruned + len(seed_order) - seed_attempt_count,
         rough_stop_hit,
     )
 

@@ -652,15 +652,12 @@ def find_islands(g_R, g_P, seed_order,
                 return True
         return False
 
-    def _deferred_key(deferred_edges):
-        return tuple(sorted(tuple(sorted(e)) for e in deferred_edges))
-
     def _progress_key(branch):
         return (
-            tuple(sorted(branch.mapping.items())),
-            tuple(sorted(branch.islands_R.items())),
-            tuple(sorted(branch.islands_P.items())),
-            _deferred_key(branch.deferred_edges),
+            frozenset(branch.mapping.items()),
+            frozenset(branch.islands_R.items()),
+            frozenset(branch.islands_P.items()),
+            frozenset(frozenset(edge) for edge in branch.deferred_edges),
         )
 
     def _island_partition(branch):
@@ -789,11 +786,11 @@ def find_islands(g_R, g_P, seed_order,
                 subtree = []
                 subtree_progressed = False
                 for ii, iso in enumerate(deduped_isos):
-                    before_state = _progress_key(b)
+                    before_state = _branch_signature(b)
                     b2 = b.fork()
                     b2.commit(iso, g_R,
                               events=events if (bi == 0 and ii == 0) else None)
-                    after_state = _progress_key(b2)
+                    after_state = _branch_signature(b2)
                     if after_state == before_state:
                         subtree.append(b)
                     else:

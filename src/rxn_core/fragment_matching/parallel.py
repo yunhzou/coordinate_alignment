@@ -57,7 +57,8 @@ def _parallel_initial_fragment_placements(
             "parallel seed execution requires the exact all-seed mode")
     source_orbits = _nauty_orbits(
         source, wbo_tol=config.iso_tolerance)
-    seed_order, seed_limited = _initial_seed_order(source, config)
+    seed_order, seed_limited, symmetry_pruned = _initial_seed_order(
+        source, config, source_orbits)
     accumulator = _InitialFamilyAccumulator(
         source, target, config, target_region_atoms,
         source_orbits, target_orbits)
@@ -114,7 +115,7 @@ def _parallel_initial_fragment_placements(
         candidate_capped,
         seed_limited,
         seed_attempt_count,
-        len(seed_order) - seed_attempt_count,
+        symmetry_pruned + len(seed_order) - seed_attempt_count,
         False,
     )
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import networkx as nx
 
 from ..alignment.post_aam import AAMHierarchy
-from ..matcher import _PartialMappingCanonicalizer
+from ..matcher import _PartialMappingCanonicalizer, _nauty_orbits
 from ..subgraph import match_weighted_subgraph
 from .graph_ops import weight_matrix
 
@@ -39,13 +39,11 @@ def _composition_fits(component, target):
 
 
 def _component_placements(
-        component, target, retained_mapping, boundary, *, graph_floor,
+        component, target, available_atoms, available_target,
+        available_target_orbits, retained_mapping, boundary, *, graph_floor,
         iso_tolerance, branch_limit):
     if not _composition_fits(component, target):
         return ()
-    retained_images = set(map(int, retained_mapping.values()))
-    available_atoms = tuple(
-        atom for atom in target if atom not in retained_images)
     if len(component) > len(available_atoms):
         return ()
     if len(component) == 1:
@@ -82,9 +80,6 @@ def _component_placements(
                 hierarchy=hierarchy,
             ))
         return tuple(placements)
-    available_target = target.subgraph(available_atoms).copy()
-    available_target.graph["wbo_matrix"] = weight_matrix(target)
-    available_target.graph["bond_cut"] = float(graph_floor)
     seed_order = sorted(component, key=lambda atom: (
         -component.degree(atom),
         str(component.nodes[atom].get("element")),
@@ -97,6 +92,7 @@ def _component_placements(
         iso_tol=iso_tolerance,
         max_branches=branch_limit,
         seed_order=seed_order,
+        target_orbits=available_target_orbits,
     )
 
     component_atoms = set(component)
@@ -158,6 +154,14 @@ def match_augmented_residuals(
     canonicalizer = _PartialMappingCanonicalizer(
         source, target, wbo_tol=iso_tolerance)
     cut_graph = source.subgraph(outside).copy()
+    retained_images = set(map(int, retained_mapping.values()))
+    available_atoms = tuple(
+        atom for atom in target if atom not in retained_images)
+    available_target = target.subgraph(available_atoms).copy()
+    available_target.graph["wbo_matrix"] = weight_matrix(target)
+    available_target.graph["bond_cut"] = float(graph_floor)
+    available_target_orbits = _nauty_orbits(
+        available_target, wbo_tol=iso_tolerance)
     components = sorted(
         (tuple(sorted(map(int, component)))
          for component in nx.connected_components(cut_graph)),
@@ -170,6 +174,9 @@ def match_augmented_residuals(
         options = _component_placements(
             component,
             target,
+            available_atoms,
+            available_target,
+            available_target_orbits,
             fixed_mapping,
             boundary,
             graph_floor=graph_floor,

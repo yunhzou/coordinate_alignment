@@ -67,6 +67,7 @@ def match_weighted_subgraph(query, target, *,
                             symmetry_wbo_tol=0.2,
                             seed_order=None,
                             orbit_dedup=True,
+                            target_orbits=None,
                             max_branches=1_000_000):
     """Find query placements inside target with a replaceable node rule.
 
@@ -94,6 +95,7 @@ def match_weighted_subgraph(query, target, *,
         orbit_dedup=orbit_dedup,
         core_R=tuple(sorted(query_nodes)),
         stop_when_core_mapped=True,
+        p_orbits=target_orbits,
         node_policy=policy,
         anchor_map=anchor_map,
     )
