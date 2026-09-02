@@ -1206,6 +1206,9 @@ void extend_free_atom(const Cand& c, const Context& ctx, std::vector<Cand>& chil
     std::vector<Group> groups;
     std::vector<int> compat_cache(c.blocks.size(), -1);
     const int n_code = R.ecode[ctx.n];
+    // element codes are interned per process: a source element the target
+    // never saw has no compatible target atoms (and may exceed the table)
+    if (n_code < 0 || n_code >= (int)P.same_element.size()) return;
     for (int v : P.same_element[n_code]) {
         if (!admissible[v] || ctx.locked_p[v]) continue;
         int join_idx = bi.p_to_block[v];
@@ -1695,7 +1698,7 @@ struct PyTarget {
             g.edge_cell_colour.push_back(g.colours.intern({1, (int64_t)item.first}));
         int max_code = 0;
         for (int c : g.ecode) max_code = std::max(max_code, c);
-        g.same_element.assign((size_t)element_table().size() + 1, {});
+        g.same_element.assign((size_t)max_code + 1, {});
         for (int v = 0; v < g.n; ++v) g.same_element[g.ecode[v]].push_back(v);
     }
 };

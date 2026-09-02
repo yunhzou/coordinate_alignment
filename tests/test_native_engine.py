@@ -108,3 +108,24 @@ def test_search_results_agree_between_engines(monkeypatch):
     monkeypatch.setenv("RXN_CORE_NATIVE", "0")
     with_python = _result_key(_search("tetraphenyl"))
     assert with_native == with_python
+
+
+def test_reused_target_handles_source_elements_introduced_later():
+    """Element codes are interned per process; a target built before a later
+    source introduced new element symbols must not index past its table."""
+    from rxn_core import _engine
+
+    target = _engine.TargetGraph(
+        ["NativeTargetC", "NativeTargetH"], [[0.0, 1.0], [1.0, 0.0]], 0.2,
+        [(0, 1)], [0, 1], [(0, 1, 5)], 0)
+    for index in range(8):
+        source = _engine.SourceGraph(
+            ["NativeTargetC", f"PreviouslyUnseenElement{index}"],
+            [[0.0, 1.0], [1.0, 0.0]], 0.2, [(0, 1)])
+        result = _engine.grow_island(
+            source, target, 0, [-1, -1], 0.2, 0.5, 1, 100, None, [], False)
+        assert result["capped"] is False
+        # the unseen element has no compatible target atom: the island stops
+        # at the seed with the C-X edge deferred
+        assert result["isos"]
+        assert all(dict(iso["mapping"]) == {0: 0} for iso in result["isos"])
