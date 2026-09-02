@@ -9,6 +9,13 @@ from rxn_core.retrosynthesis.enumeration import (
     CoverageEnumerationConfig,
     enumerate_coverage_patterns,
 )
+from rxn_core.retrosynthesis.compressed_coverage import (
+    CoverageRecommendationConfig,
+    assign_domain_signatures,
+    candidate_target_domains,
+    coverage_signature,
+    recommend_compressed_coverage_patterns,
+)
 from rxn_core.fragment_matching.serialization import (
     fragment_candidate_from_record,
     fragment_candidate_to_record,
@@ -91,3 +98,54 @@ def test_overlapping_fragments_cannot_manufacture_an_exact_cover():
     )
 
     assert result.patterns == ()
+
+
+def test_repeated_symmetric_ligand_assembles_without_bijection_expansion():
+    ligand = FragmentCandidate(
+        source_id="ligand",
+        mapping=((0, 1),),
+        retained_atoms=(0,),
+        covered_target_atoms=(1,),
+        leftover_fragments=(),
+        boundary_bonds=(),
+        attachment_atoms_source=(),
+        attachment_atoms_target=(),
+        copied_residual_placements=(),
+        augmented_target_atom_count=4,
+        retained_fragments=((0,),),
+        aam_hierarchy=AAMHierarchy((FragmentMatch(
+            fragment_index=0,
+            island_index=0,
+            r_atoms=(0,),
+            symmetry_domains=(SymmetryDomain(
+                r_atoms=(0,),
+                p_atoms=(1, 2, 3),
+                source="sym_block",
+            ),),
+            representative_assignments=((0, 1),),
+        ),)),
+    )
+    ligand_signature = coverage_signature(
+        candidate_target_domains(ligand))
+    center_signature = ((0,),)
+
+    result = recommend_compressed_coverage_patterns(
+        (center_signature, ligand_signature),
+        4,
+        lambda pattern, covered: (-covered, tuple(map(str, pattern))),
+        result_limit=4,
+        config=CoverageRecommendationConfig(
+            maximum_precursors=4,
+            frontier_limit=20,
+        ),
+    )
+
+    assert result.patterns == ((
+        center_signature,
+        ligand_signature,
+        ligand_signature,
+        ligand_signature,
+    ),)
+    witness = assign_domain_signatures(result.patterns[0], 4)
+    assert witness[0] == (0,)
+    assert {targets[0] for targets in witness[1:]} == {1, 2, 3}

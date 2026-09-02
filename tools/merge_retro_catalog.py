@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
-import itertools
+import heapq
 import json
 from collections import Counter, defaultdict
 from fractions import Fraction
@@ -16,11 +16,11 @@ from rdkit import Chem
 from rxn_core.retrosynthesis.catalog_index import (
     CandidateIndexConfig,
     build_candidate_index,
-    coverage_mask as _mask,
 )
-from rxn_core.retrosynthesis.enumeration import (
-    CoverageEnumerationConfig,
-    enumerate_coverage_patterns,
+from rxn_core.retrosynthesis.compressed_coverage import (
+    CoverageRecommendationConfig,
+    assign_candidate_items,
+    recommend_compressed_coverage_patterns,
 )
 from rxn_core.retrosynthesis.ranking import (
     assembly_rank as _assembly_rank,
@@ -34,19 +34,12 @@ def main():
     parser.add_argument("--parts", required=True)
     parser.add_argument("--target-smiles", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--per-mask-limit", type=int, default=200)
+    parser.add_argument("--per-domain-limit", type=int, default=200)
     parser.add_argument("--assembly-limit", type=int, default=20)
     parser.add_argument("--maximum-precursors", type=int, default=3)
-    parser.add_argument("--per-cover-expansion-limit", type=int, default=5000)
-    parser.add_argument("--search-mode",
-                        choices=("modular", "recommendation", "exhaustive"),
-                        default="modular")
-    parser.add_argument("--beam-width", type=int, default=200)
-    parser.add_argument("--combination-beam-width", type=int, default=200)
+    parser.add_argument("--frontier-limit", type=int, default=200)
     parser.add_argument("--pattern-limit", type=int, default=4)
     parser.add_argument("--recommendations-per-pattern", type=int, default=4)
-    parser.add_argument("--patterns-per-coverage", type=int, default=4)
-    parser.add_argument("--modular-state-limit", type=int, default=100000)
     parser.add_argument("--expected-id", action="append", default=[])
     parser.add_argument("--require-attachment-bonds",
                         action=argparse.BooleanOptionalAction, default=False)
@@ -67,18 +60,13 @@ def main():
     Chem.AssignStereochemistry(target, cleanIt=True, force=True)
     target_key = Chem.MolToSmiles(target_implicit, isomericSmiles=True)
     atom_count = target.GetNumAtoms()
-    full_mask = (1 << atom_count) - 1
     target_edges = [
         (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
         for bond in target.GetBonds()
     ]
 
-    def construction_pattern_signature(pattern):
-        masks = tuple(sorted(pattern))
-        atom_sets = [
-            {atom for atom in range(atom_count) if mask & (1 << atom)}
-            for mask in masks
-        ]
+    def construction_pattern_signature(atom_sets):
+        atom_sets = [set(atoms) for atoms in atom_sets]
         labels = [Chem.MolFragmentToSmiles(
             target, atomsToUse=sorted(atoms), canonical=True,
             isomericSmiles=True) for atoms in atom_sets]
@@ -121,7 +109,7 @@ def main():
         target,
         target_key,
         config=CandidateIndexConfig(
-            per_mask_limit=args.per_mask_limit,
+            per_domain_limit=args.per_domain_limit,
             exclude_target_identity=args.exclude_target_identity,
             attachment_trim_variants=args.attachment_trim_variants,
             chirality_ranking=args.chirality_ranking,
@@ -155,19 +143,24 @@ def main():
         )
 
     def rank_pattern(pattern, covered_atom_count):
-        return item_set_rank(
-            [groups[mask][0] for mask in pattern], covered_atom_count)
+        return (
+            -covered_atom_count,
+            item_set_rank(
+                [groups[signature][0] for signature in pattern],
+                covered_atom_count),
+        )
 
-    coverage_search = enumerate_coverage_patterns(
+    coverage_search = recommend_compressed_coverage_patterns(
         groups,
         atom_count,
         rank_pattern,
-        config=CoverageEnumerationConfig(
+        result_limit=max(
+            args.pattern_limit * args.recommendations_per_pattern,
+            args.assembly_limit,
+        ),
+        config=CoverageRecommendationConfig(
             maximum_precursors=args.maximum_precursors,
-            mode=args.search_mode,
-            beam_width=args.beam_width,
-            patterns_per_coverage=args.patterns_per_coverage,
-            state_limit=args.modular_state_limit,
+            frontier_limit=args.frontier_limit,
         ),
     )
     covers = coverage_search.patterns
@@ -194,41 +187,68 @@ def main():
                 break
         return unique
 
-    prune_at = max(10_000, args.assembly_limit * 4)
-    retain_during_search = max(args.assembly_limit * 2, 5_000)
+    def best_item_combinations(pools, limit):
+        """Yield only requested top combinations from sorted pools."""
+        if not pools or any(not pool for pool in pools):
+            return
+        start = tuple(0 for _pool in pools)
+        queue = [(item_set_rank(
+            tuple(pool[0] for pool in pools)), start)]
+        seen = {start}
+        yielded = 0
+        while queue and yielded < limit:
+            _rank, indices = heapq.heappop(queue)
+            items = tuple(
+                pool[index] for pool, index in zip(pools, indices))
+            yield items
+            yielded += 1
+            for dimension, pool in enumerate(pools):
+                next_index = indices[dimension] + 1
+                if next_index >= len(pool):
+                    continue
+                neighbour = list(indices)
+                neighbour[dimension] = next_index
+                neighbour = tuple(neighbour)
+                if neighbour in seen:
+                    continue
+                seen.add(neighbour)
+                neighbour_items = tuple(
+                    candidate_pool[index]
+                    for candidate_pool, index in zip(pools, neighbour))
+                heapq.heappush(queue, (
+                    item_set_rank(neighbour_items), neighbour))
+
     for cover in covers:
         cover_count += 1
-        pattern_key = construction_pattern_signature(cover)
-        representative_pattern.setdefault(pattern_key, tuple(sorted(cover)))
+        representative_items = assign_candidate_items(
+            [groups[signature][0] for signature in cover], atom_count)
+        if representative_items is None:
+            raise RuntimeError("compressed coverage pattern has no witness")
+        representative_atom_sets = tuple(
+            tuple(item["covered_target_atoms"])
+            for item in representative_items)
+        pattern_key = construction_pattern_signature(
+            representative_atom_sets)
+        representative_pattern.setdefault(
+            pattern_key, representative_atom_sets)
         pattern_assemblies = []
-        pools = [groups[mask] for mask in cover]
-        if args.search_mode == "recommendation":
-            partials = [()]
-            for pool in pools:
-                expanded = [partial + (item,)
-                            for partial in partials for item in pool]
-                if len(expanded) > args.combination_beam_width:
-                    beam_truncated = True
-                expanded.sort(key=lambda items: item_set_rank(items))
-                partials = expanded[:args.combination_beam_width]
-            item_combinations = partials
-        else:
-            item_combinations = itertools.islice(
-                itertools.product(*pools), args.per_cover_expansion_limit)
+        pools = [groups[signature] for signature in cover]
+        item_combinations = best_item_combinations(
+            pools, args.recommendations_per_pattern)
         for items in item_combinations:
             expansion_count += 1
             ids = [item["precursor_id"] for item in items]
             if (not args.allow_repeated_precursors and
                     len(set(ids)) != len(ids)):
                 continue
+            placed_items = assign_candidate_items(items, atom_count)
+            if placed_items is None:
+                continue
             formed = _formed_bonds(
-                items, target_edges, args.require_attachment_bonds)
+                placed_items, target_edges, args.require_attachment_bonds)
             if formed is not None:
-                pattern_assemblies.append(_assembly(items, formed))
+                pattern_assemblies.append(_assembly(placed_items, formed))
                 assembly_mapping_variants += 1
-            if len(pattern_assemblies) >= prune_at:
-                pattern_assemblies = retain_best(
-                    pattern_assemblies, retain_during_search)
         assemblies_by_pattern[pattern_key].extend(retain_best(
             pattern_assemblies, args.recommendations_per_pattern))
 
@@ -248,10 +268,9 @@ def main():
         construction_patterns.append({
             "pattern": pattern_index,
             "coverage_atom_sets": [
-                [atom for atom in range(atom_count) if mask & (1 << atom)]
-                for mask in pattern
+                list(atoms) for atoms in pattern
             ],
-            "fragment_sizes": [mask.bit_count() for mask in pattern],
+            "fragment_sizes": [len(atoms) for atoms in pattern],
             "recommendation_ranks": list(range(
                 start_rank, start_rank + len(variants))),
             "best_score": variants[0]["score"],
@@ -261,17 +280,15 @@ def main():
     expected_assembly = None
     if args.expected_id:
         expected_pools = [expected.get(item, ()) for item in args.expected_id]
-        for items in itertools.product(*expected_pools):
-            masks = [_mask(item["covered_target_atoms"]) for item in items]
-            if any(left & right for index, left in enumerate(masks)
-                   for right in masks[index + 1:]):
-                continue
-            if sum(masks) != full_mask:
+        for items in best_item_combinations(
+                expected_pools, args.per_domain_limit):
+            placed_items = assign_candidate_items(items, atom_count)
+            if placed_items is None:
                 continue
             formed = _formed_bonds(
-                items, target_edges, args.require_attachment_bonds)
+                placed_items, target_edges, args.require_attachment_bonds)
             if formed is not None:
-                expected_assembly = _assembly(items, formed)
+                expected_assembly = _assembly(placed_items, formed)
                 break
 
     summaries = []
@@ -288,7 +305,7 @@ def main():
         scan_counts.update(summary["counts"])
 
     report = {
-        "schema": "rxn_core.retro_catalog_assembly/v3",
+        "schema": "rxn_core.retro_catalog_assembly/v5",
         "target_smiles": args.target_smiles,
         "target_atom_count": atom_count,
         "part_count": len(part_paths),
@@ -305,25 +322,21 @@ def main():
             )
         },
         "merge_counts": dict(counts),
-        "coverage_masks_retained": len(groups),
-        "per_mask_limit": args.per_mask_limit,
+        "coverage_domain_families": len(groups),
+        "per_domain_limit": args.per_domain_limit,
         "assembly_limit": args.assembly_limit,
         "maximum_precursors": args.maximum_precursors,
-        "exact_cover_count": cover_count,
-        "cover_expansion_count": expansion_count,
+        "recommended_cover_count": cover_count,
+        "candidate_choice_evaluations": expansion_count,
         "require_attachment_bonds": args.require_attachment_bonds,
         "exclude_target_identity": args.exclude_target_identity,
         "allow_repeated_precursors": args.allow_repeated_precursors,
         "attachment_trim_variants": args.attachment_trim_variants,
         "chirality_ranking": args.chirality_ranking,
-        "search_mode": args.search_mode,
-        "beam_width": args.beam_width,
-        "combination_beam_width": args.combination_beam_width,
+        "frontier_limit": args.frontier_limit,
         "recommendation_search_truncated": beam_truncated,
         "pattern_limit": args.pattern_limit,
         "recommendations_per_pattern": args.recommendations_per_pattern,
-        "patterns_per_coverage": args.patterns_per_coverage,
-        "modular_state_limit": args.modular_state_limit,
         "construction_patterns": construction_patterns,
         "direct_target_matches": direct_target_matches,
         "assembly_mapping_variants": assembly_mapping_variants,

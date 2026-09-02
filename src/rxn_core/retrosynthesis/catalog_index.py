@@ -7,23 +7,20 @@ from dataclasses import dataclass
 import networkx as nx
 from rdkit import Chem
 
-from ..fragment_matching import materialize_target_coverage_orbit
 from ..fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from ..fragment_matching.serialization import (
     FRAGMENT_DETECTION_SCHEMA,
     fragment_candidate_from_record,
     fragment_candidate_to_record,
 )
-from ..matcher import _nauty_atom_generators, _nauty_orbits
+from ..matcher import _nauty_orbits
 from ..subgraph import _coerce_graph
+from .compressed_coverage import (
+    CoverageSignature,
+    candidate_target_domains,
+    coverage_signature,
+)
 from .ranking import candidate_entry_rank
-
-
-def coverage_mask(atoms):
-    value = 0
-    for atom in atoms:
-        value |= 1 << int(atom)
-    return value
 
 
 def _cip(atom):
@@ -63,7 +60,7 @@ def _symmetry_copy_capacity(retained_atoms, source_orbits):
 
 def candidate_entry(
         record, candidate, explicit_molecule, structure_key, target,
-        chirality_ranking, source_orbits):
+        chirality_ranking, source_orbits, target_domains):
     leftovers = candidate["leftover_fragments"]
     retained_heavy_atoms = sum(
         explicit_molecule.GetAtomWithIdx(int(atom)).GetAtomicNum() > 1
@@ -89,8 +86,10 @@ def candidate_entry(
         "retained_atoms": candidate["retained_atoms"],
         "leftover_fragments": leftovers,
         "boundary_bonds": candidate["boundary_bonds"],
+        "attachment_atoms_source": candidate["attachment_atoms_source"],
         "attachment_atoms_target": candidate["attachment_atoms_target"],
         "mapping": candidate["mapping"],
+        "target_domains": target_domains,
         "retained_fragments": candidate["retained_fragments"],
         "leftover_atom_count": sum(map(len, leftovers)),
         "structure_key": structure_key,
@@ -188,16 +187,15 @@ def attachment_trim_variants(candidate, molecule):
 
 @dataclass(frozen=True)
 class CandidateIndexConfig:
-    per_mask_limit: int = 200
+    per_domain_limit: int = 200
     exclude_target_identity: bool = True
     attachment_trim_variants: bool = False
     chirality_ranking: bool = False
     expected_ids: tuple[str, ...] = ()
-    orbit_limit: int = 100_000
     iso_tolerance: float = 0.5
 
     def __post_init__(self):
-        if self.per_mask_limit < 1 or self.orbit_limit < 1:
+        if self.per_domain_limit < 1:
             raise ValueError("candidate index limits must be positive")
         if self.iso_tolerance <= 0:
             raise ValueError("isomorphism tolerance must be positive")
@@ -205,7 +203,7 @@ class CandidateIndexConfig:
 
 @dataclass(frozen=True)
 class CandidateIndex:
-    groups: dict[int, list[dict]]
+    groups: dict[CoverageSignature, list[dict]]
     expected: dict[str, list[dict]]
     direct_target_matches: tuple[dict, ...]
     counts: dict[str, int]
@@ -217,10 +215,6 @@ def build_candidate_index(records, target, target_key, *, config=None):
     expected = defaultdict(list)
     direct_target_matches = []
     counts = Counter()
-    target_graph = _coerce_graph(molecule_to_weighted_graph(target), 0.2)
-    target_generators = _nauty_atom_generators(
-        target_graph, wbo_tol=config.iso_tolerance)
-
     for record in records:
         if record["schema"] != FRAGMENT_DETECTION_SCHEMA:
             raise ValueError(
@@ -257,29 +251,25 @@ def build_candidate_index(records, target, target_key, *, config=None):
         for raw_candidate in record["candidates"]:
             typed = fragment_candidate_from_record(dict(
                 raw_candidate, source_id=record["source_id"]))
-            candidates.extend(
-                fragment_candidate_to_record(variant)
-                for variant in materialize_target_coverage_orbit(
-                    typed,
-                    target_graph,
-                    iso_tolerance=config.iso_tolerance,
-                    limit=config.orbit_limit,
-                    generators=target_generators,
-                )
-            )
+            candidates.append((
+                fragment_candidate_to_record(typed),
+                candidate_target_domains(typed),
+            ))
         if config.attachment_trim_variants:
             candidates = [
-                variant
-                for candidate in candidates
+                (variant, candidate_target_domains(
+                    fragment_candidate_from_record(dict(
+                        variant, source_id=record["source_id"]))))
+                for candidate, _domains in candidates
                 for variant in attachment_trim_variants(
                     candidate, explicit_molecule)
             ]
         else:
             candidates = [
-                dict(candidate, attachment_trimmed_target_atoms=[])
-                for candidate in candidates
+                (dict(candidate, attachment_trimmed_target_atoms=[]), domains)
+                for candidate, domains in candidates
             ]
-        for candidate in candidates:
+        for candidate, target_domains in candidates:
             item = candidate_entry(
                 record,
                 candidate,
@@ -288,20 +278,22 @@ def build_candidate_index(records, target, target_key, *, config=None):
                 target,
                 config.chirality_ranking,
                 source_orbits,
+                target_domains,
             )
-            mask = coverage_mask(item["covered_target_atoms"])
-            bucket = groups[mask]
+            signature = coverage_signature(target_domains)
+            bucket = groups[signature]
             bucket.append(item)
-            if len(bucket) >= config.per_mask_limit * 2:
+            if len(bucket) >= config.per_domain_limit * 2:
                 bucket.sort(key=candidate_entry_rank)
-                del bucket[config.per_mask_limit:]
+                del bucket[config.per_domain_limit:]
             counts["fragment_candidates"] += 1
             if item["precursor_id"] in config.expected_ids:
                 expected[item["precursor_id"]].append(item)
 
     ranked_groups = {
-        mask: sorted(items, key=candidate_entry_rank)[:config.per_mask_limit]
-        for mask, items in groups.items()
+        signature: sorted(items, key=candidate_entry_rank)[
+            :config.per_domain_limit]
+        for signature, items in groups.items()
     }
     return CandidateIndex(
         groups=ranked_groups,
