@@ -75,19 +75,32 @@ def _parallel_initial_fragment_placements(
             target_region_atoms),
     )
     try:
-        results = pool.imap(_run_seed, seed_order, chunksize=1)
-        for placements, capped, branch_count in results:
-            seed_attempt_count += 1
-            maximum_branch_count = max(
-                maximum_branch_count, branch_count)
-            if capped:
-                capped_seed_count += 1
-                continue
-            candidate_capped = accumulator.add(placements)
-            if candidate_capped:
-                pool.terminate()
+        def result_waves():
+            if (config.candidate_limit is None
+                    or len(seed_order) <= config.candidate_limit):
+                yield pool.imap(_run_seed, seed_order, chunksize=1)
+                return
+            for start in range(0, len(seed_order), worker_count):
+                wave = seed_order[start:start + worker_count]
+                yield pool.map(_run_seed, wave, chunksize=1)
+
+        stop = False
+        for results in result_waves():
+            for placements, capped, branch_count in results:
+                seed_attempt_count += 1
+                maximum_branch_count = max(
+                    maximum_branch_count, branch_count)
+                if capped:
+                    capped_seed_count += 1
+                    continue
+                candidate_capped = accumulator.add(placements)
+                if candidate_capped:
+                    pool.terminate()
+                    stop = True
+                    break
+            if stop:
                 break
-        else:
+        if not stop:
             pool.close()
     finally:
         pool.join()
