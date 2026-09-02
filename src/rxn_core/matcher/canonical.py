@@ -283,17 +283,23 @@ class _CandidateAutomorphismCanonicalizer:
         return self.nauty_graph
 
     def certificate(self, cand):
-        import pynauty
+        colored_vertices, color_profile = self.coloring_profile(cand)
+        return self.certificate_from_coloring(
+            colored_vertices, color_profile)
+
+    def coloring_profile(self, cand):
+        """Return the exact vertex coloring and its cheap role profile."""
         colored_vertices = self._colored_vertices(cand)
-        # pynauty canonicalizes a partition, whose cells are not themselves
-        # named.  Preserve the semantic role attached to every cell as part of
-        # the coarse certificate; the exact transporter below remains the
-        # authoritative equivalence test.
         color_profile = tuple(
             (color, len(vertices)) for color, vertices in colored_vertices)
+        return colored_vertices, color_profile
+
+    def certificate_from_coloring(self, colored_vertices, color_profile):
+        """Canonicalize one already prepared candidate coloring."""
+        import pynauty
         return (
             pynauty.certificate(self.graph(
-                cand, colored_vertices=colored_vertices)),
+                None, colored_vertices=colored_vertices)),
             color_profile,
         )
 

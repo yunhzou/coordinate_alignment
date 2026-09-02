@@ -182,7 +182,14 @@ def _dedup_sym_cands(cands, g_R, g_P, r_orbits=None, p_orbits=None,
     canonicalizer = _CandidateAutomorphismCanonicalizer(
         g_P, p_orbits=p_orbits, locked_mapping=locked_mapping,
         node_policy=node_policy)
-    certificates = [canonicalizer.certificate(cand) for cand in cands]
+    colorings = [canonicalizer.coloring_profile(cand) for cand in cands]
+    profile_counts = Counter(profile for _, profile in colorings)
+    certificates = [
+        canonicalizer.certificate_from_coloring(coloring, profile)
+        if profile_counts[profile] > 1
+        else ('unique-color-profile', index, profile)
+        for index, (coloring, profile) in enumerate(colorings)
+    ]
     certificate_counts = Counter(certificates)
     seen = {}
     for cand, certificate in zip(cands, certificates):
