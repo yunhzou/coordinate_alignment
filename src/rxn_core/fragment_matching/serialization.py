@@ -79,6 +79,9 @@ def fragment_detection_to_record(
         "initial_placement_encounters": result.initial_placement_encounters,
         "initial_family_count": result.initial_family_count,
         "best_initial_family_count": result.best_initial_family_count,
+        "seed_attempt_count": result.seed_attempt_count,
+        "seed_pruned_count": result.seed_pruned_count,
+        "rough_stop_hit": result.rough_stop_hit,
         "candidates": [
             fragment_candidate_to_record(candidate) for candidate in selected
         ],

@@ -148,6 +148,10 @@ def _parser():
     parser.add_argument("--branch-limit", type=int, default=100)
     parser.add_argument("--candidate-limit", type=int, default=100)
     parser.add_argument("--seed-limit", type=int)
+    parser.add_argument(
+        "--seed-mode", choices=("all", "fragment_cover"), default="all")
+    parser.add_argument(
+        "--rough-retention-threshold", type=float, default=0.5)
     parser.add_argument("--maximum-boundary-bonds", type=int)
     parser.add_argument("--maximum-leftover-fragments", type=int)
     parser.add_argument("--save-all-results", action="store_true")
@@ -173,6 +177,8 @@ def main(argv=None):
         "branch_limit": args.branch_limit,
         "candidate_limit": args.candidate_limit,
         "seed_limit": args.seed_limit,
+        "seed_mode": args.seed_mode,
+        "rough_retention_threshold": args.rough_retention_threshold,
         "maximum_boundary_bonds": args.maximum_boundary_bonds,
         "maximum_leftover_fragments": args.maximum_leftover_fragments,
     }

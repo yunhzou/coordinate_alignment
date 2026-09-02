@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from ..alignment.branch import _generate_seed_orders
 from ..growth import IslandBranchLimitExceeded, grow_island
 from ..matcher import (
     _PartialMappingCanonicalizer,
@@ -50,20 +51,29 @@ def _initial_fragment_placements(
     maximum_branch_count = 0
     candidate_capped = False
 
-    seed_order = sorted(
-        source,
-        key=lambda atom: (
-            -source.degree(atom),
-            str(source.nodes[atom].get("element")),
-            int(atom),
-        ),
-    )
+    if config.seed_mode == "fragment_cover":
+        seed_order = _generate_seed_orders(source, n_trials=1)[0]
+    else:
+        seed_order = sorted(
+            source,
+            key=lambda atom: (
+                -source.degree(atom),
+                str(source.nodes[atom].get("element")),
+                int(atom),
+            ),
+        )
     seed_limited = (
         config.seed_limit is not None
         and len(seed_order) > config.seed_limit)
     if config.seed_limit is not None:
         seed_order = seed_order[:config.seed_limit]
+    remaining_seeds = set(seed_order)
+    seed_attempt_count = 0
+    rough_stop_hit = False
     for seed in seed_order:
+        if seed not in remaining_seeds:
+            continue
+        seed_attempt_count += 1
         try:
             placements = grow_island(
                 source,
@@ -80,6 +90,7 @@ def _initial_fragment_placements(
         except IslandBranchLimitExceeded as exc:
             capped_seed_count += 1
             maximum_branch_count = max(maximum_branch_count, exc.count)
+            remaining_seeds.discard(seed)
             continue
 
         maximum_branch_count = max(maximum_branch_count, len(placements))
@@ -110,6 +121,13 @@ def _initial_fragment_placements(
                 break
         if candidate_capped:
             break
+        if config.seed_mode == "fragment_cover" and placements:
+            discovered_fragment = set(map(int, placements[0].fragment))
+            remaining_seeds.difference_update(discovered_fragment)
+            if (len(discovered_fragment) / len(source)
+                    > config.rough_retention_threshold):
+                rough_stop_hit = True
+                break
 
     return (
         tuple(placement_families.values()),
@@ -117,6 +135,9 @@ def _initial_fragment_placements(
         maximum_branch_count,
         candidate_capped,
         seed_limited,
+        seed_attempt_count,
+        len(seed_order) - seed_attempt_count,
+        rough_stop_hit,
     )
 
 
@@ -176,6 +197,9 @@ def detect_fragments(
         maximum_branch_count,
         candidate_capped,
         seed_limited,
+        seed_attempt_count,
+        seed_pruned_count,
+        rough_stop_hit,
     ) = _initial_fragment_placements(
         source_graph, target_graph, config,
         target_orbits=target_context.atom_orbits,
@@ -316,11 +340,15 @@ def detect_fragments(
         default=best_initial_size,
     )
     cap_hit = bool(capped_seed_count or candidate_capped)
-    incomplete = bool(cap_hit or seed_limited)
+    approximate = bool(
+        config.seed_mode == "fragment_cover"
+        and (seed_pruned_count or rough_stop_hit))
+    incomplete = bool(cap_hit or seed_limited or approximate)
     status = (
         "capped" if cap_hit
         else ("seed_limited" if seed_limited
-              else ("matched" if candidates else "no_match"))
+              else ("rough" if approximate
+                    else ("matched" if candidates else "no_match")))
     )
     return FragmentDetectionResult(
         source_id=str(source_id),
@@ -334,4 +362,7 @@ def detect_fragments(
         initial_placement_encounters=initial_placement_encounters,
         initial_family_count=len(initial_placements),
         best_initial_family_count=best_initial_family_count,
+        seed_attempt_count=seed_attempt_count,
+        seed_pruned_count=seed_pruned_count,
+        rough_stop_hit=rough_stop_hit,
     )

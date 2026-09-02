@@ -232,6 +232,33 @@ def test_detection_keeps_target_automorphism_family_compressed_until_assembly():
     assert result.candidates[0].aam_hierarchy.fragments
 
 
+def test_rough_seed_mode_stops_after_majority_source_fragment():
+    precursor = WeightedGraph(
+        ["C", "C", "C", "C"],
+        _matrix(4, [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)]),
+    )
+    target = WeightedGraph(
+        ["C", "C", "C", "C"],
+        _matrix(4, [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)]),
+    )
+
+    result = detect_fragments(
+        precursor,
+        target,
+        config=FragmentDetectionConfig(
+            seed_mode="fragment_cover",
+            rough_retention_threshold=0.5,
+        ),
+    )
+
+    assert result.best_fragment_size == 4
+    assert result.seed_attempt_count == 1
+    assert result.seed_pruned_count == 3
+    assert result.rough_stop_hit
+    assert result.status == "rough"
+    assert not result.complete
+
+
 def test_balanced_williamson_reaction_is_recovered_with_hidden_side_product():
     pytest.importorskip("rdkit")
     from rdkit import Chem

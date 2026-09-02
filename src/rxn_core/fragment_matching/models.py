@@ -16,6 +16,8 @@ class FragmentDetectionConfig:
     branch_limit: int = 100
     candidate_limit: int = 512
     seed_limit: int | None = None
+    seed_mode: str = "all"
+    rough_retention_threshold: float = 0.5
     maximum_boundary_bonds: int | None = None
     maximum_leftover_fragments: int | None = None
 
@@ -29,6 +31,10 @@ class FragmentDetectionConfig:
             raise ValueError("branch and candidate limits must be positive")
         if self.seed_limit is not None and self.seed_limit < 1:
             raise ValueError("seed limit must be positive")
+        if self.seed_mode not in {"all", "fragment_cover"}:
+            raise ValueError("seed mode must be 'all' or 'fragment_cover'")
+        if not 0 < self.rough_retention_threshold <= 1:
+            raise ValueError("rough retention threshold must be in (0, 1]")
 
 
 @dataclass(frozen=True)
@@ -82,3 +88,6 @@ class FragmentDetectionResult:
     initial_placement_encounters: int
     initial_family_count: int
     best_initial_family_count: int
+    seed_attempt_count: int
+    seed_pruned_count: int
+    rough_stop_hit: bool

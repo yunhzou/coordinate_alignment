@@ -139,6 +139,11 @@ DETECT_FRAGMENTS(source, target, policy, target_region = none):
             diagnostics.mark_incomplete(stage = initial_growth)
             continue
 
+        in rough fragment-cover mode:
+            remove the discovered source fragment from the seed pool
+            stop when its retained-source fraction exceeds the configured
+            threshold
+
         if target_region is set and placement does not touch it:
             continue
 
