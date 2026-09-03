@@ -19,7 +19,6 @@ from rxn_core.retrosynthesis.compressed_coverage import (
     candidate_target_occupations,
     coverage_signature,
     place_candidate_items,
-    place_candidate_items_maximum_coverage,
     recommend_compressed_coverage_patterns,
 )
 from rxn_core.fragment_matching.serialization import (
@@ -201,24 +200,6 @@ def test_candidate_substitution_reuses_assigned_target_regions():
 
     assert [copy["covered_target_atoms"] for copy in placed] == [[1], [0]]
     assert [copy["mapping"] for copy in placed] == [[[4, 1]], [[4, 0]]]
-
-
-def test_ground_truth_comparison_maximizes_partial_coverage():
-    left = {"target_occupations": (
-        {"covered_target_atoms": (0, 1), "mapping": (),
-         "attachment_atoms_target": ()},
-        {"covered_target_atoms": (1, 2), "mapping": (),
-         "attachment_atoms_target": ()},
-    )}
-    right = {"target_occupations": (
-        {"covered_target_atoms": (0,), "mapping": (),
-         "attachment_atoms_target": ()},
-    )}
-
-    placed = place_candidate_items_maximum_coverage((left, right), 4)
-
-    assert {atom for item in placed
-            for atom in item["covered_target_atoms"]} == {0, 1, 2}
 
 
 def test_occupation_assembly_uses_union_and_allows_overlap():

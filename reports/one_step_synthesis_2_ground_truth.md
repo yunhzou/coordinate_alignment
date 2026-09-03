@@ -85,7 +85,7 @@ search was truncated; these are recommendations, not exhaustive rankings.
 | 2 | 47.9 s | 31 | 20 | Not full: 30/31 explicit atoms |
 | 3 | 61.0 s | 25 | 20 | Not full: saved Br residual remains uncovered |
 | 4 | 73.2 s | 26 | 20 | Blind rank 3: p-toluidine x2, 30/30, zero overlap |
-| 5 | 53.4 s | 58 | 20 | Ground-truth AAM comparison covers 43/58 atoms |
+| 5 | 53.4 s | 58 | 20 | Precise ground-truth AAM comparison covers 58/58 atoms; the saved rough blind ranking does not contain the exact set |
 | 6 | 73.9 s | 30 | 21 | Blind rank 150; appended as labeled ground truth |
 | 7 | 39.2 s | 20 | 20 | Raw ingredients present; complete cover not recovered |
 | 8 | 85.2 s | 20 | 20 | Raw ingredients present; complete cover not recovered |

@@ -159,7 +159,7 @@ DETECT_FRAGMENTS(source, target, policy, target_region = none):
         best_initial = lexicographic maximum of:
             (number of target-region atoms covered, connected size)
 
-    for initial in placements having best_initial score:
+    for initial in every non-equivalent compressed AAM family:
         partition = CUT_INITIAL_FRAGMENT(source, initial.source_atoms)
 
         if partition violates configured fragmentation bounds:
@@ -186,8 +186,9 @@ DETECT_FRAGMENTS(source, target, policy, target_region = none):
     return SearchResult(candidates, diagnostics)
 ```
 
-The maximum applies only to the initial connected island. Competitive
-augmentation may discover additional target-owned fragments from the same
+The best-initial score is diagnostic only; it must not filter occupation
+families before augmentation. Competitive augmentation may discover
+additional target-owned fragments from the same
 precursor. Detection does not enumerate target-automorphic atom mappings.
 It persists one representative plus the AAM hierarchy. Assembly later applies
 the exact target generators and materializes only distinct ownership and

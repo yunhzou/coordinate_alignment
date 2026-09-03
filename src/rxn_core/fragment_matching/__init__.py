@@ -8,6 +8,11 @@ from .models import (
     FragmentTargetContext,
 )
 from .parallel import FragmentDetectionExecution, detect_fragments_parallel
+from .progressive import (
+    ProgressiveFragmentMatchingResult,
+    ProgressiveFragmentPlacement,
+    progressive_fragment_matching,
+)
 from .symmetry import (
     FragmentOrbitLimitExceeded,
     materialize_target_coverage_orbit,
@@ -24,4 +29,7 @@ __all__ = [
     "detect_fragments_parallel",
     "materialize_target_coverage_orbit",
     "prepare_fragment_target",
+    "ProgressiveFragmentMatchingResult",
+    "ProgressiveFragmentPlacement",
+    "progressive_fragment_matching",
 ]

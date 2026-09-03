@@ -14,6 +14,7 @@ from rxn_core.fragment_matching import (
     detect_fragments_parallel,
     materialize_target_coverage_orbit,
     prepare_fragment_target,
+    progressive_fragment_matching,
 )
 from rxn_core.fragment_matching.augmentation import match_augmented_residuals
 from rxn_core.retrosynthesis import assemble_fragment_cover
@@ -32,6 +33,51 @@ def test_prepared_fragment_target_matches_direct_detection():
     reused = detect_fragments(source, prepared, config=config)
 
     assert reused == direct
+
+
+def test_progressive_matching_recovers_all_t05_ground_truth_atoms():
+    target = smiles_to_weighted_graph(
+        "C/C(NC1=C(C(C)C)C=CC=C1C(C)C)=C/C(C)=N/"
+        "C2=NC3=C(C=C(C#N)C=C3)S2",
+        expand_hydrogens=True,
+    )
+    sources = tuple(
+        (source_id, smiles_to_weighted_graph(smiles, expand_hydrogens=True))
+        for source_id, smiles in (
+            ("acetylacetone", "CC(=O)CC(C)=O"),
+            ("aniline", "CC(C)c1cccc(C(C)C)c1N"),
+            ("benzothiazole", "N#Cc1ccc2sc(N)nc2c1"),
+        )
+    )
+
+    result = progressive_fragment_matching(
+        sources,
+        target,
+        config=FragmentDetectionConfig(
+            seed_mode="all",
+            branch_limit=100,
+            candidate_limit=512,
+            iso_tolerance=0.5,
+        ),
+    )
+
+    assert result.uncovered_target_atoms == ()
+    by_id = {placement.source_id: placement for placement in result.placements}
+    acetylacetone = dict(by_id["acetylacetone"].mapping)
+    assert {acetylacetone[index] for index in (0, 1, 3, 4, 5)} == {
+        0, 1, 15, 16, 17,
+    }
+    assert 2 not in acetylacetone
+    assert 6 not in acetylacetone
+    benzothiazole = dict(by_id["benzothiazole"].mapping)
+    assert 0 in benzothiazole
+    assert 1 in benzothiazole
+    occupied = [
+        target_atom
+        for placement in result.placements
+        for _source_atom, target_atom in placement.mapping
+    ]
+    assert len(occupied) == len(set(occupied)) == len(target.nodes)
 
 
 def test_fragment_detection_seed_limit_is_reported_as_incomplete():
@@ -178,12 +224,20 @@ def test_target_region_recovers_small_donor_despite_larger_incidental_match():
         target_region_atoms=methyl_region,
     )
 
-    assert all(
-        not methyl_region.issubset(candidate.covered_target_atoms)
+    assert any(
+        methyl_region.issubset(candidate.covered_target_atoms)
+        for candidate in untargeted.candidates
+    )
+    assert any(
+        not methyl_region.intersection(candidate.covered_target_atoms)
         for candidate in untargeted.candidates
     )
     assert any(
         set(candidate.covered_target_atoms) == methyl_region
+        for candidate in targeted.candidates
+    )
+    assert all(
+        methyl_region.intersection(candidate.covered_target_atoms)
         for candidate in targeted.candidates
     )
 

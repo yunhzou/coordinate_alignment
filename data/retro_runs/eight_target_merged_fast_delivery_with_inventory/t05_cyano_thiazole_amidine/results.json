@@ -7094,15 +7094,19 @@
         "status": "rough",
         "best_fragment_size": 9,
         "covered_target_atoms": [
-          4,
-          5,
-          6,
-          8,
-          9,
-          35,
-          36,
-          37,
-          42
+          0,
+          1,
+          15,
+          16,
+          17,
+          30,
+          31,
+          32,
+          51,
+          52,
+          53,
+          54,
+          56
         ],
         "retained_atoms": [
           0,
@@ -7113,7 +7117,11 @@
           7,
           8,
           9,
-          12
+          10,
+          11,
+          12,
+          13,
+          14
         ],
         "leftover_fragments": [
           [
@@ -7121,18 +7129,6 @@
           ],
           [
             6
-          ],
-          [
-            10
-          ],
-          [
-            11
-          ],
-          [
-            13
-          ],
-          [
-            14
           ]
         ],
         "boundary_bonds": [
@@ -7142,7 +7138,7 @@
           ],
           [
             3,
-            10
+            4
           ],
           [
             3,
@@ -7151,131 +7147,151 @@
           [
             4,
             6
-          ],
-          [
-            5,
-            13
-          ],
-          [
-            5,
-            14
           ]
         ],
         "attachment_atoms_source": [
           1,
           3,
           4,
-          5
+          11
         ],
         "attachment_atoms_target": [
-          4,
-          5,
-          8,
-          9
+          1,
+          15,
+          16,
+          56
         ],
         "mapping": [
           [
             0,
-            6
+            17
           ],
           [
             1,
-            5
+            16
           ],
           [
             3,
-            4
+            15
           ],
           [
             4,
-            8
+            1
           ],
           [
             5,
-            9
+            0
           ],
           [
             7,
-            36
+            53
           ],
           [
             8,
-            37
+            54
           ],
           [
             9,
-            35
+            52
+          ],
+          [
+            10,
+            51
+          ],
+          [
+            11,
+            56
           ],
           [
             12,
-            42
+            31
+          ],
+          [
+            13,
+            32
+          ],
+          [
+            14,
+            30
           ]
         ],
         "target_domains": [
           [
             0,
             [
-              5,
-              6,
-              12,
-              13
+              17
             ]
           ],
           [
             1,
             [
-              5,
-              6,
-              12,
-              13
+              16
             ]
           ],
           [
             3,
             [
-              11
+              15
             ]
           ],
           [
             4,
             [
-              10
+              1
             ]
           ],
           [
             5,
             [
-              9
+              0
             ]
           ],
           [
             7,
             [
-              45,
-              46,
-              47
+              53
             ]
           ],
           [
             8,
             [
-              45,
-              46,
-              47
+              54
             ]
           ],
           [
             9,
             [
-              45,
-              46,
-              47
+              52
+            ]
+          ],
+          [
+            10,
+            [
+              51
+            ]
+          ],
+          [
+            11,
+            [
+              56
             ]
           ],
           [
             12,
             [
-              42
+              31
+            ]
+          ],
+          [
+            13,
+            [
+              32
+            ]
+          ],
+          [
+            14,
+            [
+              30
             ]
           ]
         ],
@@ -7284,22 +7300,30 @@
             0,
             1,
             3,
-            4,
-            5,
             7,
             8,
             9,
-            12
+            10
+          ],
+          [
+            4,
+            5,
+            12,
+            13,
+            14
+          ],
+          [
+            11
           ]
         ],
-        "leftover_atom_count": 6,
+        "leftover_atom_count": 2,
         "structure_key": "CC(=O)CC(C)=O",
         "retained_heavy_atoms": 5,
         "total_heavy_atoms": 7,
         "heavy_atom_retention": 0.7142857142857143,
-        "retained_atom_count": 9,
+        "retained_atom_count": 13,
         "total_atom_count": 15,
-        "atom_retention": 0.6,
+        "atom_retention": 0.8666666666666667,
         "symmetry_copy_capacity": 1,
         "symmetry_retained_atoms": [
           0,
@@ -7310,13 +7334,15 @@
           7,
           8,
           9,
+          10,
+          11,
           12,
           13,
           14
         ],
-        "symmetry_retained_atom_count": 9,
+        "symmetry_retained_atom_count": 13,
         "symmetry_retained_heavy_atoms": 5,
-        "symmetry_atom_retention": 0.6,
+        "symmetry_atom_retention": 0.8666666666666667,
         "symmetry_heavy_atom_retention": 0.7142857142857143,
         "attachment_trimmed_target_atoms": [],
         "chirality_violations": 0
@@ -7541,19 +7567,13 @@
           [
             0,
             [
-              5,
-              6,
-              12,
               13
             ]
           ],
           [
             1,
             [
-              5,
-              6,
-              12,
-              13
+              12
             ]
           ],
           [
@@ -7595,28 +7615,19 @@
           [
             8,
             [
-              5,
-              6,
-              12,
-              13
+              5
             ]
           ],
           [
             9,
             [
-              5,
-              6,
-              12,
-              13
+              6
             ]
           ],
           [
             10,
             [
-              5,
-              6,
-              12,
-              13
+              7
             ]
           ],
           [
@@ -7634,25 +7645,19 @@
           [
             13,
             [
-              45,
-              46,
-              47
+              46
             ]
           ],
           [
             14,
             [
-              45,
-              46,
               47
             ]
           ],
           [
             15,
             [
-              45,
-              46,
-              47
+              45
             ]
           ],
           [
@@ -7664,25 +7669,19 @@
           [
             17,
             [
-              48,
-              49,
-              50
+              49
             ]
           ],
           [
             18,
             [
-              48,
-              49,
               50
             ]
           ],
           [
             19,
             [
-              48,
-              49,
-              50
+              48
             ]
           ],
           [
@@ -7712,49 +7711,37 @@
           [
             24,
             [
-              35,
-              36,
-              37
+              35
             ]
           ],
           [
             25,
             [
-              35,
-              36,
               37
             ]
           ],
           [
             26,
             [
-              35,
-              36,
-              37
+              36
             ]
           ],
           [
             27,
             [
-              38,
-              39,
-              40
+              39
             ]
           ],
           [
             28,
             [
-              38,
-              39,
               40
             ]
           ],
           [
             29,
             [
-              38,
-              39,
-              40
+              38
             ]
           ],
           [
@@ -7839,8 +7826,7 @@
           27,
           28,
           29,
-          30,
-          31
+          30
         ],
         "symmetry_retained_atom_count": 31,
         "symmetry_retained_heavy_atoms": 13,
@@ -7864,6 +7850,8 @@
           22,
           23,
           24,
+          25,
+          26,
           27,
           28,
           29,
@@ -7871,6 +7859,8 @@
           57
         ],
         "retained_atoms": [
+          0,
+          1,
           2,
           3,
           4,
@@ -7885,10 +7875,6 @@
           16
         ],
         "leftover_fragments": [
-          [
-            0,
-            1
-          ],
           [
             12
           ],
@@ -7918,6 +7904,7 @@
           ]
         ],
         "attachment_atoms_source": [
+          1,
           2,
           3,
           8
@@ -7925,9 +7912,18 @@
         "attachment_atoms_target": [
           18,
           24,
+          25,
           27
         ],
         "mapping": [
+          [
+            0,
+            26
+          ],
+          [
+            1,
+            25
+          ],
           [
             2,
             27
@@ -7978,6 +7974,18 @@
           ]
         ],
         "target_domains": [
+          [
+            0,
+            [
+              26
+            ]
+          ],
+          [
+            1,
+            [
+              25
+            ]
+          ],
           [
             2,
             [
@@ -8053,6 +8061,10 @@
         ],
         "retained_fragments": [
           [
+            0,
+            1
+          ],
+          [
             2,
             3,
             4,
@@ -8067,16 +8079,18 @@
             16
           ]
         ],
-        "leftover_atom_count": 5,
+        "leftover_atom_count": 3,
         "structure_key": "N#Cc1ccc2sc(N)nc2c1",
-        "retained_heavy_atoms": 10,
+        "retained_heavy_atoms": 12,
         "total_heavy_atoms": 12,
-        "heavy_atom_retention": 0.8333333333333334,
-        "retained_atom_count": 12,
+        "heavy_atom_retention": 1.0,
+        "retained_atom_count": 14,
         "total_atom_count": 17,
-        "atom_retention": 0.7058823529411765,
+        "atom_retention": 0.8235294117647058,
         "symmetry_copy_capacity": 1,
         "symmetry_retained_atoms": [
+          0,
+          1,
           2,
           3,
           4,
@@ -8090,10 +8104,10 @@
           13,
           16
         ],
-        "symmetry_retained_atom_count": 12,
-        "symmetry_retained_heavy_atoms": 10,
-        "symmetry_atom_retention": 0.7058823529411765,
-        "symmetry_heavy_atom_retention": 0.8333333333333334,
+        "symmetry_retained_atom_count": 14,
+        "symmetry_retained_heavy_atoms": 12,
+        "symmetry_atom_retention": 0.8235294117647058,
+        "symmetry_heavy_atom_retention": 1.0,
         "attachment_trimmed_target_atoms": [],
         "chirality_violations": 0
       }
@@ -8103,41 +8117,38 @@
       "INVENTORY-000436": 1,
       "MCULE-7889053722": 1
     },
-    "formed_bonds": [],
+    "formed_bonds": [
+      [
+        1,
+        2
+      ],
+      [
+        16,
+        18
+      ],
+      [
+        27,
+        56
+      ]
+    ],
     "score": {
       "chirality_violations": 0,
       "unique_precursor_structures": 3,
-      "set_atom_retention": 0.8125,
-      "set_symmetry_atom_retention": 0.8125,
-      "set_symmetry_heavy_atom_retention": 0.875,
-      "set_heavy_atom_retention": 0.875,
+      "set_atom_retention": 0.90625,
+      "set_symmetry_atom_retention": 0.90625,
+      "set_symmetry_heavy_atom_retention": 0.9375,
+      "set_heavy_atom_retention": 0.9375,
       "worst_heavy_atom_retention": 0.7142857142857143,
-      "mean_heavy_atom_retention": 0.8492063492063492,
+      "mean_heavy_atom_retention": 0.9047619047619048,
       "capped_precursors": 3,
-      "broken_bonds": 11,
-      "leftover_atoms": 12,
-      "formed_bonds": 0,
-      "overlapping_target_atoms": 9,
-      "covered_target_atoms": 43,
+      "broken_bonds": 9,
+      "leftover_atoms": 6,
+      "formed_bonds": 3,
+      "overlapping_target_atoms": 0,
+      "covered_target_atoms": 58,
       "target_atom_count": 58
     },
-    "uncovered_target_atoms": [
-      0,
-      1,
-      15,
-      16,
-      17,
-      25,
-      26,
-      30,
-      31,
-      32,
-      51,
-      52,
-      53,
-      54,
-      56
-    ]
+    "uncovered_target_atoms": []
   },
   "expected_recommendation_rank": null,
   "assemblies": [

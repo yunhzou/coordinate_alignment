@@ -16,6 +16,11 @@ from pathlib import Path
 import networkx as nx
 from rdkit import Chem
 
+from rxn_core.fragment_matching import (
+    FragmentDetectionConfig,
+    progressive_fragment_matching,
+)
+from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from rxn_core.retrosynthesis.catalog_index import (
     CandidateIndexConfig,
     build_candidate_index,
@@ -25,7 +30,6 @@ from rxn_core.retrosynthesis.compressed_coverage import (
     CoverageRecommendationConfig,
     assign_candidate_items,
     place_candidate_items,
-    place_candidate_items_maximum_coverage,
     recommend_compressed_coverage_patterns,
 )
 from rxn_core.retrosynthesis.ranking import (
@@ -60,6 +64,74 @@ def _serializable_assembly(assembly):
         item.pop("target_occupations", None)
         clean["precursors"].append(item)
     return clean
+
+
+def _progressive_item(base, placement, molecule):
+    graph = molecule_to_weighted_graph(molecule).to_networkx()
+    mapping = dict(placement.mapping)
+    retained = set(mapping)
+    leftover = set(graph) - retained
+    retained_fragments = tuple(sorted(
+        (tuple(sorted(fragment)) for fragment in placement.retained_fragments),
+        key=lambda fragment: (fragment[0], len(fragment)),
+    ))
+    retained_fragment_by_atom = {
+        atom: index
+        for index, fragment in enumerate(retained_fragments)
+        for atom in fragment
+    }
+    leftover_fragments = tuple(sorted(
+        (tuple(sorted(component)) for component in
+         nx.connected_components(graph.subgraph(leftover))),
+        key=lambda fragment: (fragment[0], len(fragment)),
+    )) if leftover else ()
+    boundary = tuple(sorted(
+        tuple(sorted((left, right))) for left, right in graph.edges()
+        if ((left in retained) != (right in retained)
+            or (left in retained and right in retained
+                and retained_fragment_by_atom[left]
+                != retained_fragment_by_atom[right]))
+    ))
+    attachment_source = tuple(sorted({
+        atom for edge in boundary for atom in edge if atom in retained
+    }))
+    retained_heavy = sum(
+        molecule.GetAtomWithIdx(atom).GetAtomicNum() > 1 for atom in retained)
+    transformed = dict(base)
+    transformed.update({
+        "mapping": [list(pair) for pair in placement.mapping],
+        "covered_target_atoms": sorted(mapping.values()),
+        "retained_atoms": sorted(retained),
+        "retained_fragments": [list(part) for part in retained_fragments],
+        "leftover_fragments": [list(part) for part in leftover_fragments],
+        "leftover_atom_count": len(leftover),
+        "boundary_bonds": [list(edge) for edge in boundary],
+        "attachment_atoms_source": list(attachment_source),
+        "attachment_atoms_target": sorted(
+            mapping[atom] for atom in attachment_source),
+        "target_domains": [
+            [source, [target]] for source, target in placement.mapping
+        ],
+        "target_occupations": ({
+            "covered_target_atoms": tuple(sorted(mapping.values())),
+            "mapping": placement.mapping,
+            "attachment_atoms_target": tuple(sorted(
+                mapping[atom] for atom in attachment_source)),
+        },),
+        "retained_heavy_atoms": retained_heavy,
+        "retained_atom_count": len(retained),
+        "heavy_atom_retention": retained_heavy / molecule.GetNumHeavyAtoms(),
+        "atom_retention": len(retained) / molecule.GetNumAtoms(),
+        "symmetry_copy_capacity": 1,
+        "symmetry_retained_atoms": sorted(retained),
+        "symmetry_retained_atom_count": len(retained),
+        "symmetry_retained_heavy_atoms": retained_heavy,
+        "symmetry_atom_retention": len(retained) / molecule.GetNumAtoms(),
+        "symmetry_heavy_atom_retention": (
+            retained_heavy / molecule.GetNumHeavyAtoms()),
+        "attachment_trimmed_target_atoms": [],
+    })
+    return transformed
 
 
 def main():
@@ -396,31 +468,43 @@ def main():
             if formed is not None:
                 expected_assembly = _assembly(placed_items, formed)
                 break
-        if expected_assembly is not None:
-            expected_mapping = expected_assembly
-        elif all(expected_pools):
-            best_partial = None
-            for items in best_item_combinations(
-                    expected_pools, args.per_domain_limit):
-                placed_items = place_candidate_items_maximum_coverage(
-                    items, atom_count)
-                covered = {
-                    atom for item in placed_items
-                    for atom in item["covered_target_atoms"]
-                }
-                partial = _assembly(placed_items, [])
-                partial["score"]["covered_target_atoms"] = len(covered)
-                partial["score"]["target_atom_count"] = atom_count
-                partial["uncovered_target_atoms"] = sorted(
-                    set(range(atom_count)) - covered)
-                rank = (
-                    -len(covered),
-                    partial["score"]["overlapping_target_atoms"],
-                    _assembly_rank(partial),
-                )
-                if best_partial is None or rank < best_partial[0]:
-                    best_partial = rank, partial
-            expected_mapping = best_partial[1]
+        if all(expected_pools):
+            base_items = [pool[0] for pool in expected_pools]
+            molecules = [
+                Chem.AddHs(Chem.MolFromSmiles(item["smiles"]))
+                for item in base_items
+            ]
+            precise = progressive_fragment_matching(
+                tuple(
+                    (item["precursor_id"], molecule_to_weighted_graph(molecule))
+                    for item, molecule in zip(
+                        base_items, molecules, strict=True)
+                ),
+                molecule_to_weighted_graph(target),
+                config=FragmentDetectionConfig(
+                    seed_mode="all",
+                    branch_limit=100,
+                    candidate_limit=512,
+                    iso_tolerance=0.5,
+                ),
+            )
+            precise_items = tuple(
+                _progressive_item(item, placement, molecule)
+                for item, placement, molecule in zip(
+                    base_items, precise.placements, molecules, strict=True)
+            )
+            formed = _formed_bonds(
+                precise_items, target_edges, require_attachment_bonds=False)
+            expected_mapping = _assembly(
+                precise_items, formed if formed is not None else [])
+            covered = {
+                atom for item in precise_items
+                for atom in item["covered_target_atoms"]
+            }
+            expected_mapping["score"]["covered_target_atoms"] = len(covered)
+            expected_mapping["score"]["target_atom_count"] = atom_count
+            expected_mapping["uncovered_target_atoms"] = list(
+                precise.uncovered_target_atoms)
 
     summaries = []
     for path in part_paths:

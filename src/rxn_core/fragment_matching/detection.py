@@ -495,17 +495,18 @@ def _detect_fragments_from_initial(
     best_initial_family_count = sum(
         placement_score(placement) == best_initial_score
         for placement in initial_placements)
-    best_placements = tuple(
-        placement for placement in initial_placements
-        if placement_score(placement) == best_initial_score)
+    # Every exact AAM family is a valid occupation hypothesis.  Ranking by the
+    # initial connected island before residual augmentation discards families
+    # that become optimal only after the other fragments are placed.
+    selected_placements = initial_placements
     if augmentation_runner is None:
         augmentation_results = (
             _augment_initial_family(
                 source_graph, target_graph, placement, config, region)
-            for placement in best_placements
+            for placement in selected_placements
         )
     else:
-        augmentation_results = augmentation_runner(best_placements)
+        augmentation_results = augmentation_runner(selected_placements)
 
     candidates = []
     seen_candidates = set()
