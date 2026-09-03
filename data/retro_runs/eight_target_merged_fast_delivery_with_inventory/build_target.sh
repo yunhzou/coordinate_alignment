@@ -7,6 +7,10 @@ run_root=data/retro_runs/eight_target_merged_fast_delivery_with_inventory
 target_smiles=$(awk -F '\t' -v id="$target_id" \
   '$1 == id {print substr($0, index($0, $2))}' "$run_root/targets.tsv")
 target_root="$run_root/$target_id"
+ground_truth_status=$(awk -F '\t' -v id="$target_id" \
+  '$1 == id {print $2}' "$run_root/ground_truth.tsv")
+ground_truth_note=$(awk -F '\t' -v id="$target_id" \
+  '$1 == id {print $3}' "$run_root/ground_truth.tsv")
 
 merge_start=$(date +%s.%N)
 .venv/bin/python tools/merge_retro_catalog.py \
@@ -25,6 +29,8 @@ merge_end=$(date +%s.%N)
   --output "$target_root/viewer.html" \
   --top 20 \
   --title "$target_id" \
+  --ground-truth-status "$ground_truth_status" \
+  --ground-truth-note "$ground_truth_note" \
   > "$target_root/viewer.log" 2>&1
 viewer_end=$(date +%s.%N)
 
