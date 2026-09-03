@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
+from html import escape
 import json
 from pathlib import Path
 
@@ -117,10 +119,14 @@ def _payload(
     if known_rank is not None and known_rank not in selected_ranks:
         selected_ranks.append(known_rank)
 
-    selected = [
-        (rank, ranked[rank - 1], False) for rank in selected_ranks]
+    selected = []
     if report.get("expected_assembly") is not None:
         selected.append(("ground truth", report["expected_assembly"], True))
+    selected.extend(
+        (rank, ranked[rank - 1], False) for rank in selected_ranks)
+
+    expected_counts = Counter(report.get("expected_ids", ()))
+    expected_found = report.get("expected_ids_found", {})
 
     assemblies = []
     for rank, assembly, ground_truth in selected:
@@ -196,6 +202,14 @@ def _payload(
             "known_rank": known_rank,
             "ground_truth_status": ground_truth_status,
             "ground_truth_note": ground_truth_note,
+            "ground_truth_reactants": [
+                {
+                    "id": precursor_id,
+                    "multiplicity": multiplicity,
+                    "detected": bool(expected_found.get(precursor_id)),
+                }
+                for precursor_id, multiplicity in expected_counts.items()
+            ],
             "explicit_hydrogens": True,
             "search_truncated": report["recommendation_search_truncated"],
         },
@@ -208,6 +222,13 @@ def _html(payload):
     library = (Path(__file__).parents[1] / "src" / "rxn_core" / "static" /
                "3Dmol-min.js").read_text()
     data = json.dumps(payload, separators=(",", ":"))
+    reactants = payload["summary"]["ground_truth_reactants"]
+    ground_truth_reactants = " + ".join(
+        escape(item["id"])
+        + (f" ×{item['multiplicity']}" if item["multiplicity"] > 1 else "")
+        + (" ✓ detected" if item["detected"] else " ✗ absent")
+        for item in reactants
+    ) or "No structured ground-truth reactants supplied"
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Blind catalog retrosynthesis results</title><style>
 :root{{--bg:#f3f5f8;--card:#fff;--ink:#172033;--muted:#64748b;--line:#dbe2ea;--blue:#2684ff;--orange:#ff8b00}}
@@ -221,7 +242,7 @@ aside{{background:white;border-right:1px solid var(--line);overflow:auto}} .intr
 .patternhead{{padding:9px 12px;background:#e2e8f0;border-top:2px solid #94a3b8;border-bottom:1px solid var(--line);font-weight:800}}
 .patternhead small{{display:block;color:#475569;font-weight:500;margin-top:2px}}
 .rank{{font-weight:750;font-size:14px}} .badge{{background:#0f9d66;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
-.truthbox{{margin-top:10px;padding:8px;border-radius:7px;background:#ecfdf3;border:1px solid #6ee7a8;color:#166534}} .truthbox.partial{{background:#fffbeb;border-color:#fbbf24;color:#92400e}} .truthbox.missing{{background:#fef2f2;border-color:#fca5a5;color:#991b1b}} .patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
+.truthbox{{margin-top:10px;padding:8px;border-radius:7px;background:#ecfdf3;border:1px solid #6ee7a8;color:#166534}} .truthbox.partial{{background:#fffbeb;border-color:#fbbf24;color:#92400e}} .truthbox.missing{{background:#fef2f2;border-color:#fca5a5;color:#991b1b}} .truthreactants{{display:block;margin-top:7px;padding-top:7px;border-top:1px solid currentColor;line-height:1.5}} .patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
 .patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
 .ids{{color:#475569;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .score{{color:#64748b;font-size:11px;margin-top:4px}}
 main{{display:grid;grid-template-rows:1fr 1fr;min-width:0}} #reactants{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;padding:8px 8px 4px}}
@@ -234,7 +255,7 @@ main{{display:grid;grid-template-rows:1fr 1fr;min-width:0}} #reactants{{display:
 </style><script>{library}</script></head><body>
 <header><div><h1>{payload['summary']['title']}</h1><div class="muted">Explicit-H fragment mappings · select an assembly to inspect it in 3D</div></div>
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
-<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors. Symmetry mode colors every R position in the retained source orbits and every P position allowed by the compressed target domains. These are alternative matchable positions, not extra simultaneous assignments. <span style="color:#d33">Red = broken</span>; <span style="color:#159447">green = formed</span>.<div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br>{payload['summary']['ground_truth_note']}</div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
+<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors. Symmetry mode colors every R position in the retained source orbits and every P position allowed by the compressed target domains. These are alternative matchable positions, not extra simultaneous assignments. <span style="color:#d33">Red = broken</span>; <span style="color:#159447">green = formed</span>.<div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br>{payload['summary']['ground_truth_note']}<span class="truthreactants"><b>Ground-truth raw ingredients</b><br>{ground_truth_reactants}</span></div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
 <main><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><br><label><input id="symmetry" type="checkbox"> show symmetry domains</label><br><label><input id="labels" type="checkbox"> sampled P# identities</label></div><div id="reactants"></div>
 <div id="productWrap"><section class="panel" id="Ppanel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data}, colors={json.dumps(COLORS)}, viewers={{}};
