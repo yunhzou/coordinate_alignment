@@ -2,20 +2,20 @@
   "schema": "rxn_core.retro_catalog_assembly/v5",
   "target_smiles": "C1CCCC=C1",
   "target_atom_count": 16,
-  "part_count": 28,
+  "part_count": 29,
   "scan_counts": {
-    "rows": 155303,
+    "rows": 155305,
     "parse_errors": 0,
-    "searched": 155303,
+    "searched": 155305,
     "capped": 30,
     "target_coverage_filtered": 0,
-    "matched_precursors": 155161,
-    "fragment_candidates": 651455
+    "matched_precursors": 155163,
+    "fragment_candidates": 651457
   },
   "merge_counts": {
-    "matched_precursors": 155303,
+    "matched_precursors": 155305,
     "capped_precursors": 30,
-    "fragment_candidates": 651455
+    "fragment_candidates": 651457
   },
   "coverage_domain_families": 774,
   "per_domain_limit": 200,
@@ -235,12 +235,10 @@
   "direct_target_matches": [],
   "assembly_mapping_variants": 77,
   "expected_ids": [
-    "MCULE-9298818865",
-    "INVENTORY-001811"
+    "INVENTORY-001483"
   ],
   "expected_ids_found": {
-    "MCULE-9298818865": true,
-    "INVENTORY-001811": true
+    "INVENTORY-001483": true
   },
   "expected_assembly_recovered": false,
   "expected_assembly": null,

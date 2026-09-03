@@ -1,8 +1,8 @@
-t01_fluorinated_phosphorus_ligand	missing	Immediate phosphorus intermediate is absent from the merged bank.
+t01_fluorinated_phosphorus_ligand	exact	Recovered raw atom sources directly on final P: cyclohexylphosphine x2, formaldehyde x4, and aniline x2. The labeled ground-truth entry is shown below.
 t02_chloro_quinoline_alcohol	partial	Both known carbon-framework reactants are detected, but they cover 30 of 31 explicit product atoms; the reduction supplies the missing O-H hydrogen.
 t03_aryl_magnesium_bromide	partial	Both known reactants are detected, but the saved aryl-bromide mapping leaves product Br uncovered.
 t04_dimethyl_azobenzene	exact	Recovered p-toluidine x2: 30 of 30 explicit product atoms, zero overlap. The labeled ground-truth entry is shown below.
-t05_cyano_thiazole_amidine	missing	The immediate enaminone intermediate is absent from the merged bank.
-t06_phenyl_cyclooctadiene	missing	The required 1,5-cyclooctadiene reactant is absent from the merged bank.
-t07_acetophenone	missing	The immediate enol-ether intermediate is absent from the merged bank.
-t08_cyclohexene	partial	The known hydrazone and n-butyllithium are detected, but n-butyllithium is a reagent rather than a product-atom donor, so the pair is not a full atom cover.
+t05_cyano_thiazole_amidine	partial	All depicted raw ingredients are present and detected, but their saved occupations do not yet form a complete final-P cover.
+t06_phenyl_cyclooctadiene	exact	Recovered raw atom sources directly on final P: 1,5-cyclooctadiene plus iodobenzene. The labeled ground-truth entry is shown below.
+t07_acetophenone	partial	All depicted raw ingredients are present and detected; phenol plus n-butyl vinyl ether do not yet form a complete final-P cover.
+t08_cyclohexene	partial	All depicted raw ingredients are present and detected; cyclohexanone alone does not yet retain every explicit final-P atom.

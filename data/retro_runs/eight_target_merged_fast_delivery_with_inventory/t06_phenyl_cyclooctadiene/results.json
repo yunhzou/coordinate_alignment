@@ -2,20 +2,20 @@
   "schema": "rxn_core.retro_catalog_assembly/v5",
   "target_smiles": "C1(/C2=CC=CC=C2)=C\\CC/C=C\\CC1",
   "target_atom_count": 30,
-  "part_count": 28,
+  "part_count": 29,
   "scan_counts": {
-    "rows": 155303,
+    "rows": 155305,
     "parse_errors": 0,
-    "searched": 155303,
+    "searched": 155305,
     "capped": 337,
     "target_coverage_filtered": 0,
-    "matched_precursors": 155161,
-    "fragment_candidates": 513076
+    "matched_precursors": 155163,
+    "fragment_candidates": 513078
   },
   "merge_counts": {
-    "matched_precursors": 155303,
+    "matched_precursors": 155305,
     "capped_precursors": 337,
-    "fragment_candidates": 513076
+    "fragment_candidates": 513078
   },
   "coverage_domain_families": 12341,
   "per_domain_limit": 200,
@@ -351,10 +351,765 @@
   ],
   "direct_target_matches": [],
   "assembly_mapping_variants": 29,
-  "expected_ids": [],
-  "expected_ids_found": {},
-  "expected_assembly_recovered": false,
-  "expected_assembly": null,
+  "expected_ids": [
+    "GROUND-TRUTH-000002",
+    "INVENTORY-001161"
+  ],
+  "expected_ids_found": {
+    "GROUND-TRUTH-000002": true,
+    "INVENTORY-001161": true
+  },
+  "expected_assembly_recovered": true,
+  "expected_assembly": {
+    "precursors": [
+      {
+        "precursor_id": "GROUND-TRUTH-000002",
+        "smiles": "C1=CCCC=CCC1",
+        "row_index": 1,
+        "complete": false,
+        "status": "rough",
+        "best_fragment_size": 19,
+        "covered_target_atoms": [
+          0,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "retained_atoms": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          16,
+          17,
+          18,
+          19
+        ],
+        "leftover_fragments": [
+          [
+            15
+          ]
+        ],
+        "boundary_bonds": [
+          [
+            5,
+            15
+          ]
+        ],
+        "attachment_atoms_source": [
+          5
+        ],
+        "attachment_atoms_target": [
+          0
+        ],
+        "mapping": [
+          [
+            0,
+            11
+          ],
+          [
+            1,
+            10
+          ],
+          [
+            2,
+            9
+          ],
+          [
+            3,
+            8
+          ],
+          [
+            4,
+            7
+          ],
+          [
+            5,
+            0
+          ],
+          [
+            6,
+            13
+          ],
+          [
+            7,
+            12
+          ],
+          [
+            8,
+            25
+          ],
+          [
+            9,
+            24
+          ],
+          [
+            10,
+            23
+          ],
+          [
+            11,
+            22
+          ],
+          [
+            12,
+            21
+          ],
+          [
+            13,
+            20
+          ],
+          [
+            14,
+            19
+          ],
+          [
+            16,
+            29
+          ],
+          [
+            17,
+            28
+          ],
+          [
+            18,
+            27
+          ],
+          [
+            19,
+            26
+          ]
+        ],
+        "target_domains": [
+          [
+            0,
+            [
+              11
+            ]
+          ],
+          [
+            1,
+            [
+              10
+            ]
+          ],
+          [
+            2,
+            [
+              9
+            ]
+          ],
+          [
+            3,
+            [
+              8
+            ]
+          ],
+          [
+            4,
+            [
+              7
+            ]
+          ],
+          [
+            5,
+            [
+              0
+            ]
+          ],
+          [
+            6,
+            [
+              13
+            ]
+          ],
+          [
+            7,
+            [
+              12
+            ]
+          ],
+          [
+            8,
+            [
+              25
+            ]
+          ],
+          [
+            9,
+            [
+              24
+            ]
+          ],
+          [
+            10,
+            [
+              22,
+              23
+            ]
+          ],
+          [
+            11,
+            [
+              22,
+              23
+            ]
+          ],
+          [
+            12,
+            [
+              20,
+              21
+            ]
+          ],
+          [
+            13,
+            [
+              20,
+              21
+            ]
+          ],
+          [
+            14,
+            [
+              19
+            ]
+          ],
+          [
+            16,
+            [
+              28,
+              29
+            ]
+          ],
+          [
+            17,
+            [
+              28,
+              29
+            ]
+          ],
+          [
+            18,
+            [
+              26,
+              27
+            ]
+          ],
+          [
+            19,
+            [
+              26,
+              27
+            ]
+          ]
+        ],
+        "target_occupations": [
+          {
+            "covered_target_atoms": [
+              0,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29
+            ],
+            "mapping": [
+              [
+                0,
+                11
+              ],
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                9
+              ],
+              [
+                3,
+                8
+              ],
+              [
+                4,
+                7
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                13
+              ],
+              [
+                7,
+                12
+              ],
+              [
+                8,
+                25
+              ],
+              [
+                9,
+                24
+              ],
+              [
+                10,
+                23
+              ],
+              [
+                11,
+                22
+              ],
+              [
+                12,
+                21
+              ],
+              [
+                13,
+                20
+              ],
+              [
+                14,
+                19
+              ],
+              [
+                16,
+                29
+              ],
+              [
+                17,
+                28
+              ],
+              [
+                18,
+                27
+              ],
+              [
+                19,
+                26
+              ]
+            ],
+            "attachment_atoms_target": [
+              0
+            ]
+          }
+        ],
+        "retained_fragments": [
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            16,
+            17,
+            18,
+            19
+          ]
+        ],
+        "leftover_atom_count": 1,
+        "structure_key": "C1=CCCC=CCC1",
+        "retained_heavy_atoms": 8,
+        "total_heavy_atoms": 8,
+        "heavy_atom_retention": 1.0,
+        "retained_atom_count": 19,
+        "total_atom_count": 20,
+        "atom_retention": 0.95,
+        "symmetry_copy_capacity": 1,
+        "symmetry_retained_atoms": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "symmetry_retained_atom_count": 19,
+        "symmetry_retained_heavy_atoms": 8,
+        "symmetry_atom_retention": 0.95,
+        "symmetry_heavy_atom_retention": 1.0,
+        "attachment_trimmed_target_atoms": [],
+        "chirality_violations": 0
+      },
+      {
+        "precursor_id": "INVENTORY-001161",
+        "smiles": "Ic1ccccc1",
+        "row_index": 16525,
+        "complete": false,
+        "status": "rough",
+        "best_fragment_size": 11,
+        "covered_target_atoms": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "retained_atoms": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "leftover_fragments": [
+          [
+            0
+          ]
+        ],
+        "boundary_bonds": [
+          [
+            0,
+            1
+          ]
+        ],
+        "attachment_atoms_source": [
+          1
+        ],
+        "attachment_atoms_target": [
+          1
+        ],
+        "mapping": [
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            7,
+            14
+          ],
+          [
+            8,
+            15
+          ],
+          [
+            9,
+            16
+          ],
+          [
+            10,
+            17
+          ],
+          [
+            11,
+            18
+          ]
+        ],
+        "target_domains": [
+          [
+            1,
+            [
+              1
+            ]
+          ],
+          [
+            2,
+            [
+              2,
+              3,
+              5,
+              6
+            ]
+          ],
+          [
+            3,
+            [
+              2,
+              3,
+              5,
+              6
+            ]
+          ],
+          [
+            4,
+            [
+              4
+            ]
+          ],
+          [
+            5,
+            [
+              2,
+              3,
+              5,
+              6
+            ]
+          ],
+          [
+            6,
+            [
+              2,
+              3,
+              5,
+              6
+            ]
+          ],
+          [
+            7,
+            [
+              14
+            ]
+          ],
+          [
+            8,
+            [
+              15
+            ]
+          ],
+          [
+            9,
+            [
+              16
+            ]
+          ],
+          [
+            10,
+            [
+              17
+            ]
+          ],
+          [
+            11,
+            [
+              18
+            ]
+          ]
+        ],
+        "target_occupations": [
+          {
+            "covered_target_atoms": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "mapping": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                14
+              ],
+              [
+                8,
+                15
+              ],
+              [
+                9,
+                16
+              ],
+              [
+                10,
+                17
+              ],
+              [
+                11,
+                18
+              ]
+            ],
+            "attachment_atoms_target": [
+              1
+            ]
+          }
+        ],
+        "retained_fragments": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ]
+        ],
+        "leftover_atom_count": 1,
+        "structure_key": "Ic1ccccc1",
+        "retained_heavy_atoms": 6,
+        "total_heavy_atoms": 7,
+        "heavy_atom_retention": 0.8571428571428571,
+        "retained_atom_count": 11,
+        "total_atom_count": 12,
+        "atom_retention": 0.9166666666666666,
+        "symmetry_copy_capacity": 1,
+        "symmetry_retained_atoms": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "symmetry_retained_atom_count": 11,
+        "symmetry_retained_heavy_atoms": 6,
+        "symmetry_atom_retention": 0.9166666666666666,
+        "symmetry_heavy_atom_retention": 0.8571428571428571,
+        "attachment_trimmed_target_atoms": [],
+        "chirality_violations": 0
+      }
+    ],
+    "precursor_stoichiometry": {
+      "GROUND-TRUTH-000002": 1,
+      "INVENTORY-001161": 1
+    },
+    "formed_bonds": [
+      [
+        0,
+        1
+      ]
+    ],
+    "score": {
+      "chirality_violations": 0,
+      "unique_precursor_structures": 2,
+      "set_atom_retention": 0.9375,
+      "set_symmetry_atom_retention": 0.9375,
+      "set_symmetry_heavy_atom_retention": 0.9333333333333333,
+      "set_heavy_atom_retention": 0.9333333333333333,
+      "worst_heavy_atom_retention": 0.8571428571428571,
+      "mean_heavy_atom_retention": 0.9285714285714286,
+      "capped_precursors": 2,
+      "broken_bonds": 2,
+      "leftover_atoms": 2,
+      "formed_bonds": 1,
+      "overlapping_target_atoms": 0
+    }
+  },
   "assemblies": [
     {
       "precursors": [

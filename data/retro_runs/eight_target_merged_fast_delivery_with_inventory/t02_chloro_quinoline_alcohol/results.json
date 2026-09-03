@@ -2,20 +2,20 @@
   "schema": "rxn_core.retro_catalog_assembly/v5",
   "target_smiles": "OC(C1=CC=C(Cl)C=C1)C2=CC3=CC=CN=C3C=C2",
   "target_atom_count": 31,
-  "part_count": 28,
+  "part_count": 29,
   "scan_counts": {
-    "rows": 155303,
+    "rows": 155305,
     "parse_errors": 0,
-    "searched": 155303,
+    "searched": 155305,
     "capped": 303,
     "target_coverage_filtered": 0,
-    "matched_precursors": 155259,
-    "fragment_candidates": 320837
+    "matched_precursors": 155261,
+    "fragment_candidates": 320840
   },
   "merge_counts": {
-    "matched_precursors": 155303,
+    "matched_precursors": 155305,
     "capped_precursors": 303,
-    "fragment_candidates": 320837
+    "fragment_candidates": 320840
   },
   "coverage_domain_families": 14730,
   "per_domain_limit": 200,
