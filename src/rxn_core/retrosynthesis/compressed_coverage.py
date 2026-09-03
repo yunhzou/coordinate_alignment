@@ -231,6 +231,67 @@ def place_candidate_items(items, covered_target_atoms):
     return tuple(placed)
 
 
+def place_candidate_items_maximum_coverage(items, atom_count):
+    """Select one correlated AAM occupation per item with maximum union.
+
+    This is used to inspect a specified precursor set when it does not form a
+    complete cover. Occupations with the same target region are equivalent for
+    this objective, so only one mapping witness per region is explored.
+    """
+    items = tuple(items)
+    choices = []
+    for item in items:
+        by_mask = {}
+        for occupation in item["target_occupations"]:
+            mask = sum(
+                1 << atom for atom in occupation["covered_target_atoms"])
+            by_mask.setdefault(mask, occupation)
+        choices.append(tuple(by_mask.items()))
+    order = tuple(sorted(range(len(items)), key=lambda index: len(choices[index])))
+    possible_suffix = [0] * (len(order) + 1)
+    for depth in range(len(order) - 1, -1, -1):
+        possible_suffix[depth] = possible_suffix[depth + 1]
+        for mask, _occupation in choices[order[depth]]:
+            possible_suffix[depth] |= mask
+
+    selected = [None] * len(items)
+    best = None
+    best_key = None
+
+    def visit(depth, covered, claimed_count):
+        nonlocal best, best_key
+        upper_coverage = (covered | possible_suffix[depth]).bit_count()
+        if best_key is not None and upper_coverage < -best_key[0]:
+            return
+        if depth == len(order):
+            key = (-covered.bit_count(), claimed_count - covered.bit_count())
+            if best_key is None or key < best_key:
+                best_key = key
+                best = tuple(selected)
+            return
+        index = order[depth]
+        ranked_choices = sorted(
+            choices[index],
+            key=lambda pair: (-(pair[0] & ~covered).bit_count(), pair[0]),
+        )
+        for mask, occupation in ranked_choices:
+            selected[index] = occupation
+            visit(depth + 1, covered | mask, claimed_count + mask.bit_count())
+
+    visit(0, 0, 0)
+    placed = []
+    for item, occupation in zip(items, best, strict=True):
+        transformed = dict(item)
+        transformed.update({
+            "mapping": [list(pair) for pair in occupation["mapping"]],
+            "covered_target_atoms": list(occupation["covered_target_atoms"]),
+            "attachment_atoms_target": list(
+                occupation["attachment_atoms_target"]),
+        })
+        placed.append(transformed)
+    return tuple(placed)
+
+
 @dataclass(frozen=True)
 class CoverageRecommendationResult:
     patterns: tuple[CoveragePattern, ...]

@@ -114,8 +114,8 @@ def _payload(
 
     selected = [
         (rank, ranked[rank - 1], False) for rank in selected_ranks]
-    if (known_rank is None and report.get("expected_assembly") is not None):
-        selected.append(("ground truth", report["expected_assembly"], True))
+    if known_rank is None and report.get("expected_mapping") is not None:
+        selected.append(("ground truth", report["expected_mapping"], True))
 
     expected_counts = Counter(report.get("expected_ids", ()))
     expected_found = report.get("expected_ids_found", {})
@@ -127,7 +127,8 @@ def _payload(
             set(map(int, item["covered_target_atoms"]))
             for item in raw_precursors
         ]
-        if set().union(*regions) != set(range(len(target_elements))):
+        complete_cover = set().union(*regions) == set(range(len(target_elements)))
+        if not ground_truth and not complete_cover:
             raise ValueError(
                 f"assembly {rank} does not cover the full target")
         precursors = _group_precursors(raw_precursors)
@@ -169,6 +170,7 @@ def _payload(
             "known": ground_truth or _matches_expected(
                 assembly, expected_ids),
             "ground_truth": ground_truth,
+            "complete_cover": complete_cover,
             "score": assembly["score"],
             "precursors": [{
                 "id": item["precursor_id"],
@@ -261,10 +263,10 @@ function showModel(id,m){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{b
  m.broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));m.formed.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.11,color:'#16a34a'}}));
  if(document.getElementById('labels').checked)(m.labels||[]).forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.72,inFront:true}}));v.zoomTo();v.render()}}
 function patternInfo(id){{return data.patterns.find(x=>x.pattern===id)}}
-function patternText(id){{if(id==='GT')return 'evaluation-only comparison; not returned by blind recommender';const p=patternInfo(id);return p?(p.fragment_sizes.length+' modules · atom sizes '+p.fragment_sizes.join(' + ')):''}}
+function patternText(id){{if(id==='GT')return 'ground-truth AAM comparison; not returned by blind recommender';const p=patternInfo(id);return p?(p.fragment_sizes.length+' modules · atom sizes '+p.fragment_sizes.join(' + ')):''}}
 function select(i){{const a=data.assemblies[i];document.querySelectorAll('.result').forEach(x=>x.classList.toggle('active',Number(x.dataset.index)===i));Object.keys(viewers).filter(k=>k.startsWith('R')).forEach(k=>delete viewers[k]);const wrap=document.getElementById('reactants');wrap.innerHTML='';a.precursors.forEach((r,j)=>{{const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<div class="label" id="L'+j+'"></div><div class="view" id="R'+j+'"></div>';wrap.appendChild(panel);const mult=r.multiplicity>1?' ×'+r.multiplicity:'';document.getElementById('L'+j).innerHTML='<b><span style="color:'+colors[j%colors.length]+'">R'+(j+1)+'</span> · '+r.id+mult+'</b><small>'+r.smiles+'</small><small>retained '+r.retained.length+' atom positions; unmatched '+r.unmatched+' across copies</small>';showModel('R'+j,a.models[j])}});
- const retention=a.score.set_atom_retention===undefined?'':(' · direct retention '+(100*a.score.set_atom_retention).toFixed(1)+'%');const symmetryRetention=a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%');const chiral=a.score.chirality_violations===undefined?'':(' · chirality violations '+a.score.chirality_violations);const heading=a.ground_truth?'GROUND TRUTH':'P target · Pattern '+a.pattern;document.getElementById('LP').innerHTML='<b>'+heading+': '+patternText(a.pattern)+'</b><small>'+a.rank+' · '+a.score.broken_bonds+' broken, '+a.score.leftover_atoms+' unmatched, '+a.score.formed_bonds+' formed'+retention+symmetryRetention+chiral+'</small>';showModel('P',a.models[a.precursors.length])}}
-const list=document.getElementById('list');let lastPattern=null;data.assemblies.forEach((a,i)=>{{if(a.pattern!==lastPattern){{const h=document.createElement('div');h.className='patternhead';h.innerHTML=(a.ground_truth?'GROUND TRUTH':'Pattern '+a.pattern)+'<small>'+patternText(a.pattern)+(a.ground_truth?'':' · colored regions on P define this construction')+'</small>';list.appendChild(h);lastPattern=a.pattern}}const b=document.createElement('button');b.className='result';b.dataset.index=i;b.innerHTML='<span class="rank">'+(a.ground_truth?'ground truth':'recommendation '+a.rank)+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">direct retention '+(a.score.set_atom_retention===undefined?'n/a':(100*a.score.set_atom_retention).toFixed(1)+'%')+(a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%'))+' · broken '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · formed '+a.score.formed_bonds+(a.score.chirality_violations===undefined?'':' · chirality '+a.score.chirality_violations)+'</div>';b.onclick=()=>select(i);list.appendChild(b)}});
+ const retention=a.score.set_atom_retention===undefined?'':(' · direct retention '+(100*a.score.set_atom_retention).toFixed(1)+'%');const symmetryRetention=a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%');const chiral=a.score.chirality_violations===undefined?'':(' · chirality violations '+a.score.chirality_violations);const coverage=a.complete_cover?'complete P cover':(a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered');const heading=a.ground_truth?'GROUND TRUTH MATCHING':'P target · Pattern '+a.pattern;document.getElementById('LP').innerHTML='<b>'+heading+': '+patternText(a.pattern)+'</b><small>'+coverage+' · '+a.score.broken_bonds+' broken, '+a.score.leftover_atoms+' unmatched, '+a.score.formed_bonds+' formed'+retention+symmetryRetention+chiral+'</small>';showModel('P',a.models[a.precursors.length])}}
+const list=document.getElementById('list');let lastPattern=null;data.assemblies.forEach((a,i)=>{{if(a.pattern!==lastPattern){{const h=document.createElement('div');h.className='patternhead';h.innerHTML=(a.ground_truth?'GROUND TRUTH MATCHING':'Pattern '+a.pattern)+'<small>'+patternText(a.pattern)+(a.ground_truth?'':' · colored regions on P define this construction')+'</small>';list.appendChild(h);lastPattern=a.pattern}}const b=document.createElement('button');b.className='result';b.dataset.index=i;b.innerHTML='<span class="rank">'+(a.ground_truth?'ground-truth comparison':'recommendation '+a.rank)+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">'+(a.complete_cover?'complete P cover':(a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered'))+' · direct retention '+(a.score.set_atom_retention===undefined?'n/a':(100*a.score.set_atom_retention).toFixed(1)+'%')+(a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%'))+' · broken '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · formed '+a.score.formed_bonds+(a.score.chirality_violations===undefined?'':' · chirality '+a.score.chirality_violations)+'</div>';b.onclick=()=>select(i);list.appendChild(b)}});
 function redraw(){{select([...document.querySelectorAll('.result')].findIndex(x=>x.classList.contains('active')))}}document.getElementById('labels').onchange=redraw;document.getElementById('fragments').onchange=redraw;document.getElementById('symmetry').onchange=redraw;if(data.assemblies.length){{const knownIndex=data.assemblies.findIndex(x=>x.known);select(knownIndex>=0?knownIndex:0)}}window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
 
 

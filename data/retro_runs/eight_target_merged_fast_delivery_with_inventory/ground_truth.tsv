@@ -2,7 +2,7 @@ t01_fluorinated_phosphorus_ligand	exact	The raw set independently gives a comple
 t02_chloro_quinoline_alcohol	partial	Both known carbon-framework reactants are detected, but they cover 30 of 31 explicit product atoms; the reduction supplies the missing O-H hydrogen.
 t03_aryl_magnesium_bromide	partial	Both known reactants are detected, but the saved aryl-bromide mapping leaves product Br uncovered.
 t04_dimethyl_azobenzene	exact	Recovered p-toluidine x2: 30 of 30 explicit product atoms, zero overlap. The blind recommender returns it at candidate rank 3.
-t05_cyano_thiazole_amidine	partial	All depicted raw ingredients are present and detected, but their saved occupations do not yet form a complete final-P cover.
+t05_cyano_thiazole_amidine	partial	All three depicted raw ingredients are present and detected. Their best joint AAM occupation covers 43 of 58 explicit target atoms with 9 overlapping claims, so this comparison is not a complete recommendation.
 t06_phenyl_cyclooctadiene	exact	Recovered raw atom sources directly on final P: 1,5-cyclooctadiene plus iodobenzene. The blind recommender returns it at candidate rank 150.
 t07_acetophenone	partial	All depicted raw ingredients are present and detected; phenol plus n-butyl vinyl ether do not yet form a complete final-P cover.
 t08_cyclohexene	partial	All depicted raw ingredients are present and detected; cyclohexanone alone does not yet retain every explicit final-P atom.

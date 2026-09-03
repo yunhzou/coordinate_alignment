@@ -25,6 +25,7 @@ from rxn_core.retrosynthesis.compressed_coverage import (
     CoverageRecommendationConfig,
     assign_candidate_items,
     place_candidate_items,
+    place_candidate_items_maximum_coverage,
     recommend_compressed_coverage_patterns,
 )
 from rxn_core.retrosynthesis.ranking import (
@@ -382,6 +383,7 @@ def main():
             assemblies.append(expected_recommendation)
 
     expected_assembly = None
+    expected_mapping = None
     if args.expected_id:
         expected_pools = [expected.get(item, ()) for item in args.expected_id]
         for items in best_item_combinations(
@@ -394,6 +396,31 @@ def main():
             if formed is not None:
                 expected_assembly = _assembly(placed_items, formed)
                 break
+        if expected_assembly is not None:
+            expected_mapping = expected_assembly
+        elif all(expected_pools):
+            best_partial = None
+            for items in best_item_combinations(
+                    expected_pools, args.per_domain_limit):
+                placed_items = place_candidate_items_maximum_coverage(
+                    items, atom_count)
+                covered = {
+                    atom for item in placed_items
+                    for atom in item["covered_target_atoms"]
+                }
+                partial = _assembly(placed_items, [])
+                partial["score"]["covered_target_atoms"] = len(covered)
+                partial["score"]["target_atom_count"] = atom_count
+                partial["uncovered_target_atoms"] = sorted(
+                    set(range(atom_count)) - covered)
+                rank = (
+                    -len(covered),
+                    partial["score"]["overlapping_target_atoms"],
+                    _assembly_rank(partial),
+                )
+                if best_partial is None or rank < best_partial[0]:
+                    best_partial = rank, partial
+            expected_mapping = best_partial[1]
 
     summaries = []
     for path in part_paths:
@@ -449,6 +476,7 @@ def main():
         },
         "expected_assembly_recovered": expected_assembly is not None,
         "expected_assembly": _serializable_assembly(expected_assembly),
+        "expected_mapping": _serializable_assembly(expected_mapping),
         "expected_recommendation_rank": expected_recommendation_rank,
         "assemblies": [
             _serializable_assembly(assembly) for assembly in assemblies
