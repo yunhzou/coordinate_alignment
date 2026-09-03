@@ -13,7 +13,7 @@ assembly ranking.
 
 | Reaction | Depicted compound | 1,919 inventory | Merged bank | Saved detection | Recommendation result |
 |---|---|---:|---:|---:|---:|
-| 1 | Cyclohexylphosphine | No | Yes (supplement) | Yes | Raw set recovered |
+| 1 | Cyclohexylphosphine | No | Yes (supplement) | Yes | Exact set evaluates, not blindly ranked |
 | 1 | Formaldehyde / paraformaldehyde unit | Yes | Yes | Yes | No |
 | 1 | Ethanol | Yes | Yes | Yes | No |
 | 1 | Bis(hydroxymethyl)cyclohexylphosphine intermediate | No | No | — | — |
@@ -22,12 +22,12 @@ assembly ranking.
 | 2 | 4-Chlorobenzaldehyde | Yes | Yes | Yes | No |
 | 3 | 1-Bromo-4-tert-butylbenzene | No | Yes | Yes | No |
 | 3 | Magnesium | Yes | Yes | Yes | Rank 5 |
-| 4 | p-Toluidine | Yes | Yes | Yes | Expected set recovered exactly |
+| 4 | p-Toluidine | Yes | Yes | Yes | Blind candidate rank 3 |
 | 5 | Acetylacetone | Yes | Yes | Yes | No |
 | 5 | 2,6-Diisopropylaniline | Yes | Yes | Yes | Ranks 1–4 and 9–12 |
 | 5 | Enaminone intermediate | No | No | — | — |
 | 5 | 2-Amino-6-cyanobenzothiazole | No | Yes | Yes | No |
-| 6 | 1,5-Cyclooctadiene | No | Yes (supplement) | Yes | Raw set recovered |
+| 6 | 1,5-Cyclooctadiene | No | Yes (supplement) | Yes | Blind candidate rank 150 |
 | 6 | Iodobenzene | Yes | Yes | Yes | No |
 | 7 | Phenol | Yes | Yes | Yes | No |
 | 7 | Triflic anhydride | Yes | Yes | Yes | No |
@@ -41,8 +41,10 @@ assembly ranking.
 
 ## Route-level conclusions
 
-- Reaction 1 is recovered directly from the raw atom sources without its
-  intermediate: cyclohexylphosphine x2, formaldehyde x4, and aniline x2.
+- Reaction 1 can be assembled directly from the raw atom sources without its
+  intermediate: cyclohexylphosphine x2, formaldehyde x4, and aniline x2. This
+  exact eight-copy set is not returned by the blind geometric ranking because
+  lower-complexity covers rank ahead of it.
 - Reaction 2 has both depicted carbon-framework reactants in the merged bank,
   and both are detected. Together they cover 30 of 31 explicit product atoms;
   the remaining atom is the alcohol hydrogen supplied by the unspecified
@@ -57,13 +59,13 @@ assembly ranking.
   p-toluidine two distinct 15-atom occupation regions. With occupation-aware
   union assembly, two copies cover all 30 explicit product atoms with no
   overlap. Direct evaluation recovers this exact set. The blind search also
-  finds its construction pattern, although other molecules in that same
-  geometric class are the displayed variants under the current retention
-  ranking.
+  returns it at blind candidate rank 3.
 - Reaction 5 has all depicted raw ingredients in the bank and detects them,
   but their saved occupations do not yet form a complete final-target cover.
 - Reaction 6 is recovered directly from 1,5-cyclooctadiene and iodobenzene
-  after adding the absent raw material to the supplement.
+  after adding the absent raw material to the supplement. It is blind
+  candidate rank 150, outside the ordinary top-20 display but explicitly
+  appended and labeled in the viewer.
 - Reaction 7 has all depicted raw ingredients in the bank and detects them.
   Phenol plus n-butyl vinyl ether do not yet form a complete final-target
   cover; triflic anhydride is an activating reagent, not an atom-source module.
@@ -79,21 +81,23 @@ search was truncated; these are recommendations, not exhaustive rankings.
 
 | Reaction | Post-processing time | Blind complete patterns | Displayed assemblies | Known immediate set |
 |---|---:|---:|---:|---|
-| 1 | 122.2 s | 0 | 0 | Recovered from raw ingredients after supplement |
-| 2 | 52.4 s | 20 | 16 | Not full: 30/31 explicit atoms |
-| 3 | 65.6 s | 3 | 10 | Not full: saved Br residual remains uncovered |
-| 4 | 42.1 s | 20 | 10 | Recovered: p-toluidine x2, 30/30, zero overlap |
-| 5 | 88.8 s | 0 | 0 | Raw ingredients present; complete cover not recovered |
-| 6 | 76.1 s | 20 | 9 | Recovered from raw ingredients after supplement |
-| 7 | 37.1 s | 20 | 14 | Raw ingredients present; complete cover not recovered |
-| 8 | 84.6 s | 20 | 14 | Raw ingredients present; complete cover not recovered |
+| 1 | 158.5 s | 57 | 20 | Exact set evaluates; not returned by blind ranking |
+| 2 | 47.9 s | 31 | 20 | Not full: 30/31 explicit atoms |
+| 3 | 61.0 s | 25 | 20 | Not full: saved Br residual remains uncovered |
+| 4 | 73.2 s | 26 | 20 | Blind rank 3: p-toluidine x2, 30/30, zero overlap |
+| 5 | 65.4 s | 58 | 20 | Raw ingredients present; complete cover not recovered |
+| 6 | 73.9 s | 30 | 21 | Blind rank 150; appended as labeled ground truth |
+| 7 | 39.2 s | 20 | 20 | Raw ingredients present; complete cover not recovered |
+| 8 | 85.2 s | 20 | 20 | Raw ingredients present; complete cover not recovered |
 
 ## Main finding
 
 After adding cyclohexylphosphine and 1,5-cyclooctadiene, every depicted raw
 ingredient is present in the merged bank and detected. Intermediates are not
 required: raw atom sources are matched directly to the final product. Exact
-raw-material assemblies are recovered for reactions 1, 4, and 6. Reactions 2,
+raw-material assemblies exist for reactions 1, 4, and 6; the blind recommender
+returns reactions 4 and 6, while reaction 1 is only recovered by independent
+evaluation of its known raw set. Reactions 2,
 3, 5, 7, and 8 expose mapping or explicit-atom ownership gaps despite their
 raw ingredients being present; these are algorithm gaps, not inventory gaps.
 Assembly is a set-union operation over whole AAM occupation regions, including

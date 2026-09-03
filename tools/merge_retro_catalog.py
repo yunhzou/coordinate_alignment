@@ -24,6 +24,7 @@ from rxn_core.retrosynthesis.catalog_index import (
 from rxn_core.retrosynthesis.compressed_coverage import (
     CoverageRecommendationConfig,
     assign_candidate_items,
+    place_candidate_items,
     recommend_compressed_coverage_patterns,
 )
 from rxn_core.retrosynthesis.ranking import (
@@ -47,6 +48,19 @@ def _build_part_index(task):
         _part_records(path), target, target_key, config=config)
 
 
+def _serializable_assembly(assembly):
+    """Drop exhaustive occupation lists after a concrete witness is selected."""
+    if assembly is None:
+        return None
+    clean = dict(assembly)
+    clean["precursors"] = []
+    for precursor in assembly["precursors"]:
+        item = dict(precursor)
+        item.pop("target_occupations", None)
+        clean["precursors"].append(item)
+    return clean
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--parts", required=True)
@@ -54,7 +68,7 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--per-domain-limit", type=int, default=200)
     parser.add_argument("--assembly-limit", type=int, default=20)
-    parser.add_argument("--maximum-precursors", type=int, default=3)
+    parser.add_argument("--maximum-precursors", type=int)
     parser.add_argument("--pattern-limit", type=int, default=4)
     parser.add_argument("--recommendations-per-pattern", type=int, default=4)
     parser.add_argument("--expected-id", action="append", default=[])
@@ -178,10 +192,7 @@ def main():
         groups,
         atom_count,
         rank_pattern,
-        result_limit=max(
-            args.pattern_limit * args.recommendations_per_pattern,
-            args.assembly_limit,
-        ),
+        result_limit=max(args.assembly_limit, atom_count),
         config=CoverageRecommendationConfig(
             maximum_precursors=args.maximum_precursors,
         ),
@@ -247,53 +258,99 @@ def main():
                 heapq.heappush(queue, (
                     item_set_rank(neighbour_items), neighbour))
 
-    for cover in covers:
+    assembly_start = time.perf_counter()
+    for cover, representative_atom_sets in zip(
+            covers, coverage_search.occupations, strict=True):
         cover_count += 1
-        representative_items = assign_candidate_items(
-            [groups[signature][0] for signature in cover], atom_count)
-        if representative_items is None:
-            raise RuntimeError("compressed coverage pattern has no witness")
-        representative_atom_sets = tuple(
-            tuple(item["covered_target_atoms"])
-            for item in representative_items)
         pattern_key = construction_pattern_signature(
             representative_atom_sets)
         representative_pattern.setdefault(
             pattern_key, representative_atom_sets)
         pattern_assemblies = []
         pools = [groups[signature] for signature in cover]
-        item_combinations = best_item_combinations(
-            pools, args.recommendations_per_pattern)
-        for items in item_combinations:
+        unique_signatures = tuple(dict.fromkeys(cover))
+        signature_positions = {
+            signature: tuple(
+                index for index, item in enumerate(cover)
+                if item == signature)
+            for signature in unique_signatures
+        }
+
+        def candidate_combinations():
+            seen = set()
+            unique_pools = [groups[signature]
+                            for signature in unique_signatures]
+            homogeneous_limit = (
+                args.per_domain_limit
+                if len(unique_signatures) <= 2
+                else max(
+                    args.recommendations_per_pattern,
+                    args.per_domain_limit // len(unique_signatures),
+                )
+            )
+            for unique_items in best_item_combinations(
+                    unique_pools, homogeneous_limit):
+                items = [None] * len(cover)
+                for signature, item in zip(
+                        unique_signatures, unique_items):
+                    for position in signature_positions[signature]:
+                        items[position] = item
+                key = tuple(item["precursor_id"] for item in items)
+                if key not in seen:
+                    seen.add(key)
+                    yield tuple(items)
+            for items in best_item_combinations(
+                    pools, args.recommendations_per_pattern):
+                key = tuple(item["precursor_id"] for item in items)
+                if key not in seen:
+                    seen.add(key)
+                    yield items
+
+        for items in candidate_combinations():
             expansion_count += 1
             ids = [item["precursor_id"] for item in items]
             if (not args.allow_repeated_precursors and
                     len(set(ids)) != len(ids)):
                 continue
-            placed_items = assign_candidate_items(items, atom_count)
-            if placed_items is None:
-                continue
+            placed_items = place_candidate_items(
+                items, representative_atom_sets)
             formed = _formed_bonds(
                 placed_items, target_edges, args.require_attachment_bonds)
             if formed is not None:
                 pattern_assemblies.append(_assembly(placed_items, formed))
                 assembly_mapping_variants += 1
         assemblies_by_pattern[pattern_key].extend(retain_best(
-            pattern_assemblies, args.recommendations_per_pattern))
+            pattern_assemblies, args.per_domain_limit))
+        if cover_count % 10 == 0:
+            print(json.dumps({
+                "phase": "candidate_expansion",
+                "seconds": time.perf_counter() - assembly_start,
+                "patterns_processed": cover_count,
+            }), flush=True)
+
+    print(json.dumps({
+        "phase": "candidate_expansion",
+        "seconds": time.perf_counter() - assembly_start,
+        "patterns_processed": cover_count,
+        "complete": True,
+    }), flush=True)
 
     ranked_patterns = sorted(
-        ((pattern, retain_best(items, args.recommendations_per_pattern))
+        ((pattern, retain_best(items, args.per_domain_limit))
          for pattern, items in assemblies_by_pattern.items() if items),
         key=lambda pair: _assembly_rank(pair[1][0]),
-    )[:args.pattern_limit]
+    )
     construction_patterns = []
     assemblies = []
+    all_pattern_assemblies = []
     for pattern_index, (pattern_key, variants) in enumerate(ranked_patterns, 1):
         pattern = representative_pattern[pattern_key]
         start_rank = len(assemblies) + 1
         for variant in variants:
             variant["construction_pattern"] = pattern_index
-            assemblies.append(variant)
+        all_pattern_assemblies.extend(variants)
+        displayed_variants = variants[:args.recommendations_per_pattern]
+        assemblies.extend(displayed_variants)
         construction_patterns.append({
             "pattern": pattern_index,
             "coverage_atom_sets": [
@@ -301,10 +358,28 @@ def main():
             ],
             "fragment_sizes": [len(atoms) for atoms in pattern],
             "recommendation_ranks": list(range(
-                start_rank, start_rank + len(variants))),
+                start_rank, start_rank + len(displayed_variants))),
             "best_score": variants[0]["score"],
         })
     assemblies = assemblies[:args.assembly_limit]
+
+    expected_stoichiometry = Counter(args.expected_id)
+    naturally_ranked = retain_best(
+        all_pattern_assemblies, len(all_pattern_assemblies))
+    expected_recommendation_rank = next((
+        rank for rank, assembly in enumerate(naturally_ranked, 1)
+        if Counter(
+            item["precursor_id"] for item in assembly["precursors"]
+        ) == expected_stoichiometry
+    ), None) if expected_stoichiometry else None
+    if expected_recommendation_rank is not None:
+        expected_recommendation = naturally_ranked[
+            expected_recommendation_rank - 1]
+        if all(
+                Counter(item["precursor_id"] for item in assembly["precursors"])
+                != expected_stoichiometry
+                for assembly in assemblies):
+            assemblies.append(expected_recommendation)
 
     expected_assembly = None
     if args.expected_id:
@@ -373,8 +448,11 @@ def main():
             item: bool(expected.get(item)) for item in args.expected_id
         },
         "expected_assembly_recovered": expected_assembly is not None,
-        "expected_assembly": expected_assembly,
-        "assemblies": assemblies,
+        "expected_assembly": _serializable_assembly(expected_assembly),
+        "expected_recommendation_rank": expected_recommendation_rank,
+        "assemblies": [
+            _serializable_assembly(assembly) for assembly in assemblies
+        ],
     }
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

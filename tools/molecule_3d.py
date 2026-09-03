@@ -11,6 +11,7 @@ def mol_3d(smiles, *, spread_ions=False, show_hydrogens=False,
     with_hydrogens = Chem.AddHs(molecule)
     parameters = AllChem.ETKDGv3()
     parameters.randomSeed = 20260827
+    parameters.useRandomCoords = True
     if AllChem.EmbedMolecule(with_hydrogens, parameters) != 0:
         raise RuntimeError(f"could not embed {smiles!r}")
     try:

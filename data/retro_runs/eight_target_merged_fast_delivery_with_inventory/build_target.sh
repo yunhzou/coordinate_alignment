@@ -18,7 +18,6 @@ merge_start=$(date +%s.%N)
   --target-smiles "$target_smiles" \
   --output "$target_root/results.json" \
   --assembly-limit 20 \
-  --maximum-precursors 6 \
   --index-workers "${SLURM_CPUS_PER_TASK:-1}" \
   "$@" \
   > "$target_root/merge.log" 2>&1

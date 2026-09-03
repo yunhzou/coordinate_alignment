@@ -18,6 +18,7 @@ from rxn_core.retrosynthesis.compressed_coverage import (
     assign_occupation_signatures,
     candidate_target_occupations,
     coverage_signature,
+    place_candidate_items,
     recommend_compressed_coverage_patterns,
 )
 from rxn_core.fragment_matching.serialization import (
@@ -185,6 +186,22 @@ def test_same_precursor_can_occupy_distinct_nonoverlapping_regions():
     }
 
 
+def test_candidate_substitution_reuses_assigned_target_regions():
+    item = {
+        "target_occupations": (
+            {"covered_target_atoms": (0,), "mapping": ((4, 0),),
+             "attachment_atoms_target": (0,)},
+            {"covered_target_atoms": (1,), "mapping": ((4, 1),),
+             "attachment_atoms_target": (1,)},
+        ),
+    }
+
+    placed = place_candidate_items((item, item), ((1,), (0,)))
+
+    assert [copy["covered_target_atoms"] for copy in placed] == [[1], [0]]
+    assert [copy["mapping"] for copy in placed] == [[[4, 1]], [[4, 0]]]
+
+
 def test_occupation_assembly_uses_union_and_allows_overlap():
     signatures = (((0, 1),), ((1, 2),))
 
@@ -230,3 +247,20 @@ def test_set_cover_branching_prioritizes_marginal_target_coverage():
     )
 
     assert result.patterns == ((repeated, repeated),)
+
+
+def test_default_recommendation_has_no_arbitrary_precursor_count_ceiling():
+    signatures = tuple(((atom,),) for atom in range(8))
+
+    result = recommend_compressed_coverage_patterns(
+        signatures,
+        8,
+        lambda pattern, covered: (-covered, tuple(map(str, pattern))),
+        result_limit=2,
+    )
+
+    assert any(len(pattern) == 8 for pattern in result.patterns)
+    assert any(
+        set().union(*map(set, occupations)) == set(range(8))
+        for occupations in result.occupations
+    )

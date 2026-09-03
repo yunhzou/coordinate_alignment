@@ -205,18 +205,46 @@ def assign_candidate_items(items, atom_count):
     return tuple(placed)
 
 
+def place_candidate_items(items, covered_target_atoms):
+    """Materialize candidate mappings for an already assigned pattern.
+
+    Items in one coverage-signature pool have the same whole-fragment target
+    regions.  Assembly therefore solves region assignment once and reuses the
+    selected regions while comparing precursor substitutions.
+    """
+    placed = []
+    for item, covered_atoms in zip(items, covered_target_atoms, strict=True):
+        covered_atoms = tuple(covered_atoms)
+        occupation = next(
+            occupation for occupation in item["target_occupations"]
+            if tuple(occupation["covered_target_atoms"]) == covered_atoms
+        )
+        transformed = dict(item)
+        transformed.update({
+            "mapping": [list(pair) for pair in occupation["mapping"]],
+            "covered_target_atoms": list(
+                occupation["covered_target_atoms"]),
+            "attachment_atoms_target": list(
+                occupation["attachment_atoms_target"]),
+        })
+        placed.append(transformed)
+    return tuple(placed)
+
+
 @dataclass(frozen=True)
 class CoverageRecommendationResult:
     patterns: tuple[CoveragePattern, ...]
+    occupations: tuple[tuple[TargetOccupation, ...], ...]
     truncated: bool
 
 
 @dataclass(frozen=True)
 class CoverageRecommendationConfig:
-    maximum_precursors: int = 3
+    maximum_precursors: int | None = None
 
     def __post_init__(self):
-        if self.maximum_precursors < 1:
+        if (self.maximum_precursors is not None
+                and self.maximum_precursors < 1):
             raise ValueError("maximum precursors must be positive")
 
 
@@ -225,6 +253,7 @@ def recommend_compressed_coverage_patterns(
         config: CoverageRecommendationConfig | None = None):
     """Recommend full covers with a target-scaled best-first search."""
     config = config or CoverageRecommendationConfig()
+    maximum_precursors = config.maximum_precursors or atom_count
     signatures = tuple(sorted(set(signatures), key=lambda signature: (
         rank_pattern((signature,), max(map(len, signature))), signature)))
     occupation_masks = tuple(tuple(
@@ -247,6 +276,10 @@ def recommend_compressed_coverage_patterns(
     full = (1 << atom_count) - 1
     serial = itertools.count()
 
+    def atoms(mask):
+        return tuple(
+            atom for atom in range(atom_count) if mask & (1 << atom))
+
     def pattern(selected):
         return tuple(signatures[index] for index in selected)
 
@@ -255,9 +288,9 @@ def recommend_compressed_coverage_patterns(
         overlap = sum(signature_sizes[index] for index in selected) \
             - covered_count
         return (
+            -covered_count,
             len(set(selected)),
             overlap,
-            -covered_count,
             next(serial),
         )
 
@@ -268,7 +301,7 @@ def recommend_compressed_coverage_patterns(
         if full & ~possible:
             return None
         reachable = {0}
-        for copy_count in range(1, config.maximum_precursors + 1):
+        for copy_count in range(1, maximum_precursors + 1):
             reachable = {
                 covered | occupation
                 for covered in reachable for occupation in masks
@@ -282,33 +315,51 @@ def recommend_compressed_coverage_patterns(
         copy_count = repeated_cover_count(masks)
         if copy_count is not None:
             selected = (signature_index,) * copy_count
-            completed[selected] = pattern(selected)
+            selected_pattern = pattern(selected)
+            witness = assign_occupation_signatures(
+                selected_pattern, atom_count)
+            completed[selected] = selected_pattern, witness
 
-    queue = [(queue_rank((), 0), (), 0)]
+    # Exact complementary pairs are cheap to index and are the strongest
+    # two-module constructions: they cover every target atom with no overlap.
+    # Seed all of them so abundant one-module covers cannot crowd them out.
+    signatures_by_mask = defaultdict(set)
+    for signature_index, masks in enumerate(occupation_masks):
+        for mask in masks:
+            signatures_by_mask[mask].add(signature_index)
+    for left_index, masks in enumerate(occupation_masks):
+        for left_mask in masks:
+            complement = full ^ left_mask
+            for right_index in signatures_by_mask.get(complement, ()):
+                selected = tuple(sorted((left_index, right_index)))
+                selected_pattern = pattern(selected)
+                witness = assign_occupation_signatures(
+                    selected_pattern, atom_count)
+                completed.setdefault(selected, (selected_pattern, witness))
+
+    preloaded_cover_count = len(completed)
+    queue = [(queue_rank((), 0), (), 0, ())]
     seen = {((), 0)}
     state_budget = result_limit * max(atom_count, 1)
-    branch_budget = result_limit * config.maximum_precursors
+    branch_budget = result_limit * maximum_precursors
     visited_states = 0
     truncated = False
-    while (queue and len(completed) < result_limit
+    while (queue
+           and len(completed) < preloaded_cover_count + result_limit
            and visited_states < state_budget):
-        _priority, selected, covered = heapq.heappop(queue)
+        _priority, selected, covered, assigned_masks = heapq.heappop(queue)
         visited_states += 1
         missing = full & ~covered
         if missing == 0:
             selected_pattern = pattern(selected)
-            if any(
-                    assign_occupation_signatures(
-                        selected_pattern[:index]
-                        + selected_pattern[index + 1:], atom_count)
-                    is not None
-                    for index in range(len(selected_pattern))):
-                continue
-            completed.setdefault(selected, selected_pattern)
+            completed.setdefault(selected, (
+                selected_pattern,
+                tuple(atoms(mask) for mask in assigned_masks),
+            ))
             continue
-        if len(selected) >= config.maximum_precursors:
+        if len(selected) >= maximum_precursors:
             continue
-        remaining_slots = config.maximum_precursors - len(selected)
+        remaining_slots = maximum_precursors - len(selected)
         if missing.bit_count() > remaining_slots * maximum_signature_size:
             continue
         missing_atoms = tuple(
@@ -332,8 +383,13 @@ def recommend_compressed_coverage_patterns(
                 if not occupation & (1 << pivot):
                     continue
                 new_covered = covered | occupation
-                new_selected = tuple(sorted(
-                    selected + (signature_index,)))
+                selected_pairs = sorted(
+                    zip(selected + (signature_index,),
+                        assigned_masks + (occupation,)))
+                new_selected = tuple(
+                    index for index, _mask in selected_pairs)
+                new_assigned_masks = tuple(
+                    mask for _index, mask in selected_pairs)
                 state_key = new_selected, new_covered
                 if state_key in seen:
                     continue
@@ -342,14 +398,30 @@ def recommend_compressed_coverage_patterns(
                     queue_rank(new_selected, new_covered),
                     new_selected,
                     new_covered,
+                    new_assigned_masks,
                 ))
     if queue:
         truncated = True
-    ranked = sorted(completed.values(), key=lambda selected_pattern: (
-        sum(len(signature[0]) for signature in selected_pattern) - atom_count,
-        rank_pattern(selected_pattern, atom_count),
+    ranked = sorted(completed.values(), key=lambda result: (
+        sum(len(signature[0]) for signature in result[0]) - atom_count,
+        rank_pattern(result[0], atom_count),
     ))
+    by_module_count = defaultdict(list)
+    for result in ranked:
+        by_module_count[len(set(result[0]))].append(result)
+    diverse = []
+    module_counts = sorted(by_module_count)
+    for offset in range(max(map(len, by_module_count.values()), default=0)):
+        for module_count in module_counts:
+            patterns = by_module_count[module_count]
+            if offset < len(patterns):
+                diverse.append(patterns[offset])
+                if len(diverse) >= result_limit:
+                    break
+        if len(diverse) >= result_limit:
+            break
     return CoverageRecommendationResult(
-        patterns=tuple(ranked[:result_limit]),
+        patterns=tuple(result[0] for result in diverse),
+        occupations=tuple(result[1] for result in diverse),
         truncated=truncated,
     )
