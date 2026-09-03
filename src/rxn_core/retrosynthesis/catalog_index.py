@@ -220,6 +220,34 @@ class CandidateIndex:
     counts: dict[str, int]
 
 
+def merge_candidate_indexes(indexes, per_domain_limit):
+    """Reduce independent shard indexes into one deterministic index."""
+    groups = defaultdict(list)
+    expected = defaultdict(list)
+    direct_target_matches = []
+    counts = Counter()
+    for index in indexes:
+        for signature, items in index.groups.items():
+            groups[signature].extend(items)
+        for precursor_id, items in index.expected.items():
+            expected[precursor_id].extend(items)
+        direct_target_matches.extend(index.direct_target_matches)
+        counts.update(index.counts)
+    return CandidateIndex(
+        groups={
+            signature: sorted(items, key=candidate_entry_rank)[
+                :per_domain_limit]
+            for signature, items in groups.items()
+        },
+        expected={
+            precursor_id: sorted(items, key=candidate_entry_rank)
+            for precursor_id, items in expected.items()
+        },
+        direct_target_matches=tuple(direct_target_matches),
+        counts=dict(counts),
+    )
+
+
 def build_candidate_index(records, target, target_key, *, config=None):
     config = config or CandidateIndexConfig()
     groups = defaultdict(list)

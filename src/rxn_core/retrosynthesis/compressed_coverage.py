@@ -61,41 +61,63 @@ def candidate_target_occupations(
     coverage = tuple(sorted(map(int, candidate.covered_target_atoms)))
     attachments = tuple(sorted(map(int, candidate.attachment_atoms_target)))
     cache_key = coverage, attachments
-    permutations = orbit_cache.get(cache_key)
-    if permutations is None:
+    orbit = orbit_cache.get(cache_key)
+    tracked_atoms = tuple(sorted(set(coverage) | set(attachments)))
+    if orbit is None:
         degree = len(target)
-        identity = tuple(range(degree))
-        permutations_by_state = {(coverage, attachments): identity}
-        queue = [identity]
+        generator_images = tuple(tuple(
+            int(generator.get(atom, atom)) for atom in range(degree)
+        ) for generator in generators)
+
+        def atom_mask(atoms):
+            return sum(1 << atom for atom in atoms)
+
+        def transform_mask(mask, generator):
+            transformed = 0
+            while mask:
+                bit = mask & -mask
+                transformed |= 1 << generator[bit.bit_length() - 1]
+                mask ^= bit
+            return transformed
+
+        initial_state = atom_mask(coverage), atom_mask(attachments)
+        witnesses_by_state = {initial_state: tracked_atoms}
+        queue = [initial_state]
         cursor = 0
         while cursor < len(queue):
-            permutation = queue[cursor]
+            state = queue[cursor]
             cursor += 1
-            for generator in generators:
-                transformed = tuple(
-                    int(generator.get(image, image))
-                    for image in permutation)
-                state = (
-                    tuple(sorted(transformed[atom] for atom in coverage)),
-                    tuple(sorted(transformed[atom] for atom in attachments)),
+            witness = witnesses_by_state[state]
+            for generator in generator_images:
+                transformed_state = (
+                    transform_mask(state[0], generator),
+                    transform_mask(state[1], generator),
                 )
-                if state in permutations_by_state:
+                if transformed_state in witnesses_by_state:
                     continue
-                permutations_by_state[state] = transformed
-                queue.append(transformed)
-        permutations = tuple(
-            permutations_by_state[state]
-            for state in sorted(permutations_by_state))
-        orbit_cache[cache_key] = permutations
-    return tuple({
-        "covered_target_atoms": tuple(sorted(
-            permutation[atom] for atom in coverage)),
-        "mapping": tuple(sorted(
-            (int(source), permutation[int(target_atom)])
-            for source, target_atom in candidate.mapping)),
-        "attachment_atoms_target": tuple(sorted(
-            permutation[atom] for atom in attachments)),
-    } for permutation in permutations)
+                witnesses_by_state[transformed_state] = tuple(
+                    generator[atom] for atom in witness)
+                queue.append(transformed_state)
+        orbit = tuple(
+            (state, witnesses_by_state[state])
+            for state in sorted(witnesses_by_state))
+        orbit_cache[cache_key] = orbit
+
+    def mask_atoms(mask):
+        return tuple(
+            atom for atom in range(len(target)) if mask & (1 << atom))
+
+    occupations = []
+    for state, witness in orbit:
+        image_by_atom = dict(zip(tracked_atoms, witness))
+        occupations.append({
+            "covered_target_atoms": mask_atoms(state[0]),
+            "mapping": tuple(sorted(
+                (int(source), image_by_atom[int(target_atom)])
+                for source, target_atom in candidate.mapping)),
+            "attachment_atoms_target": mask_atoms(state[1]),
+        })
+    return tuple(occupations)
 
 
 def coverage_signature(target_occupations):
@@ -201,72 +223,133 @@ class CoverageRecommendationConfig:
 def recommend_compressed_coverage_patterns(
         signatures, atom_count, rank_pattern, *, result_limit,
         config: CoverageRecommendationConfig | None = None):
-    """Recommend full covers over compressed whole-fragment occupations."""
+    """Recommend full covers with a target-scaled best-first search."""
     config = config or CoverageRecommendationConfig()
     signatures = tuple(sorted(set(signatures), key=lambda signature: (
         rank_pattern((signature,), max(map(len, signature))), signature)))
+    occupation_masks = tuple(tuple(
+        sum(1 << atom for atom in occupation)
+        for occupation in signature
+    ) for signature in signatures)
+    signature_sizes = tuple(len(signature[0]) for signature in signatures)
+    maximum_signature_size = max(signature_sizes)
     by_target = defaultdict(list)
-    for signature in signatures:
+    for signature_index, signature in enumerate(signatures):
         for occupation in signature:
             for target in occupation:
-                by_target[target].append(signature)
+                by_target[target].append(signature_index)
+    by_target = {
+        target: tuple(sorted(set(indices)))
+        for target, indices in by_target.items()
+    }
 
     completed = {}
-    full = frozenset(range(atom_count))
+    full = (1 << atom_count) - 1
     serial = itertools.count()
 
-    def queue_rank(selected, occupations, covered):
-        overlap = sum(map(len, occupations)) - len(covered)
+    def pattern(selected):
+        return tuple(signatures[index] for index in selected)
+
+    def queue_rank(selected, covered):
+        covered_count = covered.bit_count()
+        overlap = sum(signature_sizes[index] for index in selected) \
+            - covered_count
         return (
+            len(set(selected)),
             overlap,
-            rank_pattern(selected, len(covered)),
-            -len(covered),
+            -covered_count,
             next(serial),
         )
 
-    queue = [(queue_rank((), (), frozenset()), (), (), frozenset())]
-    seen = {((), ())}
-    while queue and len(completed) < result_limit:
-        _priority, selected, occupations, covered = heapq.heappop(queue)
-        missing = full - covered
-        if not missing:
+    def repeated_cover_count(masks):
+        possible = 0
+        for occupation in masks:
+            possible |= occupation
+        if full & ~possible:
+            return None
+        reachable = {0}
+        for copy_count in range(1, config.maximum_precursors + 1):
+            reachable = {
+                covered | occupation
+                for covered in reachable for occupation in masks
+                if occupation & ~covered
+            }
+            if full in reachable:
+                return copy_count
+        return None
+
+    for signature_index, masks in enumerate(occupation_masks):
+        copy_count = repeated_cover_count(masks)
+        if copy_count is not None:
+            selected = (signature_index,) * copy_count
+            completed[selected] = pattern(selected)
+
+    queue = [(queue_rank((), 0), (), 0)]
+    seen = {((), 0)}
+    state_budget = result_limit * max(atom_count, 1)
+    branch_budget = result_limit * config.maximum_precursors
+    visited_states = 0
+    truncated = False
+    while (queue and len(completed) < result_limit
+           and visited_states < state_budget):
+        _priority, selected, covered = heapq.heappop(queue)
+        visited_states += 1
+        missing = full & ~covered
+        if missing == 0:
+            selected_pattern = pattern(selected)
             if any(
-                    occupation.issubset(frozenset().union(*(
-                        other for position, other in enumerate(occupations)
-                        if position != index)))
-                    for index, occupation in enumerate(occupations)):
+                    assign_occupation_signatures(
+                        selected_pattern[:index]
+                        + selected_pattern[index + 1:], atom_count)
+                    is not None
+                    for index in range(len(selected_pattern))):
                 continue
-            key = tuple(sorted(selected))
-            completed.setdefault(key, selected)
+            completed.setdefault(selected, selected_pattern)
             continue
         if len(selected) >= config.maximum_precursors:
             continue
-        pivot = min(missing, key=lambda target: (
-            len(by_target[target]), target))
-        for signature in by_target[pivot]:
-            for occupation in signature:
-                occupation = frozenset(occupation)
-                if pivot not in occupation:
+        remaining_slots = config.maximum_precursors - len(selected)
+        if missing.bit_count() > remaining_slots * maximum_signature_size:
+            continue
+        missing_atoms = tuple(
+            atom for atom in range(atom_count)
+            if missing & (1 << atom))
+        pivot = min(missing_atoms, key=lambda target: (
+            len(by_target.get(target, ())), target))
+        compatible_signatures = tuple(sorted(
+            by_target.get(pivot, ()),
+            key=lambda signature_index: (
+                -max(
+                    (occupation & missing).bit_count()
+                    for occupation in occupation_masks[signature_index]),
+                signature_index,
+            ),
+        ))
+        if len(compatible_signatures) > branch_budget:
+            truncated = True
+        for signature_index in compatible_signatures[:branch_budget]:
+            for occupation in occupation_masks[signature_index]:
+                if not occupation & (1 << pivot):
                     continue
-                new_covered = covered.union(occupation)
-                new_selected = selected + (signature,)
-                new_occupations = occupations + (occupation,)
-                state_key = (
-                    tuple(sorted(new_selected)),
-                    tuple(sorted(new_occupations)),
-                )
+                new_covered = covered | occupation
+                new_selected = tuple(sorted(
+                    selected + (signature_index,)))
+                state_key = new_selected, new_covered
                 if state_key in seen:
                     continue
                 seen.add(state_key)
                 heapq.heappush(queue, (
-                    queue_rank(new_selected, new_occupations, new_covered),
+                    queue_rank(new_selected, new_covered),
                     new_selected,
-                    new_occupations,
                     new_covered,
                 ))
-    ranked = sorted(completed.values(), key=lambda pattern: rank_pattern(
-        pattern, atom_count))
+    if queue:
+        truncated = True
+    ranked = sorted(completed.values(), key=lambda selected_pattern: (
+        sum(len(signature[0]) for signature in selected_pattern) - atom_count,
+        rank_pattern(selected_pattern, atom_count),
+    ))
     return CoverageRecommendationResult(
         patterns=tuple(ranked[:result_limit]),
-        truncated=bool(queue),
+        truncated=truncated,
     )

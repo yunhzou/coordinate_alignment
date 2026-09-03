@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import gzip
 import heapq
 import itertools
 import json
+import time
 from collections import Counter, defaultdict
 from fractions import Fraction
 from pathlib import Path
@@ -17,6 +19,7 @@ from rdkit import Chem
 from rxn_core.retrosynthesis.catalog_index import (
     CandidateIndexConfig,
     build_candidate_index,
+    merge_candidate_indexes,
 )
 from rxn_core.retrosynthesis.compressed_coverage import (
     CoverageRecommendationConfig,
@@ -28,6 +31,20 @@ from rxn_core.retrosynthesis.ranking import (
     build_ranked_assembly as _assembly,
     validate_atom_ownership as _formed_bonds,
 )
+
+
+def _part_records(path):
+    with gzip.open(path, "rt", encoding="utf-8") as stream:
+        for line in stream:
+            yield json.loads(line)
+
+
+def _build_part_index(task):
+    path, target_smiles, target_key, config = task
+    target = Chem.AddHs(Chem.MolFromSmiles(target_smiles))
+    Chem.AssignStereochemistry(target, cleanIt=True, force=True)
+    return build_candidate_index(
+        _part_records(path), target, target_key, config=config)
 
 
 def main():
@@ -51,6 +68,7 @@ def main():
                         action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--chirality-ranking",
                         action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--index-workers", type=int, default=1)
     args = parser.parse_args()
 
     target_implicit = Chem.MolFromSmiles(args.target_smiles)
@@ -101,28 +119,30 @@ def main():
     if not part_paths:
         raise RuntimeError("no completed part files found")
 
-    def records():
-        for path in part_paths:
-            with gzip.open(path, "rt", encoding="utf-8") as stream:
-                for line in stream:
-                    yield json.loads(line)
-
-    index = build_candidate_index(
-        records(),
-        target,
-        target_key,
-        config=CandidateIndexConfig(
-            per_domain_limit=args.per_domain_limit,
-            exclude_target_identity=args.exclude_target_identity,
-            attachment_trim_variants=args.attachment_trim_variants,
-            chirality_ranking=args.chirality_ranking,
-            expected_ids=tuple(args.expected_id),
-        ),
+    index_config = CandidateIndexConfig(
+        per_domain_limit=args.per_domain_limit,
+        exclude_target_identity=args.exclude_target_identity,
+        attachment_trim_variants=args.attachment_trim_variants,
+        chirality_ranking=args.chirality_ranking,
+        expected_ids=tuple(args.expected_id),
     )
+    index_start = time.perf_counter()
+    tasks = tuple(
+        (path, args.target_smiles, target_key, index_config)
+        for path in part_paths)
+    with ProcessPoolExecutor(max_workers=args.index_workers) as executor:
+        shard_indexes = tuple(executor.map(_build_part_index, tasks))
+    index = merge_candidate_indexes(
+        shard_indexes, args.per_domain_limit)
     groups = index.groups
     expected = index.expected
     direct_target_matches = index.direct_target_matches
     counts = index.counts
+    print(json.dumps({
+        "phase": "candidate_index",
+        "seconds": time.perf_counter() - index_start,
+        "coverage_families": len(groups),
+    }), flush=True)
 
     def item_set_rank(items, covered_atom_count=0):
         structures = {item["structure_key"] for item in items}
@@ -153,6 +173,7 @@ def main():
                 covered_atom_count),
         )
 
+    coverage_start = time.perf_counter()
     coverage_search = recommend_compressed_coverage_patterns(
         groups,
         atom_count,
@@ -167,6 +188,12 @@ def main():
     )
     covers = coverage_search.patterns
     search_truncated = coverage_search.truncated
+    print(json.dumps({
+        "phase": "coverage_recommendation",
+        "seconds": time.perf_counter() - coverage_start,
+        "patterns": len(covers),
+        "truncated": search_truncated,
+    }), flush=True)
 
     assemblies = []
     assemblies_by_pattern = defaultdict(list)

@@ -208,3 +208,25 @@ def test_set_cover_search_prefers_less_overlap_without_repeat_special_case():
     )
 
     assert result.patterns == ((repeated, repeated),)
+
+
+def test_set_cover_branching_prioritizes_marginal_target_coverage():
+    repeated = ((0, 1), (2, 3))
+    distractors = (
+        ((0,),),
+        ((0,), (1,)),
+        ((0,), (2,)),
+    )
+
+    result = recommend_compressed_coverage_patterns(
+        distractors + (repeated,),
+        4,
+        lambda pattern, covered: (
+            0 if any(item in distractors for item in pattern) else 1,
+            -covered,
+        ),
+        result_limit=1,
+        config=CoverageRecommendationConfig(maximum_precursors=2),
+    )
+
+    assert result.patterns == ((repeated, repeated),)
