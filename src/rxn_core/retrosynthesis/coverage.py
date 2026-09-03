@@ -1,4 +1,4 @@
-"""Target-coverage assembly from precursor fragment candidates."""
+"""Target-union assembly from precursor fragment candidates."""
 from __future__ import annotations
 
 from ..fragment_matching import materialize_target_coverage_orbit
@@ -15,7 +15,7 @@ def assemble_fragment_cover(
         assembly_limit=1_000, require_attachment_bonds=False,
         allow_repeated_precursors=True, orbit_limit=100_000,
         iso_tolerance=0.5):
-    """Combine candidates into non-overlapping complete target covers."""
+    """Combine candidate occupation regions until their union covers target."""
     if maximum_precursors < 1 or assembly_limit < 1:
         raise ValueError("precursor and assembly limits must be positive")
     graph_P = _coerce_graph(target, 0.2)
@@ -45,7 +45,7 @@ def assemble_fragment_cover(
         owner = {}
         for index, candidate in enumerate(selected):
             for atom in candidate.covered_target_atoms:
-                owner[atom] = index
+                owner.setdefault(atom, index)
         formed = []
         for left, right in graph_P.edges():
             if owner[left] == owner[right]:
@@ -82,7 +82,7 @@ def assemble_fragment_cover(
         for index in range(start, len(ordered)):
             candidate = ordered[index]
             coverage = frozenset(candidate.covered_target_atoms)
-            if coverage & covered:
+            if coverage.issubset(covered):
                 continue
             if (not allow_repeated_precursors
                     and candidate.source_id in used_precursors):
@@ -95,12 +95,19 @@ def assemble_fragment_cover(
             )
 
     visit(0, [], frozenset(), set())
-    assemblies.sort(key=lambda assembly: (
-        len(assembly.candidates),
-        len(assembly.formed_bonds),
-        len(assembly.broken_bonds),
-        assembly.precursor_ids,
-    ))
+    def assembly_rank(assembly):
+        claimed_atoms = sum(
+            candidate.retained_size for candidate in assembly.candidates)
+        overlap = claimed_atoms - len(target_atoms)
+        return (
+            len(assembly.candidates),
+            overlap,
+            len(assembly.formed_bonds),
+            len(assembly.broken_bonds),
+            assembly.precursor_ids,
+        )
+
+    assemblies.sort(key=assembly_rank)
     return RetroAssemblySearchResult(
         assemblies=tuple(assemblies),
         status=("capped" if capped

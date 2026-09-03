@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import heapq
+import itertools
 import json
 from collections import Counter, defaultdict
 from fractions import Fraction
@@ -37,7 +38,6 @@ def main():
     parser.add_argument("--per-domain-limit", type=int, default=200)
     parser.add_argument("--assembly-limit", type=int, default=20)
     parser.add_argument("--maximum-precursors", type=int, default=3)
-    parser.add_argument("--frontier-limit", type=int, default=200)
     parser.add_argument("--pattern-limit", type=int, default=4)
     parser.add_argument("--recommendations-per-pattern", type=int, default=4)
     parser.add_argument("--expected-id", action="append", default=[])
@@ -70,21 +70,24 @@ def main():
         labels = [Chem.MolFragmentToSmiles(
             target, atomsToUse=sorted(atoms), canonical=True,
             isomericSmiles=True) for atoms in atom_sets]
-        owner = {
-            atom: module
-            for module, atoms in enumerate(atom_sets) for atom in atoms
-        }
+        memberships = defaultdict(list)
+        for module, atoms in enumerate(atom_sets):
+            for atom in atoms:
+                memberships[atom].append(module)
         module_graph = nx.Graph()
         for module, label in enumerate(labels):
             module_graph.add_node(module, label=label)
         edge_labels = defaultdict(list)
+        for atom, modules in memberships.items():
+            for left, right in itertools.combinations(modules, 2):
+                symbol = target.GetAtomWithIdx(atom).GetSymbol()
+                edge_labels[(left, right)].append(f"overlap:{symbol}")
         for bond in target.GetBonds():
-            left = owner[bond.GetBeginAtomIdx()]
-            right = owner[bond.GetEndAtomIdx()]
-            if left == right:
-                continue
-            edge_labels[tuple(sorted((left, right)))].append(
-                str(bond.GetBondType()))
+            for left in memberships[bond.GetBeginAtomIdx()]:
+                for right in memberships[bond.GetEndAtomIdx()]:
+                    if left != right:
+                        edge_labels[tuple(sorted((left, right)))].append(
+                            str(bond.GetBondType()))
         for (left, right), bond_labels in edge_labels.items():
             module_graph.add_edge(
                 left, right, label="|".join(sorted(bond_labels)))
@@ -160,11 +163,10 @@ def main():
         ),
         config=CoverageRecommendationConfig(
             maximum_precursors=args.maximum_precursors,
-            frontier_limit=args.frontier_limit,
         ),
     )
     covers = coverage_search.patterns
-    beam_truncated = coverage_search.truncated
+    search_truncated = coverage_search.truncated
 
     assemblies = []
     assemblies_by_pattern = defaultdict(list)
@@ -333,8 +335,7 @@ def main():
         "allow_repeated_precursors": args.allow_repeated_precursors,
         "attachment_trim_variants": args.attachment_trim_variants,
         "chirality_ranking": args.chirality_ranking,
-        "frontier_limit": args.frontier_limit,
-        "recommendation_search_truncated": beam_truncated,
+        "recommendation_search_truncated": search_truncated,
         "pattern_limit": args.pattern_limit,
         "recommendations_per_pattern": args.recommendations_per_pattern,
         "construction_patterns": construction_patterns,

@@ -122,19 +122,24 @@ def _payload(report, top_count, known_ids, expected_coverage, title, known_label
             set(map(int, item["covered_target_atoms"]))
             for item in raw_precursors
         ]
-        if (set().union(*regions) != set(range(len(target_elements)))
-                or sum(map(len, regions)) != len(target_elements)):
+        if set().union(*regions) != set(range(len(target_elements))):
             raise ValueError(
-                f"assembly {rank} is not a disjoint full target cover")
+                f"assembly {rank} does not cover the full target")
         precursors = _group_precursors(raw_precursors)
         models = [
             _model(item["smiles"], item, COLORS[index], cache)
             for index, item in enumerate(precursors)
         ]
-        product_styles = [
-            {"indices": item["covered_target_atoms"], "color": COLORS[index]}
-            for index, item in enumerate(precursors)
-        ]
+        displayed = set()
+        product_styles = []
+        for index, item in enumerate(precursors):
+            owned = sorted(
+                set(item["covered_target_atoms"]) - displayed)
+            displayed.update(owned)
+            product_styles.append({
+                "indices": owned,
+                "color": COLORS[index],
+            })
         product_symmetry_styles = [
             {"indices": item["symmetry_target_atoms"], "color": COLORS[index]}
             for index, item in enumerate(precursors)

@@ -21,15 +21,13 @@ def candidate_entry_rank(entry):
 
 def validate_atom_ownership(
         precursors, target_edges, require_attachment_bonds=True):
-    """Return cross-owner product bonds, or None for an invalid ownership."""
+    """Assign shared coverage once and return cross-owner product bonds."""
     owner = {}
     attachments = []
     for index, precursor in enumerate(precursors):
         attachments.append(set(precursor["attachment_atoms_target"]))
         for atom in precursor["covered_target_atoms"]:
-            if atom in owner:
-                return None
-            owner[atom] = index
+            owner.setdefault(atom, index)
     formed = []
     for atom_a, atom_b in target_edges:
         owner_a, owner_b = owner.get(atom_a), owner.get(atom_b)
@@ -78,6 +76,11 @@ def build_ranked_assembly(items, formed_bonds):
             for item in precursors),
         sum(item["total_heavy_atoms"] for item in precursors),
     )
+    claimed_target_atoms = [
+        atom for item in precursors
+        for atom in item.get("covered_target_atoms", ())
+    ]
+    overlap_count = len(claimed_target_atoms) - len(set(claimed_target_atoms))
     return {
         "precursors": precursors,
         "precursor_stoichiometry": dict(sorted(stoichiometry.items())),
@@ -101,6 +104,7 @@ def build_ranked_assembly(items, formed_bonds):
             "leftover_atoms": sum(
                 item["leftover_atom_count"] for item in precursors),
             "formed_bonds": len(formed_bonds),
+            "overlapping_target_atoms": overlap_count,
         },
     }
 
@@ -110,6 +114,7 @@ def assembly_rank(assembly):
     return (
         score["chirality_violations"],
         score["unique_precursor_structures"],
+        score.get("overlapping_target_atoms", 0),
         -score.get(
             "set_symmetry_atom_retention", score["set_atom_retention"]),
         -score["set_atom_retention"],

@@ -1,28 +1,32 @@
-"""Recommendation over compressed target-domain claims."""
+"""Recommendation over compressed target-occupation alternatives."""
 from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import heapq
+import itertools
 
-TargetDomain = tuple[int, ...]
-CoverageSignature = tuple[TargetDomain, ...]
+from ..fragment_matching import materialize_target_coverage_orbit
+
+TargetOccupation = tuple[int, ...]
+CoverageSignature = tuple[TargetOccupation, ...]
 CoveragePattern = tuple[CoverageSignature, ...]
 
-def candidate_target_domains(candidate):
-    """Return one allowed target pool for every retained source atom.
 
-    Ordinary AAM symmetry blocks are independent set-to-set assignment
-    domains.  Exact automorphism blocks describe a coupled group action and
-    therefore remain represented by their deterministic witness here.
+def candidate_target_domains(candidate):
+    """Return AAM atom domains for display and diagnostic purposes.
+
+    These domains describe allowed atoms, but correlated AAM placements must
+    not be treated as their Cartesian product during assembly.
     """
     retained = set(map(int, candidate.retained_atoms))
     witness = {int(source): int(target) for source, target in candidate.mapping}
-    pools = {source: (target,) for source, target in witness.items()
-             if source in retained}
+    pools = {
+        source: (target,) for source, target in witness.items()
+        if source in retained
+    }
     for fragment in candidate.aam_hierarchy.fragments:
         for domain in fragment.symmetry_domains:
-            if domain.source == "exact_automorph_group":
-                continue
             target_pool = tuple(map(int, domain.p_atoms))
             for source in domain.r_atoms:
                 if source in retained:
@@ -30,125 +34,150 @@ def candidate_target_domains(candidate):
     return tuple((source, pools[source]) for source in sorted(pools))
 
 
-def coverage_signature(target_domains):
-    """Source-index-free multiset signature used to group coverage modules."""
-    return tuple(sorted(tuple(pool) for _source, pool in target_domains))
+def candidate_target_occupations(
+        candidate, target, *, iso_tolerance=0.5, generators=None,
+        orbit_cache=None):
+    """Return the distinct whole-fragment target regions allowed by AAM.
+
+    The existing AAM candidate remains compressed internally.  We quotient
+    only by target ownership/attachments, so internal atom bijections are
+    never enumerated.  Each returned record is one chemically connected
+    occupation spot that assembly may consume with a copy of the precursor.
+    """
+    if orbit_cache is None or generators is None:
+        variants = materialize_target_coverage_orbit(
+            candidate, target, iso_tolerance=iso_tolerance,
+            generators=generators)
+        return tuple({
+            "covered_target_atoms": tuple(map(
+                int, variant.covered_target_atoms)),
+            "mapping": tuple(
+                (int(source), int(target_atom))
+                for source, target_atom in variant.mapping),
+            "attachment_atoms_target": tuple(map(
+                int, variant.attachment_atoms_target)),
+        } for variant in variants)
+
+    coverage = tuple(sorted(map(int, candidate.covered_target_atoms)))
+    attachments = tuple(sorted(map(int, candidate.attachment_atoms_target)))
+    cache_key = coverage, attachments
+    permutations = orbit_cache.get(cache_key)
+    if permutations is None:
+        degree = len(target)
+        identity = tuple(range(degree))
+        permutations_by_state = {(coverage, attachments): identity}
+        queue = [identity]
+        cursor = 0
+        while cursor < len(queue):
+            permutation = queue[cursor]
+            cursor += 1
+            for generator in generators:
+                transformed = tuple(
+                    int(generator.get(image, image))
+                    for image in permutation)
+                state = (
+                    tuple(sorted(transformed[atom] for atom in coverage)),
+                    tuple(sorted(transformed[atom] for atom in attachments)),
+                )
+                if state in permutations_by_state:
+                    continue
+                permutations_by_state[state] = transformed
+                queue.append(transformed)
+        permutations = tuple(
+            permutations_by_state[state]
+            for state in sorted(permutations_by_state))
+        orbit_cache[cache_key] = permutations
+    return tuple({
+        "covered_target_atoms": tuple(sorted(
+            permutation[atom] for atom in coverage)),
+        "mapping": tuple(sorted(
+            (int(source), permutation[int(target_atom)])
+            for source, target_atom in candidate.mapping)),
+        "attachment_atoms_target": tuple(sorted(
+            permutation[atom] for atom in attachments)),
+    } for permutation in permutations)
 
 
-def assign_domain_signatures(signatures, atom_count):
-    """Find one injective target witness without enumerating bijections."""
-    domains = tuple(
-        tuple(map(int, pool))
-        for signature in signatures for pool in signature)
-    assignment = _extend_domain_assignment((), (), domains)
-    if assignment is None or len(domains) > atom_count:
-        return None
-    by_component = []
-    cursor = 0
-    for signature in signatures:
-        width = len(signature)
-        by_component.append(assignment[cursor:cursor + width])
-        cursor += width
-    return tuple(by_component)
+def coverage_signature(target_occupations):
+    """Source-index-free set of allowed whole-fragment occupations."""
+    return tuple(sorted({
+        tuple(sorted(map(int, occupation["covered_target_atoms"])))
+        for occupation in target_occupations
+    }))
 
 
-def _extend_domain_assignment(domains, assignment, appended_domains):
-    """Extend one maximum matching through augmenting paths."""
-    domains = tuple(domains) + tuple(appended_domains)
-    prior_count = len(assignment)
-    target_owner = {}
-    assigned = list(assignment) + [None] * len(appended_domains)
-    for variable, target in enumerate(assignment):
-        target_owner[target] = variable
+def assign_occupation_signatures(signatures, atom_count):
+    """Choose whole-fragment occupations whose union covers the target."""
+    signatures = tuple(signatures)
+    full = frozenset(range(atom_count))
+    assigned = [None] * len(signatures)
 
-    def augment(variable, visited):
-        for target in domains[variable]:
-            if target in visited:
-                continue
-            visited.add(target)
-            prior = target_owner.get(target)
-            if prior is None or augment(prior, visited):
-                target_owner[target] = variable
-                assigned[variable] = target
+    def visit(remaining, covered):
+        if not remaining:
+            return covered == full
+        choices = []
+        for index in remaining:
+            compatible = [
+                occupation for occupation in signatures[index]
+                if not frozenset(occupation).issubset(covered)
+            ]
+            if not compatible:
+                return False
+            choices.append((len(compatible), index, compatible))
+        _count, index, compatible = min(choices)
+        rest = tuple(item for item in remaining if item != index)
+        for occupation in compatible:
+            assigned[index] = occupation
+            if visit(rest, covered.union(occupation)):
                 return True
+        assigned[index] = None
         return False
 
-    new_variables = range(prior_count, len(domains))
-    new_variables = sorted(
-        new_variables,
-        key=lambda variable: (len(domains[variable]), domains[variable]),
-    )
-    for variable in new_variables:
-        if not augment(variable, set()):
-            return None
+    if not visit(tuple(range(len(signatures))), frozenset()):
+        return None
     return tuple(assigned)
 
 
-def _extend_with_required_target(
-        domains, appended_domains, required_target):
-    """Return one witness where the appended component owns the pivot."""
-    combined = tuple(domains) + tuple(appended_domains)
-    appended_start = len(domains)
-    forced_variables = [
-        appended_start + offset
-        for offset, pool in enumerate(appended_domains)
-        if required_target in pool
-    ]
-    for forced in forced_variables:
-        assigned = [None] * len(combined)
-        assigned[forced] = required_target
-        target_owner = {required_target: forced}
-
-        def augment(variable, visited):
-            for target in combined[variable]:
-                if target in visited:
-                    continue
-                visited.add(target)
-                prior = target_owner.get(target)
-                if prior == forced:
-                    continue
-                if prior is None or augment(prior, visited):
-                    target_owner[target] = variable
-                    assigned[variable] = target
-                    return True
-            return False
-
-        variables = sorted(
-            (variable for variable in range(len(combined))
-             if variable != forced),
-            key=lambda variable: (
-                len(combined[variable]), combined[variable]),
-        )
-        if all(augment(variable, set()) for variable in variables):
-            return tuple(assigned)
-    return None
-
-
 def assign_candidate_items(items, atom_count):
-    """Materialize one final mapping witness for compressed candidate items."""
-    signatures = [
-        tuple(tuple(pool) for _source, pool in item["target_domains"])
-        for item in items
-    ]
-    assignments = assign_domain_signatures(signatures, atom_count)
-    if assignments is None:
+    """Place candidate copies so their allowed AAM regions cover the target."""
+    items = tuple(items)
+    full = frozenset(range(atom_count))
+    selected = [None] * len(items)
+
+    def visit(remaining, covered):
+        if not remaining:
+            return covered == full
+        choices = []
+        for index in remaining:
+            compatible = [
+                occupation for occupation in items[index]["target_occupations"]
+                if not frozenset(occupation["covered_target_atoms"]).issubset(
+                    covered)
+            ]
+            if not compatible:
+                return False
+            choices.append((len(compatible), index, compatible))
+        _count, index, compatible = min(choices)
+        rest = tuple(item for item in remaining if item != index)
+        for occupation in compatible:
+            selected[index] = occupation
+            if visit(rest, covered.union(
+                    occupation["covered_target_atoms"])):
+                return True
+        selected[index] = None
+        return False
+
+    if not visit(tuple(range(len(items))), frozenset()):
         return None
     placed = []
-    for item, targets in zip(items, assignments):
+    for item, occupation in zip(items, selected):
         transformed = dict(item)
-        mapping = [
-            [int(source), int(target)]
-            for (source, _pool), target in zip(
-                item["target_domains"], targets)
-        ]
-        target_by_source = dict(mapping)
         transformed.update({
-            "mapping": mapping,
-            "covered_target_atoms": sorted(target_by_source.values()),
-            "attachment_atoms_target": sorted(
-                target_by_source[source]
-                for source in item["attachment_atoms_source"]
-                if source in target_by_source),
+            "mapping": [list(pair) for pair in occupation["mapping"]],
+            "covered_target_atoms": list(
+                occupation["covered_target_atoms"]),
+            "attachment_atoms_target": list(
+                occupation["attachment_atoms_target"]),
         })
         placed.append(transformed)
     return tuple(placed)
@@ -163,88 +192,81 @@ class CoverageRecommendationResult:
 @dataclass(frozen=True)
 class CoverageRecommendationConfig:
     maximum_precursors: int = 3
-    frontier_limit: int = 200
 
     def __post_init__(self):
-        if min(self.maximum_precursors, self.frontier_limit) < 1:
-            raise ValueError("recommendation limits must be positive")
+        if self.maximum_precursors < 1:
+            raise ValueError("maximum precursors must be positive")
 
 
 def recommend_compressed_coverage_patterns(
         signatures, atom_count, rank_pattern, *, result_limit,
         config: CoverageRecommendationConfig | None = None):
-    """Recommend full covers without materializing automorphic bijections.
-
-    Each state contains compressed target domains plus one matching witness.
-    A constrained uncovered target selects the next family.  Equivalent
-    family multisets are merged immediately, and search stops after a bounded
-    top-k frontier rather than enumerating every complete cover.
-    """
+    """Recommend full covers over compressed whole-fragment occupations."""
     config = config or CoverageRecommendationConfig()
     signatures = tuple(sorted(set(signatures), key=lambda signature: (
-        rank_pattern((signature,), len(signature)), signature)))
+        rank_pattern((signature,), max(map(len, signature))), signature)))
     by_target = defaultdict(list)
     for signature in signatures:
-        if len(signature) > atom_count:
-            continue
-        for target in set(target for pool in signature for target in pool):
-            by_target[target].append(signature)
+        for occupation in signature:
+            for target in occupation:
+                by_target[target].append(signature)
 
-    states = [((), (), ())]
     completed = {}
-    truncated = False
-    for _depth in range(config.maximum_precursors):
-        next_by_multiset = {}
-        for selected, domains, assignment in states:
-            missing = set(range(atom_count)) - set(assignment)
-            if not missing:
-                completed.setdefault(tuple(sorted(selected)), selected)
-                continue
-            remaining_atoms = atom_count - len(domains)
-            compatible_by_target = {
-                target: [signature for signature in by_target[target]
-                         if len(signature) <= remaining_atoms]
-                for target in missing
-            }
-            pivot = min(
-                missing,
-                key=lambda target: (len(compatible_by_target[target]), target),
-            )
-            for signature in compatible_by_target[pivot]:
-                appended = tuple(signature)
-                new_assignment = _extend_with_required_target(
-                    domains, appended, pivot)
-                if new_assignment is None:
-                    continue
-                new_selected = selected + (signature,)
-                new_domains = domains + appended
-                if len(new_domains) == atom_count:
-                    completed.setdefault(
-                        tuple(sorted(new_selected)), new_selected)
-                    continue
-                key = tuple(sorted(new_selected))
-                state = (new_selected, new_domains, new_assignment)
-                prior = next_by_multiset.get(key)
-                if (prior is None or rank_pattern(
-                        new_selected, len(new_domains)) < rank_pattern(
-                            prior[0], len(prior[1]))):
-                    next_by_multiset[key] = state
-        next_states = sorted(
-            next_by_multiset.values(),
-            key=lambda state: rank_pattern(state[0], len(state[1])),
+    full = frozenset(range(atom_count))
+    serial = itertools.count()
+
+    def queue_rank(selected, occupations, covered):
+        overlap = sum(map(len, occupations)) - len(covered)
+        return (
+            overlap,
+            rank_pattern(selected, len(covered)),
+            -len(covered),
+            next(serial),
         )
-        if len(next_states) > config.frontier_limit:
-            truncated = True
-        states = next_states[:config.frontier_limit]
-        if not states:
-            break
-    ranked = sorted(
-        completed.values(),
-        key=lambda pattern: rank_pattern(pattern, atom_count),
-    )
-    if len(ranked) > result_limit:
-        truncated = True
+
+    queue = [(queue_rank((), (), frozenset()), (), (), frozenset())]
+    seen = {((), ())}
+    while queue and len(completed) < result_limit:
+        _priority, selected, occupations, covered = heapq.heappop(queue)
+        missing = full - covered
+        if not missing:
+            if any(
+                    occupation.issubset(frozenset().union(*(
+                        other for position, other in enumerate(occupations)
+                        if position != index)))
+                    for index, occupation in enumerate(occupations)):
+                continue
+            key = tuple(sorted(selected))
+            completed.setdefault(key, selected)
+            continue
+        if len(selected) >= config.maximum_precursors:
+            continue
+        pivot = min(missing, key=lambda target: (
+            len(by_target[target]), target))
+        for signature in by_target[pivot]:
+            for occupation in signature:
+                occupation = frozenset(occupation)
+                if pivot not in occupation:
+                    continue
+                new_covered = covered.union(occupation)
+                new_selected = selected + (signature,)
+                new_occupations = occupations + (occupation,)
+                state_key = (
+                    tuple(sorted(new_selected)),
+                    tuple(sorted(new_occupations)),
+                )
+                if state_key in seen:
+                    continue
+                seen.add(state_key)
+                heapq.heappush(queue, (
+                    queue_rank(new_selected, new_occupations, new_covered),
+                    new_selected,
+                    new_occupations,
+                    new_covered,
+                ))
+    ranked = sorted(completed.values(), key=lambda pattern: rank_pattern(
+        pattern, atom_count))
     return CoverageRecommendationResult(
         patterns=tuple(ranked[:result_limit]),
-        truncated=truncated,
+        truncated=bool(queue),
     )

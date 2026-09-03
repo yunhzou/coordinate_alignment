@@ -1,6 +1,7 @@
 from rxn_core.retrosynthesis.ranking import (
     assembly_rank,
     build_ranked_assembly,
+    validate_atom_ownership,
 )
 from rxn_core.retrosynthesis.catalog_index import _symmetry_copy_capacity
 
@@ -103,3 +104,16 @@ def test_symmetry_copy_capacity_is_limited_by_the_rarest_required_orbit():
 
     assert _symmetry_copy_capacity((0, 2, 3), source_orbits) == 2
     assert _symmetry_copy_capacity((0, 2, 3, 6), source_orbits) == 1
+
+
+def test_shared_target_claim_is_not_rejected():
+    precursors = (
+        {"covered_target_atoms": [0, 1],
+         "attachment_atoms_target": [0, 1]},
+        {"covered_target_atoms": [1, 2],
+         "attachment_atoms_target": [1, 2]},
+    )
+
+    assert validate_atom_ownership(
+        precursors, ((0, 1), (1, 2)), require_attachment_bonds=False,
+    ) == [[1, 2]]

@@ -1,3 +1,6 @@
+import numpy as np
+
+from rxn_core import WeightedGraph
 from rxn_core.alignment.post_aam import (
     AAMHierarchy,
     AtomPermutation,
@@ -11,8 +14,9 @@ from rxn_core.retrosynthesis.enumeration import (
 )
 from rxn_core.retrosynthesis.compressed_coverage import (
     CoverageRecommendationConfig,
-    assign_domain_signatures,
-    candidate_target_domains,
+    assign_candidate_items,
+    assign_occupation_signatures,
+    candidate_target_occupations,
     coverage_signature,
     recommend_compressed_coverage_patterns,
 )
@@ -125,8 +129,14 @@ def test_repeated_symmetric_ligand_assembles_without_bijection_expansion():
             representative_assignments=((0, 1),),
         ),)),
     )
-    ligand_signature = coverage_signature(
-        candidate_target_domains(ligand))
+    target_matrix = np.zeros((4, 4), dtype=float)
+    for ligand_atom in (1, 2, 3):
+        target_matrix[0, ligand_atom] = 1.0
+        target_matrix[ligand_atom, 0] = 1.0
+    target = WeightedGraph(["C", "N", "N", "N"], target_matrix)
+    occupations = candidate_target_occupations(ligand, target)
+    ligand_signature = coverage_signature(occupations)
+    assert ligand_signature == ((1,), (2,), (3,))
     center_signature = ((0,),)
 
     result = recommend_compressed_coverage_patterns(
@@ -136,7 +146,6 @@ def test_repeated_symmetric_ligand_assembles_without_bijection_expansion():
         result_limit=4,
         config=CoverageRecommendationConfig(
             maximum_precursors=4,
-            frontier_limit=20,
         ),
     )
 
@@ -146,6 +155,56 @@ def test_repeated_symmetric_ligand_assembles_without_bijection_expansion():
         ligand_signature,
         ligand_signature,
     ),)
-    witness = assign_domain_signatures(result.patterns[0], 4)
+    witness = assign_occupation_signatures(result.patterns[0], 4)
     assert witness[0] == (0,)
     assert {targets[0] for targets in witness[1:]} == {1, 2, 3}
+
+
+def test_same_precursor_can_occupy_distinct_nonoverlapping_regions():
+    item = {
+        "precursor_id": "same-R",
+        "target_occupations": (
+            {
+                "covered_target_atoms": (0, 1),
+                "mapping": ((0, 0), (1, 1)),
+                "attachment_atoms_target": (1,),
+            },
+            {
+                "covered_target_atoms": (2, 3),
+                "mapping": ((0, 2), (1, 3)),
+                "attachment_atoms_target": (2,),
+            },
+        ),
+    }
+
+    placed = assign_candidate_items((item, item), 4)
+
+    assert placed is not None
+    assert {tuple(copy["covered_target_atoms"]) for copy in placed} == {
+        (0, 1), (2, 3),
+    }
+
+
+def test_occupation_assembly_uses_union_and_allows_overlap():
+    signatures = (((0, 1),), ((1, 2),))
+
+    assert assign_occupation_signatures(signatures, 3) == (
+        (0, 1), (1, 2))
+
+
+def test_set_cover_search_prefers_less_overlap_without_repeat_special_case():
+    repeated = ((0, 1), (2, 3))
+    broad = ((0, 1, 2), (1, 2, 3))
+
+    result = recommend_compressed_coverage_patterns(
+        (broad, repeated),
+        4,
+        lambda pattern, covered: (
+            0 if broad in pattern else 1,
+            -covered,
+        ),
+        result_limit=1,
+        config=CoverageRecommendationConfig(maximum_precursors=2),
+    )
+
+    assert result.patterns == ((repeated, repeated),)

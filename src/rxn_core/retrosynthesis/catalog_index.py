@@ -13,11 +13,12 @@ from ..fragment_matching.serialization import (
     fragment_candidate_from_record,
     fragment_candidate_to_record,
 )
-from ..matcher import _nauty_orbits
+from ..matcher import _nauty_atom_generators, _nauty_orbits
 from ..subgraph import _coerce_graph
 from .compressed_coverage import (
     CoverageSignature,
     candidate_target_domains,
+    candidate_target_occupations,
     coverage_signature,
 )
 from .ranking import candidate_entry_rank
@@ -60,7 +61,8 @@ def _symmetry_copy_capacity(retained_atoms, source_orbits):
 
 def candidate_entry(
         record, candidate, explicit_molecule, structure_key, target,
-        chirality_ranking, source_orbits, target_domains):
+        chirality_ranking, source_orbits, target_domains,
+        target_occupations):
     leftovers = candidate["leftover_fragments"]
     retained_heavy_atoms = sum(
         explicit_molecule.GetAtomWithIdx(int(atom)).GetAtomicNum() > 1
@@ -97,6 +99,7 @@ def candidate_entry(
         "attachment_atoms_target": candidate["attachment_atoms_target"],
         "mapping": candidate["mapping"],
         "target_domains": target_domains,
+        "target_occupations": target_occupations,
         "retained_fragments": candidate["retained_fragments"],
         "leftover_atom_count": sum(map(len, leftovers)),
         "structure_key": structure_key,
@@ -223,6 +226,10 @@ def build_candidate_index(records, target, target_key, *, config=None):
     expected = defaultdict(list)
     direct_target_matches = []
     counts = Counter()
+    target_graph = _coerce_graph(molecule_to_weighted_graph(target), 0.2)
+    target_generators = _nauty_atom_generators(
+        target_graph, wbo_tol=config.iso_tolerance)
+    target_occupation_orbits = {}
     for record in records:
         if record["schema"] != FRAGMENT_DETECTION_SCHEMA:
             raise ValueError(
@@ -262,22 +269,33 @@ def build_candidate_index(records, target, target_key, *, config=None):
             candidates.append((
                 fragment_candidate_to_record(typed),
                 candidate_target_domains(typed),
+                candidate_target_occupations(
+                    typed, target_graph,
+                    iso_tolerance=config.iso_tolerance,
+                    generators=target_generators,
+                    orbit_cache=target_occupation_orbits),
             ))
         if config.attachment_trim_variants:
             candidates = [
-                (variant, candidate_target_domains(
-                    fragment_candidate_from_record(dict(
-                        variant, source_id=record["source_id"]))))
-                for candidate, _domains in candidates
+                (variant, candidate_target_domains(typed_variant),
+                 candidate_target_occupations(
+                     typed_variant, target_graph,
+                     iso_tolerance=config.iso_tolerance,
+                     generators=target_generators,
+                     orbit_cache=target_occupation_orbits))
+                for candidate, _domains, _occupations in candidates
                 for variant in attachment_trim_variants(
                     candidate, explicit_molecule)
+                for typed_variant in (fragment_candidate_from_record(dict(
+                    variant, source_id=record["source_id"])),)
             ]
         else:
             candidates = [
-                (dict(candidate, attachment_trimmed_target_atoms=[]), domains)
-                for candidate, domains in candidates
+                (dict(candidate, attachment_trimmed_target_atoms=[]),
+                 domains, occupations)
+                for candidate, domains, occupations in candidates
             ]
-        for candidate, target_domains in candidates:
+        for candidate, target_domains, target_occupations in candidates:
             item = candidate_entry(
                 record,
                 candidate,
@@ -287,8 +305,9 @@ def build_candidate_index(records, target, target_key, *, config=None):
                 config.chirality_ranking,
                 source_orbits,
                 target_domains,
+                target_occupations,
             )
-            signature = coverage_signature(target_domains)
+            signature = coverage_signature(target_occupations)
             bucket = groups[signature]
             bucket.append(item)
             if len(bucket) >= config.per_domain_limit * 2:
