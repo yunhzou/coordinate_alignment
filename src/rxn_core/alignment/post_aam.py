@@ -275,7 +275,14 @@ class AAMHierarchy:
             for fragment in self.fragments))
 
     @classmethod
-    def from_record(cls, branch_symmetry):
+    def from_record(cls, branch_symmetry, *, generator_pool=None):
+        # The owner controls the pool lifetime; never retain graphs globally.
+        generator_pool = {} if generator_pool is None else generator_pool
+        def permutation(raw):
+            images = tuple(map(int, raw))
+            if images not in generator_pool:
+                generator_pool[images] = AtomPermutation(images)
+            return generator_pool[images]
         fragments = []
         for position, raw in enumerate(
                 dict(branch_symmetry or {}).get("fragments") or ()):
@@ -312,7 +319,7 @@ class AAMHierarchy:
                 automorph_domains=automorph_domains,
                 target_generators=(
                     None if raw_generators is None else tuple(
-                        AtomPermutation(tuple(map(int, generator)))
+                        permutation(generator)
                         for generator in raw_generators))))
         return cls(tuple(fragments))
 

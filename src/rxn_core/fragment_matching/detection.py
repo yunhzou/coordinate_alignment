@@ -405,11 +405,16 @@ def _augment_initial_family(
     candidates = []
     partitions = {}
     fragment_classes = {}
+    boundaries = {}
+    preserved_bonds = {}
     for augmented_placement in augmented.placements:
-        placement_boundary = tuple(sorted(set(boundary) | {
-            tuple(sorted(edge)) for base, _action in augmented_placement.hierarchy.segments
-            for fragment in base.fragments
-            for edge in fragment.deferred_edges}))
+        bases = tuple(base for base, _action in augmented_placement.hierarchy.segments)
+        history = tuple(map(id, bases))
+        if history not in boundaries:
+            boundaries[history] = tuple(sorted(set(boundary) | {
+                tuple(sorted(edge)) for base in bases for fragment in base.fragments
+                for edge in fragment.deferred_edges}))
+        placement_boundary = boundaries[history]
         augmented_mapping = dict(augmented_placement.mapping)
         target_mapping = {
             source_atom: target_atom
@@ -424,9 +429,12 @@ def _augment_initial_family(
             partitions[partition_key] = parts[0], parts[1], parts[3]
             fragment_classes[partition_key] = fragment_equivalence_classes(source_graph,
                 placement_boundary, parts[0], config.iso_tolerance)
+            preserved_bonds[partition_key] = tuple(sorted(tuple(sorted((a, b)))
+                for a, b in source_graph.edges() if a in target_mapping and b in target_mapping
+                and tuple(sorted((a, b))) not in placement_boundary))
         retained_fragments, leftover_fragments, attachment_atoms_source = partitions[partition_key]
-        copied_residual_placements = tuple(sorted((a, b) for a, b in augmented_mapping.items()
-                                                 if b >= len(target_graph)))
+        copied_residual_placements = tuple(pair for pair in augmented_placement.mapping
+                                          if pair[1] >= len(target_graph))
         if (config.maximum_leftover_fragments is not None
                 and len(leftover_fragments)
                 > config.maximum_leftover_fragments):
@@ -446,7 +454,8 @@ def _augment_initial_family(
         }))
         candidate = FragmentCandidate(
             source_id="",
-            mapping=tuple(sorted(target_mapping.items())),
+            mapping=tuple(pair for pair in augmented_placement.mapping
+                          if pair[1] < len(target_graph)),
             retained_atoms=retained_atoms,
             covered_target_atoms=tuple(sorted(target_mapping.values())),
             leftover_fragments=leftover_fragments,
@@ -458,9 +467,7 @@ def _augment_initial_family(
             retained_fragments=retained_fragments,
             aam_hierarchy=augmented_placement.hierarchy,
             fragment_classes=fragment_classes[partition_key],
-            preserved_source_bonds=tuple(sorted(tuple(sorted((a, b)))
-                for a, b in source_graph.edges() if a in target_mapping and b in target_mapping
-                and tuple(sorted((a, b))) not in placement_boundary)),
+            preserved_source_bonds=preserved_bonds[partition_key],
             derivations=(FragmentDerivation(placement.search_paths,
                                            augmented_placement.search_paths,
                                            augmented_placement.target_action, True),),

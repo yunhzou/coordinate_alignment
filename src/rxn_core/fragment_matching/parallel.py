@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import multiprocessing as mp
+from collections import deque
 
 from ..matcher import _nauty_orbits
 from .detection import (
@@ -127,18 +128,28 @@ def _parallel_initial_fragment_placements(
 def _parallel_augmentation_results(
         source, target, config, region, placements, workers):
     if len(placements) < 2:
-        return tuple(
+        yield from (
             _augment_initial_family(
                 source, target, placement, config, region)
             for placement in placements)
+        return
     worker_count = min(int(workers), len(placements))
     context = mp.get_context("fork")
     with context.Pool(
             worker_count,
             initializer=_initialize_seed_worker,
             initargs=(source, target, config, None, None, region)) as pool:
-        return tuple(pool.imap(
-            _run_augmentation, placements, chunksize=1))
+        # Bound in-flight payloads by execution capacity, not a search cap.
+        # Ordered imap alone may queue every later result behind one slow job.
+        pending = deque()
+        remaining = iter(placements)
+        for _ in range(worker_count):
+            pending.append(pool.apply_async(_run_augmentation, (next(remaining),)))
+        while pending:
+            yield pending.popleft().get()
+            placement = next(remaining, None)
+            if placement is not None:
+                pending.append(pool.apply_async(_run_augmentation, (placement,)))
 
 
 def detect_fragments_parallel(

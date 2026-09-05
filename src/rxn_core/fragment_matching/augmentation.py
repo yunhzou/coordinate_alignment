@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 
 from ..alignment.branch import find_islands
-from ..alignment.post_aam import AAMHierarchy, AAMHierarchyChain
+from ..alignment.post_aam import AAMHierarchy, AAMHierarchyChain, AAMHierarchyView
 from ..search_symmetry import finalize_graph_symmetry
 from .graph_ops import weight_matrix, fragment_equivalence_classes
 
@@ -72,6 +72,11 @@ def match_augmented_residuals(source, target, retained_mapping, outside, boundar
             "witness": dict(retained_mapping), "blocks": []}),
     },)})
     placements = []
+    pairs, relations = {}, {}
+    def share_relation(relation):
+        """Store equal immutable atom pairs/actions once across occupations."""
+        value = tuple(pairs.setdefault(pair, pair) for pair in relation)
+        return relations.setdefault(value, value)
     for path in graph.paths():
         if set(path.mapping) != set(source):
             continue
@@ -96,9 +101,11 @@ def match_augmented_residuals(source, target, retained_mapping, outside, boundar
         for variant in materialize_target_coverage_orbit(candidate, augmented,
                 iso_tolerance=iso_tolerance, generators=()):
             # Record the actual action without editing the saved search graph.
+            parts = tuple(AAMHierarchyView(base, share_relation(action)) if action else base
+                          for base, action in variant.aam_hierarchy.segments)
             placements.append(AugmentedFragmentPlacement(
-                variant.mapping, AAMHierarchyChain((baseline, variant.aam_hierarchy)),
-                (path,), variant.derivations[0].target_action))
+                share_relation(variant.mapping), AAMHierarchyChain((baseline,) + parts),
+                (path,), share_relation(variant.derivations[0].target_action)))
     caps = [s for s in graph.stops if s.reason == "capped"]
     return AugmentedMatchResult(tuple(placements), bool(caps),
         max([len(graph.terminals)] + [s.count for s in caps]), augmented_count, (graph,))

@@ -89,7 +89,7 @@ The measured single-family sizes explain why high concurrency can cross that
 limit. They do not prove every worker reached the same peak simultaneously,
 nor identify the exact allocation that triggered each historical OOM.
 
-## Fix direction — not implemented by this diagnosis
+## Original fix direction
 
 1. Keep exact generators interned/shared **in memory**, not only in saved JSON.
 2. Avoid eagerly finalizing symmetry for histories with no returned outcome;
@@ -99,6 +99,52 @@ nor identify the exact allocation that triggered each historical OOM.
 
 No new chemical filter, branch pruning, witness sampling, or weakening of
 hydrogen/symmetry semantics is needed to address these representation defects.
+
+## Applied repair
+
+The search/growth algorithm and C++ engine are unchanged. The repair is in
+result construction and its consumer's storage/execution policy:
+
+- `finalize_graph_symmetry` follows incoming DAG edges from returned terminals,
+  without unfolding paths. Only that ancestry needs exact groups for returned
+  results. All other search states, transitions, and cap records remain intact.
+  Its explicit `states=` argument allows exact finalization of any historical
+  state (including capped history) when requested; no trivial group is invented.
+- Exact generator values and group tuples are interned in memory. Typed path
+  hierarchies share graph-owned `AtomPermutation` objects and parsed decisions;
+  fragment positions remain local to each path. Pools have result-local lifetimes.
+- Augmented occupations share immutable atom pairs and actions. Product-owned
+  projections reuse those pairs. Source boundary partitions and preserved bonds
+  are cached by their exact invariant keys, not recalculated for each action.
+- Parallel augmentation yields results to the merge in input order, with at
+  most the worker count in flight. This bounds execution buffering, not search
+  possibilities: no family, path, or occupation is removed.
+
+This does **not** yet eliminate occupation materialization. All distinct
+correlated occupations are still generated and retained; the change removes
+redundant storage, not evidence.
+
+### Same saved family, without rerunning AAM
+
+| Measurement | Before | Repaired |
+| --- | ---: | ---: |
+| Symmetry finalization | 26.488 s | 0.508 s |
+| RSS after symmetry | 841.6 MB | about 154 MB |
+| Entire post-core computation | 58.966 s | 29.090 s |
+| RSS at post-core return | 1,508.8 MB | 266.9 MB |
+| Peak including pickle transport | 2,307.9 MB | 386.9 MB |
+| Returned paths / pre-merge occupations | 100 / 26,487 | 100 / 26,487 |
+
+These are single-family measurements, not full-bank timing claims. The final
+storage-sharing replay is `shared_post_2.out` (job 432059); its complete result
+is saved separately as `shared/2.post.pkl`, preserving the pre-fix baseline.
+`compare_post` compares every occupation's mapping, fragment ownership, bonds,
+correlated hierarchy/actions, and derivations, plus all graph structure and
+returned-path exact groups. It deliberately excludes unused historical group
+precomputation from equality, while still checking those histories' raw matches.
+The comparison passed all fields (`shared/2.comparison.json`, job 432060).
+The repository test suite passes: **214 tests** (`pytest tests -q`). Explicitly
+selecting `tests` avoids collecting the preserved old-core worktree as well.
 
 ## Reproduction and evidence
 

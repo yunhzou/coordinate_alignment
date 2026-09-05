@@ -81,6 +81,60 @@ def test_online_admission_reuses_equal_continuation(monkeypatch):
     assert len(result.branches()) == 1
 
 
+def test_symmetry_finalization_preserves_history_but_only_evaluates_result_ancestry():
+    target = network(['C'] * 3)
+    recorder = SearchGraphBuilder(SearchContext(tuple(target), tuple(target), (0, 1, 2)))
+    prefix = _Branch(recorder)
+    prefix.commit(iso({0: 0}), target)
+    live, capped = prefix.fork(), prefix.fork()
+    live.commit(iso({1: 1}), target)
+    capped.commit(iso({2: 2}), target)
+    recorder.stop(live, 'objective_met')
+    recorder.stop(capped, 'capped')
+    raw = recorder.finish()
+    selected = raw.ancestor_transitions(raw.terminals)
+    assert len(selected) == 2
+    result, metrics = finalize_graph_symmetry(raw, target, iso_tolerance=.5)
+    assert metrics['completed_candidate_group_requests'] == 2
+    assert result.states == raw.states and result.stops == raw.stops
+    assert len(result.transitions) == len(raw.transitions)
+    assert result.capped
+    for edge in result.transitions:
+        assert (edge.match['symmetry'].get('automorph_group_source')
+                == 'conditioned_search_transition') == (edge.id in selected)
+    complete, metrics = finalize_graph_symmetry(result, target, iso_tolerance=.5,
+                                               states=range(len(result.states)))
+    assert metrics['completed_candidate_group_requests'] == 1
+    for edge_id in selected:
+        assert complete.transitions[edge_id].match == result.transitions[edge_id].match
+    again, metrics = finalize_graph_symmetry(complete, target, iso_tolerance=.5)
+    assert metrics['completed_candidate_group_requests'] == 0
+    assert again == complete
+    restored = AAMSearchGraph.from_record(json.loads(json.dumps(result.to_record())))
+    assert next(restored.paths()).hierarchy == next(result.paths()).hierarchy
+
+
+def test_graph_shares_generator_values_and_typed_prefix_groups(monkeypatch):
+    import rxn_core.search_symmetry as symmetry
+    target = network(['C'] * 3)
+    recorder = SearchGraphBuilder(SearchContext(tuple(target), tuple(target), (0, 1, 2)))
+    branch = _Branch(recorder)
+    branch.commit(iso({0: 0}), target)
+    branch.commit(iso({1: 1}), target)
+    recorder.stop(branch, 'objective_met')
+    # Fresh equal arrays from separate conditioned calculations must be interned.
+    monkeypatch.setattr(symmetry._CandidateAutomorphismCanonicalizer,
+                        'atom_generators', lambda *a, **k: [list(range(3))])
+    graph, _ = finalize_graph_symmetry(recorder.finish(), target, iso_tolerance=.5)
+    first, second = graph.transitions
+    assert first.match['symmetry']['automorph_generators'] is second.match['symmetry']['automorph_generators']
+    paths = [next(graph.paths()), next(graph.paths())]
+    a, b = paths[0].hierarchy.fragments
+    assert a.target_generators[0] is b.target_generators[0]
+    assert a.target_generators is paths[1].hierarchy.fragments[0].target_generators
+    assert [f.fragment_index for f in paths[0].hierarchy.fragments] == [0, 1]
+
+
 @pytest.mark.parametrize('stage', ['fragment_growth', 'combined_live_leaves'])
 def test_cap_is_recorded_without_claiming_a_match(monkeypatch, stage):
     import rxn_core.fragment as fragment_module

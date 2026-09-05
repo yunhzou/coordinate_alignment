@@ -164,6 +164,9 @@ def test_augmented_copy_and_target_are_both_valid_after_cutting_boundary():
     assert {item.mapping for item in result.placements} == {
         ((0, 0), (1, 1)), ((0, 0), (1, 2))}
     assert result.placements[0].hierarchy.fragments
+    assert result.placements[0].mapping[0] is result.placements[1].mapping[0]
+    for item in result.placements:
+        assert item.target_action is item.hierarchy.parts[1].target_action
 
 
 def test_augmented_leftover_competes_for_unused_target_atoms():

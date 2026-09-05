@@ -7,9 +7,24 @@ from .matcher.canonical import _CandidateAutomorphismCanonicalizer
 from .search_graph import frozen_value
 
 
-def finalize_graph_symmetry(graph, target, *, iso_tolerance):
-    """Attach generators once per conditioned transition, independently of events."""
+def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None):
+    """Finalize exact groups on ancestors of the requested result states.
+
+    By default these are returned terminals. Capped/dead history stays in the
+    graph, without eagerly computing groups that no returned path uses. Pass
+    explicit state IDs (or all graph state IDs) to inspect that history too.
+    Immutable generators and group tuples are interned within this result.
+    """
     cache, coloring_cache, edges = {}, {}, []
+    selected = graph.ancestor_transitions(graph.terminals if states is None else states)
+    generators, groups = {}, {}
+    def intern(raw):
+        values = []
+        for generator in raw:
+            value = tuple(generator)
+            values.append(generators.setdefault(value, value))
+        group = tuple(values)
+        return groups.setdefault(group, group)
     # One graph topology for this target, recolored sequentially for each exact
     # conditioned transition. No graph object escapes this finalization pass.
     canonicalizer = None
@@ -18,8 +33,15 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance):
         if edge.match is None:
             edges.append(edge)
             continue
-        requests += 1
         state = edge.match['symmetry']
+        if state.get('automorph_group_source') == 'conditioned_search_transition':
+            symmetry = {**state, 'automorph_generators': intern(state['automorph_generators'])}
+            edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
+            continue
+        if edge.id not in selected:
+            edges.append(edge)
+            continue
+        requests += 1
         locked = graph.states[edge.source].mapping
         key = (locked, frozen_value(state))
         if key not in cache:
@@ -35,10 +57,10 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance):
             # Nauty observes the ordered partition, not our descriptive labels.
             coloring_key = tuple(vertices for _label, vertices in coloring)
             if coloring_key not in coloring_cache:
-                coloring_cache[coloring_key] = canonicalizer.atom_generators(
-                    candidate, colored_vertices=coloring)
+                coloring_cache[coloring_key] = intern(canonicalizer.atom_generators(
+                    candidate, colored_vertices=coloring))
             cache[key] = coloring_cache[coloring_key]
-        symmetry = {**state, 'automorph_generators': [list(g) for g in cache[key]],
+        symmetry = {**state, 'automorph_generators': cache[key],
                     'automorph_group_source': 'conditioned_search_transition'}
         edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
     return replace(graph, transitions=tuple(edges)), {

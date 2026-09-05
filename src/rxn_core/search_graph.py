@@ -54,7 +54,7 @@ class FragmentTransition:
     match: dict | None
     preserved_bonds: tuple = ()
 
-    @property
+    @cached_property
     def placement(self):
         """Typed fragment view; a join has no fragment placement."""
         if self.match is None:
@@ -100,7 +100,17 @@ class SearchPath:
     @cached_property
     def hierarchy(self):
         from .alignment.post_aam import AAMHierarchy
-        return AAMHierarchy.from_record({"fragments": self.fragments})
+        fragments = []
+        for edge_id in self.transitions:
+            edge = self.graph.transitions[edge_id]
+            if edge.match is None:
+                continue
+            fragment = self.graph.fragment_placement(edge_id)
+            position = len(fragments)
+            fragments.append(replace(fragment,
+                fragment_index=int(edge.match.get('fragment_index', position)),
+                island_index=int(edge.match.get('island_idx', position))))
+        return AAMHierarchy(tuple(fragments))
 
     @property
     def context(self):
@@ -128,7 +138,7 @@ class SearchPath:
             raise ValueError('generator choice is not on this path')
         for edge_id in self.transitions:
             for index in generator_words.get(edge_id, ()):
-                placement = self.graph.transitions[edge_id].placement
+                placement = self.graph.fragment_placement(edge_id)
                 if placement is None or placement.target_generators is None:
                     raise ValueError('transition has no finalized exact group')
                 generator = placement.target_generators[index].images
@@ -142,7 +152,7 @@ class SearchPath:
         """Nonuniform random walk in conditioned groups; no orbit expansion."""
         choices = {}
         for edge_id in self.transitions:
-            placement = self.graph.transitions[edge_id].placement
+            placement = self.graph.fragment_placement(edge_id)
             if placement is None:
                 continue
             if placement.target_generators is None:
@@ -197,6 +207,42 @@ class AAMSearchGraph:
     @property
     def capped(self):
         return any(stop.reason == "capped" for stop in self.stops)
+
+    def ancestor_transitions(self, states):
+        """All incoming decisions for selected states, without unfolding paths."""
+        incoming = [[] for _state in self.states]
+        for edge in self.transitions:
+            incoming[edge.target].append(edge)
+        pending, seen, edges = list(states), set(), set()
+        while pending:
+            state = pending.pop()
+            if state in seen:
+                continue
+            seen.add(state)
+            for edge in incoming[state]:
+                edges.add(edge.id)
+                pending.append(edge.source)
+        return frozenset(edges)
+
+    @cached_property
+    def _typed_fragments(self):
+        return {}
+
+    @cached_property
+    def _typed_generators(self):
+        return {}
+
+    def fragment_placement(self, edge_id):
+        """Parse each decision once; exact permutations are shared per graph."""
+        from .alignment.post_aam import AAMHierarchy
+        edge = self.transitions[edge_id]
+        if edge.match is None:
+            return None
+        if edge_id not in self._typed_fragments:
+            self._typed_fragments[edge_id] = AAMHierarchy.from_record(
+                {'fragments': (edge.match,)},
+                generator_pool=self._typed_generators).fragments[0]
+        return self._typed_fragments[edge_id]
 
     def paths(self, terminal=None):
         """Lazily unfold recorded decision paths, never atom permutations."""

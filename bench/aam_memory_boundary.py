@@ -133,7 +133,9 @@ def post(args):
     emit('post_end', family=args.family, candidates=len(result[0]), paths=serial,
          seconds=time.perf_counter()-started)
     # Save this evidence independently; do not collect other families in RAM.
-    with (args.directory / f'{args.family}.post.pkl').open('wb') as stream:
+    destination = args.output_directory or args.directory
+    destination.mkdir(parents=True, exist_ok=True)
+    with (destination / f'{args.family}.post.pkl').open('wb') as stream:
         pickle.dump(result, stream, protocol=5)
     emit('post_saved', family=args.family)
 
@@ -216,10 +218,79 @@ def compare(args):
     print(json.dumps(dict(compared=len(rows), differing=[r for r in rows if not r['identical_terminal_relations']])))
 
 
+def compare_post(args):
+    """Compare every occupation and its correlated evidence, not just counts.
+
+    Histories not leading to returned terminals retain their raw matching
+    records, but need not have their unused exact groups eagerly calculated.
+    """
+    from dataclasses import fields
+    from rxn_core.search_graph import frozen_value
+    def fingerprint(directory):
+        with (directory / f'{args.family}.post.pkl').open('rb') as stream:
+            candidates, capped, maximum, graphs = pickle.load(stream)
+        bases, paths = {}, {}
+        def digest(value):
+            return hashlib.sha256(repr(frozen_value(value)).encode()).hexdigest()
+        def hierarchy(value):
+            parts = []
+            for base, action in value.segments:
+                if id(base) not in bases:
+                    bases[id(base)] = digest(base.to_record())
+                parts.append((bases[id(base)], action))
+            return tuple(parts)
+        def path(value):
+            if id(value) not in paths:
+                paths[id(value)] = digest((value.terminal, value.transitions,
+                    value.mapping, value.deferred_edges, hierarchy(value.hierarchy)))
+            return paths[id(value)]
+        occupations = []
+        for candidate in candidates:
+            raw = {field.name: getattr(candidate, field.name) for field in fields(candidate)
+                   if field.name not in {'aam_hierarchy', 'derivations'}}
+            raw['hierarchy'] = hierarchy(candidate.aam_hierarchy)
+            raw['derivations'] = tuple((tuple(map(path, d.initial_paths)),
+                tuple(map(path, d.residual_paths)), d.target_action, d.occupation_projected)
+                for d in candidate.derivations)
+            occupations.append(digest(raw))
+        structure = []
+        exact_groups = []
+        for graph in graphs:
+            retained = graph.ancestor_transitions(graph.terminals)
+            matches = []
+            for edge in graph.transitions:
+                match = edge.match
+                if match is not None:
+                    state = match['symmetry']
+                    if edge.id in retained:
+                        exact_groups.append(digest(state))
+                    match = {**match, 'symmetry': {k: v for k, v in state.items()
+                        if k not in {'automorph_generators', 'automorph_group_source'}}}
+                matches.append((edge.id, edge.source, edge.target, edge.seed,
+                                edge.step, match, edge.preserved_bonds))
+            structure.append(digest((graph.contexts, graph.roots, graph.states,
+                                     graph.stops, matches)))
+        result = dict(capped=capped, maximum=maximum, occupations=occupations,
+                      structure=structure, exact_groups=exact_groups)
+        del candidates, graphs
+        gc.collect()
+        return result
+    old = fingerprint(args.directory)
+    new = fingerprint(args.output_directory)
+    result = dict(family=args.family, candidates=len(new['occupations']),
+                  identical={key: old[key] == new[key] for key in old})
+    (args.output_directory / f'{args.family}.comparison.json').write_text(
+        json.dumps(result, indent=2) + '\n')
+    print(json.dumps(result), flush=True)
+    if not all(result['identical'].values()):
+        raise SystemExit(1)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=['prepare', 'core', 'post', 'suite', 'audit', 'compare'])
+    parser.add_argument('mode', choices=['prepare', 'core', 'post', 'suite', 'audit', 'compare', 'compare_post'])
     parser.add_argument('--directory', type=Path, required=True)
+    parser.add_argument('--output-directory', type=Path)
     parser.add_argument('--source-id', default='INVENTORY-000400')
     parser.add_argument('--family', type=int)
     parser.add_argument('--version', choices=['old', 'current'])
