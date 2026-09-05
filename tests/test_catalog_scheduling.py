@@ -100,6 +100,15 @@ def test_progress_audit_counts_flushed_rows_without_claiming_complete_scan(tmp_p
     assert report["saved_rows"] == 1
     assert not report["scan_complete"]
     assert report["unfinished_sources"] == [{"source_id": "b", "smiles": "O", "row_index": 1}]
+
+    tail = tmp_path / 'tail'
+    (tail / 'logs').mkdir(parents=True)
+    (tail / 'logs/2_0.out').write_text(json.dumps({
+        'source_id': 'b', 'elapsed_seconds': 2., 'counts': {'rows': 1},
+        'output': 'part_0.jsonl.gz'}) + '\n')
+    combined = progress.audit(tmp_path, inventory, 'Inventory ID', [tail])
+    assert combined['scan_complete'] and not combined['initial_scan_complete']
+    assert combined['saved_rows'] == 2 and not combined['unfinished_sources']
 def test_detection_checkpoint_precedes_archive(monkeypatch, tmp_path):
     row = (4, 'C', 'source-4')
     detection = ({'rows': 1}, {'complete_typed_result': [1, 2, 3]}, 0.25)

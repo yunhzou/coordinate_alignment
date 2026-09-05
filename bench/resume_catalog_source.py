@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Complete one audited missing source using the unchanged catalog detector."""
 import argparse
+import faulthandler
 import gzip
 import json
 import os
@@ -66,6 +67,9 @@ def main():
         "prior_run": str(args.prior_run.resolve()), "config": config["config"]}
     checkpoint.write_text(json.dumps(progress, indent=2) + "\n")
     print(json.dumps(progress), flush=True)
+    trace = (args.output_dir / 'parts' / f'part_{args.index}.stacks.txt').open('w')
+    faulthandler.register(signal.SIGUSR1, file=trace)
+    faulthandler.dump_traceback_later(60, repeat=True, file=trace)
     typed_directory = args.output_dir / 'checkpoints'
     typed_directory.mkdir(parents=True, exist_ok=True)
     _worker_init(config["target_smiles"], config["config"],
@@ -94,6 +98,9 @@ def main():
     checkpoint.write_text(json.dumps({**progress, "phase": "saved", "elapsed_seconds": elapsed}, indent=2) + "\n")
     print(json.dumps({"source_id": source["source_id"], "elapsed_seconds": elapsed,
                       "counts": dict(counts), "output": str(output.resolve())}), flush=True)
+    faulthandler.cancel_dump_traceback_later()
+    faulthandler.unregister(signal.SIGUSR1)
+    trace.close()
 
 
 if __name__ == "__main__":
