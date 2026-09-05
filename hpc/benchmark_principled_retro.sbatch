@@ -19,14 +19,15 @@ export PYTHONPATH="$repo_root/src"
 export RXN_CORE_NATIVE=1
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 
-# Same target, bank, sharding, workers and seeds as the 6.7655 s baseline.
-# No candidate cap: measure the current workflow, not the old truncation.
+# Same target, bank, sharding, workers and seeds as the previous full-AAM scan.
+# No candidate cap. Persist typed detections before archive construction.
 # Ten minutes is an operational watchdog; timed-out scans are incomplete.
-srun "$repo_root/.venv/bin/python" tools/search_mcule_retro.py \
+srun timeout --kill-after=10s 580s "$repo_root/.venv/bin/python" tools/search_mcule_retro.py \
   --target-smiles "$target_smiles" \
   --catalog data/inventory/processed/inventory_structure_bank.csv.gz \
   --catalog-format csv --id-column 'Inventory ID' \
   --output "$run_root/parts/part_${SLURM_ARRAY_TASK_ID}.jsonl.gz" \
+  --checkpoint-directory "$run_root/checkpoints" \
   --workers "$SLURM_CPUS_PER_TASK" --scheduling adaptive \
   --shard-index "$SLURM_ARRAY_TASK_ID" --shard-count 28 --batch-size 1 \
   --minimum-fragment-size 1 --iso-tolerance 0.5 --branch-limit 100 \

@@ -1,8 +1,9 @@
 import importlib.util
+import gzip
+import pickle
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import threading
-import gzip
 import io
 import json
 
@@ -99,3 +100,16 @@ def test_progress_audit_counts_flushed_rows_without_claiming_complete_scan(tmp_p
     assert report["saved_rows"] == 1
     assert not report["scan_complete"]
     assert report["unfinished_sources"] == [{"source_id": "b", "smiles": "O", "row_index": 1}]
+def test_detection_checkpoint_precedes_archive(monkeypatch, tmp_path):
+    row = (4, 'C', 'source-4')
+    detection = ({'rows': 1}, {'complete_typed_result': [1, 2, 3]}, 0.25)
+    monkeypatch.setattr(catalog, '_CHECKPOINT_DIRECTORY', tmp_path)
+    monkeypatch.setattr(catalog, '_detect_one', lambda *args, **kwargs: detection)
+    def archive(actual_row, *actual_detection):
+        with gzip.open(tmp_path / '4.detection.pkl.gz', 'rb') as stream:
+            assert pickle.load(stream) == (row, detection)
+        assert actual_row == row and actual_detection == detection
+        assert not list(tmp_path.glob('*.partial'))
+        return 'archived'
+    monkeypatch.setattr(catalog, '_record_detection', archive)
+    assert catalog._search_one(row) == 'archived'

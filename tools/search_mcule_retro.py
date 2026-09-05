@@ -10,6 +10,7 @@ import json
 import math
 import multiprocessing as mp
 import os
+import pickle
 import sys
 import time
 from collections import Counter
@@ -35,14 +36,16 @@ _CONFIG = None
 _MINIMUM_TARGET_COVERAGE_SIZE = 1
 _SAVE_ALL_RESULTS = False
 _TARGET_REGION_ATOMS = None
+_CHECKPOINT_DIRECTORY = None
 
 
 def _worker_init(target_smiles, config_record,
                  minimum_target_coverage_fraction, save_all_results,
-                 target_region_atoms):
+                 target_region_atoms, checkpoint_directory=None):
     global _TARGET, _CONFIG, _MINIMUM_TARGET_COVERAGE_SIZE
     global _SAVE_ALL_RESULTS
     global _TARGET_REGION_ATOMS
+    global _CHECKPOINT_DIRECTORY
     RDLogger.DisableLog("rdApp.*")
     target_implicit = Chem.MolFromSmiles(target_smiles)
     if target_implicit is None:
@@ -59,6 +62,7 @@ def _worker_init(target_smiles, config_record,
     _TARGET_REGION_ATOMS = (
         frozenset(map(int, target_region_atoms))
         if target_region_atoms is not None else None)
+    _CHECKPOINT_DIRECTORY = checkpoint_directory
 
 
 def _detect_one(row, *, seed_workers=1):
@@ -127,7 +131,21 @@ def _record_detection(row, counts, result, detection_seconds):
 
 
 def _search_one(row, *, seed_workers=1):
-    return _record_detection(row, *_detect_one(row, seed_workers=seed_workers))
+    detection = _detect_one(row, seed_workers=seed_workers)
+    if _CHECKPOINT_DIRECTORY is not None:
+        # Persist the complete typed result before archive construction. A
+        # watchdog during later serialization must not require repeating AAM.
+        path = Path(_CHECKPOINT_DIRECTORY) / f"{row[0]}.detection.pkl.gz"
+        temporary = path.with_suffix('.partial')
+        started = time.perf_counter()
+        with gzip.open(temporary, 'xb', compresslevel=1) as stream:
+            pickle.dump((row, detection), stream, protocol=5)
+        temporary.replace(path)
+        print(json.dumps({"stage": "detection_checkpoint", "source_id": row[2],
+            "row_index": row[0], "detection_seconds": detection[2],
+            "checkpoint_seconds": time.perf_counter() - started,
+            "checkpoint": str(path)}), flush=True)
+    return _record_detection(row, *detection)
 
 
 def _search_batch(batch):
@@ -262,6 +280,8 @@ def _parser():
                         default="smi")
     parser.add_argument("--id-column", default="Mcule ID")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--checkpoint-directory", type=Path,
+                        help="save complete typed detections before archive construction")
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
         "--scheduling", choices=("precursor", "adaptive"),
@@ -329,6 +349,8 @@ def main(argv=None):
     )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
+    if args.checkpoint_directory is not None:
+        args.checkpoint_directory.mkdir(parents=True, exist_ok=True)
     totals = Counter()
     started = time.perf_counter()
     processed_batches = 0
@@ -377,7 +399,8 @@ def main(argv=None):
                     initializer=_worker_init,
                     initargs=(args.target_smiles, config_record,
                               args.minimum_target_coverage_fraction,
-                              args.save_all_results, target_region_atoms)) as executor:
+                              args.save_all_results, target_region_atoms,
+                              args.checkpoint_directory)) as executor:
                 for row, counts, payload, pair_elapsed, seed_workers in _budgeted_results(
                         executor, jobs, max(1, args.workers)):
                     write_result(sink, counts, payload)
@@ -393,7 +416,8 @@ def main(argv=None):
                 initializer=_worker_init,
                 initargs=(args.target_smiles, config_record,
                           args.minimum_target_coverage_fraction,
-                          args.save_all_results, target_region_atoms),
+                          args.save_all_results, target_region_atoms,
+                          args.checkpoint_directory),
             ) as pool:
                 iterator = pool.imap_unordered(_search_batch, batches, chunksize=1)
                 for counts, payload in iterator:
@@ -440,6 +464,7 @@ def main(argv=None):
         "derived_minimum_fragment_size": derived_minimum_fragment_size,
         "explicit_hydrogens": True,
         "saved_all_results": args.save_all_results,
+        "checkpoint_directory": str(args.checkpoint_directory) if args.checkpoint_directory else None,
         "target_region_report": args.target_region_report,
         "target_region_field": args.target_region_field,
         "target_region_atoms": target_region_atoms,
