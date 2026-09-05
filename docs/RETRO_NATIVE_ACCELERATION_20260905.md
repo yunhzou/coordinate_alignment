@@ -76,5 +76,20 @@ work. No unsafe merge was substituted to claim a speedup.
 
 Full-bank scan job `432000`, with replacement `432029` for two nodes stuck in
 configuration, uses the same 1,919-entry inventory and 28 × 48 CPUs. Results are
-under `full_bank/`. Its completion and timing must be measured separately; pair
-speedups do not establish full-bank or assembly throughput.
+under `full_bank/`. I stopped the remaining jobs at 9 min 25 s (replacement jobs
+at about 8 minutes), before the ten-minute watchdog. **1,901 of 1,919 molecules
+were saved; 18 are unfinished.** Fifteen complete shards took 106–485 seconds
+of scanner wall time. The other shards retain their completed records but are
+explicitly incomplete. There is no completed full-bank runtime or speedup claim.
+
+`full_bank/progress_audit.json` lists all unfinished source IDs/SMILES and the
+slowest completed sources; regenerate it with `bench/catalog_scan_progress.py`.
+At the tail, one inspected node had three busy augmented-search workers while
+most catalog workers were idle. Budgeted job admission removes the old phase
+barrier, but does not redistribute an already-running molecule's work across
+newly idle CPUs. A shared fragment-task scheduler is a remaining opportunity;
+it has not been substituted or claimed as implemented here.
+
+Verification: 206 full-suite tests passed, followed by four scheduler/archive
+audit tests including one newly added test (207 tests total). The methanol
+saved-record assembly and standalone viewer also completed successfully.

@@ -2,6 +2,11 @@
 
 Status: representation fixes verified; full-bank speed is **not restored**.
 
+For the subsequent native-bookkeeping and shared-chain optimization, see
+[the follow-up measurements](RETRO_NATIVE_ACCELERATION_20260905.md): identical
+full evidence on three pairs, about 1.84× on the tested long-tail pair, and
+1,901/1,919 bank records saved before stopping the incomplete scan at 9:25.
+
 ## Same-host correctness and timing check
 
 Bulky BIAN target, inventory iodobenzene `INVENTORY-001161`, explicit H,

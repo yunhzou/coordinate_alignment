@@ -56,3 +56,21 @@ def test_worker_gzip_members_are_one_complete_jsonl_stream():
     data = catalog._encode_records(()) + b"".join(catalog._encode_records([r]) for r in records)
     with gzip.open(io.BytesIO(data), "rt") as stream:
         assert [json.loads(line) for line in stream] == records
+
+
+def test_progress_audit_counts_flushed_rows_without_claiming_complete_scan(tmp_path):
+    audit_spec = importlib.util.spec_from_file_location("catalog_progress",
+        Path(__file__).parents[1] / "bench/catalog_scan_progress.py")
+    progress = importlib.util.module_from_spec(audit_spec)
+    audit_spec.loader.exec_module(progress)
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "parts").mkdir()
+    inventory = tmp_path / "bank.csv.gz"
+    with gzip.open(inventory, "wt") as stream:
+        stream.write("SMILES,Inventory ID\nC,a\nO,b\n")
+    row = {"precursor_id": "a", "pair_elapsed_seconds": 1.0}
+    (tmp_path / "logs/1_0.out").write_text(json.dumps(row) + '\n{\n  "counts": {}\n}\n')
+    report = progress.audit(tmp_path, inventory, "Inventory ID")
+    assert report["saved_rows"] == 1
+    assert not report["scan_complete"]
+    assert report["unfinished_sources"] == [{"source_id": "b", "smiles": "O", "row_index": 1}]
