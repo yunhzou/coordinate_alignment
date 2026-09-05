@@ -14,11 +14,16 @@ def candidate_target_domains(candidate):
     """Display-only atom domains. Never multiplied into assembly choices."""
     pools = {source: (target,) for source, target in candidate.mapping}
     target_owned = set(candidate.covered_target_atoms)
-    for fragment in candidate.aam_hierarchy.fragments:
+    from ..alignment.post_aam import AAMHierarchyView
+    hierarchy = candidate.aam_hierarchy
+    action = dict(hierarchy.target_action) if isinstance(hierarchy, AAMHierarchyView) else {}
+    base = hierarchy.base if isinstance(hierarchy, AAMHierarchyView) else hierarchy
+    for fragment in base.fragments:
         for domain in fragment.symmetry_domains:
             for source in domain.r_atoms:
                 if source in pools:
-                    pools[source] = tuple(a for a in domain.p_atoms if a in target_owned)
+                    pools[source] = tuple(action.get(a, a) for a in domain.p_atoms
+                                          if action.get(a, a) in target_owned)
     return tuple(sorted(pools.items()))
 
 
@@ -38,7 +43,6 @@ def candidate_target_occupations(candidate, target, *, iso_tolerance=0.5,
         "retained_fragments": variant.retained_fragments,
         "target_fragment_atoms": tuple(tuple(sorted(variant.atom_mapping[a] for a in f))
                                         for f in variant.retained_fragments),
-        "aam_hierarchy": variant.aam_hierarchy.to_record(),
         "target_domains": candidate_target_domains(variant),
         "derivation_actions": tuple(d.target_action for d in variant.derivations),
     } for variant in variants)

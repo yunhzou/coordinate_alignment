@@ -68,6 +68,7 @@ def _search_one(row, *, seed_workers=1):
     molecule = Chem.AddHs(molecule_implicit)
     counts["searched"] += 1
     source = molecule_to_weighted_graph(molecule)
+    detection_started = time.perf_counter()
     if seed_workers == 1:
         result = detect_fragments(
             source,
@@ -86,6 +87,7 @@ def _search_one(row, *, seed_workers=1):
                 seed_workers=seed_workers),
             target_region_atoms=_TARGET_REGION_ATOMS,
         )
+    detection_seconds = time.perf_counter() - detection_started
     if result.status == "capped":
         counts["capped"] += 1
     counts["incomplete"] += not result.complete
@@ -107,6 +109,7 @@ def _search_one(row, *, seed_workers=1):
         representation=smiles,
         candidates=candidates,
     )
+    record["timing"] = {"detection_seconds": detection_seconds}
     return counts, record
 
 
@@ -377,6 +380,7 @@ def main(argv=None):
             "parse_errors",
             "searched",
             "capped",
+            "incomplete",
             "target_coverage_filtered",
             "matched_precursors",
             "fragment_candidates",

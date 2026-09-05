@@ -236,9 +236,11 @@ def test_fragment_archive_and_target_action_preserve_evidence():
         assert {a: action.get(b, b) for a, b in witness.items()} == assignments
     record = json.loads(json.dumps(fragment_detection_to_record(
         result, row_index=0, representation='CO')))
-    graphs = tuple(AAMSearchGraph.from_record(g) for g in record['search_graphs'])
+    from rxn_core.fragment_matching.serialization import fragment_archive_from_record
+    graphs, fragments = fragment_archive_from_record(record)
     assert all('search_graphs' not in c for c in record['candidates'])
-    restored = fragment_candidate_from_record(record['candidates'][0], search_graphs=graphs)
+    restored = fragment_candidate_from_record(record['candidates'][0], search_graphs=graphs,
+                                              hierarchy_fragments=fragments)
     graph_id = record['candidates'][0]['derivations'][0]['initial_paths'][0]['graph']
     assert restored.derivations[0].initial_paths[0].graph is graphs[graph_id]
 

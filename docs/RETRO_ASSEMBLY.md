@@ -41,8 +41,11 @@ joint fragment partitions and carried bonds, not just their union of atoms.
 Equivalent source units are unordered within their proven class. Ten identical
 singleton H units therefore do not expand into 10! atom assignments.
 
-The occupation walk transports compact integer images. Hierarchies and exact
-generators are transported only for surviving final occupations.
+The occupation walk transports compact integer images. An `AAMHierarchyView`
+stores an immutable base hierarchy and one composed target action; `.fragments`
+or `.to_record()` materializes it explicitly. Identity transports and generators
+fixing an entire occupation require no work. Repeated source partitions reuse
+the same equivalence analysis.
 
 ## Assembly owns combinations, not matching
 
@@ -92,9 +95,12 @@ Exact cover/packing remain combinatorial; no constant runtime is promised.
 
 ## Persistence and completeness
 
-Detection schema is now `rxn_core.fragment_detection/v4`. Older implicit-
-augmentation records are not silently promoted to the new semantics: rerun
-detection into a new directory. The precursor inventory itself is unchanged.
+Detection schema is now `rxn_core.fragment_detection/v6`: candidates reference
+shared fragment objects and a shared permutation table. No symmetry is removed.
+Completed v4 augmented-AAM records can be losslessly repacked without rerunning
+matching using `tools/repack_fragment_records.py --input OLD --output NEW`.
+Older implicit-augmentation records cannot be promoted to these semantics.
+The precursor inventory itself is unchanged.
 The bank scanner saves all search records by default, including capped and
 no-match searches. Completeness also checks shard-wide diagnostics, so a dropped
 or filtered record cannot silently turn an incomplete scan into a complete one.
@@ -120,8 +126,8 @@ not a claim of globally optimal chemistry or exhaustive unconstrained AAM.
 AAM retains its default branch cap of 100 with explicit cap records. Detection
 has no default candidate cap. Explicit caller-supplied matching constraints or
 budgets remain possible in the reusable matching API; the recommendation CLI
-adds none. The C++ growth/search code is unchanged. The only core representation
-adjustment extends generator frames when relabeling augmentation atom indices.
+adds none. The C++ growth/search code is unchanged. Python hierarchy transport
+uses shared views and extends generator frames for augmentation atom indices.
 
 Reproducible saved smoke experiment:
 

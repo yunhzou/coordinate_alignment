@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, replace
+from functools import cached_property
 
 
 def frozen_value(value):
@@ -96,7 +97,7 @@ class SearchPath:
     def symmetry_paths(self):
         return (self.fragments,)
 
-    @property
+    @cached_property
     def hierarchy(self):
         from .alignment.post_aam import AAMHierarchy
         return AAMHierarchy.from_record({"fragments": self.fragments})

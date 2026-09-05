@@ -403,6 +403,8 @@ def _augment_initial_family(
         retained_symmetry=placement.symmetry,
     )
     candidates = []
+    partitions = {}
+    fragment_classes = {}
     for augmented_placement in augmented.placements:
         placement_boundary = tuple(sorted(set(boundary) | {
             tuple(sorted(edge)) for fragment in augmented_placement.hierarchy.fragments
@@ -414,18 +416,16 @@ def _augment_initial_family(
             if target_atom < len(target_graph)
         }
         retained_atoms = tuple(sorted(target_mapping))
-        (
-            retained_fragments,
-            leftover_fragments,
-            copied_residual_placements,
-            attachment_atoms_source,
-        ) = project_augmented_placement(
-            source_graph,
-            target_mapping,
-            placement_boundary,
-            augmented_mapping,
-            len(target_graph),
-        )
+        partition_key = placement_boundary, retained_atoms
+        if partition_key not in partitions:
+            parts = project_augmented_placement(source_graph, target_mapping,
+                placement_boundary, augmented_mapping, len(target_graph))
+            partitions[partition_key] = parts[0], parts[1], parts[3]
+            fragment_classes[partition_key] = fragment_equivalence_classes(source_graph,
+                placement_boundary, parts[0], config.iso_tolerance)
+        retained_fragments, leftover_fragments, attachment_atoms_source = partitions[partition_key]
+        copied_residual_placements = tuple(sorted((a, b) for a, b in augmented_mapping.items()
+                                                 if b >= len(target_graph)))
         if (config.maximum_leftover_fragments is not None
                 and len(leftover_fragments)
                 > config.maximum_leftover_fragments):
@@ -456,8 +456,7 @@ def _augment_initial_family(
             augmented_target_atom_count=augmented.augmented_target_atom_count,
             retained_fragments=retained_fragments,
             aam_hierarchy=augmented_placement.hierarchy,
-            fragment_classes=fragment_equivalence_classes(source_graph,
-                placement_boundary, retained_fragments, config.iso_tolerance),
+            fragment_classes=fragment_classes[partition_key],
             preserved_source_bonds=tuple(sorted(tuple(sorted((a, b)))
                 for a, b in source_graph.edges() if a in target_mapping and b in target_mapping
                 and tuple(sorted((a, b))) not in placement_boundary)),

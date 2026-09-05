@@ -1,12 +1,8 @@
-"""Typed mechanism-group model for post-AAM selection.
-
-AAM search produces a deduplicated mechanism and a hierarchical symmetry
-description.  Post-processing acts on the resulting group orbit; concrete
-branch witnesses are provenance and are deliberately absent from this model.
-"""
+"""Typed symmetry objects shared by AAM and optional mechanism post-processing."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Mapping, Protocol, Sequence
 
 import numpy as np
@@ -237,6 +233,11 @@ class AAMHierarchy:
     fragments: tuple[FragmentMatch, ...]
 
     def relabel_target(self, action):
+        """Keep a correlated transform as a shared view until inspected."""
+        action = tuple(sorted(dict(action).items()))
+        return AAMHierarchyView(self, action) if action else self
+
+    def _materialize_target(self, action):
         """Transport a hierarchy by one correlated target permutation.
 
         Unmentioned atoms (including augmentation copies) are fixed. Exact
@@ -244,18 +245,30 @@ class AAMHierarchy:
         """
         from dataclasses import replace
         action = dict(action)
+        extent = max(max(action, default=-1), max(action.values(), default=-1)) + 1
+        generators = tuple(g for f in self.fragments for g in (f.target_generators or ()))
+        if all(a == b for a, b in action.items()) and all(g.degree >= extent for g in generators):
+            return self
+        frames = {}
+        transported = {}
         def image(atom):
             return int(action.get(atom, atom))
         def domain(item):
             return replace(item, p_atoms=tuple(image(a) for a in item.p_atoms))
         def generator(item):
-            degree = max(item.degree, max(action, default=-1) + 1,
-                         max(action.values(), default=-1) + 1)
-            moved = list(range(degree))
-            for atom in range(degree):
-                target = item.images[atom] if atom < item.degree else atom
-                moved[image(atom)] = image(target)
-            return AtomPermutation(tuple(moved))
+            if item.images not in transported:
+                degree = max(item.degree, extent)
+                if degree not in frames:
+                    images = tuple(action.get(a, a) for a in range(degree))
+                    inverse = [0] * degree
+                    for atom, target in enumerate(images):
+                        inverse[target] = atom
+                    frames[degree] = images, inverse
+                images, inverse = frames[degree]
+                padded = item.images + tuple(range(item.degree, degree))
+                moved = tuple(images[padded[a]] for a in inverse)
+                transported[item.images] = (item if moved == item.images else AtomPermutation(moved))
+            return transported[item.images]
         return AAMHierarchy(tuple(replace(fragment,
             representative_assignments=tuple((a, image(b)) for a, b in
                                                fragment.representative_assignments),
@@ -354,6 +367,38 @@ class AAMHierarchy:
             "fragments": fragments,
             "blocks": [],
         }
+
+
+@dataclass(frozen=True)
+class AAMHierarchyView:
+    """A base hierarchy plus one coordinate transform, without copied groups."""
+
+    base: AAMHierarchy
+    target_action: tuple[tuple[int, int], ...]
+
+    @cached_property
+    def materialized(self):
+        return self.base._materialize_target(dict(self.target_action))
+
+    @property
+    def fragments(self):
+        return self.materialized.fragments
+
+    @property
+    def has_complete_exact_target_groups(self):
+        return self.base.has_complete_exact_target_groups
+
+    def relabel_target(self, action):
+        action, prior = dict(action), dict(self.target_action)
+        if not action:
+            return self
+        combined = tuple(sorted((a, action.get(prior.get(a, a), prior.get(a, a)))
+                                for a in set(prior) | set(action)))
+        return AAMHierarchyView(self.base, combined)
+
+    def to_record(self):
+        """Explicitly requested, fully materialized legacy hierarchy record."""
+        return self.materialized.to_record()
 
 
 @dataclass(frozen=True)

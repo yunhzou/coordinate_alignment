@@ -67,10 +67,15 @@ def materialize_target_coverage_orbit(candidate, target, *, iso_tolerance=0.5,
         for stage in stages:
             if not stage:
                 continue
-            actions = tuple(tuple(g.get(a, a) for a in range(degree)) for g in stage)
+            actions = tuple((tuple(g.get(a, a) for a in range(degree)),
+                             frozenset(a for a, b in g.items() if a != b)) for g in stage)
             queue = list(states.values())
             for images, action in queue:
-                for generator in actions:
+                occupied = frozenset(images)
+                for generator, support in actions:
+                    # A generator fixing the whole witness also fixes its relation.
+                    if support.isdisjoint(occupied):
+                        continue
                     moved = tuple(generator[p] for p in images)
                     relation = key(moved)
                     if relation in states:

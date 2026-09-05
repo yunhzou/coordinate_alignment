@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
 
-from ..alignment.post_aam import AAMHierarchy
+from ..alignment.post_aam import AAMHierarchy, AAMHierarchyView
 from ..search_graph import AAMSearchGraph, SearchPath
 
 
@@ -81,7 +81,7 @@ class FragmentCandidate:
     copied_residual_placements: tuple[tuple[int, int], ...]
     augmented_target_atom_count: int
     retained_fragments: tuple[tuple[int, ...], ...] = ()
-    aam_hierarchy: AAMHierarchy = field(
+    aam_hierarchy: AAMHierarchy | AAMHierarchyView = field(
         default_factory=lambda: AAMHierarchy(()))
     derivations: tuple[FragmentDerivation, ...] = ()
     fragment_classes: tuple[int, ...] = ()

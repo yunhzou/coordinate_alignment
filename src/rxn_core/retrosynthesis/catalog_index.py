@@ -10,6 +10,7 @@ from ..fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from ..fragment_matching.serialization import (
     FRAGMENT_DETECTION_SCHEMA,
     fragment_candidate_from_record,
+    fragment_archive_from_record,
 )
 from ..matcher import _nauty_atom_generators
 from ..subgraph import _coerce_graph
@@ -190,14 +191,12 @@ def build_candidate_index(records, target, target_key, *, config=None):
             molecule_to_weighted_graph(explicit_molecule), 0.2)
         source_generators = _nauty_atom_generators(source_graph, wbo_tol=config.iso_tolerance)
         source_capacity_cache = {}
-        from ..search_graph import AAMSearchGraph
-        search_graphs = tuple(AAMSearchGraph.from_record(g)
-                              for g in record.get("search_graphs", ()))
+        search_graphs, hierarchy_fragments = fragment_archive_from_record(record)
         candidates = []
         for candidate_index, raw_candidate in enumerate(record["candidates"]):
             typed = fragment_candidate_from_record(dict(
                 raw_candidate, source_id=record["source_id"]),
-                search_graphs=search_graphs)
+                search_graphs=search_graphs, hierarchy_fragments=hierarchy_fragments)
             candidates.append((
                 dict(raw_candidate, detection_candidate_index=candidate_index),
                 candidate_target_domains(typed),

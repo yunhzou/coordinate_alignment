@@ -1,18 +1,25 @@
 """Strict serialization for fragment-detection records."""
 from __future__ import annotations
+import copy
+from dataclasses import asdict, fields, replace
 
-from ..alignment.post_aam import AAMHierarchy
+from ..alignment.post_aam import AAMHierarchy, AAMHierarchyView
 from ..search_graph import AAMSearchGraph, SearchPath
 from .models import FragmentCandidate, FragmentDetectionResult, FragmentDerivation
 
 
-FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v4"
+FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v6"
 
 
 class _GraphArchive:
     def __init__(self, graphs=()):
         self.graphs = []
         self.ids = {}
+        self.fragments = []
+        self.fragment_ids = {}
+        self.hierarchies = {}
+        self.generators = []
+        self.generator_ids = {}
         for graph in graphs:
             self.add(graph)
 
@@ -26,7 +33,93 @@ class _GraphArchive:
         return path.to_reference(self.add(path.graph))
 
     def records(self):
-        return [graph.to_record() for graph in self.graphs]
+        # Archive encoding shares groups; the ordinary AAM graph API is unchanged.
+        return [{"schema": "rxn_core.aam_search_graph_refs/v1",
+                 "contexts": [asdict(c) for c in graph.contexts], "roots": graph.roots,
+                 "states": [asdict(s) for s in graph.states],
+                 "transitions": [{**{f.name: getattr(edge, f.name) for f in fields(edge)
+                                      if f.name != "match"},
+                                  "match": None if edge.match is None else self.encode_fragment(edge.match)}
+                                 for edge in graph.transitions],
+                 "stops": [asdict(s) for s in graph.stops]} for graph in self.graphs]
+
+    def encode_fragment(self, fragment):
+        symmetry = fragment["symmetry"]
+        encoded = copy.deepcopy({k: v for k, v in symmetry.items() if k != "automorph_generators"})
+        if "automorph_generators" in symmetry:
+            ids = []
+            for raw in symmetry["automorph_generators"]:
+                images = tuple(raw)
+                if images not in self.generator_ids:
+                    self.generator_ids[images] = len(self.generators)
+                    self.generators.append(images)
+                ids.append(self.generator_ids[images])
+            encoded["automorph_generator_ids"] = ids
+        return {**copy.deepcopy({k: v for k, v in fragment.items() if k != "symmetry"}),
+                "symmetry": encoded}
+
+    def hierarchy_reference(self, hierarchy):
+        base = hierarchy.base if isinstance(hierarchy, AAMHierarchyView) else hierarchy
+        # Hold the immutable base, not just its id, for this archive's lifetime.
+        key = id(base)
+        if key not in self.hierarchies:
+            ids = []
+            for fragment in base.fragments:
+                if fragment not in self.fragment_ids:
+                    self.fragment_ids[fragment] = len(self.fragments)
+                    self.fragments.append(fragment)
+                ids.append(self.fragment_ids[fragment])
+            self.hierarchies[key] = base, ids
+        return {"fragment_ids": self.hierarchies[key][1],
+                "target_action": hierarchy.target_action if isinstance(hierarchy, AAMHierarchyView) else ()}
+
+    def fragment_records(self):
+        return [self.encode_fragment(f) for f in
+                AAMHierarchy(tuple(self.fragments)).to_record()["fragments"]]
+
+
+def fragment_archive_from_record(record):
+    """Resolve a shared archive once; all candidates reuse its immutable objects."""
+    from ..alignment.post_aam import AtomPermutation
+    generators = tuple(AtomPermutation(tuple(g)) for g in record["generators"])
+    def decode_fragment(raw):
+        symmetry = raw["symmetry"]
+        decoded = {k: v for k, v in symmetry.items() if k != "automorph_generator_ids"}
+        if "automorph_generator_ids" in symmetry:
+            decoded["automorph_generators"] = tuple(generators[i].images
+                for i in symmetry["automorph_generator_ids"])
+        return {**raw, "symmetry": decoded}
+    graphs = []
+    for graph in record.get("search_graphs", ()):
+        if graph["schema"] != "rxn_core.aam_search_graph_refs/v1":
+            raise ValueError("unsupported fragment search archive")
+        decoded = {**graph, "schema": "rxn_core.aam_search_graph/v1",
+                   "transitions": [{**edge, "match": None if edge["match"] is None else
+                                    decode_fragment(edge["match"])} for edge in graph["transitions"]]}
+        graphs.append(AAMSearchGraph.from_record(decoded))
+    fragments = []
+    for raw in record["hierarchy_fragments"]:
+        symmetry = raw["symmetry"]
+        # Reuse validated permutations instead of reconstructing them per fragment.
+        fragment = AAMHierarchy.from_record({"fragments": ({**raw, "symmetry": {
+            k: v for k, v in symmetry.items() if k != "automorph_generator_ids"}},)}).fragments[0]
+        if "automorph_generator_ids" in symmetry:
+            fragment = replace(fragment, target_generators=tuple(generators[i]
+                for i in symmetry["automorph_generator_ids"]))
+        fragments.append(fragment)
+    return tuple(graphs), tuple(fragments)
+
+
+def repack_fragment_detection_v4(record):
+    """Explicit, lossless archive migration. Does not perform any matching."""
+    if record["schema"] != "rxn_core.fragment_detection/v4":
+        raise ValueError("repacking requires a v4 augmented-AAM record")
+    archive = _GraphArchive(tuple(AAMSearchGraph.from_record(g) for g in record["search_graphs"]))
+    candidates = [dict(c, aam_hierarchy=archive.hierarchy_reference(
+        AAMHierarchy.from_record(c["aam_hierarchy"]))) for c in record["candidates"]]
+    return {**record, "schema": FRAGMENT_DETECTION_SCHEMA, "candidates": candidates,
+            "search_graphs": archive.records(), "hierarchy_fragments": archive.fragment_records(),
+            "generators": archive.generators}
 
 
 def fragment_candidate_to_record(candidate: FragmentCandidate, *, archive=None):
@@ -51,7 +144,7 @@ def fragment_candidate_to_record(candidate: FragmentCandidate, *, archive=None):
         ],
         "fragment_classes": list(candidate.fragment_classes),
         "preserved_source_bonds": [list(edge) for edge in candidate.preserved_source_bonds],
-        "aam_hierarchy": candidate.aam_hierarchy.to_record(),
+        "aam_hierarchy": archive.hierarchy_reference(candidate.aam_hierarchy),
         "derivations": [{
             "initial_paths": [archive.reference(p) for p in d.initial_paths],
             "residual_paths": [archive.reference(p) for p in d.residual_paths],
@@ -61,12 +154,19 @@ def fragment_candidate_to_record(candidate: FragmentCandidate, *, archive=None):
     }
     if standalone:
         record["search_graphs"] = archive.records()
+        record["hierarchy_fragments"] = archive.fragment_records()
+        record["generators"] = archive.generators
     return record
 
 
-def fragment_candidate_from_record(record, *, search_graphs=None):
-    graphs = (tuple(AAMSearchGraph.from_record(g) for g in record.get("search_graphs", ()))
-              if search_graphs is None else search_graphs)
+def fragment_candidate_from_record(record, *, search_graphs=None, hierarchy_fragments=None):
+    if search_graphs is None:
+        graphs, fragments = fragment_archive_from_record(record)
+    else:
+        graphs, fragments = search_graphs, hierarchy_fragments
+    reference = record["aam_hierarchy"]
+    hierarchy = AAMHierarchy(tuple(fragments[i] for i in reference["fragment_ids"]))
+    hierarchy = hierarchy.relabel_target(reference["target_action"])
     return FragmentCandidate(
         source_id=str(record.get("source_id", "")),
         mapping=tuple(tuple(map(int, item))
@@ -92,8 +192,7 @@ def fragment_candidate_from_record(record, *, search_graphs=None):
         retained_fragments=tuple(
             tuple(map(int, item))
             for item in record.get("retained_fragments") or ()),
-        aam_hierarchy=AAMHierarchy.from_record(
-            record.get("aam_hierarchy") or {}),
+        aam_hierarchy=hierarchy,
         fragment_classes=tuple(record.get("fragment_classes", ())),
         preserved_source_bonds=tuple(tuple(edge) for edge in record.get("preserved_source_bonds", ())),
         derivations=tuple(FragmentDerivation(
@@ -131,4 +230,6 @@ def fragment_detection_to_record(
         "rough_stop_hit": result.rough_stop_hit,
         "candidates": candidates,
         "search_graphs": archive.records(),
+        "hierarchy_fragments": archive.fragment_records(),
+        "generators": archive.generators,
     }

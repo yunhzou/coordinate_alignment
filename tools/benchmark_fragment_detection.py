@@ -68,7 +68,7 @@ def main():
     parser.add_argument("--profile-lines", type=int, default=40)
     parser.add_argument("--seed-workers", type=int, default=1)
     parser.add_argument("--seed-limit", type=int)
-    parser.add_argument("--candidate-limit", type=int, default=100)
+    parser.add_argument("--candidate-limit", type=int)
     args = parser.parse_args()
     if args.repeats < 1:
         raise ValueError("repeats must be positive")
