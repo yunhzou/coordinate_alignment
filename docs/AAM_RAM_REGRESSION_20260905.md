@@ -146,6 +146,33 @@ The comparison passed all fields (`shared/2.comparison.json`, job 432060).
 The repository test suite passes: **214 tests** (`pytest tests -q`). Explicitly
 selecting `tests` avoids collecting the preserved old-core worktree as well.
 
+### Full precursor retries: memory improved, runtime still unresolved
+
+After the repair, job array `432061` retried only the four previously OOM-failing
+sources, with one 48-CPU/100-GB node each, unchanged matching settings, and the
+hard 600-second supervisor watchdog. All four exited with code 124 at that
+limit (Slurm accounting includes a few seconds of launch/cleanup). None OOMed.
+
+| Source | Array task | Reported step MaxRSS |
+| --- | ---: | ---: |
+| INVENTORY-000400 | 2 | 21,477,552 KB |
+| INVENTORY-000538 | 3 | 28,789,624 KB |
+| INVENTORY-000563 | 9 | 29,730,480 KB |
+| INVENTORY-000564 | 10 | 26,909,352 KB |
+
+Read-only process inspection showed that the worker pools had exited for tasks
+2, 9, and 10 while their parent Python process continued using CPU. This narrows
+their remaining delay to parent-side processing, but does not identify an exact
+function. Attaching a Python stack profiler was denied by cluster permissions;
+no stack-based attribution is claimed. Task 3 was not similarly localized.
+
+Outputs and watchdog records are under `repaired_tail/parts/`; logs are
+`repaired_tail_{2,3,9,10}.out` in the evidence root. No completed precursor record
+was produced by these retries. The cumulative scan remains **1,915/1,919 saved**.
+The demonstrated symmetry-storage regression is repaired; full end-to-end
+latency is **not** repaired by that alone. Do not restart these full retries
+without profiling/checkpointing the remaining parent-side work first.
+
 ## Reproduction and evidence
 
 `bench/aam_memory_boundary.py` supplies prepare/core/post/audit/compare modes.
