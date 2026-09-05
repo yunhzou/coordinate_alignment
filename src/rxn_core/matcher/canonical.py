@@ -409,14 +409,15 @@ class _CandidateAutomorphismCanonicalizer:
         return {p: tuple(sorted(items, key=repr))
                 for p, items in roles.items()}
 
-    def _colored_vertices(self, cand, *, group_domains=False):
+    def _colored_vertices(self, cand, *, group_domains=False, locked_roles=None):
         candidate_roles = self._candidate_roles(
             cand, group_domains=group_domains)
         colors = defaultdict(set)
+        locked_roles = self.locked_roles if locked_roles is None else locked_roles
         for p in self.nodes:
             vertex = self.atom_index[p]
             role = (
-                self.locked_roles.get(p, ()),
+                locked_roles.get(p, ()),
                 candidate_roles.get(p, ()),
             )
             colors[('atom', self.atom_base_color[vertex], role)].add(vertex)
@@ -456,27 +457,11 @@ class _CandidateAutomorphismCanonicalizer:
             color_profile,
         )
 
-    def atom_generators(self, cand):
+    def atom_generators(self, cand, *, colored_vertices=None):
         """Exact generators for a bounded completed candidate state."""
         import pynauty
+        from .._group_ops import project_generators
 
         raw_generators = pynauty.autgrp(
-            self.graph(cand, group_domains=True))[0]
-        atom_by_index = {
-            index: atom for atom, index in self.atom_index.items()}
-        identity = tuple(range(max(self.atom_index, default=-1) + 1))
-        generators = []
-        seen = set()
-        for raw in raw_generators:
-            permutation = list(identity)
-            for atom, index in self.atom_index.items():
-                image_index = int(raw[index])
-                if image_index not in atom_by_index:
-                    raise RuntimeError(
-                        "candidate automorphism mixed atom/edge vertices")
-                permutation[int(atom)] = int(atom_by_index[image_index])
-            permutation = tuple(permutation)
-            if permutation != identity and permutation not in seen:
-                seen.add(permutation)
-                generators.append(permutation)
-        return tuple(generators)
+            self.graph(cand, group_domains=True, colored_vertices=colored_vertices))[0]
+        return project_generators(raw_generators, tuple(self.atom_index), tuple(self.atom_index.values()))

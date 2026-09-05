@@ -12,6 +12,7 @@ import os
 import sys
 import time
 from collections import Counter
+from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
 from pathlib import Path
 
 from rdkit import Chem, RDLogger
@@ -121,7 +122,17 @@ def _search_batch(batch):
         counts.update(row_counts)
         if record is not None:
             records.append(record)
-    return dict(counts), records
+    return dict(counts), _encode_records(records)
+
+
+def _encode_records(records):
+    """Independent gzip members keep JSON encoding/compression on worker CPUs.
+
+    Concatenated members form a standard gzip stream. The coordinator copies
+    bytes, rather than unpickling and serially recompressing large AAM archives.
+    """
+    payload = "".join(json.dumps(record, separators=(",", ":")) + "\n" for record in records)
+    return gzip.compress(payload.encode("utf-8"), mtime=0)
 
 
 def _explicit_atom_count(row):
@@ -159,12 +170,34 @@ def _outlier_worker_budgets(rows, workers):
     return tuple(budgets)
 
 
-def _search_outlier(row, worker_budget, queue):
+def _search_scheduled(row, worker_budget):
     started = time.perf_counter()
     seed_workers = 1 if worker_budget <= 2 else worker_budget - 1
     counts, record = _search_one(row, seed_workers=seed_workers)
-    queue.put((row, counts, record, time.perf_counter() - started,
-               seed_workers))
+    payload = _encode_records([] if record is None else [record])
+    return row, counts, payload, time.perf_counter() - started, seed_workers
+
+
+def _budgeted_results(executor, jobs, workers, function=_search_scheduled):
+    """Admit independent jobs as CPU slots free; no phase-wide barriers."""
+    pending = list(jobs)
+    running = {}
+    available = workers
+    while pending or running:
+        waiting = []
+        for row, budget in pending:
+            if not 1 <= budget <= workers:
+                raise ValueError("job CPU budget outside allocation")
+            if budget <= available:
+                running[executor.submit(function, row, budget)] = budget
+                available -= budget
+            else:
+                waiting.append((row, budget))
+        pending = waiting
+        completed, _ = wait(running, return_when=FIRST_COMPLETED)
+        for future in completed:
+            available += running.pop(future)
+            yield future.result()
 
 
 def _batches(catalog, shard_index, shard_count, batch_size, limit,
@@ -297,16 +330,17 @@ def main(argv=None):
     else:
         batches = raw_batches
 
-    def write_result(sink, counts, records):
+    def write_result(sink, counts, payload):
         nonlocal processed_batches
         totals.update(counts)
-        for record in records:
-            sink.write(json.dumps(record, separators=(",", ":")) + "\n")
+        sink.write(payload)
         sink.flush()
         processed_batches += 1
 
     context = mp.get_context("fork")
-    with gzip.open(output, "wt", encoding="utf-8") as sink:
+    with output.open("wb") as sink:
+        # Also make the empty-bank output a valid gzip file.
+        sink.write(_encode_records(()))
         if args.scheduling == "adaptive":
             print(json.dumps({
                 "shard": args.shard_index,
@@ -314,64 +348,46 @@ def main(argv=None):
                 "outlier_count": outlier_count,
                 "fair_share_explicit_atoms": fair_share_atoms,
             }), flush=True)
-        with context.Pool(
-            processes=max(1, args.workers),
-            initializer=_worker_init,
-            initargs=(args.target_smiles, config_record,
-                      args.minimum_target_coverage_fraction,
-                      args.save_all_results, target_region_atoms),
-        ) as pool:
-            iterator = pool.imap_unordered(
-                _search_batch, batches, chunksize=1)
-            for counts, records in iterator:
-                write_result(sink, counts, records)
-                if processed_batches % 100 == 0:
-                    elapsed = time.perf_counter() - started
-                    print(json.dumps({
-                        "shard": args.shard_index,
-                        "elapsed_seconds": round(elapsed, 3),
-                        "rows": totals["rows"],
-                        "searched": totals["searched"],
-                        "matched": totals["matched_precursors"],
-                        "capped": totals["capped"],
-                        "rows_per_second": round(totals["rows"] / elapsed, 2),
-                    }), flush=True)
-        if outliers:
-            _worker_init(
-                args.target_smiles, config_record,
-                args.minimum_target_coverage_fraction,
-                args.save_all_results, target_region_atoms)
+        if args.scheduling == "adaptive":
             budgets = _outlier_worker_budgets(outliers, args.workers)
-            queue = context.Queue()
-            processes = [
-                context.Process(
-                    target=_search_outlier,
-                    args=(row, budget, queue),
-                )
-                for row, budget in zip(outliers, budgets)
-            ]
-            for process in processes:
-                process.start()
-            outlier_positions = {
-                row[0]: index
-                for index, row in enumerate(outliers, 1)
-            }
-            for _ in processes:
-                row, counts, record, outlier_elapsed, seed_workers = (
-                    queue.get())
-                write_result(
-                    sink, counts, [] if record is None else [record])
-                print(json.dumps({
-                    "shard": args.shard_index,
-                    "adaptive_outlier": outlier_positions[row[0]],
-                    "outlier_count": outlier_count,
-                    "row_index": row[0],
-                    "precursor_id": row[2],
-                    "seed_workers": seed_workers,
-                    "elapsed_seconds": round(outlier_elapsed, 3),
-                }), flush=True)
-            for process in processes:
-                process.join()
+            jobs = list(zip(outliers, budgets)) + [(row, 1) for row in ordinary]
+            with ProcessPoolExecutor(
+                    max_workers=max(1, args.workers), mp_context=context,
+                    initializer=_worker_init,
+                    initargs=(args.target_smiles, config_record,
+                              args.minimum_target_coverage_fraction,
+                              args.save_all_results, target_region_atoms)) as executor:
+                for row, counts, payload, pair_elapsed, seed_workers in _budgeted_results(
+                        executor, jobs, max(1, args.workers)):
+                    write_result(sink, counts, payload)
+                    print(json.dumps({
+                        "shard": args.shard_index, "rows": totals["rows"],
+                        "precursor_id": row[2], "seed_workers": seed_workers,
+                        "pair_elapsed_seconds": pair_elapsed,
+                        "elapsed_seconds": time.perf_counter() - started,
+                    }), flush=True)
+        else:
+            with context.Pool(
+                processes=max(1, args.workers),
+                initializer=_worker_init,
+                initargs=(args.target_smiles, config_record,
+                          args.minimum_target_coverage_fraction,
+                          args.save_all_results, target_region_atoms),
+            ) as pool:
+                iterator = pool.imap_unordered(_search_batch, batches, chunksize=1)
+                for counts, payload in iterator:
+                    write_result(sink, counts, payload)
+                    if processed_batches % 100 == 0:
+                        elapsed = time.perf_counter() - started
+                        print(json.dumps({
+                            "shard": args.shard_index,
+                            "elapsed_seconds": round(elapsed, 3),
+                            "rows": totals["rows"],
+                            "searched": totals["searched"],
+                            "matched": totals["matched_precursors"],
+                            "capped": totals["capped"],
+                            "rows_per_second": round(totals["rows"] / elapsed, 2),
+                        }), flush=True)
     elapsed = time.perf_counter() - started
     count_record = {
         key: totals[key]

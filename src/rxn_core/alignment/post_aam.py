@@ -232,6 +232,11 @@ class FragmentMatch:
 class AAMHierarchy:
     fragments: tuple[FragmentMatch, ...]
 
+    @property
+    def segments(self):
+        """Shared base fragments and their correlated coordinate transforms."""
+        return ((self, ()),)
+
     def relabel_target(self, action):
         """Keep a correlated transform as a shared view until inspected."""
         action = tuple(sorted(dict(action).items()))
@@ -244,30 +249,21 @@ class AAMHierarchy:
         generators are conjugated, not copied into the old target frame.
         """
         from dataclasses import replace
+        from .._group_ops import conjugate_generators
         action = dict(action)
         extent = max(max(action, default=-1), max(action.values(), default=-1)) + 1
         generators = tuple(g for f in self.fragments for g in (f.target_generators or ()))
         if all(a == b for a, b in action.items()) and all(g.degree >= extent for g in generators):
             return self
-        frames = {}
-        transported = {}
+        unique = {g.images: g for g in generators}
+        transformed = conjugate_generators(tuple(unique), tuple(action.get(a, a) for a in range(extent)))
+        transported = {old: unique[old] if old == moved else AtomPermutation(moved)
+                       for old, moved in zip(unique, transformed, strict=True)}
         def image(atom):
             return int(action.get(atom, atom))
         def domain(item):
             return replace(item, p_atoms=tuple(image(a) for a in item.p_atoms))
         def generator(item):
-            if item.images not in transported:
-                degree = max(item.degree, extent)
-                if degree not in frames:
-                    images = tuple(action.get(a, a) for a in range(degree))
-                    inverse = [0] * degree
-                    for atom, target in enumerate(images):
-                        inverse[target] = atom
-                    frames[degree] = images, inverse
-                images, inverse = frames[degree]
-                padded = item.images + tuple(range(item.degree, degree))
-                moved = tuple(images[padded[a]] for a in inverse)
-                transported[item.images] = (item if moved == item.images else AtomPermutation(moved))
             return transported[item.images]
         return AAMHierarchy(tuple(replace(fragment,
             representative_assignments=tuple((a, image(b)) for a, b in
@@ -376,6 +372,10 @@ class AAMHierarchyView:
     base: AAMHierarchy
     target_action: tuple[tuple[int, int], ...]
 
+    @property
+    def segments(self):
+        return ((self.base, self.target_action),)
+
     @cached_property
     def materialized(self):
         return self.base._materialize_target(dict(self.target_action))
@@ -399,6 +399,37 @@ class AAMHierarchyView:
     def to_record(self):
         """Explicitly requested, fully materialized legacy hierarchy record."""
         return self.materialized.to_record()
+
+
+@dataclass(frozen=True)
+class AAMHierarchyChain:
+    """Concatenated fragment chains, each retaining its own coordinate frame.
+
+    In particular, an augmented residual action must not transform the locked
+    initial fragment. Composition preserves those independent frames without
+    copying the fragment objects or conjugating their generators eagerly.
+    """
+
+    parts: tuple[AAMHierarchy | AAMHierarchyView, ...]
+
+    @property
+    def segments(self):
+        return tuple(segment for part in self.parts for segment in part.segments)
+
+    @cached_property
+    def fragments(self):
+        """Materialize only when a consumer explicitly requests full fragments."""
+        return tuple(fragment for part in self.parts for fragment in part.fragments)
+
+    @property
+    def has_complete_exact_target_groups(self):
+        return bool(self.parts) and all(part.has_complete_exact_target_groups for part in self.parts)
+
+    def relabel_target(self, action):
+        return AAMHierarchyChain(tuple(part.relabel_target(action) for part in self.parts))
+
+    def to_record(self):
+        return AAMHierarchy(self.fragments).to_record()
 
 
 @dataclass(frozen=True)

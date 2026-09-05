@@ -52,9 +52,8 @@ started on either incomplete scan. Do not report a full-bank speedup.
 There is a material policy difference: the historical workflow augmented only
 the largest initial families and had a candidate cap and attachment restrictions.
 The current workflow augments every initial family, including small ones, and
-has neither restriction. The user has been asked whether to restore the original
-largest-first objective while retaining every tied-largest family and all its
-correlated occupations. That policy has not been changed without confirmation.
+has neither restriction. The user declined restoring largest-first selection;
+the current policy continues to retain every initial family.
 
 ## Saved evidence
 

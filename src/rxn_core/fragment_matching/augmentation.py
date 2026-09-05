@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 
 from ..alignment.branch import find_islands
-from ..alignment.post_aam import AAMHierarchy
+from ..alignment.post_aam import AAMHierarchy, AAMHierarchyChain
 from ..search_symmetry import finalize_graph_symmetry
 from .graph_ops import weight_matrix, fragment_equivalence_classes
 
@@ -12,7 +12,7 @@ from .graph_ops import weight_matrix, fragment_equivalence_classes
 @dataclass(frozen=True)
 class AugmentedFragmentPlacement:
     mapping: tuple[tuple[int, int], ...]
-    hierarchy: AAMHierarchy
+    hierarchy: AAMHierarchyChain
     search_paths: tuple = ()
     target_action: tuple = ()
 
@@ -97,7 +97,7 @@ def match_augmented_residuals(source, target, retained_mapping, outside, boundar
                 iso_tolerance=iso_tolerance, generators=()):
             # Record the actual action without editing the saved search graph.
             placements.append(AugmentedFragmentPlacement(
-                variant.mapping, AAMHierarchy(baseline.fragments + variant.aam_hierarchy.fragments),
+                variant.mapping, AAMHierarchyChain((baseline, variant.aam_hierarchy)),
                 (path,), variant.derivations[0].target_action))
     caps = [s for s in graph.stops if s.reason == "capped"]
     return AugmentedMatchResult(tuple(placements), bool(caps),

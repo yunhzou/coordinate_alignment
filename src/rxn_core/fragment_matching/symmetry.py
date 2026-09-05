@@ -4,6 +4,7 @@ from dataclasses import replace
 from ..alignment.post_aam import AAMHierarchy
 from ..matcher import _nauty_atom_generators
 from ..subgraph import _coerce_graph
+from .._group_ops import occupation_orbit, OccupationLimitExceeded
 
 
 class FragmentOrbitLimitExceeded(RuntimeError):
@@ -56,36 +57,22 @@ def materialize_target_coverage_orbit(candidate, target, *, iso_tolerance=0.5,
         degree = max([max(graph.nodes(), default=-1) + 1,
                       max(family.covered_target_atoms, default=-1) + 1]
                      + [max(g, default=-1) + 1 for stage in stages for g in stage])
-        identity = tuple(range(degree))
         witness = tuple(p for _a, p in family.mapping)
         def key(images):
             return (tuple(sorted(images)), tuple(sorted(images[i] for i in attachments)),
                     tuple(sorted((label, tuple(sorted(images[i] for i in part)))
                                  for label, part in fragment_positions)),
                     tuple(sorted(tuple(sorted((images[a], images[b]))) for a, b in bonds)))
-        states = {key(witness): (witness, identity)}
-        for stage in stages:
-            if not stage:
-                continue
-            actions = tuple((tuple(g.get(a, a) for a in range(degree)),
-                             frozenset(a for a, b in g.items() if a != b)) for g in stage)
-            queue = list(states.values())
-            for images, action in queue:
-                occupied = frozenset(images)
-                for generator, support in actions:
-                    # A generator fixing the whole witness also fixes its relation.
-                    if support.isdisjoint(occupied):
-                        continue
-                    moved = tuple(generator[p] for p in images)
-                    relation = key(moved)
-                    if relation in states:
-                        continue
-                    if limit is not None and len(states) >= limit:
-                        raise FragmentOrbitLimitExceeded(len(states) + 1, limit)
-                    state = moved, tuple(generator[p] for p in action)
-                    states[relation] = state
-                    queue.append(state)
-        for relation, (images, action) in states.items():
+        actions = tuple(tuple(tuple(g.get(a, a) for a in range(degree)) for g in stage)
+                        for stage in stages)
+        try:
+            states = occupation_orbit(witness, degree, actions, attachments,
+                                      fragment_positions, bonds, -1 if limit is None else limit)
+        except OccupationLimitExceeded:
+            raise FragmentOrbitLimitExceeded(limit + 1, limit) from None
+        for raw_images, raw_action in states:
+            images, action = tuple(raw_images), tuple(raw_action)
+            relation = key(images)
             final.setdefault(relation, (family, source_atoms, images, action))
     output = []
     for relation in sorted(final):

@@ -95,10 +95,13 @@ Exact cover/packing remain combinatorial; no constant runtime is promised.
 
 ## Persistence and completeness
 
-Detection schema is now `rxn_core.fragment_detection/v6`: candidates reference
-shared fragment objects and a shared permutation table. No symmetry is removed.
-Completed v4 augmented-AAM records can be losslessly repacked without rerunning
-matching using `tools/repack_fragment_records.py --input OLD --output NEW`.
+Detection schema is now `rxn_core.fragment_detection/v7`: candidates reference
+shared fragment objects, a shared permutation table, and independently transformed
+hierarchy segments. A locked initial fragment and its transformed residual chain
+remain separate frames without eagerly copying either. No symmetry is removed.
+Completed v4/v6 augmented-AAM records can be losslessly repacked without rerunning
+matching using `tools/repack_fragment_records.py --from-version v6 --input OLD --output NEW`
+(select `v4` explicitly for v4 inputs).
 Older implicit-augmentation records cannot be promoted to these semantics.
 The precursor inventory itself is unchanged.
 The bank scanner saves all search records by default, including capped and
@@ -128,6 +131,16 @@ has no default candidate cap. Explicit caller-supplied matching constraints or
 budgets remain possible in the reusable matching API; the recommendation CLI
 adds none. The C++ growth/search code is unchanged. Python hierarchy transport
 uses shared views and extends generator frames for augmentation atom indices.
+Native `_group_ops` implements the same staged occupation closure, exact relation
+keys and first witnesses, atom-generator projection, and padded conjugation.
+There is no alternate approximate implementation or runtime fallback. Public
+Python objects and the standalone AAM search-graph schema are unchanged.
+
+Adaptive catalog scheduling starts large jobs early, admits other jobs whenever
+their CPU budget fits, and has no ordinary/outlier phase barrier. Encoding and
+compression run on worker CPUs; the coordinator writes complete gzip members.
+Concatenated members are one normal gzip/JSONL stream, including partial runs
+up to their last completed record. They do not certify scan completeness.
 
 Reproducible saved smoke experiment:
 

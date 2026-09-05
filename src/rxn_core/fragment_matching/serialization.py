@@ -3,12 +3,12 @@ from __future__ import annotations
 import copy
 from dataclasses import asdict, fields, replace
 
-from ..alignment.post_aam import AAMHierarchy, AAMHierarchyView
+from ..alignment.post_aam import AAMHierarchy, AAMHierarchyChain
 from ..search_graph import AAMSearchGraph, SearchPath
 from .models import FragmentCandidate, FragmentDetectionResult, FragmentDerivation
 
 
-FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v6"
+FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v7"
 
 
 class _GraphArchive:
@@ -59,7 +59,10 @@ class _GraphArchive:
                 "symmetry": encoded}
 
     def hierarchy_reference(self, hierarchy):
-        base = hierarchy.base if isinstance(hierarchy, AAMHierarchyView) else hierarchy
+        return {"segments": [self.segment_reference(base, action)
+                             for base, action in hierarchy.segments]}
+
+    def segment_reference(self, base, action):
         # Hold the immutable base, not just its id, for this archive's lifetime.
         key = id(base)
         if key not in self.hierarchies:
@@ -71,7 +74,7 @@ class _GraphArchive:
                 ids.append(self.fragment_ids[fragment])
             self.hierarchies[key] = base, ids
         return {"fragment_ids": self.hierarchies[key][1],
-                "target_action": hierarchy.target_action if isinstance(hierarchy, AAMHierarchyView) else ()}
+                "target_action": action}
 
     def fragment_records(self):
         return [self.encode_fragment(f) for f in
@@ -122,6 +125,15 @@ def repack_fragment_detection_v4(record):
             "generators": archive.generators}
 
 
+def repack_fragment_detection_v6(record):
+    """Explicit lossless migration to segmented hierarchy references; no AAM."""
+    if record["schema"] != "rxn_core.fragment_detection/v6":
+        raise ValueError("repacking requires a v6 augmented-AAM record")
+    return {**record, "schema": FRAGMENT_DETECTION_SCHEMA,
+            "candidates": [dict(c, aam_hierarchy={"segments": [c["aam_hierarchy"]]})
+                           for c in record["candidates"]]}
+
+
 def fragment_candidate_to_record(candidate: FragmentCandidate, *, archive=None):
     standalone = archive is None
     archive = _GraphArchive() if standalone else archive
@@ -165,8 +177,9 @@ def fragment_candidate_from_record(record, *, search_graphs=None, hierarchy_frag
     else:
         graphs, fragments = search_graphs, hierarchy_fragments
     reference = record["aam_hierarchy"]
-    hierarchy = AAMHierarchy(tuple(fragments[i] for i in reference["fragment_ids"]))
-    hierarchy = hierarchy.relabel_target(reference["target_action"])
+    parts = tuple(AAMHierarchy(tuple(fragments[i] for i in segment["fragment_ids"])).relabel_target(
+        segment["target_action"]) for segment in reference["segments"])
+    hierarchy = parts[0] if len(parts) == 1 else AAMHierarchyChain(parts)
     return FragmentCandidate(
         source_id=str(record.get("source_id", "")),
         mapping=tuple(tuple(map(int, item))

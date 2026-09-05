@@ -35,6 +35,11 @@ building-block recommendation using the same matcher and saved AAM graphs.
 python -m pip install -e .
 ```
 
+Installation builds the native bookkeeping extensions and requires a C++17
+compiler; build isolation installs pybind11. Python still owns the AAM search
+graph, fragment hierarchy and retro pipeline. The `_group_ops` extension
+accelerates exact permutation/occupation operations, not search-policy changes.
+
 Install xTB separately only when endpoint WBO matrices must be computed. The
 typed core API accepts already materialized coordinates and WBO matrices and
 does not invoke xTB.

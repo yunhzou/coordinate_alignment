@@ -407,7 +407,8 @@ def _augment_initial_family(
     fragment_classes = {}
     for augmented_placement in augmented.placements:
         placement_boundary = tuple(sorted(set(boundary) | {
-            tuple(sorted(edge)) for fragment in augmented_placement.hierarchy.fragments
+            tuple(sorted(edge)) for base, _action in augmented_placement.hierarchy.segments
+            for fragment in base.fragments
             for edge in fragment.deferred_edges}))
         augmented_mapping = dict(augmented_placement.mapping)
         target_mapping = {
