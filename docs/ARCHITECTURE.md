@@ -18,6 +18,27 @@ It re-exports stable entry points such as:
 Code outside the package should prefer these top-level imports unless it is
 debugging internals.
 
+## Typed AAM API and C++ execution boundary
+
+`aam.search_aam(problem: AAMProblem, config: AAMSearchConfig) -> AAMResult`
+is the typed Python AAM interface. `domain.py` defines the input, configuration,
+mechanism, result, and metrics objects. Completed mechanisms retain Python
+`AAMBranch` objects with an `AAMHierarchy`, representative mapping, and symmetry
+family information from `alignment/post_aam.py`.
+
+The C++ backend replaces computation inside `growth.island.grow_island`:
+`growth/native.py` prepares native graph views, calls `_engine.grow_island`,
+restores original atom indices, and returns Python `_IsoResult` objects.
+The kernel owns its internal candidate state, growth loop, extension, and
+deduplication; Python owns cut/seed orchestration and completed AAM objects.
+The Python growth implementation remains available as the reference engine.
+
+Fragment detection also calls this same growth interface. Its separate
+`_native.paired_mapping_invariant` kernel accelerates occupation-family
+grouping. Augmentation, assembly, ranking, and visualization remain Python.
+See [the native backend guide](../native/README.md) for pseudocode, build
+instructions, and the distinction between active and currently unused kernels.
+
 ## Molecule Alignment: `rxn_core.alignment`
 
 Purpose: turn two WBO matrices into scored molecule-level alignments.
