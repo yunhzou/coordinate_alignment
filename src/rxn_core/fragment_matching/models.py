@@ -20,6 +20,7 @@ class FragmentDerivation:
     initial_paths: tuple[SearchPath, ...]
     residual_paths: tuple[SearchPath, ...] = ()
     target_action: tuple[tuple[int, int], ...] = ()
+    occupation_projected: bool = False
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ class FragmentDetectionConfig:
     iso_tolerance: float = 0.5
     minimum_fragment_size: int = 1
     branch_limit: int = 100
-    candidate_limit: int = 512
+    candidate_limit: int | None = None
     seed_limit: int | None = None
     seed_mode: str = "all"
     rough_retention_threshold: float = 0.5
@@ -41,7 +42,7 @@ class FragmentDetectionConfig:
                 "graph floor and isomorphism tolerance must be positive")
         if self.minimum_fragment_size < 1:
             raise ValueError("minimum fragment size must be positive")
-        if self.branch_limit < 1 or self.candidate_limit < 1:
+        if self.branch_limit < 1 or (self.candidate_limit is not None and self.candidate_limit < 1):
             raise ValueError("branch and candidate limits must be positive")
         if self.seed_limit is not None and self.seed_limit < 1:
             raise ValueError("seed limit must be positive")
@@ -83,6 +84,8 @@ class FragmentCandidate:
     aam_hierarchy: AAMHierarchy = field(
         default_factory=lambda: AAMHierarchy(()))
     derivations: tuple[FragmentDerivation, ...] = ()
+    fragment_classes: tuple[int, ...] = ()
+    preserved_source_bonds: tuple[tuple[int, int], ...] = ()
 
     @property
     def atom_mapping(self):

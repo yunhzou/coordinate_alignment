@@ -6,6 +6,8 @@ only the abstraction needed by the layer above it.
 
 Implemented interface: [AAM search graph API](AAM_SEARCH_GRAPH_API.md).
 The [original design analysis](AAM_SEARCH_GRAPH_DESIGN.md) records the rationale.
+The [retro detection and assembly contract](RETRO_ASSEMBLY.md) describes the
+separate matching, occupation, exact assembly, ranking, and viewer layers.
 
 ## Public Surface
 

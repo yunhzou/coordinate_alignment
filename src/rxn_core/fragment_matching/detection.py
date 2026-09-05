@@ -17,7 +17,7 @@ from ..matcher import (
 from ..subgraph import _coerce_graph
 from ..search_graph import AAMSearchGraph
 from .augmentation import match_augmented_residuals, project_augmented_placement
-from .graph_ops import partition_at_retained_fragment
+from .graph_ops import partition_at_retained_fragment, fragment_equivalence_classes
 from .models import (
     FragmentCandidate,
     FragmentDerivation,
@@ -222,7 +222,8 @@ class _InitialFamilyAccumulator:
                     family, encounter_count=family.encounter_count + 1,
                     search_paths=family.search_paths + (path,))
                 self.literal_families[literal_key] = family_id
-            if len(self.families) >= self.config.candidate_limit:
+            if (self.config.candidate_limit is not None
+                    and len(self.families) >= self.config.candidate_limit):
                 return True
         return False
 
@@ -262,7 +263,13 @@ def _grow_initial_seed(
             iso_tolerance=config.iso_tolerance, minimum_size=config.minimum_fragment_size,
             branch_limit=config.branch_limit))
     graph = AAMSearchGraph.initial_fragment_search(source, target, seed, result, config)
-    return result.matches, result.capped, result.branch_count, graph
+    from ..search_symmetry import finalize_graph_symmetry
+    graph, _metrics = finalize_graph_symmetry(graph, target,
+                                             iso_tolerance=config.iso_tolerance)
+    matches = tuple(replace(match, symmetry=edge.match['symmetry'])
+                    for match, edge in zip(result.matches,
+                        (e for e in graph.transitions if e.match is not None), strict=True))
+    return matches, result.capped, result.branch_count, graph
 
 
 def _initial_fragment_placements(
@@ -378,6 +385,7 @@ def _augment_initial_family(
     mapping_pairs = placement.representative_mapping
     outside, boundary, _fragments = partition_at_retained_fragment(
         source_graph, retained)
+    boundary = tuple(sorted(set(boundary) | set(placement.search_paths[0].deferred_edges)))
     if (config.maximum_boundary_bonds is not None
             and len(boundary) > config.maximum_boundary_bonds):
         return (), False, 0, ()
@@ -396,6 +404,9 @@ def _augment_initial_family(
     )
     candidates = []
     for augmented_placement in augmented.placements:
+        placement_boundary = tuple(sorted(set(boundary) | {
+            tuple(sorted(edge)) for fragment in augmented_placement.hierarchy.fragments
+            for edge in fragment.deferred_edges}))
         augmented_mapping = dict(augmented_placement.mapping)
         target_mapping = {
             source_atom: target_atom
@@ -411,7 +422,7 @@ def _augment_initial_family(
         ) = project_augmented_placement(
             source_graph,
             target_mapping,
-            boundary,
+            placement_boundary,
             augmented_mapping,
             len(target_graph),
         )
@@ -438,15 +449,21 @@ def _augment_initial_family(
             retained_atoms=retained_atoms,
             covered_target_atoms=tuple(sorted(target_mapping.values())),
             leftover_fragments=leftover_fragments,
-            boundary_bonds=boundary,
+            boundary_bonds=placement_boundary,
             attachment_atoms_source=attachment_atoms_source,
             attachment_atoms_target=attachment_atoms_target,
             copied_residual_placements=copied_residual_placements,
             augmented_target_atom_count=augmented.augmented_target_atom_count,
             retained_fragments=retained_fragments,
             aam_hierarchy=augmented_placement.hierarchy,
+            fragment_classes=fragment_equivalence_classes(source_graph,
+                placement_boundary, retained_fragments, config.iso_tolerance),
+            preserved_source_bonds=tuple(sorted(tuple(sorted((a, b)))
+                for a, b in source_graph.edges() if a in target_mapping and b in target_mapping
+                and tuple(sorted((a, b))) not in placement_boundary)),
             derivations=(FragmentDerivation(placement.search_paths,
-                                           augmented_placement.search_paths),),
+                                           augmented_placement.search_paths,
+                                           augmented_placement.target_action, True),),
         )
         if (region is None
                 or region.intersection(candidate.covered_target_atoms)):
@@ -527,12 +544,12 @@ def _detect_fragments_from_initial(
                 continue
             seen_candidates[identity] = len(candidates)
             candidates.append(candidate)
-            if len(candidates) >= config.candidate_limit:
+            if config.candidate_limit is not None and len(candidates) >= config.candidate_limit:
                 candidate_capped = True
                 break
             if candidate_capped:
                 break
-        if len(candidates) >= config.candidate_limit:
+        if config.candidate_limit is not None and len(candidates) >= config.candidate_limit:
             break
 
     candidates.sort(key=lambda candidate: (

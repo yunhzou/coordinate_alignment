@@ -1,79 +1,101 @@
-"""Exact target-group action on compressed fragment candidates."""
-from __future__ import annotations
-
+"""Exact correlated actions projected to fragment occupations, not bijections."""
 from dataclasses import replace
 
+from ..alignment.post_aam import AAMHierarchy
 from ..matcher import _nauty_atom_generators
 from ..subgraph import _coerce_graph
 
 
 class FragmentOrbitLimitExceeded(RuntimeError):
-    """The exact target-coverage orbit exceeded its configured limit."""
-
     def __init__(self, count, limit):
-        self.count = int(count)
-        self.limit = int(limit)
-        super().__init__(
-            f"fragment target-coverage orbit cap hit: {count}>{limit}")
+        self.count, self.limit = int(count), int(limit)
+        super().__init__(f"fragment occupation limit: {count}>{limit}")
 
 
-def materialize_target_coverage_orbit(
-        candidate, target, *, iso_tolerance=0.5, limit=100_000,
-        generators=None):
-    """Materialize one witness per exact coverage/attachment group orbit.
+def materialize_target_coverage_orbit(candidate, target, *, iso_tolerance=0.5,
+                                      limit=None, generators=None):
+    """One witness per correlated fragment-region relation.
 
-    Internal atom permutations that leave both target ownership and attachment
-    sets unchanged remain compressed.  This is the assembly-relevant quotient;
-    it does not enumerate concrete atom bijections.
+    The orbit walk transports only integer images. Hierarchy/generator objects
+    are transported once for each final region, never on every group edge.
+    Proven equivalent source fragment units form an unordered multiset.
     """
-    if limit < 1:
-        raise ValueError("fragment orbit limit must be positive")
     graph = _coerce_graph(target, 0.2)
-    generators = tuple(generators or _nauty_atom_generators(
-        graph, wbo_tol=iso_tolerance))
+    generators = tuple(_nauty_atom_generators(graph, wbo_tol=iso_tolerance)
+                       if generators is None else generators)
+    families = []
+    for derivation in candidate.derivations:
+        paths = derivation.initial_paths[:1] + derivation.residual_paths
+        mapping = {a: p for path in paths for a, p in path.mapping.items()
+                   if a in candidate.retained_atoms}
+        action = dict(derivation.target_action)
+        mapping = {a: action.get(p, p) for a, p in mapping.items()}
+        if set(mapping) != set(candidate.retained_atoms):
+            raise ValueError("derivation does not explain retained atoms")
+        hierarchy = AAMHierarchy(tuple(f for path in paths for f in path.hierarchy.fragments))
+        families.append(replace(candidate, mapping=tuple(sorted(mapping.items())),
+            aam_hierarchy=hierarchy.relabel_target(action), derivations=(derivation,),
+            covered_target_atoms=tuple(sorted(mapping.values())),
+            attachment_atoms_target=tuple(sorted(mapping[a] for a in candidate.attachment_atoms_source))))
+    if not candidate.derivations:
+        families.append(candidate)  # Explicitly supplied relation, with no search provenance.
 
-    def key(item):
-        return (
-            tuple(sorted(item.covered_target_atoms)),
-            tuple(sorted(item.attachment_atoms_target)),
-        )
-
-    def transport(derivation, generator):
-        prior = dict(derivation.target_action)
-        atoms = set(prior) | set(generator)
-        action = tuple(sorted((atom, generator.get(prior.get(atom, atom),
-                                                   prior.get(atom, atom)))
-                              for atom in atoms))
-        return replace(derivation, target_action=action)
-
-    seen = {key(candidate): candidate}
-    queue = [candidate]
-    cursor = 0
-    while cursor < len(queue):
-        current = queue[cursor]
-        cursor += 1
-        for generator in generators:
-            mapping = tuple(sorted(
-                (int(source), int(generator.get(target_atom, target_atom)))
-                for source, target_atom in current.mapping
-            ))
-            transformed = replace(
-                current,
-                mapping=mapping,
-                aam_hierarchy=current.aam_hierarchy.relabel_target(generator),
-                derivations=tuple(transport(d, generator) for d in current.derivations),
-                covered_target_atoms=tuple(sorted(
-                    int(generator.get(atom, atom))
-                    for atom in current.covered_target_atoms)),
-                attachment_atoms_target=tuple(sorted(
-                    int(generator.get(atom, atom))
-                    for atom in current.attachment_atoms_target)),
-            )
-            state = key(transformed)
-            if state in seen:
+    final = {}
+    for family in families:
+        source_atoms = tuple(a for a, _p in family.mapping)
+        positions = {a: i for i, a in enumerate(source_atoms)}
+        classes = family.fragment_classes or tuple(range(len(family.retained_fragments)))
+        fragment_positions = tuple((label, tuple(positions[a] for a in fragment))
+            for label, fragment in zip(classes, family.retained_fragments, strict=True))
+        attachments = tuple(positions[a] for a in family.attachment_atoms_source)
+        bonds = tuple((positions[a], positions[b]) for a, b in family.preserved_source_bonds)
+        local = (() if family.derivations and family.derivations[0].occupation_projected
+                 else family.aam_hierarchy.fragments)
+        stages = [tuple(dict(enumerate(g.images)) for g in (f.target_generators or ()))
+                  for f in reversed(local)] + [generators]
+        degree = max([max(graph.nodes(), default=-1) + 1,
+                      max(family.covered_target_atoms, default=-1) + 1]
+                     + [max(g, default=-1) + 1 for stage in stages for g in stage])
+        identity = tuple(range(degree))
+        witness = tuple(p for _a, p in family.mapping)
+        def key(images):
+            return (tuple(sorted(images)), tuple(sorted(images[i] for i in attachments)),
+                    tuple(sorted((label, tuple(sorted(images[i] for i in part)))
+                                 for label, part in fragment_positions)),
+                    tuple(sorted(tuple(sorted((images[a], images[b]))) for a, b in bonds)))
+        states = {key(witness): (witness, identity)}
+        for stage in stages:
+            if not stage:
                 continue
-            if len(seen) >= limit:
-                raise FragmentOrbitLimitExceeded(len(seen) + 1, limit)
-            seen[state] = transformed
-            queue.append(transformed)
-    return tuple(seen[state] for state in sorted(seen))
+            actions = tuple(tuple(g.get(a, a) for a in range(degree)) for g in stage)
+            queue = list(states.values())
+            for images, action in queue:
+                for generator in actions:
+                    moved = tuple(generator[p] for p in images)
+                    relation = key(moved)
+                    if relation in states:
+                        continue
+                    if limit is not None and len(states) >= limit:
+                        raise FragmentOrbitLimitExceeded(len(states) + 1, limit)
+                    state = moved, tuple(generator[p] for p in action)
+                    states[relation] = state
+                    queue.append(state)
+        for relation, (images, action) in states.items():
+            final.setdefault(relation, (family, source_atoms, images, action))
+    output = []
+    for relation in sorted(final):
+        family, atoms, images, action = final[relation]
+        action_map = dict(enumerate(action))
+        derivations = []
+        for derivation in family.derivations:
+            prior = dict(derivation.target_action)
+            domain = set(prior) | set(action_map)
+            combined = tuple(sorted((a, action_map.get(prior.get(a, a), prior.get(a, a)))
+                                    for a in domain))
+            derivations.append(replace(derivation, target_action=combined))
+        mapping = dict(zip(atoms, images))
+        output.append(replace(family, mapping=tuple(sorted(mapping.items())),
+            covered_target_atoms=relation[0], attachment_atoms_target=relation[1],
+            aam_hierarchy=family.aam_hierarchy.relabel_target(action_map),
+            derivations=tuple(derivations)))
+    return tuple(output)

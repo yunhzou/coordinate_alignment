@@ -67,42 +67,37 @@ def test_fragment_candidate_serialization_preserves_fragment_units():
     assert restored.aam_hierarchy == hierarchy
 
 
-def test_all_coverage_modes_find_the_same_simple_exact_covers():
+def test_exact_coverage_graph_finds_all_simple_two_region_covers():
     masks = (0b0011, 0b1100, 0b0101, 0b1010)
 
     def rank_pattern(pattern, _covered_atom_count):
         return tuple(pattern)
 
     expected = {(0b0011, 0b1100), (0b0101, 0b1010)}
-    for mode in ("exhaustive", "modular", "recommendation"):
+    for _repeat in range(2):
         result = enumerate_coverage_patterns(
             masks,
             4,
             rank_pattern,
             config=CoverageEnumerationConfig(
                 maximum_precursors=2,
-                mode=mode,
-                beam_width=20,
-                patterns_per_coverage=4,
-                state_limit=100,
             ),
         )
         assert set(result.patterns) == expected
         assert result.complete
 
 
-def test_overlapping_fragments_cannot_manufacture_an_exact_cover():
+def test_overlapping_fragments_are_a_valid_union_cover_not_an_owned_reaction():
     result = enumerate_coverage_patterns(
         (0b011, 0b110),
         3,
         lambda pattern, _covered: tuple(pattern),
         config=CoverageEnumerationConfig(
             maximum_precursors=2,
-            mode="exhaustive",
         ),
     )
 
-    assert result.patterns == ()
+    assert result.patterns == ((0b011, 0b110),)
 
 
 def test_repeated_symmetric_ligand_assembles_without_bijection_expansion():
@@ -198,8 +193,8 @@ def test_candidate_substitution_reuses_assigned_target_regions():
 
     placed = place_candidate_items((item, item), ((1,), (0,)))
 
-    assert [copy["covered_target_atoms"] for copy in placed] == [[1], [0]]
-    assert [copy["mapping"] for copy in placed] == [[[4, 1]], [[4, 0]]]
+    assert [tuple(copy["covered_target_atoms"]) for copy in placed] == [(1,), (0,)]
+    assert [tuple(copy["mapping"]) for copy in placed] == [((4, 1),), ((4, 0),)]
 
 
 def test_occupation_assembly_uses_union_and_allows_overlap():
@@ -209,7 +204,7 @@ def test_occupation_assembly_uses_union_and_allows_overlap():
         (0, 1), (1, 2))
 
 
-def test_set_cover_search_prefers_less_overlap_without_repeat_special_case():
+def test_set_cover_search_obeys_supplied_rank_without_hidden_overlap_penalty():
     repeated = ((0, 1), (2, 3))
     broad = ((0, 1, 2), (1, 2, 3))
 
@@ -224,7 +219,8 @@ def test_set_cover_search_prefers_less_overlap_without_repeat_special_case():
         config=CoverageRecommendationConfig(maximum_precursors=2),
     )
 
-    assert result.patterns == ((repeated, repeated),)
+    assert broad in result.patterns[0]
+    assert not result.truncated
 
 
 def test_set_cover_branching_prioritizes_marginal_target_coverage():

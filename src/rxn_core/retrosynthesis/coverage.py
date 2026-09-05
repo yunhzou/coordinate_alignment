@@ -1,117 +1,68 @@
-"""Target-union assembly from precursor fragment candidates."""
-from __future__ import annotations
+"""Public typed assembly API using the common exact coverage decision graph."""
+from collections import defaultdict
+from fractions import Fraction
+from itertools import product
 
 from ..fragment_matching import materialize_target_coverage_orbit
-from ..matcher import _nauty_atom_generators
 from ..subgraph import _coerce_graph
-from .models import (
-    RetroAssembly,
-    RetroAssemblySearchResult,
-)
+from .decision_graph import CoverageDecisionGraph
+from .models import RetroAssembly, RetroAssemblySearchResult
+from .ranking import validate_atom_ownership
 
 
-def assemble_fragment_cover(
-        target, candidates, *, maximum_precursors=2,
-        assembly_limit=1_000, require_attachment_bonds=False,
-        allow_repeated_precursors=True, orbit_limit=100_000,
-        iso_tolerance=0.5):
-    """Combine candidate occupation regions until their union covers target."""
-    if maximum_precursors < 1 or assembly_limit < 1:
-        raise ValueError("precursor and assembly limits must be positive")
-    graph_P = _coerce_graph(target, 0.2)
-    target_atoms = frozenset(map(int, graph_P.nodes()))
-    generators = _nauty_atom_generators(
-        graph_P, wbo_tol=iso_tolerance)
-    expanded = []
+def assemble_fragment_cover(target, candidates, *, maximum_precursors=None,
+        assembly_limit=None, require_attachment_bonds=False,
+        allow_repeated_precursors=True, orbit_limit=None, iso_tolerance=0.5):
+    """All full covers; optional explicit caller restrictions and output slicing.
+
+    No cap limits traversal. Repeated copies at different target occupations
+    remain distinct slots. The raw API uses source IDs as precursor identities;
+    the catalog API additionally has canonical structure identities.
+    """
+    graph = _coerce_graph(target, 0.2)
+    pools = defaultdict(dict)
     for candidate in candidates:
-        variants = materialize_target_coverage_orbit(
-            candidate,
-            graph_P,
-            iso_tolerance=iso_tolerance,
-            limit=orbit_limit,
-            generators=generators,
-        )
-        expanded.extend(variants)
-    ordered = sorted(expanded, key=lambda candidate: (
-        -candidate.retained_size,
-        candidate.source_id,
-        candidate.covered_target_atoms,
-        candidate.mapping,
-    ))
+        for variant in materialize_target_coverage_orbit(candidate, graph,
+                iso_tolerance=iso_tolerance, limit=orbit_limit):
+            mask = sum(1 << atom for atom in variant.covered_target_atoms)
+            mapping = dict(variant.mapping)
+            shape = (mask, tuple(sorted(tuple(sorted(mapping[a] for a in part))
+                                         for part in variant.retained_fragments)),
+                     tuple(sorted(tuple(sorted((mapping[a], mapping[b])))
+                                  for a, b in variant.preserved_source_bonds)),
+                     variant.attachment_atoms_target)
+            key = (variant.source_id, variant.mapping, variant.retained_fragments,
+                   variant.boundary_bonds, variant.attachment_atoms_target)
+            pools[shape].setdefault(key, variant)
+    shapes = sorted(pools, key=lambda s: (-s[0].bit_count(), s))
+    decisions = CoverageDecisionGraph.build((s[0] for s in shapes), len(graph),
+                                             maximum_regions=maximum_precursors)
     assemblies = []
-    capped = False
-
-    def emit(selected):
-        owner = {}
-        for index, candidate in enumerate(selected):
-            for atom in candidate.covered_target_atoms:
-                owner.setdefault(atom, index)
-        formed = []
-        for left, right in graph_P.edges():
-            if owner[left] == owner[right]:
+    for slots in decisions.paths():
+        for selected in product(*(tuple(pools[shapes[slot]].values()) for slot in slots)):
+            if not allow_repeated_precursors and len({c.source_id for c in selected}) != len(selected):
                 continue
-            if require_attachment_bonds:
-                left_candidate = selected[owner[left]]
-                right_candidate = selected[owner[right]]
-                if (left not in left_candidate.attachment_atoms_target
-                        or right not in right_candidate.attachment_atoms_target):
-                    return
-            formed.append(tuple(sorted((int(left), int(right)))))
-        broken = tuple(sorted(
-            (candidate.source_id, int(left), int(right))
-            for candidate in selected
-            for left, right in candidate.boundary_bonds
-        ))
-        assemblies.append(RetroAssembly(
-            candidates=tuple(selected),
-            formed_bonds=tuple(sorted(formed)),
-            broken_bonds=broken,
-        ))
-
-    def visit(start, selected, covered, used_precursors):
-        nonlocal capped
-        if capped:
-            return
-        if covered == target_atoms:
-            emit(selected)
-            if len(assemblies) >= assembly_limit:
-                capped = True
-            return
-        if len(selected) >= maximum_precursors:
-            return
-        for index in range(start, len(ordered)):
-            candidate = ordered[index]
-            coverage = frozenset(candidate.covered_target_atoms)
-            if coverage.issubset(covered):
+            records = []
+            for candidate in selected:
+                mapping = dict(candidate.mapping)
+                carried = {tuple(sorted((mapping[a], mapping[b])))
+                           for a, b in candidate.preserved_source_bonds}
+                records.append({
+                    "covered_target_atoms": candidate.covered_target_atoms,
+                    "attachment_atoms_target": candidate.attachment_atoms_target,
+                    "preserved_target_bonds": carried,
+                })
+            formed = validate_atom_ownership(records, graph.edges(), require_attachment_bonds)
+            if formed is None:
                 continue
-            if (not allow_repeated_precursors
-                    and candidate.source_id in used_precursors):
-                continue
-            visit(
-                index + 1,
-                selected + [candidate],
-                covered | coverage,
-                used_precursors | {candidate.source_id},
-            )
-
-    visit(0, [], frozenset(), set())
-    def assembly_rank(assembly):
-        claimed_atoms = sum(
-            candidate.retained_size for candidate in assembly.candidates)
-        overlap = claimed_atoms - len(target_atoms)
-        return (
-            len(assembly.candidates),
-            overlap,
-            len(assembly.formed_bonds),
-            len(assembly.broken_bonds),
-            assembly.precursor_ids,
-        )
-
-    assemblies.sort(key=assembly_rank)
-    return RetroAssemblySearchResult(
-        assemblies=tuple(assemblies),
-        status=("capped" if capped
-                else ("matched" if assemblies else "no_cover")),
-        complete=not capped,
-        assembly_limit=int(assembly_limit),
-    )
+            assemblies.append(RetroAssembly(tuple(selected), tuple(map(tuple, formed)),
+                tuple(sorted((c.source_id, a, b) for c in selected for a, b in c.boundary_bonds))))
+    def rank(assembly):
+        total = sum(c.retained_size + sum(map(len, c.leftover_fragments)) for c in assembly.candidates)
+        return (len(set(assembly.precursor_ids)), -Fraction(len(graph), total),
+                tuple(sorted(assembly.precursor_ids)),
+                tuple(c.mapping for c in assembly.candidates))
+    assemblies.sort(key=rank)
+    shown = assemblies if assembly_limit is None else assemblies[:assembly_limit]
+    return RetroAssemblySearchResult(tuple(shown),
+        "matched" if assemblies else "no_cover", True, assembly_limit)

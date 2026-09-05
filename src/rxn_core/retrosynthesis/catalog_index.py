@@ -1,10 +1,9 @@
-"""Build a bounded coverage index from persisted fragment-search records."""
+"""Lossless coverage index from persisted fragment-search records."""
 from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
-import networkx as nx
 from rdkit import Chem
 
 from ..fragment_matching.rdkit_adapter import molecule_to_weighted_graph
@@ -12,7 +11,7 @@ from ..fragment_matching.serialization import (
     FRAGMENT_DETECTION_SCHEMA,
     fragment_candidate_from_record,
 )
-from ..matcher import _nauty_atom_generators, _nauty_orbits
+from ..matcher import _nauty_atom_generators
 from ..subgraph import _coerce_graph
 from .compressed_coverage import (
     CoverageSignature,
@@ -23,45 +22,9 @@ from .compressed_coverage import (
 from .ranking import candidate_entry_rank
 
 
-def _cip(atom):
-    return atom.GetProp("_CIPCode") if atom.HasProp("_CIPCode") else None
-
-
-def chirality_violations(candidate, source, target):
-    reaction_center = {int(edge[0]) for edge in candidate["boundary_bonds"]}
-    violations = 0
-    for source_atom, target_atom in candidate["mapping"]:
-        if int(source_atom) in reaction_center:
-            continue
-        source_cip = _cip(source.GetAtomWithIdx(int(source_atom)))
-        target_cip = _cip(target.GetAtomWithIdx(int(target_atom)))
-        if ((source_cip is not None or target_cip is not None)
-                and source_cip != target_cip):
-            violations += 1
-    return violations
-
-
-def _symmetry_copy_capacity(retained_atoms, source_orbits):
-    """Return how many disjoint retained atom inventories symmetry permits.
-
-    A source automorphism orbit is an exact pool of interchangeable atoms.  A
-    repeated copy of a retained fragment consumes the same number of atoms
-    from every orbit as the observed copy.  The smallest orbit capacity is
-    therefore the structural upper bound on symmetric product copies.
-    """
-    orbit_sizes = Counter(source_orbits.values())
-    retained_orbits = Counter(
-        source_orbits[int(atom)] for atom in retained_atoms)
-    return min(
-        orbit_sizes[orbit] // count
-        for orbit, count in retained_orbits.items()
-    )
-
-
 def candidate_entry(
-        record, candidate, explicit_molecule, structure_key, target,
-        chirality_ranking, source_orbits, target_domains,
-        target_occupations):
+        record, candidate, explicit_molecule, structure_key, target_domains,
+        target_occupations, copy_capacity):
     leftovers = candidate["leftover_fragments"]
     retained_heavy_atoms = sum(
         explicit_molecule.GetAtomWithIdx(int(atom)).GetAtomicNum() > 1
@@ -70,15 +33,7 @@ def candidate_entry(
     retained_atom_count = len(candidate["retained_atoms"])
     total_atom_count = explicit_molecule.GetNumAtoms()
     total_heavy_atoms = explicit_molecule.GetNumHeavyAtoms()
-    symmetry_copy_capacity = _symmetry_copy_capacity(
-        candidate["retained_atoms"], source_orbits)
-    retained_orbits = {
-        source_orbits[int(atom)] for atom in candidate["retained_atoms"]
-    }
-    symmetry_retained_atom_indices = sorted(
-        int(atom) for atom, orbit in source_orbits.items()
-        if orbit in retained_orbits
-    )
+    symmetry_copy_capacity, symmetry_retained_atom_indices = copy_capacity
     symmetry_retained_atoms = min(
         total_atom_count, retained_atom_count * symmetry_copy_capacity)
     symmetry_retained_heavy_atoms = min(
@@ -101,6 +56,7 @@ def candidate_entry(
         "attachment_atoms_source": candidate["attachment_atoms_source"],
         "attachment_atoms_target": candidate["attachment_atoms_target"],
         "mapping": candidate["mapping"],
+        "preserved_source_bonds": candidate["preserved_source_bonds"],
         "target_domains": target_domains,
         "target_occupations": target_occupations,
         "retained_fragments": candidate["retained_fragments"],
@@ -108,7 +64,7 @@ def candidate_entry(
         "structure_key": structure_key,
         "retained_heavy_atoms": retained_heavy_atoms,
         "total_heavy_atoms": total_heavy_atoms,
-        "heavy_atom_retention": retained_heavy_atoms / total_heavy_atoms,
+        "heavy_atom_retention": retained_heavy_atoms / total_heavy_atoms if total_heavy_atoms else None,
         "retained_atom_count": retained_atom_count,
         "total_atom_count": total_atom_count,
         "atom_retention": retained_atom_count / total_atom_count,
@@ -119,98 +75,43 @@ def candidate_entry(
         "symmetry_atom_retention": (
             symmetry_retained_atoms / total_atom_count),
         "symmetry_heavy_atom_retention": (
-            symmetry_retained_heavy_atoms / total_heavy_atoms),
+            symmetry_retained_heavy_atoms / total_heavy_atoms if total_heavy_atoms else None),
         "attachment_trimmed_target_atoms": candidate[
             "attachment_trimmed_target_atoms"],
-        "chirality_violations": (
-            chirality_violations(candidate, explicit_molecule, target)
-            if chirality_ranking else 0),
+        "chirality_violations": 0,
     }
 
 
-def attachment_trim_variants(candidate, molecule):
-    """Yield connected variants that relinquish one mapped attachment atom."""
-    base = dict(candidate)
-    base["attachment_trimmed_target_atoms"] = []
-    yield base
-    mapping = {
-        int(source): int(target) for source, target in candidate["mapping"]
-    }
-    retained = {int(atom) for atom in candidate["retained_atoms"]}
-    attachment_targets = set(map(
-        int, candidate["attachment_atoms_target"]))
-    inverse = {target: source for source, target in mapping.items()}
-    seen = set()
-    for target_atom in sorted(attachment_targets):
-        source_atom = inverse.get(target_atom)
-        if source_atom is None or source_atom not in retained:
-            continue
-        new_retained = retained - {source_atom}
-        if not new_retained:
-            continue
-        graph = nx.Graph()
-        graph.add_nodes_from(new_retained)
-        for bond in molecule.GetBonds():
-            left, right = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-            if left in new_retained and right in new_retained:
-                graph.add_edge(left, right)
-        if not nx.is_connected(graph):
-            continue
-        new_mapping = {
-            source: target for source, target in mapping.items()
-            if source in new_retained
-        }
-        leftover = set(range(molecule.GetNumAtoms())) - new_retained
-        leftover_graph = nx.Graph()
-        leftover_graph.add_nodes_from(leftover)
-        boundary = []
-        attachment_r = set()
-        for bond in molecule.GetBonds():
-            left, right = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-            if left in leftover and right in leftover:
-                leftover_graph.add_edge(left, right)
-            elif left in new_retained and right in leftover:
-                boundary.append([left, right])
-                attachment_r.add(left)
-            elif right in new_retained and left in leftover:
-                boundary.append([right, left])
-                attachment_r.add(right)
-        if not attachment_r:
-            continue
-        key = tuple(sorted(new_mapping.items()))
-        if key in seen:
-            continue
-        seen.add(key)
-        variant = dict(candidate)
-        variant.update({
-            "mapping": [list(item) for item in sorted(new_mapping.items())],
-            "retained_atoms": sorted(new_retained),
-            "covered_target_atoms": sorted(new_mapping.values()),
-            "leftover_fragments": [
-                sorted(component)
-                for component in nx.connected_components(leftover_graph)
-            ],
-            "boundary_bonds": sorted(boundary),
-            "attachment_atoms_source": sorted(attachment_r),
-            "attachment_atoms_target": sorted(
-                new_mapping[atom] for atom in attachment_r),
-            "attachment_trimmed_target_atoms": [target_atom],
-        })
-        yield variant
+def exact_source_copy_capacity(retained_atoms, generators):
+    """Maximum disjoint whole-fragment copies, not independent atom capacity."""
+    initial = frozenset(map(int, retained_atoms))
+    regions, queue = {initial}, [initial]
+    for region in queue:
+        for generator in generators:
+            image = frozenset(generator.get(a, a) for a in region)
+            if image not in regions:
+                regions.add(image)
+                queue.append(image)
+    masks = tuple(sum(1 << a for a in region) for region in regions)
+    from functools import lru_cache
+    @lru_cache(None)
+    def pack(remaining):
+        if not remaining:
+            return 0
+        if all(not (a & b) for i, a in enumerate(remaining) for b in remaining[i + 1:]):
+            return len(remaining)
+        first, rest = remaining[0], remaining[1:]
+        return max(pack(rest), 1 + pack(tuple(m for m in rest if not m & first)))
+    return pack(tuple(sorted(masks))), sorted(set().union(*regions))
 
 
 @dataclass(frozen=True)
 class CandidateIndexConfig:
-    per_domain_limit: int = 200
-    exclude_target_identity: bool = True
-    attachment_trim_variants: bool = False
-    chirality_ranking: bool = False
+    exclude_target_identity: bool = False
     expected_ids: tuple[str, ...] = ()
     iso_tolerance: float = 0.5
 
     def __post_init__(self):
-        if self.per_domain_limit < 1:
-            raise ValueError("candidate index limits must be positive")
         if self.iso_tolerance <= 0:
             raise ValueError("isomorphism tolerance must be positive")
 
@@ -223,7 +124,7 @@ class CandidateIndex:
     counts: dict[str, int]
 
 
-def merge_candidate_indexes(indexes, per_domain_limit):
+def merge_candidate_indexes(indexes):
     """Reduce independent shard indexes into one deterministic index."""
     groups = defaultdict(list)
     expected = defaultdict(list)
@@ -238,8 +139,7 @@ def merge_candidate_indexes(indexes, per_domain_limit):
         counts.update(index.counts)
     return CandidateIndex(
         groups={
-            signature: sorted(items, key=candidate_entry_rank)[
-                :per_domain_limit]
+            signature: sorted(items, key=candidate_entry_rank)
             for signature, items in groups.items()
         },
         expected={
@@ -260,7 +160,6 @@ def build_candidate_index(records, target, target_key, *, config=None):
     target_graph = _coerce_graph(molecule_to_weighted_graph(target), 0.2)
     target_generators = _nauty_atom_generators(
         target_graph, wbo_tol=config.iso_tolerance)
-    target_occupation_orbits = {}
     for record in records:
         if record["schema"] != FRAGMENT_DETECTION_SCHEMA:
             raise ValueError(
@@ -283,16 +182,14 @@ def build_candidate_index(records, target, target_key, *, config=None):
                 "invalid persisted source representation: "
                 f"{record['representation']!r}")
 
-        counts["matched_precursors"] += 1
+        counts["matched_precursors"] += bool(record["candidates"])
         counts["capped_precursors"] += record["status"] == "capped"
+        counts["incomplete_precursors"] += not record["complete"]
         explicit_molecule = Chem.AddHs(molecule)
         source_graph = _coerce_graph(
             molecule_to_weighted_graph(explicit_molecule), 0.2)
-        source_orbits = _nauty_orbits(
-            source_graph, wbo_tol=config.iso_tolerance)
-        if config.chirality_ranking:
-            Chem.AssignStereochemistry(
-                explicit_molecule, cleanIt=True, force=True)
+        source_generators = _nauty_atom_generators(source_graph, wbo_tol=config.iso_tolerance)
+        source_capacity_cache = {}
         from ..search_graph import AAMSearchGraph
         search_graphs = tuple(AAMSearchGraph.from_record(g)
                               for g in record.get("search_graphs", ()))
@@ -307,54 +204,34 @@ def build_candidate_index(records, target, target_key, *, config=None):
                 candidate_target_occupations(
                     typed, target_graph,
                     iso_tolerance=config.iso_tolerance,
-                    generators=target_generators,
-                    orbit_cache=target_occupation_orbits),
+                    generators=target_generators),
             ))
-        if config.attachment_trim_variants:
-            candidates = [
-                (variant, candidate_target_domains(typed_variant),
-                 candidate_target_occupations(
-                     typed_variant, target_graph,
-                     iso_tolerance=config.iso_tolerance,
-                     generators=target_generators,
-                     orbit_cache=target_occupation_orbits))
-                for candidate, _domains, _occupations in candidates
-                for variant in attachment_trim_variants(
-                    candidate, explicit_molecule)
-                for typed_variant in (fragment_candidate_from_record(dict(
-                    variant, source_id=record["source_id"]), search_graphs=search_graphs),)
-            ]
-        else:
-            candidates = [
-                (dict(candidate, attachment_trimmed_target_atoms=[]),
-                 domains, occupations)
-                for candidate, domains, occupations in candidates
-            ]
+        candidates = [
+            (dict(candidate, attachment_trimmed_target_atoms=[]), domains, occupations)
+            for candidate, domains, occupations in candidates
+        ]
         for candidate, target_domains, target_occupations in candidates:
+            retained = tuple(candidate["retained_atoms"])
+            if retained not in source_capacity_cache:
+                source_capacity_cache[retained] = exact_source_copy_capacity(retained, source_generators)
             item = candidate_entry(
                 record,
                 candidate,
                 explicit_molecule,
                 molecule_key,
-                target,
-                config.chirality_ranking,
-                source_orbits,
                 target_domains,
                 target_occupations,
+                source_capacity_cache[retained],
             )
             signature = coverage_signature(target_occupations)
             bucket = groups[signature]
             bucket.append(item)
-            if len(bucket) >= config.per_domain_limit * 2:
-                bucket.sort(key=candidate_entry_rank)
-                del bucket[config.per_domain_limit:]
             counts["fragment_candidates"] += 1
             if item["precursor_id"] in config.expected_ids:
                 expected[item["precursor_id"]].append(item)
 
     ranked_groups = {
-        signature: sorted(items, key=candidate_entry_rank)[
-            :config.per_domain_limit]
+        signature: sorted(items, key=candidate_entry_rank)
         for signature, items in groups.items()
     }
     return CandidateIndex(

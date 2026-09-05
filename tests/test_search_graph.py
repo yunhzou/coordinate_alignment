@@ -220,10 +220,10 @@ def test_fragment_archive_and_target_action_preserve_evidence():
     result = detect_fragments(source, target)
     candidate = result.candidates[0]
     variants = materialize_target_coverage_orbit(candidate, target)
-    assert len(variants) == 2
+    assert {dict(v.mapping)[0] for v in variants} == {0, 2}
     for variant in variants:
         assignments = {a: b for fragment in variant.aam_hierarchy.fragments
-                        for a, b in fragment.representative_assignments}
+                        for a, b in fragment.representative_assignments if a in variant.retained_atoms}
         assert assignments == dict(variant.mapping)
         record = json.loads(json.dumps(fragment_candidate_to_record(variant)))
         restored = fragment_candidate_from_record(record)
@@ -231,7 +231,8 @@ def test_fragment_archive_and_target_action_preserve_evidence():
         assert restored.aam_hierarchy == variant.aam_hierarchy
         derivation = restored.derivations[0]
         action = dict(derivation.target_action)
-        witness = derivation.initial_paths[0].mapping
+        witness = {a: b for path in derivation.initial_paths[:1] + derivation.residual_paths
+                   for a, b in path.mapping.items() if a in variant.retained_atoms}
         assert {a: action.get(b, b) for a, b in witness.items()} == assignments
     record = json.loads(json.dumps(fragment_detection_to_record(
         result, row_index=0, representation='CO')))

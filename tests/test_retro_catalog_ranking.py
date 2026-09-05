@@ -3,7 +3,7 @@ from rxn_core.retrosynthesis.ranking import (
     build_ranked_assembly,
     validate_atom_ownership,
 )
-from rxn_core.retrosynthesis.catalog_index import _symmetry_copy_capacity
+from rxn_core.retrosynthesis.catalog_index import exact_source_copy_capacity
 
 
 def _item(precursor_id, structure_key, retained, total,
@@ -94,26 +94,22 @@ def test_symmetric_disassembly_precedes_equal_direct_retention():
     assert assembly_rank(symmetric) < assembly_rank(asymmetric)
 
 
-def test_symmetry_copy_capacity_is_limited_by_the_rarest_required_orbit():
-    source_orbits = {
-        0: "repeated-carbon", 1: "repeated-carbon",
-        2: "repeated-hydrogen", 3: "repeated-hydrogen",
-        4: "repeated-hydrogen", 5: "repeated-hydrogen",
-        6: "unique-anchor",
-    }
-
-    assert _symmetry_copy_capacity((0, 2, 3), source_orbits) == 2
-    assert _symmetry_copy_capacity((0, 2, 3, 6), source_orbits) == 1
+def test_symmetry_copy_capacity_uses_correlated_whole_fragment_action():
+    swap = dict(enumerate((1, 0, 4, 5, 2, 3, 6)))
+    assert exact_source_copy_capacity((0, 2, 3), (swap,))[0] == 2
+    assert exact_source_copy_capacity((0, 2, 3, 6), (swap,))[0] == 1
 
 
 def test_shared_target_claim_is_not_rejected():
     precursors = (
         {"covered_target_atoms": [0, 1],
+         "preserved_target_bonds": ((0, 1),),
          "attachment_atoms_target": [0, 1]},
         {"covered_target_atoms": [1, 2],
+         "preserved_target_bonds": ((1, 2),),
          "attachment_atoms_target": [1, 2]},
     )
 
     assert validate_atom_ownership(
         precursors, ((0, 1), (1, 2)), require_attachment_bonds=False,
-    ) == [[1, 2]]
+    ) == []

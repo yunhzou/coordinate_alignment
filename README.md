@@ -26,6 +26,8 @@ they do not reconstruct an alternative AAM model from serialized records.
 See [the search-graph API](docs/AAM_SEARCH_GRAPH_API.md) for the object model,
 conditional fragment API, persistence, and path replay;
 [ALGORITHM.md](ALGORITHM.md) covers downstream algorithms.
+See [retro detection and assembly](docs/RETRO_ASSEMBLY.md) for geometric
+building-block recommendation using the same matcher and saved AAM graphs.
 
 ## Install
 

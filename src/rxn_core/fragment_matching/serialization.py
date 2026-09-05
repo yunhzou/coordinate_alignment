@@ -6,7 +6,7 @@ from ..search_graph import AAMSearchGraph, SearchPath
 from .models import FragmentCandidate, FragmentDetectionResult, FragmentDerivation
 
 
-FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v3"
+FRAGMENT_DETECTION_SCHEMA = "rxn_core.fragment_detection/v4"
 
 
 class _GraphArchive:
@@ -49,11 +49,14 @@ def fragment_candidate_to_record(candidate: FragmentCandidate, *, archive=None):
         "retained_fragments": [
             list(item) for item in candidate.retained_fragments
         ],
+        "fragment_classes": list(candidate.fragment_classes),
+        "preserved_source_bonds": [list(edge) for edge in candidate.preserved_source_bonds],
         "aam_hierarchy": candidate.aam_hierarchy.to_record(),
         "derivations": [{
             "initial_paths": [archive.reference(p) for p in d.initial_paths],
             "residual_paths": [archive.reference(p) for p in d.residual_paths],
             "target_action": [list(pair) for pair in d.target_action],
+            "occupation_projected": d.occupation_projected,
         } for d in candidate.derivations],
     }
     if standalone:
@@ -91,10 +94,13 @@ def fragment_candidate_from_record(record, *, search_graphs=None):
             for item in record.get("retained_fragments") or ()),
         aam_hierarchy=AAMHierarchy.from_record(
             record.get("aam_hierarchy") or {}),
+        fragment_classes=tuple(record.get("fragment_classes", ())),
+        preserved_source_bonds=tuple(tuple(edge) for edge in record.get("preserved_source_bonds", ())),
         derivations=tuple(FragmentDerivation(
             tuple(SearchPath.from_reference(p, graphs) for p in d["initial_paths"]),
             tuple(SearchPath.from_reference(p, graphs) for p in d["residual_paths"]),
-            tuple(tuple(pair) for pair in d["target_action"]))
+            tuple(tuple(pair) for pair in d["target_action"]),
+            bool(d.get("occupation_projected", False)))
             for d in record.get("derivations", ())),
     )
 

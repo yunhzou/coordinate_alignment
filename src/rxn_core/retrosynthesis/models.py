@@ -22,4 +22,4 @@ class RetroAssemblySearchResult:
     assemblies: tuple[RetroAssembly, ...]
     status: str
     complete: bool
-    assembly_limit: int
+    assembly_limit: int | None

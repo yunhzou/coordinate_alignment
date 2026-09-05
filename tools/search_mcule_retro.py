@@ -88,12 +88,13 @@ def _search_one(row, *, seed_workers=1):
         )
     if result.status == "capped":
         counts["capped"] += 1
+    counts["incomplete"] += not result.complete
     candidates = [
         candidate for candidate in result.candidates
         if len(candidate.covered_target_atoms)
         >= _MINIMUM_TARGET_COVERAGE_SIZE
     ]
-    if result.candidates and not candidates:
+    if len(candidates) != len(result.candidates):
         counts["target_coverage_filtered"] += 1
     if not candidates and not _SAVE_ALL_RESULTS:
         return counts, None
@@ -216,7 +217,7 @@ def _parser():
     parser.add_argument("--minimum-target-coverage-fraction", type=float)
     parser.add_argument("--iso-tolerance", type=float, default=0.5)
     parser.add_argument("--branch-limit", type=int, default=100)
-    parser.add_argument("--candidate-limit", type=int, default=100)
+    parser.add_argument("--candidate-limit", type=int)
     parser.add_argument("--seed-limit", type=int)
     parser.add_argument(
         "--seed-mode",
@@ -226,7 +227,8 @@ def _parser():
         "--rough-retention-threshold", type=float, default=0.5)
     parser.add_argument("--maximum-boundary-bonds", type=int)
     parser.add_argument("--maximum-leftover-fragments", type=int)
-    parser.add_argument("--save-all-results", action="store_true")
+    parser.add_argument("--save-all-results", action=argparse.BooleanOptionalAction, default=True,
+                        help="persist complete search evidence, including capped/no-match records")
     parser.add_argument("--target-region-report")
     parser.add_argument(
         "--target-region-field",

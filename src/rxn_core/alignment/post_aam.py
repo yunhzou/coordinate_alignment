@@ -249,8 +249,11 @@ class AAMHierarchy:
         def domain(item):
             return replace(item, p_atoms=tuple(image(a) for a in item.p_atoms))
         def generator(item):
-            moved = list(range(item.degree))
-            for atom, target in enumerate(item.images):
+            degree = max(item.degree, max(action, default=-1) + 1,
+                         max(action.values(), default=-1) + 1)
+            moved = list(range(degree))
+            for atom in range(degree):
+                target = item.images[atom] if atom < item.degree else atom
                 moved[image(atom)] = image(target)
             return AtomPermutation(tuple(moved))
         return AAMHierarchy(tuple(replace(fragment,
