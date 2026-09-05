@@ -17,6 +17,7 @@ from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
 from pathlib import Path
 
 from rdkit import Chem, RDLogger
+from msgspec import json as fast_json
 
 from rxn_core.fragment_matching import (
     FragmentDetectionConfig,
@@ -146,13 +147,11 @@ def _encode_records(records):
     Concatenated members form a standard gzip stream. The coordinator copies
     bytes, rather than unpickling and serially recompressing large AAM archives.
     """
-    # Search graphs are acyclic JSON records (DAG links are integer references).
     # Encode one record at a time; do not copy a whole batch into one huge string.
     output = io.BytesIO()
     with gzip.GzipFile(fileobj=output, mode="wb", compresslevel=1, mtime=0) as stream:
         for record in records:
-            payload = json.dumps(record, separators=(",", ":"), check_circular=False)
-            stream.write(payload.encode("utf-8"))
+            stream.write(fast_json.encode(record))
             stream.write(b"\n")
     return output.getvalue()
 

@@ -15,11 +15,11 @@ for each measurement. No AAM was rerun for these comparisons.
 
 | Operation | Before | After |
 | --- | ---: | ---: |
-| Build archive | 14.161 s | 4.572 s |
-| JSON encoding | 8.352 s | 5.712 s |
-| Compression | 3.603 s | 1.543 s |
-| Total above | 26.116 s | 11.827 s |
-| Peak RSS through encoding/compression | 1,343.7 MB | 647.4 MB |
+| Build archive | 14.161 s | 4.530 s |
+| JSON encoding | 8.352 s | 1.248 s |
+| Compression | 3.603 s | 1.441 s |
+| Total above | 26.116 s | 7.219 s |
+| Peak RSS through encoding/compression | 1,343.7 MB | 648.4 MB |
 | Compressed bytes | 1,318,398 | 5,443,069 |
 
 The faster gzip setting trades file size for throughput; it is lossless. All
@@ -41,9 +41,12 @@ Changes:
   and repeatedly concatenated growing provenance tuples. A saved-family replay
   reduced merge time from 0.838 s to 0.512 s, with all 1,177 retained candidates
   and all derivations equal, in the same order.
-- The writer omits circular-reference checks because this schema represents
-  graph links using IDs, not cyclic Python containers. It uses gzip level1 and
-  preserves arbitrarily large integer symmetry counts.
+- The writer uses `msgspec`'s native JSON encoder and gzip level1. It preserves
+  the existing JSON schema and integer symmetry counts, including the tested
+  101-digit value. Unicode is emitted as UTF-8 rather than ASCII escapes; the
+  decoded value is unchanged. No native codec fallback or witness sampling is
+  involved. Install the catalog tools with `pip install -e '.[catalog]'`.
+  Core AAM's Python objects and C++ engine have no dependency on this writer.
 - `_detect_one` and `_record_detection` separate search from persistence.
   `_search_one` retains its external behavior. `bench/retro_tail_stages.py` saves
   typed detection and archive checkpoints, records individual stage times, and
@@ -51,7 +54,10 @@ Changes:
   partial result or repeats a missing search during an archive replay.
 
 Native RapidJSON was evaluated, but its measured JSON time (7.77 s) did not
-justify a production dependency. No native JSON dependency was added.
+justify a production dependency. A subsequent `msgspec` test reduced this stage
+to 1.248 s and was adopted. Both evaluated native encoders preserve the saved
+family's bytes; production uses only `msgspec`. The standard-library-only
+intermediate improvement measured 11.827 s for the three stages together.
 
 ## Full precursor evidence
 
@@ -62,6 +68,25 @@ justify a production dependency. No native JSON dependency was added.
   that change's full-precursor benefit.
 - Job432074: archive construction 119.371 s; archive checkpoint 39.865 s.
   This reused the typed checkpoint and performed no AAM.
+- Job432075: standard-library JSON/gzip-level1 encoding 189.800 s, excluding
+  its 38.638 s checkpoint load. Its full 40,062-candidate archive was saved.
+- Job432079: native JSON/gzip-level1 encoding **69.304 s**, excluding its
+  29.497 s checkpoint load. Both encoding jobs used one CPU on bosque67.
+  Peak RSS including the loaded archive fell from 13,665.8 MB to 10,116.0 MB.
+  The result is 130,923,317 compressed bytes (about 125 MiB), with all 40,062
+  candidates and the original capped/incomplete flags retained.
+
+The measured detection + archive + native encoding stage sum is **505.3 s**
+(8.42 min), excluding checkpoint saves/loads and about 1.4 s final file write.
+This is a sum of separately timed stages, not a newly timed end-to-end scan;
+in particular the detection measurement predates the merge-list improvement.
+
+The full native-written result is available at:
+`/h/399/yunhengzou/coordinate_alignment/data/retro_runs/aam_memory_boundary_20260905/staged_native_tail/2/result.jsonl.gz`.
+
+Streaming gzip integrity/checksum jobs432080 and432081 confirmed the entire
+standard-library and native-written JSON streams are byte-for-byte identical:
+SHA-256 `a40badac8912dfd0b16079158e3a7ea2c8a3cf6f3b232a7013fe645b4de86d49`.
 
 The checkpoints are roughly 1 GB each, at
 `data/retro_runs/aam_memory_boundary_20260905/staged_tail/2/detection.pkl`
@@ -82,4 +107,5 @@ lossless gzip output with shared arrays and a 101-digit symmetry count.
 
 Evidence directories under `data/retro_runs/aam_memory_boundary_20260905/`:
 `archive_before`, `archive_profile`, `archive_shared`, `archive_native`,
-`archive_final`, `merge_profile`, and `staged_tail/2`.
+`archive_final`, `archive_msgspec`, `merge_profile`, `staged_tail/2`, and
+`staged_native_tail/2`.

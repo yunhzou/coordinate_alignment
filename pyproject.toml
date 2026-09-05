@@ -27,6 +27,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "nbclient", "ipykernel"]
 smiles = ["rdkit>=2022.9"]
+catalog = ["rdkit>=2022.9", "msgspec>=0.21"]
 sessions = ["pymongo>=4.6"]
 
 [project.scripts]

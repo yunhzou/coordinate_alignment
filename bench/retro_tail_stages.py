@@ -17,11 +17,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prior-run', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--input-dir', type=Path)
     parser.add_argument('--index', type=int, required=True)
     parser.add_argument('--workers', type=int, default=48)
     parser.add_argument('--stage', choices=['detect', 'archive', 'encode', 'all'], default='all')
     args = parser.parse_args()
     directory = args.output_dir / str(args.index)
+    inputs = (args.input_dir or args.output_dir) / str(args.index)
     directory.mkdir(parents=True, exist_ok=True)
     # Trace the process from inside: external ptrace is disabled on these nodes.
     trace = (directory / f'{args.stage}.stacks.txt').open('w')
@@ -31,7 +33,8 @@ def main():
     row = source['row_index'], source['smiles'], source['source_id']
     _worker_init(config['target_smiles'], config['config'],
                  config['minimum_target_coverage_fraction'], True, None)
-    metrics = dict(source_id=source['source_id'], workers=args.workers,
+    metrics = dict(source_id=source['source_id'],
+                   workers=args.workers if args.stage in {'detect', 'all'} else 1,
                    stage=args.stage, config=config['config'])
     def checkpoint(stage, started):
         metrics[stage] = dict(seconds=time.perf_counter()-started,
@@ -49,7 +52,7 @@ def main():
     if args.stage in {'archive', 'all'}:
         if args.stage == 'archive':
             started = time.perf_counter()
-            with (directory / 'detection.pkl').open('rb') as stream:
+            with (inputs / 'detection.pkl').open('rb') as stream:
                 detection = pickle.load(stream)
             checkpoint('load_detection', started)
         started = time.perf_counter()
@@ -62,7 +65,7 @@ def main():
     if args.stage in {'encode', 'all'}:
         if args.stage == 'encode':
             started = time.perf_counter()
-            with (directory / 'archive.pkl').open('rb') as stream:
+            with (inputs / 'archive.pkl').open('rb') as stream:
                 counts, record = pickle.load(stream)
             checkpoint('load_archive', started)
         print(json.dumps({'candidates': 0 if record is None else len(record['candidates']),

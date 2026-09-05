@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--profile', action='store_true')
-    parser.add_argument('--codec', choices=['stdlib', 'rapidjson'], default='stdlib')
+    parser.add_argument('--codec', choices=['stdlib', 'rapidjson', 'msgspec'], default='stdlib')
     parser.add_argument('--compression-level', type=int, default=9)
     parser.add_argument('--no-circular-check', action='store_true')
     parser.add_argument('--merge-only', action='store_true')
@@ -87,16 +87,23 @@ def main():
     stats['archive'] = dict(seconds=time.perf_counter()-started, **memory())
     print(json.dumps({'archive': stats['archive']}), flush=True)
     started = time.perf_counter()
-    if args.codec == 'rapidjson':
+    if args.codec == 'msgspec':
+        import msgspec
+        encoded = msgspec.json.encode(record) + b'\n'
+        payload_size = len(encoded)
+    elif args.codec == 'rapidjson':
         import rapidjson
         payload = rapidjson.dumps(record, mapping_mode=rapidjson.MM_COERCE_KEYS_TO_STRINGS) + '\n'
     else:
         payload = json.dumps(record, separators=(',', ':'),
                              check_circular=not args.no_circular_check) + '\n'
-    stats['json'] = dict(seconds=time.perf_counter()-started, bytes=len(payload), **memory())
+    if args.codec != 'msgspec':
+        payload_size = len(payload)
+    stats['json'] = dict(seconds=time.perf_counter()-started, bytes=payload_size, **memory())
     print(json.dumps({'json': stats['json']}), flush=True)
     started = time.perf_counter()
-    encoded = payload.encode('utf-8')
+    if args.codec != 'msgspec':
+        encoded = payload.encode('utf-8')
     compressed = gzip.compress(encoded, compresslevel=args.compression_level, mtime=0)
     stats['gzip'] = dict(seconds=time.perf_counter()-started, bytes=len(compressed), **memory())
     stats['sha256'] = hashlib.sha256(encoded).hexdigest()

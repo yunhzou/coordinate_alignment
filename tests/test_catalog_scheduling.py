@@ -63,7 +63,7 @@ def test_fast_writer_preserves_large_symmetry_counts_and_shared_arrays():
     records = [{'multiplicity': 10**100, 'mapping': shared,
                 'alternative': shared, 'witness': {0: 2}, 'label': 'α/β'}]
     expected = ''.join(json.dumps(r, separators=(',', ':')) + '\n' for r in records)
-    assert gzip.decompress(catalog._encode_records(records)).decode() == expected
+    assert json.loads(gzip.decompress(catalog._encode_records(records))) == json.loads(expected)
     assert gzip.decompress(catalog._encode_records(())) == b''
 
 
