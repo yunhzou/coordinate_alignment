@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Complete one audited missing source using the unchanged catalog detector."""
 import argparse
+import gzip
 import json
 import os
 from pathlib import Path
 import signal
+import pickle
 import subprocess
 import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from search_mcule_retro import _worker_init, _search_one, _encode_records
+from search_mcule_retro import _worker_init, _search_one, _record_detection, _encode_records
 
 
 def supervise(arguments, output_dir, index):
@@ -43,6 +45,8 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--index", type=int, required=True)
     parser.add_argument("--workers", type=int, required=True)
+    parser.add_argument("--resume-detection", action="store_true",
+                        help="require and reuse the prior typed detection checkpoint")
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if not args.worker:
@@ -62,10 +66,20 @@ def main():
         "prior_run": str(args.prior_run.resolve()), "config": config["config"]}
     checkpoint.write_text(json.dumps(progress, indent=2) + "\n")
     print(json.dumps(progress), flush=True)
+    typed_directory = args.output_dir / 'checkpoints'
+    typed_directory.mkdir(parents=True, exist_ok=True)
     _worker_init(config["target_smiles"], config["config"],
-                 config["minimum_target_coverage_fraction"], True, None)
-    counts, record = _search_one((source["row_index"], source["smiles"], source["source_id"]),
-                                 seed_workers=max(1, args.workers - 1))
+                 config["minimum_target_coverage_fraction"], True, None, typed_directory)
+    row = source["row_index"], source["smiles"], source["source_id"]
+    if args.resume_detection:
+        saved = args.prior_run / 'checkpoints' / f'{row[0]}.detection.pkl.gz'
+        with gzip.open(saved, 'rb') as stream:
+            saved_row, detection = pickle.load(stream)
+        if saved_row != row:
+            raise ValueError('checkpoint source differs from audited source')
+        counts, record = _record_detection(row, *detection)
+    else:
+        counts, record = _search_one(row, seed_workers=max(1, args.workers - 1))
     with output.open("xb") as stream:
         stream.write(_encode_records([] if record is None else [record]))
     elapsed = time.perf_counter() - started
@@ -74,6 +88,7 @@ def main():
         "workers": args.workers, "scheduling": "resumed_one_source_per_node",
         "elapsed_seconds": elapsed, "source_id": source["source_id"],
         "resumed_from": str(args.prior_run.resolve()),
+        "reused_detection_checkpoint": args.resume_detection,
         "timing_scope": "fresh unfinished source only; not a fresh full-bank scan"}
     output.with_suffix(output.suffix + ".summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     checkpoint.write_text(json.dumps({**progress, "phase": "saved", "elapsed_seconds": elapsed}, indent=2) + "\n")

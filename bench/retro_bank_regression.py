@@ -46,10 +46,17 @@ def main():
         "run_directory": str(args.run.resolve()),
         "baseline": baseline, "current": current,
         "timing_scope": "scan including serialization; slowest shard excludes scheduler queue/startup and assembly",
-        "policy_difference": "current detection has no candidate cap; baseline candidate cap was 100",
+        "config_differences": {
+            key: {"baseline": baseline.get("config", {}).get(key),
+                  "current": current.get("config", {}).get(key)}
+            for key in baseline.get("config", {}).keys() | current.get("config", {}).keys()
+            if baseline.get("config", {}).get(key) != current.get("config", {}).get(key)
+        },
     }
-    if current["complete"]:
+    if current["complete"] and baseline["complete"]:
         report["scan_slowdown"] = current["slowest_shard_seconds"] / baseline["slowest_shard_seconds"]
+    else:
+        report["comparison_note"] = "No full-scan speed ratio: at least one scan is incomplete."
     slowest = []
     for summary_path in sorted((args.run / "parts").glob("*.summary.json")):
         path = Path(str(summary_path).removesuffix(".summary.json"))

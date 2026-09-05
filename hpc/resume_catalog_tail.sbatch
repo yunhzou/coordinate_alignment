@@ -14,6 +14,10 @@ cd "$repo_root"
 export PYTHONPATH="$repo_root/src"
 export RXN_CORE_NATIVE=1
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-srun "$repo_root/.venv/bin/python" bench/resume_catalog_source.py \
+stage_args=()
+if [[ "${3:-}" == "checkpoint" ]]; then
+  stage_args=(--resume-detection)
+fi
+srun timeout --kill-after=10s 580s "$repo_root/.venv/bin/python" bench/resume_catalog_source.py \
   --prior-run "$1" --output-dir "$2" \
-  --index "$SLURM_ARRAY_TASK_ID" --workers "$SLURM_CPUS_PER_TASK"
+  --index "$SLURM_ARRAY_TASK_ID" --workers "$SLURM_CPUS_PER_TASK" "${stage_args[@]}"

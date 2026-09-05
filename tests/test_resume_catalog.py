@@ -1,6 +1,7 @@
 import gzip
 import importlib.util
 import json
+import pickle
 from pathlib import Path
 import sys
 
@@ -28,7 +29,8 @@ def test_resume_preserves_source_indices_and_config_and_does_not_repeat_saved_wo
     monkeypatch.setattr(sys, "argv", ["resume", "--prior-run", str(prior),
         "--output-dir", str(output), "--index", "0", "--workers", "48", "--worker"])
     runner.main()
-    assert calls == [("CO", {"branch_limit": 100}, None, True, None), ((572, "C", "source"), 47)]
+    assert calls == [("CO", {"branch_limit": 100}, None, True, None, output / 'checkpoints'),
+                     ((572, "C", "source"), 47)]
     with gzip.open(output / "parts/part_0.jsonl.gz", "rt") as stream:
         assert json.loads(stream.read()) == {"row_index": 572, "source_id": "source"}
     with pytest.raises(FileExistsError):
@@ -65,3 +67,35 @@ def test_watchdog_kills_entire_session_and_records_timeout(tmp_path, monkeypatch
     assert killed == [(12345, runner.signal.SIGKILL)]
     assert json.loads((tmp_path / "parts/part_2.watchdog.json").read_text())["result_complete"] is False
     assert json.loads(capsys.readouterr().out)["event"] == "slow_run"
+
+
+def test_resume_detection_never_repeats_matching(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location("checkpoint_resume",
+        Path(__file__).parents[1] / "bench/resume_catalog_source.py")
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    prior, output = tmp_path / 'prior', tmp_path / 'output'
+    (prior / 'parts').mkdir(parents=True)
+    (prior / 'checkpoints').mkdir()
+    row = (42, 'C', 'source')
+    (prior / 'progress_audit.json').write_text(json.dumps({'unfinished_sources': [
+        {'source_id': row[2], 'smiles': row[1], 'row_index': row[0]}]}))
+    (prior / 'parts/part_0.summary.json').write_text(json.dumps({
+        'target_smiles': 'C', 'config': {'branch_limit': 100},
+        'minimum_target_coverage_fraction': None}))
+    with gzip.open(prior / 'checkpoints/42.detection.pkl.gz', 'wb') as stream:
+        pickle.dump((row, ({'rows': 1}, 'saved evidence', .25)), stream)
+    monkeypatch.setattr(runner, '_worker_init', lambda *args: None)
+    def forbidden(*args, **kwargs):
+        raise AssertionError('must not repeat a completed detection')
+    monkeypatch.setattr(runner, '_search_one', forbidden)
+    def archive(actual_row, counts, evidence, seconds):
+        assert actual_row == row and evidence == 'saved evidence' and seconds == .25
+        return counts, {'source_id': row[2]}
+    monkeypatch.setattr(runner, '_record_detection', archive)
+    monkeypatch.setattr(sys, 'argv', ['resume', '--prior-run', str(prior),
+        '--output-dir', str(output), '--index', '0', '--workers', '48',
+        '--worker', '--resume-detection'])
+    runner.main()
+    assert json.loads((output / 'parts/part_0.jsonl.gz.summary.json').read_text())[
+        'reused_detection_checkpoint'] is True
