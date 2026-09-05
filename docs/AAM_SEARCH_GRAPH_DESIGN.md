@@ -410,3 +410,73 @@ For unequal endpoint compositions the same target action yields an injective
 partial mapping, not a full bijection. Structural-family membership does not
 by itself imply chirality acceptance; that belongs to the requested selection
 policy.
+
+## 14. Reusable conditional fragment-matching function
+
+Formalize the existing fragment-growth operation as an independently usable
+package function. Both whole-molecule AAM and retrosynthesis detection should
+call this contract, rather than reaching through mechanism/result internals.
+This is an API proposal around existing matching semantics, not a new solver.
+
+```text
+match_fragment(source, target, *, seed, context, config)
+    -> FragmentMatchResult
+```
+
+- `source`, `target`: prepared weighted graphs with stable atom identity maps.
+  Preparing or caching these graphs must be reusable across calls.
+- `seed`: the source atom from which this fragment grows. Selection of multiple
+  seeds belongs to the calling search policy, rather than being hidden here.
+- `context`: locked source-target assignments, island partition, deferred-edge
+  evidence, and the graph/availability context needed to continue matching.
+- `config`: explicit matching rules (atom compatibility, graph floor, bond
+  tolerance, permitted mapped-seed behavior) and fragment-search limits.
+
+```text
+FragmentMatchResult
+    matches[]              distinct retained compressed fragment placements
+        source fragment and preserved-edge evidence
+        representative placement
+        local blocks / automorph relation and its conditioning context
+        deferred edges / island-merge information
+    diagnostics            outcome, cap scope/count, elapsed work
+```
+
+Each match is the R-P matched object discussed with the user. Its representation
+includes correlated alternatives; the top-level list does not enumerate every
+equivalent atom assignment. Results can be attached directly to search-graph
+transitions. The match references the context under which it is valid.
+
+Responsibilities:
+
+1. Reuse the existing incremental extension, compatibility checks and online
+   symmetry deduplication through the native-enabled growth boundary.
+2. Return every surviving compressed alternative within the configured search,
+   with original atom indices and explicit cap diagnostics.
+3. Retain sufficient conditioned symmetry evidence for exact realization. The
+   API must distinguish domains awaiting finalization from available exact
+   generators; finalization ownership remains the decision listed in section 11.
+4. Report a saturated fragment under this seeded search. Do not claim a
+   globally largest common fragment or exhaustive matching over all seeds.
+
+The consumers then own different compositions of this same operation:
+
+```text
+AAM scheduler:
+    choose seed -> match_fragment -> admit graph transitions -> continue
+
+Retro fragment detection:
+    choose initial seeds -> match_fragment -> construct augmentation context
+    -> match residual components under that context -> retain target ownership
+```
+
+The fixed-query subgraph API remains a distinct higher-level contract: it must
+cover the requested query and verify its required edges. It may compose multiple
+fragment-growth calls. A single seeded-growth result is not automatically a
+complete subgraph embedding. Augmentation likewise remains detection workflow
+logic; mechanism scoring, catalog ranking and assembly are outside the matcher.
+
+Existing `grow_island`, `match_weighted_subgraph`, and `detect_fragments` represent
+these different granularities. The coordinated refactor should clarify their
+public contracts and route common work through the fragment primitive, without
+duplicating search implementations or introducing one catch-all pipeline API.
