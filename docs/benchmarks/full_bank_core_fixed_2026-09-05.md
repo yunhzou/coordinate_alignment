@@ -46,6 +46,26 @@ Neither fresh scan completed, so there is **no measured complete-bank speedup
 ratio**. The independently verified 2.33× core improvement does not imply a
 2.33× end-to-end scan improvement.
 
+## Saved-record integrity audit
+
+Job 432151 read all 31 result files and verified gzip/JSON syntax, exact bank
+row IDs and SMILES, and absence of duplicate source records. It took 4 min 40 s
+on four allocated CPUs; this is validation time, not search time. Its exit code
+1 explicitly signals the three missing rows, not corrupt saved files.
+
+- 1,916 valid saved source records; 1,830 contain candidates.
+- 3,448,290 fragment candidates, not distinct reactant sets or mechanisms.
+- Status counts: 1,200 `capped`, 611 `rough`, 78 `matched`, 27 `no_match`.
+- Only 105 records carry `complete=true`; completed persistence is not an
+  exhaustive-search guarantee. `rough` is the detector's existing completeness
+  classification, not an additional shortcut introduced in this run.
+- All saved branch limits are 100. Missing zero-based rows: 537, 593, 619.
+
+Compact counts are versioned in
+[`full_bank_core_fixed_2026-09-05.json`](full_bank_core_fixed_2026-09-05.json).
+The complete per-record locations and SHA256 hashes remain in the cluster's
+`validated_index.json`.
+
 ## Remaining bottlenecks
 
 Short worker probes sampled the actual hot child processes using SIGUSR1:
