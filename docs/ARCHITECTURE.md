@@ -4,6 +4,10 @@ This document describes the module boundaries for the WBO graph alignment
 implementation. The main rule is that each layer owns one concept and exports
 only the abstraction needed by the layer above it.
 
+Proposed refactor (not implemented): [AAM search graph design and change
+analysis](AAM_SEARCH_GRAPH_DESIGN.md). This separates recorded fragment-decision
+paths from optional mechanism grouping and defines the consumer migration plan.
+
 ## Public Surface
 
 `rxn_core.__init__` is the convenience API used by scripts and the pipeline.
