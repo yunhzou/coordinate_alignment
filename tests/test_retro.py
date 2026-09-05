@@ -78,6 +78,12 @@ def test_progressive_matching_recovers_all_t05_ground_truth_atoms():
         for _source_atom, target_atom in placement.mapping
     ]
     assert len(occupied) == len(set(occupied)) == len(target.nodes)
+    assert result.selections
+    for selection in result.selections:
+        assert selection.candidate.derivations
+        original_pairs = {(selection.source_atoms[a], selection.target_atoms[b])
+                          for a, b in selection.candidate.mapping}
+        assert original_pairs.issubset(set(result.placements[selection.source_index].mapping))
 
 
 def test_fragment_detection_seed_limit_is_reported_as_incomplete():
@@ -142,7 +148,7 @@ def test_augmented_copy_baseline_survives_invalid_greedy_target_mapping():
         _matrix(2, []),
     ).to_networkx()
 
-    mappings, capped, _branches, augmented_size = match_augmented_residuals(
+    result = match_augmented_residuals(
         source,
         target,
         {0: 0},
@@ -153,10 +159,10 @@ def test_augmented_copy_baseline_survives_invalid_greedy_target_mapping():
         branch_limit=100,
     )
 
-    assert not capped
-    assert augmented_size == 2
-    assert tuple(item.mapping for item in mappings) == (((0, 0),),)
-    assert mappings[0].hierarchy.fragments
+    assert not result.capped
+    assert result.augmented_target_atom_count == 2
+    assert tuple(item.mapping for item in result.placements) == (((0, 0),),)
+    assert result.placements[0].hierarchy.fragments
 
 
 def test_augmented_leftover_competes_for_unused_target_atoms():

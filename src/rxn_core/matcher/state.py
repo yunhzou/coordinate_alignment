@@ -6,6 +6,21 @@ from dataclasses import dataclass
 from .primitives import _orbit_id
 
 
+def candidate_from_record(state):
+    """Reconstruct the compressed native/Python candidate, not its bijections."""
+    witness = {int(r): int(p) for r, p in state['witness'].items()}
+    automorph_blocks = tuple(_SymBlock(
+        tuple(block['r_atoms']), tuple(block['p_atoms']), extendable=False)
+        for block in state.get('automorph_blocks', ()))
+    blocks = tuple(_SymBlock(tuple(block['r_atoms']), tuple(block['p_atoms']),
+                             extendable=bool(block.get('extendable', False)))
+        for block in state.get('blocks', ())
+        if block.get('source') != 'exact_automorph_group')
+    return _SymCand(witness, blocks, exact_fixed=tuple(state.get('exact_fixed', ())),
+                    multiplicity=int(state.get('multiplicity', 1)),
+                    automorph_blocks=automorph_blocks)
+
+
 @dataclass(frozen=True)
 class _SymBlock:
     """A local symmetry class inside one partial candidate.

@@ -67,6 +67,7 @@ def _parallel_initial_fragment_placements(
     maximum_branch_count = 0
     candidate_capped = False
     seed_attempt_count = 0
+    search_graphs = []
     worker_count = min(int(seed_workers), len(seed_order))
 
     context = mp.get_context("fork")
@@ -90,14 +91,15 @@ def _parallel_initial_fragment_placements(
 
         stop = False
         for results in result_waves():
-            for placements, capped, branch_count in results:
+            for placements, capped, branch_count, graph in results:
+                search_graphs.append(graph)
                 seed_attempt_count += 1
                 maximum_branch_count = max(
                     maximum_branch_count, branch_count)
                 if capped:
                     capped_seed_count += 1
                     continue
-                candidate_capped = accumulator.add(placements)
+                candidate_capped = accumulator.add(placements, graph) if placements else False
                 if candidate_capped:
                     pool.terminate()
                     stop = True
@@ -118,6 +120,7 @@ def _parallel_initial_fragment_placements(
         seed_attempt_count,
         symmetry_pruned + len(seed_order) - seed_attempt_count,
         False,
+        tuple(search_graphs),
     )
 
 

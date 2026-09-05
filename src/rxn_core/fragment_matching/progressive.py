@@ -7,7 +7,17 @@ import numpy as np
 
 from ..frag import WeightedGraph
 from .detection import detect_fragments
-from .models import FragmentDetectionConfig
+from .models import FragmentCandidate, FragmentDetectionConfig, FragmentDetectionResult
+
+
+@dataclass(frozen=True)
+class ProgressiveSelection:
+    """One greedy selection with explicit residual-to-original atom spaces."""
+    source_index: int
+    source_atoms: tuple[int, ...]
+    target_atoms: tuple[int, ...]
+    detection: FragmentDetectionResult
+    candidate: FragmentCandidate
 
 
 @dataclass(frozen=True)
@@ -21,6 +31,7 @@ class ProgressiveFragmentPlacement:
 class ProgressiveFragmentMatchingResult:
     placements: tuple[ProgressiveFragmentPlacement, ...]
     uncovered_target_atoms: tuple[int, ...]
+    selections: tuple[ProgressiveSelection, ...] = ()
 
 
 def _induced(graph, atoms):
@@ -50,6 +61,7 @@ def progressive_fragment_matching(
     remaining_target = set(range(len(target.nodes)))
     mappings = [[] for _source in sources]
     fragments = [[] for _source in sources]
+    selections = []
 
     while remaining_target:
         options = []
@@ -87,10 +99,14 @@ def progressive_fragment_matching(
                     source_index,
                     mapping,
                     retained_fragments,
+                    ProgressiveSelection(source_index, source_atoms, target_atoms,
+                                         detection, candidate),
                 ))
         if not options:
             break
-        _rank, source_index, mapping, retained_fragments = min(options)
+        _rank, source_index, mapping, retained_fragments, selection = min(
+            options, key=lambda option: option[0])
+        selections.append(selection)
         mappings[source_index].extend(mapping)
         fragments[source_index].extend(retained_fragments)
         remaining_sources[source_index].difference_update(
@@ -109,4 +125,5 @@ def progressive_fragment_matching(
                 sources, mappings, fragments, strict=True)
         ),
         uncovered_target_atoms=tuple(sorted(remaining_target)),
+        selections=tuple(selections),
     )

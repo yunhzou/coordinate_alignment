@@ -1,0 +1,89 @@
+<!doctype html><html><head><meta charset="utf-8"><title>AAM search graph</title>
+<style>
+body{margin:0;background:#10151d;color:#e8edf4;font:14px system-ui}header{padding:14px;background:#1e2938}
+select,button,input{margin:4px}#graph{overflow:auto;height:190px;border-bottom:1px solid #526071}
+#panels{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 350px);min-height:280px}
+.panel{position:relative}.viewer{position:absolute;inset:0}.label{position:absolute;z-index:2;padding:8px}
+#status,#legend{padding:8px 14px}circle{cursor:pointer}#notice{color:#ffc078}
+</style><script>__LIBRARY__</script></head><body>
+<header><b>Recorded AAM fragment decisions</b> <select id="context"></select>
+<select id="terminal"></select><button id="history">Next recorded history</button>
+<br><button id="play">Play / pause</button><input id="step" type="range" min="0" value="0">
+<label><input id="colors" type="checkbox" checked>Fragment colors</label>
+<span id="notice"></span></header>
+<div id="graph"></div><div id="status"></div>
+<div id="panels"><div class="panel"><b class="label">R · original atom indices</b><div class="viewer" id="r"></div></div>
+<div class="panel"><b class="label">P · original atom indices</b><div class="viewer" id="p"></div></div></div>
+<div id="legend">Colors link matched atoms in this recorded path only. Unmatched atoms retain element colors. Colored cylinders mark preserved fragment bonds; thin original bonds provide context. No atom-permutation expansion.</div>
+<script>
+const data=__DATA__,g=data.graph;
+const contexts=document.getElementById('context'),ends=document.getElementById('terminal');
+const slider=document.getElementById('step'),status=document.getElementById('status');
+const incoming=g.states.map(()=>[]),roots=new Set(g.roots);
+g.transitions.forEach(e=>incoming[e.target].push(e));
+let selected=[],iterator=null,timer=null;
+const rv=$3Dmol.createViewer('r',{backgroundColor:'#10151d'}),pv=$3Dmol.createViewer('p',{backgroundColor:'#10151d'});
+function atoms(endpoint){return endpoint.elements.map((elem,i)=>{
+  const bonds=[],orders=[];endpoint.wbo[i].forEach((w,j)=>{if(i!==j&&w>=data.config.graph_floor){bonds.push(j);orders.push(Math.max(1,Math.round(w)))}});
+  return {elem,serial:i,index:i,x:endpoint.coordinates[i][0],y:endpoint.coordinates[i][1],z:endpoint.coordinates[i][2],bonds,bondOrder:orders};
+})}
+rv.addModel().addAtoms(atoms(data.reactant));pv.addModel().addAtoms(atoms(data.product));
+rv.zoomTo();pv.zoomTo();
+function* histories(node,suffix=[]){if(roots.has(node)){yield suffix;return}
+  for(const e of incoming[node])yield* histories(e.source,[e.id,...suffix]);}
+function color(i){const hue=i*137.508%360;
+  const channel=n=>{const k=(n+hue/30)%12;return Math.round(255*(.65-.26*Math.max(-1,Math.min(k-3,9-k,1))))};
+  return '#'+[0,8,4].map(n=>channel(n).toString(16).padStart(2,'0')).join('')}
+function draw(){
+  rv.removeAllShapes();pv.removeAllShapes();
+  for(const v of [rv,pv])v.setStyle({},{stick:{radius:.09},sphere:{scale:.23}});
+  const upto=Number(slider.value),owners=new Set();let fragment=0,matched=0;
+  for(const id of selected.slice(0,upto)){
+    const e=g.transitions[id];if(!e.match)continue;const mapping=e.match.symmetry.witness,c=color(fragment++);
+    if(!document.getElementById('colors').checked)continue;
+    for(const a of e.match.fragment){if(owners.has(a))continue;owners.add(a);matched++;
+      rv.setStyle({index:a},{stick:{radius:.09},sphere:{scale:.3,color:c}});
+      pv.setStyle({index:mapping[a]},{stick:{radius:.09},sphere:{scale:.3,color:c}});}
+    for(const [a,b] of e.preserved_bonds){for(const [viewer,endpoint,x,y] of
+      [[rv,data.reactant,a,b],[pv,data.product,mapping[a],mapping[b]]]){
+      const xyz=i=>({x:endpoint.coordinates[i][0],y:endpoint.coordinates[i][1],z:endpoint.coordinates[i][2]});
+      viewer.addCylinder({start:xyz(x),end:xyz(y),radius:.11,color:c});}}
+  }
+  rv.render();pv.render();
+  const terminal=Number(ends.value),node=upto?g.transitions[selected[upto-1]].target:rootFor(terminal);
+  const stops=g.stops.filter(s=>s.state===terminal);
+  status.textContent='State '+node+' · '+g.states[node].mapping.length+' assigned atoms · '+fragment+' fragment decisions · stop: '+stops.map(s=>s.reason+(s.stage?' ('+s.stage+')':'')).join(', ');
+  graphView();
+}
+function rootFor(node){while(incoming[node].length)node=incoming[node][0].source;return node}
+function graphView(){
+  const nodes=g.states.filter(s=>s.context===Number(contexts.value)),ids=new Set(nodes.map(s=>s.id));
+  const edges=g.transitions.filter(e=>ids.has(e.source)),levels=new Map(),rows=new Map(),pos=new Map();
+  for(const n of nodes){const level=Math.max(0,...incoming[n.id].map(e=>(levels.get(e.source)||0)+1));levels.set(n.id,level);
+    const row=rows.get(level)||0;rows.set(level,row+1);pos.set(n.id,[35+level*125,30+row*45]);}
+  const width=Math.max(300,...[...pos.values()].map(p=>p[0]+75)),height=Math.max(160,...[...pos.values()].map(p=>p[1]+35));
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'">';
+  for(const e of edges){const a=pos.get(e.source),b=pos.get(e.target),on=selected.includes(e.id);
+    svg+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+(on?'#f0b558':'#526071')+'" stroke-width="'+(on?3:1)+'"'+(e.match?'':' stroke-dasharray="4 3"')+'/>';}
+  for(const n of nodes){const p=pos.get(n.id),cap=g.stops.some(s=>s.state===n.id&&s.reason==='capped');
+    svg+='<circle data-node="'+n.id+'" cx="'+p[0]+'" cy="'+p[1]+'" r="12" fill="'+(cap?'#be4957':'#306d93')+'"/><text x="'+(p[0]+17)+'" y="'+(p[1]+4)+'" fill="#eee" font-size="11">'+n.id+' ('+n.mapping.length+')</text>';}
+  document.getElementById('graph').innerHTML=svg+'</svg>';
+  document.querySelectorAll('[data-node]').forEach(circle=>circle.onclick=()=>{
+    const node=circle.dataset.node;
+    if(![...ends.options].some(o=>o.value===node))ends.add(new Option('Recorded state '+node,node));
+    ends.value=node;chooseEnd()});
+}
+function nextHistory(){let next=iterator.next();if(next.done){iterator=histories(Number(ends.value));next=iterator.next()}
+  selected=next.value||[];slider.max=selected.length;slider.value=selected.length;draw()}
+function chooseEnd(){iterator=histories(Number(ends.value));nextHistory()}
+function chooseContext(){ends.replaceChildren();const stops=g.stops.filter(s=>g.states[s.state].context===Number(contexts.value));
+  for(const node of new Set(stops.map(s=>s.state))){const o=new Option('Terminal state '+node,node);ends.add(o)}
+  document.getElementById('notice').textContent=stops.some(s=>s.reason==='capped')?'Cap reached: retained search is incomplete':'';
+  chooseEnd()}
+g.contexts.forEach((c,i)=>contexts.add(new Option('Run '+i+' · seeds '+c.seed_order.join(',')+' · cuts '+JSON.stringify(c.cuts),i)));
+contexts.onchange=chooseContext;ends.onchange=chooseEnd;slider.oninput=draw;
+document.getElementById('history').onclick=nextHistory;document.getElementById('colors').onchange=draw;
+document.getElementById('play').onclick=()=>{if(timer){clearInterval(timer);timer=null;return}
+  slider.value=0;draw();timer=setInterval(()=>{slider.value=(Number(slider.value)+1)%(selected.length+1);draw()},800)};
+window.onresize=()=>{rv.resize();pv.resize()};chooseContext();
+</script></body></html>

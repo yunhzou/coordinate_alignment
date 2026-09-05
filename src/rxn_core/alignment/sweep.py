@@ -27,6 +27,7 @@ from ..matcher import (
     _sym_block_assignment_expr,
 )
 from ..matcher.canonical import _CandidateAutomorphismCanonicalizer
+from ..matcher.state import candidate_from_record
 from ..matcher.orbits import _nauty_colored_wbo_graph
 from .branch import (
     BranchLimitExceeded,
@@ -256,7 +257,10 @@ def _branch_symmetry_record(branch, symmetry_fragments=None):
         for r, p in getattr(branch, 'mapping', {}).items()
     }
     if symmetry_fragments is None:
-        symmetry_fragments = getattr(branch, 'symmetry_fragments', ())
+        paths = branch.symmetry_paths
+        if len(paths) != 1:
+            raise ValueError("select an explicit search path before projecting its hierarchy")
+        symmetry_fragments = paths[0]
     for frag_index, fragment in enumerate(symmetry_fragments):
         record = {
             'fragment_index': int(frag_index),
@@ -311,9 +315,7 @@ def _branch_symmetry_record(branch, symmetry_fragments=None):
 
 
 def _branch_analytical_derivations(branch, mapping):
-    paths = getattr(branch, 'symmetry_paths', None)
-    if not paths:
-        return [(dict(mapping), _branch_symmetry_record(branch))]
+    paths = branch.symmetry_paths
     derivations = []
     for path in paths:
         symmetry = _branch_symmetry_record(
@@ -759,6 +761,7 @@ def _merge_analytical_branch(branches, incoming, key_index=None):
             for cut in incoming.get('cuts', ())
         }
         branch['cuts'] = _cut_record(cuts)
+        branch.setdefault('path_provenance', []).extend(incoming.get('path_provenance', ()))
         return False
     branches.append(incoming)
     if key_index is not None:
@@ -797,10 +800,12 @@ def _refresh_entry_branch_symmetry(entry):
     entry['branch_symmetry'] = hierarchy
 
 
-def _pool_add(pool, sig, mapping, cuts, branch_symmetry=None):
+def _pool_add(pool, sig, mapping, cuts, branch_symmetry=None, *, provenance=None):
     cuts = frozenset(cuts)
     no_cut = not cuts
     branch = _analytical_branch(mapping, cuts, branch_symmetry)
+    if provenance is not None:
+        branch['path_provenance'] = [provenance]
     entry = pool.get(sig)
     if entry is None:
         pool[sig] = {
@@ -908,29 +913,6 @@ def _merge_compressed_pool(target, incoming, *, take_ownership=False,
     return target
 
 
-def _candidate_from_symmetry_state(state):
-    """Reconstruct one completed compressed candidate from its AAM record."""
-    state = dict(state or {})
-    witness = {int(r): int(p)
-               for r, p in dict(state.get('witness') or {}).items()}
-    automorph_blocks = tuple(_SymBlock(
-        tuple(map(int, block.get('r_atoms') or ())),
-        tuple(map(int, block.get('p_atoms') or ())),
-        extendable=False)
-        for block in state.get('automorph_blocks') or ())
-    blocks = tuple(_SymBlock(
-        tuple(map(int, block.get('r_atoms') or ())),
-        tuple(map(int, block.get('p_atoms') or ())),
-        extendable=bool(block.get('extendable', False)))
-        for block in state.get('blocks') or ()
-        if str(block.get('source') or '') != 'exact_automorph_group')
-    return _SymCand(
-        witness, blocks,
-        exact_fixed=tuple(map(int, state.get('exact_fixed') or ())),
-        multiplicity=int(state.get('multiplicity', 1)),
-        automorph_blocks=automorph_blocks)
-
-
 def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
                                       node_policy=None, return_metrics=False):
     """Attach exact groups after completed branch-family reduction.
@@ -953,7 +935,7 @@ def attach_completed_candidate_groups(branches, g_P, *, wbo_tol,
         for fragment in hierarchy.get('fragments') or ():
             metrics['completed_candidate_group_requests'] += 1
             state = fragment.get('symmetry') or {}
-            candidate = _candidate_from_symmetry_state(state)
+            candidate = candidate_from_record(state)
             key = (tuple(sorted(locked.items())),
                    _freeze_analytical(state))
             generators = cache.get(key)
@@ -994,7 +976,7 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
                               p_orbits=None, r_orbits=None,
                               profile=None):
     stop_on_core = bool(core_R)
-    return find_islands(
+    graph = find_islands(
         g_R, g_P, list(order),
         iso_tol=float(cfg['iso_tol']),
         max_branches=int(cfg['max_branches']),
@@ -1008,6 +990,7 @@ def _run_find_islands_limited(g_R, g_P, order, core_R, cfg, *,
         profile=profile,
         anchor_map=cfg.get('anchor_map'),
     )
+    return tuple(graph.paths())
 
 
 def _score_branch_mapping(mapping, g_R, g_P, wboR, wboT,
@@ -1168,7 +1151,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                   *, return_trace=False, collect_metrics=False):
     cut = tuple(tuple(int(v) for v in pair) for pair in cut)
     events = []
-    out = []
+    out = {}
     cut_t0 = time.perf_counter()
 
     graph_t0 = time.perf_counter()
@@ -1335,12 +1318,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
                     for derived_mapping, hierarchy in (
                             _branch_analytical_derivations(
                                 branch, accepted_mapping)):
-                        out.append((
-                            sig,
-                            tuple(sorted(derived_mapping.items())),
-                            cut,
-                            hierarchy,
-                        ))
+                        _pool_add(out, sig, derived_mapping, cut, hierarchy)
                         seed_accepted += 1
                 repair_stats = scored_items[0][2] if scored_items else None
                 repair_summary = _repair_trace_stats(repair_stats)
@@ -1398,7 +1376,7 @@ def _run_cut_work(elR, wboR, elT, wboT, cfg, cut, orders, core_R,
         raise
 
     elapsed = time.perf_counter() - cut_t0
-    compact_metrics['raw_result_count'] = len(out)
+    compact_metrics['raw_result_count'] = total_accepted
     if return_trace:
         events.append({
             'event': 'cut_end',
@@ -1451,13 +1429,7 @@ def _cs_wrun(args):
         _WORKER['g_P'], _WORKER['g_R_full'],
         _WORKER['p_orbits'], _WORKER['r_orbits'],
         return_trace=trace_enabled, collect_metrics=metrics_enabled)
-    local_pool = {}
-    for result in out:
-        sig, mapping_items, cut = result[:3]
-        branch_symmetry = result[3] if len(result) > 3 else None
-        _pool_add(
-            local_pool, sig, dict(mapping_items), cut, branch_symmetry)
-    local_pool = _public_pool(local_pool)
+    local_pool = _public_pool(out)
     metrics['worker_returned_branch_count'] = sum(
         len(entry.get('branches') or ())
         for entry in local_pool.values())
@@ -1672,11 +1644,7 @@ def _cut_sweep_chunk_serial(elR, wboR, elT, wboT, cfg, core_R, cuts,
         if collect_metrics:
             _merge_sweep_metrics(metrics, cut_metrics)
         _emit_trace(trace_path, events)
-        for result in results:
-            sig, mapping_items, _cut = result[:3]
-            branch_symmetry = result[3] if len(result) > 3 else None
-            mapping = dict(mapping_items)
-            _pool_add(pool, sig, mapping, _cut, branch_symmetry)
+        _merge_compressed_pool(pool, results, take_ownership=True)
     return pool, metrics
 
 

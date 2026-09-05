@@ -1,8 +1,9 @@
 # AAM search graph: design and coordinated refactor plan
 
-Status: proposed design; **no implementation authorized or included here**.
-Recorded 2026-09-04 after discussion with the user. The next step is to finish
-reviewing the contracts and then implement the agreed changes together.
+Status: implemented following authorization on 2026-09-04. See the
+[current API and verification notes](AAM_SEARCH_GRAPH_API.md).
+The sections below preserve the original design review and pre-refactor
+observations; statements about "current code" below refer to that baseline.
 
 ## 1. Agreed direction
 

@@ -3,7 +3,8 @@ import pytest
 import rxn_core
 
 from rxn_core.aam import search_aam
-from rxn_core.analytical import compile_mapping_families
+from rxn_core.analytical import compile_mechanism_families
+from rxn_core.mechanisms import group_mechanisms
 from rxn_core.rp import select_rp_mappings
 from rxn_core.ts import analyze_transition_state
 from rxn_core.domain import (
@@ -63,9 +64,11 @@ def test_search_aam_returns_complete_typed_hierarchy():
         workers=1)
 
     assert result.problem is problem
-    assert result.mechanisms
-    assert result.minimum_event_mechanisms()
-    mechanism = result.minimum_event_mechanisms()[0]
+    assert result.graph.transitions
+    assert result.branches
+    grouped = group_mechanisms(result)
+    assert grouped.minimum_event_mechanisms()
+    mechanism = grouped.minimum_event_mechanisms()[0]
     assert mechanism.representative.degree == 2
     assert mechanism.branches
     assert mechanism.encounter_count >= 1
@@ -76,11 +79,10 @@ def test_search_aam_returns_complete_typed_hierarchy():
     assert mechanism.branches[0].hierarchy.has_complete_exact_target_groups
     assert result.metrics.completed_group_requests >= 1
     assert result.metrics.completed_group_calculations >= 1
-    assert result.metrics.retained_branch_count == sum(
-        len(item.branches) for item in result.mechanisms)
+    assert result.metrics.retained_branch_count == len(result.graph.terminals)
 
-    analytical = compile_mapping_families(
-        result, workers=1, minimum_events_only=True)
+    analytical = compile_mechanism_families(
+        grouped, workers=1, minimum_events_only=True)
     assert analytical.mechanisms
     family = analytical.mechanisms[0].branches[0]
     assert family.family.contains(family.representative.as_dict())
@@ -118,8 +120,8 @@ def test_nonempty_ts_processing_uses_exact_endpoint_consensus():
                (0, 2, 0.5), (1, 3, 0.5))), label="TS")
     config = AAMSearchConfig(
         seed_count=1, branch_limit=100, symmetry_repair=False)
-    rp = select_rp_mappings(compile_mapping_families(
-        search_aam(AAMProblem(reactant, product), config),
+    rp = select_rp_mappings(compile_mechanism_families(
+        group_mechanisms(search_aam(AAMProblem(reactant, product), config)),
         minimum_events_only=True))
     modes = np.zeros((1, 4, 3))
     modes[0, :, 0] = (1.0, -1.0, -1.0, 1.0)
@@ -142,8 +144,8 @@ def test_no_event_mechanism_has_explicit_unscorable_ts_status():
     problem = AAMProblem(_endpoint("R"), _endpoint("P"), name="no_event")
     config = AAMSearchConfig(
         seed_count=1, branch_limit=100, symmetry_repair=False)
-    rp = select_rp_mappings(compile_mapping_families(
-        search_aam(problem, config), minimum_events_only=True))
+    rp = select_rp_mappings(compile_mechanism_families(
+        group_mechanisms(search_aam(problem, config)), minimum_events_only=True))
     modes = np.zeros((1, 2, 3))
     target = TransitionStateTarget(
         _endpoint("TS"), VibrationalModes(np.array([-100.0]), modes))

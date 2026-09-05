@@ -22,11 +22,11 @@ def main():
             t0 = time.perf_counter(); out = fn(*a, **k); phases[name] = phases.get(name, 0.0) + time.perf_counter() - t0
             return out
         return wrapper
-    aam_mod._execute_cut_sweep = timed("cut_sweep", aam_mod._execute_cut_sweep)
-    aam_mod._attach_exact_fragment_groups = timed("attach_groups", aam_mod._attach_exact_fragment_groups)
-    aam_mod._result_from_pool = timed("result_from_pool", aam_mod._result_from_pool)
+    aam_mod.finalize_graph_symmetry = timed("exact_groups", aam_mod.finalize_graph_symmetry)
     t0 = time.perf_counter()
     result = aam_mod.search_aam(problem, AAMSearchConfig(), workers=workers)
+    from rxn_core import group_mechanisms
+    timed('optional_grouping', group_mechanisms)(result)
     total = time.perf_counter() - t0
     m = result.metrics
     print(f"case {case} workers {workers}: total {total:.2f}s | " + " | ".join(f"{k} {v:.2f}s" for k, v in phases.items())

@@ -1,0 +1,42 @@
+{
+  "baseline_commit": "7a3d095b7220768fa99efb17636eb4fbafe1fad4",
+  "engine": "same compiled C++ extension for baseline and refactor",
+  "workers": 1,
+  "configuration": "unchanged AAMSearchConfig defaults; 3 seed orders; cap 100; full cut sweep",
+  "timing_scope": "raw AAM plus optional mechanism grouping; excludes final JSON serialization",
+  "saved_results_directory": "data/retro_runs/search_graph_refactor",
+  "cases": {
+    "tetraphenyl": {
+      "identical_mechanisms_mappings_fragments": true,
+      "baseline_seconds": [1.6465804371982813, 1.6193496398627758, 1.6267433054745197],
+      "final_seconds": [1.362690405920148, 1.3410579860210419, 1.318780031055212],
+      "mechanism_count": 9,
+      "deduplicated_branch_count": 123,
+      "semantic_snapshot_sha256": "f3966294d6354cc451ee3c151009fbbdf61f47d867148d693d505f5687fef2d6",
+      "states": 581,
+      "transitions": 434,
+      "graph_json_bytes": 951769
+    },
+    "tetratbu": {
+      "identical_mechanisms_mappings_fragments": true,
+      "baseline_seconds": [29.641861198469996, 30.181937884539366, 30.213880164548755],
+      "final_seconds": [29.868388388305902],
+      "same_optimization_three_repeat_check_seconds": [29.75202338770032, 29.849293595179915, 30.29163563065231],
+      "mechanism_count": 3,
+      "deduplicated_branch_count": 2562,
+      "semantic_snapshot_sha256": "44c2d3727df20ae3099e6e3111d05f59390dc9e82a22fbe4f90152811e222df2",
+      "states": 5947,
+      "transitions": 5788,
+      "graph_json_bytes": 25503582
+    }
+  },
+  "interpretation": "Tetraphenyl median improved about 18%; the heavy case is effectively unchanged. The full raw graph is now retained. This is not an order-of-magnitude speedup.",
+  "regressions": {
+    "pytest_passed": 181,
+    "t05_explicit_atoms_covered": 58,
+    "tiny_ring_exact_automorphisms": 8,
+    "native_python_differential": "passed",
+    "notebook_code_cells": "executed successfully",
+    "offline_viewer": "saved-result construction and JavaScript syntax tested; browser launch on this node lacks libnspr4.so"
+  }
+}

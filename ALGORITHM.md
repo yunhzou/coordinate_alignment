@@ -28,7 +28,7 @@ MolecularEndpoint(R, P)
  search_aam -------------------------------> AAMResult
                                                 |
                          +----------------------+
-                         | mechanism classes
+                         | fragment-decision graph
                          | completed branches
                          | fragment hierarchy
                          | exact fixed roles
@@ -37,7 +37,9 @@ MolecularEndpoint(R, P)
                          | cuts + provenance
                          | search metrics
                          v
-             compile_mapping_families
+                 group_mechanisms (optional)
+                         |
+             compile_mechanism_families
                          |
                          v
                  AnalyticalAAMResult
@@ -61,13 +63,14 @@ MolecularEndpoint(R, P)
                                   TSResult
 ```
 
-`search_aam()` performs AAM graph search, mechanism classification, and no
-geometry-based selection.
-It also finalizes each retained fragment candidate's exact target generators
-after branch-family reduction; this is the terminal AAM operation, and its
+`search_aam()` performs AAM graph search without mechanism classification or
+geometry-based selection. It finalizes each recorded fragment transition's
+exact target generators under its locked prefix; this is the terminal AAM operation, and its
 request/calculation/cache counts are part of `AAMSearchMetrics`.
-`compile_mapping_families()` turns the retained hierarchical relations into
-maximal exact cosets. `select_rp_mappings()` applies chirality constraints and
+`group_mechanisms()` separately performs balanced event scoring/repair.
+`compile_mechanism_families()` compiles its event-conditioned families;
+`compile_mapping_families()` instead compiles complete raw structural families
+without event grouping. `select_rp_mappings()` applies chirality constraints and
 then fixed-mapping RMSD ranking. `analyze_transition_state()` composes two
 partial AAM searches with mode scoring. None of these stages reads JSON,
 writes files, invokes the viewer, or silently recomputes an alternative atom
@@ -77,6 +80,13 @@ The main result objects are:
 
 ```text
 AAMResult
+`- AAMSearchGraph
+   |- contexts + roots
+   |- SearchState[]
+   |- FragmentTransition[] (compressed matched fragment; joins have no match)
+   `- SearchStop[]
+
+MechanismResult (optional; references AAMResult)
 `- AAMMechanism[]
    `- AAMBranch[]
       |- representative: AtomBijection

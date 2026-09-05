@@ -8,14 +8,17 @@ import time
 
 import numpy as np
 
-from .aam import _branch_from_record
+from .mechanisms import _branch_from_record
 from .alignment.post_aam import AAMHierarchy
+from .search_graph import frozen_value
 from .alignment.index_chirality import (
     analytical_family_static_context,
     compile_analytical_mapping_family,
 )
 from .domain import (
     AAMResult,
+    MechanismResult,
+    MappingFamilyResult,
     AnalyticalAAMResult,
     AnalyticalBranch,
     AnalyticalMechanism,
@@ -41,35 +44,12 @@ def _payload_key(record):
     mapping = tuple(sorted(
         (int(source), int(target))
         for source, target in record["mapping"].items()))
-    fragments = tuple(sorted(
-        tuple(sorted(map(int, fragment.get("fragment") or ())))
-        for fragment in (record.get("hierarchy") or {}).get("fragments") or ({
-            "fragment": [source for source, _target in mapping],
-        },)))
-    return mapping, fragments
-
-
-def _merge_fragment_generators(kept, incoming):
-    kept_fragments = {
-        tuple(sorted(map(int, item.get("fragment") or ()))): item
-        for item in (kept.get("hierarchy") or {}).get("fragments") or ()}
-    for item in (incoming.get("hierarchy") or {}).get("fragments") or ():
-        key = tuple(sorted(map(int, item.get("fragment") or ())))
-        target = kept_fragments.get(key)
-        if target is None:
-            continue
-        left = target.setdefault("symmetry", {})
-        right = item.get("symmetry") or {}
-        if ("automorph_generators" not in left
-                and "automorph_generators" not in right):
-            continue
-        generators = {
-            tuple(map(int, generator))
-            for generator in left.get("automorph_generators") or ()}
-        generators.update(tuple(map(int, generator)) for generator in
-                          right.get("automorph_generators") or ())
-        left["automorph_generators"] = [
-            list(generator) for generator in sorted(generators)]
+    fragments = []
+    for fragment in record["hierarchy"]["fragments"]:
+        symmetry = {key: value for key, value in fragment['symmetry'].items()
+                    if key not in {'multiplicity', 'automorph_group_source'}}
+        fragments.append((fragment['fragment'], fragment['deferred_edges'], symmetry))
+    return mapping, frozen_value(fragments)
 
 
 _COMPILER_CONTEXT = None
@@ -93,10 +73,11 @@ def _compile_payload(payload):
         metal_dwbo_threshold=context["metal_dwbo_threshold"],
         anchor_map=context["anchor_map"],
         static_context=context["static_context"],
+        include_event_relations=context["include_event_relations"],
     )
 
 
-def _compile_unique(records, aam, workers, static_context):
+def _compile_unique(records, aam, workers, static_context, include_event_relations):
     problem, config = aam.problem, aam.config
     context = {
         "elements_R": problem.reactant.elements,
@@ -109,6 +90,7 @@ def _compile_unique(records, aam, workers, static_context):
         "metal_dwbo_threshold": config.metal_event_threshold,
         "anchor_map": dict(config.anchors),
         "static_context": static_context,
+        "include_event_relations": include_event_relations,
     }
     payloads = [(record["mapping"], record["hierarchy"])
                 for record in records]
@@ -122,7 +104,7 @@ def _compile_unique(records, aam, workers, static_context):
         return pool.map(_compile_payload, payloads)
 
 
-def _maximal_families(records, aam, workers, static_context):
+def _maximal_families(records, aam, workers, static_context, *, include_event_relations=True):
     """Compile once per exact relation and retain maximal exact cosets."""
     groups = {}
     for source_index, original in enumerate(records):
@@ -132,12 +114,12 @@ def _maximal_families(records, aam, workers, static_context):
             "source_branch_index": source_index,
             "cuts": copy.deepcopy(record.get("cuts") or ()),
             "encounter_count": int(record.get("encounter_count", 1)),
+            "search_paths": copy.deepcopy(record.get("path_provenance", ())),
         }
         group = groups.get(key)
         if group is None:
             groups[key] = {"record": record, "provenance": [provenance]}
             continue
-        _merge_fragment_generators(group["record"], record)
         group["provenance"].append(provenance)
         group["record"]["encounter_count"] = (
             int(group["record"].get("encounter_count", 1))
@@ -150,7 +132,8 @@ def _maximal_families(records, aam, workers, static_context):
         group["record"]["cuts"] = [list(cut) for cut in sorted(cuts)]
     grouped = list(groups.values())
     compiled = _compile_unique(
-        [group["record"] for group in grouped], aam, workers, static_context)
+        [group["record"] for group in grouped], aam, workers, static_context,
+        include_event_relations)
     entries = []
     for group, family in zip(grouped, compiled):
         record = group["record"]
@@ -195,15 +178,16 @@ def _maximal_families(records, aam, workers, static_context):
     return maximal
 
 
-def compile_mapping_families(
-        aam: AAMResult, *, workers: int = 1,
+def compile_mechanism_families(
+        grouped: MechanismResult, *, workers: int = 1,
         minimum_events_only: bool = False) -> AnalyticalAAMResult:
     """Compile and maximally deduplicate exact cosets for AAM mechanisms.
 
     Geometry, chirality, and RMSD do not participate in this transformation.
     """
-    if not isinstance(aam, AAMResult):
-        raise TypeError("compile_mapping_families requires an AAMResult")
+    if not isinstance(grouped, MechanismResult):
+        raise TypeError("compile_mechanism_families requires group_mechanisms(aam)")
+    aam = grouped.aam
     started = time.perf_counter()
     problem = aam.problem
     static_context = analytical_family_static_context(
@@ -213,8 +197,8 @@ def compile_mapping_families(
         dwbo_threshold=aam.config.event_threshold,
         metal_dwbo_threshold=aam.config.metal_event_threshold)
     sources = (
-        aam.minimum_event_mechanisms()
-        if minimum_events_only else aam.mechanisms)
+        grouped.minimum_event_mechanisms()
+        if minimum_events_only else grouped.mechanisms)
     mechanisms = []
     for mechanism in sources:
         completed = [_branch_record(branch) for branch in mechanism.branches]
@@ -230,3 +214,29 @@ def compile_mapping_families(
         aam=aam,
         mechanisms=tuple(mechanisms),
         elapsed_seconds=time.perf_counter() - started)
+
+
+def compile_mapping_families(aam: AAMResult, *, workers: int = 1):
+    """Compile complete raw branch relations without mechanism grouping."""
+    if not isinstance(aam, AAMResult):
+        raise TypeError('compile_mapping_families requires an AAMResult')
+    started = time.perf_counter()
+    problem, config = aam.problem, aam.config
+    records = []
+    for branch in aam.branches:
+        mapping = branch.representative.as_dict()
+        if len(mapping) != problem.atom_count:
+            raise ValueError('full mapping-family compilation requires complete branches')
+        records.append({'mapping': mapping, 'hierarchy': branch.hierarchy.to_record(),
+            'cuts': sorted({cut for path in branch.paths for cut in path.context.cuts}),
+            'encounter_count': len(branch.paths),
+            'path_provenance': [{'terminal': path.terminal, 'transitions': path.transitions}
+                                for path in branch.paths]})
+    context = analytical_family_static_context(problem.reactant.elements, problem.reactant.wbo,
+        problem.product.elements, problem.product.wbo, graph_floor=config.graph_floor,
+        dwbo_threshold=config.event_threshold, metal_dwbo_threshold=config.metal_event_threshold)
+    compiled = _maximal_families(records, aam, workers, context,
+                                 include_event_relations=False)
+    return MappingFamilyResult(aam,
+        tuple(AnalyticalBranch(_branch_from_record(raw), family) for raw, family in compiled),
+        time.perf_counter() - started)

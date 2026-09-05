@@ -38,6 +38,14 @@ def materialize_target_coverage_orbit(
             tuple(sorted(item.attachment_atoms_target)),
         )
 
+    def transport(derivation, generator):
+        prior = dict(derivation.target_action)
+        atoms = set(prior) | set(generator)
+        action = tuple(sorted((atom, generator.get(prior.get(atom, atom),
+                                                   prior.get(atom, atom)))
+                              for atom in atoms))
+        return replace(derivation, target_action=action)
+
     seen = {key(candidate): candidate}
     queue = [candidate]
     cursor = 0
@@ -52,6 +60,8 @@ def materialize_target_coverage_orbit(
             transformed = replace(
                 current,
                 mapping=mapping,
+                aam_hierarchy=current.aam_hierarchy.relabel_target(generator),
+                derivations=tuple(transport(d, generator) for d in current.derivations),
                 covered_target_atoms=tuple(sorted(
                     int(generator.get(atom, atom))
                     for atom in current.covered_target_atoms)),

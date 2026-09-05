@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 
 from .._native import paired_mapping_invariant as _native_paired_invariant
 from ..alignment.branch import _generate_seed_orders
-from ..growth import IslandBranchLimitExceeded, grow_island
+from ..fragment import FragmentMatchConfig, FragmentMatchContext, match_fragment
 from ..matcher import (
     _PartialMappingCanonicalizer,
     _edge_wbo,
@@ -15,10 +15,12 @@ from ..matcher import (
     _orbit_wbo_bucket,
 )
 from ..subgraph import _coerce_graph
+from ..search_graph import AAMSearchGraph
 from .augmentation import match_augmented_residuals, project_augmented_placement
 from .graph_ops import partition_at_retained_fragment
 from .models import (
     FragmentCandidate,
+    FragmentDerivation,
     FragmentDetectionConfig,
     FragmentDetectionResult,
     FragmentTargetContext,
@@ -33,6 +35,7 @@ class _InitialFragmentFamily:
     representative_mapping: tuple[tuple[int, int], ...]
     symmetry: dict
     encounter_count: int = 1
+    search_paths: tuple = ()
 
 
 def _paired_mapping_invariant(mapping, source_orbits, target_orbits,
@@ -166,8 +169,8 @@ class _InitialFamilyAccumulator:
                 if target_region_atoms is not None else None),
         )
 
-    def add(self, placements):
-        for placement in placements:
+    def add(self, placements, graph):
+        for placement, path in zip(placements, graph.paths(), strict=True):
             retained = tuple(sorted(map(int, placement.fragment)))
             mapping = tuple(sorted(
                 (int(source_atom), int(target_atom))
@@ -183,7 +186,8 @@ class _InitialFamilyAccumulator:
             if family_id is not None:
                 family = self.families[family_id]
                 self.families[family_id] = replace(
-                    family, encounter_count=family.encounter_count + 1)
+                    family, encounter_count=family.encounter_count + 1,
+                    search_paths=family.search_paths + (path,))
                 continue
             coarse = _paired_mapping_invariant(
                 mapping,
@@ -208,13 +212,15 @@ class _InitialFamilyAccumulator:
                     retained_atoms=retained,
                     representative_mapping=mapping,
                     symmetry=dict(placement.symmetry or {}),
+                    search_paths=(path,),
                 )
                 bucket.append(family_id)
                 self.literal_families[literal_key] = family_id
             else:
                 family = self.families[family_id]
                 self.families[family_id] = replace(
-                    family, encounter_count=family.encounter_count + 1)
+                    family, encounter_count=family.encounter_count + 1,
+                    search_paths=family.search_paths + (path,))
                 self.literal_families[literal_key] = family_id
             if len(self.families) >= self.config.candidate_limit:
                 return True
@@ -250,22 +256,13 @@ def _initial_seed_order(source, config, source_orbits=None):
 
 def _grow_initial_seed(
         source, target, seed, config, source_orbits, target_orbits):
-    try:
-        placements = grow_island(
-            source,
-            target,
-            seed,
-            {},
-            graph_floor=config.graph_floor,
-            iso_tol=config.iso_tolerance,
-            min_lock_size=config.minimum_fragment_size,
-            max_branches=config.branch_limit,
-            p_orbits=target_orbits,
-            r_orbits=source_orbits,
-        )
-    except IslandBranchLimitExceeded as exc:
-        return (), True, int(exc.count)
-    return placements, False, len(placements)
+    result = match_fragment(source, target, seed=seed,
+        context=FragmentMatchContext(source_orbits=source_orbits, target_orbits=target_orbits),
+        config=FragmentMatchConfig(graph_floor=config.graph_floor,
+            iso_tolerance=config.iso_tolerance, minimum_size=config.minimum_fragment_size,
+            branch_limit=config.branch_limit))
+    graph = AAMSearchGraph.initial_fragment_search(source, target, seed, result, config)
+    return result.matches, result.capped, result.branch_count, graph
 
 
 def _initial_fragment_placements(
@@ -287,12 +284,14 @@ def _initial_fragment_placements(
     remaining_seeds = set(seed_order)
     seed_attempt_count = 0
     rough_stop_hit = False
+    search_graphs = []
     for seed in seed_order:
         if seed not in remaining_seeds:
             continue
         seed_attempt_count += 1
-        placements, capped, branch_count = _grow_initial_seed(
+        placements, capped, branch_count, graph = _grow_initial_seed(
             source, target, seed, config, source_orbits, target_orbits)
+        search_graphs.append(graph)
         if capped:
             capped_seed_count += 1
             maximum_branch_count = max(maximum_branch_count, branch_count)
@@ -300,7 +299,7 @@ def _initial_fragment_placements(
             continue
 
         maximum_branch_count = max(maximum_branch_count, branch_count)
-        candidate_capped = accumulator.add(placements)
+        candidate_capped = accumulator.add(placements, graph) if placements else False
         if candidate_capped:
             break
         if config.seed_mode == "fragment_cover" and placements:
@@ -320,6 +319,7 @@ def _initial_fragment_placements(
         seed_attempt_count,
         symmetry_pruned + len(seed_order) - seed_attempt_count,
         rough_stop_hit,
+        tuple(search_graphs),
     )
 
 
@@ -380,14 +380,9 @@ def _augment_initial_family(
         source_graph, retained)
     if (config.maximum_boundary_bonds is not None
             and len(boundary) > config.maximum_boundary_bonds):
-        return (), False, 0
+        return (), False, 0, ()
 
-    (
-        augmented_mappings,
-        augmented_capped,
-        augmented_branch_count,
-        augmented_atom_count,
-    ) = match_augmented_residuals(
+    augmented = match_augmented_residuals(
         source_graph,
         target_graph,
         dict(mapping_pairs),
@@ -400,7 +395,7 @@ def _augment_initial_family(
         retained_symmetry=placement.symmetry,
     )
     candidates = []
-    for augmented_placement in augmented_mappings:
+    for augmented_placement in augmented.placements:
         augmented_mapping = dict(augmented_placement.mapping)
         target_mapping = {
             source_atom: target_atom
@@ -447,17 +442,20 @@ def _augment_initial_family(
             attachment_atoms_source=attachment_atoms_source,
             attachment_atoms_target=attachment_atoms_target,
             copied_residual_placements=copied_residual_placements,
-            augmented_target_atom_count=augmented_atom_count,
+            augmented_target_atom_count=augmented.augmented_target_atom_count,
             retained_fragments=retained_fragments,
             aam_hierarchy=augmented_placement.hierarchy,
+            derivations=(FragmentDerivation(placement.search_paths,
+                                           augmented_placement.search_paths),),
         )
         if (region is None
                 or region.intersection(candidate.covered_target_atoms)):
             candidates.append(candidate)
     return (
         tuple(candidates),
-        augmented_capped,
-        augmented_branch_count,
+        augmented.capped,
+        augmented.maximum_branch_count,
+        augmented.search_graphs,
     )
 
 
@@ -474,6 +472,7 @@ def _detect_fragments_from_initial(
         seed_attempt_count,
         seed_pruned_count,
         rough_stop_hit,
+        search_graphs,
     ) = initial_search
 
     def placement_score(placement):
@@ -509,9 +508,11 @@ def _detect_fragments_from_initial(
         augmentation_results = augmentation_runner(selected_placements)
 
     candidates = []
-    seen_candidates = set()
-    for family_candidates, augmented_capped, augmented_branch_count in (
+    seen_candidates = {}
+    search_graphs = list(search_graphs)
+    for family_candidates, augmented_capped, augmented_branch_count, augmented_graphs in (
             augmentation_results):
+        search_graphs.extend(augmented_graphs)
         maximum_branch_count = max(
             maximum_branch_count, augmented_branch_count)
         if augmented_capped:
@@ -520,8 +521,11 @@ def _detect_fragments_from_initial(
             candidate = replace(raw_candidate, source_id=str(source_id))
             identity = _candidate_identity(candidate)
             if identity in seen_candidates:
+                index = seen_candidates[identity]
+                candidates[index] = replace(candidates[index],
+                    derivations=candidates[index].derivations + candidate.derivations)
                 continue
-            seen_candidates.add(identity)
+            seen_candidates[identity] = len(candidates)
             candidates.append(candidate)
             if len(candidates) >= config.candidate_limit:
                 candidate_capped = True
@@ -566,6 +570,7 @@ def _detect_fragments_from_initial(
         seed_attempt_count=seed_attempt_count,
         seed_pruned_count=seed_pruned_count,
         rough_stop_hit=rough_stop_hit,
+        search_graphs=tuple(search_graphs),
     )
 
 

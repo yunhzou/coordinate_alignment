@@ -10,9 +10,49 @@ import numpy as np
 from .chemistry_computations import write_xyz_str
 from .alignment.post_aam import AtomBijection
 from .domain import (
-    AAMProblem, AAMSearchConfig, RPResult, ReactionContext,
+    AAMProblem, AAMSearchConfig, AAMResult, AAMSearchMetrics, MolecularEndpoint, RPResult, ReactionContext,
     ResolvedMechanism, TSResult,
 )
+from .search_graph import AAMSearchGraph
+
+
+def aam_record(result: AAMResult):
+    """Persist the search graph before selecting mechanisms or representatives."""
+    from dataclasses import asdict
+    def endpoint(molecule):
+        return {'elements': molecule.elements, 'coordinates': molecule.coordinates.tolist(),
+                'wbo': molecule.wbo.tolist(), 'label': molecule.label,
+                'energy': molecule.energy, 'metadata': dict(molecule.metadata)}
+    return {'schema': 'rxn_core.aam/v1', 'name': result.problem.name,
+            'reactant': endpoint(result.problem.reactant),
+            'product': endpoint(result.problem.product),
+            'config': asdict(result.config), 'metrics': asdict(result.metrics),
+            'graph': result.graph.to_record()}
+
+
+def aam_from_record(record):
+    if record['schema'] != 'rxn_core.aam/v1':
+        raise ValueError('unsupported AAM result schema')
+    def endpoint(raw):
+        return MolecularEndpoint(tuple(raw['elements']), raw['coordinates'], raw['wbo'], raw['label'],
+                                  energy=raw.get('energy'), metadata=raw.get('metadata', {}))
+    return AAMResult(AAMProblem(endpoint(record['reactant']), endpoint(record['product']), record['name']),
+                     AAMSearchConfig(**record['config']), AAMSearchGraph.from_record(record['graph']),
+                     AAMSearchMetrics(**record['metrics']))
+
+
+def write_aam_bundle(result: AAMResult, output_directory):
+    """Save raw AAM and an offline graph/path viewer; never rerun matching."""
+    output = Path(output_directory)
+    output.mkdir(parents=True, exist_ok=True)
+    record = aam_record(result)
+    _json_dump(output / 'aam.json', record)
+    assets = Path(__file__).parent / 'static'
+    page = (assets / 'aam_search.html').read_text()
+    page = page.replace('__LIBRARY__', (assets / '3Dmol-min.js').read_text())
+    page = page.replace('__DATA__', json.dumps(record).replace('<', '\\u003c'))
+    (output / 'search.html').write_text(page)
+    return output
 
 
 def _mapping_record(mapping):
@@ -25,6 +65,7 @@ def rp_record(result: RPResult):
     problem = result.analytical.aam.problem
     return {
         "schema": "rxn_core.rp/v2",
+        "aam": aam_record(result.analytical.aam),
         "name": problem.name,
         "atom_count": problem.atom_count,
         "timing": {

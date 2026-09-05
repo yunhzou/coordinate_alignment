@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Sequence
 
 import networkx as nx
 
@@ -9,6 +10,7 @@ from .alignment.branch import find_islands
 from .frag import WeightedGraph
 from .matcher import _edge_wbo, _growth_edge_supported
 from .matcher.policy import as_node_match_policy
+from .search_graph import AAMSearchGraph, SearchPath, frozen_value
 
 
 @dataclass(frozen=True)
@@ -18,6 +20,7 @@ class SubgraphMatch:
     mapping: dict[int, int]
     symmetry_fragments: tuple = ()
     deferred_edges: tuple = ()
+    search_path: SearchPath | None = None
 
     @property
     def query_nodes(self):
@@ -26,6 +29,23 @@ class SubgraphMatch:
     @property
     def target_nodes(self):
         return tuple(self.mapping[i] for i in self.query_nodes)
+
+
+@dataclass(frozen=True)
+class SubgraphSearchResult(Sequence):
+    """Validated query placements and all search evidence, including caps."""
+    matches: tuple[SubgraphMatch, ...]
+    graph: AAMSearchGraph
+
+    def __len__(self):
+        return len(self.matches)
+
+    def __getitem__(self, index):
+        return self.matches[index]
+
+    @property
+    def capped(self):
+        return self.graph.capped
 
 
 def _coerce_graph(graph, graph_floor):
@@ -84,7 +104,7 @@ def match_weighted_subgraph(query, target, *,
     query_nodes = set(g_q.nodes())
     anchor_map = {int(r): int(p) for r, p in dict(anchor_map or {}).items()}
     order = list(seed_order) if seed_order is not None else sorted(g_q.nodes())
-    branches = find_islands(
+    search_graph = find_islands(
         g_q,
         g_t,
         order,
@@ -101,20 +121,21 @@ def match_weighted_subgraph(query, target, *,
     )
     matches = []
     seen = set()
-    for branch in branches:
+    for branch in search_graph.paths():
         mapping = {int(k): int(v) for k, v in branch.mapping.items()
                    if k in query_nodes}
         if set(mapping) != query_nodes:
             continue
         if not _query_edges_supported(g_q, g_t, mapping, iso_tol):
             continue
-        key = tuple(sorted(mapping.items()))
+        key = (tuple(sorted(mapping.items())), frozen_value(branch.fragments))
         if key in seen:
             continue
         seen.add(key)
         matches.append(SubgraphMatch(
             mapping=mapping,
-            symmetry_fragments=tuple(branch.symmetry_fragments),
+            symmetry_fragments=branch.fragments,
             deferred_edges=tuple(sorted(tuple(e) for e in branch.deferred_edges)),
+            search_path=branch,
         ))
-    return matches
+    return SubgraphSearchResult(tuple(matches), search_graph)

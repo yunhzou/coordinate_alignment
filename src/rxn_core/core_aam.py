@@ -52,23 +52,22 @@ def search_core_assignments(
     capped = 0
     for seed_index, order in enumerate(_generate_seed_orders(
             graph_source, n_trials=config.seed_count)):
-        try:
-            raw_branches = find_islands(
-                graph_source, graph_target, list(order),
-                iso_tol=config.iso_tolerance,
-                max_branches=config.branch_limit,
-                dwbo_threshold=config.event_threshold,
-                metal_dwbo_threshold=config.metal_event_threshold,
-                symmetry_wbo_tol=config.iso_tolerance,
-                core_R=core,
-                stop_when_core_mapped=True,
-                p_orbits=target_orbits,
-                r_orbits=source_orbits,
-            )
-        except BranchLimitExceeded:
-            capped += 1
-            continue
-        for raw in raw_branches:
+        graph = find_islands(
+            graph_source, graph_target, list(order),
+            iso_tol=config.iso_tolerance,
+            max_branches=config.branch_limit,
+            dwbo_threshold=config.event_threshold,
+            metal_dwbo_threshold=config.metal_event_threshold,
+            symmetry_wbo_tol=config.iso_tolerance,
+            core_R=core,
+            stop_when_core_mapped=True,
+            p_orbits=target_orbits,
+            r_orbits=source_orbits,
+        )
+        capped += int(graph.capped)
+        for raw in graph.paths():
+            if not all(atom in raw.mapping for atom in core):
+                continue
             variants = _core_mapping_variants(
                 raw, core, assignment_limit,
                 g_P=graph_target, p_orbits=target_orbits)
@@ -83,6 +82,7 @@ def search_core_assignments(
                 hierarchy=hierarchy,
                 exact_assignments=exact,
                 seed_index=seed_index,
+                search_path=raw,
             ))
             for assignment in exact:
                 unique.setdefault(assignment.pairs, assignment)

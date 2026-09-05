@@ -3,6 +3,7 @@
 from .detection import detect_fragments, prepare_fragment_target
 from .models import (
     FragmentCandidate,
+    FragmentDerivation,
     FragmentDetectionConfig,
     FragmentDetectionResult,
     FragmentTargetContext,
@@ -11,6 +12,7 @@ from .parallel import FragmentDetectionExecution, detect_fragments_parallel
 from .progressive import (
     ProgressiveFragmentMatchingResult,
     ProgressiveFragmentPlacement,
+    ProgressiveSelection,
     progressive_fragment_matching,
 )
 from .symmetry import (
@@ -20,6 +22,7 @@ from .symmetry import (
 
 __all__ = [
     "FragmentCandidate",
+    "FragmentDerivation",
     "FragmentDetectionConfig",
     "FragmentDetectionResult",
     "FragmentDetectionExecution",
@@ -31,5 +34,6 @@ __all__ = [
     "prepare_fragment_target",
     "ProgressiveFragmentMatchingResult",
     "ProgressiveFragmentPlacement",
+    "ProgressiveSelection",
     "progressive_fragment_matching",
 ]

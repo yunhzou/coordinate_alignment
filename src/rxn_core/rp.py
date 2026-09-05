@@ -144,12 +144,13 @@ def select_rp_mappings(
 
 
 def align_reaction(problem, *, search_config=None, workers=1,
-                   post_workers=None):
+                   post_workers=None, intermediate_dir=None):
     """Convenience composition of typed AAM, family, and R/P stages."""
     from .aam import search_aam
-    from .analytical import compile_mapping_families
+    from .analytical import compile_mechanism_families
+    from .mechanisms import group_mechanisms
 
-    aam = search_aam(problem, search_config, workers=workers)
-    families = compile_mapping_families(
-        aam, workers=post_workers or workers, minimum_events_only=True)
+    aam = search_aam(problem, search_config, workers=workers, intermediate_dir=intermediate_dir)
+    families = compile_mechanism_families(
+        group_mechanisms(aam), workers=post_workers or workers, minimum_events_only=True)
     return select_rp_mappings(families)

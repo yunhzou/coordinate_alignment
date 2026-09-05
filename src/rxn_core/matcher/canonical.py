@@ -464,7 +464,7 @@ class _CandidateAutomorphismCanonicalizer:
             self.graph(cand, group_domains=True))[0]
         atom_by_index = {
             index: atom for atom, index in self.atom_index.items()}
-        identity = tuple(range(self.n_atoms))
+        identity = tuple(range(max(self.atom_index, default=-1) + 1))
         generators = []
         seen = set()
         for raw in raw_generators:

@@ -99,7 +99,8 @@ def main(argv=None):
             problem,
             search_config=config,
             workers=max(1, args.workers),
-            post_workers=args.post_workers)
+            post_workers=args.post_workers,
+            intermediate_dir=output / 'aam_search')
         output = write_rp_bundle(rp, output)
         from .ts import reaction_context_from_rp
         reaction = reaction_context_from_rp(rp)

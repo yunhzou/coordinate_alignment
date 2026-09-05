@@ -6,6 +6,20 @@ from dataclasses import field
 from typing import Any
 
 from ..alignment.post_aam import AAMHierarchy
+from ..search_graph import AAMSearchGraph, SearchPath
+
+
+@dataclass(frozen=True)
+class FragmentDerivation:
+    """Recorded searches behind an occupation, in their original atom frame.
+
+    initial_paths[0] is the selected initial witness; remaining initial paths
+    are equivalent discoveries, not independent fragments to concatenate.
+    target_action transports the selected result without rewriting evidence.
+    """
+    initial_paths: tuple[SearchPath, ...]
+    residual_paths: tuple[SearchPath, ...] = ()
+    target_action: tuple[tuple[int, int], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,6 +82,7 @@ class FragmentCandidate:
     retained_fragments: tuple[tuple[int, ...], ...] = ()
     aam_hierarchy: AAMHierarchy = field(
         default_factory=lambda: AAMHierarchy(()))
+    derivations: tuple[FragmentDerivation, ...] = ()
 
     @property
     def atom_mapping(self):
@@ -94,3 +109,4 @@ class FragmentDetectionResult:
     seed_attempt_count: int
     seed_pruned_count: int
     rough_stop_hit: bool
+    search_graphs: tuple[AAMSearchGraph, ...] = ()

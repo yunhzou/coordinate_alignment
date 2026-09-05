@@ -1,142 +1,100 @@
-"""Typed public AAM search API."""
+"""Mechanism-independent AAM search with persistent fragment-decision graphs."""
 from __future__ import annotations
 
+import json
+import multiprocessing as mp
 import time
+from pathlib import Path
 
-from .alignment.post_aam import AAMBranch, AAMHierarchy, AtomBijection
-from .alignment.sweep import (
-    attach_completed_candidate_groups,
-    cut_sweep as _execute_cut_sweep,
-)
-from .domain import (
-    AAMMechanism,
-    AAMProblem,
-    AAMResult,
-    AAMSearchConfig,
-    AAMSearchMetrics,
-)
+from .alignment.branch import _generate_seed_orders, find_islands
+from .alignment.sweep import cut_sweep_items
+from .domain import AAMProblem, AAMResult, AAMSearchConfig, AAMSearchMetrics
 from .frag import build_graph
+from .matcher import _nauty_orbits
+from .search_graph import AAMSearchGraph
+from .search_symmetry import finalize_graph_symmetry
 
 
-def _attach_exact_fragment_groups(problem, config, pool, metrics):
-    """Finalize candidate-carried groups once, as part of AAM output."""
-    locations, raw_branches = [], []
-    for entry in pool.values():
-        branches = list(entry.get("branches") or ())
-        if not branches:
-            raise ValueError("AAM mechanism lacks completed branch records")
-        locations.append((entry, len(branches)))
-        raw_branches.extend(branches)
-    graph_product = build_graph(
-        problem.product.elements, problem.product.wbo,
-        bond_cut=config.graph_floor)
-    completed, group_metrics = attach_completed_candidate_groups(
-        raw_branches, graph_product, wbo_tol=config.iso_tolerance,
-        return_metrics=True)
-    offset = 0
-    for entry, count in locations:
-        entry["branches"] = completed[offset:offset + count]
-        offset += count
-    metrics = dict(metrics or {})
-    metrics.update(group_metrics)
-    return pool, metrics
+_SEARCH_CONTEXT = None
 
 
-def _branch_from_record(raw):
-    mapping_family = dict(raw.get("mapping_family") or {})
-    # The branch representative is the concrete AAM source mapping.  A
-    # canonical representative of a later compiled coset belongs to the
-    # analytical family object and must not overwrite branch provenance.
-    representative = raw.get("mapping")
-    if representative is None:
-        raise ValueError("AAM branch record lacks its representative mapping")
-    hierarchy = raw.get("hierarchy")
-    if not hierarchy:
-        raise ValueError("AAM branch record lacks its fragment hierarchy")
-    raw_generators = raw.get("target_group_generators")
-    if raw_generators is None:
-        raw_generators = mapping_family.get("target_generators")
-    target_group = None
-    if raw_generators is not None:
-        from .alignment.post_aam import PermutationGroup
-        target_group = PermutationGroup.from_generator_mappings(
-            len(representative), raw_generators)
-    return AAMBranch(
-        representative=AtomBijection.from_mapping(representative),
-        hierarchy=AAMHierarchy.from_record(hierarchy),
-        encounter_count=int(raw.get("encounter_count", 1)),
-        cuts=tuple(tuple(map(int, cut)) for cut in raw.get("cuts") or ()),
-        covered_path_count=int(raw.get("covered_path_count", 1)),
-        mapping_family=mapping_family,
-        path_provenance=tuple(
-            dict(item) for item in raw.get("path_provenance") or ()),
-        target_group=target_group,
-    )
+def _initialize_search(problem, config):
+    global _SEARCH_CONTEXT
+    target = build_graph(problem.product.elements, problem.product.wbo,
+                         bond_cut=config.graph_floor)
+    _SEARCH_CONTEXT = (problem, config, target,
+                       _nauty_orbits(target, wbo_tol=config.iso_tolerance))
 
 
-def _result_from_pool(problem, config, pool, metrics, elapsed_seconds):
-    mechanisms = []
-    for key, entry in pool.items():
-        representative = AtomBijection.from_mapping(entry["mapping"])
-        raw_branches = tuple(entry.get("branches") or ())
-        if not raw_branches:
-            raise ValueError("AAM mechanism lacks completed branches")
-        branches = tuple(_branch_from_record(raw) for raw in raw_branches)
-        mechanisms.append(AAMMechanism(
-            key=tuple(key),
-            representative=representative,
-            branches=branches,
-            cuts=tuple(entry.get("cuts") or ()),
-            includes_uncut_search=bool(entry.get("has_no_cut", False)),
-            encounter_count=int(entry.get("dedup_count", 1)),
-        ))
-    metrics = dict(metrics or {})
-    metrics["retained_branch_count"] = sum(
-        len(mechanism.branches) for mechanism in mechanisms)
-    return AAMResult(
-        problem=problem,
-        config=config,
-        mechanisms=tuple(mechanisms),
-        metrics=AAMSearchMetrics.from_record(metrics, elapsed_seconds),
-    )
+def _search_cut(cut):
+    problem, config, target, target_orbits = _SEARCH_CONTEXT
+    source = build_graph(problem.reactant.elements, problem.reactant.wbo,
+                         bond_cut=config.graph_floor)
+    source.remove_edges_from(cut)
+    source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
+    graphs, profile = [], []
+    for order in _generate_seed_orders(source, n_trials=config.seed_count):
+        graphs.append(find_islands(source, target, order,
+            graph_floor=config.graph_floor, iso_tol=config.iso_tolerance,
+            max_branches=config.branch_limit, p_orbits=target_orbits,
+            r_orbits=source_orbits, anchor_map=dict(config.anchors),
+            profile=profile, cuts=cut))
+    graph = AAMSearchGraph.combine(graphs)
+    return graph, {
+        'max_live_branches': max((len(g.terminals) for g in graphs), default=0),
+        'max_growth_candidates': max((row.get('max_cands_before', 0)
+                                      for row in profile), default=0),
+    }
 
 
 def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
-               *, workers: int = 1) -> AAMResult:
-    """Search all configured no-cut/one-cut AAM branches.
+               *, workers: int = 1, intermediate_dir=None) -> AAMResult:
+    """Return raw matching histories; repair/grouping/ranking are separate calls.
 
-    This function performs graph search and mechanism classification only.
-    It does not apply index chirality, geometry ranking, RMSD selection, TS
-    scoring, serialization, or viewer logic.
+    When supplied, intermediate_dir receives each completed cut graph before
+    group finalization and a final reusable graph record. No path or bijection
+    enumeration is needed to collect worker results.
     """
     if not isinstance(problem, AAMProblem):
-        raise TypeError("search_aam requires an AAMProblem")
+        raise TypeError('search_aam requires an AAMProblem')
     config = config or AAMSearchConfig()
     started = time.perf_counter()
-    pool, metrics = _execute_cut_sweep(
-        problem.reactant.elements,
-        problem.reactant.wbo,
-        problem.product.elements,
-        problem.product.wbo,
-        n_workers=max(1, int(workers)),
-        cut_floor=config.cut_floor,
-        graph_floor=config.graph_floor,
-        iso_tol=config.iso_tolerance,
-        dwbo_threshold=config.event_threshold,
-        metal_dwbo_threshold=config.metal_event_threshold,
-        symmetry_wbo_tol=config.iso_tolerance,
-        n_seeds=config.seed_count,
-        max_branches=config.branch_limit,
-        chunksize=config.task_chunksize,
-        symmetry_repair=config.symmetry_repair,
-        symmetry_repair_min_changes=config.symmetry_repair_min_changes,
-        symmetry_repair_max_evals=(
-            config.symmetry_repair_max_evaluations),
-        anchor_map=dict(config.anchors),
-        return_metrics=True,
-    )
-    pool, metrics = _attach_exact_fragment_groups(
-        problem, config, pool, metrics)
-    return _result_from_pool(
-        problem, config, pool, metrics,
-        elapsed_seconds=time.perf_counter() - started)
+    cuts = cut_sweep_items(problem.reactant.wbo, config.cut_floor)
+    directory = None if intermediate_dir is None else Path(intermediate_dir)
+    if directory is not None:
+        directory.mkdir(parents=True, exist_ok=True)
+    graphs, metrics = [], {'max_live_branches': 0, 'max_growth_candidates': 0}
+
+    def collect(payloads):
+        for index, (graph, counts) in enumerate(payloads):
+            graphs.append(graph)
+            for key, value in counts.items():
+                metrics[key] = max(metrics[key], value)
+            if directory is not None:
+                (directory / f'cut_{index:05d}.json').write_text(
+                    json.dumps(graph.to_record()) + '\n')
+
+    workers = min(max(1, int(workers)), len(cuts))
+    if workers == 1:
+        _initialize_search(problem, config)
+        collect(map(_search_cut, cuts))
+    else:
+        with mp.get_context('fork').Pool(workers, initializer=_initialize_search,
+                initargs=(problem, config)) as pool:
+            collect(pool.imap(_search_cut, cuts, chunksize=config.task_chunksize))
+    merge_started = time.perf_counter()
+    graph = AAMSearchGraph.combine(graphs)
+    metrics['parent_merge_seconds'] = time.perf_counter() - merge_started
+    target = build_graph(problem.product.elements, problem.product.wbo,
+                         bond_cut=config.graph_floor)
+    graph, groups = finalize_graph_symmetry(graph, target, iso_tolerance=config.iso_tolerance)
+    metrics.update(groups)
+    metrics.update(cuts=len(cuts), raw_result_count=len(graph.terminals),
+        retained_branch_count=len(graph.terminals),
+        subtree_branch_cap_count=sum(stop.reason == 'capped' for stop in graph.stops))
+    result = AAMResult(problem, config, graph,
+                      AAMSearchMetrics.from_record(metrics, time.perf_counter()-started))
+    if directory is not None:
+        from .artifacts import aam_record
+        (directory / 'aam.json').write_text(json.dumps(aam_record(result)) + '\n')
+    return result

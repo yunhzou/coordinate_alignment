@@ -1204,7 +1204,7 @@ def compile_analytical_mapping_family(
         elements_P: Sequence[str], wbo_P, *,
         graph_floor=0.2, symmetry_wbo_tol=0.2,
         dwbo_threshold=0.5, metal_dwbo_threshold=0.3,
-        anchor_map=None, static_context=None):
+        anchor_map=None, static_context=None, include_event_relations=True):
     """Compile one completed branch into its exact pre-chirality coset."""
     source = validate_mapping(source_mapping, elements_R, elements_P)
     relation, _persistent, _inverse, _fragments = _masked_relation_data(
@@ -1212,7 +1212,7 @@ def compile_analytical_mapping_family(
         elements_P, np.asarray(wbo_P), graph_floor,
         symmetry_wbo_tol, dwbo_threshold,
         metal_dwbo_threshold, anchor_map or {},
-        static_context=static_context)
+        static_context=static_context, include_event_relations=include_event_relations)
     structural_relation, _persistent, _inverse, _fragments = (
         _masked_relation_data(
             source, branch_symmetry, elements_R, np.asarray(wbo_R),

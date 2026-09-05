@@ -16,6 +16,16 @@ from .graph_ops import weight_matrix
 class AugmentedFragmentPlacement:
     mapping: tuple[tuple[int, int], ...]
     hierarchy: AAMHierarchy
+    search_paths: tuple = ()
+
+
+@dataclass(frozen=True)
+class AugmentedMatchResult:
+    placements: tuple[AugmentedFragmentPlacement, ...]
+    capped: bool
+    maximum_branch_count: int
+    augmented_target_atom_count: int
+    search_graphs: tuple
 
 
 def _hierarchy_with(base, extension):
@@ -41,7 +51,7 @@ def _composition_fits(component, target):
 def _component_placements(
         component, target, available_atoms, available_target,
         available_target_orbits, retained_mapping, boundary, *, graph_floor,
-        iso_tolerance, branch_limit):
+        iso_tolerance, branch_limit, search_graphs):
     if not _composition_fits(component, target):
         return ()
     if len(component) > len(available_atoms):
@@ -94,6 +104,7 @@ def _component_placements(
         seed_order=seed_order,
         target_orbits=available_target_orbits,
     )
+    search_graphs.append(matches.graph)
 
     component_atoms = set(component)
     relevant_boundary = tuple(
@@ -125,6 +136,7 @@ def _component_placements(
             hierarchy=AAMHierarchy.from_record({
                 "fragments": match.symmetry_fragments,
             }),
+            search_paths=(match.search_path,),
         ))
     return tuple(placements)
 
@@ -168,6 +180,7 @@ def match_augmented_residuals(
         key=lambda atoms: (-len(atoms), atoms),
     )
     maximum_branch_count = 1
+    search_graphs = []
     competitive_atom_count = 0
     for atoms in components:
         component = _component_graph(source, atoms, graph_floor)
@@ -182,6 +195,7 @@ def match_augmented_residuals(
             graph_floor=graph_floor,
             iso_tolerance=iso_tolerance,
             branch_limit=branch_limit,
+            search_graphs=search_graphs,
         )
         maximum_branch_count = max(maximum_branch_count, len(options))
         if not options:
@@ -203,16 +217,15 @@ def match_augmented_residuals(
                     mapping=tuple(sorted(combined_mapping.items())),
                     hierarchy=_hierarchy_with(
                         state.hierarchy, option.hierarchy),
+                    search_paths=state.search_paths + option.search_paths,
                 )
                 next_states.setdefault(
                     canonicalizer.certificate(combined_mapping), combined)
         maximum_branch_count = max(
             maximum_branch_count, len(next_states))
         if len(next_states) > branch_limit:
-            return (
-                (), True, len(next_states),
-                target_atom_count + competitive_atom_count,
-            )
+            return AugmentedMatchResult((), True, len(next_states),
+                target_atom_count + competitive_atom_count, tuple(search_graphs))
         states = tuple(next_states.values())
 
     placements = states
@@ -238,7 +251,12 @@ def match_augmented_residuals(
             placement for placement in placements
             if ownership(placement) == best_ownership
         )
-    return placements, False, maximum_branch_count, augmented_size
+    cap_stops = [stop for graph in search_graphs for stop in graph.stops
+                 if stop.reason == 'capped']
+    maximum_branch_count = max(maximum_branch_count,
+                               max((stop.count for stop in cap_stops), default=0))
+    return AugmentedMatchResult(placements, bool(cap_stops), maximum_branch_count,
+                                augmented_size, tuple(search_graphs))
 
 
 def project_augmented_placement(

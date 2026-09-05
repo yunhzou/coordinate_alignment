@@ -236,6 +236,32 @@ class FragmentMatch:
 class AAMHierarchy:
     fragments: tuple[FragmentMatch, ...]
 
+    def relabel_target(self, action):
+        """Transport a hierarchy by one correlated target permutation.
+
+        Unmentioned atoms (including augmentation copies) are fixed. Exact
+        generators are conjugated, not copied into the old target frame.
+        """
+        from dataclasses import replace
+        action = dict(action)
+        def image(atom):
+            return int(action.get(atom, atom))
+        def domain(item):
+            return replace(item, p_atoms=tuple(image(a) for a in item.p_atoms))
+        def generator(item):
+            moved = list(range(item.degree))
+            for atom, target in enumerate(item.images):
+                moved[image(atom)] = image(target)
+            return AtomPermutation(tuple(moved))
+        return AAMHierarchy(tuple(replace(fragment,
+            representative_assignments=tuple((a, image(b)) for a, b in
+                                               fragment.representative_assignments),
+            symmetry_domains=tuple(domain(d) for d in fragment.symmetry_domains),
+            automorph_domains=tuple(domain(d) for d in fragment.automorph_domains),
+            target_generators=(None if fragment.target_generators is None else
+                               tuple(generator(g) for g in fragment.target_generators)))
+            for fragment in self.fragments))
+
     @classmethod
     def from_record(cls, branch_symmetry):
         fragments = []

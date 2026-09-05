@@ -14,6 +14,7 @@ from typing import Any, Mapping
 import numpy as np
 
 from .alignment.post_aam import AAMBranch, AAMHierarchy, AtomBijection
+from .search_graph import AAMSearchGraph
 
 
 def _readonly_array(value, *, shape=None, ndim=None):
@@ -197,21 +198,25 @@ class AAMMechanism:
 
 @dataclass(frozen=True)
 class AAMResult:
-    """Complete output of AAM search, before geometry post-processing."""
+    """Raw fragment-decision graph, independent of mechanism classification."""
 
     problem: AAMProblem
     config: AAMSearchConfig
-    mechanisms: tuple[AAMMechanism, ...]
+    graph: AAMSearchGraph
     metrics: AAMSearchMetrics
 
-    def __post_init__(self):
-        mechanisms = tuple(self.mechanisms)
-        if any(mechanism.representative.degree != self.problem.atom_count
-               for mechanism in mechanisms):
-            raise ValueError("AAM result contains a wrong-degree mapping")
-        if len({mechanism.key for mechanism in mechanisms}) != len(mechanisms):
-            raise ValueError("AAM mechanism keys must be unique")
-        object.__setattr__(self, "mechanisms", mechanisms)
+    @property
+    def branches(self):
+        return self.graph.branches()
+
+
+@dataclass(frozen=True)
+class MechanismResult:
+    """Optional event grouping with a reference to the unmodified search."""
+
+    aam: AAMResult
+    mechanisms: tuple[AAMMechanism, ...]
+    elapsed_seconds: float
 
     def minimum_event_mechanisms(self):
         if not self.mechanisms:
@@ -220,6 +225,15 @@ class AAMResult:
         return tuple(
             mechanism for mechanism in self.mechanisms
             if mechanism.event_count == minimum)
+
+
+@dataclass(frozen=True)
+class MappingFamilyResult:
+    """Compiled branch relations without mechanism grouping."""
+
+    aam: AAMResult
+    branches: tuple[AnalyticalBranch, ...]
+    elapsed_seconds: float
 
 
 @dataclass(frozen=True)
@@ -425,6 +439,7 @@ class CoreAAMBranch:
     hierarchy: AAMHierarchy
     exact_assignments: tuple[AtomAssignment, ...]
     seed_index: int
+    search_path: object = None
 
     def __post_init__(self):
         exact = tuple(self.exact_assignments)

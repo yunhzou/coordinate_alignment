@@ -26,8 +26,8 @@ def test_weighted_subgraph_default_policy_is_same_element():
         _edge_matrix(2, [(0, 1, 1.1)]),
     )
 
-    assert match_weighted_subgraph(
-        query, target, graph_floor=0.2, iso_tol=0.3) == []
+    assert not match_weighted_subgraph(
+        query, target, graph_floor=0.2, iso_tol=0.3)
 
 
 def test_weighted_subgraph_can_match_by_custom_node_feature():
@@ -75,13 +75,13 @@ def test_weighted_subgraph_respects_wbo_iso_after_custom_node_match():
         _edge_matrix(2, [(0, 1, 0.4)]),
     )
 
-    assert match_weighted_subgraph(
+    assert not match_weighted_subgraph(
         query,
         target,
         node_policy="outer_shell",
         graph_floor=0.2,
         iso_tol=0.3,
-    ) == []
+    )
 
 
 def test_weighted_subgraph_can_match_by_multiple_node_features():
@@ -191,19 +191,19 @@ def test_weighted_subgraph_complete_anchor_map_still_checks_wbo_edges():
         _edge_matrix(2, [(0, 1, 0.3)]),
     )
 
-    assert match_weighted_subgraph(
+    assert not match_weighted_subgraph(
         query,
         target,
         node_policy="outer_shell",
         anchor_map={0: 0, 1: 1},
         graph_floor=0.2,
         iso_tol=0.1,
-    ) == []
+    )
 
 
 def test_weighted_subgraph_incompatible_anchor_has_no_match():
     query = WeightedGraph(["O"], _edge_matrix(1, []))
     target = WeightedGraph(["S"], _edge_matrix(1, []))
 
-    assert match_weighted_subgraph(
-        query, target, anchor_map={0: 0}) == []
+    assert not match_weighted_subgraph(
+        query, target, anchor_map={0: 0})

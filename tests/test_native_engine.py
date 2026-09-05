@@ -35,11 +35,12 @@ def _iso_key(isos):
 def _search(case, workers=1):
     from cases import CASES
     from rxn_core.aam import search_aam
+    from rxn_core.mechanisms import group_mechanisms
     from rxn_core.domain import AAMProblem, AAMSearchConfig
 
     R, P = CASES[case]()
-    return search_aam(AAMProblem(R, P, name=case), AAMSearchConfig(),
-                      workers=workers)
+    return group_mechanisms(search_aam(AAMProblem(R, P, name=case), AAMSearchConfig(),
+                      workers=workers))
 
 
 def _result_key(result):
@@ -57,7 +58,7 @@ def _result_key(result):
 
 
 def test_every_growth_call_agrees_with_python(monkeypatch):
-    import rxn_core.alignment.branch as branch_mod
+    import rxn_core.fragment as fragment_mod
     import rxn_core.growth.island as island_mod
     from rxn_core.growth.result import IslandBranchLimitExceeded
     from rxn_core.matcher.policy import as_node_match_policy
@@ -95,7 +96,7 @@ def test_every_growth_call_agrees_with_python(monkeypatch):
             assert got is None or got == expected, (seed, len(mapping))
         return original(g_R, g_P, seed, dict(mapping), **kw)
 
-    monkeypatch.setattr(branch_mod, "grow_island", both)
+    monkeypatch.setattr(fragment_mod, "grow_island", both)
     result = _search("tetraphenyl")
     assert result.mechanisms
     assert stats["calls"] > 300

@@ -9,18 +9,23 @@ The computational API consists of immutable typed stages:
 
 ```text
 search_aam
-    -> compile_mapping_families
+    -> group_mechanisms                 # optional
+        -> compile_mechanism_families
         -> select_rp_mappings
             -> analyze_transition_state
 ```
 
 AAM is the authoritative source of mapping information. Its result retains
-mechanism classes, every unique completed branch, fragment hierarchy,
-assignment domains, exact fixed roles, target automorphism generators, cuts,
-provenance, and search metrics. R/P and TS processing consume those objects;
+a fragment-decision graph with shared prefixes/reconvergence, compressed
+placements, exact target generators, seed/cut provenance, and cap records.
+Mechanisms are an optional post-processing result, not the core container.
+`match_fragment` is independently reusable by AAM and retro detection.
+R/P and TS processing consume those objects;
 they do not reconstruct an alternative AAM model from serialized records.
 
-See [ALGORITHM.md](ALGORITHM.md) for the complete data model and algorithms.
+See [the search-graph API](docs/AAM_SEARCH_GRAPH_API.md) for the object model,
+conditional fragment API, persistence, and path replay;
+[ALGORITHM.md](ALGORITHM.md) covers downstream algorithms.
 
 ## Install
 
@@ -42,7 +47,8 @@ from rxn_core import (
     TransitionStateTarget,
     VibrationalModes,
     analyze_transition_state,
-    compile_mapping_families,
+    group_mechanisms,
+    compile_mechanism_families,
     search_aam,
     select_rp_mappings,
 )
@@ -51,9 +57,11 @@ reactant = MolecularEndpoint(elements_R, xyz_R, wbo_R, label="R")
 product = MolecularEndpoint(elements_P, xyz_P, wbo_P, label="P")
 problem = AAMProblem(reactant, product, name="reaction")
 
-aam = search_aam(problem, AAMSearchConfig(), workers=8)
-families = compile_mapping_families(
-    aam, workers=8, minimum_events_only=True)
+aam = search_aam(problem, AAMSearchConfig(), workers=8,
+                 intermediate_dir="alignment/aam_search")
+grouped = group_mechanisms(aam)
+families = compile_mechanism_families(
+    grouped, workers=8, minimum_events_only=True)
 rp = select_rp_mappings(families)
 
 target = TransitionStateTarget(
@@ -64,7 +72,7 @@ ts = analyze_transition_state(rp, target)
 ```
 
 For R/P only, `align_reaction(problem, workers=8)` is the convenience
-composition of the first three stages. The individual stages remain available
+composition of the search, grouping, family, and selection stages. They remain available
 when callers need to inspect, cache, audit, or transform AAM information.
 
 Serialization, CLI workflows, and self-contained HTML views are typed

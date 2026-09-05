@@ -25,15 +25,16 @@ Python operations:
 
 ```text
 search_aam(problem, config)                         # Python
-    schedule cut/seed searches                    # alignment.sweep / branch
+    schedule cut/seed searches                    # aam / alignment.branch
     for each fragment-growth request:
-        grow_island(graph_R, graph_P, seed, ...)   # Python entry point
+        match_fragment(...)                      # reusable Python contract
+          grow_island(graph_R, graph_P, seed, ...) # Python/native boundary
             prepare/cache native graph views     # growth.native
             raw = _engine.grow_island(...)        # C++ growth + matcher
             restore original atom indices
             return list[_IsoResult]              # Python result objects
-    merge branches and classify mechanisms
-    attach exact fragment groups
+    collect fragment-decision graph chunks
+    finalize conditioned exact fragment groups
     return AAMResult                              # Python domain object
 ```
 
@@ -47,16 +48,15 @@ The completed Python output remains:
 
 ```text
 AAMResult
-    mechanisms: tuple[AAMMechanism]
-        branches: tuple[AAMBranch]
-            representative: AtomBijection
-            hierarchy: AAMHierarchy
-            mapping_family, target_group, cuts, path_provenance, ...
+    graph: AAMSearchGraph
+        contexts, roots, states, fragment transitions, stops
+        paths() / branches(): explicit projections, no bijection expansion
     metrics: AAMSearchMetrics
 ```
 
-`AtomBijection` holds a representative assignment; the hierarchy and group
-fields carry the family information. Using C++ does not remove those fields.
+`group_mechanisms(aam)` is a separate optional Python stage. Its `AAMBranch`
+records use `AtomBijection` representatives and hierarchy/group information.
+Using C++ does not remove those Python objects.
 The public objects are defined in `src/rxn_core/domain.py` and
 `src/rxn_core/alignment/post_aam.py`.
 

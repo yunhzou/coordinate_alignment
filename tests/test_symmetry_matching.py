@@ -320,7 +320,8 @@ def test_live_branch_cap_discards_only_overflowing_parent_subtree(monkeypatch):
             ]
         return [_IsoResult({1: 2}, fragment={1})]
 
-    monkeypatch.setattr(branch_mod, "grow_island", fake_grow)
+    import rxn_core.fragment as fragment_mod
+    monkeypatch.setattr(fragment_mod, "grow_island", fake_grow)
     monkeypatch.setattr(
         branch_mod, "_chemistry_orbit_signature",
         lambda mapping, *_args, **_kwargs: tuple(sorted(mapping.items())))
@@ -328,7 +329,7 @@ def test_live_branch_cap_discards_only_overflowing_parent_subtree(monkeypatch):
     branches = branch_mod.find_islands(
         g_r, g_p, [0, 1], orbit_dedup=False, max_branches=2)
 
-    assert [branch.mapping for branch in branches] == [{0: 1, 1: 2}]
+    assert [branch.mapping for branch in branches.paths()] == [{0: 1, 1: 2}]
 
 
 def test_symcand_reassigns_correlated_block_witness():
@@ -527,7 +528,7 @@ def test_core_alignment_expands_internal_branch_degeneracy():
 def test_core_mapping_variants_do_not_invent_global_orbit_swaps():
     class Branch:
         mapping = {0: 0, 1: 1}
-        symmetry_fragments = []
+        symmetry_paths = ((),)
 
     wbo = np.zeros((2, 2))
     g_p = build_graph(["H", "H"], wbo, bond_cut=0.2)
@@ -1288,7 +1289,8 @@ def test_core_atoms_do_not_reorder_seed_sequence(monkeypatch):
         seen.append(seed)
         return []
 
-    monkeypatch.setattr(branch_mod, "grow_island", fake_grow_island)
+    import rxn_core.fragment as fragment_mod
+    monkeypatch.setattr(fragment_mod, "grow_island", fake_grow_island)
 
     branch_mod.find_islands(
         g, g, [0, 1, 2],
@@ -1336,7 +1338,7 @@ def test_find_islands_reuses_precomputed_orbits(monkeypatch):
     )
 
     assert branches
-    assert branches[0].mapping == {0: 0, 1: 1}
+    assert next(branches.paths()).mapping == {0: 0, 1: 1}
 
 
 def test_partial_witness_mode_scores_use_full_mode_norm():
@@ -1464,6 +1466,6 @@ def test_anchored_noop_seed_does_not_keep_pass_loop_alive():
     )
 
     assert branches
-    assert all(branch.mapping[0] == 0 for branch in branches)
+    assert all(branch.mapping[0] == 0 for branch in branches.paths())
     assert [e["seed"] for e in events if e.get("type") == "seed_start"][:2] == [1, 0]
     assert sum(1 for e in events if e.get("type") == "pass_start") == 2

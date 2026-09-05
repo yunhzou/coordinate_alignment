@@ -1,4 +1,4 @@
-"""Branch scheduling, mechanism-state dedupe, and symmetry repair."""
+"""Fragment-decision scheduling, exact frontier admission, and symmetry repair."""
 from __future__ import annotations
 
 import random
@@ -7,7 +7,8 @@ from collections import Counter, defaultdict, deque
 import numpy as np
 
 from ..frag import bond_event_threshold, classify_bonds
-from ..growth import IslandBranchLimitExceeded, grow_island
+from ..fragment import FragmentMatchConfig, FragmentMatchContext, match_fragment
+from ..search_graph import SearchContext, SearchGraphBuilder, frozen_value
 from ..matcher import (
     _boundary_signature,
     _edge_wbo,
@@ -43,79 +44,59 @@ class BranchLimitExceeded(RuntimeError):
 
 class _Branch:
     __slots__ = ('mapping', 'islands_R', 'islands_P', 'next_iid',
-                 'deferred_edges', 'symmetry_paths', '_signature_cache')
-    def __init__(self):
-        self.mapping = {}
+                 'deferred_edges', 'graph', 'node', '_signature_cache')
+    def __init__(self, graph=None, anchor_map=()):
+        self.mapping = dict(anchor_map)
         self.islands_R = {}
         self.islands_P = {}
         self.next_iid = 1
         self.deferred_edges = set()
-        self.symmetry_paths = [[]]
         self._signature_cache = None
+        for r, p in sorted(self.mapping.items()):
+            self.islands_R[r] = self.next_iid
+            self.islands_P[p] = self.next_iid
+            self.next_iid += 1
+        self.graph = graph or SearchGraphBuilder(SearchContext((), (), ()))
+        self.node = self.graph.root(self)
 
     @classmethod
-    def from_anchor_map(cls, anchor_map):
-        b = cls()
-        for r, p in sorted((int(r), int(p))
-                           for r, p in dict(anchor_map or {}).items()):
-            iid = b.next_iid
-            b.next_iid += 1
-            b.mapping[r] = p
-            b.islands_R[r] = iid
-            b.islands_P[p] = iid
-        return b
+    def from_anchor_map(cls, anchor_map, graph=None):
+        return cls(graph, anchor_map)
 
     def fork(self):
-        b = _Branch()
+        b = object.__new__(_Branch)
         b.mapping = dict(self.mapping)
         b.islands_R = dict(self.islands_R)
         b.islands_P = dict(self.islands_P)
         b.next_iid = self.next_iid
         b.deferred_edges = set(self.deferred_edges)
-        b.symmetry_paths = [list(path) for path in self.symmetry_paths]
+        b.graph = self.graph
+        b.node = self.node
         b._signature_cache = self._signature_cache
         return b
 
     @property
-    def symmetry_fragments(self):
-        """Compatibility view of the first retained analytical path."""
-        return self.symmetry_paths[0]
+    def symmetry_paths(self):
+        """Explicit path projection for consumers; never copied during growth."""
+        return [path.fragments for path in self.graph.finish().paths(self.node)]
 
     def merge_exact_paths(self, other):
         """Union histories after exact equality of cumulative search state."""
-        seen = {_freeze_branch_value(path) for path in self.symmetry_paths}
-        for path in other.symmetry_paths:
-            key = _freeze_branch_value(path)
-            if key not in seen:
-                seen.add(key)
-                self.symmetry_paths.append(list(path))
+        self.graph.join(self, other)
 
-    def add_interbranch_symmetry(self, blocks):
-        blocks = list(blocks or ())
-        if not blocks:
-            return
-        r_atoms = sorted({
-            int(r)
-            for block in blocks
-            for r in block.get('r_atoms', ())
-        })
-        record = {
-            'island_idx': 0,
-            'fragment': r_atoms,
-            'deferred_edges': [],
-            'symmetry': {
-                'witness': {
-                    int(r): int(self.mapping[r])
-                    for r in r_atoms
-                    if r in self.mapping
-                },
-                'blocks': blocks,
-            },
-        }
-        for path in self.symmetry_paths:
-            path.append(record)
+    def normalize_islands(self):
+        groups = defaultdict(list)
+        for atom, island in self.islands_R.items():
+            groups[island].append(atom)
+        self.islands_R = {atom: index for index, atoms in enumerate(
+            sorted(tuple(sorted(atoms)) for atoms in groups.values()), 1)
+            for atom in atoms}
+        self.islands_P = {self.mapping[atom]: island
+                          for atom, island in self.islands_R.items()}
+        self.next_iid = len(groups) + 1
 
     def commit(self, iso, g_R, events=None):
+        before = (dict(self.mapping), dict(self.islands_R), set(self.deferred_edges))
         self._signature_cache = None
         touched = set()
         for r in iso:
@@ -136,21 +117,23 @@ class _Branch:
                 relabeled.append((int(r), int(self.islands_R[r])))
             self.islands_R[r] = iid
             self.islands_P[p] = iid
-        self.deferred_edges.update(getattr(iso, 'deferred_edges', ()))
+        self.deferred_edges.update(iso.deferred_edges)
         record = {
             'island_idx': int(iid),
-            'fragment': sorted(int(r) for r in getattr(iso, 'fragment', ())),
+            'fragment': sorted(int(r) for r in iso.fragment),
             'deferred_edges': [list(map(int, e))
-                               for e in sorted(getattr(iso, 'deferred_edges', ()))],
-            'symmetry': getattr(iso, 'symmetry', {}),
+                               for e in sorted(iso.deferred_edges)],
+            'symmetry': iso.symmetry,
         }
-        for path in self.symmetry_paths:
-            path.append(record)
         for r, k in list(self.islands_R.items()):
             if k in touched and k != iid:
                 relabeled.append((int(r), int(k)))
                 self.islands_R[r] = iid
                 self.islands_P[self.mapping[r]] = iid
+        self.normalize_islands()
+        if before != (self.mapping, self.islands_R, self.deferred_edges):
+            record['island_idx'] = self.islands_R[next(iter(iso))]
+            self.node = self.graph.commit(self.node, self, record, g_R)
         if events is not None:
             events.append({
                 'type': 'island_locked',
@@ -163,15 +146,7 @@ class _Branch:
 
 
 def _freeze_branch_value(value):
-    if isinstance(value, dict):
-        return tuple(sorted((str(key), _freeze_branch_value(item))
-                            for key, item in value.items()))
-    if isinstance(value, (list, tuple)):
-        return tuple(_freeze_branch_value(item) for item in value)
-    if isinstance(value, (set, frozenset)):
-        return tuple(sorted((_freeze_branch_value(item) for item in value),
-                            key=repr))
-    return value
+    return frozen_value(value)
 
 
 def _mapping_variation_blocks(mappings, source='interbranch'):
@@ -581,9 +556,9 @@ def find_islands(g_R, g_P, seed_order,
                  p_orbits=None, r_orbits=None,
                  node_policy=None,
                  anchor_map=None,
-                 profile=None):
+                 profile=None, cuts=()):
     """Run growth over a single seed ordering, branching on
-    non-set-unique locks. Returns list of _Branch.
+    non-set-unique locks. Returns an AAMSearchGraph of fragment decisions.
 
     Optional `events` only records the FIRST (best-mapped) branch's
     trajectory — multi-branch traces would be confusing on a slider.
@@ -596,8 +571,7 @@ def find_islands(g_R, g_P, seed_order,
     remain the verifier.
 
     core_R: optional R atoms that define the scoring-relevant alignment.
-    When supplied, branch dedup switches to exact core mapping as soon as
-    every core atom is mapped.  With stop_when_core_mapped=True the search
+    With stop_when_core_mapped=True the search
     returns once all live branches have mapped the core; spectators remain
     represented only by the compressed witness state already discovered.
 
@@ -611,8 +585,16 @@ def find_islands(g_R, g_P, seed_order,
     symmetry_wbo_tol = float(iso_tol)
     node_policy = as_node_match_policy(node_policy)
     anchor_map = _normalize_anchor_map(anchor_map, g_R, g_P)
+    seed_order = list(dict.fromkeys(seed_order))
+    graph = SearchGraphBuilder(SearchContext(
+        tuple(sorted(g_R)), tuple(sorted(g_P)), tuple(seed_order),
+        tuple(cuts), tuple(sorted(core_R or ())), tuple(sorted(anchor_map.items())),
+        float(graph_floor), float(iso_tol), int(max_branches),
+        objective='requested_core' if stop_when_core_mapped and core_R else 'full_source'))
     if not _anchor_nodes_compatible(anchor_map, g_R, g_P, node_policy):
-        return []
+        branch = _Branch.from_anchor_map({}, graph)
+        graph.stop(branch, 'incompatible_anchors')
+        return graph.finish()
     if orbit_dedup:
         if p_orbits is None:
             p_orbits = _nauty_orbits(
@@ -631,10 +613,8 @@ def find_islands(g_R, g_P, seed_order,
     # fragment-assignment domains and therefore lead to different mechanisms.
     # Exact semantic family dedupe is performed after AAM has the complete
     # hierarchy available.
-    branch_canonicalizer = None
     core_R = tuple(sorted(set(core_R or ())))
-    seed_order = list(dict.fromkeys(seed_order))
-    branches = [_Branch.from_anchor_map(anchor_map)]
+    branches = [_Branch.from_anchor_map(anchor_map, graph)]
     progressed = True
     pass_no = 0
 
@@ -660,13 +640,6 @@ def find_islands(g_R, g_P, seed_order,
             frozenset(frozenset(edge) for edge in branch.deferred_edges),
         )
 
-    def _island_partition(branch):
-        groups = {}
-        for atom, island in branch.islands_R.items():
-            groups.setdefault(int(island), []).append(int(atom))
-        return tuple(sorted(tuple(sorted(atoms))
-                            for atoms in groups.values()))
-
     def _branch_signature(branch):
         if branch._signature_cache is not None:
             return branch._signature_cache
@@ -683,10 +656,12 @@ def find_islands(g_R, g_P, seed_order,
     while progressed:
         progressed = False
         pass_no += 1
-        if events is not None:
+        if events is not None and branches:
             events.append({'type': 'pass_start', 'pass': pass_no,
                            'mapped': len(branches[0].mapping)})
-        for seed in seed_order:
+        for seed_position, seed in enumerate(seed_order):
+            graph.step = (pass_no, seed_position)
+            graph.seed = int(seed)
             new_branches = []
             pending_seen = {}
 
@@ -714,6 +689,9 @@ def find_islands(g_R, g_P, seed_order,
                     local_seen[sig] = candidate
                     additions.append((sig, candidate))
                 if len(new_branches) + len(additions) > max_branches:
+                    for _sig, candidate in additions:
+                        graph.stop(candidate, 'capped', stage='combined_live_leaves',
+                                   count=len(new_branches) + len(additions), limit=max_branches)
                     if profile is not None:
                         profile.append({
                             'seed': int(seed),
@@ -753,28 +731,29 @@ def find_islands(g_R, g_P, seed_order,
                     continue
                 # Only record events for branch 0 to keep trace linear
                 ev_arg = events if (events is not None and bi == 0) else None
-                try:
-                    isos = grow_island(
-                        g_R, g_P, seed, b.mapping,
-                        graph_floor=graph_floor, iso_tol=iso_tol,
-                        max_branches=max_branches,
+                result = match_fragment(
+                        g_R, g_P, seed=seed,
+                        context=FragmentMatchContext(
+                            b.mapping, b.islands_R, tuple(b.deferred_edges), r_orbits, p_orbits),
+                        config=FragmentMatchConfig(
+                            graph_floor=graph_floor, iso_tolerance=iso_tol,
+                            branch_limit=max_branches, node_policy=node_policy,
+                            orbit_dedup=orbit_dedup,
+                            allow_mapped_seed=seed_is_mapped_anchor),
                         events=ev_arg,
-                        islands_R=b.islands_R,
-                        p_orbits=p_orbits,
-                        r_orbits=r_orbits,
-                        prior_deferred_edges=b.deferred_edges,
-                        node_policy=node_policy,
-                        allow_mapped_seed=seed_is_mapped_anchor,
                         profile=profile,
                         profile_context={
                             'pass': int(pass_no),
                             'branch_index': int(bi),
                             'mapped_before': len(b.mapping),
                         })
-                except IslandBranchLimitExceeded:
+                if result.capped:
+                    graph.stop(b, 'capped', stage='fragment_growth',
+                               count=result.branch_count, limit=result.branch_limit)
                     # Only this parent branch's descendant subtree is
                     # pathological.  Remove it and continue its siblings.
                     continue
+                isos = result.matches
                 if not isos:
                     _admit_subtree([b], source_branch=bi)
                     continue
@@ -800,21 +779,8 @@ def find_islands(g_R, g_P, seed_order,
                     subtree, made_progress=subtree_progressed,
                     source_branch=bi)
             new_branches.sort(key=lambda b: -len(b.mapping))
-            # Cross-branch dedupe is intentionally exact.  Coupled
-            # automorphic branches remain separate until their transporter is
-            # represented analytically; an orbit/event signature is not a
-            # proof that their mapping families are equal.
-            seen = {}
-            uniq = []
-            for b in new_branches:
-                state_sig = _branch_signature(b)
-                kept = seen.get(state_sig)
-                if kept is not None:
-                    _merge_equivalent_paths(kept, b)
-                    continue
-                seen[state_sig] = b
-                uniq.append(b)
-            branches = uniq
+            # Admission already enforces unique live state keys.
+            branches = new_branches
             # Soft warning: pathological symmetry can blow this up. Default
             # cap is 1e6 so we should never hit it on real molecules; if we
             # do, surface it so we know.
@@ -831,11 +797,15 @@ def find_islands(g_R, g_P, seed_order,
                                    'mapped': len(branches[0].mapping),
                                    'stop_reason': 'core_mapped',
                                    'core_size': len(core_R)})
-                return branches
-    if events is not None:
+                for branch in branches:
+                    graph.stop(branch, 'objective_met')
+                return graph.finish()
+    if events is not None and branches:
         events.append({'type': 'done',
                        'mapped': len(branches[0].mapping)})
-    return branches
+    for branch in branches:
+        graph.stop(branch, 'objective_met' if len(branch.mapping) == len(g_R) else 'stalled')
+    return graph.finish()
 
 
 def _chirality_violations(mapping, coords_R, coords_P,

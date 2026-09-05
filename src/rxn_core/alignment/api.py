@@ -38,6 +38,7 @@ class MatchCandidate:
     deferred_edges: tuple
     symmetry_fragments: list
     events: list | None = None
+    search_path: object = None
 
 
 @dataclass
@@ -101,14 +102,14 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
     orders = _generate_seed_orders(g_R, n_seeds)
     for seed_index, order in enumerate(orders):
         events = [] if capture_events else None
-        branches = find_islands(
+        search_graph = find_islands(
             g_R, g_P, order,
             graph_floor=graph_floor, iso_tol=iso_tol,
             dwbo_threshold=dwbo_threshold,
             metal_dwbo_threshold=metal_dwbo_threshold,
             symmetry_wbo_tol=symmetry_wbo_tol,
             max_branches=max_branches, events=events, profile=profile)
-        for branch_index, branch in enumerate(branches):
+        for branch_index, branch in enumerate(search_graph.paths()):
             raw_mapping = expand_mapping(branch.mapping, g_R, g_P)
             mapping = dict(raw_mapping)
             if repair_symmetry:
@@ -138,8 +139,9 @@ def match_wbo_graphs(elR, wboR, elP, wboP, *,
                 score=score,
                 deferred_edges=tuple(sorted(tuple(map(int, e))
                                             for e in branch.deferred_edges)),
-                symmetry_fragments=list(getattr(branch, 'symmetry_fragments', [])),
+                symmetry_fragments=list(branch.fragments),
                 events=events if capture_events and branch_index == 0 else None,
+                search_path=branch,
             ))
     candidates.sort(key=lambda c: c.score)
     best = candidates[0] if candidates else None

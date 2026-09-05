@@ -11,7 +11,6 @@ from ..fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from ..fragment_matching.serialization import (
     FRAGMENT_DETECTION_SCHEMA,
     fragment_candidate_from_record,
-    fragment_candidate_to_record,
 )
 from ..matcher import _nauty_atom_generators, _nauty_orbits
 from ..subgraph import _coerce_graph
@@ -88,6 +87,10 @@ def candidate_entry(
         "precursor_id": record["source_id"],
         "smiles": record["representation"],
         "row_index": record["row_index"],
+        "detection_reference": {
+            "row_index": record["row_index"],
+            "candidate_index": candidate.get("detection_candidate_index"),
+        },
         "complete": record["complete"],
         "status": record["status"],
         "best_fragment_size": record["best_fragment_size"],
@@ -290,12 +293,16 @@ def build_candidate_index(records, target, target_key, *, config=None):
         if config.chirality_ranking:
             Chem.AssignStereochemistry(
                 explicit_molecule, cleanIt=True, force=True)
+        from ..search_graph import AAMSearchGraph
+        search_graphs = tuple(AAMSearchGraph.from_record(g)
+                              for g in record.get("search_graphs", ()))
         candidates = []
-        for raw_candidate in record["candidates"]:
+        for candidate_index, raw_candidate in enumerate(record["candidates"]):
             typed = fragment_candidate_from_record(dict(
-                raw_candidate, source_id=record["source_id"]))
+                raw_candidate, source_id=record["source_id"]),
+                search_graphs=search_graphs)
             candidates.append((
-                fragment_candidate_to_record(typed),
+                dict(raw_candidate, detection_candidate_index=candidate_index),
                 candidate_target_domains(typed),
                 candidate_target_occupations(
                     typed, target_graph,
@@ -315,7 +322,7 @@ def build_candidate_index(records, target, target_key, *, config=None):
                 for variant in attachment_trim_variants(
                     candidate, explicit_molecule)
                 for typed_variant in (fragment_candidate_from_record(dict(
-                    variant, source_id=record["source_id"])),)
+                    variant, source_id=record["source_id"]), search_graphs=search_graphs),)
             ]
         else:
             candidates = [
