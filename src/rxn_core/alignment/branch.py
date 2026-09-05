@@ -22,6 +22,17 @@ from ..matcher import (
 SYM_REPAIR_MAX_EVALS = 20000
 
 
+class _StateKey(tuple):
+    """Canonical state tuples with a hash reused at every frontier lookup."""
+    def __new__(cls, values):
+        key = super().__new__(cls, values)
+        key._hash = hash(values)
+        return key
+
+    def __hash__(self):
+        return self._hash
+
+
 class BranchLimitExceeded(RuntimeError):
     """Raised when an explicitly enumerated result set exceeds its cap."""
 
@@ -43,18 +54,16 @@ class BranchLimitExceeded(RuntimeError):
 
 
 class _Branch:
-    __slots__ = ('mapping', 'islands_R', 'islands_P', 'next_iid',
+    __slots__ = ('mapping', 'islands_R', 'next_iid',
                  'deferred_edges', 'graph', 'node', '_signature_cache')
     def __init__(self, graph=None, anchor_map=()):
         self.mapping = dict(anchor_map)
         self.islands_R = {}
-        self.islands_P = {}
         self.next_iid = 1
         self.deferred_edges = set()
         self._signature_cache = None
         for r, p in sorted(self.mapping.items()):
             self.islands_R[r] = self.next_iid
-            self.islands_P[p] = self.next_iid
             self.next_iid += 1
         self.graph = graph or SearchGraphBuilder(SearchContext((), (), ()))
         self.node = self.graph.root(self)
@@ -66,14 +75,20 @@ class _Branch:
     def fork(self):
         b = object.__new__(_Branch)
         b.mapping = dict(self.mapping)
-        b.islands_R = dict(self.islands_R)
-        b.islands_P = dict(self.islands_P)
+        # Commit replaces these partitions; sibling branches can read-share
+        # them until their next fragment decision.
+        b.islands_R = self.islands_R
         b.next_iid = self.next_iid
         b.deferred_edges = set(self.deferred_edges)
         b.graph = self.graph
         b.node = self.node
         b._signature_cache = self._signature_cache
         return b
+
+    @property
+    def islands_P(self):
+        """Derived inspection view; matching only needs the source partition."""
+        return {self.mapping[atom]: island for atom, island in self.islands_R.items()}
 
     @property
     def symmetry_paths(self):
@@ -84,56 +99,48 @@ class _Branch:
         """Union histories after exact equality of cumulative search state."""
         self.graph.join(self, other)
 
-    def normalize_islands(self):
-        groups = defaultdict(list)
-        for atom, island in self.islands_R.items():
-            groups[island].append(atom)
-        self.islands_R = {atom: index for index, atoms in enumerate(
-            sorted(tuple(sorted(atoms)) for atoms in groups.values()), 1)
-            for atom in atoms}
-        self.islands_P = {self.mapping[atom]: island
-                          for atom, island in self.islands_R.items()}
-        self.next_iid = len(groups) + 1
+    def state_key(self):
+        """One canonical snapshot for both frontier dedup and DAG storage.
 
-    def commit(self, iso, g_R, events=None):
-        before = (dict(self.mapping), dict(self.islands_R), set(self.deferred_edges))
-        self._signature_cache = None
-        touched = set()
-        for r in iso:
-            if r in self.islands_R:
-                touched.add(self.islands_R[r])
-        if touched:
-            iid = min(touched)
-        else:
-            iid = self.next_iid
-            self.next_iid += 1
+        Product island labels are derived from the mapping and source labels;
+        storing a second copy in the dedup key adds no information.
+        """
+        if self._signature_cache is None:
+            self._signature_cache = _StateKey((tuple(sorted(self.mapping.items())),
+                                              tuple(sorted(self.islands_R.items())),
+                                              tuple(sorted(self.deferred_edges))))
+        return self._signature_cache
+
+    def commit(self, iso, events=None):
+        """Consume a fragment placement; its symmetry record is now DAG-owned."""
+        before = self.state_key()
+        if events is not None:
+            touched = {self.islands_R[r] for r in iso if r in self.islands_R}
+            iid = min(touched) if touched else self.next_iid
+            relabeled = [(int(r), int(self.islands_R[r])) for r in iso
+                         if r in self.islands_R and self.islands_R[r] != iid]
+            relabeled.extend((int(r), int(k)) for r, k in self.islands_R.items()
+                             if r not in iso and k in touched and k != iid)
         committed_new = []
-        relabeled = []
         for r, p in iso.items():
             if r not in self.mapping:
                 self.mapping[r] = p
                 committed_new.append((int(r), int(p)))
-            elif self.islands_R.get(r) != iid:
-                relabeled.append((int(r), int(self.islands_R[r])))
-            self.islands_R[r] = iid
-            self.islands_P[p] = iid
         self.deferred_edges.update(iso.deferred_edges)
-        record = {
-            'island_idx': int(iid),
-            'fragment': sorted(int(r) for r in iso.fragment),
-            'deferred_edges': [list(map(int, e))
-                               for e in sorted(iso.deferred_edges)],
-            'symmetry': iso.symmetry,
-        }
-        for r, k in list(self.islands_R.items()):
-            if k in touched and k != iid:
-                relabeled.append((int(r), int(k)))
-                self.islands_R[r] = iid
-                self.islands_P[self.mapping[r]] = iid
-        self.normalize_islands()
-        if before != (self.mapping, self.islands_R, self.deferred_edges):
-            record['island_idx'] = self.islands_R[next(iter(iso))]
-            self.node = self.graph.commit(self.node, self, record, g_R)
+        ordered, islands, self.next_iid = self.graph.merged_partition(before[1], frozenset(iso))
+        self.islands_R = dict(ordered)
+        # A commit only extends the witness. Reuse the parent's immutable atom
+        # pairs instead of allocating a complete copy for every history node.
+        mapping = tuple(sorted(before[0] + tuple(committed_new))) if committed_new else before[0]
+        self._signature_cache = _StateKey((mapping, islands, tuple(sorted(self.deferred_edges))))
+        if before != self.state_key():
+            record = {
+                'island_idx': self.islands_R[next(iter(iso))],
+                'fragment': sorted(int(r) for r in iso.fragment),
+                'deferred_edges': [list(map(int, e)) for e in sorted(iso.deferred_edges)],
+                'symmetry': iso.symmetry,
+            }
+            self.node = self.graph.commit(self.node, self, record, iso.preserved_bonds)
         if events is not None:
             events.append({
                 'type': 'island_locked',
@@ -632,20 +639,8 @@ def find_islands(g_R, g_P, seed_order,
                 return True
         return False
 
-    def _progress_key(branch):
-        return (
-            frozenset(branch.mapping.items()),
-            frozenset(branch.islands_R.items()),
-            frozenset(branch.islands_P.items()),
-            frozenset(frozenset(edge) for edge in branch.deferred_edges),
-        )
-
     def _branch_signature(branch):
-        if branch._signature_cache is not None:
-            return branch._signature_cache
-        signature = _progress_key(branch)
-        branch._signature_cache = signature
-        return signature
+        return branch.state_key()
 
     def _merge_equivalent_paths(kept, other):
         if kept.mapping == other.mapping:
@@ -761,13 +756,12 @@ def find_islands(g_R, g_P, seed_order,
                 # pynauty transporter inside ``grow_island``.  Distinct
                 # surviving candidates are distinct symbolic branch choices;
                 # do not collapse them by a mechanism/event summary here.
-                deduped_isos = list(isos)
                 subtree = []
                 subtree_progressed = False
-                for ii, iso in enumerate(deduped_isos):
+                for ii, iso in enumerate(isos):
                     before_state = _branch_signature(b)
                     b2 = b.fork()
-                    b2.commit(iso, g_R,
+                    b2.commit(iso,
                               events=events if (bi == 0 and ii == 0) else None)
                     after_state = _branch_signature(b2)
                     if after_state == before_state:

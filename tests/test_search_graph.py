@@ -13,8 +13,8 @@ from rxn_core.artifacts import aam_from_record, aam_record
 from rxn_core.alignment.branch import _Branch, find_islands
 from rxn_core.analytical import _payload_key, compile_mapping_families
 from rxn_core.frag import build_graph
-from rxn_core.fragment import FragmentMatchConfig, FragmentMatchContext, match_fragment
-from rxn_core.growth.result import _IsoResult, IslandBranchLimitExceeded
+from rxn_core.fragment import FragmentPlacement, FragmentMatchConfig, FragmentMatchContext, match_fragment
+from rxn_core.growth.result import IslandBranchLimitExceeded
 from rxn_core.matcher import _nauty_orbits
 from rxn_core.search_graph import AAMSearchGraph, SearchContext, SearchGraphBuilder
 
@@ -27,8 +27,8 @@ def network(elements, bonds=()):
 
 
 def iso(mapping):
-    return _IsoResult(mapping, fragment=mapping,
-                      symmetry={'witness': mapping, 'blocks': []})
+    return FragmentPlacement(dict(mapping), frozenset(mapping), frozenset(),
+                             {'witness': mapping, 'blocks': []}, ())
 
 
 def problem():
@@ -41,15 +41,15 @@ def test_prefix_fork_reconvergence_does_not_copy_or_cross_contexts():
     graph = network(['C'] * 4)
     recorder = SearchGraphBuilder(SearchContext(tuple(graph), tuple(graph), (0, 1, 2, 3)))
     prefix = _Branch(recorder)
-    prefix.commit(iso({0: 0}), graph)
+    prefix.commit(iso({0: 0}))
     left, right = prefix.fork(), prefix.fork()
-    left.commit(iso({1: 1}), graph)
-    left.commit(iso({2: 2}), graph)
-    left.commit(iso({1: 1, 2: 2}), graph)
-    right.commit(iso({1: 1, 2: 2}), graph)
+    left.commit(iso({1: 1}))
+    left.commit(iso({2: 2}))
+    left.commit(iso({1: 1, 2: 2}))
+    right.commit(iso({1: 1, 2: 2}))
     assert left.islands_R == right.islands_R
     left.merge_exact_paths(right)
-    left.commit(iso({3: 3}), graph)
+    left.commit(iso({3: 3}))
     recorder.stop(left, 'objective_met')
     result = recorder.finish()
     paths = tuple(result.paths())
@@ -81,14 +81,103 @@ def test_online_admission_reuses_equal_continuation(monkeypatch):
     assert len(result.branches()) == 1
 
 
+def test_sibling_commits_share_snapshots_without_mutating_the_parent():
+    parent = _Branch(anchor_map={0: 10, 2: 12})
+    before = parent.state_key()
+    left, right = parent.fork(), parent.fork()
+    assert left.islands_R is right.islands_R is parent.islands_R
+    left.commit(iso({1: 11}))
+    right.commit(iso({1: 13}))
+    assert parent.state_key() == before
+    assert parent.mapping == {0: 10, 2: 12}
+    assert parent.islands_R == {0: 1, 2: 2}
+    # Only the source partition is shared: different target witnesses survive.
+    assert left.state_key()[1] is right.state_key()[1]
+    assert left.state_key() != right.state_key()
+    assert left.state_key()[0][0] is before[0][0]
+    old_node = left.node
+    left.commit(iso({1: 11}))
+    assert left.node == old_node  # a no-op doesn't invent a new decision
+    assert len(parent.graph.states) == 3
+
+
+@pytest.mark.parametrize('seed', range(20))
+def test_cached_partitions_and_events_match_literal_commit(seed):
+    """Compare the optimized commit against the pre-optimization definition."""
+    rng = random.Random(seed)
+    atoms = list(range(0, 36, 3))
+    assignment = dict(zip(atoms, rng.sample(range(50, 150), len(atoms))))
+    anchors = dict((a, assignment[a]) for a in rng.sample(atoms, 3))
+    branch = _Branch(anchor_map=anchors)
+    mapping, islands = dict(anchors), dict(branch.islands_R)
+    cuts, next_iid = set(), branch.next_iid
+    for _ in range(30):
+        selected = rng.sample(atoms, rng.randrange(1, 6))
+        pairs = {a: assignment[a] for a in selected}
+        new_cuts = frozenset({tuple(sorted(rng.sample(atoms, 2)))})
+        match = FragmentPlacement(pairs, frozenset(pairs), new_cuts,
+                                  {'witness': pairs, 'blocks': []}, ())
+        touched = {islands[a] for a in pairs if a in islands}
+        iid = min(touched) if touched else next_iid
+        added, relabeled = [], []
+        for a, b in pairs.items():
+            if a not in mapping:
+                mapping[a] = b
+                added.append((a, b))
+            elif islands[a] != iid:
+                relabeled.append((a, islands[a]))
+            islands[a] = iid
+        for a, label in list(islands.items()):
+            if label in touched and label != iid:
+                relabeled.append((a, label))
+                islands[a] = iid
+        groups = {}
+        for a, label in islands.items():
+            groups.setdefault(label, []).append(a)
+        groups = sorted(tuple(sorted(group)) for group in groups.values())
+        islands = {a: label for label, group in enumerate(groups, 1) for a in group}
+        next_iid = len(groups) + 1
+        cuts.update(new_cuts)
+        expected_event = dict(type='island_locked', island_idx=iid, pairs=added,
+                              merged_with=sorted(touched - {iid}), relabeled=relabeled,
+                              mapped_total=len(mapping))
+        events = []
+        branch.commit(match, events=events)
+        assert events == [expected_event]
+        assert branch.mapping == mapping
+        assert list(branch.islands_R.items()) == list(islands.items())
+        assert branch.islands_P == {mapping[a]: label for a, label in islands.items()}
+        assert branch.next_iid == next_iid
+        assert branch.state_key() == (tuple(sorted(mapping.items())),
+                                      tuple(sorted(islands.items())), tuple(sorted(cuts)))
+
+
+@pytest.mark.parametrize('seed', range(10))
+def test_fragment_bonds_match_whole_graph_definition(seed):
+    from rxn_core.growth.result import _IsoResult
+    rng = random.Random(seed)
+    graph = network(['C'] * 18)
+    for a in graph:
+        for b in range(a, 18):
+            if rng.random() < .2:
+                graph.add_edge(a, b)
+    atoms = frozenset(rng.sample(list(graph), 9))
+    cuts = frozenset(tuple(sorted(edge)) for edge in rng.sample(list(graph.edges()), 4))
+    raw = _IsoResult({a: a + 100 for a in atoms}, fragment=atoms, deferred_edges=cuts)
+    expected = tuple(sorted(tuple(sorted((a, b))) for a, b in graph.edges()
+                            if a in atoms and b in atoms and tuple(sorted((a, b))) not in cuts))
+    result = FragmentPlacement.from_match(raw, graph)
+    assert result.preserved_bonds == expected
+
+
 def test_symmetry_finalization_preserves_history_but_only_evaluates_result_ancestry():
     target = network(['C'] * 3)
     recorder = SearchGraphBuilder(SearchContext(tuple(target), tuple(target), (0, 1, 2)))
     prefix = _Branch(recorder)
-    prefix.commit(iso({0: 0}), target)
+    prefix.commit(iso({0: 0}))
     live, capped = prefix.fork(), prefix.fork()
-    live.commit(iso({1: 1}), target)
-    capped.commit(iso({2: 2}), target)
+    live.commit(iso({1: 1}))
+    capped.commit(iso({2: 2}))
     recorder.stop(live, 'objective_met')
     recorder.stop(capped, 'capped')
     raw = recorder.finish()
@@ -119,8 +208,8 @@ def test_graph_shares_generator_values_and_typed_prefix_groups(monkeypatch):
     target = network(['C'] * 3)
     recorder = SearchGraphBuilder(SearchContext(tuple(target), tuple(target), (0, 1, 2)))
     branch = _Branch(recorder)
-    branch.commit(iso({0: 0}), target)
-    branch.commit(iso({1: 1}), target)
+    branch.commit(iso({0: 0}))
+    branch.commit(iso({1: 1}))
     recorder.stop(branch, 'objective_met')
     # Fresh equal arrays from separate conditioned calculations must be interned.
     monkeypatch.setattr(symmetry._CandidateAutomorphismCanonicalizer,
@@ -239,7 +328,7 @@ def test_later_generator_is_transported_with_earlier_fragment():
     for atom, generators in [(0, [[1, 0, 2]]), (1, [[0, 2, 1]]), (2, [])]:
         placement = iso({atom: atom})
         placement.symmetry['automorph_generators'] = generators
-        branch.commit(placement, graph)
+        branch.commit(placement)
     recorder.stop(branch, 'objective_met')
     path = next(recorder.finish().paths())
     sample = path.realize({0: (0,), 1: (0,)})

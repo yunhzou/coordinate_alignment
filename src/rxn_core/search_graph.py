@@ -7,6 +7,7 @@ and cut contexts retain separate nodes when graphs are combined.
 from __future__ import annotations
 
 import copy
+from collections import defaultdict
 from dataclasses import dataclass, replace
 from functools import cached_property
 
@@ -361,11 +362,33 @@ class SearchGraphBuilder:
         self.roots = []
         self.step = (0, 0)
         self.seed = None
+        self._partitions = {}
+
+    def merged_partition(self, previous, atoms):
+        """Merge touched source islands once for all sibling target placements."""
+        key = (previous, atoms)
+        partition = self._partitions.get(key)
+        if partition is None:
+            labels = dict(previous)
+            touched = {labels[atom] for atom in atoms if atom in labels}
+            groups = defaultdict(list)
+            merged = set(atoms)
+            for atom, island in previous:
+                if island in touched:
+                    merged.add(atom)
+                else:
+                    groups[island].append(atom)
+            components = list(groups.values())
+            if merged:
+                components.append(sorted(merged))
+            ordered = tuple((atom, index) for index, group in enumerate(sorted(components), 1)
+                            for atom in group)
+            partition = ordered, tuple(sorted(ordered)), len(components) + 1
+            self._partitions[key] = partition
+        return partition
 
     def state(self, branch):
-        node = SearchState(len(self.states), 0, tuple(sorted(branch.mapping.items())),
-                           tuple(sorted(branch.islands_R.items())),
-                           tuple(sorted(branch.deferred_edges)))
+        node = SearchState(len(self.states), 0, *branch.state_key())
         self.states.append(node)
         return node.id
 
@@ -374,15 +397,17 @@ class SearchGraphBuilder:
         self.roots.append(node)
         return node
 
-    def commit(self, parent, branch, match, graph):
+    def commit(self, parent, branch, match, preserved_bonds):
+        """Take ownership of a freshly committed record, never mutate it.
+
+        Growth produces each symmetry payload afresh. The scheduler transfers
+        it here; subsequent branches reference this transition, not copies of
+        its payload. Public conversion of caller-owned placements still copies
+        at that boundary (initial_fragment_search).
+        """
         node = self.state(branch)
-        atoms = set(match["fragment"])
-        deferred = {tuple(sorted(edge)) for edge in match["deferred_edges"]}
-        bonds = tuple(sorted(tuple(sorted((a, b))) for a, b in graph.edges()
-                             if a in atoms and b in atoms
-                             and tuple(sorted((a, b))) not in deferred))
         self.transitions.append(FragmentTransition(len(self.transitions), parent,
-            node, self.seed, self.step, copy.deepcopy(match), bonds))
+            node, self.seed, self.step, match, preserved_bonds))
         return node
 
     def join(self, kept, other):

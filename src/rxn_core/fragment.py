@@ -30,6 +30,14 @@ class FragmentPlacement(Mapping):
     def items(self):
         return self.mapping.items()
 
+    @classmethod
+    def from_match(cls, match, source):
+        """Attach the induced bonds once, without scanning unrelated atoms."""
+        atoms, cuts = match.fragment, match.deferred_edges
+        bonds = tuple(sorted((a, b) for a in atoms for b in source[a]
+                             if a <= b and b in atoms and (a, b) not in cuts))
+        return cls(dict(match), atoms, cuts, match.symmetry, bonds)
+
 
 @dataclass(frozen=True)
 class FragmentMatchContext:
@@ -95,11 +103,6 @@ def match_fragment(source, target, *, seed, context=None, config=None,
     except IslandBranchLimitExceeded as exc:
         return FragmentMatchResult((), True, exc.count, exc.limit,
                                    time.perf_counter() - started)
-    placements = tuple(FragmentPlacement(dict(match), match.fragment,
-        match.deferred_edges, match.symmetry,
-        tuple(sorted(tuple(sorted((a, b))) for a, b in source.edges()
-                     if a in match.fragment and b in match.fragment
-                     and tuple(sorted((a, b))) not in match.deferred_edges)))
-        for match in matches)
+    placements = tuple(FragmentPlacement.from_match(match, source) for match in matches)
     return FragmentMatchResult(placements, False, len(matches),
                                config.branch_limit, time.perf_counter() - started)

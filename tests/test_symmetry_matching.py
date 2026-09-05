@@ -369,9 +369,10 @@ def test_mapping_variation_blocks_capture_branch_dedupe_pool():
 
 
 def test_branch_symmetry_record_closes_open_pool_with_mapping_owner():
+    from rxn_core.fragment import FragmentPlacement
     branch = branch_mod._Branch()
     branch.commit(
-        _IsoResult(
+        FragmentPlacement.from_match(_IsoResult(
             {27: 27},
             fragment={27},
             symmetry={
@@ -385,11 +386,10 @@ def test_branch_symmetry_record_closes_open_pool_with_mapping_owner():
                 }],
             },
         ),
-        build_graph(["H"] * 28, np.zeros((28, 28)), bond_cut=0.2),
+        build_graph(["H"] * 28, np.zeros((28, 28)), bond_cut=0.2)),
     )
     branch.mapping[22] = 26
     branch.islands_R[22] = 2
-    branch.islands_P[26] = 2
 
     record = _branch_symmetry_record(branch)
 

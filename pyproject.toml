@@ -43,5 +43,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 rxn_core = ["static/*.js", "static/*.html", "static/LICENSES/*"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 # Note: xtb (Grimme) is a runtime requirement but not a Python dependency;
 # install it via your system package manager (e.g. conda install -c conda-forge xtb).
