@@ -60,6 +60,33 @@ def test_archive_does_not_materialize_views_and_interns_generators():
     assert restored.aam_hierarchy.base.fragments[0].target_generators[0] is restored.aam_hierarchy.base.fragments[1].target_generators[0]
 
 
+def test_archive_shares_encoded_arrays_without_mutating_typed_input():
+    from rxn_core.fragment_matching.serialization import _GraphArchive
+    original = candidate(base())
+    archive = _GraphArchive()
+    first = fragment_candidate_to_record(original, archive=archive)
+    second = fragment_candidate_to_record(original, archive=archive)
+    assert first['mapping'] is second['mapping']
+    assert first['retained_fragments'] is second['retained_fragments']
+    first['mapping'][0][1] = 99
+    assert original.mapping == ((0, 0), (1, 1))
+
+
+def test_archive_state_records_reuse_immutable_fields_and_match_asdict():
+    from dataclasses import asdict
+    from rxn_core.search_graph import AAMSearchGraph, SearchContext, SearchState
+    from rxn_core.fragment_matching.serialization import _GraphArchive
+    state = SearchState(0, 0, ((0, 1),), ((0, 0),), ())
+    context = SearchContext((0,), (0, 1), (0,))
+    graph = AAMSearchGraph((context,), (0,), (state,), (), ())
+    record = _GraphArchive((graph,)).records()[0]
+    assert record['states'][0] == asdict(state)
+    assert record['states'][0]['mapping'] is state.mapping
+    assert record['contexts'][0] == asdict(context)
+    record['states'][0]['mapping'] = ()
+    assert state.mapping == ((0, 1),)
+
+
 def test_v4_repacking_preserves_full_hierarchy_without_search():
     original = candidate(base())
     record = fragment_candidate_to_record(original)

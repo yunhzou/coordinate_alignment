@@ -46,3 +46,27 @@ def test_small_augmentation_stream_keeps_all_results(monkeypatch, placements):
     monkeypatch.setattr(parallel, '_augment_initial_family', lambda s, t, p, c, r: p)
     assert tuple(parallel._parallel_augmentation_results(
         None, None, None, None, placements, 4)) == placements
+
+
+def test_merge_freezes_once_and_preserves_every_derivation(monkeypatch):
+    from types import SimpleNamespace
+    import rxn_core.fragment_matching.detection as detection
+    from rxn_core.fragment_matching.models import FragmentCandidate, FragmentDerivation, FragmentDetectionConfig
+    placement = SimpleNamespace(retained_atoms=(0,), representative_mapping=((0, 0),), encounter_count=1)
+    initial = ((placement,), 0, 0, False, False, 1, 0, False, ())
+    a, b = FragmentDerivation((), (), ((0, 0),)), FragmentDerivation((), (), ((0, 1), (1, 0)))
+    raw = FragmentCandidate('raw', ((0, 0),), (0,), (0,), (), (), (), (), (), 2,
+                            retained_fragments=((0,),), derivations=(a,))
+    other = detection.replace(raw, derivations=(b,))
+    replacements = []
+    original = detection.replace
+    def counted(*args, **kwargs):
+        replacements.append(args[0])
+        return original(*args, **kwargs)
+    monkeypatch.setattr(detection, 'replace', counted)
+    result = detection._detect_fragments_from_initial(None, SimpleNamespace(graph=None), initial,
+        source_id='final', config=FragmentDetectionConfig(), region=None,
+        augmentation_runner=lambda _: (((raw, other) * 100, False, 1, ()),))
+    assert len(replacements) == len(result.candidates) == 1
+    assert result.candidates[0].source_id == 'final'
+    assert result.candidates[0].derivations == (a, b) * 100

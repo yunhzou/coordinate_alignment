@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import io
 import json
 import math
 import multiprocessing as mp
@@ -59,13 +60,14 @@ def _worker_init(target_smiles, config_record,
         if target_region_atoms is not None else None)
 
 
-def _search_one(row, *, seed_workers=1):
+def _detect_one(row, *, seed_workers=1):
+    """Molecular search only; its typed result can be checkpointed and reused."""
     row_index, smiles, precursor_id = row
     counts = Counter(rows=1)
     molecule_implicit = Chem.MolFromSmiles(smiles)
     if molecule_implicit is None:
         counts["parse_errors"] += 1
-        return counts, None
+        return counts, None, 0.0
     molecule = Chem.AddHs(molecule_implicit)
     counts["searched"] += 1
     source = molecule_to_weighted_graph(molecule)
@@ -89,6 +91,15 @@ def _search_one(row, *, seed_workers=1):
             target_region_atoms=_TARGET_REGION_ATOMS,
         )
     detection_seconds = time.perf_counter() - detection_started
+    return counts, result, detection_seconds
+
+
+def _record_detection(row, counts, result, detection_seconds):
+    """Encode a completed detection without repeating any molecular search."""
+    row_index, smiles, _precursor_id = row
+    if result is None:
+        return counts, None
+    counts = Counter(counts)
     if result.status == "capped":
         counts["capped"] += 1
     counts["incomplete"] += not result.complete
@@ -114,6 +125,10 @@ def _search_one(row, *, seed_workers=1):
     return counts, record
 
 
+def _search_one(row, *, seed_workers=1):
+    return _record_detection(row, *_detect_one(row, seed_workers=seed_workers))
+
+
 def _search_batch(batch):
     records = []
     counts = Counter()
@@ -131,8 +146,15 @@ def _encode_records(records):
     Concatenated members form a standard gzip stream. The coordinator copies
     bytes, rather than unpickling and serially recompressing large AAM archives.
     """
-    payload = "".join(json.dumps(record, separators=(",", ":")) + "\n" for record in records)
-    return gzip.compress(payload.encode("utf-8"), mtime=0)
+    # Search graphs are acyclic JSON records (DAG links are integer references).
+    # Encode one record at a time; do not copy a whole batch into one huge string.
+    output = io.BytesIO()
+    with gzip.GzipFile(fileobj=output, mode="wb", compresslevel=1, mtime=0) as stream:
+        for record in records:
+            payload = json.dumps(record, separators=(",", ":"), check_circular=False)
+            stream.write(payload.encode("utf-8"))
+            stream.write(b"\n")
+    return output.getvalue()
 
 
 def _explicit_atom_count(row):

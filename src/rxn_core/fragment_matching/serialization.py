@@ -1,7 +1,7 @@
 """Strict serialization for fragment-detection records."""
 from __future__ import annotations
 import copy
-from dataclasses import asdict, fields, replace
+from dataclasses import fields, replace
 
 from ..alignment.post_aam import AAMHierarchy, AAMHierarchyChain
 from ..search_graph import AAMSearchGraph, SearchPath
@@ -20,6 +20,8 @@ class _GraphArchive:
         self.hierarchies = {}
         self.generators = []
         self.generator_ids = {}
+        self.arrays = {}
+        self.paths = {}
         for graph in graphs:
             self.add(graph)
 
@@ -30,18 +32,34 @@ class _GraphArchive:
         return self.ids[id(graph)]
 
     def reference(self, path):
-        return path.to_reference(self.add(path.graph))
+        key = id(path)
+        if key not in self.paths:
+            self.paths[key] = path, path.to_reference(self.add(path.graph))
+        return self.paths[key][1]
+
+    def array(self, value):
+        """Encode immutable shared tuples once, retaining the JSON list API."""
+        key = id(value)
+        if key not in self.arrays:
+            self.arrays[key] = value, [self.array(item) if isinstance(item, tuple) else item
+                                       for item in value]
+        return self.arrays[key][1]
 
     def records(self):
         # Archive encoding shares groups; the ordinary AAM graph API is unchanged.
         return [{"schema": "rxn_core.aam_search_graph_refs/v1",
-                 "contexts": [asdict(c) for c in graph.contexts], "roots": graph.roots,
-                 "states": [asdict(s) for s in graph.states],
+                 # These frozen records contain only immutable scalars/tuples.
+                 # asdict recursively rebuilds every mapping and island pair.
+                 "contexts": [{f.name: getattr(c, f.name) for f in fields(c)}
+                              for c in graph.contexts], "roots": graph.roots,
+                 "states": [{f.name: getattr(s, f.name) for f in fields(s)}
+                            for s in graph.states],
                  "transitions": [{**{f.name: getattr(edge, f.name) for f in fields(edge)
                                       if f.name != "match"},
                                   "match": None if edge.match is None else self.encode_fragment(edge.match)}
                                  for edge in graph.transitions],
-                 "stops": [asdict(s) for s in graph.stops]} for graph in self.graphs]
+                 "stops": [{f.name: getattr(s, f.name) for f in fields(s)}
+                           for s in graph.stops]} for graph in self.graphs]
 
     def encode_fragment(self, fragment):
         symmetry = fragment["symmetry"]
@@ -138,29 +156,23 @@ def fragment_candidate_to_record(candidate: FragmentCandidate, *, archive=None):
     standalone = archive is None
     archive = _GraphArchive() if standalone else archive
     record = {
-        "mapping": [list(item) for item in candidate.mapping],
-        "retained_atoms": list(candidate.retained_atoms),
-        "covered_target_atoms": list(candidate.covered_target_atoms),
-        "leftover_fragments": [
-            list(item) for item in candidate.leftover_fragments
-        ],
-        "boundary_bonds": [list(item) for item in candidate.boundary_bonds],
-        "attachment_atoms_source": list(candidate.attachment_atoms_source),
-        "attachment_atoms_target": list(candidate.attachment_atoms_target),
-        "copied_residual_placements": [
-            list(item) for item in candidate.copied_residual_placements
-        ],
+        "mapping": archive.array(candidate.mapping),
+        "retained_atoms": archive.array(candidate.retained_atoms),
+        "covered_target_atoms": archive.array(candidate.covered_target_atoms),
+        "leftover_fragments": archive.array(candidate.leftover_fragments),
+        "boundary_bonds": archive.array(candidate.boundary_bonds),
+        "attachment_atoms_source": archive.array(candidate.attachment_atoms_source),
+        "attachment_atoms_target": archive.array(candidate.attachment_atoms_target),
+        "copied_residual_placements": archive.array(candidate.copied_residual_placements),
         "augmented_target_atom_count": candidate.augmented_target_atom_count,
-        "retained_fragments": [
-            list(item) for item in candidate.retained_fragments
-        ],
-        "fragment_classes": list(candidate.fragment_classes),
-        "preserved_source_bonds": [list(edge) for edge in candidate.preserved_source_bonds],
+        "retained_fragments": archive.array(candidate.retained_fragments),
+        "fragment_classes": archive.array(candidate.fragment_classes),
+        "preserved_source_bonds": archive.array(candidate.preserved_source_bonds),
         "aam_hierarchy": archive.hierarchy_reference(candidate.aam_hierarchy),
         "derivations": [{
             "initial_paths": [archive.reference(p) for p in d.initial_paths],
             "residual_paths": [archive.reference(p) for p in d.residual_paths],
-            "target_action": [list(pair) for pair in d.target_action],
+            "target_action": archive.array(d.target_action),
             "occupation_projected": d.occupation_projected,
         } for d in candidate.derivations],
     }

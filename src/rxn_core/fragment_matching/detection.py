@@ -532,6 +532,7 @@ def _detect_fragments_from_initial(
         augmentation_results = augmentation_runner(selected_placements)
 
     candidates = []
+    derivations = []
     seen_candidates = {}
     search_graphs = list(search_graphs)
     for family_candidates, augmented_capped, augmented_branch_count, augmented_graphs in (
@@ -542,15 +543,14 @@ def _detect_fragments_from_initial(
         if augmented_capped:
             capped_seed_count += 1
         for raw_candidate in family_candidates:
-            candidate = replace(raw_candidate, source_id=str(source_id))
-            identity = _candidate_identity(candidate)
+            identity = _candidate_identity(raw_candidate)
             if identity in seen_candidates:
                 index = seen_candidates[identity]
-                candidates[index] = replace(candidates[index],
-                    derivations=candidates[index].derivations + candidate.derivations)
+                derivations[index].extend(raw_candidate.derivations)
                 continue
             seen_candidates[identity] = len(candidates)
-            candidates.append(candidate)
+            candidates.append(raw_candidate)
+            derivations.append(list(raw_candidate.derivations))
             if config.candidate_limit is not None and len(candidates) >= config.candidate_limit:
                 candidate_capped = True
                 break
@@ -559,6 +559,9 @@ def _detect_fragments_from_initial(
         if config.candidate_limit is not None and len(candidates) >= config.candidate_limit:
             break
 
+    # Freeze once per retained candidate, not once per incoming discovery.
+    candidates = [replace(candidate, source_id=str(source_id), derivations=tuple(paths))
+                  for candidate, paths in zip(candidates, derivations, strict=True)]
     candidates.sort(key=lambda candidate: (
         candidate.covered_target_atoms,
         candidate.attachment_atoms_target,

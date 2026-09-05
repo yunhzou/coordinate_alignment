@@ -58,6 +58,31 @@ def test_worker_gzip_members_are_one_complete_jsonl_stream():
         assert [json.loads(line) for line in stream] == records
 
 
+def test_fast_writer_preserves_large_symmetry_counts_and_shared_arrays():
+    shared = ((0, 2), (1, 0), (2, 1))
+    records = [{'multiplicity': 10**100, 'mapping': shared,
+                'alternative': shared, 'witness': {0: 2}, 'label': 'α/β'}]
+    expected = ''.join(json.dumps(r, separators=(',', ':')) + '\n' for r in records)
+    assert gzip.decompress(catalog._encode_records(records)).decode() == expected
+    assert gzip.decompress(catalog._encode_records(())) == b''
+
+
+def test_search_orchestration_keeps_detection_independent_from_archiving(monkeypatch):
+    row = (42, 'C', 'source')
+    detection = ({'rows': 1}, object(), 0.125)
+    calls = []
+    def detect(actual, *, seed_workers):
+        calls.append(('detect', actual, seed_workers))
+        return detection
+    def record(actual, *payload):
+        calls.append(('archive', actual, payload))
+        return 'encoded'
+    monkeypatch.setattr(catalog, '_detect_one', detect)
+    monkeypatch.setattr(catalog, '_record_detection', record)
+    assert catalog._search_one(row, seed_workers=47) == 'encoded'
+    assert calls == [('detect', row, 47), ('archive', row, detection)]
+
+
 def test_progress_audit_counts_flushed_rows_without_claiming_complete_scan(tmp_path):
     audit_spec = importlib.util.spec_from_file_location("catalog_progress",
         Path(__file__).parents[1] / "bench/catalog_scan_progress.py")
