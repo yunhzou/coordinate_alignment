@@ -93,3 +93,19 @@ it has not been substituted or claimed as implemented here.
 Verification: 206 full-suite tests passed, followed by four scheduler/archive
 audit tests including one newly added test (207 tests total). The methanol
 saved-record assembly and standalone viewer also completed successfully.
+
+## Completing the unfinished experiment
+
+At the user's request, job `432033` resumes only the 18 unfinished sources,
+one 48-CPU node per source. The detector and configuration are unchanged; the
+original row indices are preserved. The 1,901 saved records are not recomputed.
+`hpc/resume_catalog_tail.sbatch` runs `bench/resume_catalog_source.py`, which
+uses the existing catalog detector and records source-level start/completion
+checkpoints, full compressed AAM evidence, and timings under
+`data/retro_runs/native_exact_20260905/tail_completion/`.
+
+The allocation watchdog is one hour, with inspection rather than automatic
+cancellation at ten minutes. This redistributes CPUs compared with the original
+scan. The resumed completion time must therefore be reported separately from a
+fresh full-bank benchmark. A regression test verifies configuration/row-index
+preservation and refusal to rerun an already saved source.
