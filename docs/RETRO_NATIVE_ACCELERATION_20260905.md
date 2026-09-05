@@ -104,8 +104,21 @@ uses the existing catalog detector and records source-level start/completion
 checkpoints, full compressed AAM evidence, and timings under
 `data/retro_runs/native_exact_20260905/tail_completion/`.
 
-The allocation watchdog is one hour, with inspection rather than automatic
-cancellation at ten minutes. This redistributes CPUs compared with the original
-scan. The resumed completion time must therefore be reported separately from a
-fresh full-bank benchmark. A regression test verifies configuration/row-index
-preservation and refusal to rerun an already saved source.
+That experimental allocation initially allowed one hour. The user has now
+required a hard ten-minute watchdog for future runs: the Slurm limit is ten
+minutes, and a process supervisor independently warns at five minutes and kills
+the isolated detector process group at ten minutes. This includes native code,
+forked AAM workers and post-processing; it does not alter matching semantics.
+The five-minute warning is for the whole precursor pipeline, not proof that any
+single internal AAM call took five minutes. Timeouts are recorded as incomplete.
+
+The resumed run finished with 14 new saved results and four OOM failures,
+bringing the bank to **1,915/1,919 saved**. The last job, INVENTORY-000594, completed
+in 26:17 of Slurm wall time (1,564.18 seconds inside the runner). Its parallel
+workers exited before the final serial result-processing phase. No experiment
+jobs remained active when the hard-watchdog policy was restored. The four OOM
+sources are INVENTORY-000400, INVENTORY-000538, INVENTORY-000563, INVENTORY-000564.
+
+This run redistributed CPUs compared with the original scan. Its completion
+times are not fresh full-bank benchmark times. Tests verify configuration/row
+preservation, refusal to rerun saved work, and whole-process-group timeout handling.

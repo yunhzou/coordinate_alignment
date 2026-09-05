@@ -2,12 +2,39 @@
 """Complete one audited missing source using the unchanged catalog detector."""
 import argparse
 import json
+import os
 from pathlib import Path
+import signal
+import subprocess
 import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from search_mcule_retro import _worker_init, _search_one, _encode_records
+
+
+def supervise(arguments, output_dir, index):
+    """Wall-clock guard outside the detector, including native code and children."""
+    with subprocess.Popen([sys.executable, __file__, *arguments, "--worker"],
+                          start_new_session=True) as process:
+        try:
+            code = process.wait(timeout=300)
+        except subprocess.TimeoutExpired:
+            print(json.dumps({"event": "slow_run", "seconds": 300,
+                "index": index, "scope": "precursor pipeline including AAM and post-processing"}), flush=True)
+            try:
+                code = process.wait(timeout=300)
+            except subprocess.TimeoutExpired:
+                # The isolated session contains the detector and its forked pool.
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+                path = output_dir / "parts" / f"part_{index}.watchdog.json"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({"phase": "timed_out", "limit_seconds": 600,
+                    "result_complete": False, "index": index}) + "\n")
+                raise SystemExit(124)
+        if code:
+            raise SystemExit(code)
 
 
 def main():
@@ -16,7 +43,10 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--index", type=int, required=True)
     parser.add_argument("--workers", type=int, required=True)
+    parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if not args.worker:
+        return supervise(sys.argv[1:], args.output_dir, args.index)
     audit = json.loads((args.prior_run / "progress_audit.json").read_text())
     source = audit["unfinished_sources"][args.index]
     prior_summary = sorted((args.prior_run / "parts").glob("*.summary.json"))[0]
