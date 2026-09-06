@@ -2,6 +2,8 @@
 
 Download this directory and open `index.html`, then choose a target. The viewers contain assembled R/P mappings, construction patterns, scores, and separately labelled reference-set checks.
 
+The target occupies the larger pane beside a scrollable reactant column. Use **Fit target** to reset its camera, **Expand target** for a target-only workspace, and the collapsible score plot to compare assemblies. Narrow screens place the target above the reactants. These layout controls do not change mappings or scores.
+
 Bank: 155,305 structures in merged_fast_delivery_with_inventory. Current beta workflow, explicit hydrogen, tolerance 1.0, branch cap 100, no sweep. Seven fresh connected bank scans; case 5 reused its saved matching and reran assembly with the corrected reference isomer. Recommendations are not exhaustive or certified globally optimal.
 
 | Case | Blind full-cover assemblies | Reference full-cover assemblies | Capped searches: blind / reference |

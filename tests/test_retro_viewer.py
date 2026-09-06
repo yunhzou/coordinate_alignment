@@ -58,6 +58,12 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
     assert target['labels'][1]['always']
     html = VIEWER._html(payload)
     assert "not validated reaction edits" in html
+    assert 'id="moleculeWorkspace"' in html
+    assert 'id="fitTarget"' in html
+    assert 'id="expandTarget"' in html
+    assert '<details id="scoreDetails">' in html
+    assert '#Ppanel .label{position:static' in html
+    assert '#reactants .panel{flex:0 0 300px}' in html
     assert "Known-ingredient check, not a blind bank scan" in html
     assert "Returned by blind recommender" not in html
 
