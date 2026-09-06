@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <tuple>
@@ -15,6 +16,35 @@ using Fragment = std::pair<int, Images>;
 using Bond = std::pair<int, int>;
 using Key = std::tuple<Images, Images, std::vector<Fragment>, std::vector<Bond>>;
 using State = std::pair<Images, Images>;
+
+// Only a closed, permanently unobservable set can be collapsed. Include every
+// point that any recorded generator can transport to an observed point. This
+// over-approximates chronological reachability and is safe for every stage.
+static Images observation_labels(int degree,
+        const std::vector<std::vector<Images>>& stages,
+        const std::optional<Images>& observed) {
+    Images labels(degree);
+    std::iota(labels.begin(), labels.end(), 0);
+    if (!observed) return labels;
+    Images parent = labels;
+    auto root = [&](int a) {
+        while (parent[a] != a) {
+            parent[a] = parent[parent[a]];
+            a = parent[a];
+        }
+        return a;
+    };
+    for (const auto& stage : stages) for (const auto& g : stage)
+        for (int a = 0; a < degree; ++a) parent[root(a)] = root(g[a]);
+    std::vector<bool> visible(degree, false);
+    for (int a : *observed) {
+        if (a < 0 || a >= degree) throw std::invalid_argument("observed atom outside frame");
+        visible[root(a)] = true;
+    }
+    for (int a = 0; a < degree; ++a)
+        if (!visible[root(a)]) labels[a] = -1;
+    return labels;
+}
 
 static void check_permutation(const Images& p) {
     Images ordered = p;
@@ -55,7 +85,8 @@ static Key occupation_key(const Images& images, const Images& attachments,
 static std::vector<State> occupation_orbit(
         const Images& witness, int degree, const std::vector<std::vector<Images>>& stages,
         const Images& attachments, const std::vector<Fragment>& fragments,
-        const std::vector<Bond>& bonds, int limit) {
+        const std::vector<Bond>& bonds, int limit,
+        const std::optional<Images>& observed = std::nullopt) {
     if (degree < 0) throw std::invalid_argument("negative permutation degree");
     for (int image : witness)
         if (image < 0 || image >= degree) throw std::invalid_argument("image outside frame");
@@ -72,19 +103,33 @@ static std::vector<State> occupation_orbit(
     }
     Images identity(degree);
     std::iota(identity.begin(), identity.end(), 0);
+    const Images labels = observation_labels(degree, stages, observed);
+    auto projected = [&](const Images& images) {
+        Images value;
+        value.reserve(images.size());
+        for (int image : images) value.push_back(labels[image]);
+        return value;
+    };
     std::vector<State> states{{witness, identity}};
     std::map<Key, size_t> seen;
-    seen.emplace(occupation_key(witness, attachments, fragments, bonds), 0);
+    seen.emplace(occupation_key(projected(witness), attachments, fragments, bonds), 0);
+    std::map<Images, size_t> evaluated;
     for (const auto& stage : stages) {
+        std::vector<size_t> already;
+        for (const auto& g : stage) already.push_back(evaluated[g]);
         for (size_t current = 0; current < states.size(); ++current) {
             // Appending states may reallocate; do not hold references into states.
             const State state = states[current];
-            for (const auto& g : stage) {
+            const Images state_projection = projected(state.first);
+            for (size_t gi = 0; gi < stage.size(); ++gi) {
+                if (current < already[gi]) continue;
+                const auto& g = stage[gi];
                 Images moved;
                 moved.reserve(witness.size());
                 for (int image : state.first) moved.push_back(g[image]);
-                if (moved == state.first) continue;
-                Key key = occupation_key(moved, attachments, fragments, bonds);
+                Images moved_projection = projected(moved);
+                if (moved_projection == state_projection) continue;
+                Key key = occupation_key(moved_projection, attachments, fragments, bonds);
                 if (seen.find(key) != seen.end()) continue;
                 if (limit >= 0 && states.size() >= static_cast<size_t>(limit))
                     throw std::length_error("fragment occupation limit exceeded");
@@ -95,6 +140,7 @@ static std::vector<State> occupation_orbit(
                 states.emplace_back(std::move(moved), std::move(action));
             }
         }
+        for (const auto& g : stage) evaluated[g] = states.size();
     }
     // Preserve discovery order; the Python caller merges families and sorts final keys.
     return states;
@@ -151,7 +197,11 @@ static py::tuple conjugate_generators(const std::vector<Images>& generators, con
 }
 
 PYBIND11_MODULE(_group_ops, m) {
-    m.def("occupation_orbit", &occupation_orbit, py::call_guard<py::gil_scoped_release>());
+    m.def("occupation_orbit", &occupation_orbit,
+          py::arg("witness"), py::arg("degree"), py::arg("stages"),
+          py::arg("attachments"), py::arg("fragments"), py::arg("bonds"),
+          py::arg("limit"), py::arg("observed_atoms") = py::none(),
+          py::call_guard<py::gil_scoped_release>());
     m.def("project_generators", &project_generators);
     m.def("conjugate_generators", &conjugate_generators);
     py::register_exception<std::length_error>(m, "OccupationLimitExceeded");

@@ -3,6 +3,7 @@ from itertools import combinations
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 from rdkit import Chem
 
 from rxn_core import WeightedGraph
@@ -14,6 +15,33 @@ from rxn_core.fragment_matching import detect_fragments, FragmentDetectionConfig
 from rxn_core.fragment_matching import FragmentCandidate, materialize_target_coverage_orbit
 from rxn_core.fragment_matching.graph_ops import fragment_equivalence_classes
 from rxn_core.alignment.post_aam import AAMHierarchy, FragmentMatch, AtomPermutation
+
+
+@pytest.mark.parametrize('source_smiles,target_smiles', [
+    ('CC', 'C'), ('O=C=O', 'CC(=O)O'), ('O', 'CC(=O)O'), ('CCO', 'CO'),
+])
+def test_augmented_observation_quotient_matches_full_expansion(
+        monkeypatch, source_smiles, target_smiles):
+    from rxn_core.fragment_matching import symmetry
+    from rxn_core.fragment_matching.detection import _candidate_identity
+    from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
+    source = molecule_to_weighted_graph(Chem.AddHs(Chem.MolFromSmiles(source_smiles)))
+    target = molecule_to_weighted_graph(Chem.AddHs(Chem.MolFromSmiles(target_smiles)))
+    compact = detect_fragments(source, target)
+    original = symmetry.materialize_target_coverage_orbit
+
+    def full_expansion(*args, **kwargs):
+        kwargs.pop('observed_atoms', None)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(symmetry, 'materialize_target_coverage_orbit', full_expansion)
+    full = detect_fragments(source, target)
+    assert {_candidate_identity(c) for c in compact.candidates} == {
+        _candidate_identity(c) for c in full.candidates}
+    assert compact.status == full.status
+    assert compact.complete == full.complete
+    assert compact.capped_seed_count == full.capped_seed_count
+    assert compact.search_graphs == full.search_graphs
 
 
 def test_decision_graph_equals_exhaustive_union_covers_including_redundancy():

@@ -1,0 +1,100 @@
+{
+  "scope": "retro occupation compression; native AAM growth unchanged",
+  "jobs": {
+    "precursors": 432164,
+    "isolated_validation": 432166,
+    "captured_suite": 432167,
+    "archive_validation": 432168
+  },
+  "suite": {
+    "cases": 1472,
+    "elapsed_seconds": 66.91065016621724,
+    "full_states": 814748,
+    "compact_states": 16537,
+    "observed_relations_identical": true,
+    "exact_source_target_pairs_identical": true,
+    "sum_baseline_call_elapsed_seconds": 1949.864056535,
+    "sum_compact_call_elapsed_seconds": 15.094811223447323
+  },
+  "isolated": [
+    {
+      "input": "data/retro_runs/occupation_diagnosis_20260905/INVENTORY-000538/2009879_32.pkl.gz",
+      "baseline_seconds": 8.614565875,
+      "full_seconds": 3.00069185718894,
+      "compact_seconds": 0.013270279858261347,
+      "full_states": 5460,
+      "compact_states": 12,
+      "full_output_identical": true,
+      "observed_relations_identical": true,
+      "exact_source_target_pairs_identical": true
+    },
+    {
+      "input": "data/retro_runs/occupation_diagnosis_20260905/INVENTORY-000594/2148408_6.pkl.gz",
+      "baseline_seconds": 11.795787251,
+      "full_seconds": 4.334679032210261,
+      "compact_seconds": 0.0557438051328063,
+      "full_states": 5616,
+      "compact_states": 144,
+      "full_output_identical": true,
+      "observed_relations_identical": true,
+      "exact_source_target_pairs_identical": true
+    },
+    {
+      "input": "data/retro_runs/occupation_diagnosis_20260905/INVENTORY-000538/2009869_39.pkl.gz",
+      "baseline_seconds": 3.264576759,
+      "full_seconds": 1.3104261979460716,
+      "compact_seconds": 0.011037224903702736,
+      "full_states": 2640,
+      "compact_states": 12,
+      "full_output_identical": true,
+      "observed_relations_identical": true,
+      "exact_source_target_pairs_identical": true
+    },
+    {
+      "input": "data/retro_runs/occupation_diagnosis_20260905/INVENTORY-000594/2148408_16.pkl.gz",
+      "baseline_seconds": 5.179748581,
+      "full_seconds": 1.8689050558023155,
+      "compact_seconds": 0.05188505770638585,
+      "full_states": 2592,
+      "compact_states": 144,
+      "full_output_identical": true,
+      "observed_relations_identical": true,
+      "exact_source_target_pairs_identical": true
+    }
+  ],
+  "source_records": [
+    {
+      "source_id": "INVENTORY-000538",
+      "row_index": 537,
+      "representation": "CCCCCC=CCC=CCC=CCC=CCC=CCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)C(O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC(n2cnc3c(N)ncnc32)C(O)C1OP(=O)([O-])[O-]",
+      "status": "capped",
+      "complete": false,
+      "candidates": 17551,
+      "best_fragment_size": 34,
+      "capped_seed_count": 138,
+      "branch_limit": 100,
+      "detection_seconds": 39.905121407005936,
+      "file": "data/retro_runs/full_bank_core_fixed_20260905/occupation_fixed/parts/part_2.jsonl.gz",
+      "line": 1,
+      "record_sha256": "6919be974431a56a3242baa6e69ee9bc343e7bca291b7a5728f7508923bb3a51"
+    },
+    {
+      "source_id": "INVENTORY-000594",
+      "row_index": 593,
+      "representation": "CCCCCCCC[C@H]1CC[C@@]2(C)C3CC[C@@]4(C)Cc5nc6c(nc5C[C@]4(C)[C@@]3(C)CC[C@]12C)C[C@]1(C)CCC2[C@](C)(CC[C@]3(C)[C@@H](CCCCCCCC)CC[C@@]23C)[C@@]1(C)C6",
+      "status": "capped",
+      "complete": false,
+      "candidates": 3388,
+      "best_fragment_size": 55,
+      "capped_seed_count": 63,
+      "branch_limit": 100,
+      "detection_seconds": 58.579327625688165,
+      "file": "data/retro_runs/full_bank_core_fixed_20260905/occupation_fixed/parts/part_4.jsonl.gz",
+      "line": 1,
+      "record_sha256": "598dac3ebc4c04c20aed987a30a641d4d5a2acd7b7cc52c8e2face6a6b38cacd"
+    }
+  ],
+  "saved_bank_rows": 1918,
+  "expected_bank_rows": 1919,
+  "remaining_source_id": "INVENTORY-000620"
+}

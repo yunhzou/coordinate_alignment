@@ -82,9 +82,10 @@ def match_augmented_residuals(source, target, retained_mapping, outside, boundar
             continue
         fragments = (tuple(sorted(retained_mapping)),) + tuple(
             fragment.r_atoms for fragment in path.hierarchy.fragments)
-        # The quotient tracks complete fragment image sets, including competitor
-        # positions, before projecting ownership to P. Dropping competitor atoms
-        # earlier would not commute with the recorded generator action.
+        # Keep competitors that can reach P distinct. Permanently competitor-only
+        # choices remain in the recorded groups rather than being listed. The
+        # native observation closure makes this quotient commute with every
+        # recorded action; it is not a premature projection onto P alone.
         candidate = FragmentCandidate(
             source_id="", mapping=tuple(sorted(path.mapping.items())),
             retained_atoms=tuple(sorted(source)),
@@ -99,7 +100,8 @@ def match_augmented_residuals(source, target, retained_mapping, outside, boundar
             fragment_classes=fragment_equivalence_classes(source,
                 tuple(boundary) + tuple(path.deferred_edges), fragments, iso_tolerance))
         for variant in materialize_target_coverage_orbit(candidate, augmented,
-                iso_tolerance=iso_tolerance, generators=()):
+                iso_tolerance=iso_tolerance, generators=(),
+                observed_atoms=range(target_count)):
             # Record the actual action without editing the saved search graph.
             parts = tuple(AAMHierarchyView(base, share_relation(action)) if action else base
                           for base, action in variant.aam_hierarchy.segments)

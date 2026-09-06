@@ -14,16 +14,20 @@ class FragmentOrbitLimitExceeded(RuntimeError):
 
 
 def materialize_target_coverage_orbit(candidate, target, *, iso_tolerance=0.5,
-                                      limit=None, generators=None):
+                                      limit=None, generators=None, observed_atoms=None):
     """One witness per correlated fragment-region relation.
 
     The orbit walk transports only integer images. Hierarchy/generator objects
     are transported once for each final region, never on every group edge.
     Proven equivalent source fragment units form an unordered multiset.
+    With observed_atoms, choices permanently outside their generator-reachable
+    closure stay compressed in the original hierarchy. Every returned mapping
+    remains a complete, correlated witness, including competitor assignments.
     """
     graph = _coerce_graph(target, 0.2)
     generators = tuple(_nauty_atom_generators(graph, wbo_tol=iso_tolerance)
                        if generators is None else generators)
+    observed_atoms = None if observed_atoms is None else tuple(observed_atoms)
     families = []
     for derivation in candidate.derivations:
         paths = derivation.initial_paths[:1] + derivation.residual_paths
@@ -67,7 +71,8 @@ def materialize_target_coverage_orbit(candidate, target, *, iso_tolerance=0.5,
                         for stage in stages)
         try:
             states = occupation_orbit(witness, degree, actions, attachments,
-                                      fragment_positions, bonds, -1 if limit is None else limit)
+                                      fragment_positions, bonds, -1 if limit is None else limit,
+                                      observed_atoms)
         except OccupationLimitExceeded:
             raise FragmentOrbitLimitExceeded(limit + 1, limit) from None
         for raw_images, raw_action in states:

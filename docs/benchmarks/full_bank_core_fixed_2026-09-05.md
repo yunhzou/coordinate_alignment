@@ -1,5 +1,9 @@
 # Full inventory scan after the core-AAM fix
 
+Follow-up: the [occupation compression fix](occupation_compression_fix_2026-09-05.md)
+recovered sources 538 and 594. Combined progress is now 1,918/1,919; only 620 is
+unresolved. The measurements below describe the earlier scan and recovery.
+
 **Incomplete: 1,916 of 1,919 source records saved after checkpoint recovery.**
 The three unfinished sources are not classified as nonmatches. No assembly or
 viewer generation was run in this detection benchmark.

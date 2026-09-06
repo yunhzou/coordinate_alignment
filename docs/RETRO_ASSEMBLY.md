@@ -47,6 +47,17 @@ or `.to_record()` materializes it explicitly. Identity transports and generators
 fixing an entire occupation require no work. Repeated source partitions reuse
 the same equivalence analysis.
 
+For augmented matching, the observable set is the real P target. The native
+walk first closes that set under all recorded generators. Competitor atoms
+inside this closure remain distinct because a later action could carry them
+into P. Its closed complement uses one unobservable label in occupation keys;
+these competitor-only choices stay in the saved groups, not an explicit list.
+This quotient commutes with every recorded action. A complete injective witness,
+its transport action, and the original search graph are still retained. The
+algorithm neither deletes H nor unions independent fragment assignments.
+Without an observable set the API returns the original full occupation states.
+Already evaluated state/generator pairs are reused across chronological stages.
+
 ## Assembly owns combinations, not matching
 
 `retrosynthesis.assembly.AssemblyProblem` indexes complete correlated occupation
