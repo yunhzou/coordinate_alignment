@@ -1,6 +1,7 @@
 """Reusable augmented fragment detection."""
 
 from .detection import detect_fragments, prepare_fragment_target
+from .connected import ConnectedFragmentResult, find_connected_fragments
 from .models import (
     FragmentCandidate,
     FragmentDerivation,
@@ -21,6 +22,8 @@ from .symmetry import (
 )
 
 __all__ = [
+    "ConnectedFragmentResult",
+    "find_connected_fragments",
     "FragmentCandidate",
     "FragmentDerivation",
     "FragmentDetectionConfig",

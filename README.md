@@ -28,6 +28,8 @@ conditional fragment API, persistence, and path replay;
 [ALGORITHM.md](ALGORITHM.md) covers downstream algorithms.
 See [retro detection and assembly](docs/RETRO_ASSEMBLY.md) for geometric
 building-block recommendation using the same matcher and saved AAM graphs.
+The separate [big-block / gap-first beta](docs/RETRO_BETA.md) defers augmentation
+until a reactant is selected; it does not replace the full workflow.
 
 ## Install
 
