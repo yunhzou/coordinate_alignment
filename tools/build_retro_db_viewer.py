@@ -101,6 +101,58 @@ def _matches_expected(assembly, expected_ids):
     ) == Counter(expected_ids)
 
 
+def _fragment_colors(precursors, models):
+    """Color saved matched partitions, never infer fragments from geometry.
+
+    Identical source-atom fragments across copies share a color. Their separate
+    mapped target occupations are retained. Conflicting colors on a merged R
+    or overlapping P are explicit display alternatives, not new assignments.
+    """
+    fragments = []
+    for source_index, group in enumerate(precursors):
+        by_atoms = {}
+        for copy_index, copy in enumerate(group['copies']):
+            mapping = dict(copy['mapping'])
+            parts = copy['retained_fragments']
+            atoms = [a for part in parts for a in part]
+            if len(atoms) != len(set(atoms)) or set(atoms) != set(mapping):
+                raise ValueError('Saved matched fragments must partition the retained mapping')
+            for part in parts:
+                key = tuple(sorted(part))
+                if key not in by_atoms:
+                    index = len(fragments)
+                    fragment = dict(index=index, source=source_index,
+                        label=f'R{source_index + 1}.F{len(by_atoms) + 1}',
+                        color=_color(index), source_atoms=list(key), occupations=[])
+                    by_atoms[key] = fragment
+                    fragments.append(fragment)
+                by_atoms[key]['occupations'].append(dict(copy=copy_index + 1,
+                    mapping=[[a, mapping[a]] for a in key]))
+    for model_index, model in enumerate(models):
+        target = model_index == len(precursors)
+        claims = {}
+        for fragment in fragments:
+            if not target and fragment['source'] != model_index:
+                continue
+            atoms = (set(b for occupation in fragment['occupations']
+                         for a, b in occupation['mapping']) if target else fragment['source_atoms'])
+            for atom in atoms:
+                claims.setdefault(atom, set()).add(fragment['index'])
+        styles = []
+        alternatives = {}
+        for fragment in fragments:
+            owned = sorted(a for a, owners in claims.items() if owners == {fragment['index']})
+            if owned:
+                styles.append(dict(indices=owned, color=fragment['color']))
+        for atom, owners in sorted(claims.items()):
+            if len(owners) > 1:
+                alternatives.setdefault(tuple(sorted(owners)), []).append(atom)
+        model['fragmentStyles'] = styles
+        model['fragmentAlternatives'] = [dict(atoms=atoms, owners=list(owners), selected=owners[0])
+                                        for owners, atoms in alternatives.items()]
+    return fragments
+
+
 def _payload(
         report, top_count, title,
         ground_truth_status="not-evaluated",
@@ -189,7 +241,9 @@ def _payload(
             "formed": assembly["formed_bonds"],
         })
         pattern = assembly.get("construction_pattern", "GT")
+        fragments = _fragment_colors(precursors, models)
         assemblies.append({
+            "fragments": fragments,
             "rank": rank,
             "pareto_layer": assembly.get('pareto_layer'),
             "pattern": pattern,
@@ -241,6 +295,7 @@ def _payload(
         "unassembled_target": {
             "mol": target_block, "coords": target_coords, "elements": target_elements,
             "styles": [], "broken": [], "formed": [],
+            "fragmentStyles": [], "fragmentAlternatives": [],
             "labels": [{"atom": atom, "text": f"P{atom}"}
                        for atom in range(len(target_elements))],
         } if not assemblies else None,
@@ -250,6 +305,7 @@ def _payload(
 
 def _html(payload):
     score_plot = (Path(__file__).parents[1] / 'src/rxn_core/static/retro_score_plot.js').read_text()
+    fragment_colors = (Path(__file__).parents[1] / 'src/rxn_core/static/retro_fragment_colors.js').read_text()
     library = (Path(__file__).parents[1] / "src" / "rxn_core" / "static" /
                "3Dmol-min.js").read_text()
     data = json.dumps(payload, separators=(",", ":"))
@@ -297,6 +353,7 @@ main{{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:
 #Ppanel .label small{{white-space:normal}} #P{{position:relative;flex:1;min-height:320px}}
 #selectedScores .scoregrid{{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}} #selectedScores .scorecell{{padding:4px}} #selectedScores .scorecell b{{font-size:18px}}
 .target-tools{{display:flex;gap:8px;align-items:center;padding:6px 0}} .target-tools button{{padding:6px 10px;border:1px solid #94a3b8;border-radius:6px;background:white;cursor:pointer}} .target-tools span{{color:var(--muted);font-size:11px}}
+#fragmentLegend{{display:flex;flex-wrap:wrap;gap:5px;max-height:82px;overflow:auto;padding:4px 0}} #fragmentLegend>span:first-child{{width:100%;font-size:11px;color:var(--muted)}} .fragment-chip{{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;font-size:11px}} .fragment-chip i{{width:12px;height:12px;border-radius:3px;display:inline-block}}
 #scorePlotPanel summary{{cursor:pointer;font-weight:700;padding:4px 0}} #scorePlotPanel .controls{{margin-bottom:2px}}
 #scorePlotPanel,#moleculeWorkspace,#reactants{{min-width:0}} #scorePlotChoices{{max-width:100%;min-width:0}} header>div:first-child{{min-width:0}} header .muted{{max-height:32px;overflow:hidden}}
 @media(max-width:1000px){{.metrics{{display:none}} #layout{{grid-template-columns:270px minmax(0,1fr)}} #moleculeWorkspace{{grid-template-columns:minmax(0,1fr);min-height:940px;grid-template-rows:minmax(620px,1fr) 300px}} #productWrap{{grid-row:1}} #reactants{{flex-direction:row;grid-row:2}} #reactants .panel{{flex:0 0 280px}} #moleculeWorkspace.target-focus{{grid-template-rows:1fr}}}}
@@ -305,32 +362,34 @@ main{{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:
 .label b{{display:block}} .label small{{display:block;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .controls{{display:flex;gap:12px;flex-wrap:wrap;background:#ffffffdc;padding:4px 0}}
 .dot{{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 5px 0 10px}} code{{font-size:11px}}
-</style><script>{library}</script><script>{score_plot}</script></head><body>
+</style><script>{library}</script><script>{score_plot}</script><script>{fragment_colors}</script></head><body>
 <header><div><h1>{payload['summary']['title']}</h1><div class="muted">{escape(payload['summary']['search_scope'])} · Explicit-H fragment mappings</div></div>
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
-<div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>
-Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors.
-Overlapping copies of the same R keep that R's color. For different suppliers,
-use the R buttons below to switch the displayed color; labels list every supplier.
+<div id="layout"><aside><div class="intro"><b>Each color is one matched fragment.</b><br>
+R1.F1 and R1.F2 are different fragments of R1. The same color marks a fragment in R and its mapped atoms in P.
+Repeated copies share one R panel; identical source-atom fragments share their color across copies. Hydrogens are explicit. Unmatched atoms keep element colors.
+Colors are local to the selected assembly. For overlapping fragment colors,
+use the buttons below to switch the displayed color; the legend lists the fragment assignments.
 These are display alternatives, not independently validated new assemblies.
-Symmetry mode shows alternative matchable positions, not extra simultaneous assignments.<br>
+Symmetry mode uses precursor colors and shows alternative matchable positions, not extra simultaneous fragment assignments.<br>
 <span style="color:#d33">Red = source cuts</span>; <span style="color:#159447">green = unsupported target connections</span>.
 These are geometric connections, not validated reaction edits.
 <div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br><b>Returned by recommender: {recommendation_truth}</b><br>{payload['summary']['ground_truth_note']}<span class="truthreactants"><b>Ground-truth raw ingredients</b><br>{ground_truth_reactants}</span></div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="suppliers" class="intro"></div><div id="list"></div></aside>
-<main><section id="scorePlotPanel"><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><label><input id="symmetry" type="checkbox"> show symmetry domains</label><label><input id="labels" type="checkbox"> sampled P# identities</label></div><details id="scoreDetails"><summary>Score plot · click to compare assemblies</summary><div class="plotnote">Blue: blind proposals · green: validation · ×N: coincident alternatives (no jitter). Upper left is better; trade-offs share a Pareto layer.</div><svg id="scorePlot" aria-label="Retention versus structural changes"></svg><div id="scorePlotChoices"></div></details></section><div id="moleculeWorkspace"><div id="reactants"></div>
+<main><section id="scorePlotPanel"><div class="controls"><label><input id="fragments" type="checkbox" checked> color matches</label><label>Color by <select id="colorBy"><option value="fragment">Matched fragment</option><option value="precursor">Precursor</option></select></label><label><input id="symmetry" type="checkbox"> symmetry domains (precursor colors)</label><label><input id="labels" type="checkbox"> sampled P# identities</label></div><div id="fragmentLegend"></div><details id="scoreDetails"><summary>Score plot · click to compare assemblies</summary><div class="plotnote">Blue: blind proposals · green: validation · ×N: coincident alternatives (no jitter). Upper left is better; trade-offs share a Pareto layer.</div><svg id="scorePlot" aria-label="Retention versus structural changes"></svg><div id="scorePlotChoices"></div></details></section><div id="moleculeWorkspace"><div id="reactants"></div>
 <div id="productWrap"><div id="selectedScores"></div><div class="target-tools"><button id="fitTarget" type="button">Fit target</button><button id="expandTarget" type="button" aria-pressed="false">Expand target</button><span>Drag to rotate · scroll to zoom</span></div><section class="panel" id="Ppanel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></div></div></main></div>
-<script>const data={data}, colors={json.dumps(palette)}, viewers={{}};
+<script>const data={data}, colors={json.dumps(palette)}, viewers={{}};let activeAssembly=null;
 function pt(m,i){{return {{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}}
 function scoreCards(a){{const s=a.score;const cell=(label,value,detail,cls='')=>'<div class="scorecell '+cls+'"><small>'+label+'</small><b>'+value+'</b><small>'+detail+'</small></div>';return '<div class="scoregrid">'+cell('Pareto rank',a.ground_truth?'—':(a.pareto_layer||'—'),a.ground_truth?'validation only':'same rank = trade-offs')+cell('Bond breaking',s.broken_bonds===undefined?'—':s.broken_bonds,'source boundary cuts','breaking')+cell('Bond forming',s.formed_bonds===undefined?'—':s.formed_bonds,'target connections','forming')+cell('Total changes',s.broken_bonds===undefined||s.formed_bonds===undefined?'—':s.broken_bonds+s.formed_bonds,'breaking + forming')+cell('P coverage',(100*s.covered_target_atoms/s.target_atom_count).toFixed(1)+'%',s.covered_target_atoms+' / '+s.target_atom_count+' atoms incl. H')+cell('R retention',s.set_atom_retention===undefined?'—':(100*s.set_atom_retention).toFixed(1)+'%','unique P / all input atoms')+cell('Matched fragments',s.matched_fragment_count===undefined?'—':s.matched_fragment_count,'equal-score tie-break')+'</div>'}}
-function supplierControls(m){{const wrap=document.getElementById('suppliers');wrap.replaceChildren();const groups=m.supplierAlternatives||[];if(!groups.length){{wrap.textContent='No overlap between different R species. Repeated copies use their R color.';return}}const title=document.createElement('b');title.textContent='Alternative R suppliers · display only';wrap.appendChild(title);groups.forEach(g=>{{const row=document.createElement('div');const atoms=document.createElement('div');atoms.textContent=g.atoms.map(a=>'P'+a).join(', ');row.appendChild(atoms);g.owners.forEach(r=>{{const button=document.createElement('button');button.textContent='R'+(r+1);button.title='Show this supplier’s color; all listed suppliers remain in the saved assembly';button.style.color=colors[r%colors.length];button.style.fontWeight=g.selected===r?'bold':'normal';button.style.border=g.selected===r?'2px solid currentColor':'1px solid #ccc';button.disabled=document.getElementById('symmetry').checked;button.onclick=()=>{{g.selected=r;showModel('P',m)}};row.appendChild(button)}});wrap.appendChild(row)}})}}
+function supplierControls(m){{const wrap=document.getElementById('suppliers');wrap.replaceChildren();if(fragmentMode()&&activeAssembly){{fragmentSupplierControls(activeAssembly,wrap,showModel);return}}const groups=m.supplierAlternatives||[];if(!groups.length){{wrap.textContent='No overlap between different R species. Repeated copies use their R color.';return}}const title=document.createElement('b');title.textContent='Alternative R suppliers · display only';wrap.appendChild(title);groups.forEach(g=>{{const row=document.createElement('div');const atoms=document.createElement('div');atoms.textContent=g.atoms.map(a=>'P'+a).join(', ');row.appendChild(atoms);g.owners.forEach(r=>{{const button=document.createElement('button');button.textContent='R'+(r+1);button.title='Show this supplier’s color; all listed suppliers remain in the saved assembly';button.style.color=colors[r%colors.length];button.style.fontWeight=g.selected===r?'bold':'normal';button.style.border=g.selected===r?'2px solid currentColor':'1px solid #ccc';button.disabled=document.getElementById('symmetry').checked;button.onclick=()=>{{g.selected=r;showModel('P',m)}};row.appendChild(button)}});wrap.appendChild(row)}})}}
 function showModel(id,m){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}
- v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});if(document.getElementById('fragments').checked){{const symmetry=document.getElementById('symmetry').checked;const styles=symmetry&&(m.symmetryStyles||[]).length?m.symmetryStyles:m.styles;styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.19}},sphere:{{color:s.color,scale:.34}}}}))}}
- if(id==='P'){{supplierControls(m);if(document.getElementById('fragments').checked&&!document.getElementById('symmetry').checked)(m.supplierAlternatives||[]).forEach(g=>v.addStyle({{index:g.atoms}},{{stick:{{color:colors[g.selected%colors.length],radius:.19}},sphere:{{color:colors[g.selected%colors.length],scale:.34}}}}))}}
+ v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});if(document.getElementById('fragments').checked){{const symmetry=document.getElementById('symmetry').checked;const styles=fragmentMode()?m.fragmentStyles:symmetry&&(m.symmetryStyles||[]).length?m.symmetryStyles:m.styles;styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.19}},sphere:{{color:s.color,scale:.34}}}}));if(fragmentMode())m.fragmentAlternatives.forEach(g=>{{const color=activeAssembly.fragments[g.selected].color;v.addStyle({{index:g.atoms}},{{stick:{{color,radius:.19}},sphere:{{color,scale:.34}}}})}})}}
+ if(id==='P'||fragmentMode())supplierControls(activeAssembly?activeAssembly.models[activeAssembly.precursors.length]:m);
+ if(id==='P'&&!fragmentMode()){{if(document.getElementById('fragments').checked&&!document.getElementById('symmetry').checked)(m.supplierAlternatives||[]).forEach(g=>v.addStyle({{index:g.atoms}},{{stick:{{color:colors[g.selected%colors.length],radius:.19}},sphere:{{color:colors[g.selected%colors.length],scale:.34}}}}))}}
  m.broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));m.formed.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.11,color:'#16a34a'}}));
  (m.labels||[]).filter(l=>l.always||document.getElementById('labels').checked).forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:l.always?'#b42318':'#111',backgroundColor:'white',backgroundOpacity:.85,inFront:true}}));v.zoomTo();v.render()}}
 function patternInfo(id){{return data.patterns.find(x=>x.pattern===id)}}
 function patternText(id){{if(String(id).startsWith('GT-'))return 'Validation pattern '+id+' · complete supplier-set assembly; separate from blind ranks';if(id==='GT')return 'ground-truth AAM comparison; not returned by blind recommender';const p=patternInfo(id);return p?(p.fragment_sizes.length+' modules · atom sizes '+p.fragment_sizes.join(' + ')):''}}
-function select(i){{const a=data.assemblies[i];renderScorePlot(data.assemblies,i,j=>{{select(j);document.querySelector('.result.active')?.scrollIntoView({{block:'nearest'}})}});document.getElementById('selectedScores').innerHTML=scoreCards(a);document.querySelectorAll('.result').forEach(x=>x.classList.toggle('active',Number(x.dataset.index)===i));Object.keys(viewers).filter(k=>k.startsWith('R')).forEach(k=>delete viewers[k]);const wrap=document.getElementById('reactants');wrap.innerHTML='';a.precursors.forEach((r,j)=>{{const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<div class="label" id="L'+j+'"></div><div class="view" id="R'+j+'"></div>';wrap.appendChild(panel);const mult=r.multiplicity>1?' ×'+r.multiplicity:'';document.getElementById('L'+j).innerHTML='<b><span style="color:'+colors[j%colors.length]+'">R'+(j+1)+'</span> · '+r.id+mult+'</b><small>'+r.smiles+'</small><small>retained '+r.retained.length+' atom positions; unmatched '+r.unmatched+' across copies</small>';showModel('R'+j,a.models[j])}});
+function select(i){{const a=data.assemblies[i];activeAssembly=a;fragmentLegend(a);renderScorePlot(data.assemblies,i,j=>{{select(j);document.querySelector('.result.active')?.scrollIntoView({{block:'nearest'}})}});document.getElementById('selectedScores').innerHTML=scoreCards(a);document.querySelectorAll('.result').forEach(x=>x.classList.toggle('active',Number(x.dataset.index)===i));Object.keys(viewers).filter(k=>k.startsWith('R')).forEach(k=>delete viewers[k]);const wrap=document.getElementById('reactants');wrap.innerHTML='';a.precursors.forEach((r,j)=>{{const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<div class="label" id="L'+j+'"></div><div class="view" id="R'+j+'"></div>';wrap.appendChild(panel);const mult=r.multiplicity>1?' ×'+r.multiplicity:'';document.getElementById('L'+j).innerHTML='<b><span style="color:'+(fragmentMode()?'#172033':colors[j%colors.length])+'">R'+(j+1)+'</span> · '+r.id+mult+'</b><small>'+r.smiles+'</small><small>retained '+r.retained.length+' atom positions; unmatched '+r.unmatched+' across copies</small>';showModel('R'+j,a.models[j])}});
  const retention=a.score.set_atom_retention===undefined?'':(' · direct retention '+(100*a.score.set_atom_retention).toFixed(1)+'%');const symmetryRetention=a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%');const chiral=a.score.chirality_violations===undefined?'':(' · stereochemistry not assessed');const coverage=a.complete_cover?'complete P cover':(a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered');const heading=a.diagnostic?(a.complete_cover?'KNOWN-SET COVER · saved AAM mappings':'FAILED COVER · saved-mapping diagnostic'):a.ground_truth?'GROUND TRUTH MATCHING':'P target · Pattern '+a.pattern;document.getElementById('LP').innerHTML='<b>'+heading+'</b><small>'+coverage+' · '+a.score.broken_bonds+' source cuts, '+a.score.leftover_atoms+' unmatched, '+a.score.formed_bonds+' target connections (not reaction edits)'+retention+symmetryRetention+chiral+'</small>';showModel('P',a.models[a.precursors.length])}}
 const list=document.getElementById('list');const sortbar=document.createElement('div');sortbar.className='sortbar';sortbar.innerHTML='<label>Sort displayed results by<select id="scoreSort"><option value="pareto">Pareto rank (default)</option value="retention">R retention: highest first</option value="changes">Total changes: fewest first</option><option value="breaking">Bond breaking: fewest first</option><option value="forming">Bond forming: fewest first</option><option value="coverage">P coverage: highest first</option></select></label><small>Sorting changes display order, not Pareto rank. Validation entries stay separate. Bond counts are geometric proxies, not validated reaction events.</small>';list.before(sortbar);
 function sortedAssemblies(assemblies,mode){{
@@ -350,6 +409,7 @@ ordered.forEach(({{a,i}})=>{{
 }});
 }}
 renderList();document.getElementById('scoreSort').onchange=()=>{{const active=document.querySelector('.result.active');const index=active?Number(active.dataset.index):0;renderList();if(data.assemblies.length)select(index)}};
+document.getElementById('colorBy').onchange=()=>redraw();
 function fitTarget(){{const v=viewers.P;if(v){{v.resize();v.zoomTo();v.render()}}}}
 document.getElementById('fitTarget').onclick=fitTarget;
 document.getElementById('expandTarget').onclick=function(){{const expanded=document.getElementById('moleculeWorkspace').classList.toggle('target-focus');this.textContent=expanded?'Show reactants':'Expand target';this.setAttribute('aria-pressed',String(expanded));requestAnimationFrame(fitTarget)}};

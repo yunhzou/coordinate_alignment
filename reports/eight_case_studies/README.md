@@ -4,6 +4,8 @@ Download this directory and open `index.html`, then choose a target. The viewers
 
 The target occupies the larger pane beside a scrollable reactant column. Use **Fit target** to reset its camera, **Expand target** for a target-only workspace, and the collapsible score plot to compare assemblies. Narrow screens place the target above the reactants. These layout controls do not change mappings or scores.
 
+**Matched fragment** coloring is the default: `R1.F1` and `R1.F2` have different colors even though they come from the same precursor. Each fragment keeps its color on its mapped P atoms. The legend is derived from saved matched partitions, including hydrogen-only fragments; hover a legend item for source atoms and per-copy target mappings. Identical source-atom fragments in repeated copies share a color. Overlaps on merged R panels or P have explicit fragment-color buttons. Colors are local to the selected assembly, not global atom identities. **Precursor** coloring remains selectable; symmetry-domain mode explicitly uses precursor colors because its alternative domains are not simultaneous fragment assignments.
+
 Bank: 155,305 structures in merged_fast_delivery_with_inventory. Current beta workflow, explicit hydrogen, tolerance 1.0, branch cap 100, no sweep. Seven fresh connected bank scans; case 5 reused its saved matching and reran assembly with the corrected reference isomer. Recommendations are not exhaustive or certified globally optimal.
 
 | Case | Blind full-cover assemblies | Reference full-cover assemblies | Capped searches: blind / reference |

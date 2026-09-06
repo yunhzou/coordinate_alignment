@@ -41,6 +41,7 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
         ("mock sdf", [[0., 0., 0.]] * 3, ["C"] * 3))
     def source(name, atoms):
         return {"precursor_id": name, "smiles": "CCC", "retained_atoms": [0, 1],
+                "retained_fragments": [[0, 1]],
                 "covered_target_atoms": atoms, "mapping": list(enumerate(atoms)),
                 "symmetry_retained_atoms": [0, 1], "target_domains": list(enumerate([[a] for a in atoms])),
                 "boundary_bonds": [], "leftover_fragments": [], "complete": True}
@@ -109,6 +110,52 @@ def test_no_cover_shows_unassigned_target_not_a_fabricated_assembly(monkeypatch)
     assert payload["unassembled_target"]["styles"] == []
     assert payload["uncovered_target_atoms"] == [0]
     assert "No complete assembly in saved detections" in VIEWER._html(payload)
+
+
+def test_fragment_colors_follow_saved_partitions_and_mappings():
+    groups = [dict(copies=[dict(mapping=[[0, 3], [1, 2], [2, 1]],
+                               retained_fragments=[[0, 1], [2]])])]
+    models = [{}, {}]
+    fragments = VIEWER._fragment_colors(groups, models)
+    assert [f['label'] for f in fragments] == ['R1.F1', 'R1.F2']
+    assert fragments[0]['color'] != fragments[1]['color']
+    assert models[0]['fragmentStyles'] == [
+        dict(indices=[0, 1], color=fragments[0]['color']),
+        dict(indices=[2], color=fragments[1]['color'])]
+    assert models[1]['fragmentStyles'] == [
+        dict(indices=[2, 3], color=fragments[0]['color']),
+        dict(indices=[1], color=fragments[1]['color'])]
+    assert fragments[0]['occupations'] == [dict(copy=1, mapping=[[0, 3], [1, 2]])]
+
+
+def test_identical_fragments_share_color_across_repeated_copies():
+    groups = [dict(copies=[
+        dict(mapping=[[0, 0], [1, 1]], retained_fragments=[[0, 1]]),
+        dict(mapping=[[0, 2], [1, 3]], retained_fragments=[[0, 1]])])]
+    models = [{}, {}]
+    fragments = VIEWER._fragment_colors(groups, models)
+    assert len(fragments) == 1
+    assert len(fragments[0]['occupations']) == 2
+    assert models[1]['fragmentStyles'] == [dict(indices=[0, 1, 2, 3], color=fragments[0]['color'])]
+
+
+def test_conflicting_fragments_are_explicit_on_merged_source_and_target():
+    groups = [dict(copies=[
+        dict(mapping=[[0, 0], [1, 1]], retained_fragments=[[0, 1]]),
+        dict(mapping=[[1, 1], [2, 2]], retained_fragments=[[1, 2]])])]
+    models = [{}, {}]
+    fragments = VIEWER._fragment_colors(groups, models)
+    assert len(fragments) == 2
+    for model in models:
+        assert model['fragmentAlternatives'] == [dict(atoms=[1], owners=[0, 1], selected=0)]
+        assert all(1 not in style['indices'] for style in model['fragmentStyles'])
+
+
+def test_fragment_coloring_rejects_nonpartition_instead_of_guessing():
+    import pytest
+    groups = [dict(copies=[dict(mapping=[[0, 0], [1, 1]], retained_fragments=[[0]])])]
+    with pytest.raises(ValueError, match='partition'):
+        VIEWER._fragment_colors(groups, [{}, {}])
 
 
 def test_score_sort_controls_keep_ranks_and_validation_separate(monkeypatch):
