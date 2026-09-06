@@ -23,7 +23,8 @@ def main():
     parser.add_argument('--iso-tolerance', type=float, default=DEFAULT_ISO_TOLERANCE)
     parser.add_argument('--branch-limit', type=int, default=100)
     parser.add_argument('--workers', type=int, default=1)
-    parser.add_argument('--recommendations', type=int, default=1)
+    parser.add_argument('--recommendations', type=int, default=20)
+    parser.add_argument('--patterns', type=int, help='Construction patterns (default: min(4, recommendations))')
     args = parser.parse_args()
     config = FragmentDetectionConfig(iso_tolerance=args.iso_tolerance,
                                     branch_limit=args.branch_limit)
@@ -54,7 +55,7 @@ def main():
         checkpoint.count = 0
         bank = FragmentQueryBank(sources, target, config=config,
                                  checkpoint=checkpoint, workers=args.workers)
-        result = recommend_big_blocks(bank, recommendations=args.recommendations)
+        result = recommend_big_blocks(bank, recommendations=args.recommendations,pattern_limit=args.patterns)
     with gzip.open(args.output_dir / 'result.pkl.gz', 'wb') as stream:
         pickle.dump(result, stream, protocol=pickle.HIGHEST_PROTOCOL)
     def record(recommendation):

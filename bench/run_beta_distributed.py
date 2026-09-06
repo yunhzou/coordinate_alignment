@@ -93,6 +93,19 @@ class DistributedBank(FragmentQueryBank):
             return evidence
         return super().detect_selected(source_id)
 
+    def assembly_found(self, assembly, pattern, pattern_count, count):
+        directory=self.root/'assembly_candidates'
+        directory.mkdir(exist_ok=True)
+        key=hashlib.sha256(repr(tuple(p.key for p in assembly.placements)).encode()).hexdigest()
+        path=directory/f'{key}.pkl.gz'
+        if not path.exists():
+            with gzip.open(path,'wb',compresslevel=1) as stream:
+                pickle.dump(assembly,stream,protocol=pickle.HIGHEST_PROTOCOL)
+        print(json.dumps(dict(stage='assembled_cover',count=count,patterns=pattern_count,
+            sources=[p.source_id for p in assembly.placements],
+            fragments=sum(p.fragment_count for p in assembly.placements),
+            checkpoint=str(path))),flush=True)
+
     def submit(self, script, directory, shards, label):
         if self.budget is None:
             raise ValueError('New Slurm work requires an explicit CPU budget')
@@ -189,6 +202,9 @@ def main():
     p.add_argument('--shards',type=int)
     p.add_argument('--poll-seconds',type=float,default=2)
     p.add_argument('--partitions',default='cpunodes_nia,cpunodes')
+    p.add_argument('--recommendations',type=int,default=20)
+    p.add_argument('--patterns',type=int,help='Construction patterns (default: min(4, recommendations))')
+    p.add_argument('--result-stem',default='assemblies')
     a=p.parse_args()
     started=time.perf_counter()
     reserved = int(os.environ.get('SLURM_CPUS_ON_NODE', '1'))
@@ -216,12 +232,12 @@ def main():
         p.error('--poll-seconds must be positive')
     bank=DistributedBank(a.run,a.exclude,budget,a.poll_seconds,a.partitions)
     try:
-        result=recommend_big_blocks(bank,recommendations=1)
+        result=recommend_big_blocks(bank,recommendations=a.recommendations,pattern_limit=a.patterns)
     except BaseException:
         for job in bank.jobs:
             subprocess.run(['scancel',job],check=False)
         raise
-    with gzip.open(a.run/'result.pkl.gz','wb',compresslevel=1) as stream:
+    with gzip.open(a.run/f'{a.result_stem}.pkl.gz','wb',compresslevel=1) as stream:
         pickle.dump(result,stream,protocol=pickle.HIGHEST_PROTOCOL)
     def record(recommendation):
         return dict(uncovered_target_atoms=recommendation.uncovered_target_atoms,
@@ -230,10 +246,18 @@ def main():
                 target_fragments=[sorted(dict(p.mapping)[atom] for atom in fragment)
                                  for fragment in p.candidate.retained_fragments])
                 for p in recommendation.placements])
-    report=dict(workflow='big_blocks_beta/v1',exhaustive=False,
+    from rxn_core.retrosynthesis.beta_assembly import placement_pattern
+    pattern_ids={}
+    def patterned(recommendation):
+        certificate=placement_pattern(recommendation.placements,bank.target)
+        pattern_ids.setdefault(certificate,len(pattern_ids)+1)
+        return dict(record(recommendation),construction_pattern=pattern_ids[certificate])
+    report=dict(workflow='big_blocks_beta/v2',exhaustive=False,
         coordinator_seconds=time.perf_counter()-started,
         recommendation_count=len(result.recommendations),capped_searches=result.capped_searches,
-        recommendations=[record(r) for r in result.recommendations],
+        recommendations=[patterned(r) for r in result.recommendations],
+        construction_patterns=[dict(pattern=i,certificate=k) for k,i in pattern_ids.items()],
+        ranking_scope='Ranked among discovered beta assemblies; not globally certified over the bank',
         best_partial=record(result.best_partial))
     report['resource_budget']=dict(cpu_limit=budget.cpu_limit,
         coordinator_cpus=budget.coordinator_cpus,worker_cpus=budget.worker_cpus,
@@ -249,7 +273,7 @@ def main():
         worker_reports=len(workers),
         scope='Completed worker process lifetimes across attempts; excludes Slurm startup/cleanup. '
               'Hard-killed workers may lack reports; use Slurm accounting for those allocations.')
-    (a.run/'result.json').write_text(json.dumps(report,indent=2)+'\n')
+    (a.run/f'{a.result_stem}.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report),flush=True)
 
 

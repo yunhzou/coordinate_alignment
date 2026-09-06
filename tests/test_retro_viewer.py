@@ -59,6 +59,15 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
     assert "Known-ingredient check, not a blind bank scan" in html
     assert "Returned by blind recommender" not in html
 
+    report['validation_assemblies'] = [dict(report['assemblies'][0], construction_pattern='GT-1')]
+    checked = VIEWER._payload(report, 20, 'Validation separation')
+    assert len(checked['assemblies']) == 2
+    assert not checked['assemblies'][0]['ground_truth']
+    assert checked['assemblies'][1]['ground_truth']
+    assert checked['assemblies'][1]['pattern'] == 'GT-1'
+    assert checked['assemblies'][1]['complete_cover']
+    assert 'Validation pattern' in VIEWER._html(checked)
+
 
 def test_no_cover_shows_unassigned_target_not_a_fabricated_assembly(monkeypatch):
     monkeypatch.setattr(VIEWER, "mol_3d", lambda *args, **kwargs:

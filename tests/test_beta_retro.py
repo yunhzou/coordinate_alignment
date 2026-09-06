@@ -7,6 +7,7 @@ from rxn_core.retrosynthesis.beta import (
     BetaPlacement, FragmentQueryBank, recommend_big_blocks,
 )
 from rxn_core.smiles import smiles_to_weighted_graph
+from rxn_core.subgraph import _coerce_graph
 
 
 def graph(smiles):
@@ -22,7 +23,7 @@ def block(source, atoms, *, refined=False):
 
 
 class FakeBank:
-    target = range(4)
+    target = _coerce_graph(smiles_to_weighted_graph('CCCC',expand_hydrogens=False),.2)
     capped_searches = 0
 
     def __init__(self):
@@ -40,7 +41,7 @@ def test_selected_source_is_refined_before_gap_bank_search():
             self.events.append(('refine', selected.candidate.source_id))
             return (block('R', (0, 1, 2, 3), refined=True),)
     bank = Bank()
-    result = recommend_big_blocks(bank)
+    result = recommend_big_blocks(bank, recommendations=1)
     assert bank.events == [('query', frozenset(range(4))), ('refine', 'R')]
     assert len(result.recommendations[0].placements) == 1
     assert not result.exhaustive
@@ -56,7 +57,7 @@ def test_gap_queries_and_repeated_reactant_copies_with_overlap():
                 return (block('R', (2, 3), refined=True),)
             return (replace(selected, refined=True),)
     bank = Bank()
-    result = recommend_big_blocks(bank)
+    result = recommend_big_blocks(bank, recommendations=1)
     assert bank.events == [frozenset(range(4)), frozenset({3})]
     chosen = result.recommendations[0].placements
     assert len(chosen) == 2
@@ -73,7 +74,7 @@ def test_stalled_largest_choice_does_not_delete_alternatives():
             return () if selected.candidate.source_id == 'large' else (
                 block('small', (0, 1, 2, 3), refined=True),)
     bank = Bank()
-    result = recommend_big_blocks(bank)
+    result = recommend_big_blocks(bank, recommendations=1)
     assert bank.events == ['large', 'small']
     assert result.recommendations[0].placements[0].candidate.source_id == 'small'
 
@@ -84,7 +85,7 @@ def test_no_cover_is_an_explicit_partial_result():
             return (block('R', (0, 1, 2)),) if len(region) == 4 else ()
         def refine(self, selected):
             return (replace(selected, refined=True),)
-    result = recommend_big_blocks(Bank())
+    result = recommend_big_blocks(Bank(), recommendations=1)
     assert not result.recommendations
     assert result.best_partial.uncovered_target_atoms == (3,)
 
@@ -105,7 +106,7 @@ def test_real_explicit_h_methanol_cover_and_checkpointing():
     saved = []
     bank = FragmentQueryBank([('methane', graph('C')), ('water', graph('O'))], graph('CO'),
         checkpoint=lambda event, result: saved.append((event, result)))
-    result = recommend_big_blocks(bank)
+    result = recommend_big_blocks(bank, recommendations=1)
     assert result.recommendations
     chosen = result.recommendations[0].placements
     assert set().union(*(p.covered_atoms for p in chosen)) == set(range(6))
@@ -159,6 +160,6 @@ def test_sorted_disk_stream_is_consumed_lazily_without_pruning_alternatives():
         def refine(self, selected):
             return (block(selected.source_id, (0, 1, 2, 3), refined=True),)
     bank = Bank()
-    result = recommend_big_blocks(bank)
+    result = recommend_big_blocks(bank, recommendations=1)
     assert result.recommendations
     assert bank.events == [0, 1]

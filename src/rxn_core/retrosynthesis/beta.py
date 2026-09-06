@@ -206,20 +206,25 @@ def proposal_rank(placements, target_count):
             -Fraction(len(covered), sum(p.input_atom_count for p in placements) or 1))
 
 
-def recommend_big_blocks(bank, *, recommendations=1):
+def recommend_big_blocks(bank, *, recommendations=20, pattern_limit=None):
     """Best-first beta search, with lazy refinement and retained alternatives.
 
-    No beam or hidden reactant-count cap. `recommendations` is an explicit
-    output stopping rule, not a claim of exact global ranking. Repeated sources
+    No beam or hidden reactant-count cap. Output collects multiple construction
+    patterns; each pattern retains its best encountered assemblies. Repeated sources
     and overlapping target coverage are allowed. A stalled branch is retained
     as a partial result while other block choices are explored.
     """
     if recommendations < 1:
         raise ValueError('recommendations must be positive')
+    pattern_limit=min(4,recommendations) if pattern_limit is None else pattern_limit
+    if pattern_limit < 1 or pattern_limit > recommendations:
+        raise ValueError('pattern limit must be positive and fit the output size')
+    from .beta_assembly import placement_pattern
     started = perf_counter()
     target_atoms = frozenset(range(len(bank.target)))
     queue, seen, serial = [], set(), count()
     answers = {}
+    patterns = {}
     best = BetaRecommendation((), tuple(sorted(target_atoms)))
 
     def push(placements, continuation=None):
@@ -239,7 +244,7 @@ def recommend_big_blocks(bank, *, recommendations=1):
                 break
 
     push(())
-    while queue and len(answers) < recommendations:
+    while queue:
         _, _, placements, covered, continuation = heappop(queue)
         if continuation is not None:
             advance(*continuation)
@@ -254,9 +259,31 @@ def recommend_big_blocks(bank, *, recommendations=1):
         if not missing:
             answer = BetaRecommendation(placements, ())
             answers.setdefault(tuple(p.key for p in placements), answer)
+            pattern=placement_pattern(placements,bank.target)
+            patterns.setdefault(pattern,[]).append(answer)
+            callback=getattr(bank,'assembly_found',None)
+            if callback is not None:
+                callback(answer,pattern,len(patterns),len(answers))
             best = answer
+            if len(patterns)>=pattern_limit:
+                display=sorted(patterns.values(),key=lambda bucket:min(
+                    proposal_rank(a.placements,len(target_atoms)) for a in bucket))[:pattern_limit]
+                if sum(map(len,display))>=recommendations:
+                    break
             continue
         advance(placements, bank.ordered_query(missing, placements))
 
-    return BetaResult(tuple(answers.values()), best, bank.capped_searches,
+    # A representative from each selected construction pattern comes first;
+    # remaining display slots hold ranked alternatives. This is ranking among
+    # discovered assemblies; beta discovery itself is still approximate.
+    rank=lambda answer:proposal_rank(answer.placements,len(target_atoms))
+    ordered=sorted(patterns.values(),key=lambda bucket:rank(min(bucket,key=rank)))[:pattern_limit]
+    selected=[min(bucket,key=rank) for bucket in ordered]
+    keys={tuple(p.key for p in a.placements) for a in selected}
+    for answer in sorted((a for bucket in ordered for a in bucket),key=rank):
+        key=tuple(p.key for p in answer.placements)
+        if key not in keys and len(selected)<recommendations:
+            selected.append(answer)
+            keys.add(key)
+    return BetaResult(tuple(selected), best, bank.capped_searches,
                       perf_counter() - started, tuple(bank.events))

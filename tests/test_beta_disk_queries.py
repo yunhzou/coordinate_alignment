@@ -49,7 +49,7 @@ def test_disk_query_matches_in_memory_and_returns_a_full_cover(tmp_path,monkeypa
     # Slurm submission is outside this unit test.
     original=disk.ordered_query
     disk.ordered_query=lambda region,placements: original(region,placements) if len(region)==6 else memory.ordered_query(region,placements)
-    result=recommend_big_blocks(disk)
+    result=recommend_big_blocks(disk, recommendations=1)
     assert result.recommendations[0].uncovered_target_atoms==()
     assert all(p.refined for p in result.recommendations[0].placements)
     cached=runner.DistributedBank(tmp_path,'')

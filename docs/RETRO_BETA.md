@@ -104,7 +104,13 @@ overlapping *initial* anchor; full selected-R refinement can add overlap.
 Alternative branches remain available, but arbitrary fragment recombination
 within one source copy is not permitted. Failure is reported as a partial
 cover, not a proof that the bank has no solution. Cap hits remain explicit.
-Requesting one recommendation stops at the first fully refined cover; it does
+The default collects 20 complete assemblies across four construction patterns.
+Each pattern preserves whole source-copy assignments and their matched fragment
+partition, modulo target symmetry. Representatives appear first, followed by
+alternatives from those patterns. These are ranked discovered proposals, not
+a certified global top 20. Every discovered complete assembly is checkpointed
+by the distributed runner before collection continues.
+Explicitly requesting one recommendation stops at the first fully refined cover; it does
 not prove that cover is globally optimal or chemically feasible.
 
 Per-R connected queries can run in parallel with `--workers`. Only that many
@@ -120,7 +126,7 @@ Input CSV (plain or gzip) has `Bank ID` and `SMILES` columns. Example:
 ```bash
 PYTHONPATH=src timeout --kill-after=10s 580s .venv/bin/python tools/search_retro_beta.py \
   --target-smiles CO --catalog /path/to/bank.csv \
-  --output-dir /path/to/new-beta-run --workers 4 --recommendations 1
+  --output-dir /path/to/new-beta-run --workers 4 --recommendations 20 --patterns 4
 ```
 
 Use a new output directory. On Slurm, request the same CPU count as `--workers`
@@ -147,3 +153,21 @@ The distributed runner reuses completed source archives, query indexes, and
 selected-source AAM checkpoints after interruption. Each query/index Slurm job
 has a ten-minute watchdog. Node-start failures must be distinguished from AAM
 timeouts; do not rerun completed matching to recover an index-only failure.
+
+## Known-supplier validation and assembled viewer
+
+`retrosynthesis.beta_assembly.assemble_supplier_copies` joins the allowed whole
+occupations of specified reactant copies. Its lazy branch-and-bound traversal
+returns complete covers in fragment-count order. Overlap and repeated copies
+are allowed; mutually exclusive placements of one copy cannot be combined.
+This component is independent of how the occupations were detected.
+
+`bench/assemble_beta_known_sources.py --run RUN --case CASE` reads the known
+suppliers' actual full-bank connected checkpoints, applies selected-source
+augmentation, and saves four distinct full-cover patterns. This validates
+recoverability, not the supplier set's blind recommendation rank.
+
+`bench/view_beta_result.py --run RUN --validation-stem ground_truth_assemblies
+--case CASE` renders saved blind assemblies and separately labelled validation
+panels in `RUN/assemblies.html`. All panels use the actual selected R-to-P
+mappings, include hydrogen, and show a combined target-only assembly.
