@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--run',type=Path,required=True)
     parser.add_argument('--case',type=Path,required=True)
     parser.add_argument('--patterns',type=int,default=4)
+    parser.add_argument('--result-stem',default='ground_truth_assemblies')
     args=parser.parse_args()
     started=time.perf_counter()
     case=json.loads(args.case.read_text())
@@ -55,7 +56,7 @@ def main():
     result=BetaResult(recommendations,
         recommendations[0] if recommendations else BetaRecommendation((),tuple(range(len(bank.target)))),
         bank.capped_searches,time.perf_counter()-started,tuple(bank.events))
-    with gzip.open(args.run/'ground_truth_assemblies.pkl.gz','wb',compresslevel=1) as stream:
+    with gzip.open(args.run/f'{args.result_stem}.pkl.gz','wb',compresslevel=1) as stream:
         pickle.dump(result,stream,protocol=pickle.HIGHEST_PROTOCOL)
     report=dict(scope='Specified ground-truth supplier-set assembly, separate from blind recommendation rank',
         sources=sources,target_atoms=len(bank.target),covered=bool(recommendations),
@@ -66,7 +67,7 @@ def main():
             placements=[dict(source_id=p.source_id,mapping=p.mapping,
                 retained_fragments=p.candidate.retained_fragments) for p in r.placements])
             for i,r in enumerate(recommendations,1)])
-    (args.run/'ground_truth_assemblies.json').write_text(json.dumps(report,indent=2)+'\n')
+    (args.run/f'{args.result_stem}.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report),flush=True)
 
 

@@ -1,5 +1,21 @@
 # Example 5: complete beta assemblies
 
+**Reference correction:** the original ground-truth R3 below was the wrong
+nitrile regioisomer. The user corrected it to `INVENTORY-001198` /
+`MCULE-6958723118`, `N#Cc1ccc2nc(N)sc2c1`. Historical validation metrics below
+describe the incorrect reference, not the intended reaction. Current ground
+truth is defined in `docs/example_runs/t05_ground_truth.json`.
+
+Reassembly with the corrected reference reused all three saved connected and
+augmented matching records and took 1.835 seconds, with zero cap hits. It found
+four complete patterns: 3, 4, 4 and 4 fragments. All cover 58/58 explicit atoms
+with 90.625% retention, six source cuts and two target connections. The best
+pattern has one matched fragment per reactant. The nitrile attachment maps to
+P25–P24 and is preserved within R3's ring-containing fragment in every pattern.
+Saved evidence: `ground_truth_corrected.json` and `ground_truth_corrected.pkl.gz`.
+The original reference/checkpoints remain preserved for provenance. The bank
+itself was not modified: the corrected isomer was already present and detected.
+
 Run: `/project/yunhengzou/coordinate_alignment/retro_runs/beta_full_t05_20260906`.
 Bank: `merged_fast_delivery_with_inventory`, 155,305 unique structures.
 Matching settings: explicit H, tolerance 1.0, branch cap 100, no sweep.

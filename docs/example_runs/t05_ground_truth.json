@@ -4,6 +4,7 @@
   "reactants": [
     {"id": "INVENTORY-000283", "name": "Acetylacetone", "smiles": "CC(=O)CC(C)=O"},
     {"id": "INVENTORY-000436", "name": "2,6-Diisopropylaniline", "smiles": "CC(C)c1cccc(C(C)C)c1N"},
-    {"id": "MCULE-7889053722", "name": "2-Amino-6-cyanobenzothiazole", "smiles": "N#Cc1ccc2sc(N)nc2c1"}
-  ]
+    {"id": "INVENTORY-001198", "name": "2-Amino-6-cyanobenzothiazole", "smiles": "N#Cc1ccc2nc(N)sc2c1"}
+  ],
+  "reference_correction": "User corrected the nitrile/H positions. Previous MCULE-7889053722 / N#Cc1ccc2sc(N)nc2c1 was the wrong regioisomer; preserved historical validation results must not be treated as ground truth. Correct isomer also has Mcule ID MCULE-6958723118."
 }
