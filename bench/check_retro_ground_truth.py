@@ -14,6 +14,7 @@ from itertools import product
 from pathlib import Path
 import subprocess
 import sys
+from collections import Counter
 
 from rdkit import Chem
 
@@ -62,7 +63,7 @@ def audit_saved_results(directory):
     print(json.dumps({key: value for key, value in audit.items() if key != "sources"}), flush=True)
 
 
-def build_partial_diagnostic(directory):
+def build_partial_diagnostic(directory, report_name="results.json"):
     """Maximum union for the specified known copies; never a recommendation.
 
     Equal coverage masks may share one display witness here because the sole
@@ -70,7 +71,7 @@ def build_partial_diagnostic(directory):
     """
     from rxn_core.retrosynthesis.compressed_coverage import place_item
     from rxn_core.retrosynthesis.ranking import build_ranked_assembly
-    report = json.loads((directory / "results.json").read_text())
+    report = json.loads((directory / report_name).read_text())
     index = json.loads((directory / "results.occupations.json").read_text())
     pools = {source_id: {} for source_id in report["expected_ids"]}
     for group in index["groups"]:
@@ -100,21 +101,22 @@ def build_partial_diagnostic(directory):
     diagnostic["uncovered_target_atoms"] = sorted(set(range(target.GetNumAtoms())) - covered)
     diagnostic["precursors"] = [{k: v for k, v in item.items() if k != "target_occupations"}
                                 for item in diagnostic["precursors"]]
-    diagnostic["semantics"] = "Best partial support from one copy of each known ingredient; not a complete recommendation"
+    diagnostic["semantics"] = "Maximum coverage from one copy of each known ingredient; separate from the recommendation stream"
     report["diagnostic_assembly"] = diagnostic
-    (directory / "results.json").write_text(json.dumps(report, indent=2) + "\n")
+    (directory / report_name).write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({"diagnostic_coverage": len(covered),
         "target_atoms": target.GetNumAtoms(), "uncovered": diagnostic["uncovered_target_atoms"]}), flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("prepare", "detect", "assemble", "audit", "diagnostic"))
+    parser.add_argument("phase", choices=("prepare", "detect", "assemble", "audit", "diagnostic", "known-set"))
     parser.add_argument("--case", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--bank", type=Path)
     parser.add_argument("--source-index", type=int)
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--iso-tolerance", type=float, default=0.5)
     args = parser.parse_args()
     case = json.loads(args.case.read_text())
     directory = args.output_dir.resolve()
@@ -138,6 +140,7 @@ def main():
             writer.writeheader()
             writer.writerows(row for _, row in rows)
         provenance = {"case": case, "bank": str(args.bank.resolve()),
+                      "iso_tolerance": args.iso_tolerance,
                       "bank_rows": [{"bank_row_index": i, **row} for i, row in rows]}
         (directory / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
         print(json.dumps(provenance), flush=True)
@@ -149,17 +152,49 @@ def main():
             "--checkpoint-directory", str(directory / "checkpoints"),
             "--shard-count", str(len(expected)), "--shard-index", str(args.source_index),
             "--workers", str(args.workers), "--scheduling", "adaptive", "--batch-size", "1",
-            "--seed-mode", "all", "--branch-limit", "100", "--iso-tolerance", "0.5"], check=True)
+            "--seed-mode", "all", "--branch-limit", "100",
+            "--iso-tolerance", str(args.iso_tolerance)], check=True)
     elif args.phase == "audit":
         audit_saved_results(directory)
     elif args.phase == "diagnostic":
         build_partial_diagnostic(directory)
+    elif args.phase == "known-set":
+        counts = Counter()
+        for path in (directory / "parts").glob("*.summary.json"):
+            counts.update(json.loads(path.read_text())["counts"])
+        found = {}
+        for path in (directory / "parts").glob("part_*.jsonl.gz"):
+            with gzip.open(path, "rt") as stream:
+                for line in stream:
+                    record = json.loads(line)
+                    found[record["source_id"]] = bool(record["candidates"])
+        report = {"target_smiles": case["target_smiles"], "search_scope": case["scope"],
+            "iso_tolerance": args.iso_tolerance, "scan_counts": dict(counts),
+            "expected_ids": list(expected), "expected_ids_found": {key: found.get(key, False) for key in expected},
+            "expected_recommendation_rank": None, "expected_mapping": None,
+            "assemblies": [], "construction_patterns": [],
+            "recommendation_search_truncated": False}
+        report_name = "known_set.json"
+        (directory / report_name).write_text(json.dumps(report, indent=2) + "\n")
+        build_partial_diagnostic(directory, report_name)
+        report = json.loads((directory / report_name).read_text())
+        complete = not report["diagnostic_assembly"]["uncovered_target_atoms"]
+        report["expected_status"] = "known_set_covers_target" if complete else "known_set_incomplete"
+        (directory / report_name).write_text(json.dumps(report, indent=2) + "\n")
+        subprocess.run([sys.executable, str(tools / "build_retro_db_viewer.py"),
+            "--results", str(directory / report_name), "--output", str(directory / "known_set.html"),
+            "--title", f"Example 5: known-set coverage at tolerance {args.iso_tolerance}",
+            "--ground-truth-status", "covered" if complete else "partial",
+            "--ground-truth-note", "Actual saved AAM occupations, one copy per known ingredient. "
+                "This tests geometric recoverability, not blind ranking or unique atom ownership. "
+                "Grey target atoms have overlapping support."], check=True)
     else:
         output = directory / "results.json"
         expected_args = [word for source_id in expected for word in ("--expected-id", source_id)]
         subprocess.run([sys.executable, str(tools / "merge_retro_catalog.py"),
             "--parts", str(directory / "parts"), "--target-smiles", case["target_smiles"],
             "--output", str(output), "--index-workers", str(args.workers),
+            "--iso-tolerance", str(args.iso_tolerance),
             "--pattern-limit", "1", "--recommendations-per-pattern", "1", *expected_args], check=True)
         report = json.loads(output.read_text())
         report["search_scope"] = case["scope"]

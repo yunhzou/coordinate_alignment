@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--recommendations-per-pattern", type=int, default=4, help="display only")
     parser.add_argument("--expected-id", action="append", default=[])
     parser.add_argument("--index-workers", type=int, default=1)
+    parser.add_argument("--iso-tolerance", type=float, default=0.5)
     parser.add_argument("--exhaustive", action="store_true", help="write every assembly, not just the certified recommendation prefix")
     args = parser.parse_args()
     implicit = Chem.MolFromSmiles(args.target_smiles)
@@ -71,7 +72,8 @@ def main():
     for summary in summaries:
         scan_counts.update(summary["counts"])
     config = CandidateIndexConfig(expected_ids=tuple(args.expected_id),
-                                  exclude_target_identity=False)
+                                  exclude_target_identity=False,
+                                  iso_tolerance=args.iso_tolerance)
     tasks = [(path, args.target_smiles, target_key, config) for path in paths]
     with ProcessPoolExecutor(max_workers=args.index_workers) as executor:
         index = merge_candidate_indexes(executor.map(_build_part_index, tasks))
@@ -165,6 +167,7 @@ def main():
     report = {
         "schema": "rxn_core.retro_catalog_assembly/v5",
         "target_smiles": args.target_smiles, "target_atom_count": target.GetNumAtoms(),
+        "iso_tolerance": args.iso_tolerance,
         "part_count": len(paths), "scan_counts": dict(scan_counts), "merge_counts": index.counts,
         "coverage_domain_families": len(index.groups),
         "assembly_limit": args.assembly_limit, "pattern_limit": args.pattern_limit,

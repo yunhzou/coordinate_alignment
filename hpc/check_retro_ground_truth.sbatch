@@ -16,4 +16,4 @@ if [[ "$1" == detect ]]; then
   source_args=(--source-index "$SLURM_ARRAY_TASK_ID")
 fi
 srun timeout --kill-after=10s 580s .venv/bin/python bench/check_retro_ground_truth.py \
-  "$1" --case "$2" --output-dir "$3" --workers "$SLURM_CPUS_PER_TASK" "${source_args[@]}"
+  "$1" --case "$2" --output-dir "$3" --workers "$SLURM_CPUS_PER_TASK" "${source_args[@]}" "${@:4}"
