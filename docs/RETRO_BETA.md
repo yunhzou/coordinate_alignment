@@ -200,3 +200,11 @@ recoverability, not the supplier set's blind recommendation rank.
 --case CASE` renders saved blind assemblies and separately labelled validation
 panels in `RUN/assemblies.html`. All panels use the actual selected R-to-P
 mappings, include hydrogen, and show a combined target-only assembly.
+
+The viewer shows separate score cards for Pareto rank, bond breaking (source
+boundary cuts), bond forming (unsupported target connections), their total,
+explicit-H target coverage, and reactant retention. These bond counts are
+geometric proxies, not validated reaction events. The sort selector orders the
+display by any score without changing Pareto ranks or mixing validation panels
+into the blind recommendations. Target coverage uses a union, never a sum of
+overlapping claims.

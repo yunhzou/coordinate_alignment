@@ -73,6 +73,10 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
     checked = VIEWER._payload(report,20,'Pareto display')
     assert checked['assemblies'][0]['pareto_layer'] == 2
     assert 'Pareto layer' in VIEWER._html(checked)
+    assert checked['assemblies'][0]['score']['covered_target_atoms'] == 3
+    assert checked['assemblies'][0]['score']['target_atom_count'] == 3
+    for label in ('Bond breaking', 'Bond forming', 'P coverage', 'R retention', 'Pareto rank'):
+        assert label in VIEWER._html(checked)
 
     report['assemblies'][0]['precursors'][1]['precursor_id'] = 'A'
     target = VIEWER._payload(report, 20, 'Repeated source')['assemblies'][0]['models'][-1]
@@ -93,3 +97,32 @@ def test_no_cover_shows_unassigned_target_not_a_fabricated_assembly(monkeypatch)
     assert payload["unassembled_target"]["styles"] == []
     assert payload["uncovered_target_atoms"] == [0]
     assert "No complete assembly in saved detections" in VIEWER._html(payload)
+
+
+def test_score_sort_controls_keep_ranks_and_validation_separate(monkeypatch):
+    import shutil
+    import subprocess
+    import pytest
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('JavaScript test requires Node')
+    monkeypatch.setattr(VIEWER, 'mol_3d', lambda *args, **kwargs: ('sdf',[[0,0,0]],['C']))
+    report = dict(target_smiles='C', assemblies=[], construction_patterns=[],
+        scan_counts=dict(rows=0,searched=0,matched_precursors=0,fragment_candidates=0,capped=0),
+        recommendation_search_truncated=False)
+    html = VIEWER._html(VIEWER._payload(report,20,'Scores'))
+    functions = html[html.index('function scoreCards'):html.index('function supplierControls')]
+    functions += html[html.index('function sortedAssemblies'):html.index('function renderList')]
+    code = functions + """
+const assert=require('node:assert/strict');
+const make=(rank,retention,broken,formed,covered,validation=false)=>({pareto_layer:rank,ground_truth:validation,score:{set_atom_retention:retention,broken_bonds:broken,formed_bonds:formed,covered_target_atoms:covered,target_atom_count:10}});
+const rows=[make(2,.9,8,4,10),make(1,.6,3,6,9),make(null,1,0,0,10,true)];
+for(const [mode,expected] of Object.entries({pareto:[1,0,2],retention:[0,1,2],changes:[1,0,2],breaking:[1,0,2],forming:[0,1,2],coverage:[0,1,2]})){
+ assert.deepEqual(sortedAssemblies(rows,mode).map(x=>x.i),expected);
+}
+assert.deepEqual(rows.map(a=>a.pareto_layer),[2,1,null]);
+const cards=scoreCards(rows[0]);
+for(const text of ['90.0%','100.0%','10 / 10','>12<','>8<','>4<'])assert.ok(cards.includes(text),text);
+assert.ok(scoreCards(rows[2]).includes('validation only'));
+"""
+    subprocess.run([node,'-e',code],check=True,capture_output=True,text=True)
