@@ -1,5 +1,55 @@
 # Big-block / gap-first beta
 
+## Slurm CPU budget
+
+`bench/run_beta_distributed.py --cpu-budget N` now limits simultaneous allocated
+CPUs for one run, including its coordinator. Slurm admits independent workers
+as capacity becomes available, up to that limit; there is no requirement to
+obtain a fixed number of nodes. Use one coordinator per run directory.
+
+The default requests the smallest whole-core worker. Slurm topology is queried
+and the requested worker size is rounded up to the largest threads-per-core
+value in the eligible partitions. On this cluster's `CR_CORE_MEMORY` policy,
+newer nodes reserve two logical CPUs per core; workers request and use both.
+`--worker-cpus` explicitly changes the requested size; concurrency is
+`floor((budget - actual coordinator allocation) / rounded worker CPUs)`.
+For example, a 32-CPU budget with a one-CPU coordinator allows 15 two-CPU
+workers on the mixed partitions, or 31 one-CPU workers with
+`--partitions cpunodes`. Smaller tasks can fill partially occupied nodes.
+Memory is requested per CPU.
+The budget applies to this run, not unrelated jobs belonging to the user.
+
+Workers run connected scanning and index construction in the **same allocation**.
+They release the allocation when finished. Arrays from different query stages
+never overlap. This avoids retaining a large idle CPU allocation during serial
+refinement or assembly. Workers are not kept alive between separate gap queries;
+that still incurs submission latency.
+
+Each worker has a ten-minute Slurm limit and a 580-second process watchdog.
+Scanning stops admitting new sources after 75% of the process budget, leaving
+room for in-flight work and indexing. A voluntary checkpoint yield (exit 75)
+resubmits only unfinished shards and reuses completed source evidence. Real
+failures and hard timeouts are reported rather than silently retried. Pending
+queue time is not subject to the computation watchdog. The coordinator's own
+Slurm wall limit should allow queue time; request only one coordinator CPU.
+
+For a new run, also supply `--catalog`, `--target-smiles`, and `--shards`.
+Shards control workload granularity, independently of the CPU ceiling. Existing
+run manifests retain their shard layout and checkpoints. Resume with a different
+CPU budget after the previous coordinator and its workers have exited.
+
+```bash
+PYTHONPATH=src .venv/bin/python bench/run_beta_distributed.py \
+  --run /path/to/new-run --catalog /path/to/bank.csv.gz \
+  --target-smiles CO --shards 256 --cpu-budget 32
+```
+
+`query_*/resources/*.json` records user/system CPU seconds and process wall time
+for each scan/index attempt. The final report distinguishes actual CPU work
+from CPU capacity reserved during worker process lifetimes. These measurements
+exclude Slurm startup/cleanup; hard-killed workers may lack reports. Use Slurm
+accounting to include those allocations. The coordinator is measured separately.
+
 This is a **separate, opt-in recommendation workflow**. The full augmented
 bank scan and exact assembly remain available and unchanged. Neither workflow
 silently invokes the other on failure.
@@ -78,3 +128,22 @@ and a ten-minute job limit. Partial checkpoints survive a watchdog termination;
 pickle artifacts are trusted local data and must not be loaded from untrusted
 sources. Automatic checkpoint replay is not implemented in this beta entry
 point yet. The full workflow's own checkpoint/recovery tools are unchanged.
+
+## Distributed full-bank execution
+
+`bench/scan_beta_catalog.py` / `hpc/scan_beta_catalog.sbatch` shard each connected
+target query across nodes. Each source saves typed connected evidence before
+occupation projection, then a placement archive and completion record.
+`bench/index_beta_query.py` builds one SQLite proposal index per shard.
+
+`bench/run_beta_distributed.py` runs the same beta selection policy against
+these indexes. Sorted proposal streams feed the best-first frontier lazily:
+only the next alternative from each expansion needs to be on the heap. No
+alternative is pruned and full source AAM objects stay in their archives until
+needed. This is a memory/execution change, not a new matching rule or beam.
+Only selected source graphs are instantiated in the coordinator.
+
+The distributed runner reuses completed source archives, query indexes, and
+selected-source AAM checkpoints after interruption. Each query/index Slurm job
+has a ten-minute watchdog. Node-start failures must be distinguished from AAM
+timeouts; do not rerun completed matching to recover an index-only failure.

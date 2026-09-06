@@ -72,6 +72,18 @@ class BetaPlacement:
         return (self.candidate.source_id, self.mapping,
                 self.candidate.retained_fragments, self.refined)
 
+    @property
+    def source_id(self):
+        return self.candidate.source_id
+
+    @property
+    def fragment_count(self):
+        return len(self.candidate.retained_fragments)
+
+    @property
+    def input_atom_count(self):
+        return self.candidate.retained_size + sum(map(len, self.candidate.leftover_fragments))
+
 
 @dataclass(frozen=True)
 class BetaRecommendation:
@@ -160,11 +172,10 @@ class FragmentQueryBank:
         internal assignment. Never splice two incompatible R mappings together.
         The full selected-R result is cached across gaps and branch alternatives.
         """
-        source_id = block.candidate.source_id
+        source_id = block.source_id
         if source_id not in self.augmented:
             started = perf_counter()
-            result = detect_fragments(self.sources[source_id], self.context,
-                source_id=source_id, config=self.config)
+            result = self.detect_selected(source_id)
             region = tuple(range(len(self.target)))
             self._save('selected_augmentation', source_id, region, result, perf_counter() - started)
             blocks = {}
@@ -177,6 +188,22 @@ class FragmentQueryBank:
             self.augmented[source_id] = tuple(blocks.values())
         return tuple(candidate for candidate in self.augmented[source_id]
                      if block.covered_atoms <= candidate.covered_atoms)
+
+    def detect_selected(self, source_id):
+        return detect_fragments(self.sources[source_id], self.context,
+                                source_id=source_id, config=self.config)
+
+    def ordered_query(self, region, placements):
+        """Order child proposals so a frontier needs only the next alternative."""
+        return iter(sorted(self.query(region),
+                           key=lambda block: proposal_rank(placements + (block,), len(self.target))))
+
+
+def proposal_rank(placements, target_count):
+    covered = frozenset(a for p in placements for a in p.covered_atoms)
+    return (target_count - len(covered), sum(p.fragment_count for p in placements),
+            len({p.source_id for p in placements}),
+            -Fraction(len(covered), sum(p.input_atom_count for p in placements) or 1))
 
 
 def recommend_big_blocks(bank, *, recommendations=1):
@@ -195,24 +222,27 @@ def recommend_big_blocks(bank, *, recommendations=1):
     answers = {}
     best = BetaRecommendation((), tuple(sorted(target_atoms)))
 
-    def push(placements):
+    def push(placements, continuation=None):
         placements = tuple(sorted(placements, key=lambda p: p.key))
         key = tuple(p.key for p in placements)
         if key in seen:
-            return
+            return False
         seen.add(key)
         covered = frozenset(a for p in placements for a in p.covered_atoms)
-        fragments = sum(len(p.candidate.retained_fragments) for p in placements)
-        total_atoms = sum(p.candidate.retained_size + sum(map(len,
-            p.candidate.leftover_fragments)) for p in placements)
-        rank = (len(target_atoms - covered), fragments,
-                len({p.candidate.source_id for p in placements}),
-                -Fraction(len(covered), total_atoms or 1))
-        heappush(queue, (rank, next(serial), placements, covered))
+        rank = proposal_rank(placements, len(target_atoms))
+        heappush(queue, (rank, next(serial), placements, covered, continuation))
+        return True
+
+    def advance(placements, options):
+        for block in options:
+            if push(placements + (block,), (placements, options)):
+                break
 
     push(())
     while queue and len(answers) < recommendations:
-        _, _, placements, covered = heappop(queue)
+        _, _, placements, covered, continuation = heappop(queue)
+        if continuation is not None:
+            advance(*continuation)
         missing = target_atoms - covered
         pending = next((i for i, p in enumerate(placements) if not p.refined), None)
         if pending is not None:
@@ -226,9 +256,7 @@ def recommend_big_blocks(bank, *, recommendations=1):
             answers.setdefault(tuple(p.key for p in placements), answer)
             best = answer
             continue
-        for block in bank.query(missing):
-            if block.covered_atoms & missing:
-                push(placements + (block,))
+        advance(placements, bank.ordered_query(missing, placements))
 
     return BetaResult(tuple(answers.values()), best, bank.capped_searches,
                       perf_counter() - started, tuple(bank.events))

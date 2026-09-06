@@ -28,6 +28,8 @@ class FakeBank:
     def __init__(self):
         self.events = []
 
+    ordered_query = FragmentQueryBank.ordered_query
+
 
 def test_selected_source_is_refined_before_gap_bank_search():
     class Bank(FakeBank):
@@ -146,3 +148,17 @@ def test_parallel_connected_scan_preserves_occupations():
     parallel = FragmentQueryBank(sources, graph('CO'), workers=2)
     assert {p.key for p in serial.query(range(6))} == {
         p.key for p in parallel.query(range(6))}
+
+
+def test_sorted_disk_stream_is_consumed_lazily_without_pruning_alternatives():
+    class Bank(FakeBank):
+        def ordered_query(self, region, placements):
+            for i in range(1000):
+                self.events.append(i)
+                yield block(f'R{i:04d}', (0, 1, 2))
+        def refine(self, selected):
+            return (block(selected.source_id, (0, 1, 2, 3), refined=True),)
+    bank = Bank()
+    result = recommend_big_blocks(bank)
+    assert result.recommendations
+    assert bank.events == [0, 1]
