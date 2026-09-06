@@ -29,3 +29,24 @@ Saved artifacts: `assemblies.json`, `assemblies.pkl.gz`, individual
 `assembly_candidates/*.pkl.gz`, `ground_truth_assemblies.json`,
 `ground_truth_assemblies.pkl.gz`, `assemblies_viewer.json`, and
 `assemblies.html`. Existing first-cover artifacts remain unchanged.
+
+## Ranking and overlap audit
+
+The first blind assembly has six fragments, two distinct species, 58/175
+explicit-atom retention (33.14%), eight source boundary cuts and four unsupported
+target connections. The first known-supplier validation has six fragments,
+three species, 58/64 retention (90.625%), eight cuts and four connections.
+The ground truth is substantially more atom-efficient, but does not have fewer
+displayed cuts/connections in these saved mappings. These counts are not a
+balanced chemical reaction's bond-edit count.
+
+Current beta ordering compares species count before retention and does not rank
+by cuts/connections. Its output quota also stops discovery before global ranking
+can be certified. Changing display order alone cannot fix absent candidates.
+No ground-truth-specific ranking bonus or discovery rule has been added.
+
+The former grey atoms in blind pattern 1 were overlapping claims from two
+copies of R2 (`MCULE-2301670172`), not different R species. The viewer now gives
+them R2's color. For overlaps across distinct species it lists all R alternatives
+and offers color-selection buttons; this changes display only, not mappings or
+which atoms are covered.

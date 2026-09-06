@@ -52,8 +52,10 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
         "search_scope": "Known-ingredient check, not a blind bank scan"}
     payload = VIEWER._payload(report, 20, "Overlap test")
     target = payload["assemblies"][0]["models"][-1]
-    assert target["styles"][-1] == {"indices": [1], "color": "#9ca3af"}
-    assert target["labels"][1]["text"] == "P1 shared: R1/R2"
+    assert target['supplierAlternatives'] == [dict(atoms=[1], owners=[0,1], selected=0)]
+    assert all(s['color'] != '#9ca3af' for s in target['styles'])
+    assert target["labels"][1]["text"] == "P1: R1 or R2"
+    assert target['labels'][1]['always']
     html = VIEWER._html(payload)
     assert "not validated reaction edits" in html
     assert "Known-ingredient check, not a blind bank scan" in html
@@ -67,6 +69,12 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
     assert checked['assemblies'][1]['pattern'] == 'GT-1'
     assert checked['assemblies'][1]['complete_cover']
     assert 'Validation pattern' in VIEWER._html(checked)
+
+    report['assemblies'][0]['precursors'][1]['precursor_id'] = 'A'
+    target = VIEWER._payload(report, 20, 'Repeated source')['assemblies'][0]['models'][-1]
+    assert target['supplierAlternatives'] == []
+    assert target['styles'] == [dict(indices=[0,1,2],color=VIEWER._color(0))]
+    assert target['labels'][1]['text'] == 'P1: R1 (2 copies)'
 
 
 def test_no_cover_shows_unassigned_target_not_a_fabricated_assembly(monkeypatch):

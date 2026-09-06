@@ -102,7 +102,7 @@ def main():
     payload=_payload(report,len(result.recommendations),'Example 5 · assembled construction patterns',
         'covered' if validations else 'not-evaluated',
         'Ground-truth panels validate actual compatible supplier occupations and full target coverage. '
-        'They are separate from blind recommendation ranks. Grey atoms have shared support.')
+        'They are separate from blind recommendation ranks. Overlapping suppliers are labelled explicitly.')
     (root/f'{args.result_stem}.html').write_text(_html(payload))
     print(root/f'{args.result_stem}.html',flush=True)
 

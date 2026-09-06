@@ -150,15 +150,18 @@ def _payload(
         claims = {atom: [index for index, item in enumerate(precursors)
                          for copy in item["copies"] if atom in copy["covered_target_atoms"]]
                   for atom in range(len(target_elements))}
+        owners = {atom: sorted(set(indices)) for atom, indices in claims.items()}
+        alternatives = {}
+        for atom, indices in owners.items():
+            if len(indices) > 1:
+                alternatives.setdefault(tuple(indices), []).append(atom)
         product_styles = []
         for index, item in enumerate(precursors):
-            owned = sorted(atom for atom, owners in claims.items() if owners == [index])
+            owned = sorted(atom for atom, indices in owners.items() if indices == [index])
             product_styles.append({
                 "indices": owned,
                 "color": _color(index),
             })
-        product_styles.append({"indices": sorted(atom for atom, owners in claims.items() if len(owners) > 1),
-                               "color": "#9ca3af"})
         product_symmetry_styles = [
             {"indices": item["symmetry_target_atoms"], "color": _color(index)}
             for index, item in enumerate(precursors)
@@ -169,11 +172,15 @@ def _payload(
             "elements": target_elements,
             "styles": product_styles,
             "symmetryStyles": product_symmetry_styles,
+            "supplierAlternatives": [dict(atoms=atoms, owners=list(indices), selected=indices[0])
+                                     for indices, atoms in alternatives.items()],
             "labels": [
                 {"atom": atom, "text": (f"P{atom} UNCOVERED" if not claims[atom] else
                     f"P{atom}" if len(claims[atom]) == 1 else
-                    f"P{atom} shared: " + "/".join(f"R{i + 1}" for i in claims[atom])),
-                 "always": not claims[atom]}
+                    f"P{atom}: " + " or ".join(f"R{i + 1}" +
+                        (f" ({claims[atom].count(i)} copies)" if claims[atom].count(i) > 1 else "")
+                        for i in owners[atom])),
+                 "always": len(claims[atom]) != 1}
                 for atom in range(len(target_elements))
             ],
             "broken": [],
@@ -282,17 +289,21 @@ main{{display:grid;grid-template-rows:1fr 1fr;min-width:0}} #reactants{{display:
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
 <div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>
 Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors.
-Grey marks shared target support, not assigned atom ownership.
+Overlapping copies of the same R keep that R's color. For different suppliers,
+use the R buttons below to switch the displayed color; labels list every supplier.
+These are display alternatives, not independently validated new assemblies.
 Symmetry mode shows alternative matchable positions, not extra simultaneous assignments.<br>
 <span style="color:#d33">Red = source cuts</span>; <span style="color:#159447">green = unsupported target connections</span>.
 These are geometric connections, not validated reaction edits.
-<div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br><b>Returned by recommender: {recommendation_truth}</b><br>{payload['summary']['ground_truth_note']}<span class="truthreactants"><b>Ground-truth raw ingredients</b><br>{ground_truth_reactants}</span></div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
+<div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br><b>Returned by recommender: {recommendation_truth}</b><br>{payload['summary']['ground_truth_note']}<span class="truthreactants"><b>Ground-truth raw ingredients</b><br>{ground_truth_reactants}</span></div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="suppliers" class="intro"></div><div id="list"></div></aside>
 <main><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><br><label><input id="symmetry" type="checkbox"> show symmetry domains</label><br><label><input id="labels" type="checkbox"> sampled P# identities</label></div><div id="reactants"></div>
 <div id="productWrap"><section class="panel" id="Ppanel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data}, colors={json.dumps(palette)}, viewers={{}};
 function pt(m,i){{return {{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}}
+function supplierControls(m){{const wrap=document.getElementById('suppliers');wrap.replaceChildren();const groups=m.supplierAlternatives||[];if(!groups.length){{wrap.textContent='No overlap between different R species. Repeated copies use their R color.';return}}const title=document.createElement('b');title.textContent='Alternative R suppliers · display only';wrap.appendChild(title);groups.forEach(g=>{{const row=document.createElement('div');const atoms=document.createElement('div');atoms.textContent=g.atoms.map(a=>'P'+a).join(', ');row.appendChild(atoms);g.owners.forEach(r=>{{const button=document.createElement('button');button.textContent='R'+(r+1);button.title='Show this supplier’s color; all listed suppliers remain in the saved assembly';button.style.color=colors[r%colors.length];button.style.fontWeight=g.selected===r?'bold':'normal';button.style.border=g.selected===r?'2px solid currentColor':'1px solid #ccc';button.disabled=document.getElementById('symmetry').checked;button.onclick=()=>{{g.selected=r;showModel('P',m)}};row.appendChild(button)}});wrap.appendChild(row)}})}}
 function showModel(id,m){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}
  v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});if(document.getElementById('fragments').checked){{const symmetry=document.getElementById('symmetry').checked;const styles=symmetry&&(m.symmetryStyles||[]).length?m.symmetryStyles:m.styles;styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.19}},sphere:{{color:s.color,scale:.34}}}}))}}
+ if(id==='P'){{supplierControls(m);if(document.getElementById('fragments').checked&&!document.getElementById('symmetry').checked)(m.supplierAlternatives||[]).forEach(g=>v.addStyle({{index:g.atoms}},{{stick:{{color:colors[g.selected%colors.length],radius:.19}},sphere:{{color:colors[g.selected%colors.length],scale:.34}}}}))}}
  m.broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));m.formed.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.11,color:'#16a34a'}}));
  (m.labels||[]).filter(l=>l.always||document.getElementById('labels').checked).forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:l.always?'#b42318':'#111',backgroundColor:'white',backgroundOpacity:.85,inFront:true}}));v.zoomTo();v.render()}}
 function patternInfo(id){{return data.patterns.find(x=>x.pattern===id)}}
@@ -303,7 +314,7 @@ const list=document.getElementById('list');let lastPattern=null;
 data.assemblies.forEach((a,i)=>{{
  if(a.pattern!==lastPattern){{
   const h=document.createElement('div');h.className='patternhead';
-  h.innerHTML=a.diagnostic?(a.complete_cover?'KNOWN-SET COVER':'FAILED COVER · partial diagnostic')+'<small>One copy of each known ingredient. Actual saved AAM occupations; separate from blind recommendations.</small>':(a.ground_truth?'GROUND TRUTH MATCHING':'Pattern '+a.pattern)+'<small>'+patternText(a.pattern)+' · grey means shared support</small>';
+  h.innerHTML=a.diagnostic?(a.complete_cover?'KNOWN-SET COVER':'FAILED COVER · partial diagnostic')+'<small>One copy of each known ingredient. Actual saved AAM occupations; separate from blind recommendations.</small>':(a.ground_truth?'GROUND TRUTH MATCHING':'Pattern '+a.pattern)+'<small>'+patternText(a.pattern)+' · overlapping suppliers listed explicitly</small>';
   list.appendChild(h);lastPattern=a.pattern;
  }}
  const b=document.createElement('button');b.className='result';b.dataset.index=i;
