@@ -123,6 +123,8 @@ def _payload(
         (rank, ranked[rank - 1], False) for rank in selected_ranks]
     if known_rank is None and report.get("expected_mapping") is not None:
         selected.append(("ground truth", report["expected_mapping"], True))
+    if report.get("diagnostic_assembly") is not None:
+        selected.append(("diagnostic", report["diagnostic_assembly"], True))
 
     expected_counts = Counter(report.get("expected_ids", ()))
     expected_found = report.get("expected_ids_found", {})
@@ -166,8 +168,10 @@ def _payload(
             "styles": product_styles,
             "symmetryStyles": product_symmetry_styles,
             "labels": [
-                {"atom": atom, "text": (f"P{atom}" if len(claims[atom]) == 1 else
-                    f"P{atom} shared: " + "/".join(f"R{i + 1}" for i in claims[atom]))}
+                {"atom": atom, "text": (f"P{atom} UNCOVERED" if not claims[atom] else
+                    f"P{atom}" if len(claims[atom]) == 1 else
+                    f"P{atom} shared: " + "/".join(f"R{i + 1}" for i in claims[atom])),
+                 "always": not claims[atom]}
                 for atom in range(len(target_elements))
             ],
             "broken": [],
@@ -177,9 +181,10 @@ def _payload(
         assemblies.append({
             "rank": rank,
             "pattern": pattern,
-            "known": ground_truth or _matches_expected(
-                assembly, expected_ids),
-            "ground_truth": ground_truth,
+            "known": rank != "diagnostic" and (ground_truth or _matches_expected(
+                assembly, expected_ids)),
+            "ground_truth": ground_truth and rank != "diagnostic",
+            "diagnostic": rank == "diagnostic",
             "complete_cover": complete_cover,
             "score": assembly["score"],
             "precursors": [{
@@ -196,6 +201,7 @@ def _payload(
     return {
         "summary": {
             "title": title,
+            "search_scope": report.get("search_scope", "Blind catalog search"),
             "catalog_rows": report["scan_counts"]["rows"],
             "searched": report["scan_counts"]["searched"],
             "matched_precursors": report["scan_counts"]["matched_precursors"],
@@ -218,6 +224,13 @@ def _payload(
         },
         "patterns": report["construction_patterns"],
         "assemblies": assemblies,
+        "unassembled_target": {
+            "mol": target_block, "coords": target_coords, "elements": target_elements,
+            "styles": [], "broken": [], "formed": [],
+            "labels": [{"atom": atom, "text": f"P{atom}"}
+                       for atom in range(len(target_elements))],
+        } if not assemblies else None,
+        "uncovered_target_atoms": report.get("uncovered_target_atoms", []),
     }
 
 
@@ -234,13 +247,13 @@ def _html(payload):
     ) or "No structured ground-truth reactants supplied"
     known_rank = payload["summary"]["known_rank"]
     recommendation_truth = (
-        f"yes, blind candidate rank {known_rank}"
+        f"yes, candidate rank {known_rank} in the searched pool"
         if known_rank is not None else "no"
     )
     palette = [_color(i) for i in range(max(
         (len(a["precursors"]) for a in payload["assemblies"]), default=0))]
     return f"""<!doctype html><html><head><meta charset="utf-8">
-<title>Blind catalog retrosynthesis results</title><style>
+<title>Geometric building-block results</title><style>
 :root{{--bg:#f3f5f8;--card:#fff;--ink:#172033;--muted:#64748b;--line:#dbe2ea;--blue:#2684ff;--orange:#ff8b00}}
 *{{box-sizing:border-box}} body{{margin:0;height:100vh;overflow:hidden;font:13px system-ui;background:var(--bg);color:var(--ink)}}
 header{{height:72px;padding:11px 18px;background:#101828;color:white;display:flex;align-items:center;justify-content:space-between}}
@@ -263,7 +276,7 @@ main{{display:grid;grid-template-rows:1fr 1fr;min-width:0}} #reactants{{display:
 .controls{{position:absolute;z-index:5;right:18px;top:82px;background:#ffffffdc;padding:5px 8px;border:1px solid var(--line);border-radius:7px}}
 .dot{{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 5px 0 10px}} code{{font-size:11px}}
 </style><script>{library}</script></head><body>
-<header><div><h1>{payload['summary']['title']}</h1><div class="muted">Explicit-H fragment mappings · select an assembly to inspect it in 3D</div></div>
+<header><div><h1>{payload['summary']['title']}</h1><div class="muted">{escape(payload['summary']['search_scope'])} · Explicit-H fragment mappings</div></div>
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
 <div id="layout"><aside><div class="intro"><b>Each color is one unique precursor.</b><br>
 Repeated copies share one color and one R panel. Hydrogens are explicit. Unmatched atoms keep element colors.
@@ -271,7 +284,7 @@ Grey marks shared target support, not assigned atom ownership.
 Symmetry mode shows alternative matchable positions, not extra simultaneous assignments.<br>
 <span style="color:#d33">Red = source cuts</span>; <span style="color:#159447">green = unsupported target connections</span>.
 These are geometric connections, not validated reaction edits.
-<div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br><b>Returned by blind recommender: {recommendation_truth}</b><br>{payload['summary']['ground_truth_note']}<span class="truthreactants"><b>Ground-truth raw ingredients</b><br>{ground_truth_reactants}</span></div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
+<div class="truthbox {payload['summary']['ground_truth_status']}"><b>Ground truth: {payload['summary']['ground_truth_status'].upper()}</b><br><b>Returned by recommender: {recommendation_truth}</b><br>{payload['summary']['ground_truth_note']}<span class="truthreactants"><b>Ground-truth raw ingredients</b><br>{ground_truth_reactants}</span></div><br>Cap-hit precursors: {payload['summary']['capped']:,}. <span style="color:#b45309;font-weight:700">Assembly search truncated: {'yes' if payload['summary']['search_truncated'] else 'no'}.</span></div><div id="list"></div></aside>
 <main><div class="controls"><label><input id="fragments" type="checkbox" checked> color fragments</label><br><label><input id="symmetry" type="checkbox"> show symmetry domains</label><br><label><input id="labels" type="checkbox"> sampled P# identities</label></div><div id="reactants"></div>
 <div id="productWrap"><section class="panel" id="Ppanel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></div></main></div>
 <script>const data={data}, colors={json.dumps(palette)}, viewers={{}};
@@ -279,13 +292,26 @@ function pt(m,i){{return {{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}
 function showModel(id,m){{let v=viewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});viewers[id]=v}}else{{v.removeAllModels();v.removeAllShapes();v.removeAllLabels()}}
  v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});if(document.getElementById('fragments').checked){{const symmetry=document.getElementById('symmetry').checked;const styles=symmetry&&(m.symmetryStyles||[]).length?m.symmetryStyles:m.styles;styles.forEach(s=>v.addStyle({{index:s.indices}},{{stick:{{color:s.color,radius:.19}},sphere:{{color:s.color,scale:.34}}}}))}}
  m.broken.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.10,color:'#e5484d'}}));m.formed.forEach(b=>v.addCylinder({{start:pt(m,b[0]),end:pt(m,b[1]),radius:.11,color:'#16a34a'}}));
- if(document.getElementById('labels').checked)(m.labels||[]).forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.72,inFront:true}}));v.zoomTo();v.render()}}
+ (m.labels||[]).filter(l=>l.always||document.getElementById('labels').checked).forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:10,fontColor:l.always?'#b42318':'#111',backgroundColor:'white',backgroundOpacity:.85,inFront:true}}));v.zoomTo();v.render()}}
 function patternInfo(id){{return data.patterns.find(x=>x.pattern===id)}}
 function patternText(id){{if(id==='GT')return 'ground-truth AAM comparison; not returned by blind recommender';const p=patternInfo(id);return p?(p.fragment_sizes.length+' modules · atom sizes '+p.fragment_sizes.join(' + ')):''}}
 function select(i){{const a=data.assemblies[i];document.querySelectorAll('.result').forEach(x=>x.classList.toggle('active',Number(x.dataset.index)===i));Object.keys(viewers).filter(k=>k.startsWith('R')).forEach(k=>delete viewers[k]);const wrap=document.getElementById('reactants');wrap.innerHTML='';a.precursors.forEach((r,j)=>{{const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<div class="label" id="L'+j+'"></div><div class="view" id="R'+j+'"></div>';wrap.appendChild(panel);const mult=r.multiplicity>1?' ×'+r.multiplicity:'';document.getElementById('L'+j).innerHTML='<b><span style="color:'+colors[j%colors.length]+'">R'+(j+1)+'</span> · '+r.id+mult+'</b><small>'+r.smiles+'</small><small>retained '+r.retained.length+' atom positions; unmatched '+r.unmatched+' across copies</small>';showModel('R'+j,a.models[j])}});
- const retention=a.score.set_atom_retention===undefined?'':(' · direct retention '+(100*a.score.set_atom_retention).toFixed(1)+'%');const symmetryRetention=a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%');const chiral=a.score.chirality_violations===undefined?'':(' · stereochemistry not assessed');const coverage=a.complete_cover?'complete P cover':(a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered');const heading=a.ground_truth?'GROUND TRUTH MATCHING':'P target · Pattern '+a.pattern;document.getElementById('LP').innerHTML='<b>'+heading+': '+patternText(a.pattern)+'</b><small>'+coverage+' · '+a.score.broken_bonds+' source cuts, '+a.score.leftover_atoms+' unmatched, '+a.score.formed_bonds+' target connections (not reaction edits)'+retention+symmetryRetention+chiral+'</small>';showModel('P',a.models[a.precursors.length])}}
-const list=document.getElementById('list');let lastPattern=null;data.assemblies.forEach((a,i)=>{{if(a.pattern!==lastPattern){{const h=document.createElement('div');h.className='patternhead';h.innerHTML=(a.ground_truth?'GROUND TRUTH MATCHING':'Pattern '+a.pattern)+'<small>'+patternText(a.pattern)+(a.ground_truth?'':' · colored regions define this construction; grey means shared support, not assigned ownership')+'</small>';list.appendChild(h);lastPattern=a.pattern}}const b=document.createElement('button');b.className='result';b.dataset.index=i;b.innerHTML='<span class="rank">'+(a.ground_truth?'ground-truth comparison':'recommendation '+a.rank)+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">'+(a.complete_cover?'complete P cover':(a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered'))+' · direct retention '+(a.score.set_atom_retention===undefined?'n/a':(100*a.score.set_atom_retention).toFixed(1)+'%')+(a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%'))+' · source cuts '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · target connections '+a.score.formed_bonds+(a.score.chirality_violations===undefined?'':' · stereochemistry not assessed')+'</div>';b.onclick=()=>select(i);list.appendChild(b)}});
-function redraw(){{select([...document.querySelectorAll('.result')].findIndex(x=>x.classList.contains('active')))}}document.getElementById('labels').onchange=redraw;document.getElementById('fragments').onchange=redraw;document.getElementById('symmetry').onchange=redraw;if(data.assemblies.length){{const knownIndex=data.assemblies.findIndex(x=>x.known);select(knownIndex>=0?knownIndex:0)}}window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
+ const retention=a.score.set_atom_retention===undefined?'':(' · direct retention '+(100*a.score.set_atom_retention).toFixed(1)+'%');const symmetryRetention=a.score.set_symmetry_atom_retention===undefined?'':(' · symmetry-adjusted '+(100*a.score.set_symmetry_atom_retention).toFixed(1)+'%');const chiral=a.score.chirality_violations===undefined?'':(' · stereochemistry not assessed');const coverage=a.complete_cover?'complete P cover':(a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered');const heading=a.diagnostic?'FAILED COVER · saved-mapping diagnostic':a.ground_truth?'GROUND TRUTH MATCHING':'P target · Pattern '+a.pattern;document.getElementById('LP').innerHTML='<b>'+heading+'</b><small>'+coverage+' · '+a.score.broken_bonds+' source cuts, '+a.score.leftover_atoms+' unmatched, '+a.score.formed_bonds+' target connections (not reaction edits)'+retention+symmetryRetention+chiral+'</small>';showModel('P',a.models[a.precursors.length])}}
+const list=document.getElementById('list');let lastPattern=null;
+data.assemblies.forEach((a,i)=>{{
+ if(a.pattern!==lastPattern){{
+  const h=document.createElement('div');h.className='patternhead';
+  h.innerHTML=a.diagnostic?'FAILED COVER · partial diagnostic<small>One copy of each known ingredient. Actual saved AAM occupations; not a recommendation.</small>':(a.ground_truth?'GROUND TRUTH MATCHING':'Pattern '+a.pattern)+'<small>'+patternText(a.pattern)+' · grey means shared support</small>';
+  list.appendChild(h);lastPattern=a.pattern;
+ }}
+ const b=document.createElement('button');b.className='result';b.dataset.index=i;
+ const label=a.diagnostic?'Best incomplete combination':a.ground_truth?'ground-truth comparison':'recommendation '+a.rank;
+ const coverage=a.complete_cover?'complete P cover':a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered';
+ b.innerHTML='<span class="rank">'+label+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">'+coverage+' · source cuts '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · target connections '+a.score.formed_bonds+'</div>';
+ b.onclick=()=>select(i);list.appendChild(b);
+}});
+function showUnassembled(){{document.querySelector('main').style.gridTemplateRows='1fr';document.getElementById('reactants').style.display='none';document.getElementById('LP').textContent='No complete assembly in saved detections. Target shown without an assigned mapping.';list.textContent='No recommendation. Unsupported target atoms: '+data.uncovered_target_atoms.map(a=>'P'+a).join(', ');showModel('P',data.unassembled_target)}}
+function redraw(){{if(!data.assemblies.length){{showUnassembled();return}}select([...document.querySelectorAll('.result')].findIndex(x=>x.classList.contains('active')))}}document.getElementById('labels').onchange=redraw;document.getElementById('fragments').onchange=redraw;document.getElementById('symmetry').onchange=redraw;if(data.assemblies.length){{const knownIndex=data.assemblies.findIndex(x=>x.known);select(knownIndex>=0?knownIndex:0)}}else{{showUnassembled()}}window.onresize=()=>Object.values(viewers).forEach(v=>v.resize());</script></body></html>"""
 
 
 def main():

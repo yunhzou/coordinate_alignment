@@ -48,10 +48,27 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
         "precursors": [source("A", [0, 1]), source("B", [1, 2])],
         "formed_bonds": [], "score": {}}], "construction_patterns": [],
         "scan_counts": dict(rows=2, searched=2, matched_precursors=2, fragment_candidates=2, capped=0),
-        "recommendation_search_truncated": False}
+        "recommendation_search_truncated": False,
+        "search_scope": "Known-ingredient check, not a blind bank scan"}
     payload = VIEWER._payload(report, 20, "Overlap test")
     target = payload["assemblies"][0]["models"][-1]
     assert target["styles"][-1] == {"indices": [1], "color": "#9ca3af"}
     assert target["labels"][1]["text"] == "P1 shared: R1/R2"
     html = VIEWER._html(payload)
     assert "not validated reaction edits" in html
+    assert "Known-ingredient check, not a blind bank scan" in html
+    assert "Returned by blind recommender" not in html
+
+
+def test_no_cover_shows_unassigned_target_not_a_fabricated_assembly(monkeypatch):
+    monkeypatch.setattr(VIEWER, "mol_3d", lambda *args, **kwargs:
+        ("mock sdf", [[0., 0., 0.]], ["C"]))
+    report = {"target_smiles": "C", "assemblies": [], "construction_patterns": [],
+        "scan_counts": dict(rows=1, searched=1, matched_precursors=0,
+                            fragment_candidates=0, capped=0),
+        "recommendation_search_truncated": False, "uncovered_target_atoms": [0]}
+    payload = VIEWER._payload(report, 20, "No cover")
+    assert payload["assemblies"] == []
+    assert payload["unassembled_target"]["styles"] == []
+    assert payload["uncovered_target_atoms"] == [0]
+    assert "No complete assembly in saved detections" in VIEWER._html(payload)
