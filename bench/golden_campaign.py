@@ -50,7 +50,7 @@ def initialize(args):
             previous=args.reuse/str(row['index'])
             if (previous/'aam.json.gz').exists() or (previous/'partial_archive.json').exists():
                 old_manifest=json.loads((args.reuse/'manifest.json').read_text())
-                if old_manifest['config'] != asdict(AAMSearchConfig()) or (previous/'input.json').read_bytes()!=(directory/'input.json').read_bytes():
+                if old_manifest['config'] != json.loads(json.dumps(asdict(AAMSearchConfig()))) or (previous/'input.json').read_bytes()!=(directory/'input.json').read_bytes():
                     raise ValueError('Cannot reuse a different input or AAM configuration')
                 for name in ('aam.json.gz','search.json','partial.json','search_timeout.json'):
                     if (previous/name).exists():shutil.copy2(previous/name,directory/name)
