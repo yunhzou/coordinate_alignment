@@ -17,6 +17,7 @@ from rxn_core.retrosynthesis.catalog_index import (
     CandidateIndexConfig, build_candidate_index, merge_candidate_indexes,
 )
 from rxn_core.retrosynthesis.ranking import assembly_rank
+from rxn_core.retrosynthesis.config import DEFAULT_ISO_TOLERANCE
 
 
 def _part_records(path):
@@ -49,7 +50,7 @@ def main():
     parser.add_argument("--recommendations-per-pattern", type=int, default=4, help="display only")
     parser.add_argument("--expected-id", action="append", default=[])
     parser.add_argument("--index-workers", type=int, default=1)
-    parser.add_argument("--iso-tolerance", type=float, default=0.5)
+    parser.add_argument("--iso-tolerance", type=float, default=DEFAULT_ISO_TOLERANCE)
     parser.add_argument("--exhaustive", action="store_true", help="write every assembly, not just the certified recommendation prefix")
     args = parser.parse_args()
     implicit = Chem.MolFromSmiles(args.target_smiles)

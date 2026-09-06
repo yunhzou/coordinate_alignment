@@ -17,6 +17,7 @@ import sys
 from collections import Counter
 
 from rdkit import Chem
+from rxn_core.retrosynthesis.config import DEFAULT_ISO_TOLERANCE
 
 
 def audit_saved_results(directory):
@@ -128,7 +129,7 @@ def main():
     parser.add_argument("--bank", type=Path)
     parser.add_argument("--source-index", type=int)
     parser.add_argument("--workers", type=int, default=1)
-    parser.add_argument("--iso-tolerance", type=float, default=0.5)
+    parser.add_argument("--iso-tolerance", type=float, default=DEFAULT_ISO_TOLERANCE)
     parser.add_argument("--report-name", default="known_set.json")
     args = parser.parse_args()
     case = json.loads(args.case.read_text())

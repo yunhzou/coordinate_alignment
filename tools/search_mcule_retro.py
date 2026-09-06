@@ -29,6 +29,7 @@ from rxn_core.fragment_matching import (
 )
 from rxn_core.fragment_matching.rdkit_adapter import molecule_to_weighted_graph
 from rxn_core.fragment_matching.serialization import fragment_detection_to_record
+from rxn_core.retrosynthesis.config import DEFAULT_ISO_TOLERANCE
 
 
 _TARGET = None
@@ -292,7 +293,7 @@ def _parser():
     parser.add_argument("--limit", type=int)
     parser.add_argument("--minimum-fragment-size", type=int, default=1)
     parser.add_argument("--minimum-target-coverage-fraction", type=float)
-    parser.add_argument("--iso-tolerance", type=float, default=0.5)
+    parser.add_argument("--iso-tolerance", type=float, default=DEFAULT_ISO_TOLERANCE)
     parser.add_argument("--branch-limit", type=int, default=100)
     parser.add_argument("--candidate-limit", type=int)
     parser.add_argument("--seed-limit", type=int)

@@ -21,6 +21,7 @@ from .compressed_coverage import (
     coverage_signature,
 )
 from .ranking import candidate_entry_rank
+from .config import DEFAULT_ISO_TOLERANCE
 
 
 def candidate_entry(
@@ -110,7 +111,7 @@ def exact_source_copy_capacity(retained_atoms, generators):
 class CandidateIndexConfig:
     exclude_target_identity: bool = False
     expected_ids: tuple[str, ...] = ()
-    iso_tolerance: float = 0.5
+    iso_tolerance: float = DEFAULT_ISO_TOLERANCE
 
     def __post_init__(self):
         if self.iso_tolerance <= 0:

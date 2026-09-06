@@ -4,6 +4,7 @@ from itertools import product
 
 from ..fragment_matching import materialize_target_coverage_orbit
 from .decision_graph import CoverageDecisionGraph
+from .config import DEFAULT_ISO_TOLERANCE
 
 TargetOccupation = tuple[int, ...]
 CoverageSignature = tuple[TargetOccupation, ...]
@@ -25,7 +26,7 @@ def candidate_target_domains(candidate):
     return tuple(sorted(pools.items()))
 
 
-def candidate_target_occupations(candidate, target, *, iso_tolerance=0.5,
+def candidate_target_occupations(candidate, target, *, iso_tolerance=DEFAULT_ISO_TOLERANCE,
                                  generators=None):
     """Project exact branch actions onto joint matched-fragment regions.
 

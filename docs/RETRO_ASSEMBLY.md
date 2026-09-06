@@ -5,6 +5,13 @@ matched fragments jointly support every target atom, including explicit H.
 This establishes a geometric foundation, **not chemical feasibility, a reaction
 mechanism, unique atom ownership, or a multistep synthesis route**.
 
+The retro scanner and assembly APIs default to bond-order tolerance **1.0**,
+defined in `retrosynthesis.config`. This permits single/double bond changes
+within a retained building-block fragment; an absent target bond remains
+unsupported. Reusable AAM and fragment-matching defaults remain **0.5**.
+Use the same explicit tolerance for detection and replay/indexing when comparing
+historical runs. All matching still includes explicit hydrogen atoms.
+
 ```text
 R bank + P target
     -> shared fragment matcher

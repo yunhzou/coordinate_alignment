@@ -8,11 +8,12 @@ from ..subgraph import _coerce_graph
 from .decision_graph import CoverageDecisionGraph
 from .models import RetroAssembly, RetroAssemblySearchResult
 from .ranking import validate_atom_ownership
+from .config import DEFAULT_ISO_TOLERANCE
 
 
 def assemble_fragment_cover(target, candidates, *, maximum_precursors=None,
         assembly_limit=None, require_attachment_bonds=False,
-        allow_repeated_precursors=True, orbit_limit=None, iso_tolerance=0.5):
+        allow_repeated_precursors=True, orbit_limit=None, iso_tolerance=DEFAULT_ISO_TOLERANCE):
     """All full covers; optional explicit caller restrictions and output slicing.
 
     No cap limits traversal. Repeated copies at different target occupations
