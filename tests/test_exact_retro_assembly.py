@@ -123,6 +123,56 @@ def test_equal_coverage_keeps_different_fragment_partitions():
     results = list(problem.ranked_assemblies())
     assert len(results) == 3  # Either relation alone, or both overlapping relations.
     assert results[0]["pattern_key"] != results[1]["pattern_key"]
+    assert [a["score"]["matched_fragment_count"] for a in results] == [1, 2, 3]
+
+
+def test_fragment_count_precedes_species_count_and_retention():
+    items = [item("shattered", (0, 1, 2), total=3, fragments=((0,), (1,), (2,))),
+             item("left", (0,), total=20), item("right", (1, 2), total=20)]
+    problem = AssemblyProblem.from_index(SimpleNamespace(groups={0: items}), Chem.MolFromSmiles("CCC"))
+    exhaustive = sorted(problem.assemblies(), key=assembly_rank)
+    ranked = list(problem.ranked_assemblies())
+    assert [assembly_rank(a) for a in ranked] == [assembly_rank(a) for a in exhaustive]
+    assert ranked[0]["precursor_stoichiometry"] == {"left": 1, "right": 1}
+    assert ranked[0]["score"]["matched_fragment_count"] == 2
+
+
+def test_explicit_hydrogen_singletons_count_as_fragment_units():
+    items = [item("connected", (0, 1), fragments=((0, 1),)),
+             item("split", (0, 1), fragments=((0,), (1,)))]
+    target = Chem.AddHs(Chem.MolFromSmiles("[H]Cl"))
+    problem = AssemblyProblem.from_index(SimpleNamespace(groups={0: items}), target)
+    ranked = list(problem.ranked_assemblies())
+    assert ranked[0]["precursor_stoichiometry"] == {"connected": 1}
+    assert ranked[1]["score"]["matched_fragment_count"] == 2
+
+
+@pytest.mark.parametrize("seed", range(12))
+def test_fragment_first_best_first_matches_random_exhaustive_oracle(seed):
+    import random
+    randomizer = random.Random(seed)
+    items = []
+    for _ in range(6):
+        atoms = tuple(sorted(randomizer.sample(range(3), randomizer.randint(1, 3))))
+        fragments = (tuple(range(len(atoms))),) if randomizer.randrange(2) else tuple((i,) for i in range(len(atoms)))
+        items.append(item(str(randomizer.randrange(3)), atoms,
+                          total=randomizer.randint(3, 20), fragments=fragments))
+    problem = AssemblyProblem.from_index(SimpleNamespace(groups={0: items}), Chem.MolFromSmiles("CCC"))
+    assert [assembly_rank(a) for a in problem.ranked_assemblies()] == sorted(
+        assembly_rank(a) for a in problem.assemblies())
+
+
+def test_typed_api_prioritizes_matched_fragment_units():
+    from rxn_core.retrosynthesis import assemble_fragment_cover
+    from dataclasses import replace
+    target = WeightedGraph(["C", "C"], np.array([[0., 1.], [1., 0.]]))
+    split = FragmentCandidate("a-split", ((0, 0), (1, 1)), (0, 1), (0, 1),
+        (), (), (), (), (), 2, retained_fragments=((0,), (1,)))
+    connected = replace(split, source_id="z-connected", retained_fragments=((0, 1),),
+                        preserved_source_bonds=((0, 1),))
+    result = assemble_fragment_cover(target, (split, connected))
+    assert result.assemblies[0].precursor_ids == ("z-connected",)
+    assert result.assemblies[0].matched_fragment_count == 1
 
 
 def test_overlap_does_not_create_an_order_dependent_bond_edit():

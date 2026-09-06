@@ -16,6 +16,10 @@ class RetroAssembly:
     def precursor_ids(self):
         return tuple(candidate.source_id for candidate in self.candidates)
 
+    @property
+    def matched_fragment_count(self):
+        return sum(len(candidate.retained_fragments) for candidate in self.candidates)
+
 
 @dataclass(frozen=True)
 class RetroAssemblySearchResult:

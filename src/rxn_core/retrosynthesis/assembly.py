@@ -9,7 +9,7 @@ import heapq
 from ..search_graph import frozen_value
 from .compressed_coverage import place_item
 from .decision_graph import CoverageDecisionGraph
-from .ranking import build_ranked_assembly, validate_atom_ownership, precursor_cost
+from .ranking import build_ranked_assembly, validate_atom_ownership, precursor_cost, matched_fragment_count
 
 
 def construction_pattern(items, target_labels, target_bonds):
@@ -107,31 +107,34 @@ class AssemblyProblem:
         A popped terminal therefore certifies the next globally ranked result.
         """
         graph = self.decisions
-        lower = {-2: (Fraction(), 0)}
+        lower = {-2: (0, Fraction(), 0)}
         for index, node in enumerate(graph.nodes):
             options = []
             if node.skip != -1:
                 options.append(lower[node.skip])
             if node.take != -1:
                 costs = tuple(precursor_cost(item) for item in self.pools[node.region])
-                options.append((min(c[0] for c in costs) + lower[node.take][0],
-                                min(c[1] for c in costs) + lower[node.take][1]))
-            lower[index] = (min(c[0] for c in options), min(c[1] for c in options))
+                fragments = min(matched_fragment_count(item) for item in self.pools[node.region])
+                options.append((fragments + lower[node.take][0],
+                                min(c[0] for c in costs) + lower[node.take][1],
+                                min(c[1] for c in costs) + lower[node.take][2]))
+            lower[index] = tuple(min(c[i] for c in options) for i in range(3))
         queue, serial = [], count()
         atom_count = graph.full.bit_count()
-        def push(node_id, items, structures, adjusted, total):
+        def push(node_id, items, structures, fragments, adjusted, total):
             if node_id == -1:
                 return
             bound = lower[node_id]
             ids = tuple(sorted(item["precursor_id"] for item in items)) if node_id == -2 else ()
-            rank = (len(structures), -Fraction(atom_count) / (adjusted + bound[0]),
-                    -Fraction(atom_count, total + bound[1]), ids)
-            heapq.heappush(queue, (rank, next(serial), node_id, items, structures, adjusted, total))
+            rank = (fragments + bound[0], len(structures),
+                    -Fraction(atom_count) / (adjusted + bound[1]),
+                    -Fraction(atom_count, total + bound[2]), ids)
+            heapq.heappush(queue, (rank, next(serial), node_id, items, structures, fragments, adjusted, total))
         if graph.root == -1:
             return
-        push(graph.root, (), frozenset(), Fraction(), 0)
+        push(graph.root, (), frozenset(), 0, Fraction(), 0)
         while queue:
-            _rank, _serial, node_id, items, structures, adjusted, total = heapq.heappop(queue)
+            _rank, _serial, node_id, items, structures, fragments, adjusted, total = heapq.heappop(queue)
             if node_id == -2:
                 connections = validate_atom_ownership(items, self.target_edges)
                 assembly = build_ranked_assembly(items, connections)
@@ -139,8 +142,8 @@ class AssemblyProblem:
                 yield assembly
                 continue
             node = graph.nodes[node_id]
-            push(node.skip, items, structures, adjusted, total)
+            push(node.skip, items, structures, fragments, adjusted, total)
             for item in self.pools[node.region]:
                 cost, atoms = precursor_cost(item)
                 push(node.take, items + (item,), structures | {item["structure_key"]},
-                     adjusted + cost, total + atoms)
+                     fragments + matched_fragment_count(item), adjusted + cost, total + atoms)

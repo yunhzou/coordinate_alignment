@@ -66,26 +66,37 @@ def audit_saved_results(directory):
 def build_partial_diagnostic(directory, report_name="results.json"):
     """Maximum union for the specified known copies; never a recommendation.
 
-    Equal coverage masks may share one display witness here because the sole
-    diagnostic objective is coverage. Production matching/indexing is unchanged.
+    After maximum coverage, minimize matched units and effective input cost.
+    Equal masks retain the best witness for those objectives within each R.
+    Production matching/indexing is unchanged.
     """
     from rxn_core.retrosynthesis.compressed_coverage import place_item
-    from rxn_core.retrosynthesis.ranking import build_ranked_assembly
+    from rxn_core.retrosynthesis.ranking import build_ranked_assembly, precursor_cost
     report = json.loads((directory / report_name).read_text())
     index = json.loads((directory / "results.occupations.json").read_text())
     pools = {source_id: {} for source_id in report["expected_ids"]}
+    costs = {source_id: {} for source_id in pools}
     for group in index["groups"]:
         for item in group:
             if item["precursor_id"] not in pools:
                 continue
+            cost = precursor_cost(item)[0]
             for occupation in item["target_occupations"]:
                 mask = sum(1 << a for a in occupation["covered_target_atoms"])
-                pools[item["precursor_id"]].setdefault(mask, (item, occupation))
+                key = (len(occupation["retained_fragments"]), cost)
+                prior = costs[item["precursor_id"]].get(mask)
+                if prior is None or key < prior:
+                    pools[item["precursor_id"]][mask] = (item, occupation)
+                    costs[item["precursor_id"]][mask] = key
     choices = [tuple(pools[source_id]) for source_id in report["expected_ids"]]
     best, selected = None, None
     for masks in product(*choices):
         union = reduce(int.__or__, masks, 0)
-        rank = (-union.bit_count(), sum(m.bit_count() for m in masks) - union.bit_count())
+        selected_costs = [costs[source_id][mask]
+                          for source_id, mask in zip(report["expected_ids"], masks, strict=True)]
+        rank = (-union.bit_count(), sum(c[0] for c in selected_costs),
+                sum(c[1] for c in selected_costs),
+                sum(m.bit_count() for m in masks) - union.bit_count())
         if best is None or rank < best:
             best, selected = rank, masks
     placed = [place_item(*pools[source_id][mask])
@@ -101,10 +112,11 @@ def build_partial_diagnostic(directory, report_name="results.json"):
     diagnostic["uncovered_target_atoms"] = sorted(set(range(target.GetNumAtoms())) - covered)
     diagnostic["precursors"] = [{k: v for k, v in item.items() if k != "target_occupations"}
                                 for item in diagnostic["precursors"]]
-    diagnostic["semantics"] = "Maximum coverage from one copy of each known ingredient; separate from the recommendation stream"
+    diagnostic["semantics"] = "Maximum coverage, then fewest matched fragments and least effective input cost, from one copy of each known ingredient; separate from the recommendation stream"
     report["diagnostic_assembly"] = diagnostic
     (directory / report_name).write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({"diagnostic_coverage": len(covered),
+        "matched_fragment_count": diagnostic["score"]["matched_fragment_count"],
         "target_atoms": target.GetNumAtoms(), "uncovered": diagnostic["uncovered_target_atoms"]}), flush=True)
 
 
@@ -117,6 +129,7 @@ def main():
     parser.add_argument("--source-index", type=int)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--iso-tolerance", type=float, default=0.5)
+    parser.add_argument("--report-name", default="known_set.json")
     args = parser.parse_args()
     case = json.loads(args.case.read_text())
     directory = args.output_dir.resolve()
@@ -174,7 +187,7 @@ def main():
             "expected_recommendation_rank": None, "expected_mapping": None,
             "assemblies": [], "construction_patterns": [],
             "recommendation_search_truncated": False}
-        report_name = "known_set.json"
+        report_name = args.report_name
         (directory / report_name).write_text(json.dumps(report, indent=2) + "\n")
         build_partial_diagnostic(directory, report_name)
         report = json.loads((directory / report_name).read_text())
@@ -182,7 +195,7 @@ def main():
         report["expected_status"] = "known_set_covers_target" if complete else "known_set_incomplete"
         (directory / report_name).write_text(json.dumps(report, indent=2) + "\n")
         subprocess.run([sys.executable, str(tools / "build_retro_db_viewer.py"),
-            "--results", str(directory / report_name), "--output", str(directory / "known_set.html"),
+            "--results", str(directory / report_name), "--output", str((directory / report_name).with_suffix(".html")),
             "--title", f"Example 5: known-set coverage at tolerance {args.iso_tolerance}",
             "--ground-truth-status", "covered" if complete else "partial",
             "--ground-truth-note", "Actual saved AAM occupations, one copy per known ingredient. "

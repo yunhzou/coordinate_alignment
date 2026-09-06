@@ -81,9 +81,15 @@ event**. Source cuts likewise are not a balanced reaction edit count.
 
 Ranking compares full supplier sets in this order:
 
-1. Number of distinct precursor structures, not total copies.
-2. Symmetry-adjusted explicit-atom retention.
-3. Direct explicit-atom retention, followed by deterministic supplier IDs.
+1. Total matched fragment units across every selected precursor copy.
+2. Number of distinct precursor structures, not total copies.
+3. Symmetry-adjusted explicit-atom retention.
+4. Direct explicit-atom retention, followed by deterministic supplier IDs.
+
+Fragment units come directly from each occupation's retained-fragment partition.
+Singleton hydrogens count; unmatched byproduct fragments do not. Repeated R
+copies each contribute their matched units. Overlapping units remain separate
+contributions; their shared target atoms are still counted once for coverage.
 
 Direct retention counts the target union once and counts every input copy in
 the denominator. For symmetry adjustment, each input's atom cost is divided
@@ -92,7 +98,7 @@ by source automorphisms. This packing is solved exactly; independent atom-orbit
 capacities are not treated as realizable copies. The adjusted set score divides
 target atom count by the sum of these effective input costs.
 
-Best-first traversal uses optimistic suffix input-cost bounds and the number
+Best-first traversal uses optimistic suffix fragment-count/input-cost bounds and the number
 of distinct structures already chosen. It cannot overestimate a completion's
 rank. A popped complete assembly is therefore the next ranked result over the
 saved occupation index. Unit tests compare this order against exhaustive

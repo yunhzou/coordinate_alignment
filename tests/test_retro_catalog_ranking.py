@@ -23,6 +23,7 @@ def _item(precursor_id, structure_key, retained, total,
         "retained_heavy_atoms": retained,
         "total_heavy_atoms": total,
         "retained_atom_count": retained_atoms,
+        "retained_fragments": (tuple(range(retained_atoms)),),
         "total_atom_count": total_atoms,
         "symmetry_retained_atom_count": symmetry_retained_atoms,
         "symmetry_retained_heavy_atoms": symmetry_retained_heavy_atoms,
@@ -43,6 +44,8 @@ def test_repeated_copies_do_not_increase_unique_precursor_count():
 
     assert one["score"]["unique_precursor_structures"] == 1
     assert three["score"]["unique_precursor_structures"] == 1
+    assert one["score"]["matched_fragment_count"] == 1
+    assert three["score"]["matched_fragment_count"] == 3
     assert one["score"]["set_atom_retention"] == 1.0
     assert three["score"]["set_atom_retention"] == 1.0
 
@@ -69,12 +72,15 @@ def test_retention_ranks_chloroform_above_a_large_one_carbon_source():
 
 
 def test_unique_structure_count_precedes_retention():
-    one_structure = build_ranked_assembly([_item("one", "one", 1, 4)], [])
+    one = _item("one", "one", 2, 4)
+    one["retained_fragments"] = ((0,), (1,))
+    one_structure = build_ranked_assembly([one], [])
     two_structures = build_ranked_assembly([
         _item("left", "left", 5, 5),
         _item("right", "right", 5, 5),
     ], [])
 
+    assert one_structure["score"]["matched_fragment_count"] == two_structures["score"]["matched_fragment_count"]
     assert assembly_rank(one_structure) < assembly_rank(two_structures)
 
 

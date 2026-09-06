@@ -307,7 +307,8 @@ data.assemblies.forEach((a,i)=>{{
  const b=document.createElement('button');b.className='result';b.dataset.index=i;
  const label=a.diagnostic?(a.complete_cover?'Complete known-ingredient combination':'Best incomplete combination'):a.ground_truth?'ground-truth comparison':'recommendation '+a.rank;
  const coverage=a.complete_cover?'complete P cover':a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered';
- b.innerHTML='<span class="rank">'+label+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">'+coverage+' · source cuts '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · target connections '+a.score.formed_bonds+'</div>';
+ const fragments=a.score.matched_fragment_count===undefined?'':a.score.matched_fragment_count+' matched fragments · ';
+ b.innerHTML='<span class="rank">'+label+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">'+fragments+coverage+' · source cuts '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · target connections '+a.score.formed_bonds+'</div>';
  b.onclick=()=>select(i);list.appendChild(b);
 }});
 function showUnassembled(){{document.querySelector('main').style.gridTemplateRows='1fr';document.getElementById('reactants').style.display='none';document.getElementById('LP').textContent='No complete assembly in saved detections. Target shown without an assigned mapping.';list.textContent='No recommendation. Unsupported target atoms: '+data.uncovered_target_atoms.map(a=>'P'+a).join(', ');showModel('P',data.unassembled_target)}}

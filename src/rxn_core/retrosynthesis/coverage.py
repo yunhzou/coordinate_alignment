@@ -59,7 +59,8 @@ def assemble_fragment_cover(target, candidates, *, maximum_precursors=None,
                 tuple(sorted((c.source_id, a, b) for c in selected for a, b in c.boundary_bonds))))
     def rank(assembly):
         total = sum(c.retained_size + sum(map(len, c.leftover_fragments)) for c in assembly.candidates)
-        return (len(set(assembly.precursor_ids)), -Fraction(len(graph), total),
+        return (assembly.matched_fragment_count,
+                len(set(assembly.precursor_ids)), -Fraction(len(graph), total),
                 tuple(sorted(assembly.precursor_ids)),
                 tuple(c.mapping for c in assembly.candidates))
     assemblies.sort(key=rank)

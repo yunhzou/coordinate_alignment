@@ -5,6 +5,11 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 
 
+def matched_fragment_count(item):
+    """Matched units in one selected R copy, including singleton H units."""
+    return len(item["retained_fragments"])
+
+
 def precursor_cost(item):
     """Input cost per supported product copy, using proven fragment packing."""
     return (Fraction(item["total_atom_count"] * item["retained_atom_count"],
@@ -103,6 +108,7 @@ def build_ranked_assembly(items, formed_bonds):
                            for atom in sorted(set(claimed_target_atoms))},
         "ownership_resolved": overlap_count == 0,
         "score": {
+            "matched_fragment_count": sum(matched_fragment_count(item) for item in precursors),
             "chirality_violations": sum(
                 item["chirality_violations"] for item in precursors),
             "unique_precursor_structures": len({item["structure_key"] for item in precursors}),
@@ -134,6 +140,7 @@ def assembly_rank(assembly):
     adjusted = sum((precursor_cost(item)[0] for item in items), Fraction())
     total = sum(item["total_atom_count"] for item in items)
     return (
+        sum(matched_fragment_count(item) for item in items),
         score["unique_precursor_structures"],
         -Fraction(count) / adjusted,
         -Fraction(count, total),
