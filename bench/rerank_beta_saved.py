@@ -52,7 +52,7 @@ def main():
     report = dict(workflow='big_blocks_beta/ranked', seconds=result.elapsed_seconds,
         pool_size=len(answers), recommendations=records,
         objective=['maximize explicit-H retention', 'minimize cuts + connections'],
-        ordering='Pareto layers; within-layer order is display only; species breaks equal-objective ties',
+        ordering='Pareto layers; within-layer order is display only; fewer fragments then species break equal-objective ties',
         nondominated_in_pool=sum(rank[0]==1 for rank in ranks.values()),
         nondominated_displayed=sum(ranks[assembly_key(a)][0]==1 for a in selected),
         scope='Saved blind complete assemblies only; validation sets are NOT admitted to this pool')

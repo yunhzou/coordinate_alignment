@@ -45,8 +45,8 @@ def pareto_assembly_ranks(answers, target):
     """Return Pareto layer and deterministic display order for complete sets.
 
     Neither objective outweighs the other. Within a layer, retention only orders
-    the display; it does NOT imply preference between trade-offs. Species count
-    breaks identical objective-point ties only. Fragment count is descriptive.
+    the display; it does NOT imply preference between trade-offs. Fewer fragments,
+    then fewer species, break identical objective-point ties only.
     A prefix-max tree computes all 2D layers in O(n log n); equal points are
     updated together so duplicate outcomes cannot dominate one another.
     """
@@ -72,7 +72,7 @@ def pareto_assembly_ranks(answers, target):
             cursor -= cursor & -cursor
         layer = best + 1
         for key in keys:
-            ranks[key] = (layer, *point, metrics[key]['species'], key)
+            ranks[key] = (layer, *point, metrics[key]['fragments'], metrics[key]['species'], key)
         while index < len(tree):
             tree[index] = max(tree[index], layer)
             index += index & -index

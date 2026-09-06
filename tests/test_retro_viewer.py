@@ -126,3 +126,35 @@ for(const text of ['90.0%','100.0%','10 / 10','>12<','>8<','>4<'])assert.ok(card
 assert.ok(scoreCards(rows[2]).includes('validation only'));
 """
     subprocess.run([node,'-e',code],check=True,capture_output=True,text=True)
+
+
+def test_score_plot_coincident_choices_and_clicks():
+    import shutil
+    import subprocess
+    import pytest
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('JavaScript test requires Node')
+    source = (TOOLS.parent/'src/rxn_core/static/retro_score_plot.js').read_text()
+    code = source + """
+const assert=require('node:assert/strict');
+const make=(fragments,retention=.9,validation=false)=>({rank:fragments,pattern:'p',ground_truth:validation,precursors:[{}],score:{matched_fragment_count:fragments,set_atom_retention:retention,broken_bonds:8,formed_bonds:4}});
+const rows=[make(7),make(6),make(6,.9,true),make(6,.6)];
+const groups=scorePlotGroups(rows);
+assert.equal(groups.length,2);
+assert.deepEqual(groups[0].members.map(m=>m.index),[1,2,0]);
+function node(){return {children:[],attrs:{},style:{},appendChild(x){this.children.push(x)},replaceChildren(){this.children=[]},setAttribute(k,v){this.attrs[k]=v}}}
+const svg=node(),choices=node();
+global.document={getElementById:id=>id==='scorePlot'?svg:choices,createElement:node,createElementNS:node};
+let selected=-1;
+renderScorePlot(rows,0,i=>selected=i);
+const circles=svg.children.filter(x=>x.attrs.role==='button');
+assert.equal(circles.length,2);
+circles[0].onclick();assert.equal(selected,1);
+assert.equal(choices.children.length,4);
+choices.children[2].onclick();assert.equal(selected,2);
+assert.ok(choices.children[2].textContent.includes('Validation'));
+circles[1].onkeydown({key:'Enter',preventDefault(){}});assert.equal(selected,3);
+assert.deepEqual(rows.map(a=>a.score.matched_fragment_count),[7,6,6,6]);
+"""
+    subprocess.run([node,'-e',code],check=True,capture_output=True,text=True)

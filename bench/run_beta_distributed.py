@@ -263,7 +263,7 @@ def main():
         construction_patterns=[dict(pattern=i,certificate=k) for k,i in pattern_ids.items()],
         ranking_scope='Ranked among discovered beta assemblies; not globally certified over the bank',
         ranking_objective=['maximize explicit-H retention', 'minimize cuts + connections'],
-        ranking_method='Pareto layers; within-layer order is display only; species breaks equal-objective ties',
+        ranking_method='Pareto layers; within-layer order is display only; fewer fragments then species break equal-objective ties',
         nondominated_in_pool=sum(rank[0]==1 for rank in pareto_ranks.values()),
         nondominated_displayed=sum(pareto_ranks[assembly_key(r)][0]==1 for r in result.recommendations),
         best_partial=record(result.best_partial))

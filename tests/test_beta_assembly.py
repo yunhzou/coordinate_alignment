@@ -128,3 +128,16 @@ def test_species_only_breaks_equal_objective_ties_not_pareto_layers():
     assert left[:3] == right[:3]
     assert left[0] == right[0] == 1
     assert left < right
+
+
+def test_fragment_count_breaks_equal_score_ties_without_changing_front():
+    from rxn_core.retrosynthesis.beta import BetaRecommendation
+    p = block('r',range(4),refined=True)
+    connected = BetaRecommendation((p,),())
+    split = BetaRecommendation((replace(p,candidate=replace(p.candidate,
+        retained_fragments=((0,1),(2,3)))),),())
+    ranks = pareto_assembly_ranks((split,connected),FakeBank().target)
+    left,right = ranks[assembly_key(connected)],ranks[assembly_key(split)]
+    assert left[:3] == right[:3]
+    assert left[0] == right[0] == 1
+    assert left < right

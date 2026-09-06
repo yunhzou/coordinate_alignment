@@ -90,7 +90,7 @@ def main():
         item['recommendation_ranks'].append(rank)
     report=dict(target_smiles=manifest['target_smiles'],assemblies=assemblies[:len(result.recommendations)],
         validation_assemblies=assemblies[len(result.recommendations):],
-        search_scope='Pareto trade-offs: higher explicit-H retention versus fewer cuts + connections. Same-layer alternatives have no preferred order. Fragment count is descriptive, not ranked. Ground-truth validation is separate.',
+        search_scope='Pareto trade-offs: higher explicit-H retention versus fewer cuts + connections. Equal scores prefer fewer fragments, then fewer species. Ground-truth validation is separate.',
         scan_counts=dict(rows=sum(p['rows'] for p in parts),searched=sum(p['rows'] for p in parts),
             matched_precursors=sum(1 for _ in bank),fragment_candidates=sum(p['blocks'] for p in parts),
             capped=result.capped_searches),recommendation_search_truncated=True,

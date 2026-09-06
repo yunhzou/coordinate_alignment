@@ -116,8 +116,8 @@ over two objectives: maximize explicit-H retention and minimize source boundary
 cuts plus unsupported target connections. A candidate dominates another only
 if it is at least as good on both and strictly better on at least one. Layer 1
 contains the nondominated alternatives; subsequent layers repeat this operation
-after removing earlier layers. Fragment count is descriptive, not ranked.
-Distinct species count only breaks ties at identical objective values. Within a
+after removing earlier layers. At identical objective values, fewer total matched
+fragments across all source copies wins, then fewer distinct species. Within a
 layer, display order is deterministic but is not a preference between trade-offs.
 
 Retention is unique covered target atoms divided by all input atoms across
@@ -208,3 +208,10 @@ geometric proxies, not validated reaction events. The sort selector orders the
 display by any score without changing Pareto ranks or mixing validation panels
 into the blind recommendations. Target coverage uses a union, never a sum of
 overlapping claims.
+
+A clickable retention-versus-structural-changes plot sits above the molecular
+views. Blue points are blind proposals; green points are validation sets.
+Exactly coincident scores share one point labelled with their multiplicity,
+without artificial jitter. Clicking opens a saved assembly and exposes buttons
+for every coincident mapping, ordered by fragment count then species. Selected
+markers and molecular views stay synchronized. No matching is run by the plot.
