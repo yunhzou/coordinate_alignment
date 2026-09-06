@@ -1,6 +1,8 @@
-# AAM paper benchmark: preparation and proposed protocol
+# AAM paper benchmark: protocol and implementation
 
-Status: original data acquired and audited; three small full-search smoke tests completed. **No dataset accuracy or baseline speed comparison has been measured.** Core AAM and retrosynthesis code are unchanged.
+Status: the public API now accepts unequal endpoint compositions and returns the existing compressed partial-injection search graph. The full 1,851-record campaign is implemented and running, with separate saved searches and symmetry-aware evaluation. **No external baseline speed/accuracy comparison has been run.**
+
+Campaign: `/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_full_20260906/`. Live status: `index.html` and `progress.json`. Frozen engine/configuration/input hashes: `manifest.json`. The 16-record pilot at the adjacent `golden_pilot_20260906/` is retained; its searches are reused, not remapped. Summaries must distinguish reuse from a cold full-run timing.
 
 ## Datasets and baselines
 
@@ -27,7 +29,7 @@ RDKit version: `2026.03.5`.
 
 These are our reader's input audit counts, not the published exclusion counts or accuracy denominators. Full endpoint equality is much stricter than mapping product atoms to a subset of supplied reactants. Many legitimate benchmark records omit byproducts or include excess reagents. **Unequal full compositions do not make a reaction invalid.**
 
-The current public `AAMProblem` rejects unequal endpoint counts/compositions. This is a public-interface limitation; it does not establish the capabilities of every lower-level matcher. Before claiming a full Golden benchmark, inspect/reuse the appropriate partial-output path and define how its unmatched atoms are represented. Do not bypass the guard, invent byproducts, supply answer-derived anchors, silently drop reagents, or substitute the beta retrosynthesis recommender. Report unsupported records explicitly if the adapter is not yet available.
+The inherited composition guard in `AAMProblem` has been removed. The existing search graph stores partial injections; unmatched atoms remain outside the mapping. No padding, fabricated byproducts, answer-derived anchors, dropped reagents, or retro-recommender substitution is used. `balanced`, `source_atom_count`, and `target_atom_count` are explicit public properties; legacy `atom_count` remains the source count. Optional balanced mechanism/transition-state postprocessors remain separate and reject incompatible inputs explicitly. Archive regression tests verify that the balanced search graphs are unchanged.
 
 Keep explicit H during our search. Primary comparable accuracy must use the annotated heavy-atom correspondence: Golden generally does not specify individual hydrogen identities. Do not invent hydrogen ground truth or report H-identity accuracy from automatically added hydrogens. Preserve original map labels only in the evaluator; strip them from AAM input. The audit preserves every row and records exceptions without repairing it.
 
@@ -50,11 +52,25 @@ Report separately:
 
 Use identical hardware and CPU budgets for CPU comparisons; separate single-reaction latency from batched throughput and GPU results. Pin software versions and record node/CPU model. Count initialization, parsing/graph preparation, AAM growth, symmetry finalization/merge, optional grouping/selection, scoring, and serialization separately; report end-to-end time too. Report median, p95, maximum, CPU-seconds, peak RSS, cap hits and timeouts, not just the fastest run. Persist each reaction so evaluation can be repeated without remapping.
 
-Initial pilot proposal: a fixed, recorded stratified sample spanning size, balance status, rearrangements, stereo and symmetry, followed by the entire pinned set. Keep tuning cases separate from the final test; audit dataset overlap. Compare branch caps 100/500, three/ten seeds, sweep on/off, Python/native backends where semantics agree, and input atom/component ordering. These are proposed experiments, not measured results. Do not change the search defaults based on test labels.
+Executed pilot: 16 evenly spaced original record indices (recorded in its manifest), then all 1,851 records without composition exclusions. This pilot is not claimed to be difficulty-stratified. Native backend, explicit H, three seeds, branch cap 100, tolerance 1.0, full one-edge sweep, one AAM worker per reaction. No search defaults were tuned using reference labels. Proposed paper ablations remain cap 100/500, three/ten seeds, sweep on/off, Python/native backends where semantics agree, and input atom/component ordering; these comparisons are not yet measured.
 
 Use a 300-second per-reaction worker watchdog and a 10-minute supervisory watchdog. Timeouts are results, not deleted records. Start with a modest measured CPU budget; scale independent reactions through Slurm after the pilot establishes RAM/runtime needs.
 
-## Smoke test actually run
+## Saved evaluation and reproducibility
+
+`bench/golden_evaluation.py` projects to annotated heavy atoms for accuracy, compares paired chemically colored graphs, and queries ordered compressed group products symbolically using Schreier–Sims transversal choices. It does not enumerate group elements or individual bijections. Unit tests include noncommuting actions, unmatched domains, and a real AAM example whose reference is inside a compressed family but absent from all terminal representatives.
+
+Report complete-reference recovery separately from consistency with partial reference annotations. Top-1 is the frozen reference-blind **terminal representative** ranking, not a globally optimized family member. Coverage is the best achieved by a single mapping, not a union of incompatible branches. Explicit-H coverage does not imply hydrogen identity accuracy.
+
+Every normal search saves `aam.json.gz`, `search.json`, and atomic per-cut checkpoints. Search timeouts preserve completed cuts in `partial_archive.json`; positive reference evidence can be recovered without remapping, but a failed partial check is unknown, not a full-family miss. The watchdog is 300 seconds for search/archive, 135 seconds for evaluation (120-second internal query budget), and 600 seconds for the outer task. A separate Slurm supervisor records scheduler failures and accounting. Queue/configuration failures must be distinguished from algorithm failures.
+
+`bench/report_golden_campaign.py --run RUN --output OUTPUT` exports all records and stratified denominators without loading the AAM archives. To repeat scoring, use the frozen `RUN/engine/bench/golden_campaign.py score --run RUN --index INDEX` with `PYTHONPATH=RUN/engine/src`; preserve the earlier evaluation when deliberately replacing it. Large archives stay on the cluster; code and compact reports belong in Git.
+
+Campaign monitoring identified redundant archive serialization in the benchmark wrapper: the API had already written a full `cuts/aam.json`, but the wrapper rebuilt the object for gzip. The current wrapper compresses the existing bytes. The active campaign keeps its frozen original wrapper for reproducibility. `bench/rescore_golden_archive.py` can validate and recover a completed raw archive after a wrapper timeout, then score it without running AAM; prior evaluations/statuses are preserved under `rescoring/`. The evaluator also caches certificates for identical heavy-atom relations among explicit-H alternatives; this preserves all terminals and the evaluation definition. Revised evaluations record the scorer hash. The public final archive is now written atomically, like the per-cut checkpoints.
+
+Infrastructure retries are limited to tasks that never started search and retain the original failure record. They use the same frozen scientific engine on another partition. The initial arrays are throttled to reserve CPUs for these retries and archive recovery, within the original allocation budget. Cluster launch failures and wrapper/archive timeouts must not be labelled as AAM growth timeouts.
+
+## Historical smoke test
 
 Three smallest explicit-H-balanced records by atom count then original zero-based index; chosen for adapter validation, not representative speed or accuracy. Configuration: existing `AAMSearchConfig()` defaults, native backend, one CPU worker, three seeds, cap 100, tolerance 1.0, full one-edge sweep. No mechanism grouping or scoring. Full compressed AAM records and per-cut intermediates saved.
 
@@ -64,7 +80,7 @@ Three smallest explicit-H-balanced records by atom count then original zero-base
 | 979 | 10 | 9 | 0.191 | 0 |
 | 267 | 12 | 13 | 0.142 | 0 |
 
-These were lightweight smoke checks on `bosque1`, not a Slurm performance campaign. Core implementation commit: `eff2f41` (new work in this turn adds only benchmark preparation/smoke tools and documentation). Do not extrapolate them to the full dataset or claim speedup/accuracy from them.
+These were lightweight smoke checks on `bosque1`, not the full Slurm campaign. Original core implementation commit: `eff2f41`. All three saved compressed graph records were subsequently reproduced identically after the public partial-composition API change. Do not extrapolate these small timings to the full dataset.
 
 Local data: `/h/399/yunhengzou/coordinate_alignment/data/aam_benchmarks/golden_original_20260906/`.
 Saved search results: `/h/399/yunhengzou/coordinate_alignment/data/aam_benchmarks/golden_smoke_20260906/`.

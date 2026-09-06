@@ -58,15 +58,19 @@ def test_aam_problem_accepts_composition_mismatch():
     assert max(len(result.graph.states[t].mapping) for t in result.graph.terminals) == 1
 
 
-def test_partial_aam_keeps_unmatched_atoms_and_roundtrips():
+def test_partial_aam_keeps_unmatched_atoms_and_roundtrips(tmp_path):
+    import json
     from rxn_core.artifacts import aam_record, aam_from_record
     source = MolecularEndpoint(('C','Cl'), np.zeros((2,3)), [[0,1],[1,0]])
     target = MolecularEndpoint(('C',), np.zeros((1,3)), [[0]])
-    result = search_aam(AAMProblem(source,target), AAMSearchConfig(seed_count=1))
+    result = search_aam(AAMProblem(source,target), AAMSearchConfig(seed_count=1),intermediate_dir=tmp_path)
     restored = aam_from_record(aam_record(result))
     assert restored.problem.source_atom_count == 2
     assert restored.problem.target_atom_count == 1
     assert restored.graph == result.graph
+    saved = aam_from_record(json.loads((tmp_path/'aam.json').read_text()))
+    assert json.dumps(saved.graph.to_record(),sort_keys=True) == json.dumps(restored.graph.to_record(),sort_keys=True)
+    assert not list(tmp_path.glob('*.tmp'))
     assert all(dict(result.graph.states[t].mapping) == {0:0} for t in result.graph.terminals)
     reverse = search_aam(AAMProblem(target, source), AAMSearchConfig(seed_count=1))
     assert reverse.graph.terminals

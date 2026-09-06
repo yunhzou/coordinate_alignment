@@ -195,7 +195,15 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True):
     terminals=list(aam.graph.terminals)
     ranked=sorted(terminals,key=lambda t:rank_key(aam.graph.states[t].mapping,aam.problem)[0])
     candidates=[project(aam.graph.states[t].mapping,features) for t in ranked]
-    certificates=[pynauty.certificate(colored_graph(features,m)) for m in candidates]
+    # Explicit-H alternatives often have the identical heavy-atom relation.
+    # Canonicalize that relation once, without discarding any AAM terminal.
+    certificate_cache={}
+    certificates=[]
+    for mapping in candidates:
+        key=tuple(sorted(mapping.items()))
+        if key not in certificate_cache:
+            certificate_cache[key]=pynauty.certificate(colored_graph(features,mapping))
+        certificates.append(certificate_cache[key])
     hit=next((i for i,c in enumerate(certificates) if c==expected),None)
     result=dict(reference_pairs=len(reference),reference_annotation_complete=complete_reference,
         top1_correct=bool(certificates and certificates[0]==expected) if complete_reference else None,
@@ -203,6 +211,7 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True):
         top_terminal=ranked[0] if ranked else None,
         witness_terminal=ranked[hit] if hit is not None else None,
         candidate_terminals=len(terminals),unique_representative_chemistries=len(set(certificates)),
+        unique_heavy_representatives=len(certificate_cache),
         best_target_heavy_coverage=max((len(m)/max(1,len(features[1]['heavy'])) for m in candidates),default=0),
         best_target_all_atom_coverage=max((len(aam.graph.states[t].mapping)/aam.problem.target_atom_count for t in terminals),default=0),
         capped=aam.graph.capped, symbolic_queries=0, unknown_queries=0)

@@ -45,3 +45,19 @@ def test_inputs_are_unmapped_explicit_H_and_reference_indices_are_separate():
     assert problem.source_atom_count==8
     assert len(E.project(reference,features))==3
     assert all(':' not in e.metadata['unmapped_smiles'] for e in (problem.reactant,problem.product))
+
+
+def test_reference_recovery_queries_real_compressed_aam_not_only_representative():
+    import numpy as np
+    from rxn_core import AAMProblem,AAMSearchConfig,search_aam
+    from rxn_core.domain import MolecularEndpoint
+    bonds=np.array([[0.,1.,0.],[1.,0.,2.],[0.,2.,0.]])
+    endpoint=MolecularEndpoint(('C','C','C'),np.zeros((3,3)),bonds)
+    result=search_aam(AAMProblem(endpoint,endpoint),AAMSearchConfig(seed_count=1,cut_floor=10))
+    mapping=dict(result.graph.states[result.graph.terminals[0]].mapping)
+    reference={a:(2,1,0)[b] for a,b in mapping.items()}
+    f=feature(3,True)
+    evaluated=E.evaluate(result,[f,f],reference,seconds=10)
+    assert not evaluated['representative_recovery']
+    assert evaluated['reference_recovery']=='recovered'
+    assert evaluated['symbolic_queries']>0

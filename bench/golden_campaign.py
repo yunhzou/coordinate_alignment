@@ -15,7 +15,7 @@ import time
 
 from golden_evaluation import prepare, evaluate
 from rxn_core import AAMProblem, AAMSearchConfig, search_aam
-from rxn_core.artifacts import aam_from_record, aam_record
+from rxn_core.artifacts import aam_from_record
 from rxn_core.domain import MolecularEndpoint
 
 
@@ -87,7 +87,10 @@ def search(args):
     search_elapsed=time.perf_counter()-started
     archive_started=time.perf_counter()
     temporary=directory/'aam.json.gz.tmp'
-    with gzip.open(temporary,'wt',compresslevel=1) as stream:json.dump(aam_record(result),stream)
+    # search_aam already serialized the complete result. Compress those exact
+    # bytes instead of rebuilding and traversing the entire Python object.
+    with (directory/'cuts/aam.json').open('rb') as source, gzip.open(temporary,'wb',compresslevel=1) as stream:
+        shutil.copyfileobj(source,stream,length=1024*1024)
     temporary.replace(directory/'aam.json.gz')
     save(directory/'search.json',dict(wall_seconds=search_elapsed,metrics=vars(result.metrics),
         archive_seconds=time.perf_counter()-archive_started,
@@ -105,6 +108,7 @@ def score(args):
     reference=json.loads((directory/'reference.json').read_text())
     evaluation=evaluate(result,reference['features'],reference['mapping'],seconds=120)
     evaluation['search_incomplete']=archive.get('benchmark_completion')=='search_timeout'
+    evaluation['evaluator_sha256']=hashlib.sha256(Path(__file__).with_name('golden_evaluation.py').read_bytes()).hexdigest()
     save(directory/'evaluation.json',evaluation)
 
 

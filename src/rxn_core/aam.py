@@ -108,5 +108,7 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
                       AAMSearchMetrics.from_record(metrics, time.perf_counter()-started))
     if directory is not None:
         from .artifacts import aam_record
-        (directory / 'aam.json').write_text(json.dumps(aam_record(result)) + '\n')
+        temporary = directory / 'aam.json.tmp'
+        temporary.write_text(json.dumps(aam_record(result)) + '\n')
+        temporary.replace(directory / 'aam.json')
     return result
