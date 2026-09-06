@@ -115,8 +115,11 @@ class DistributedBank(FragmentQueryBank):
             f'--partition={self.partitions}',
             f'--output={directory}/logs/{label}_%A_%a.out',
             f'--error={directory}/logs/{label}_%A_%a.err',script,str(directory)]
-        if self.excluded:
-            command.insert(2, f'--exclude={self.excluded}')
+        # Explicit operator-updated scheduling policy; never changes matching.
+        override=self.root/'scheduler_exclusions.json'
+        excluded=','.join(json.loads(override.read_text())) if override.exists() else self.excluded
+        if excluded:
+            command.insert(2, f'--exclude={excluded}')
         environment=dict(os.environ)
         # Nested submission must not inherit the coordinator's memory mode.
         for name in ('SLURM_MEM_PER_CPU','SLURM_MEM_PER_GPU','SLURM_MEM_PER_NODE'):

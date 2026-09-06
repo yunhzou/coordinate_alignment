@@ -115,6 +115,8 @@ def _payload(
         (index for index, assembly in enumerate(ranked)
          if _matches_expected(assembly, expected_ids)), None)
     known_rank = report.get("expected_recommendation_rank")
+    if known_rank is None and known_index is not None:
+        known_rank = known_index + 1
     selected_ranks = list(range(1, min(top_count, len(ranked)) + 1))
     if known_index is not None and known_index + 1 not in selected_ranks:
         selected_ranks.append(known_index + 1)
@@ -280,6 +282,7 @@ aside{{background:white;border-right:1px solid var(--line);overflow:auto}} .intr
 .rank{{font-weight:750;font-size:14px}} .badge{{background:#0f9d66;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
 .truthbox{{margin-top:10px;padding:8px;border-radius:7px;background:#ecfdf3;border:1px solid #6ee7a8;color:#166534}} .truthbox.partial{{background:#fffbeb;border-color:#fbbf24;color:#92400e}} .truthbox.missing{{background:#fef2f2;border-color:#fca5a5;color:#991b1b}} .truthreactants{{display:block;margin-top:7px;padding-top:7px;border-top:1px solid currentColor;line-height:1.5}} .patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
 .patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
+.truthbox.incomplete{{background:#fffbeb;border-color:#fbbf24;color:#92400e}} .truthbox.not-evaluated{{background:#f8fafc;border-color:#94a3b8;color:#334155}}
 .ids{{color:#475569;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .score{{color:#64748b;font-size:11px;margin-top:4px}}
 .scoregrid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}} .scorecell{{background:#f1f5f9;border:1px solid #dbe2ea;border-radius:6px;padding:6px;min-width:0}} .scorecell b{{display:block;font-size:18px}} .scorecell small{{display:block;font-size:10px;color:#475569}} .scorecell.breaking b{{color:#c62828}} .scorecell.forming b{{color:#148343}}
 #selectedScores .scoregrid{{grid-template-columns:repeat(6,minmax(0,1fr));margin:0 0 6px}} #selectedScores .scorecell b{{font-size:22px}} .sortbar{{padding:10px 12px;background:white;position:sticky;top:0;z-index:6;border-bottom:1px solid var(--line)}} .sortbar select{{width:100%;margin-top:4px;padding:6px}} .sortbar small{{display:block;color:#64748b;margin-top:4px}}

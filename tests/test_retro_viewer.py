@@ -61,6 +61,12 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
     assert "Known-ingredient check, not a blind bank scan" in html
     assert "Returned by blind recommender" not in html
 
+    report['expected_ids'] = ['A', 'B']
+    matched = VIEWER._payload(report, 20, 'Known rank')
+    assert matched['summary']['known_rank'] == 1
+    assert 'yes, candidate rank 1 in the searched pool' in VIEWER._html(matched)
+    del report['expected_ids']
+
     report['validation_assemblies'] = [dict(report['assemblies'][0], construction_pattern='GT-1')]
     checked = VIEWER._payload(report, 20, 'Validation separation')
     assert len(checked['assemblies']) == 2

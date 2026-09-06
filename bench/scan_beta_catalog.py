@@ -114,6 +114,7 @@ def main():
         seconds=time.perf_counter()-started,
         blocks=sum(r['blocks'] for r in records),
         candidates=sum(r['candidates'] for r in records),
+        matched_sources=sum(r['blocks'] > 0 for r in records),
         capped=sum(r['capped'] for r in records))
     (args.query/'parts'/f'{args.shard}.json').write_text(json.dumps(report)+'\n')
     print(json.dumps(report), flush=True)

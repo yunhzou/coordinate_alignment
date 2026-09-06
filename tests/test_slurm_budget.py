@@ -31,6 +31,7 @@ def test_submission_applies_budget_and_clears_parent_memory_mode(tmp_path, monke
     sys.modules[spec.name]=runner
     spec.loader.exec_module(runner)
     bank=object.__new__(runner.DistributedBank)
+    bank.root=tmp_path
     bank.budget=SlurmBudget(8, 2)
     bank.excluded=''
     bank.jobs=[]
@@ -46,6 +47,9 @@ def test_submission_applies_budget_and_clears_parent_memory_mode(tmp_path, monke
     assert '--array=0-99%3' in calls[0]
     assert '--cpus-per-task=2' in calls[0]
     assert bank.jobs == ['12345']
+    (tmp_path/'scheduler_exclusions.json').write_text(json.dumps(['bosque40']))
+    bank.submit('worker.sbatch',tmp_path,'0-99','query')
+    assert '--exclude=bosque40' in calls[1]
 
 
 def test_smt_allocations_are_budgeted_and_used():

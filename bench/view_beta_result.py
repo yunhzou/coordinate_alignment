@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--result-stem',default='assemblies')
     parser.add_argument('--validation-stem')
     parser.add_argument('--case',type=Path)
+    parser.add_argument('--title',default='Assembled construction patterns')
     parser.add_argument('--html-output',type=Path)
     parser.add_argument('--scan-summary',type=Path,
                         help='Reuse scan_counts from a saved viewer report for this same run')
@@ -94,7 +95,9 @@ def main():
         scan_counts=dict(rows=sum(p['rows'] for p in parts),searched=sum(p['rows'] for p in parts),
             matched_precursors=sum(1 for _ in bank),fragment_candidates=sum(p['blocks'] for p in parts),
             capped=result.capped_searches),recommendation_search_truncated=True,
-        construction_patterns=list(patterns.values()),uncovered_target_atoms=[])
+        construction_patterns=list(patterns.values()),uncovered_target_atoms=list(result.best_partial.uncovered_target_atoms))
+    if metadata.get('failure'):
+        report['search_scope']=metadata['failure']+' '+report['search_scope']
     # Matched-source count is not recoverable from shard block totals alone.
     if args.scan_summary:
         report['scan_counts']['matched_precursors']=json.loads(
@@ -108,10 +111,11 @@ def main():
     (root/f'{args.result_stem}_viewer.json').write_text(json.dumps(report,indent=2)+'\n')
     sys.path.insert(0,str(Path(__file__).parents[1]/'tools'))
     from build_retro_db_viewer import _payload,_html
-    payload=_payload(report,len(result.recommendations),'Example 5 · assembled construction patterns',
-        'covered' if validations else 'not-evaluated',
-        'Ground-truth panels validate actual compatible supplier occupations and full target coverage. '
-        'They are separate from blind recommendation ranks. Overlapping suppliers are labelled explicitly.')
+    validation_status='covered' if validations else 'incomplete' if args.validation_stem else 'not-evaluated'
+    validation_note=('Saved reference-set assemblies cover the full target; separate from blind ranks.' if validations else
+        'No compatible full reference-set cover was returned by this validation search; not a proof of impossibility.'
+        if args.validation_stem else 'No separate reference-set validation has completed for this report.')
+    payload=_payload(report,len(result.recommendations),args.title,validation_status,validation_note)
     output = args.html_output or root/f'{args.result_stem}.html'
     output.write_text(_html(payload))
     print(output,flush=True)

@@ -1,0 +1,114 @@
+[
+  {
+    "case": "t01_fluorinated_phosphorus_ligand",
+    "status": "failed",
+    "elapsed_including_restarts": 1353.7232139110565,
+    "blind": {
+      "complete_assemblies": 0,
+      "capped_searches": 1
+    },
+    "reference": {
+      "complete_assemblies": 1,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 78
+  },
+  {
+    "case": "t02_chloro_quinoline_alcohol",
+    "status": "complete",
+    "elapsed_including_restarts": 1722.7205169200897,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 5
+    },
+    "reference": {
+      "complete_assemblies": 0,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 31
+  },
+  {
+    "case": "t03_aryl_magnesium_bromide",
+    "status": "complete",
+    "elapsed_including_restarts": 1743.4713933467865,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 2
+    },
+    "reference": {
+      "complete_assemblies": 1,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 25
+  },
+  {
+    "case": "t04_dimethyl_azobenzene",
+    "status": "complete",
+    "elapsed_including_restarts": 2108.174683570862,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 0
+    },
+    "reference": {
+      "complete_assemblies": 4,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 30
+  },
+  {
+    "case": "t05_cyano_thiazole_amidine",
+    "status": "complete",
+    "elapsed_including_restarts": 94.40049719810486,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 1
+    },
+    "reference": {
+      "complete_assemblies": 4,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 58
+  },
+  {
+    "case": "t06_phenyl_cyclooctadiene",
+    "status": "complete",
+    "elapsed_including_restarts": 910.5679750442505,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 18
+    },
+    "reference": {
+      "complete_assemblies": 4,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 30
+  },
+  {
+    "case": "t07_acetophenone",
+    "status": "complete",
+    "elapsed_including_restarts": 1032.80504322052,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 22
+    },
+    "reference": {
+      "complete_assemblies": 4,
+      "capped_searches": 1
+    },
+    "explicit_target_atoms": 17
+  },
+  {
+    "case": "t08_cyclohexene",
+    "status": "complete",
+    "elapsed_including_restarts": 1017.3917586803436,
+    "blind": {
+      "complete_assemblies": 20,
+      "capped_searches": 0
+    },
+    "reference": {
+      "complete_assemblies": 1,
+      "capped_searches": 0
+    },
+    "explicit_target_atoms": 16
+  }
+]

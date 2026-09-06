@@ -126,9 +126,11 @@ def assemble_supplier_copies(option_pools, target_atoms):
         return
     full=frozenset(target_atoms)
     unions=[frozenset()]*(len(pools)+1)
+    capacity=[0]*(len(pools)+1)
     lower=[0]*(len(pools)+1)
     for i in range(len(pools)-1,-1,-1):
         unions[i]=unions[i+1] | frozenset(a for p in pools[i] for a in p.covered_atoms)
+        capacity[i]=capacity[i+1]+max(len(p.covered_atoms & full) for p in pools[i])
         lower[i]=lower[i+1]+pools[i][0].fragment_count
     queue=[]
     serial=count()
@@ -148,6 +150,8 @@ def assemble_supplier_copies(option_pools, target_atoms):
         block=pools[level][index]
         selection=prefix+(block,)
         covered=covered | block.covered_atoms
+        if len(covered & full)+capacity[level+1] < len(full):
+            continue
         if not full <= covered | unions[level+1]:
             continue
         if len(selection)==len(pools):
