@@ -28,6 +28,7 @@ dependencies = [
 dev = ["pytest", "nbclient", "ipykernel"]
 smiles = ["rdkit>=2022.9"]
 catalog = ["rdkit>=2022.9", "msgspec>=0.21"]
+benchmark = ["rdkit>=2022.9", "z3-solver>=4.13"]
 sessions = ["pymongo>=4.6"]
 
 [project.scripts]

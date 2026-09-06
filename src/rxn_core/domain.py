@@ -81,14 +81,23 @@ class AAMProblem:
     name: str = ""
 
     def __post_init__(self):
-        if self.reactant.atom_count != self.product.atom_count:
-            raise ValueError("AAM endpoints must have equal atom counts")
-        if Counter(self.reactant.elements) != Counter(self.product.elements):
-            raise ValueError("AAM endpoints must have equal compositions")
         object.__setattr__(self, "name", str(self.name))
 
     @property
+    def balanced(self):
+        return Counter(self.reactant.elements) == Counter(self.product.elements)
+
+    @property
+    def source_atom_count(self):
+        return self.reactant.atom_count
+
+    @property
+    def target_atom_count(self):
+        return self.product.atom_count
+
+    @property
     def atom_count(self):
+        """Source endpoint size; use target_atom_count for the other side."""
         return self.reactant.atom_count
 
 
@@ -143,6 +152,9 @@ class AAMSearchMetrics:
     completed_group_requests: int = 0
     completed_group_calculations: int = 0
     completed_group_cache_hits: int = 0
+    worker_search_seconds: float | None = None
+    checkpoint_seconds: float | None = None
+    symmetry_finalization_seconds: float | None = None
 
     @classmethod
     def from_record(cls, record, elapsed_seconds):
@@ -165,6 +177,9 @@ class AAMSearchMetrics:
                 "completed_candidate_group_calculations", 0)),
             completed_group_cache_hits=int(record.get(
                 "completed_candidate_group_cache_hits", 0)),
+            worker_search_seconds=record.get('worker_search_seconds'),
+            checkpoint_seconds=record.get('checkpoint_seconds'),
+            symmetry_finalization_seconds=record.get('symmetry_finalization_seconds'),
         )
 
 

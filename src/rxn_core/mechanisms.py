@@ -31,6 +31,9 @@ def group_mechanisms(aam):
     """Reproduce balanced event scoring without mutating raw search evidence."""
     started = time.perf_counter()
     problem, config = aam.problem, aam.config
+    if not problem.balanced:
+        raise ValueError('Balanced mechanism grouping requires balanced endpoints; '
+                         'partial AAM mappings remain available in aam.graph')
     source = build_graph(problem.reactant.elements, problem.reactant.wbo,
                          bond_cut=config.graph_floor)
     target = build_graph(problem.product.elements, problem.product.wbo,

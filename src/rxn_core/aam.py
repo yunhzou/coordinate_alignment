@@ -27,6 +27,7 @@ def _initialize_search(problem, config):
 
 
 def _search_cut(cut):
+    started = time.perf_counter()
     problem, config, target, target_orbits = _SEARCH_CONTEXT
     source = build_graph(problem.reactant.elements, problem.reactant.wbo,
                          bond_cut=config.graph_floor)
@@ -41,6 +42,7 @@ def _search_cut(cut):
             profile=profile, cuts=cut))
     graph = AAMSearchGraph.combine(graphs)
     return graph, {
+        'search_seconds': time.perf_counter() - started,
         'max_live_branches': max((len(g.terminals) for g in graphs), default=0),
         'max_growth_candidates': max((row.get('max_cands_before', 0)
                                       for row in profile), default=0),
@@ -65,14 +67,21 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
         directory.mkdir(parents=True, exist_ok=True)
     graphs, metrics = [], {'max_live_branches': 0, 'max_growth_candidates': 0}
 
+    checkpoint_seconds = worker_search_seconds = 0.0
     def collect(payloads):
+        nonlocal checkpoint_seconds, worker_search_seconds
         for index, (graph, counts) in enumerate(payloads):
+            worker_search_seconds += counts['search_seconds']
             graphs.append(graph)
-            for key, value in counts.items():
-                metrics[key] = max(metrics[key], value)
+            for key in ('max_live_branches', 'max_growth_candidates'):
+                metrics[key] = max(metrics[key], counts[key])
             if directory is not None:
-                (directory / f'cut_{index:05d}.json').write_text(
-                    json.dumps(graph.to_record()) + '\n')
+                checkpoint_started = time.perf_counter()
+                checkpoint = directory / f'cut_{index:05d}.json'
+                temporary = checkpoint.with_suffix('.json.tmp')
+                temporary.write_text(json.dumps(graph.to_record()) + '\n')
+                temporary.replace(checkpoint)
+                checkpoint_seconds += time.perf_counter() - checkpoint_started
 
     workers = min(max(1, int(workers)), len(cuts))
     if workers == 1:
@@ -87,7 +96,10 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     metrics['parent_merge_seconds'] = time.perf_counter() - merge_started
     target = build_graph(problem.product.elements, problem.product.wbo,
                          bond_cut=config.graph_floor)
+    symmetry_started = time.perf_counter()
     graph, groups = finalize_graph_symmetry(graph, target, iso_tolerance=config.iso_tolerance)
+    metrics.update(symmetry_finalization_seconds=time.perf_counter()-symmetry_started,
+                   worker_search_seconds=worker_search_seconds, checkpoint_seconds=checkpoint_seconds)
     metrics.update(groups)
     metrics.update(cuts=len(cuts), raw_result_count=len(graph.terminals),
         retained_branch_count=len(graph.terminals),
