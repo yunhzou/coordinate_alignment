@@ -189,6 +189,7 @@ def _payload(
         pattern = assembly.get("construction_pattern", "GT")
         assemblies.append({
             "rank": rank,
+            "pareto_layer": assembly.get('pareto_layer'),
             "pattern": pattern,
             "known": rank != "diagnostic" and (ground_truth or _matches_expected(
                 assembly, expected_ids)),
@@ -318,9 +319,9 @@ data.assemblies.forEach((a,i)=>{{
   list.appendChild(h);lastPattern=a.pattern;
  }}
  const b=document.createElement('button');b.className='result';b.dataset.index=i;
- const label=a.diagnostic?(a.complete_cover?'Complete known-ingredient combination':'Best incomplete combination'):a.ground_truth?'ground-truth comparison':'recommendation '+a.rank;
+ const label=a.diagnostic?(a.complete_cover?'Complete known-ingredient combination':'Best incomplete combination'):a.ground_truth?'ground-truth comparison':a.pareto_layer?'Pareto layer '+a.pareto_layer+' · alternative '+a.rank:'recommendation '+a.rank;
  const coverage=a.complete_cover?'complete P cover':a.score.covered_target_atoms+' / '+a.score.target_atom_count+' P atoms covered';
- const fragments=a.score.matched_fragment_count===undefined?'':a.score.matched_fragment_count+' matched fragments · ';
+ const fragments=(a.score.set_atom_retention===undefined?'':(100*a.score.set_atom_retention).toFixed(1)+'% retention · ')+(a.score.matched_fragment_count===undefined?'':a.score.matched_fragment_count+' matched fragments · ');
  b.innerHTML='<span class="rank">'+label+'</span>'+(a.known?'<span class="badge">GROUND TRUTH</span>':'')+'<div class="ids">'+a.precursors.map(x=>x.id+(x.multiplicity>1?' ×'+x.multiplicity:'')).join(' + ')+'</div><div class="score">'+fragments+coverage+' · source cuts '+a.score.broken_bonds+' · unmatched atoms '+a.score.leftover_atoms+' · target connections '+a.score.formed_bonds+'</div>';
  b.onclick=()=>select(i);list.appendChild(b);
 }});

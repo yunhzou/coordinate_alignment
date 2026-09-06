@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--validation-stem')
     parser.add_argument('--case',type=Path)
     parser.add_argument('--html-output',type=Path)
+    parser.add_argument('--scan-summary',type=Path,
+                        help='Reuse scan_counts from a saved viewer report for this same run')
     args=parser.parse_args()
     root=args.run
     manifest=json.loads((root/'query_full/manifest.json').read_text())
@@ -72,6 +74,8 @@ def main():
         position=len(assemblies)
         if position<len(result.recommendations):
             assembly['construction_pattern']=metadata['recommendations'][position]['construction_pattern']
+            if 'pareto_layer' in metadata['recommendations'][position]:
+                assembly['pareto_layer']=metadata['recommendations'][position]['pareto_layer']
         else:
             assembly['construction_pattern']=f'GT-{position-len(result.recommendations)+1}'
         assemblies.append(assembly)
@@ -86,14 +90,18 @@ def main():
         item['recommendation_ranks'].append(rank)
     report=dict(target_smiles=manifest['target_smiles'],assemblies=assemblies[:len(result.recommendations)],
         validation_assemblies=assemblies[len(result.recommendations):],
-        search_scope='Beta final order: fewer fragments, higher explicit-H retention, fewer cuts + connections, fewer distinct species. Ranked among discovered full covers; ground-truth validation is separate.',
+        search_scope='Pareto trade-offs: higher explicit-H retention versus fewer cuts + connections. Same-layer alternatives have no preferred order. Fragment count is descriptive, not ranked. Ground-truth validation is separate.',
         scan_counts=dict(rows=sum(p['rows'] for p in parts),searched=sum(p['rows'] for p in parts),
             matched_precursors=sum(1 for _ in bank),fragment_candidates=sum(p['blocks'] for p in parts),
             capped=result.capped_searches),recommendation_search_truncated=True,
         construction_patterns=list(patterns.values()),uncovered_target_atoms=[])
     # Matched-source count is not recoverable from shard block totals alone.
-    report['scan_counts']['matched_precursors']=sum(
-        json.loads(p.read_text())['blocks']>0 for p in (root/'query_full/sources').glob('*.json'))
+    if args.scan_summary:
+        report['scan_counts']['matched_precursors']=json.loads(
+            args.scan_summary.read_text())['scan_counts']['matched_precursors']
+    else:
+        report['scan_counts']['matched_precursors']=sum(
+            json.loads(p.read_text())['blocks']>0 for p in (root/'query_full/sources').glob('*.json'))
     if args.case:
         expected=[r['id'] for r in json.loads(args.case.read_text())['reactants']]
         report.update(expected_ids=expected,expected_ids_found={r:r in bank for r in expected})

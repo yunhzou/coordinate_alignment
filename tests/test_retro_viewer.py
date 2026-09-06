@@ -69,6 +69,10 @@ def test_shared_target_support_is_not_assigned_to_first_precursor(monkeypatch):
     assert checked['assemblies'][1]['pattern'] == 'GT-1'
     assert checked['assemblies'][1]['complete_cover']
     assert 'Validation pattern' in VIEWER._html(checked)
+    report['assemblies'][0]['pareto_layer'] = 2
+    checked = VIEWER._payload(report,20,'Pareto display')
+    assert checked['assemblies'][0]['pareto_layer'] == 2
+    assert 'Pareto layer' in VIEWER._html(checked)
 
     report['assemblies'][0]['precursors'][1]['precursor_id'] = 'A'
     target = VIEWER._payload(report, 20, 'Repeated source')['assemblies'][0]['models'][-1]

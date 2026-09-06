@@ -73,6 +73,7 @@ class DistributedBank(FragmentQueryBank):
         self.poll_seconds = poll_seconds
         self.partitions = partitions
         self.queried = set()
+        self.completed_assemblies = []
 
     def save_refinement(self, event, evidence):
         directory = self.root/'refinements'
@@ -94,6 +95,7 @@ class DistributedBank(FragmentQueryBank):
         return super().detect_selected(source_id)
 
     def assembly_found(self, assembly, pattern, pattern_count, count):
+        self.completed_assemblies.append(assembly)
         directory=self.root/'assembly_candidates'
         directory.mkdir(exist_ok=True)
         key=hashlib.sha256(repr(tuple(p.key for p in assembly.placements)).encode()).hexdigest()
@@ -246,19 +248,24 @@ def main():
                 target_fragments=[sorted(dict(p.mapping)[atom] for atom in fragment)
                                  for fragment in p.candidate.retained_fragments])
                 for p in recommendation.placements])
-    from rxn_core.retrosynthesis.beta_assembly import placement_pattern
+    from rxn_core.retrosynthesis.beta_assembly import placement_pattern, pareto_assembly_ranks, assembly_key
+    pareto_ranks=pareto_assembly_ranks(bank.completed_assemblies,bank.target)
     pattern_ids={}
     def patterned(recommendation):
         certificate=placement_pattern(recommendation.placements,bank.target)
         pattern_ids.setdefault(certificate,len(pattern_ids)+1)
-        return dict(record(recommendation),construction_pattern=pattern_ids[certificate])
+        return dict(record(recommendation),construction_pattern=pattern_ids[certificate],
+                    pareto_layer=pareto_ranks[assembly_key(recommendation)][0])
     report=dict(workflow='big_blocks_beta/v2',exhaustive=False,
         coordinator_seconds=time.perf_counter()-started,
         recommendation_count=len(result.recommendations),capped_searches=result.capped_searches,
         recommendations=[patterned(r) for r in result.recommendations],
         construction_patterns=[dict(pattern=i,certificate=k) for k,i in pattern_ids.items()],
         ranking_scope='Ranked among discovered beta assemblies; not globally certified over the bank',
-        ranking_objective=['fragments', '-explicit_atom_retention', 'cuts + connections', 'distinct_species'],
+        ranking_objective=['maximize explicit-H retention', 'minimize cuts + connections'],
+        ranking_method='Pareto layers; within-layer order is display only; species breaks equal-objective ties',
+        nondominated_in_pool=sum(rank[0]==1 for rank in pareto_ranks.values()),
+        nondominated_displayed=sum(pareto_ranks[assembly_key(r)][0]==1 for r in result.recommendations),
         best_partial=record(result.best_partial))
     report['resource_budget']=dict(cpu_limit=budget.cpu_limit,
         coordinator_cpus=budget.coordinator_cpus,worker_cpus=budget.worker_cpus,

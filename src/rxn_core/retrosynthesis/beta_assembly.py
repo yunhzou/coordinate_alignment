@@ -29,23 +29,61 @@ def assembly_metrics(placements, target):
         species=len({p.source_id for p in placements}))
 
 
-def completed_assembly_rank(placements, target):
-    """Final beta objective, separate from the discovery queue heuristic.
+def assembly_key(answer):
+    return tuple(sorted(p.key for p in answer.placements))
 
-    No fitted weights or source identity bonuses. Exact fractions avoid float
-    ties. Source IDs only provide a reproducible tie-break after all objectives.
+
+def dominates(left, right):
+    """Strict Pareto dominance: greater retention and fewer structural changes."""
+    lcost = left['cuts'] + left['connections']
+    rcost = right['cuts'] + right['connections']
+    return (left['retention'] >= right['retention'] and lcost <= rcost
+            and (left['retention'] > right['retention'] or lcost < rcost))
+
+
+def pareto_assembly_ranks(answers, target):
+    """Return Pareto layer and deterministic display order for complete sets.
+
+    Neither objective outweighs the other. Within a layer, retention only orders
+    the display; it does NOT imply preference between trade-offs. Species count
+    breaks identical objective-point ties only. Fragment count is descriptive.
+    A prefix-max tree computes all 2D layers in O(n log n); equal points are
+    updated together so duplicate outcomes cannot dominate one another.
     """
-    m = assembly_metrics(placements, target)
-    if m['uncovered']:
-        raise ValueError('Final ranking requires complete target coverage')
-    return (m['fragments'], -m['retention'], m['cuts'] + m['connections'],
-            m['species'], tuple(sorted(p.key for p in placements)))
+    points = {}
+    metrics = {}
+    for answer in answers:
+        key = assembly_key(answer)
+        m = assembly_metrics(answer.placements, target)
+        if m['uncovered']:
+            raise ValueError('Final ranking requires complete target coverage')
+        metrics[key] = m
+        point = (-m['retention'], m['cuts'] + m['connections'])
+        points.setdefault(point, []).append(key)
+    costs = {cost:i+1 for i,cost in enumerate(sorted({p[1] for p in points}))}
+    tree = [0] * (len(costs)+1)
+    ranks = {}
+    for point, keys in sorted(points.items()):
+        index = costs[point[1]]
+        best = 0
+        cursor = index
+        while cursor:
+            best = max(best, tree[cursor])
+            cursor -= cursor & -cursor
+        layer = best + 1
+        for key in keys:
+            ranks[key] = (layer, *point, metrics[key]['species'], key)
+        while index < len(tree):
+            tree[index] = max(tree[index], layer)
+            index += index & -index
+    return ranks
 
 
 def rank_complete_assemblies(answers, target, recommendations, pattern_limit):
     """Rank saved complete sets, reserving a representative per chosen pattern."""
-    rank = lambda answer: completed_assembly_rank(answer.placements, target)
-    unique = {tuple(sorted(p.key for p in a.placements)): a for a in answers}
+    unique = {assembly_key(a): a for a in answers}
+    ranks = pareto_assembly_ranks(unique.values(), target)
+    rank = lambda answer: ranks[assembly_key(answer)]
     buckets = {}
     for answer in sorted(unique.values(), key=rank):
         pattern = placement_pattern(answer.placements, target)

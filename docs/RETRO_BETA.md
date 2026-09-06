@@ -111,21 +111,34 @@ reserved; all displayed results are then sorted by the final ranking. These are 
 a certified global top 20. Every discovered complete assembly is checkpointed
 by the distributed runner before collection continues.
 
-Final beta ranking is independent of discovery order. Among complete covers,
-it compares, lexicographically: matched fragment count; decreasing explicit-H
-retention; source boundary cuts plus unsupported target connections; then
-distinct source species. Retention is unique covered target atoms divided by
-all input atoms across physical source copies. Overlaps cannot inflate it.
-There is no separate penalty for copy count, fitted weighting, or ground-truth
-bonus. Cuts/connections are geometric support metrics, not reaction edit counts.
-Exact rational retention is used internally. Pattern diversity changes which
-results are displayed, not their rank. The full workflow's exact solver and
-its ranking bounds are unchanged by this beta-specific change.
+Final beta ranking is independent of discovery order. It uses Pareto layers
+over two objectives: maximize explicit-H retention and minimize source boundary
+cuts plus unsupported target connections. A candidate dominates another only
+if it is at least as good on both and strictly better on at least one. Layer 1
+contains the nondominated alternatives; subsequent layers repeat this operation
+after removing earlier layers. Fragment count is descriptive, not ranked.
+Distinct species count only breaks ties at identical objective values. Within a
+layer, display order is deterministic but is not a preference between trade-offs.
+
+Retention is unique covered target atoms divided by all input atoms across
+physical source copies. Overlaps cannot inflate it. There is no separate penalty
+for copy count, fitted weighting, or ground-truth bonus. Cuts/connections are
+geometric support metrics, not reaction edit counts. Exact rational retention
+is used internally; a prefix-max tree computes 2D layers in O(n log n).
+Pattern/output quotas may limit displayed alternatives; the saved rerank report
+counts nondominated pool and displayed entries. The full workflow's exact solver
+and its ranking bounds are unchanged by this beta-specific change. Connected
+discovery and the known-supplier join retain their fragment-oriented traversal
+heuristics; these are not final Pareto ranking or global-optimality guarantees.
 
 `bench/rerank_beta_saved.py --run RUN` applies this same ranking to all saved
 complete beta candidates without any new matching. Optional
 `--validation-stem ground_truth_assemblies` compares validation sets but never
 adds them to the blind candidate pool.
+Outputs are saved as `assemblies_pareto.json` and `assemblies_pareto.pkl.gz`,
+preserving earlier rankings. Rebuild the viewer with `--result-stem assemblies_pareto`.
+`--scan-summary RUN/assemblies_viewer.json` explicitly reuses the same run's
+previously tallied matched-source count, avoiding a bank-wide metadata reread.
 Explicitly requesting one recommendation stops at the first fully refined cover; it does
 not prove that cover is globally optimal or chemically feasible.
 

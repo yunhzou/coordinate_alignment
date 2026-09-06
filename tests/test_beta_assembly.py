@@ -5,8 +5,8 @@ from itertools import product
 from test_beta_retro import FakeBank, block
 from rxn_core.retrosynthesis.beta import recommend_big_blocks
 from rxn_core.retrosynthesis.beta_assembly import (
-    assemble_supplier_copies, completed_assembly_rank, rank_complete_assemblies,
-    assembly_metrics,
+    assemble_supplier_copies, rank_complete_assemblies,
+    assembly_metrics, dominates, pareto_assembly_ranks, assembly_key,
 )
 
 
@@ -53,7 +53,7 @@ def test_final_rank_prefers_retention_over_fewer_species():
     efficient = (block('a',(0,1),refined=True), block('b',(2,3),refined=True))
     wasteful = tuple(replace(p,candidate=replace(p.candidate,source_id='large',
         leftover_fragments=((10,11,12,13),))) for p in efficient)
-    assert completed_assembly_rank(efficient,target) < completed_assembly_rank(wasteful,target)
+    assert dominates(assembly_metrics(efficient,target), assembly_metrics(wasteful,target))
 
 
 def test_final_rank_uses_structural_operations_and_rejects_partial():
@@ -61,9 +61,10 @@ def test_final_rank_uses_structural_operations_and_rejects_partial():
     target = FakeBank().target
     clean = (block('a',range(4),refined=True),)
     cut = (replace(clean[0],candidate=replace(clean[0].candidate,boundary_bonds=((0,5),))),)
-    assert completed_assembly_rank(clean,target) < completed_assembly_rank(cut,target)
+    assert dominates(assembly_metrics(clean,target), assembly_metrics(cut,target))
     with pytest.raises(ValueError,match='complete'):
-        completed_assembly_rank((block('a',(0,1)),),target)
+        from rxn_core.retrosynthesis.beta import BetaRecommendation
+        pareto_assembly_ranks((BetaRecommendation((block('a',(0,1)),),(2,3)),),target)
 
 
 def test_repeated_overlapping_copies_do_not_inflate_retention():
@@ -84,5 +85,46 @@ def test_display_order_is_final_rank_even_with_pattern_diversity():
     answers = [BetaRecommendation((p,),()) for p in (c,b,a)]
     result = rank_complete_assemblies(answers,target,3,2)
     assert len(result)==3
-    ranks = [completed_assembly_rank(r.placements,target) for r in result]
-    assert ranks == sorted(ranks)
+    ranks = pareto_assembly_ranks(answers,target)
+    assert [ranks[assembly_key(r)] for r in result] == sorted(ranks.values())
+    assert {r[0] for r in ranks.values()} == {1}  # partitions do not affect rank
+
+
+def test_pareto_layers_equal_exhaustive_dominance_and_preserve_tradeoffs():
+    from rxn_core.retrosynthesis.beta import BetaRecommendation
+    target = FakeBank().target
+    answers = []
+    for waste in range(5):
+        for cuts in range(5):
+            for duplicate in range(2):
+                p = block(f'r{waste}-{cuts}-{duplicate}',range(4),refined=True)
+                c = replace(p.candidate,leftover_fragments=(tuple(range(10,10+waste)),),
+                            boundary_bonds=tuple((0,10+i) for i in range(cuts)))
+                answers.append(BetaRecommendation((replace(p,candidate=c),),()))
+    metrics = {assembly_key(a):assembly_metrics(a.placements,target) for a in answers}
+    expected = {}
+    remaining = set(metrics)
+    layer = 1
+    while remaining:
+        front = {k for k in remaining if not any(dominates(metrics[j],metrics[k])
+                                                 for j in remaining)}
+        expected.update((k,layer) for k in front)
+        remaining -= front
+        layer += 1
+    actual = pareto_assembly_ranks(reversed(answers),target)
+    assert {k:r[0] for k,r in actual.items()} == expected
+    # High retention/more cuts and low retention/fewer cuts are incomparable.
+    a,b = metrics[assembly_key(answers[8])],metrics[assembly_key(answers[40])]
+    assert not dominates(a,b) and not dominates(b,a)
+
+
+def test_species_only_breaks_equal_objective_ties_not_pareto_layers():
+    from rxn_core.retrosynthesis.beta import BetaRecommendation
+    a,b = block('a',(0,1),refined=True),block('b',(2,3),refined=True)
+    distinct = BetaRecommendation((a,b),())
+    repeated = BetaRecommendation((a,replace(b,candidate=replace(b.candidate,source_id='a'))),())
+    ranks = pareto_assembly_ranks((distinct,repeated),FakeBank().target)
+    left,right = ranks[assembly_key(repeated)],ranks[assembly_key(distinct)]
+    assert left[:3] == right[:3]
+    assert left[0] == right[0] == 1
+    assert left < right

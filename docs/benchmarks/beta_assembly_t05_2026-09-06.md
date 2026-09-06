@@ -53,6 +53,8 @@ which atoms are covered.
 
 ## Final beta ranking correction
 
+This lexicographic correction is historical; the Pareto update below supersedes it.
+
 Final ranking is now separate from provisional discovery priority: fewer
 fragment units, greater unique-target/all-input explicit-H retention, fewer
 source cuts plus unsupported target connections, then fewer distinct species.
@@ -68,3 +70,22 @@ ranking, not the earlier discovery stopping criterion or ground-truth absence.
 `assemblies_ranked.json` records the objective, scores, and comparison;
 `assemblies_ranked.pkl.gz` preserves selected full mappings. `assemblies.html`
 is regenerated from this ranked result with separate validation panels.
+
+## Pareto ranking update
+
+Fragment count is no longer a final ranking objective. Explicit-H retention
+and structural cuts + connections define Pareto layers; species count only
+breaks identical-objective ties. Layer 1 retains both real blind trade-offs:
+59.18% retention with 10 structural changes, and 58.0% with 9. Neither dominates
+the other. Both are included in the 20 displayed proposals across four patterns.
+
+All four validation patterns, including the seven-fragment variant, now have
+the same objective values: 90.625% retention and 12 structural changes. None is
+dominated by the 23 saved blind candidates. Each dominates two of those and
+is incomparable with the other 21. This is a separate validation comparison,
+not ground-truth injection into blind discovery.
+
+Saved reranking took 0.469 seconds. `assemblies_pareto.json` stores layer labels,
+metrics and comparisons; `assemblies_pareto.pkl.gz` retains full mappings.
+Earlier lexicographic artifacts remain intact. The viewer displays Pareto layer
+labels explicitly and does not claim a preferred order within each layer.
