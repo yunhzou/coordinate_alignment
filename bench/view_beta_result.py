@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--result-stem',default='assemblies')
     parser.add_argument('--validation-stem')
     parser.add_argument('--case',type=Path)
+    parser.add_argument('--html-output',type=Path)
     args=parser.parse_args()
     root=args.run
     manifest=json.loads((root/'query_full/manifest.json').read_text())
@@ -85,7 +86,7 @@ def main():
         item['recommendation_ranks'].append(rank)
     report=dict(target_smiles=manifest['target_smiles'],assemblies=assemblies[:len(result.recommendations)],
         validation_assemblies=assemblies[len(result.recommendations):],
-        search_scope='Full-bank beta assemblies grouped by construction pattern. Ranking is among discovered assemblies. Ground-truth supplier-set validation is labelled separately.',
+        search_scope='Beta final order: fewer fragments, higher explicit-H retention, fewer cuts + connections, fewer distinct species. Ranked among discovered full covers; ground-truth validation is separate.',
         scan_counts=dict(rows=sum(p['rows'] for p in parts),searched=sum(p['rows'] for p in parts),
             matched_precursors=sum(1 for _ in bank),fragment_candidates=sum(p['blocks'] for p in parts),
             capped=result.capped_searches),recommendation_search_truncated=True,
@@ -103,8 +104,9 @@ def main():
         'covered' if validations else 'not-evaluated',
         'Ground-truth panels validate actual compatible supplier occupations and full target coverage. '
         'They are separate from blind recommendation ranks. Overlapping suppliers are labelled explicitly.')
-    (root/f'{args.result_stem}.html').write_text(_html(payload))
-    print(root/f'{args.result_stem}.html',flush=True)
+    output = args.html_output or root/f'{args.result_stem}.html'
+    output.write_text(_html(payload))
+    print(output,flush=True)
 
 
 if __name__=='__main__':

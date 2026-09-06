@@ -258,6 +258,7 @@ def main():
         recommendations=[patterned(r) for r in result.recommendations],
         construction_patterns=[dict(pattern=i,certificate=k) for k,i in pattern_ids.items()],
         ranking_scope='Ranked among discovered beta assemblies; not globally certified over the bank',
+        ranking_objective=['fragments', '-explicit_atom_retention', 'cuts + connections', 'distinct_species'],
         best_partial=record(result.best_partial))
     report['resource_budget']=dict(cpu_limit=budget.cpu_limit,
         coordinator_cpus=budget.coordinator_cpus,worker_cpus=budget.worker_cpus,

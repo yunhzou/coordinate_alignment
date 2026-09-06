@@ -219,12 +219,13 @@ def recommend_big_blocks(bank, *, recommendations=20, pattern_limit=None):
     pattern_limit=min(4,recommendations) if pattern_limit is None else pattern_limit
     if pattern_limit < 1 or pattern_limit > recommendations:
         raise ValueError('pattern limit must be positive and fit the output size')
-    from .beta_assembly import placement_pattern
+    from .beta_assembly import placement_pattern, completed_assembly_rank, rank_complete_assemblies
     started = perf_counter()
     target_atoms = frozenset(range(len(bank.target)))
     queue, seen, serial = [], set(), count()
     answers = {}
     patterns = {}
+    rank = lambda answer: completed_assembly_rank(answer.placements, bank.target)
     best = BetaRecommendation((), tuple(sorted(target_atoms)))
 
     def push(placements, continuation=None):
@@ -266,24 +267,16 @@ def recommend_big_blocks(bank, *, recommendations=20, pattern_limit=None):
                 callback(answer,pattern,len(patterns),len(answers))
             best = answer
             if len(patterns)>=pattern_limit:
-                display=sorted(patterns.values(),key=lambda bucket:min(
-                    proposal_rank(a.placements,len(target_atoms)) for a in bucket))[:pattern_limit]
+                display=sorted(patterns.values(),key=lambda bucket:rank(min(bucket,key=rank)))[:pattern_limit]
                 if sum(map(len,display))>=recommendations:
                     break
             continue
         advance(placements, bank.ordered_query(missing, placements))
 
-    # A representative from each selected construction pattern comes first;
-    # remaining display slots hold ranked alternatives. This is ranking among
-    # discovered assemblies; beta discovery itself is still approximate.
-    rank=lambda answer:proposal_rank(answer.placements,len(target_atoms))
-    ordered=sorted(patterns.values(),key=lambda bucket:rank(min(bucket,key=rank)))[:pattern_limit]
-    selected=[min(bucket,key=rank) for bucket in ordered]
-    keys={tuple(p.key for p in a.placements) for a in selected}
-    for answer in sorted((a for bucket in ordered for a in bucket),key=rank):
-        key=tuple(p.key for p in answer.placements)
-        if key not in keys and len(selected)<recommendations:
-            selected.append(answer)
-            keys.add(key)
-    return BetaResult(tuple(selected), best, bank.capped_searches,
+    # Select diverse patterns, then sort all displayed assemblies by the same
+    # final objective. Pattern representation never masquerades as rank.
+    selected = rank_complete_assemblies(answers.values(), bank.target, recommendations, pattern_limit)
+    if selected:
+        best = selected[0]
+    return BetaResult(selected, best, bank.capped_searches,
                       perf_counter() - started, tuple(bank.events))

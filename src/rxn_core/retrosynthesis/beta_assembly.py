@@ -1,9 +1,60 @@
 """Assembly of whole beta occupations, independent of fragment discovery."""
 from heapq import heappop, heappush
 from itertools import count
+from fractions import Fraction
 
 from .assembly import construction_pattern
 from ..search_graph import frozen_value
+
+
+def assembly_metrics(placements, target):
+    """Whole-set metrics; overlapping claims never multiply product yield.
+
+    Cuts and connections describe geometric support, not balanced reaction edits.
+    Every physical source copy contributes its explicit-H input atom count.
+    """
+    covered = frozenset(a for p in placements for a in p.covered_atoms)
+    carried = set()
+    for p in placements:
+        mapping = dict(p.mapping)
+        carried.update(tuple(sorted((mapping[a], mapping[b])))
+                       for a, b in p.candidate.preserved_source_bonds)
+    edges = {tuple(sorted(edge)) for edge in target.edges()}
+    return dict(
+        uncovered=len(target) - len(covered),
+        fragments=sum(p.fragment_count for p in placements),
+        retention=Fraction(len(covered), sum(p.input_atom_count for p in placements)),
+        cuts=sum(len(p.candidate.boundary_bonds) for p in placements),
+        connections=len(edges - carried),
+        species=len({p.source_id for p in placements}))
+
+
+def completed_assembly_rank(placements, target):
+    """Final beta objective, separate from the discovery queue heuristic.
+
+    No fitted weights or source identity bonuses. Exact fractions avoid float
+    ties. Source IDs only provide a reproducible tie-break after all objectives.
+    """
+    m = assembly_metrics(placements, target)
+    if m['uncovered']:
+        raise ValueError('Final ranking requires complete target coverage')
+    return (m['fragments'], -m['retention'], m['cuts'] + m['connections'],
+            m['species'], tuple(sorted(p.key for p in placements)))
+
+
+def rank_complete_assemblies(answers, target, recommendations, pattern_limit):
+    """Rank saved complete sets, reserving a representative per chosen pattern."""
+    rank = lambda answer: completed_assembly_rank(answer.placements, target)
+    unique = {tuple(sorted(p.key for p in a.placements)): a for a in answers}
+    buckets = {}
+    for answer in sorted(unique.values(), key=rank):
+        pattern = placement_pattern(answer.placements, target)
+        buckets.setdefault(pattern, []).append(answer)
+    chosen = list(buckets.values())[:pattern_limit]
+    selected = [bucket[0] for bucket in chosen]
+    alternatives = sorted((a for bucket in chosen for a in bucket[1:]), key=rank)
+    selected.extend(alternatives[:max(0, recommendations - len(selected))])
+    return tuple(sorted(selected, key=rank))
 
 
 def placement_pattern(placements, target):

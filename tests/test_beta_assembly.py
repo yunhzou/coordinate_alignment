@@ -4,7 +4,10 @@ from itertools import product
 
 from test_beta_retro import FakeBank, block
 from rxn_core.retrosynthesis.beta import recommend_big_blocks
-from rxn_core.retrosynthesis.beta_assembly import assemble_supplier_copies
+from rxn_core.retrosynthesis.beta_assembly import (
+    assemble_supplier_copies, completed_assembly_rank, rank_complete_assemblies,
+    assembly_metrics,
+)
 
 
 def test_supplier_join_equals_exhaustive_correlated_covers_and_fragment_order():
@@ -43,3 +46,43 @@ def test_beta_collects_distinct_patterns_after_first_complete_cover():
     assert len(result.recommendations)==2
     assert bank.events==['a','b']
     assert [sum(p.fragment_count for p in r.placements) for r in result.recommendations]==[1,2]
+
+
+def test_final_rank_prefers_retention_over_fewer_species():
+    target = FakeBank().target
+    efficient = (block('a',(0,1),refined=True), block('b',(2,3),refined=True))
+    wasteful = tuple(replace(p,candidate=replace(p.candidate,source_id='large',
+        leftover_fragments=((10,11,12,13),))) for p in efficient)
+    assert completed_assembly_rank(efficient,target) < completed_assembly_rank(wasteful,target)
+
+
+def test_final_rank_uses_structural_operations_and_rejects_partial():
+    import pytest
+    target = FakeBank().target
+    clean = (block('a',range(4),refined=True),)
+    cut = (replace(clean[0],candidate=replace(clean[0].candidate,boundary_bonds=((0,5),))),)
+    assert completed_assembly_rank(clean,target) < completed_assembly_rank(cut,target)
+    with pytest.raises(ValueError,match='complete'):
+        completed_assembly_rank((block('a',(0,1)),),target)
+
+
+def test_repeated_overlapping_copies_do_not_inflate_retention():
+    target = FakeBank().target
+    p = block('a',range(4),refined=True)
+    one = assembly_metrics((p,),target)
+    two = assembly_metrics((p,p),target)
+    assert two['retention'] == one['retention']/2
+    assert two['species'] == one['species'] == 1
+
+
+def test_display_order_is_final_rank_even_with_pattern_diversity():
+    from rxn_core.retrosynthesis.beta import BetaRecommendation
+    target = FakeBank().target
+    a = block('a',range(4),refined=True)
+    b = replace(a,candidate=replace(a.candidate,source_id='b'))
+    c = replace(a,candidate=replace(a.candidate,source_id='c',retained_fragments=((0,1),(2,3))))
+    answers = [BetaRecommendation((p,),()) for p in (c,b,a)]
+    result = rank_complete_assemblies(answers,target,3,2)
+    assert len(result)==3
+    ranks = [completed_assembly_rank(r.placements,target) for r in result]
+    assert ranks == sorted(ranks)

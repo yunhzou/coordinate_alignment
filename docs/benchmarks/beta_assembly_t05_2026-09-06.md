@@ -40,7 +40,7 @@ The ground truth is substantially more atom-efficient, but does not have fewer
 displayed cuts/connections in these saved mappings. These counts are not a
 balanced chemical reaction's bond-edit count.
 
-Current beta ordering compares species count before retention and does not rank
+At the time of this audit, beta ordering compared species count before retention and did not rank
 by cuts/connections. Its output quota also stops discovery before global ranking
 can be certified. Changing display order alone cannot fix absent candidates.
 No ground-truth-specific ranking bonus or discovery rule has been added.
@@ -50,3 +50,21 @@ copies of R2 (`MCULE-2301670172`), not different R species. The viewer now gives
 them R2's color. For overlaps across distinct species it lists all R alternatives
 and offers color-selection buttons; this changes display only, not mappings or
 which atoms are covered.
+
+## Final beta ranking correction
+
+Final ranking is now separate from provisional discovery priority: fewer
+fragment units, greater unique-target/all-input explicit-H retention, fewer
+source cuts plus unsupported target connections, then fewer distinct species.
+No fitted weights or known-source bonuses are used. All selected outputs are
+sorted by this objective even when reserving representatives across patterns.
+
+Re-ranking all 23 saved blind full-cover candidates took 0.47 seconds. The new
+first blind result has 59.18% retention, six fragments, five cuts and five
+connections. The three six-fragment validation patterns outrank all 23 blind
+candidates; the seven-fragment validation pattern does not. Validation sets
+were compared separately, never inserted into the blind pool. This fixes
+ranking, not the earlier discovery stopping criterion or ground-truth absence.
+`assemblies_ranked.json` records the objective, scores, and comparison;
+`assemblies_ranked.pkl.gz` preserves selected full mappings. `assemblies.html`
+is regenerated from this ranked result with separate validation panels.

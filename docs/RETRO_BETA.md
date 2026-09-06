@@ -106,10 +106,26 @@ within one source copy is not permitted. Failure is reported as a partial
 cover, not a proof that the bank has no solution. Cap hits remain explicit.
 The default collects 20 complete assemblies across four construction patterns.
 Each pattern preserves whole source-copy assignments and their matched fragment
-partition, modulo target symmetry. Representatives appear first, followed by
-alternatives from those patterns. These are ranked discovered proposals, not
+partition, modulo target symmetry. One representative per chosen pattern is
+reserved; all displayed results are then sorted by the final ranking. These are ranked discovered proposals, not
 a certified global top 20. Every discovered complete assembly is checkpointed
 by the distributed runner before collection continues.
+
+Final beta ranking is independent of discovery order. Among complete covers,
+it compares, lexicographically: matched fragment count; decreasing explicit-H
+retention; source boundary cuts plus unsupported target connections; then
+distinct source species. Retention is unique covered target atoms divided by
+all input atoms across physical source copies. Overlaps cannot inflate it.
+There is no separate penalty for copy count, fitted weighting, or ground-truth
+bonus. Cuts/connections are geometric support metrics, not reaction edit counts.
+Exact rational retention is used internally. Pattern diversity changes which
+results are displayed, not their rank. The full workflow's exact solver and
+its ranking bounds are unchanged by this beta-specific change.
+
+`bench/rerank_beta_saved.py --run RUN` applies this same ranking to all saved
+complete beta candidates without any new matching. Optional
+`--validation-stem ground_truth_assemblies` compares validation sets but never
+adds them to the blind candidate pool.
 Explicitly requesting one recommendation stops at the first fully refined cover; it does
 not prove that cover is globally optimal or chemically feasible.
 
