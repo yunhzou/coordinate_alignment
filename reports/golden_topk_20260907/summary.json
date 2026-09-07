@@ -1,0 +1,78 @@
+{
+  "records": 1851,
+  "statuses": {
+    "complete": 1832,
+    "incomplete_search": 19
+  },
+  "representative_topk": {
+    "1": {
+      "recovered": 1435,
+      "total": 1851,
+      "percent": 77.52566180443004
+    },
+    "3": {
+      "recovered": 1741,
+      "total": 1851,
+      "percent": 94.05726634251756
+    },
+    "5": {
+      "recovered": 1768,
+      "total": 1851,
+      "percent": 95.51593733117234
+    },
+    "10": {
+      "recovered": 1781,
+      "total": 1851,
+      "percent": 96.2182603997839
+    }
+  },
+  "top5_family": {
+    "recovered": 1780,
+    "total": 1851,
+    "percent": 96.16423554835224,
+    "outcomes": {
+      "recovered": 1780,
+      "not_recovered": 52,
+      "unknown": 19
+    }
+  },
+  "top5_tie_inclusive": {
+    "recovered": 1777,
+    "total": 1851,
+    "percent": 96.00216099405726,
+    "mean_candidates": 6.225982532751091
+  },
+  "event_windows": {
+    "0": {
+      "recovered": 1660,
+      "total": 1851,
+      "percent": 89.68125337655322,
+      "mean_candidates": 1.334061135371179
+    },
+    "1": {
+      "recovered": 1717,
+      "total": 1851,
+      "percent": 92.76066990815775,
+      "mean_candidates": 1.5474890829694323
+    },
+    "2": {
+      "recovered": 1772,
+      "total": 1851,
+      "percent": 95.73203673689898,
+      "mean_candidates": 3.1883187772925763
+    },
+    "3": {
+      "recovered": 1783,
+      "total": 1851,
+      "percent": 96.32631010264721,
+      "mean_candidates": 5.308406113537118
+    },
+    "5": {
+      "recovered": 1788,
+      "total": 1851,
+      "percent": 96.59643435980551,
+      "mean_candidates": 10.27565502183406
+    }
+  },
+  "note": "All 1851 remain in denominators. Incomplete search rankings unknown. Event-window/tie metrics use displayed representatives; top5-family includes full compressed alternatives behind the selected classes, not a globally optimized family score."
+}
