@@ -1,0 +1,13 @@
+{
+  "completion_records": 152,
+  "all_status_complete": true,
+  "all_evaluations_search_complete": true,
+  "input_and_reference_identity": true,
+  "configuration_identity": true,
+  "all_archives_present": true,
+  "all_expected_cut_checkpoints_present": true,
+  "recorded_live_branch_max": 100,
+  "previously_confirmed_references_lost": [],
+  "newly_recovered_reference_indices": [1606, 1624, 1657, 1661, 1696, 1698, 1799],
+  "archive_formats": {".json": 142, ".pkl": 10}
+}

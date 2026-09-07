@@ -1,0 +1,260 @@
+{
+  "run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_full_20260906",
+  "search_revision": "9dd6d8d2bb4ae20ec6e6482743d8727655bb724d",
+  "configuration": {
+    "cut_floor": 0.2,
+    "graph_floor": 0.2,
+    "iso_tolerance": 1.0,
+    "event_threshold": 0.5,
+    "metal_event_threshold": 0.3,
+    "seed_count": 3,
+    "branch_limit": 100,
+    "task_chunksize": 1,
+    "symmetry_repair": true,
+    "symmetry_repair_min_changes": 1,
+    "symmetry_repair_max_evaluations": 20000,
+    "anchors": []
+  },
+  "all_records": {
+    "records": 1851,
+    "evaluated": 1851,
+    "family_recovery": {
+      "recovered": 1683,
+      "not_recovered": 142,
+      "unknown": 26
+    },
+    "top1_eligible": 1760,
+    "top1_correct": 1302,
+    "representative_recovered": 1665,
+    "full_P_heavy": 1758,
+    "full_P_explicit_H_included": 1551,
+    "capped": 917,
+    "incomplete_searches": 0,
+    "stages": {
+      "complete": 1851
+    }
+  },
+  "complete_reference": {
+    "records": 1760,
+    "evaluated": 1760,
+    "family_recovery": {
+      "recovered": 1595,
+      "not_recovered": 142,
+      "unknown": 23
+    },
+    "top1_eligible": 1760,
+    "top1_correct": 1302,
+    "representative_recovered": 1580,
+    "full_P_heavy": 1755,
+    "full_P_explicit_H_included": 1548,
+    "capped": 895,
+    "incomplete_searches": 0,
+    "stages": {
+      "complete": 1760
+    }
+  },
+  "partial_reference": {
+    "records": 91,
+    "evaluated": 91,
+    "family_recovery": {
+      "recovered": 88,
+      "unknown": 3
+    },
+    "top1_eligible": 0,
+    "top1_correct": 0,
+    "representative_recovered": 85,
+    "full_P_heavy": 3,
+    "full_P_explicit_H_included": 3,
+    "capped": 22,
+    "incomplete_searches": 0,
+    "stages": {
+      "complete": 91
+    }
+  },
+  "balanced": {
+    "records": 733,
+    "evaluated": 733,
+    "family_recovery": {
+      "recovered": 711,
+      "not_recovered": 17,
+      "unknown": 5
+    },
+    "top1_eligible": 732,
+    "top1_correct": 604,
+    "representative_recovered": 708,
+    "full_P_heavy": 733,
+    "full_P_explicit_H_included": 733,
+    "capped": 363,
+    "incomplete_searches": 0,
+    "stages": {
+      "complete": 733
+    }
+  },
+  "unbalanced": {
+    "records": 1118,
+    "evaluated": 1118,
+    "family_recovery": {
+      "recovered": 972,
+      "not_recovered": 125,
+      "unknown": 21
+    },
+    "top1_eligible": 1028,
+    "top1_correct": 698,
+    "representative_recovered": 957,
+    "full_P_heavy": 1025,
+    "full_P_explicit_H_included": 818,
+    "capped": 554,
+    "incomplete_searches": 0,
+    "stages": {
+      "complete": 1118
+    }
+  },
+  "completed_searches": {
+    "records": 1851,
+    "evaluated": 1851,
+    "family_recovery": {
+      "recovered": 1683,
+      "not_recovered": 142,
+      "unknown": 26
+    },
+    "top1_eligible": 1760,
+    "top1_correct": 1302,
+    "representative_recovered": 1665,
+    "full_P_heavy": 1758,
+    "full_P_explicit_H_included": 1551,
+    "capped": 917,
+    "incomplete_searches": 0,
+    "stages": {
+      "complete": 1851
+    }
+  },
+  "interrupted_searches": {
+    "records": 0,
+    "evaluated": 0,
+    "family_recovery": {},
+    "top1_eligible": 0,
+    "top1_correct": 0,
+    "representative_recovered": 0,
+    "full_P_heavy": 0,
+    "full_P_explicit_H_included": 0,
+    "capped": 0,
+    "incomplete_searches": 0,
+    "stages": {}
+  },
+  "reused_searches": 14,
+  "completion_campaign": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_completion_20260906",
+  "completion_records": 152,
+  "recorded_live_branch_max": 100,
+  "recorded_live_branch_limit_exceedances": 0,
+  "completion_wall_seconds": {
+    "n": 152,
+    "total": 19224.502453112975,
+    "median": 129.52273492747918,
+    "p95": 255.43277635006234,
+    "maximum": 284.5494451522827
+  },
+  "search_wall_seconds": {
+    "n": 1677,
+    "total": 33185.35609499342,
+    "median": 5.036007617134601,
+    "p95": 111.23327580653131,
+    "maximum": 229.00842744391412
+  },
+  "archive_seconds": {
+    "n": 1677,
+    "total": 18937.95315972413,
+    "median": 2.061954515054822,
+    "p95": 64.61954336403869,
+    "maximum": 136.3284358419478
+  },
+  "evaluation_seconds": {
+    "n": 1851,
+    "total": 9310.31977370358,
+    "median": 0.6375614805147052,
+    "p95": 19.370036569191143,
+    "maximum": 120.86920006410219
+  },
+  "completed_search_cpu_seconds": {
+    "n": 1677,
+    "total": 50890.36403,
+    "median": 7.27766,
+    "p95": 168.085142,
+    "maximum": 289.782554
+  },
+  "completion_parent_cpu_seconds": {
+    "n": 152,
+    "total": 17322.713686,
+    "median": 119.1567625,
+    "p95": 231.290833,
+    "maximum": 283.02997899999997
+  },
+  "completed_search_peak_rss_mb": {
+    "n": 1829,
+    "total": 1335484.4375,
+    "median": 171.33984375,
+    "p95": 3588.87109375,
+    "maximum": 32730.1640625
+  },
+  "nodes": [
+    "bosque12",
+    "bosque20",
+    "bosque26",
+    "bosque34",
+    "bosque35",
+    "bosque36",
+    "bosque37",
+    "bosque38",
+    "bosque39",
+    "bosque40",
+    "bosque44",
+    "bosque46",
+    "bosque56",
+    "bosque67",
+    "bosque70"
+  ],
+  "cpu_models": [
+    "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz"
+  ],
+  "worker_search_seconds": {
+    "n": 1663,
+    "total": 11252.889245807659,
+    "median": 1.6511326897889376,
+    "p95": 34.09957380942069,
+    "maximum": 158.24332873383537
+  },
+  "checkpoint_seconds": {
+    "n": 1663,
+    "total": 9728.201274642022,
+    "median": 1.6230505453422666,
+    "p95": 30.385145904496312,
+    "maximum": 61.80805471446365
+  },
+  "parent_merge_seconds": {
+    "n": 1677,
+    "total": 295.6035343303811,
+    "median": 0.02656117919832468,
+    "p95": 1.0350001081824303,
+    "maximum": 3.0324636339209974
+  },
+  "symmetry_finalization_seconds": {
+    "n": 1663,
+    "total": 3313.868198256241,
+    "median": 0.5746560012921691,
+    "p95": 9.017080343794078,
+    "maximum": 29.385057497769594
+  },
+  "checkpoint_restore_and_finalize_seconds": {
+    "n": 0
+  },
+  "slurm": {
+    "tasks": 1926,
+    "states": {
+      "COMPLETED": 1849,
+      "CANCELLED by 7711": 77
+    },
+    "measured_cpu_seconds": 122188.876,
+    "allocated_cpu_seconds": 368054.0,
+    "note": "Parent array tasks only: includes search, scoring, serialization and timed-out jobs; excludes cached pilot searches and supervisor. Accounting can lag task completion."
+  }
+}

@@ -1,6 +1,6 @@
 # AAM paper benchmark: protocol and implementation
 
-Status: the public API now accepts unequal endpoint compositions and returns the existing compressed partial-injection search graph. The full 1,851-record campaign is implemented and running, with separate saved searches and symmetry-aware evaluation. **No external baseline speed/accuracy comparison has been run.**
+Status: the public API accepts unequal endpoint compositions and returns the existing compressed partial-injection search graph. The initial 1,851-record campaign included 152 interrupted searches; these were resumed from saved evidence. See [completion investigation](golden_completion_2026-09-06.md) and the [updated report](../../reports/golden_aam_completed_20260906/README.md) for completion and scoring status. **No external baseline speed/accuracy comparison has been run.**
 
 Campaign: `/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_full_20260906/`. Live status: `index.html` and `progress.json`. Frozen engine/configuration/input hashes: `manifest.json`. The 16-record pilot at the adjacent `golden_pilot_20260906/` is retained; its searches are reused, not remapped. Summaries must distinguish reuse from a cold full-run timing.
 

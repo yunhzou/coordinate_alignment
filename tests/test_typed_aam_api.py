@@ -77,6 +77,67 @@ def test_partial_aam_keeps_unmatched_atoms_and_roundtrips(tmp_path):
     assert any(dict(reverse.graph.states[t].mapping) == {0:0} for t in reverse.graph.terminals)
 
 
+def test_resume_reuses_completed_cuts_and_rejects_different_config(tmp_path, monkeypatch):
+    import importlib,json
+    module=importlib.import_module('rxn_core.aam')
+    problem=AAMProblem(_endpoint('R'),_endpoint('P'))
+    config=AAMSearchConfig(seed_count=1)
+    original=search_aam(problem,config,intermediate_dir=tmp_path)
+    expected=json.dumps(original.graph.to_record(),sort_keys=True)
+    assert expected==json.dumps(original.graph.to_record(copy=False),sort_keys=True)
+    calls=[];search_cut=module._search_cut
+    def tracked(cut):
+        calls.append(cut);return search_cut(cut)
+    monkeypatch.setattr(module,'_search_cut',tracked)
+    resumed=search_aam(problem,config,intermediate_dir=tmp_path,resume=True)
+    assert not calls
+    assert json.dumps(resumed.graph.to_record(),sort_keys=True)==expected
+    (tmp_path/'cut_00000.json').unlink()
+    resumed=search_aam(problem,config,intermediate_dir=tmp_path,resume=True)
+    assert len(calls)==1
+    assert json.dumps(resumed.graph.to_record(),sort_keys=True)==expected
+    with pytest.raises(ValueError,match='differs'):
+        search_aam(problem,AAMSearchConfig(seed_count=2),intermediate_dir=tmp_path,resume=True)
+
+
+@pytest.mark.parametrize('molecule', ['hydrogen', 'ethane'])
+def test_parallel_finalization_preserves_graph_and_reuses_checkpoints(tmp_path,molecule):
+    import json
+    if molecule=='hydrogen':
+        problem=AAMProblem(_endpoint('R'),_endpoint('P'))
+    else:
+        elements=('C','C','H','H','H','H','H','H')
+        wbo=np.zeros((8,8))
+        for left,right in [(0,1),(0,2),(0,3),(0,4),(1,5),(1,6),(1,7)]:
+            wbo[left,right]=wbo[right,left]=1
+        order=[5,1,2,0,7,3,6,4]
+        problem=AAMProblem(MolecularEndpoint(elements,np.zeros((8,3)),wbo),
+            MolecularEndpoint(tuple(elements[i] for i in order),np.zeros((8,3)),
+                              wbo[np.ix_(order,order)]))
+    config=AAMSearchConfig(seed_count=3)
+    serial=search_aam(problem,config)
+    parallel=search_aam(problem,config,workers=2,intermediate_dir=tmp_path)
+    normalize=lambda result:json.dumps(result.graph.to_record(),sort_keys=True)
+    assert normalize(parallel)==normalize(serial)
+    checkpoints=list(tmp_path.glob('*.finalized.pkl.gz'))
+    assert len(checkpoints)==len(list(tmp_path.glob('cut_*.json')))
+    stamps={p:p.stat().st_mtime_ns for p in checkpoints}
+    resumed=search_aam(problem,config,workers=2,intermediate_dir=tmp_path,resume=True)
+    assert normalize(resumed)==normalize(serial)
+    assert stamps=={p:p.stat().st_mtime_ns for p in checkpoints}
+
+
+def test_compressed_checkpoint_preserves_typed_graph_and_json_content(tmp_path):
+    import json
+    from rxn_core.artifacts import aam_record,read_aam_checkpoint
+    result=search_aam(AAMProblem(_endpoint('R'),_endpoint('P')),AAMSearchConfig(seed_count=1),
+        intermediate_dir=tmp_path,archive_format='checkpoint')
+    restored=read_aam_checkpoint(tmp_path/'aam.pkl.gz')
+    assert json.dumps(aam_record(restored),sort_keys=True)==json.dumps(aam_record(result),sort_keys=True)
+    assert restored.graph.fragment_placement(0)==result.graph.fragment_placement(0)
+    assert not list(tmp_path.glob('*.tmp'))
+
+
 def test_search_aam_returns_complete_typed_hierarchy():
     problem = AAMProblem(_endpoint("R"), _endpoint("P"), name="h2")
     result = search_aam(

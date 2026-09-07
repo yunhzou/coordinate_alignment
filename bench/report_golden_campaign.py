@@ -37,11 +37,14 @@ def summarize(rows):
         stages=dict(Counter(r['stage'] for r in rows)))
 
 
-def export(run, output):
+def export(run, output, completion=None):
     output.mkdir(parents=True,exist_ok=True)
     manifest=read(run/'manifest.json');rows=[]
     for item in manifest['records']:
-        directory=run/str(item['index'])
+        original=run/str(item['index']);directory=original
+        if completion:
+            candidate=completion/str(item['index'])
+            if read(candidate/'status.json').get('stage')=='complete':directory=candidate
         state=read(directory/'status.json');search=read(directory/'search.json')
         evaluation=read(directory/'evaluation.json');reference=read(directory/'reference.json')
         heavy=set(reference['features'][1]['heavy'])
@@ -49,10 +52,11 @@ def export(run, output):
         row=dict(index=item['index'],balanced=item['balanced'],source_atoms=item['source_atoms'],
             target_atoms=item['target_atoms'],target_heavy_atoms=len(heavy),
             reference_complete=len(annotated)==len(heavy),reference_target_coverage=len(annotated)/len(heavy),
-            stage=state['stage'],evaluated=bool(evaluation),
+            stage=state['stage'],evaluated=bool(evaluation),completion_run=directory!=original,
             search_incomplete=bool(evaluation.get('search_incomplete') or (directory/'search_timeout.json').exists()),
             reused_search=(directory/'reuse.json').exists(),
-            archive=str(directory/'aam.json.gz') if (directory/'aam.json.gz').exists() else '',
+            archive=(str(directory/'aam.pkl.gz') if (directory/'aam.pkl.gz').exists() else
+                     str(directory/'aam.json.gz') if (directory/'aam.json.gz').exists() else ''),
             partial_archive=str(directory/'partial_archive.json') if (directory/'partial_archive.json').exists() else '',
             evaluation=str(directory/'evaluation.json') if evaluation else '')
         row.update({k:v for k,v in evaluation.items() if not isinstance(v,(dict,list))})
@@ -72,15 +76,23 @@ def export(run, output):
         completed_searches=summarize([r for r in rows if r['archive']]),
         interrupted_searches=summarize([r for r in rows if r['search_incomplete']]),
         reused_searches=sum(r['reused_search'] for r in rows),
-        search_wall_seconds=stats([r.get('search_wall_seconds') for r in rows]),
-        archive_seconds=stats([r.get('search_archive_seconds') for r in rows]),
+        completion_campaign=str(completion) if completion else None,
+        completion_records=sum(r['completion_run'] for r in rows),
+        recorded_live_branch_max=max((r.get('metric_max_live_branches',0) for r in rows),default=0),
+        recorded_live_branch_limit_exceedances=sum(
+            r.get('metric_max_live_branches',0)>manifest['config']['branch_limit'] for r in rows),
+        completion_wall_seconds=stats([r.get('search_wall_seconds') for r in rows if r['completion_run']]),
+        search_wall_seconds=stats([r.get('search_wall_seconds') for r in rows if not r['completion_run']]),
+        archive_seconds=stats([r.get('search_archive_seconds') for r in rows if not r['completion_run']]),
         evaluation_seconds=stats([r.get('evaluation_seconds') for r in rows]),
-        completed_search_cpu_seconds=stats([r.get('search_cpu_seconds') for r in rows]),
+        completed_search_cpu_seconds=stats([r.get('search_cpu_seconds') for r in rows if not r['completion_run']]),
+        completion_parent_cpu_seconds=stats([r.get('search_cpu_seconds') for r in rows if r['completion_run']]),
         completed_search_peak_rss_mb=stats([r.get('search_peak_rss_mb') for r in rows]),
         nodes=sorted({r['search_hostname'] for r in rows if 'search_hostname' in r}),
-        cpu_models=sorted({r['search_cpu_model'] for r in rows if 'search_cpu_model' in r}))
-    for key in ('worker_search_seconds','checkpoint_seconds','parent_merge_seconds','symmetry_finalization_seconds'):
-        summary[key]=stats([r.get('metric_'+key) for r in rows])
+        cpu_models=sorted({r['search_cpu_model'] for r in rows if r.get('search_cpu_model')}))
+    for key in ('worker_search_seconds','checkpoint_seconds','parent_merge_seconds','symmetry_finalization_seconds',
+                'checkpoint_restore_and_finalize_seconds'):
+        summary[key]=stats([r.get('metric_'+key) for r in rows if not r['completion_run']])
     accounting=run/'slurm_accounting.psv'
     if accounting.exists():
         tasks=[line.split('|') for line in accounting.read_text().splitlines()
@@ -93,6 +105,7 @@ def export(run, output):
     all_=summary['all_records'];complete=summary['complete_reference'];partial=summary['partial_reference']
     lines=['# Golden AAM benchmark — measured campaign', '',
         f"Run: `{run}`. Search revision: `{manifest['revision']}`. Frozen source hashes and inputs: `manifest.json`.", '',
+        f"Completion campaign: `{completion}`; {summary['completion_records']} records completed from saved evidence. These are not cold rerun timings." if completion else '', '',
         '## Recovery and coverage', '',
         '| Measure | Count |','|---|---:|',
         f"| Records / evaluated | {len(rows)} / {all_['evaluated']} |",
@@ -110,10 +123,13 @@ def export(run, output):
         '## Measured performance', '',
         '| Phase | Completed measurements | Median (s) | p95 (s) | Maximum (s) |',
         '|---|---:|---:|---:|---:|']
-    for label,key in [('Search including checkpoints','search_wall_seconds'),('Additional gzip archive','archive_seconds'),('Evaluation','evaluation_seconds')]:
+    for label,key in [('Original completed searches including checkpoints','search_wall_seconds'),('Original additional gzip archive','archive_seconds'),('Checkpoint completion, not cold search','completion_wall_seconds'),('Evaluation','evaluation_seconds')]:
         s=summary[key]
         if s['n']:lines.append(f"| {label} | {s['n']} | {s['median']:.3f} | {s['p95']:.3f} | {s['maximum']:.3f} |")
-    lines+=['',f"Search watchdog: {manifest['search_timeout']} s; outer task watchdog: 600 s. CPU allocation ceiling: {manifest['cpu_budget']}; one AAM thread per reaction. {summary['reused_searches']} searches reused from the saved pilot.", '',
+    lines+=['',f"Original search watchdog: {manifest['search_timeout']} s; outer task watchdog: 600 s. Original CPU allocation ceiling: {manifest['cpu_budget']}; one AAM worker per reaction. {summary['reused_searches']} searches reused from the saved pilot.", '',
+        'Completion attempts use a 300-second finish watchdog and 270-second scoring watchdog within a 600-second outer watchdog. '
+        'Frozen completion engine manifests record each attempt’s cut-worker and node allocation. Completion CPU statistics are parent-process only; scheduler accounting includes child processes. '
+        'Completion latencies describe the successful resumption, not the cumulative cost of previous attempts.', '',
         'Completed-search latency excludes timed-out searches and additional gzip serialization; report those separately, not as a cold full-run speed claim. '
         'Phase metrics are diagnostic, can overlap, and should not be blindly added. Slurm measured CPU and allocated CPU-seconds are different quantities. '
         'Peak RSS in the case table is the search process high-water mark; raw scheduler accounting also retains scoring/task memory.', '',
@@ -127,11 +143,13 @@ def export(run, output):
         'No external baseline has been rerun here. Published Golden subsets/reference corrections differ; these results are not yet a like-for-like paper comparison.', '',
         '## Saved evidence', '',
         '- Every input, separate reference, status, search log and available complete compressed AAM archive.',
+        '- `.pkl.gz` files are trusted internal typed-graph snapshots: load with `read_aam_checkpoint` and the frozen producing engine, never from untrusted sources. They retain the same AAMResult; JSON export remains available.',
         '- Atomic per-cut checkpoints, including for interrupted searches; partial manifests identify their exact files.',
         '- Per-case evaluations and symbolic witness actions when required; source/configuration hashes and Slurm accounting.',
         '- `cases.csv`: every dataset row, including failures. `summary.json`: stratified denominators and timings.', '',
         'Recreate this report without remapping: `python bench/report_golden_campaign.py --run RUN --output OUTPUT`.',
         'Rescore a completed archive without remapping: `PYTHONPATH=RUN/engine/src python RUN/engine/bench/golden_campaign.py score --run RUN --index INDEX`. '
+        'For completion snapshots use the producing engine’s `complete_golden_campaign.py score` command instead. '
         'Preserve the previous evaluation before intentionally rescoring; use the frozen engine for exact reproducibility.', '']
     (output/'README.md').write_text('\n'.join(lines))
     print(json.dumps(summary['all_records']))
@@ -141,4 +159,5 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
-    args=parser.parse_args();export(args.run.resolve(),args.output)
+    parser.add_argument('--completion',type=Path)
+    args=parser.parse_args();export(args.run.resolve(),args.output,args.completion)

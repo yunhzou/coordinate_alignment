@@ -155,6 +155,7 @@ class AAMSearchMetrics:
     worker_search_seconds: float | None = None
     checkpoint_seconds: float | None = None
     symmetry_finalization_seconds: float | None = None
+    checkpoint_restore_and_finalize_seconds: float | None = None
 
     @classmethod
     def from_record(cls, record, elapsed_seconds):
@@ -180,6 +181,7 @@ class AAMSearchMetrics:
             worker_search_seconds=record.get('worker_search_seconds'),
             checkpoint_seconds=record.get('checkpoint_seconds'),
             symmetry_finalization_seconds=record.get('symmetry_finalization_seconds'),
+            checkpoint_restore_and_finalize_seconds=record.get('checkpoint_restore_and_finalize_seconds'),
         )
 
 

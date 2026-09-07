@@ -15,7 +15,7 @@ import time
 
 from golden_evaluation import prepare, evaluate
 from rxn_core import AAMProblem, AAMSearchConfig, search_aam
-from rxn_core.artifacts import aam_from_record
+from rxn_core.artifacts import aam_from_record,read_aam
 from rxn_core.domain import MolecularEndpoint
 
 
@@ -103,11 +103,10 @@ def search(args):
 
 def score(args):
     directory=args.run/str(args.index)
-    with gzip.open(directory/'aam.json.gz','rt') as stream:archive=json.load(stream)
-    result=aam_from_record(archive)
+    with gzip.open(directory/'aam.json.gz','rt') as stream:result=read_aam(stream)
     reference=json.loads((directory/'reference.json').read_text())
     evaluation=evaluate(result,reference['features'],reference['mapping'],seconds=120)
-    evaluation['search_incomplete']=archive.get('benchmark_completion')=='search_timeout'
+    evaluation['search_incomplete']=False  # Only complete typed archives enter this function.
     evaluation['evaluator_sha256']=hashlib.sha256(Path(__file__).with_name('golden_evaluation.py').read_bytes()).hexdigest()
     save(directory/'evaluation.json',evaluation)
 

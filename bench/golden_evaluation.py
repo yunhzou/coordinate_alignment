@@ -220,22 +220,29 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True):
         for path in aam.graph.paths():
             if time.perf_counter()>deadline:
                 result['reference_recovery']='unknown';break
-            groups=[]
+            groups=[];group_edges=[]
             for edge in path.transitions:
                 placement=aam.graph.fragment_placement(edge)
                 if placement is None:continue
-                groups.append(tuple(tuple(target_index[g.images[a]] for a in features[1]['heavy'])
-                                    for g in placement.target_generators))
-            key=(tuple(path.mapping.items()),tuple(groups))
+                projected=tuple(dict.fromkeys(tuple(target_index[g.images[a]] for a in features[1]['heavy'])
+                                               for g in placement.target_generators))
+                projected=tuple(g for g in projected if g!=tuple(range(len(target_index))))
+                if projected:
+                    groups.append(projected);group_edges.append(edge)
+            heavy_mapping=project(path.mapping,features)
+            # The query is about heavy atoms. H-only witnesses/actions must
+            # not cause the exact same symbolic query to be solved repeatedly.
+            key=(tuple(sorted(heavy_mapping.items())),tuple(groups))
             if key in seen:continue
             seen.add(key)
             if complete_reference and all(exact_action(g,features[1]) for group in groups for g in group):continue
-            status,witness=symbolic_path_query(project(path.mapping,features),groups,features,reference,
+            status,witness=symbolic_path_query(heavy_mapping,groups,features,reference,
                                                min(10000,1000*(deadline-time.perf_counter())))
             result['symbolic_queries']+=1
             if status=='recovered':
                 result.update(reference_recovery=status,witness_terminal=path.terminal,
-                              witness_path=list(path.transitions),witness_actions=witness);break
+                              witness_path=list(path.transitions),witness_group_edges=group_edges,
+                              witness_actions=witness);break
             if status=='unknown':
                 result['unknown_queries']+=1;result['reference_recovery']='unknown'
     result['evaluation_seconds']=time.perf_counter()-start

@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import html
 import json
+import gc
+import gzip
+import pickle
 from pathlib import Path
 
 import numpy as np
@@ -16,8 +19,7 @@ from .domain import (
 from .search_graph import AAMSearchGraph
 
 
-def aam_record(result: AAMResult):
-    """Persist the search graph before selecting mechanisms or representatives."""
+def _aam_header(result):
     from dataclasses import asdict
     def endpoint(molecule):
         return {'elements': molecule.elements, 'coordinates': molecule.coordinates.tolist(),
@@ -26,31 +28,105 @@ def aam_record(result: AAMResult):
     return {'schema': 'rxn_core.aam/v1', 'name': result.problem.name,
             'reactant': endpoint(result.problem.reactant),
             'product': endpoint(result.problem.product),
-            'config': asdict(result.config), 'metrics': asdict(result.metrics),
-            'graph': result.graph.to_record()}
+            'config': asdict(result.config), 'metrics': asdict(result.metrics)}
 
 
-def aam_from_record(record):
+def aam_record(result: AAMResult, *, copy_graph=True):
+    """Persist the search graph before selecting mechanisms or representatives."""
+    return {**_aam_header(result),'graph': result.graph.to_record(copy=copy_graph)}
+
+
+def aam_from_record(record, *, copy_graph=True):
     if record['schema'] != 'rxn_core.aam/v1':
         raise ValueError('unsupported AAM result schema')
+    return _aam_result(record,AAMSearchGraph.from_record(record['graph'],copy=copy_graph))
+
+
+def _aam_result(record,graph):
     def endpoint(raw):
         return MolecularEndpoint(tuple(raw['elements']), raw['coordinates'], raw['wbo'], raw['label'],
                                   energy=raw.get('energy'), metadata=raw.get('metadata', {}))
     return AAMResult(AAMProblem(endpoint(record['reactant']), endpoint(record['product']), record['name']),
-                     AAMSearchConfig(**record['config']), AAMSearchGraph.from_record(record['graph']),
+                     AAMSearchConfig(**record['config']), graph,
                      AAMSearchMetrics(**record['metrics']))
+
+
+def write_aam_checkpoint(result,path):
+    """Trusted internal snapshot preserving shared Python graph objects.
+
+    Keep the producing engine with this file. JSON remains the interchange
+    format; this pickle-based checkpoint must never be loaded from strangers.
+    """
+    path=Path(path);temporary=path.with_suffix(path.suffix+'.tmp')
+    record={**_aam_header(result),'schema':'rxn_core.aam_checkpoint/v1','graph':result.graph}
+    enabled=gc.isenabled()
+    try:
+        gc.disable()
+        with gzip.open(temporary,'wb',compresslevel=1) as stream:
+            pickle.dump(record,stream,protocol=5)
+        temporary.replace(path)
+    finally:
+        if enabled:gc.enable()
+
+
+def read_aam_checkpoint(path):
+    """Read only trusted internally produced snapshots, never untrusted pickle."""
+    enabled=gc.isenabled()
+    try:
+        gc.disable()
+        with gzip.open(path,'rb') as stream:record=pickle.load(stream)
+        if record['schema']!='rxn_core.aam_checkpoint/v1':
+            raise ValueError('Unsupported AAM checkpoint schema')
+        return _aam_result(record,record['graph'])
+    finally:
+        if enabled:gc.enable()
+
+
+def write_graph_checkpoint(graph,path):
+    """Save a trusted, finalized cut graph without expanding shared values."""
+    path=Path(path);temporary=path.with_suffix(path.suffix+'.tmp')
+    with gzip.open(temporary,'wb',compresslevel=1) as stream:
+        pickle.dump(('rxn_core.finalized_cut/v1',graph),stream,protocol=5)
+    temporary.replace(path)
+
+
+def read_graph_checkpoint(path):
+    """Load only internally produced finalized-cut checkpoints."""
+    with gzip.open(path,'rb') as stream:schema,graph=pickle.load(stream)
+    if schema!='rxn_core.finalized_cut/v1':raise ValueError('Unsupported cut checkpoint schema')
+    return graph
+
+
+def read_aam(stream):
+    """Load owned, acyclic JSON directly into the typed graph."""
+    enabled=gc.isenabled()
+    try:
+        gc.disable()
+        return aam_from_record(json.load(stream),copy_graph=False)
+    finally:
+        if enabled:gc.enable()
+
+
+def aam_json(result):
+    """Encode the complete record while borrowing its immutable graph data."""
+    enabled=gc.isenabled()
+    try:
+        gc.disable()
+        return json.dumps(aam_record(result,copy_graph=False))+'\n'
+    finally:
+        if enabled:gc.enable()
 
 
 def write_aam_bundle(result: AAMResult, output_directory):
     """Save raw AAM and an offline graph/path viewer; never rerun matching."""
     output = Path(output_directory)
     output.mkdir(parents=True, exist_ok=True)
-    record = aam_record(result)
-    _json_dump(output / 'aam.json', record)
+    serialized = aam_json(result)
+    (output / 'aam.json').write_text(serialized)
     assets = Path(__file__).parent / 'static'
     page = (assets / 'aam_search.html').read_text()
     page = page.replace('__LIBRARY__', (assets / '3Dmol-min.js').read_text())
-    page = page.replace('__DATA__', json.dumps(record).replace('<', '\\u003c'))
+    page = page.replace('__DATA__', serialized.replace('<', '\\u003c'))
     (output / 'search.html').write_text(page)
     return output
 

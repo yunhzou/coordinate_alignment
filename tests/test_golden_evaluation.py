@@ -61,3 +61,22 @@ def test_reference_recovery_queries_real_compressed_aam_not_only_representative(
     assert not evaluated['representative_recovery']
     assert evaluated['reference_recovery']=='recovered'
     assert evaluated['symbolic_queries']>0
+
+
+def test_H_only_witness_differences_do_not_repeat_heavy_queries(monkeypatch):
+    from types import SimpleNamespace as S
+    import numpy as np
+    from rxn_core import AAMProblem
+    from rxn_core.domain import MolecularEndpoint
+    endpoint=MolecularEndpoint(('C','C','H','H'),np.zeros((4,3)),np.zeros((4,4)))
+    mappings=[{0:0,1:1,2:2,3:3},{0:0,1:1,2:3,3:2}]
+    graph=S(terminals=[0,1],states=[S(mapping=m) for m in mappings],capped=False,
+        paths=lambda:iter([S(mapping=m,terminal=i,transitions=[i]) for i,m in enumerate(mappings)]),
+        fragment_placement=lambda edge:S(target_generators=[S(images=(1,0,2,3)),S(images=(0,1,3,2))]))
+    calls=[]
+    def query(*args):calls.append(args);return 'unknown',None
+    monkeypatch.setattr(E,'symbolic_path_query',query)
+    f=feature(2,True)
+    result=E.evaluate(S(graph=graph,problem=AAMProblem(endpoint,endpoint)),[f,f],{0:1,1:0})
+    assert result['reference_recovery']=='unknown'
+    assert len(calls)==result['symbolic_queries']==1

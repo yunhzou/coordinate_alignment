@@ -7,6 +7,8 @@ and cut contexts retain separate nodes when graphs are combined.
 from __future__ import annotations
 
 import copy
+import gc
+import json
 from collections import defaultdict
 from dataclasses import dataclass, replace
 from functools import cached_property
@@ -279,10 +281,32 @@ class AAMSearchGraph:
             relations.setdefault(key, []).append(path)
         return tuple(SearchBranch(tuple(paths)) for paths in relations.values())
 
-    def to_record(self):
-        from dataclasses import asdict
+    def to_record(self, *, copy=True):
+        """Return detached data by default; borrow nested data for immediate I/O.
+
+        The read-only serialization view avoids recursively copying shared
+        fragment/group records. It must not be retained or mutated by callers.
+        """
+        from dataclasses import asdict, fields
+        if not copy:
+            def rows(items):
+                return tuple({field.name: getattr(item, field.name)
+                              for field in fields(item)} for item in items)
+            return dict(schema='rxn_core.aam_search_graph/v1',
+                        contexts=rows(self.contexts), roots=self.roots,
+                        states=rows(self.states), transitions=rows(self.transitions),
+                        stops=rows(self.stops))
         return {"schema": "rxn_core.aam_search_graph/v1",
                 **asdict(self)}
+
+    def to_json(self):
+        """Encode an acyclic archive without collecting its temporary views."""
+        enabled=gc.isenabled()
+        try:
+            gc.disable()
+            return json.dumps(self.to_record(copy=False))+'\n'
+        finally:
+            if enabled:gc.enable()
 
     @classmethod
     def initial_fragment_search(cls, source, target, seed, result, config):
@@ -312,11 +336,20 @@ class AAMSearchGraph:
         return cls((context,), (0,), tuple(states), tuple(edges), tuple(stops))
 
     @classmethod
-    def from_record(cls, record):
+    def from_record(cls, record, *, copy=True, tuple_pool=None):
+        from copy import deepcopy
         if record["schema"] != "rxn_core.aam_search_graph/v1":
             raise ValueError("unsupported AAM search graph schema")
+        tuple_pool = {} if tuple_pool is None else tuple_pool
         def pairs(items):
-            return tuple(tuple(item) for item in items)
+            values = tuple(map(tuple, items))
+            shared = tuple_pool.get(values)
+            if shared is not None:
+                return shared
+            # Atom-index pairs and unchanged mapping/island sequences recur
+            # throughout the DAG. Intern immutable values, never alternatives.
+            values = tuple(tuple_pool.setdefault(pair,pair) for pair in values)
+            return tuple_pool.setdefault(values,values)
         contexts = tuple(SearchContext(
             **{**item, "source_atoms": tuple(item["source_atoms"]),
                "target_atoms": tuple(item["target_atoms"]),
@@ -328,9 +361,13 @@ class AAMSearchGraph:
             for item in record["states"])
         transitions = []
         for item in record["transitions"]:
-            match = copy.deepcopy(item["match"])
+            # Owned JSON input may transfer its nested storage to the graph.
+            # The default remains detached for callers retaining the record.
+            match = deepcopy(item["match"]) if copy else item["match"]
             if match is not None:
-                symmetry = match["symmetry"]
+                match = dict(match)
+                symmetry = dict(match["symmetry"])
+                match['symmetry'] = symmetry
                 symmetry["witness"] = {int(a): int(b) for a, b in symmetry["witness"].items()}
             transitions.append(FragmentTransition(**{**item, "match": match,
                 "step": tuple(item["step"]), "preserved_bonds": pairs(item["preserved_bonds"])}))
