@@ -76,7 +76,7 @@ def svg(mol, colors, hydrogens, width, height, *, mapping=None, owner=None, side
         target = mapping.get(old) if side == 'R' else old
         position = drawer.GetDrawCoords(atom.GetIdx())
         if source is None:
-            description = f'P:p{target} — no annotated source assignment'
+            description = f'P:p{target} — no source assignment in this mapping'
         elif target is None:
             meaning = 'H identity not reference-annotated' if reference and atom.GetAtomicNum() == 1 else 'not mapped to P'
             description = f'R{owner.get(source, 0)+1}:r{source} — {meaning}'
@@ -174,7 +174,8 @@ def render_viewer(payload, reactant, product, problem, config):
         for p in range(problem.target_atom_count):
             r, ref = inverse.get(p), expected_inverse.get(p)
             identity = lambda a: 'unassigned' if a is None else f'R{owner[a]+1}:r{a}'
-            comparison = 'H not reference-annotated' if ref is None else 'same pair' if r == ref else 'different raw pair'
+            comparison = ('H not reference-annotated' if problem.product.elements[p]=='H'
+                          else 'reference-unmatched') if ref is None else 'same pair' if r == ref else 'different raw pair'
             rows.append(f'<tr data-r="{r if r is not None else ""}" data-p="{p}" data-side="P" class="{"raw-difference" if ref is not None and r != ref else ""}">'
                         f'<td>p{p} ({problem.product.elements[p]})</td><td>{identity(r)}</td><td>{identity(ref)}</td><td>{comparison}</td></tr>')
         details = '' if record['context'] is None else '<p>Actual sweep cut on '+record['context'].get('seed_side','r').upper()+': '+html.escape(str(record['context']['cuts']))+'</p><ol>'+''.join(

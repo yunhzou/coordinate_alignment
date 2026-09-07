@@ -1,0 +1,35 @@
+[
+  {
+    "index": 9,
+    "terminals": 591,
+    "raw_heavy": 34,
+    "classes": 23,
+    "representative_reference_ranks": [
+      2
+    ],
+    "generation_seconds": 0.9215298406779766,
+    "html_bytes": 5025331
+  },
+  {
+    "index": 15,
+    "terminals": 334,
+    "raw_heavy": 26,
+    "classes": 20,
+    "representative_reference_ranks": [
+      1
+    ],
+    "generation_seconds": 0.7237323801964521,
+    "html_bytes": 4647211
+  },
+  {
+    "index": 21,
+    "terminals": 2319,
+    "raw_heavy": 47,
+    "classes": 47,
+    "representative_reference_ranks": [
+      4
+    ],
+    "generation_seconds": 2.076682338491082,
+    "html_bytes": 7796982
+  }
+]
