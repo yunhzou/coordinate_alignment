@@ -1,0 +1,36 @@
+{
+  "manifest": {
+    "jobs": [
+      {
+        "index": 1665,
+        "seeds": 100,
+        "cap": 2000,
+        "tolerance": 1.0,
+        "workers": 8,
+        "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_full_20260906/1665"
+      }
+    ],
+    "watchdog_seconds": 570,
+    "purpose": "Cap-only comparison: unchanged seeds, tolerance 1.0, ordinary sweep cuts; no reference-directed search",
+    "selection": "Five previously empty cases; four capped cap1000 misses; unresolved blind case1740. Also repeat 1665/1740 at their previous 100 seeds.",
+    "git_commit": "00c2223a7451c3296415f9d61f98fd61550aebb4"
+  },
+  "results": [
+    {
+      "index": 1665,
+      "seeds": 100,
+      "cap": 2000,
+      "reference_recovery": "recovered",
+      "scope": "partial_completed_cuts",
+      "capped": null,
+      "terminals": null,
+      "cap_stops": null,
+      "search_seconds": null,
+      "evaluation_seconds": null,
+      "total_seconds": null,
+      "exit_code": "stopped_after_reference_witness",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_cap2000_20260907/high_memory_retry/case1665_seeds100_cap2000/cuts",
+      "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_cap2000_20260907/high_memory_retry/case1665_seeds100_cap2000/partial_reference_check.json"
+    }
+  ]
+}

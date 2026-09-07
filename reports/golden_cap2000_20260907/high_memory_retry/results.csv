@@ -1,0 +1,2 @@
+index,seeds,cap,reference_recovery,scope,capped,terminals,cap_stops,search_seconds,evaluation_seconds,total_seconds,exit_code,archive,evaluation
+1665,100,2000,recovered,partial_completed_cuts,,,,,,,stopped_after_reference_witness,/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_cap2000_20260907/high_memory_retry/case1665_seeds100_cap2000/cuts,/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_cap2000_20260907/high_memory_retry/case1665_seeds100_cap2000/partial_reference_check.json
