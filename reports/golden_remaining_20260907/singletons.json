@@ -1,0 +1,786 @@
+[
+  {
+    "index": 1817,
+    "reference_recovery": "recovered",
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_policy_full_20260907/1817/cuts/aam.pkl.gz",
+    "terminal": 36,
+    "transitions": [
+      25,
+      26,
+      28,
+      31
+    ],
+    "domains": {
+      "4": [
+        27,
+        28,
+        29
+      ],
+      "3": [
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    "witness": {
+      "heavy_mapping": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          26
+        ],
+        [
+          4,
+          28
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          7
+        ],
+        [
+          10,
+          8
+        ],
+        [
+          11,
+          9
+        ],
+        [
+          12,
+          10
+        ],
+        [
+          13,
+          11
+        ],
+        [
+          14,
+          12
+        ],
+        [
+          15,
+          13
+        ],
+        [
+          16,
+          14
+        ],
+        [
+          17,
+          15
+        ],
+        [
+          18,
+          16
+        ],
+        [
+          19,
+          17
+        ],
+        [
+          20,
+          18
+        ],
+        [
+          21,
+          19
+        ],
+        [
+          22,
+          20
+        ],
+        [
+          23,
+          21
+        ],
+        [
+          24,
+          22
+        ],
+        [
+          25,
+          23
+        ]
+      ],
+      "singleton_assignments": {
+        "4": 28
+      },
+      "method": "one saved-domain substitution, exact certificate"
+    },
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        7,
+        9
+      ],
+      [
+        8,
+        10
+      ],
+      [
+        9,
+        11
+      ],
+      [
+        10,
+        12
+      ],
+      [
+        11,
+        13
+      ],
+      [
+        12,
+        14
+      ],
+      [
+        13,
+        15
+      ],
+      [
+        14,
+        16
+      ],
+      [
+        15,
+        17
+      ],
+      [
+        16,
+        18
+      ],
+      [
+        17,
+        19
+      ],
+      [
+        18,
+        20
+      ],
+      [
+        19,
+        21
+      ],
+      [
+        20,
+        22
+      ],
+      [
+        21,
+        23
+      ],
+      [
+        22,
+        24
+      ],
+      [
+        23,
+        25
+      ],
+      [
+        26,
+        3
+      ],
+      [
+        28,
+        4
+      ],
+      [
+        31,
+        26
+      ],
+      [
+        32,
+        27
+      ],
+      [
+        33,
+        28
+      ],
+      [
+        34,
+        30
+      ],
+      [
+        35,
+        29
+      ],
+      [
+        36,
+        31
+      ],
+      [
+        37,
+        32
+      ],
+      [
+        38,
+        33
+      ],
+      [
+        39,
+        35
+      ],
+      [
+        40,
+        34
+      ],
+      [
+        41,
+        37
+      ],
+      [
+        42,
+        36
+      ],
+      [
+        43,
+        38
+      ],
+      [
+        44,
+        40
+      ],
+      [
+        45,
+        39
+      ],
+      [
+        46,
+        43
+      ],
+      [
+        47,
+        41
+      ],
+      [
+        48,
+        42
+      ],
+      [
+        49,
+        44
+      ],
+      [
+        50,
+        45
+      ],
+      [
+        51,
+        46
+      ],
+      [
+        52,
+        47
+      ],
+      [
+        53,
+        48
+      ],
+      [
+        54,
+        51
+      ],
+      [
+        55,
+        49
+      ],
+      [
+        56,
+        50
+      ]
+    ],
+    "seconds": 0.04327736608684063,
+    "queries": 1,
+    "scope": "Verified saved trailing singleton-domain witness; no search rerun; no top-1 claim"
+  },
+  {
+    "index": 780,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 12.071388476993889,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 833,
+    "reference_recovery": "unknown",
+    "queries": 1,
+    "unknown_queries": 1,
+    "seconds": 17.232759803999215,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 867,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 2.0101511920802295,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 871,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 7.0600712997838855,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 846,
+    "reference_recovery": "unknown",
+    "queries": 35,
+    "unknown_queries": 35,
+    "seconds": 97.14395422581583,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 850,
+    "reference_recovery": "unknown",
+    "queries": 62,
+    "unknown_queries": 62,
+    "seconds": 146.81571348011494,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 865,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 2.0797451899852604,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1400,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 1.2545907411258668,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1351,
+    "reference_recovery": "unknown",
+    "queries": 27,
+    "unknown_queries": 27,
+    "seconds": 69.95113115897402,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1739,
+    "reference_recovery": "unknown",
+    "queries": 8,
+    "unknown_queries": 5,
+    "seconds": 15.490982817020267,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1522,
+    "reference_recovery": "unknown",
+    "queries": 68,
+    "unknown_queries": 68,
+    "seconds": 150.82563487789594,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1033,
+    "reference_recovery": "unknown",
+    "queries": 51,
+    "unknown_queries": 51,
+    "seconds": 120.30104073486291,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 44,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 5.264031164115295,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1228,
+    "reference_recovery": "unknown",
+    "queries": 1,
+    "unknown_queries": 0,
+    "seconds": 3.2450319649651647,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1314,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 1.4296349249780178,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1380,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 12.736756424419582,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 986,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 0.30886342003941536,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1285,
+    "reference_recovery": "unknown",
+    "queries": 13,
+    "unknown_queries": 0,
+    "seconds": 0.41975697595626116,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1230,
+    "reference_recovery": "unknown",
+    "queries": 6,
+    "unknown_queries": 6,
+    "seconds": 15.75138889439404,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 964,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 2.6202561892569065,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 602,
+    "reference_recovery": "unknown",
+    "queries": 9,
+    "unknown_queries": 0,
+    "seconds": 0.9491837620735168,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 19,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 11.862497696885839,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 576,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 0.8694132480304688,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 603,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 1.754829203011468,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 775,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 2.659297574078664,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 737,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 10.979292114032432,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 590,
+    "reference_recovery": "unknown",
+    "queries": 42,
+    "unknown_queries": 39,
+    "seconds": 106.30417137406766,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1786,
+    "reference_recovery": "unknown",
+    "queries": 1,
+    "unknown_queries": 1,
+    "seconds": 10.897405204363167,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1574,
+    "reference_recovery": "unknown",
+    "queries": 70,
+    "unknown_queries": 70,
+    "seconds": 151.17489628959447,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1793,
+    "reference_recovery": "unknown",
+    "reason": "no full checkpoint"
+  },
+  {
+    "index": 1729,
+    "reference_recovery": "recovered",
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_policy_full_20260907/1729/cuts/aam.pkl.gz",
+    "terminal": 47,
+    "transitions": [
+      0,
+      6,
+      46
+    ],
+    "domains": {
+      "12": [
+        23,
+        24,
+        25
+      ],
+      "13": [
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    "witness": {
+      "heavy_mapping": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          9
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          11,
+          11
+        ],
+        [
+          12,
+          24
+        ],
+        [
+          13,
+          22
+        ]
+      ],
+      "singleton_assignments": {
+        "12": 24
+      },
+      "method": "one saved-domain substitution, exact certificate"
+    },
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        9,
+        9
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        11,
+        11
+      ],
+      [
+        22,
+        13
+      ],
+      [
+        24,
+        12
+      ],
+      [
+        29,
+        16
+      ],
+      [
+        30,
+        14
+      ],
+      [
+        31,
+        15
+      ],
+      [
+        32,
+        17
+      ],
+      [
+        33,
+        18
+      ],
+      [
+        34,
+        19
+      ]
+    ],
+    "seconds": 70.80601349845529,
+    "queries": 36,
+    "scope": "Verified saved trailing singleton-domain witness; no search rerun; no top-1 claim"
+  },
+  {
+    "index": 845,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 2.301864604000002,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1553,
+    "reference_recovery": "unknown",
+    "queries": 0,
+    "unknown_queries": 0,
+    "seconds": 0.20357876177877188,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  },
+  {
+    "index": 1568,
+    "reference_recovery": "unknown",
+    "queries": 66,
+    "unknown_queries": 66,
+    "seconds": 150.5896842670627,
+    "scope": "Positive-only trailing singleton probe; absence is not a family miss"
+  }
+]

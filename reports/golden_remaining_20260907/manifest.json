@@ -1,0 +1,334 @@
+{
+  "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_policy_full_20260907",
+  "jobs": [
+    {
+      "index": 19,
+      "variant": "archive"
+    },
+    {
+      "index": 19,
+      "variant": "opposite"
+    },
+    {
+      "index": 19,
+      "variant": "cap2000"
+    },
+    {
+      "index": 576,
+      "variant": "archive"
+    },
+    {
+      "index": 576,
+      "variant": "opposite"
+    },
+    {
+      "index": 576,
+      "variant": "cap2000"
+    },
+    {
+      "index": 590,
+      "variant": "archive"
+    },
+    {
+      "index": 590,
+      "variant": "opposite"
+    },
+    {
+      "index": 590,
+      "variant": "cap2000"
+    },
+    {
+      "index": 602,
+      "variant": "archive"
+    },
+    {
+      "index": 602,
+      "variant": "opposite"
+    },
+    {
+      "index": 602,
+      "variant": "cap2000"
+    },
+    {
+      "index": 603,
+      "variant": "archive"
+    },
+    {
+      "index": 603,
+      "variant": "opposite"
+    },
+    {
+      "index": 603,
+      "variant": "cap2000"
+    },
+    {
+      "index": 737,
+      "variant": "archive"
+    },
+    {
+      "index": 737,
+      "variant": "opposite"
+    },
+    {
+      "index": 737,
+      "variant": "cap2000"
+    },
+    {
+      "index": 775,
+      "variant": "archive"
+    },
+    {
+      "index": 775,
+      "variant": "opposite"
+    },
+    {
+      "index": 775,
+      "variant": "cap2000"
+    },
+    {
+      "index": 780,
+      "variant": "archive"
+    },
+    {
+      "index": 780,
+      "variant": "opposite"
+    },
+    {
+      "index": 780,
+      "variant": "cap2000"
+    },
+    {
+      "index": 833,
+      "variant": "archive"
+    },
+    {
+      "index": 833,
+      "variant": "opposite"
+    },
+    {
+      "index": 833,
+      "variant": "cap2000"
+    },
+    {
+      "index": 845,
+      "variant": "archive"
+    },
+    {
+      "index": 845,
+      "variant": "opposite"
+    },
+    {
+      "index": 845,
+      "variant": "cap2000"
+    },
+    {
+      "index": 846,
+      "variant": "archive"
+    },
+    {
+      "index": 846,
+      "variant": "opposite"
+    },
+    {
+      "index": 846,
+      "variant": "cap2000"
+    },
+    {
+      "index": 850,
+      "variant": "archive"
+    },
+    {
+      "index": 850,
+      "variant": "opposite"
+    },
+    {
+      "index": 850,
+      "variant": "cap2000"
+    },
+    {
+      "index": 867,
+      "variant": "archive"
+    },
+    {
+      "index": 867,
+      "variant": "opposite"
+    },
+    {
+      "index": 867,
+      "variant": "cap2000"
+    },
+    {
+      "index": 871,
+      "variant": "archive"
+    },
+    {
+      "index": 871,
+      "variant": "opposite"
+    },
+    {
+      "index": 871,
+      "variant": "cap2000"
+    },
+    {
+      "index": 964,
+      "variant": "archive"
+    },
+    {
+      "index": 964,
+      "variant": "opposite"
+    },
+    {
+      "index": 964,
+      "variant": "cap2000"
+    },
+    {
+      "index": 986,
+      "variant": "archive"
+    },
+    {
+      "index": 986,
+      "variant": "opposite"
+    },
+    {
+      "index": 986,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1228,
+      "variant": "archive"
+    },
+    {
+      "index": 1228,
+      "variant": "opposite"
+    },
+    {
+      "index": 1228,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1230,
+      "variant": "archive"
+    },
+    {
+      "index": 1230,
+      "variant": "opposite"
+    },
+    {
+      "index": 1230,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1285,
+      "variant": "archive"
+    },
+    {
+      "index": 1285,
+      "variant": "opposite"
+    },
+    {
+      "index": 1285,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1314,
+      "variant": "archive"
+    },
+    {
+      "index": 1314,
+      "variant": "opposite"
+    },
+    {
+      "index": 1314,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1380,
+      "variant": "archive"
+    },
+    {
+      "index": 1380,
+      "variant": "opposite"
+    },
+    {
+      "index": 1380,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1400,
+      "variant": "archive"
+    },
+    {
+      "index": 1400,
+      "variant": "opposite"
+    },
+    {
+      "index": 1400,
+      "variant": "cap2000"
+    },
+    {
+      "index": 1739,
+      "variant": "archive"
+    },
+    {
+      "index": 1739,
+      "variant": "opposite"
+    },
+    {
+      "index": 1817,
+      "variant": "archive"
+    },
+    {
+      "index": 1817,
+      "variant": "opposite"
+    },
+    {
+      "index": 44,
+      "variant": "archive"
+    },
+    {
+      "index": 865,
+      "variant": "archive"
+    },
+    {
+      "index": 1033,
+      "variant": "archive"
+    },
+    {
+      "index": 1351,
+      "variant": "archive"
+    },
+    {
+      "index": 1522,
+      "variant": "archive"
+    },
+    {
+      "index": 1553,
+      "variant": "archive"
+    },
+    {
+      "index": 1568,
+      "variant": "archive"
+    },
+    {
+      "index": 1574,
+      "variant": "archive"
+    },
+    {
+      "index": 1729,
+      "variant": "archive"
+    },
+    {
+      "index": 1786,
+      "variant": "archive"
+    },
+    {
+      "index": 1793,
+      "variant": "archive"
+    }
+  ],
+  "revision": "4ffe03a42577ada732fefd725ea665cf830b9ac1",
+  "purpose": "Separate diagnosis, not a replacement benchmark; 3 seeds, tolerance 1.0 unchanged",
+  "search_watchdog": 300,
+  "score_watchdog": 180,
+  "workers": 2
+}

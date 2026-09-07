@@ -1,0 +1,46 @@
+{
+  "original_remaining_records": 35,
+  "variants": 81,
+  "opposite_recovered": [
+    576,
+    602,
+    603,
+    737,
+    775,
+    780,
+    833,
+    845,
+    846,
+    867,
+    964,
+    1230,
+    1380,
+    1400,
+    1739,
+    1817
+  ],
+  "cap2000_recovered": [],
+  "cap2000_watchdogs": [
+    19,
+    590,
+    737,
+    780,
+    833,
+    846,
+    850,
+    871,
+    1380
+  ],
+  "saved_domain_recovered": [
+    1817,
+    1729
+  ],
+  "singleton_checks": 35,
+  "finding": "Evaluator consumes target_generators but omits symmetry_domains; singleton domains can span multiple conditioned automorphism orbits.",
+  "warning": "Do not merge these ablations into the fixed benchmark. Positive witnesses are valid; generator-only negatives require domain-aware reverification.",
+  "source_hashes": {
+    "bench/golden_remaining.py": "26dafa42d5184dd680b67fe73f1d33d026120b1b0fb68d04b8b21756a3eaac4d",
+    "bench/golden_singleton_probe.py": "106570e5bb02b4e8d12d18b6e0e9deb613c2bc142fbd0ded9667be282327d5e5",
+    "bench/golden_evaluation.py": "d2bed8ec5a684d315b7659fffb29f029f87e8014f0792ab09be83d1c3fccbe06"
+  }
+}

@@ -104,7 +104,14 @@ def transversal_factors(generators, degree):
                  for level in reversed(group.basic_transversals) if len(level)>1)
 
 
-def symbolic_path_query(mapping, groups, features, reference, timeout_ms, *, finite_domain=False):
+def symbolic_path_query(mapping, groups, features, reference, timeout_ms, *, finite_domain=False,
+                        independent_singleton_domains=None):
+    """Query group actions, optionally with independently validated singleton choices.
+
+    This is NOT a complete arbitrary-domain verifier. The optional domains
+    must not replace correlated multi-atom fragment assignments. The diagnostic
+    caller restricts them to trailing one-atom fragments and checks its witness.
+    """
     import z3
     nr,np_ = len(features[0]['heavy']),len(features[1]['heavy'])
     width=max(nr,np_,1).bit_length()
@@ -137,7 +144,15 @@ def symbolic_path_query(mapping, groups, features, reference, timeout_ms, *, fin
             choices.append((label,choice,factor)); selected.append(choice)
         return values
     values = act([number(i) for i in range(nr)], endpoint_generators(features[0]),nr,'source_equivalence')
-    base = table([mapping.get(i,np_) for i in range(nr)],np_)
+    selected_base=dict(mapping)
+    domain_variables={}
+    for atom,domain in (independent_singleton_domains or {}).items():
+        value=variable(f'domain_{atom}')
+        solver.add(z3.Or(*(value==number(p) for p in domain)))
+        selected_base[atom]=value;domain_variables[atom]=value
+    if domain_variables:
+        solver.add(z3.Distinct(*selected_base.values()))
+    base = table([selected_base.get(i,np_) for i in range(nr)],np_)
     values = [z3.Select(base,x) for x in values]
     # Recorded chronological actions compose left-to-right; apply last first.
     for index in reversed(range(len(groups))):
@@ -158,7 +173,9 @@ def symbolic_path_query(mapping, groups, features, reference, timeout_ms, *, fin
         for action in actions:
             if action['stage']=='source_equivalence':
                 source_action=[action['permutation'][i] for i in source_action]
-        actual=[mapping.get(i,np_) for i in range(nr)]
+        realized=dict(mapping)
+        realized.update({i:model.eval(v).as_long() for i,v in domain_variables.items()})
+        actual=[realized.get(i,np_) for i in range(nr)]
         for action in actions:
             if action['stage'].startswith('path_'):
                 actual=[action['permutation'][i] if i<np_ else np_ for i in actual]
@@ -170,7 +187,8 @@ def symbolic_path_query(mapping, groups, features, reference, timeout_ms, *, fin
         selected={i:p for i,p in enumerate(actual) if p<np_}
         if complete_reference:
             assert pynauty.certificate(colored_graph(features,selected))==pynauty.certificate(colored_graph(features,reference))
-        return 'recovered', dict(actions=actions,heavy_mapping=sorted(selected.items()))
+        return 'recovered', dict(actions=actions,heavy_mapping=sorted(selected.items()),
+            singleton_assignments={i:realized[i] for i in domain_variables})
     return ('not_recovered',None) if status == z3.unsat else ('unknown',solver.reason_unknown())
 
 

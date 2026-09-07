@@ -1,5 +1,7 @@
 # Golden: smaller-first AAM and independent sweep-cut seeds
 
+**Subsequent verification correction:** the investigation in `../golden_remaining_20260907/` found that this evaluator omits saved assignment-domain alternatives. Case 1817 has a certified reference-equivalent witness in its original archive despite being labelled a miss here. The frozen figures below record the original evaluator output; negative classifications are not yet a complete domain-aware assessment. Search archives are unchanged.
+
 All 1,851 records were attempted and evaluated. No pending cases or evaluator errors remain. A completed evaluation is not necessarily a completed search: 19 searches are explicitly partial.
 
 ## Reference recovery
