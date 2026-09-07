@@ -1,0 +1,56 @@
+{
+  "cached_verified_positives": 1725,
+  "rescored": 35,
+  "new_recovered": [
+    44,
+    1351,
+    1522,
+    1729,
+    1786,
+    1817
+  ],
+  "fixed_archive_recovered": 1731,
+  "denominator": 1760,
+  "fixed_archive_percent": 98.35227272727273,
+  "outcomes": {
+    "not_recovered": 28,
+    "recovered": 6,
+    "unknown": 1
+  },
+  "not_recovered": [
+    19,
+    576,
+    590,
+    602,
+    603,
+    737,
+    775,
+    780,
+    833,
+    845,
+    846,
+    850,
+    865,
+    867,
+    871,
+    964,
+    986,
+    1033,
+    1228,
+    1230,
+    1285,
+    1314,
+    1380,
+    1400,
+    1553,
+    1568,
+    1574,
+    1739
+  ],
+  "unknown": [
+    1793
+  ],
+  "combined_with_opposite_recovered": 1746,
+  "combined_with_opposite_percent": 99.20454545454545,
+  "warning": "Combined coverage is an explicitly separate union of different search directions, not fixed-policy benchmark accuracy."
+}

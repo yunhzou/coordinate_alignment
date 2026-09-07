@@ -67,23 +67,24 @@ def test_reference_recovery_queries_real_compressed_aam_not_only_representative(
     assert evaluated['symbolic_queries']>0
 
 
-def test_H_only_witness_differences_do_not_repeat_heavy_queries(monkeypatch):
+def test_H_witness_differences_retain_full_feasibility_queries():
     from types import SimpleNamespace as S
     import numpy as np
     from rxn_core import AAMProblem
     from rxn_core.domain import MolecularEndpoint
     endpoint=MolecularEndpoint(('C','C','H','H'),np.zeros((4,3)),np.zeros((4,4)))
     mappings=[{0:0,1:1,2:2,3:3},{0:0,1:1,2:3,3:2}]
-    graph=S(terminals=[0,1],states=[S(mapping=m) for m in mappings],capped=False,
-        paths=lambda:iter([S(mapping=m,terminal=i,transitions=[i]) for i,m in enumerate(mappings)]),
-        fragment_placement=lambda edge:S(target_generators=[S(images=(1,0,2,3)),S(images=(0,1,3,2))]))
+    graph=S(terminals=[0,1],states=[S(mapping=tuple(m.items())) for m in mappings],capped=False,
+        transitions=[S(source=0),S(source=0)],
+        paths=lambda:iter([S(mapping=m,terminal=i,transitions=[i],context=S(cuts=()),fragments=()) for i,m in enumerate(mappings)]),
+        fragment_placement=lambda edge:S(r_atoms=(),representative_assignments=(),exact_fixed=(),deferred_edges=(),
+            symmetry_domains=(),target_generators=[S(images=(1,0,2,3)),S(images=(0,1,3,2))]))
     calls=[]
-    def query(*args):calls.append(args);return 'unknown',None
-    monkeypatch.setattr(E,'symbolic_path_query',query)
+    def query(*args,**kwargs):calls.append(args);return 'unknown',None
     f=feature(2,True)
-    result=E.evaluate(S(graph=graph,problem=AAMProblem(endpoint,endpoint)),[f,f],{0:1,1:0})
+    result=E.evaluate(S(graph=graph,problem=AAMProblem(endpoint,endpoint)),[f,f],{0:1,1:0},query=query)
     assert result['reference_recovery']=='unknown'
-    assert len(calls)==result['symbolic_queries']==1
+    assert len(calls)==result['symbolic_queries']==2
 
 
 def test_explicit_H_donor_competition_depends_on_seed_order():

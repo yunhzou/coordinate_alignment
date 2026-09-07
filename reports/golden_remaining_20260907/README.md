@@ -1,5 +1,7 @@
 # Investigation of the remaining Golden mappings
 
+**Follow-up completed:** `../golden_domain_rescore_20260907/` contains the full domain/group verifier fix and corrected fixed-archive coverage: **98.35%**, not 100%.
+
 ## Decisive finding: the evaluator ignores assignment domains
 
 The Golden evaluator reads each fragment's `target_generators`, but does not generally consume `symmetry_domains`. **These are not interchangeable.** A domain can contain assignments in different orbits of the conditioned automorphism group.

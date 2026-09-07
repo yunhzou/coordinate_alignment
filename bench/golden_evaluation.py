@@ -14,6 +14,8 @@ from rdkit import Chem
 from sympy.combinatorics import Permutation, PermutationGroup
 
 from rxn_core.domain import AAMProblem, MolecularEndpoint
+from rxn_core.family_query import query_path
+from rxn_core.search_graph import frozen_value
 
 
 def prepare(mapped_reaction):
@@ -214,6 +216,7 @@ def rank_key(mapping, problem):
 def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
              query_timeout_ms=10000, reference_side='target', ranker=None):
     start=time.perf_counter(); deadline=start+seconds
+    full_reference=dict(reference)
     reference=project(reference,features)
     side={'source':0,'target':1}[reference_side]
     complete_reference=len(reference)==len(features[side]['heavy'])
@@ -243,37 +246,79 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
         best_target_all_atom_coverage=max((len(aam.graph.states[t].mapping)/(aam.problem.source_atom_count if side==0 else aam.problem.target_atom_count) for t in terminals),default=0),
         capped=aam.graph.capped, symbolic_queries=0, unknown_queries=0)
     if hit is None and symbolic:
-        seen=set(); target_index={a:i for i,a in enumerate(features[1]['heavy'])}
+        seen=set(); rejected_projections=set(); target_index={a:i for i,a in enumerate(features[1]['heavy'])}
+        source_heavy=set(features[0]['heavy'])
+        def lifted(feature,degree):
+            result=[]
+            for g in endpoint_generators(feature):
+                images=list(range(degree))
+                for i,a in enumerate(feature['heavy']):images[a]=feature['heavy'][g[i]]
+                result.append(tuple(images))
+            return tuple(result)
+        source_equivalence=lifted(features[0],aam.problem.source_atom_count)
+        target_equivalence=lifted(features[1],aam.problem.target_atom_count)
         for path in aam.graph.paths():
             if time.perf_counter()>deadline:
                 result['reference_recovery']='unknown';break
-            groups=[];group_edges=[]
+            changes_chemistry=False;projected_history=[]
             for edge in path.transitions:
                 placement=aam.graph.fragment_placement(edge)
                 if placement is None:continue
                 projected=tuple(dict.fromkeys(tuple(target_index[g.images[a]] for a in features[1]['heavy'])
                                                for g in placement.target_generators))
                 projected=tuple(g for g in projected if g!=tuple(range(len(target_index))))
-                if projected:
-                    groups.append(projected);group_edges.append(edge)
+                changes_chemistry |= any(not exact_action(g,features[1]) for g in projected)
+                projected_domains=[]
+                for domain in placement.symmetry_domains:
+                    if domain.source=='exact_automorph_group':continue
+                    atoms=[target_index[a] for a in domain.p_atoms if a in target_index]
+                    if atoms:projected_domains.append((tuple(r for r in domain.r_atoms if r in source_heavy),tuple(atoms)))
+                    for atom in atoms[1:]:
+                        swap=list(range(len(target_index)));swap[atoms[0]],swap[atom]=swap[atom],swap[atoms[0]]
+                        changes_chemistry |= not exact_action(swap,features[1])
+                fragment=tuple(r for r in placement.r_atoms if r in source_heavy)
+                if projected or projected_domains or fragment:
+                    projected_history.append((fragment,tuple(projected_domains),projected,
+                        tuple((r,p) for r,p in placement.representative_assignments if r in source_heavy),
+                        tuple(r for r in placement.exact_fixed if r in source_heavy),
+                        tuple(e for e in placement.deferred_edges if set(e)<=source_heavy),
+                        tuple((r,p) for r,p in aam.graph.states[aam.graph.transitions[edge].source].mapping if r in source_heavy)))
             heavy_mapping=project(path.mapping,features)
-            # The query is about heavy atoms. H-only witnesses/actions must
-            # not cause the exact same symbolic query to be solved repeatedly.
-            key=(tuple(sorted(heavy_mapping.items())),tuple(groups))
+            # Full H and domain history matter to feasibility, even when the
+            # projected heavy representative is identical.
+            key=(tuple(sorted(path.mapping.items())),path.context.cuts,frozen_value(path.fragments))
             if key in seen:continue
             seen.add(key)
-            if complete_reference and all(exact_action(g,features[1]) for group in groups for g in group):continue
-            query_function=symbolic_path_query if query is None else query
-            status,witness=query_function(heavy_mapping,groups,features,reference,
-                                               min(query_timeout_ms,1000*(deadline-time.perf_counter())))
+            if complete_reference and (not changes_chemistry or len(heavy_mapping)!=len(reference)):continue
+            query_function=query_path if query is None else query
+            projection_key=(tuple(sorted(heavy_mapping.items())),tuple(projected_history),
+                tuple(e for e in path.context.cuts if set(e)<=source_heavy))
+            if projection_key in rejected_projections:continue
+            if query is None:
+                status,_=query_path(path,aam.problem,full_reference,
+                    source_atoms=features[0]['heavy'],source_generators=source_equivalence,
+                    target_generators=target_equivalence,complete_reference=complete_reference,
+                    projected_atoms=features[0]['heavy'],
+                    timeout_ms=min(query_timeout_ms,1000*(deadline-time.perf_counter())))
+                if status=='not_recovered':rejected_projections.add(projection_key);continue
+            status,witness=query_function(path,aam.problem,full_reference,
+                source_atoms=features[0]['heavy'],source_generators=source_equivalence,
+                target_generators=target_equivalence,complete_reference=complete_reference,
+                timeout_ms=min(query_timeout_ms,1000*(deadline-time.perf_counter())))
             result['symbolic_queries']+=1
             if status=='recovered':
+                realized=project(witness['mapping'],features)
+                if complete_reference:
+                    assert pynauty.certificate(colored_graph(features,realized))==expected
+                witness['heavy_mapping']=sorted(realized.items())
                 result.update(reference_recovery=status,witness_terminal=path.terminal,
-                              witness_path=list(path.transitions),witness_group_edges=group_edges,
+                              witness_path=list(path.transitions),
                               witness_actions=witness);break
             if status=='unknown':
                 result['unknown_queries']+=1;result['reference_recovery']='unknown'
     result['evaluation_seconds']=time.perf_counter()-start
+    result['verifier']='full_explicit_domain_and_group_v1'
+    if hit is None and symbolic:result['rejected_heavy_projections']=len(rejected_projections)
     if ranked:result['top_events']=ranker(aam.graph.states[ranked[0]].mapping)[1]
     return result
 
@@ -295,4 +340,5 @@ def evaluate_planned(aam, plan, features, reference, **options):
         concrete={ordered_features[0]['heavy'][r]:ordered_features[1]['heavy'][p]
                   for r,p in heavy.items()}
         result['input_orientation_heavy_witness']=sorted(plan.to_input_mapping(concrete).items())
+        result['input_orientation_witness']=sorted(plan.to_input_mapping(result['witness_actions']['mapping']).items())
     return result

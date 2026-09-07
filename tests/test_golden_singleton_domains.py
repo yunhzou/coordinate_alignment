@@ -5,7 +5,7 @@ import numpy as np
 import pynauty
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'bench'))
-from golden_evaluation import colored_graph,symbolic_path_query
+from golden_evaluation import colored_graph,symbolic_path_query,evaluate
 from rxn_core import AAMProblem,AAMSearchConfig,search_aam
 from rxn_core.domain import MolecularEndpoint
 
@@ -25,6 +25,14 @@ def test_saved_singleton_domain_can_cross_conditioned_automorphism_orbits():
     assert len(set(trial.values()))==2
     assert bonds[tuple(path.mapping.values())]==1
     assert bonds[tuple(trial.values())]==0
+    def feature(n,edges):
+        return dict(heavy=list(range(n)),colors=[('O',0,0,0,'')]*n,
+                    bonds=[(a,b,(1.0,'STEREONONE')) for a,b in edges])
+    score=evaluate(result,[feature(2,[]),feature(4,[(0,1),(2,3)])],trial,
+                   reference_side='source',seconds=10)
+    assert not score['representative_recovery']
+    assert score['reference_recovery']=='recovered'
+    assert score['witness_actions']['scope']=='full_explicit'
 
 
 def test_explicit_singleton_domain_query_can_certify_alternative():

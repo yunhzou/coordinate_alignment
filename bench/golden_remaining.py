@@ -2,7 +2,6 @@
 import argparse
 from collections import Counter
 from dataclasses import replace,asdict
-from functools import partial
 import json
 import os
 from pathlib import Path
@@ -13,8 +12,7 @@ import time
 
 import pynauty
 from golden_policy_campaign import load_case,save,guarded
-from golden_evaluation import (project,colored_graph,endpoint_generators,evaluate_planned,
-                               symbolic_path_query)
+from golden_evaluation import project,colored_graph,endpoint_generators,evaluate_planned
 from rxn_core import AAMProblem,AAMSearchPlan,search_aam
 from rxn_core.artifacts import read_aam_checkpoint
 
@@ -113,7 +111,7 @@ def diagnose(args):
         view=replace(aam,graph=replace(aam.graph,stops=tuple(s for s in aam.graph.stops
             if s.reason not in {'objective_met','stalled'} or s.state in eligible)))
         score=evaluate_planned(view,plan,ref['features'],ref['mapping'],seconds=130,
-            query=partial(symbolic_path_query,finite_domain=True),query_timeout_ms=15000)
+            query_timeout_ms=15000)
         save(out/'verification.json',score)
         info.update(reference_recovery='recovered' if score['reference_recovery']=='recovered' else 'unknown',
             generator_only_outcome=score['reference_recovery'],symbolic_queries=score['symbolic_queries'],

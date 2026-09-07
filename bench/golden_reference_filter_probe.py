@@ -12,11 +12,10 @@ import gzip
 import json
 from pathlib import Path
 import time
-from functools import partial
 
 import pynauty
 
-from golden_evaluation import colored_graph,project,evaluate,symbolic_path_query,endpoint_generators
+from golden_evaluation import colored_graph,project,evaluate,endpoint_generators
 from investigate_golden_mapping import save
 from rxn_core.artifacts import read_aam,read_aam_checkpoint
 
@@ -29,7 +28,6 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--archive',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--finite',action='store_true')
     p.add_argument('--query-seconds',type=float,default=10)
     p.add_argument('--target-orbits',action='store_true')
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
@@ -63,6 +61,10 @@ def main():
             if edge.id not in ancestors or edge.match is None:continue
             for g in edge.match['symmetry']['automorph_generators']:
                 action(tuple(index[g[a]] for a in features[1]['heavy']))
+            for block in edge.match['symmetry']['blocks']:
+                if block.get('source')=='exact_automorph_group':continue
+                atoms=[index[p] for p in block['p_atoms'] if p in index]
+                for atom in atoms[1:]:parents[root(atom)]=root(atoms[0])
         target_orbits=[root(i) for i in range(degree)]
         def pair_key(mapping):
             return tuple(sorted(Counter((orbits[r],target_orbits[p]) for r,p in mapping.items()).items()))
@@ -74,14 +76,13 @@ def main():
     view=replace(aam,graph=replace(aam.graph,stops=tuple(s for s in aam.graph.stops
         if s.reason not in {'objective_met','stalled'} or s.state in eligible)))
     checked=evaluate(view,features,reference['mapping'],seconds=120,
-        query=partial(symbolic_path_query,finite_domain=True) if args.finite else None,
         query_timeout_ms=1000*args.query_seconds)
     save(args.output/'verification.json',dict(reference_recovery=checked['reference_recovery'],
         witness_terminal=checked.get('witness_terminal'),witness_path=checked.get('witness_path'),
         witness_group_edges=checked.get('witness_group_edges'),witness_actions=checked.get('witness_actions'),
         symbolic_queries=checked['symbolic_queries'],unknown_queries=checked['unknown_queries'],
         evaluation_seconds=checked['evaluation_seconds'],total_seconds=time.perf_counter()-started,
-        original_archive=str(args.archive),top1_not_recomputed=True,finite_domain=args.finite,
+        original_archive=str(args.archive),top1_not_recomputed=True,verifier=checked['verifier'],
         query_seconds=args.query_seconds))
 
 
