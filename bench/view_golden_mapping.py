@@ -177,8 +177,8 @@ def render_viewer(payload, reactant, product, problem, config):
             comparison = 'H not reference-annotated' if ref is None else 'same pair' if r == ref else 'different raw pair'
             rows.append(f'<tr data-r="{r if r is not None else ""}" data-p="{p}" data-side="P" class="{"raw-difference" if ref is not None and r != ref else ""}">'
                         f'<td>p{p} ({problem.product.elements[p]})</td><td>{identity(r)}</td><td>{identity(ref)}</td><td>{comparison}</td></tr>')
-        details = '' if record['context'] is None else '<p>Actual sweep cut: '+html.escape(str(record['context']['cuts']))+'</p><ol>'+''.join(
-            f'<li>Seed r{s["seed"]}: source atoms [{", ".join("r"+str(r) for r in s["fragment"])}]</li>' for s in record['steps'])+'</ol>'
+        details = '' if record['context'] is None else '<p>Actual sweep cut on '+record['context'].get('seed_side','r').upper()+': '+html.escape(str(record['context']['cuts']))+'</p><ol>'+''.join(
+            f'<li>Seed {record["context"].get("seed_side","r")}{s["seed"]}: mapped R atoms [{", ".join("r"+str(r) for r in s["fragment"])}]</li>' for s in record['steps'])+'</ol>'
         views.append(f'<section><h2>{record["label"]}</h2><p>{"Colors show actual AAM transition fragments (F)." if record["context"] is not None else "Colors show reference-derived conserved regions (G), not AAM fragments."}</p>'+
                      legend+compare+''.join(panels)+'<details><summary>Exact P → R comparison table (click a row to highlight)</summary>'+
                      '<table><tr><th>Product atom</th><th>Selected mapping</th><th>Reference mapping</th><th>Raw-index comparison</th></tr>'+''.join(rows)+
