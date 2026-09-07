@@ -9,6 +9,7 @@ Serialization, command-line orchestration, and viewers are typed boundary
 adapters outside these computational contracts.
 """
 from .aam import search_aam
+from .search_orientation import AAMSearchPlan, plan_aam_search
 from .analytical import compile_mapping_families, compile_mechanism_families
 from .mechanisms import group_mechanisms
 from .fragment import match_fragment, FragmentMatchConfig, FragmentMatchContext, FragmentMatchResult, FragmentPlacement
@@ -65,6 +66,7 @@ from .modes import bond_overlap_per_mode, rxn_overlap_per_mode
 from .subgraph import SubgraphMatch, SubgraphSearchResult, match_weighted_subgraph
 
 __all__ = [
+    "AAMSearchPlan", "plan_aam_search",
     "aam_record", "aam_from_record", "write_aam_bundle",
     "group_mechanisms", "compile_mechanism_families", "MechanismResult", "MappingFamilyResult",
     "match_fragment", "FragmentMatchConfig", "FragmentMatchContext", "FragmentMatchResult", "FragmentPlacement",

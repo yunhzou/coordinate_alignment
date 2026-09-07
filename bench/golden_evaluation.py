@@ -194,13 +194,15 @@ def rank_key(mapping, problem):
 
 
 def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
-             query_timeout_ms=10000):
+             query_timeout_ms=10000, reference_side='target', ranker=None):
     start=time.perf_counter(); deadline=start+seconds
     reference=project(reference,features)
-    complete_reference=len(set(reference.values()))==len(features[1]['heavy'])
+    side={'source':0,'target':1}[reference_side]
+    complete_reference=len(reference)==len(features[side]['heavy'])
+    ranker = ranker or (lambda mapping:rank_key(mapping,aam.problem))
     expected=pynauty.certificate(colored_graph(features,reference))
     terminals=list(aam.graph.terminals)
-    ranked=sorted(terminals,key=lambda t:rank_key(aam.graph.states[t].mapping,aam.problem)[0])
+    ranked=sorted(terminals,key=lambda t:ranker(aam.graph.states[t].mapping)[0])
     candidates=[project(aam.graph.states[t].mapping,features) for t in ranked]
     # Explicit-H alternatives often have the identical heavy-atom relation.
     # Canonicalize that relation once, without discarding any AAM terminal.
@@ -219,8 +221,8 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
         witness_terminal=ranked[hit] if hit is not None else None,
         candidate_terminals=len(terminals),unique_representative_chemistries=len(set(certificates)),
         unique_heavy_representatives=len(certificate_cache),
-        best_target_heavy_coverage=max((len(m)/max(1,len(features[1]['heavy'])) for m in candidates),default=0),
-        best_target_all_atom_coverage=max((len(aam.graph.states[t].mapping)/aam.problem.target_atom_count for t in terminals),default=0),
+        best_target_heavy_coverage=max((len(m)/max(1,len(features[side]['heavy'])) for m in candidates),default=0),
+        best_target_all_atom_coverage=max((len(aam.graph.states[t].mapping)/(aam.problem.source_atom_count if side==0 else aam.problem.target_atom_count) for t in terminals),default=0),
         capped=aam.graph.capped, symbolic_queries=0, unknown_queries=0)
     if hit is None and symbolic:
         seen=set(); target_index={a:i for i,a in enumerate(features[1]['heavy'])}
@@ -254,5 +256,25 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
             if status=='unknown':
                 result['unknown_queries']+=1;result['reference_recovery']='unknown'
     result['evaluation_seconds']=time.perf_counter()-start
-    if ranked:result['top_events']=rank_key(aam.graph.states[ranked[0]].mapping,aam.problem)[1]
+    if ranked:result['top_events']=ranker(aam.graph.states[ranked[0]].mapping)[1]
+    return result
+
+
+def evaluate_planned(aam, plan, features, reference, **options):
+    """Score native compressed actions in search space; rank in input R/P space."""
+    ordered_features = list(reversed(features)) if plan.reversed else features
+    result = evaluate(aam,ordered_features,plan.to_search_mapping(reference),
+        reference_side='source' if plan.reversed else 'target',
+        ranker=lambda m:rank_key(plan.to_input_mapping(m),plan.input_problem),**options)
+    result['search_direction']=plan.direction
+    result['mapping_space']='search source/target; use orientation.json to recover input R/P indices'
+    result['coverage_space']='original input product'
+    if result['witness_terminal'] is not None and result['representative_recovery']:
+        result['input_orientation_witness']=sorted(plan.to_input_mapping(
+            aam.graph.states[result['witness_terminal']].mapping).items())
+    elif result.get('witness_actions'):
+        heavy=dict(result['witness_actions']['heavy_mapping'])
+        concrete={ordered_features[0]['heavy'][r]:ordered_features[1]['heavy'][p]
+                  for r,p in heavy.items()}
+        result['input_orientation_heavy_witness']=sorted(plan.to_input_mapping(concrete).items())
     return result

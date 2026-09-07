@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import gc
 import multiprocessing as mp
 import time
@@ -20,12 +21,23 @@ from .search_symmetry import finalize_graph_symmetry
 _SEARCH_CONTEXT = None
 
 
+def cut_seed(cut, root_seed=42):
+    """Distinct reproducible streams, independent of scheduling and cut order."""
+    edges = tuple(sorted(tuple(sorted(edge)) for edge in cut))
+    if not edges:
+        return root_seed
+    payload = json.dumps([root_seed, edges], separators=(',', ':')).encode('ascii')
+    return int.from_bytes(hashlib.blake2b(payload, digest_size=16,
+                                         person=b'AAM-cut-seeds-v1').digest(), 'big')
+
+
 def checkpoint_manifest(problem, config):
     """Identity required before reusing cut checkpoints (not reference labels)."""
     def endpoint(value):
         return dict(elements=list(value.elements), wbo=value.wbo.tolist(),
                     coordinates=value.coordinates.tolist())
-    return json.loads(json.dumps(dict(schema='rxn_core.aam_checkpoints/v1',
+    return json.loads(json.dumps(dict(schema='rxn_core.aam_checkpoints/v2',
+        seed_policy='independent_per_cut_blake2b_v1',
         reactant=endpoint(problem.reactant),product=endpoint(problem.product),
         config=asdict(config))))
 
@@ -46,7 +58,7 @@ def _search_cut(cut):
     source.remove_edges_from(cut)
     source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
     graphs, profile = [], []
-    for order in _generate_seed_orders(source, n_trials=config.seed_count):
+    for order in _generate_seed_orders(source, n_trials=config.seed_count, rng_seed=cut_seed(cut)):
         graphs.append(find_islands(source, target, order,
             graph_floor=config.graph_floor, iso_tol=config.iso_tolerance,
             max_branches=config.branch_limit, p_orbits=target_orbits,
