@@ -28,7 +28,9 @@ Case 1740 still misses at 100 seeds with **zero cap stops** (67.12 s search/arch
 - [Case 1665, new cap 2,000 / three seeds](case1665_seeds3/viewer.html)
 - [Case 1665, previous cap 100 / 100 seeds](../golden_mapping_diagnosis_20260907/case1665/viewer.html)
 
-Both are standalone offline HTML, with reference, blind top-ranked result, and closest saved representative. Display indices are checked against the archive elements and bond matrix. Colors indicate **source-component origins**, not fragment boundaries; actual fragment decisions are listed separately. Explicit-H toggle is available. The reference does not specify individual H mappings.
+The viewers are standalone offline HTML. Display indices are checked against the archive elements and bond matrix. **Both drawings now show the mapped source-atom identifier (`r57`), not unrelated R and P indices.** Hover/click highlights the actual pair and reports, for example, `R6:r76 → P:p0`. The exact table compares each P atom's selected source against its reference source without relabelling symmetry-equivalent copies.
+
+Colors show **actual AAM transition fragments (F)**; the reference view instead labels its derived conserved regions (G), because the reference contains no AAM search history. Identical target heavy-atom regions retain their color across views. An explicit-H toggle is available; unannotated reference H identities remain unassigned. Contributing molecules appear first; “Show all input molecules” includes all nine. The recovered viewer opens on the actual verified witness, not the reference. All mappings are unchanged; only their presentation was corrected.
 
 The reference uses 18 core carbons and two sets of ten naphthyl carbons. The previous cap-100 top result borrows seven carbons from toluene and three from phosphine. The new cap-2,000 closest saved representative uses 18 + 10 + 9 intended carbons but one carbon from phosphine. “Closest” is an explicitly documented orbit-count diagnostic, not a claim of globally optimal alignment over all symmetry realizations.
 
