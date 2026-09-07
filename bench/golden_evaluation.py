@@ -104,13 +104,18 @@ def transversal_factors(generators, degree):
                  for level in reversed(group.basic_transversals) if len(level)>1)
 
 
-def symbolic_path_query(mapping, groups, features, reference, timeout_ms):
+def symbolic_path_query(mapping, groups, features, reference, timeout_ms, *, finite_domain=False):
     import z3
-    solver = z3.Solver(); solver.set(timeout=max(1,int(timeout_ms)))
     nr,np_ = len(features[0]['heavy']),len(features[1]['heavy'])
+    width=max(nr,np_,1).bit_length()
+    sort=z3.BitVecSort(width) if finite_domain else z3.IntSort()
+    number=(lambda n:z3.BitVecVal(n,width)) if finite_domain else z3.IntVal
+    variable=(lambda name:z3.BitVec(name,width)) if finite_domain else z3.Int
+    solver = z3.SolverFor('QF_ABV') if finite_domain else z3.Solver()
+    solver.set(timeout=max(1,int(timeout_ms)))
     choices, serial = [], 0
     def table(images, sentinel):
-        array = z3.K(z3.IntSort(),z3.IntVal(sentinel))
+        array = z3.K(sort,number(sentinel))
         for i,value in enumerate(images):
             array = z3.Store(array,i,value)
         return array
@@ -118,19 +123,20 @@ def symbolic_path_query(mapping, groups, features, reference, timeout_ms):
         nonlocal serial
         selected = []
         for factor in transversal_factors(tuple(generators),degree):
-            choice = z3.Int(f'c{serial}');serial += 1
-            solver.add(choice>=0,choice<len(factor))
+            choice = variable(f'c{serial}');serial += 1
+            if finite_domain:solver.add(z3.ULT(choice,number(len(factor))))
+            else:solver.add(choice>=0,choice<len(factor))
             arr = table(factor[-1],degree)
             for index in reversed(range(len(factor)-1)):
                 arr = z3.If(choice==index,table(factor[index],degree),arr)
             result = []
             for value in values:
-                variable = z3.Int(f'x{serial}');serial += 1
-                solver.add(variable == z3.Select(arr,value));result.append(variable)
+                transported = variable(f'x{serial}');serial += 1
+                solver.add(transported == z3.Select(arr,value));result.append(transported)
             values = result
             choices.append((label,choice,factor)); selected.append(choice)
         return values
-    values = act([z3.IntVal(i) for i in range(nr)], endpoint_generators(features[0]),nr,'source_equivalence')
+    values = act([number(i) for i in range(nr)], endpoint_generators(features[0]),nr,'source_equivalence')
     base = table([mapping.get(i,np_) for i in range(nr)],np_)
     values = [z3.Select(base,x) for x in values]
     # Recorded chronological actions compose left-to-right; apply last first.
@@ -187,7 +193,8 @@ def rank_key(mapping, problem):
         broken=int(broken),formed=int(formed),bond_order_changed=int(changed))
 
 
-def evaluate(aam, features, reference, seconds=120, symbolic=True):
+def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
+             query_timeout_ms=10000):
     start=time.perf_counter(); deadline=start+seconds
     reference=project(reference,features)
     complete_reference=len(set(reference.values()))==len(features[1]['heavy'])
@@ -236,8 +243,9 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True):
             if key in seen:continue
             seen.add(key)
             if complete_reference and all(exact_action(g,features[1]) for group in groups for g in group):continue
-            status,witness=symbolic_path_query(heavy_mapping,groups,features,reference,
-                                               min(10000,1000*(deadline-time.perf_counter())))
+            query_function=symbolic_path_query if query is None else query
+            status,witness=query_function(heavy_mapping,groups,features,reference,
+                                               min(query_timeout_ms,1000*(deadline-time.perf_counter())))
             result['symbolic_queries']+=1
             if status=='recovered':
                 result.update(reference_recovery=status,witness_terminal=path.terminal,

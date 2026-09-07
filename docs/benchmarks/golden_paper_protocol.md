@@ -4,6 +4,12 @@ Status: the public API accepts unequal endpoint compositions and returns the exi
 
 Campaign: `/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_full_20260906/`. Live status: `index.html` and `progress.json`. Frozen engine/configuration/input hashes: `manifest.json`. The 16-record pilot at the adjacent `golden_pilot_20260906/` is retained; its searches are reused, not remapped. Summaries must distinguish reuse from a cold full-run timing.
 
+Later [mapping-miss diagnostics](../../reports/golden_mapping_diagnosis_20260907/README.md)
+audit the 137 nonempty misses and separate seed/cap experiments from verification
+on unchanged archives. Improved verification confirms 1,607/1,760 complete
+references, with four still unresolved; higher-seed and guided successes are not
+mixed into that fixed-search count. Original reports remain historical evidence.
+
 ## Datasets and baselines
 
 - Primary: Lin et al., *Atom-to-atom Mapping: A Benchmarking Study of Popular Mapping Algorithms and Consensus Strategies*, Molecular Informatics, DOI [10.1002/minf.202100138](https://doi.org/10.1002/minf.202100138). The original Golden archive contains 1,851 reactions. Obtain it from the [authors' repository](https://github.com/Laboratoire-de-Chemoinformatique/Reaction_Data_Cleaning), pin its commit and file hashes, and preserve original records.
