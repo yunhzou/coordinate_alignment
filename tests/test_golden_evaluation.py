@@ -51,6 +51,23 @@ def test_inputs_are_unmapped_explicit_H_and_reference_indices_are_separate():
     assert all(':' not in e.metadata['unmapped_smiles'] for e in (problem.reactant,problem.product))
 
 
+@pytest.mark.parametrize('extra_pair',[False,True])
+def test_one_sided_reference_requires_exact_relation_not_subset(extra_pair):
+    from types import SimpleNamespace as S
+    import numpy as np
+    from rxn_core import AAMProblem
+    from rxn_core.domain import MolecularEndpoint
+    endpoint=MolecularEndpoint(('C','C'),np.zeros((2,3)),np.zeros((2,2)))
+    mapping={0:0,1:1} if extra_pair else {0:0}
+    graph=S(terminals=[0],states=[S(mapping=tuple(mapping.items()))],capped=False,
+            paths=lambda:iter(()))
+    f=feature(2,True)
+    result=E.evaluate(S(graph=graph,problem=AAMProblem(endpoint,endpoint)),[f,f],{0:0})
+    assert not result['reference_annotation_complete']
+    assert result['top1_correct'] is (not extra_pair)
+    assert (result['reference_recovery']=='recovered') is (not extra_pair)
+
+
 def test_reference_recovery_queries_real_compressed_aam_not_only_representative():
     import numpy as np
     from rxn_core import AAMProblem,AAMSearchConfig,search_aam

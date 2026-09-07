@@ -22,11 +22,14 @@ def init(args):
     jobs=[]
     for p in sorted(args.source.glob('*/evaluation.json'),key=lambda p:int(p.parent.name)):
         e=json.loads(p.read_text())
-        if e.get('reference_annotation_complete') and e['reference_recovery']!='recovered':jobs.append(int(p.parent.name))
+        selected = (not e.get('reference_annotation_complete') if args.one_sided
+                    else e.get('reference_annotation_complete') and e['reference_recovery']!='recovered')
+        if selected:jobs.append(int(p.parent.name))
     save(args.run/'manifest.json',dict(source=str(args.source.resolve()),indices=jobs,
         cached_complete_reference_positives=old['complete_reference_recovered'],
         complete_reference_total=old['complete_reference_total'],watchdog_seconds=300,
-        interpretation='Reuse independently certified positives; rescore all remaining complete-reference records, no new AAM searches',
+        interpretation=('Score every one-sided reference with exact unmatched-atom semantics' if args.one_sided
+                        else 'Reuse independently certified positives; rescore all remaining complete-reference records, no new AAM searches'),
         source_hashes={str(p.relative_to(args.run/'engine')):hashlib.sha256(p.read_bytes()).hexdigest()
             for p in (args.run/'engine').rglob('*.py')}))
     print(len(jobs))
@@ -75,4 +78,5 @@ def worker(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['init','worker','score'])
     p.add_argument('--run',type=Path,required=True);p.add_argument('--source',type=Path);p.add_argument('--slot',type=int)
+    p.add_argument('--one-sided',action='store_true')
     a=p.parse_args();dict(init=init,worker=worker,score=score)[a.mode](a)

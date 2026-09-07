@@ -1,0 +1,81 @@
+{
+  "all_records": {
+    "total": 1851,
+    "outcomes": {
+      "recovered": 1818,
+      "not_recovered": 32,
+      "unknown": 1
+    },
+    "recovered": 1818,
+    "coverage_percent": 98.21717990275526,
+    "top1_correct": 1435,
+    "top1_unknown": 19,
+    "top1_percent": 77.52566180443004
+  },
+  "one_sided": {
+    "total": 91,
+    "outcomes": {
+      "not_recovered": 4,
+      "recovered": 87
+    },
+    "recovered": 87,
+    "coverage_percent": 95.6043956043956,
+    "top1_correct": 81,
+    "top1_unknown": 0,
+    "top1_percent": 89.01098901098901
+  },
+  "fully_paired_product": {
+    "total": 1760,
+    "outcomes": {
+      "recovered": 1731,
+      "not_recovered": 28,
+      "unknown": 1
+    },
+    "recovered": 1731,
+    "coverage_percent": 98.35227272727273,
+    "top1_correct": 1354,
+    "top1_unknown": 19,
+    "top1_percent": 76.93181818181819
+  },
+  "combined_search_recovered": 1833,
+  "combined_search_percent": 99.02755267423015,
+  "not_recovered": [
+    7,
+    19,
+    576,
+    590,
+    602,
+    603,
+    737,
+    775,
+    780,
+    833,
+    845,
+    846,
+    850,
+    865,
+    867,
+    871,
+    964,
+    986,
+    1033,
+    1228,
+    1230,
+    1285,
+    1314,
+    1358,
+    1377,
+    1380,
+    1400,
+    1475,
+    1553,
+    1568,
+    1574,
+    1739
+  ],
+  "unknown": [
+    1793
+  ],
+  "semantics": "Exact heavy-atom relation and unmatched status, modulo endpoint chemical symmetry. Explicit H in AAM; no H-identity accuracy claim.",
+  "caveat": "Combined-search coverage is a union with prior opposite-direction diagnostics, not fixed-policy accuracy. This is our evaluator, not a reproduction of the original CGR scoring implementation."
+}

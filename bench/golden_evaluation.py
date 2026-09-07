@@ -236,7 +236,7 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
         certificates.append(certificate_cache[key])
     hit=next((i for i,c in enumerate(certificates) if c==expected),None)
     result=dict(reference_pairs=len(reference),reference_annotation_complete=complete_reference,
-        top1_correct=bool(certificates and certificates[0]==expected) if complete_reference else None,
+        top1_correct=bool(certificates and certificates[0]==expected),
         representative_recovery=hit is not None,reference_recovery='recovered' if hit is not None else 'not_recovered',
         top_terminal=ranked[0] if ranked else None,
         witness_terminal=ranked[hit] if hit is not None else None,
@@ -289,7 +289,7 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
             key=(tuple(sorted(path.mapping.items())),path.context.cuts,frozen_value(path.fragments))
             if key in seen:continue
             seen.add(key)
-            if complete_reference and (not changes_chemistry or len(heavy_mapping)!=len(reference)):continue
+            if not changes_chemistry or len(heavy_mapping)!=len(reference):continue
             query_function=query_path if query is None else query
             projection_key=(tuple(sorted(heavy_mapping.items())),tuple(projected_history),
                 tuple(e for e in path.context.cuts if set(e)<=source_heavy))
@@ -297,19 +297,18 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
             if query is None:
                 status,_=query_path(path,aam.problem,full_reference,
                     source_atoms=features[0]['heavy'],source_generators=source_equivalence,
-                    target_generators=target_equivalence,complete_reference=complete_reference,
+                    target_generators=target_equivalence,complete_reference=True,
                     projected_atoms=features[0]['heavy'],
                     timeout_ms=min(query_timeout_ms,1000*(deadline-time.perf_counter())))
                 if status=='not_recovered':rejected_projections.add(projection_key);continue
             status,witness=query_function(path,aam.problem,full_reference,
                 source_atoms=features[0]['heavy'],source_generators=source_equivalence,
-                target_generators=target_equivalence,complete_reference=complete_reference,
+                target_generators=target_equivalence,complete_reference=True,
                 timeout_ms=min(query_timeout_ms,1000*(deadline-time.perf_counter())))
             result['symbolic_queries']+=1
             if status=='recovered':
                 realized=project(witness['mapping'],features)
-                if complete_reference:
-                    assert pynauty.certificate(colored_graph(features,realized))==expected
+                assert pynauty.certificate(colored_graph(features,realized))==expected
                 witness['heavy_mapping']=sorted(realized.items())
                 result.update(reference_recovery=status,witness_terminal=path.terminal,
                               witness_path=list(path.transitions),
@@ -318,6 +317,7 @@ def evaluate(aam, features, reference, seconds=120, symbolic=True, query=None,
                 result['unknown_queries']+=1;result['reference_recovery']='unknown'
     result['evaluation_seconds']=time.perf_counter()-start
     result['verifier']='full_explicit_domain_and_group_v1'
+    result['reference_semantics']='exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry'
     if hit is None and symbolic:result['rejected_heavy_projections']=len(rejected_projections)
     if ranked:result['top_events']=ranker(aam.graph.states[ranked[0]].mapping)[1]
     return result
