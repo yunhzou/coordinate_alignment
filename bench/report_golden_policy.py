@@ -5,6 +5,7 @@ import csv
 import json
 from pathlib import Path
 import statistics
+import subprocess
 
 
 def main(args):
@@ -32,6 +33,7 @@ def main(args):
     complete=[r for r in rows if r['reference_complete']]
     times=[r['search_seconds'] for r in rows if r['search_seconds'] is not None]
     summary=dict(total=len(rows),states=dict(Counter(r['stage'] for r in rows)),
+        settled=all(r['stage']=='complete' for r in rows),
         complete_reference_total=len(complete),complete_reference_outcomes=dict(Counter(r['reference_recovery'] for r in complete)),
         complete_reference_recovered=sum(r['reference_recovery']=='recovered' for r in complete),
         complete_reference_top1=sum(r['top1_correct'] is True for r in complete),
@@ -39,14 +41,34 @@ def main(args):
         top1_percent=100*sum(r['top1_correct'] is True for r in complete)/len(complete),
         gains=[r['index'] for r in complete if r['recovery_change']=='gained'],
         losses=[r['index'] for r in complete if r['recovery_change']=='lost'],
+        not_recovered=[r['index'] for r in complete if r['reference_recovery']=='not_recovered'],
+        unknown=[r['index'] for r in complete if r['reference_recovery']=='unknown'],
+        partial_search_indices=[r['index'] for r in rows if r['search_incomplete'] is True],
         partial_reference_records=len(rows)-len(complete),
         incomplete_searches=sum(r['search_incomplete'] is True for r in rows),
         completed_searches=len(times),search_median_seconds=statistics.median(times) if times else None,
         search_max_seconds=max(times,default=None),
         completed_search_cpu_hours=sum(r['cpu_seconds'] or 0 for r in rows)/3600,
+        completed_search_seconds=sum(times),
+        evaluation_seconds=sum(r['evaluation_seconds'] or 0 for r in rows),
         peak_rss_mb=max((r['peak_rss_mb'] or 0 for r in rows),default=0),
-        note='Accuracy uses all complete-reference records, including pending/errors/unknown. Until the run settles these percentages are lower bounds, not final scores. CPU totals omit interrupted searches; use Slurm accounting for allocation totals.')
+        note='Accuracy uses all complete-reference records, including unresolved cases. Recovered partial-search witnesses count as positive evidence; their full-sweep top-1 is unknown. An unsettled report is interim. Completed-search CPU totals omit interrupted searches; Slurm allocation totals are separate.')
     args.output.mkdir(parents=True,exist_ok=True)
+    if args.accounting:
+        submission=json.loads((args.run/'submission.json').read_text())
+        recovery=args.run/'resubmission_unstarted.json'
+        if recovery.exists():
+            resubmission=json.loads(recovery.read_text())
+            submission['jobs']+=resubmission['jobs']
+            (args.output/recovery.name).write_text(json.dumps(resubmission,indent=2)+'\n')
+        jobs=','.join(j['job'] for j in submission['jobs'])
+        accounting=subprocess.check_output(['sacct','-j',jobs,'-P',
+            '--format=JobID,State,ElapsedRaw,AllocCPUS,TotalCPU,MaxRSS,Start,End'],text=True)
+        (args.output/'slurm_accounting.psv').write_text(accounting)
+        allocations=[r for r in csv.DictReader(accounting.splitlines(),delimiter='|') if '.' not in r['JobID']]
+        summary['allocation_states']=dict(Counter(r['State'] for r in allocations))
+        summary['allocated_cpu_hours']=sum(int(r['ElapsedRaw'])*int(r['AllocCPUS']) for r in allocations)/3600
+        summary['allocation_note']='Main campaign allocations include interrupted searches and process/startup overhead; separate saved-cut reevaluation jobs are excluded.'
     for name,data in [('summary.json',summary),('manifest.json',manifest)]:
         (args.output/name).write_text(json.dumps(data,indent=2)+'\n')
     with (args.output/'cases.csv').open('w') as stream:
@@ -59,4 +81,5 @@ if __name__=='__main__':
     parser.add_argument('--run',type=Path,required=True)
     parser.add_argument('--baseline',type=Path,default=Path('reports/golden_mapping_diagnosis_20260907/unchanged_search_reference_status.csv'))
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--accounting',action='store_true')
     main(parser.parse_args())

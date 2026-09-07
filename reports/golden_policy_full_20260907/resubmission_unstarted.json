@@ -1,0 +1,1432 @@
+{
+  "reason": "Jobs never started on stalled CONFIGURING nodes; preserve all running/completed searches",
+  "time": 1788799289.3113048,
+  "cancelled_unstarted": [
+    {
+      "job": "438299_477",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 477
+    },
+    {
+      "job": "438299_478",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 478
+    },
+    {
+      "job": "438300_480",
+      "state": "CONFIGURING",
+      "node": "bosque46",
+      "index": 1481
+    },
+    {
+      "job": "438300_485",
+      "state": "CONFIGURING",
+      "node": "bosque52",
+      "index": 1486
+    },
+    {
+      "job": "438300_390",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 1391
+    },
+    {
+      "job": "438299_372",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 372
+    },
+    {
+      "job": "438299_378",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 378
+    },
+    {
+      "job": "438299_379",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 379
+    },
+    {
+      "job": "438299_387",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 387
+    },
+    {
+      "job": "438299_390",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 390
+    },
+    {
+      "job": "438299_391",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 391
+    },
+    {
+      "job": "438299_392",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 392
+    },
+    {
+      "job": "438299_393",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 393
+    },
+    {
+      "job": "438299_394",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 394
+    },
+    {
+      "job": "438299_398",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 398
+    },
+    {
+      "job": "438299_399",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 399
+    },
+    {
+      "job": "438300_391",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 1392
+    },
+    {
+      "job": "438300_395",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1396
+    },
+    {
+      "job": "438300_397",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1398
+    },
+    {
+      "job": "438300_399",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1400
+    },
+    {
+      "job": "438300_402",
+      "state": "CONFIGURING",
+      "node": "bosque26",
+      "index": 1403
+    },
+    {
+      "job": "438300_403",
+      "state": "CONFIGURING",
+      "node": "bosque26",
+      "index": 1404
+    },
+    {
+      "job": "438300_411",
+      "state": "CONFIGURING",
+      "node": "bosque52",
+      "index": 1412
+    },
+    {
+      "job": "438300_296",
+      "state": "CONFIGURING",
+      "node": "bosque46",
+      "index": 1297
+    },
+    {
+      "job": "438299_295",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 295
+    },
+    {
+      "job": "438299_297",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 297
+    },
+    {
+      "job": "438299_302",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 302
+    },
+    {
+      "job": "438299_305",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 305
+    },
+    {
+      "job": "438299_311",
+      "state": "CONFIGURING",
+      "node": "bosque26",
+      "index": 311
+    },
+    {
+      "job": "438299_314",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 314
+    },
+    {
+      "job": "438299_315",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 315
+    },
+    {
+      "job": "438299_316",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 316
+    },
+    {
+      "job": "438299_318",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 318
+    },
+    {
+      "job": "438299_319",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 319
+    },
+    {
+      "job": "438299_322",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 322
+    },
+    {
+      "job": "438299_323",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 323
+    },
+    {
+      "job": "438299_324",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 324
+    },
+    {
+      "job": "438299_328",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 328
+    },
+    {
+      "job": "438299_329",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 329
+    },
+    {
+      "job": "438299_332",
+      "state": "CONFIGURING",
+      "node": "bosque46",
+      "index": 332
+    },
+    {
+      "job": "438300_300",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 1301
+    },
+    {
+      "job": "438300_314",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1315
+    },
+    {
+      "job": "438300_318",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1319
+    },
+    {
+      "job": "438300_319",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1320
+    },
+    {
+      "job": "438300_331",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 1332
+    },
+    {
+      "job": "438299_212",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 212
+    },
+    {
+      "job": "438299_220",
+      "state": "CONFIGURING",
+      "node": "bosque26",
+      "index": 220
+    },
+    {
+      "job": "438299_235",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 235
+    },
+    {
+      "job": "438300_213",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 1214
+    },
+    {
+      "job": "438300_217",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 1218
+    },
+    {
+      "job": "438300_220",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 1221
+    },
+    {
+      "job": "438300_248",
+      "state": "CONFIGURING",
+      "node": "bosque52",
+      "index": 1249
+    },
+    {
+      "job": "438299_113",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 113
+    },
+    {
+      "job": "438299_119",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 119
+    },
+    {
+      "job": "438299_121",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 121
+    },
+    {
+      "job": "438299_124",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 124
+    },
+    {
+      "job": "438299_126",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 126
+    },
+    {
+      "job": "438299_157",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 157
+    },
+    {
+      "job": "438300_127",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 1128
+    },
+    {
+      "job": "438300_138",
+      "state": "CONFIGURING",
+      "node": "bosque44",
+      "index": 1139
+    },
+    {
+      "job": "438299_9",
+      "state": "CONFIGURING",
+      "node": "bosque56",
+      "index": 9
+    },
+    {
+      "job": "438299_12",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 12
+    },
+    {
+      "job": "438299_15",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 15
+    },
+    {
+      "job": "438299_17",
+      "state": "CONFIGURING",
+      "node": "bosque67",
+      "index": 17
+    },
+    {
+      "job": "438299_34",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 34
+    },
+    {
+      "job": "438299_45",
+      "state": "CONFIGURING",
+      "node": "bosque26",
+      "index": 45
+    },
+    {
+      "job": "438300_3",
+      "state": "CONFIGURING",
+      "node": "bosque46",
+      "index": 1004
+    },
+    {
+      "job": "438300_17",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1018
+    },
+    {
+      "job": "438300_26",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1027
+    },
+    {
+      "job": "438300_35",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 1036
+    },
+    {
+      "job": "438300_37",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 1038
+    },
+    {
+      "job": "438300_45",
+      "state": "CONFIGURING",
+      "node": "bosque81",
+      "index": 1046
+    },
+    {
+      "job": "438299_549",
+      "state": "CONFIGURING",
+      "node": "bosque20",
+      "index": 549
+    },
+    {
+      "job": "438300_543",
+      "state": "CONFIGURING",
+      "node": "bosque70",
+      "index": 1544
+    },
+    {
+      "job": "438300_548",
+      "state": "CONFIGURING",
+      "node": "bosque72",
+      "index": 1549
+    },
+    {
+      "job": "438299_842",
+      "state": "PENDING",
+      "node": "",
+      "index": 842
+    },
+    {
+      "job": "438299_843",
+      "state": "PENDING",
+      "node": "",
+      "index": 843
+    },
+    {
+      "job": "438299_844",
+      "state": "PENDING",
+      "node": "",
+      "index": 844
+    },
+    {
+      "job": "438299_845",
+      "state": "PENDING",
+      "node": "",
+      "index": 845
+    },
+    {
+      "job": "438299_846",
+      "state": "PENDING",
+      "node": "",
+      "index": 846
+    },
+    {
+      "job": "438299_847",
+      "state": "PENDING",
+      "node": "",
+      "index": 847
+    },
+    {
+      "job": "438299_848",
+      "state": "PENDING",
+      "node": "",
+      "index": 848
+    },
+    {
+      "job": "438299_849",
+      "state": "PENDING",
+      "node": "",
+      "index": 849
+    },
+    {
+      "job": "438299_850",
+      "state": "PENDING",
+      "node": "",
+      "index": 850
+    },
+    {
+      "job": "438299_851",
+      "state": "PENDING",
+      "node": "",
+      "index": 851
+    },
+    {
+      "job": "438299_852",
+      "state": "PENDING",
+      "node": "",
+      "index": 852
+    },
+    {
+      "job": "438299_853",
+      "state": "PENDING",
+      "node": "",
+      "index": 853
+    },
+    {
+      "job": "438299_854",
+      "state": "PENDING",
+      "node": "",
+      "index": 854
+    },
+    {
+      "job": "438299_855",
+      "state": "PENDING",
+      "node": "",
+      "index": 855
+    },
+    {
+      "job": "438299_856",
+      "state": "PENDING",
+      "node": "",
+      "index": 856
+    },
+    {
+      "job": "438299_857",
+      "state": "PENDING",
+      "node": "",
+      "index": 857
+    },
+    {
+      "job": "438299_858",
+      "state": "PENDING",
+      "node": "",
+      "index": 858
+    },
+    {
+      "job": "438299_859",
+      "state": "PENDING",
+      "node": "",
+      "index": 859
+    },
+    {
+      "job": "438299_860",
+      "state": "PENDING",
+      "node": "",
+      "index": 860
+    },
+    {
+      "job": "438299_861",
+      "state": "PENDING",
+      "node": "",
+      "index": 861
+    },
+    {
+      "job": "438299_862",
+      "state": "PENDING",
+      "node": "",
+      "index": 862
+    },
+    {
+      "job": "438299_863",
+      "state": "PENDING",
+      "node": "",
+      "index": 863
+    },
+    {
+      "job": "438299_864",
+      "state": "PENDING",
+      "node": "",
+      "index": 864
+    },
+    {
+      "job": "438299_865",
+      "state": "PENDING",
+      "node": "",
+      "index": 865
+    },
+    {
+      "job": "438299_866",
+      "state": "PENDING",
+      "node": "",
+      "index": 866
+    },
+    {
+      "job": "438299_867",
+      "state": "PENDING",
+      "node": "",
+      "index": 867
+    },
+    {
+      "job": "438299_868",
+      "state": "PENDING",
+      "node": "",
+      "index": 868
+    },
+    {
+      "job": "438299_869",
+      "state": "PENDING",
+      "node": "",
+      "index": 869
+    },
+    {
+      "job": "438299_870",
+      "state": "PENDING",
+      "node": "",
+      "index": 870
+    },
+    {
+      "job": "438299_871",
+      "state": "PENDING",
+      "node": "",
+      "index": 871
+    },
+    {
+      "job": "438299_872",
+      "state": "PENDING",
+      "node": "",
+      "index": 872
+    },
+    {
+      "job": "438299_873",
+      "state": "PENDING",
+      "node": "",
+      "index": 873
+    },
+    {
+      "job": "438299_874",
+      "state": "PENDING",
+      "node": "",
+      "index": 874
+    },
+    {
+      "job": "438299_875",
+      "state": "PENDING",
+      "node": "",
+      "index": 875
+    },
+    {
+      "job": "438299_876",
+      "state": "PENDING",
+      "node": "",
+      "index": 876
+    },
+    {
+      "job": "438299_877",
+      "state": "PENDING",
+      "node": "",
+      "index": 877
+    },
+    {
+      "job": "438299_878",
+      "state": "PENDING",
+      "node": "",
+      "index": 878
+    },
+    {
+      "job": "438299_879",
+      "state": "PENDING",
+      "node": "",
+      "index": 879
+    },
+    {
+      "job": "438299_880",
+      "state": "PENDING",
+      "node": "",
+      "index": 880
+    },
+    {
+      "job": "438299_881",
+      "state": "PENDING",
+      "node": "",
+      "index": 881
+    },
+    {
+      "job": "438299_882",
+      "state": "PENDING",
+      "node": "",
+      "index": 882
+    },
+    {
+      "job": "438299_883",
+      "state": "PENDING",
+      "node": "",
+      "index": 883
+    },
+    {
+      "job": "438299_884",
+      "state": "PENDING",
+      "node": "",
+      "index": 884
+    },
+    {
+      "job": "438299_885",
+      "state": "PENDING",
+      "node": "",
+      "index": 885
+    },
+    {
+      "job": "438299_886",
+      "state": "PENDING",
+      "node": "",
+      "index": 886
+    },
+    {
+      "job": "438299_887",
+      "state": "PENDING",
+      "node": "",
+      "index": 887
+    },
+    {
+      "job": "438299_888",
+      "state": "PENDING",
+      "node": "",
+      "index": 888
+    },
+    {
+      "job": "438299_889",
+      "state": "PENDING",
+      "node": "",
+      "index": 889
+    },
+    {
+      "job": "438299_890",
+      "state": "PENDING",
+      "node": "",
+      "index": 890
+    },
+    {
+      "job": "438299_891",
+      "state": "PENDING",
+      "node": "",
+      "index": 891
+    },
+    {
+      "job": "438299_892",
+      "state": "PENDING",
+      "node": "",
+      "index": 892
+    },
+    {
+      "job": "438299_893",
+      "state": "PENDING",
+      "node": "",
+      "index": 893
+    },
+    {
+      "job": "438299_894",
+      "state": "PENDING",
+      "node": "",
+      "index": 894
+    },
+    {
+      "job": "438299_895",
+      "state": "PENDING",
+      "node": "",
+      "index": 895
+    },
+    {
+      "job": "438299_896",
+      "state": "PENDING",
+      "node": "",
+      "index": 896
+    },
+    {
+      "job": "438299_897",
+      "state": "PENDING",
+      "node": "",
+      "index": 897
+    },
+    {
+      "job": "438299_898",
+      "state": "PENDING",
+      "node": "",
+      "index": 898
+    },
+    {
+      "job": "438299_899",
+      "state": "PENDING",
+      "node": "",
+      "index": 899
+    },
+    {
+      "job": "438299_900",
+      "state": "PENDING",
+      "node": "",
+      "index": 900
+    },
+    {
+      "job": "438299_901",
+      "state": "PENDING",
+      "node": "",
+      "index": 901
+    },
+    {
+      "job": "438299_902",
+      "state": "PENDING",
+      "node": "",
+      "index": 902
+    },
+    {
+      "job": "438299_903",
+      "state": "PENDING",
+      "node": "",
+      "index": 903
+    },
+    {
+      "job": "438299_904",
+      "state": "PENDING",
+      "node": "",
+      "index": 904
+    },
+    {
+      "job": "438299_905",
+      "state": "PENDING",
+      "node": "",
+      "index": 905
+    },
+    {
+      "job": "438299_906",
+      "state": "PENDING",
+      "node": "",
+      "index": 906
+    },
+    {
+      "job": "438299_907",
+      "state": "PENDING",
+      "node": "",
+      "index": 907
+    },
+    {
+      "job": "438299_908",
+      "state": "PENDING",
+      "node": "",
+      "index": 908
+    },
+    {
+      "job": "438299_909",
+      "state": "PENDING",
+      "node": "",
+      "index": 909
+    },
+    {
+      "job": "438299_910",
+      "state": "PENDING",
+      "node": "",
+      "index": 910
+    },
+    {
+      "job": "438299_911",
+      "state": "PENDING",
+      "node": "",
+      "index": 911
+    },
+    {
+      "job": "438299_912",
+      "state": "PENDING",
+      "node": "",
+      "index": 912
+    },
+    {
+      "job": "438299_913",
+      "state": "PENDING",
+      "node": "",
+      "index": 913
+    },
+    {
+      "job": "438299_914",
+      "state": "PENDING",
+      "node": "",
+      "index": 914
+    },
+    {
+      "job": "438299_915",
+      "state": "PENDING",
+      "node": "",
+      "index": 915
+    },
+    {
+      "job": "438299_916",
+      "state": "PENDING",
+      "node": "",
+      "index": 916
+    },
+    {
+      "job": "438299_917",
+      "state": "PENDING",
+      "node": "",
+      "index": 917
+    },
+    {
+      "job": "438299_918",
+      "state": "PENDING",
+      "node": "",
+      "index": 918
+    },
+    {
+      "job": "438299_919",
+      "state": "PENDING",
+      "node": "",
+      "index": 919
+    },
+    {
+      "job": "438299_920",
+      "state": "PENDING",
+      "node": "",
+      "index": 920
+    },
+    {
+      "job": "438299_921",
+      "state": "PENDING",
+      "node": "",
+      "index": 921
+    },
+    {
+      "job": "438299_922",
+      "state": "PENDING",
+      "node": "",
+      "index": 922
+    },
+    {
+      "job": "438299_923",
+      "state": "PENDING",
+      "node": "",
+      "index": 923
+    },
+    {
+      "job": "438299_924",
+      "state": "PENDING",
+      "node": "",
+      "index": 924
+    },
+    {
+      "job": "438299_925",
+      "state": "PENDING",
+      "node": "",
+      "index": 925
+    },
+    {
+      "job": "438299_926",
+      "state": "PENDING",
+      "node": "",
+      "index": 926
+    },
+    {
+      "job": "438299_927",
+      "state": "PENDING",
+      "node": "",
+      "index": 927
+    },
+    {
+      "job": "438299_928",
+      "state": "PENDING",
+      "node": "",
+      "index": 928
+    },
+    {
+      "job": "438299_929",
+      "state": "PENDING",
+      "node": "",
+      "index": 929
+    },
+    {
+      "job": "438299_930",
+      "state": "PENDING",
+      "node": "",
+      "index": 930
+    },
+    {
+      "job": "438299_931",
+      "state": "PENDING",
+      "node": "",
+      "index": 931
+    },
+    {
+      "job": "438299_932",
+      "state": "PENDING",
+      "node": "",
+      "index": 932
+    },
+    {
+      "job": "438299_933",
+      "state": "PENDING",
+      "node": "",
+      "index": 933
+    },
+    {
+      "job": "438299_934",
+      "state": "PENDING",
+      "node": "",
+      "index": 934
+    },
+    {
+      "job": "438299_935",
+      "state": "PENDING",
+      "node": "",
+      "index": 935
+    },
+    {
+      "job": "438299_936",
+      "state": "PENDING",
+      "node": "",
+      "index": 936
+    },
+    {
+      "job": "438299_937",
+      "state": "PENDING",
+      "node": "",
+      "index": 937
+    },
+    {
+      "job": "438299_938",
+      "state": "PENDING",
+      "node": "",
+      "index": 938
+    },
+    {
+      "job": "438299_939",
+      "state": "PENDING",
+      "node": "",
+      "index": 939
+    },
+    {
+      "job": "438299_940",
+      "state": "PENDING",
+      "node": "",
+      "index": 940
+    },
+    {
+      "job": "438299_941",
+      "state": "PENDING",
+      "node": "",
+      "index": 941
+    },
+    {
+      "job": "438299_942",
+      "state": "PENDING",
+      "node": "",
+      "index": 942
+    },
+    {
+      "job": "438299_943",
+      "state": "PENDING",
+      "node": "",
+      "index": 943
+    },
+    {
+      "job": "438299_944",
+      "state": "PENDING",
+      "node": "",
+      "index": 944
+    },
+    {
+      "job": "438299_945",
+      "state": "PENDING",
+      "node": "",
+      "index": 945
+    },
+    {
+      "job": "438299_946",
+      "state": "PENDING",
+      "node": "",
+      "index": 946
+    },
+    {
+      "job": "438299_947",
+      "state": "PENDING",
+      "node": "",
+      "index": 947
+    },
+    {
+      "job": "438299_948",
+      "state": "PENDING",
+      "node": "",
+      "index": 948
+    },
+    {
+      "job": "438299_949",
+      "state": "PENDING",
+      "node": "",
+      "index": 949
+    },
+    {
+      "job": "438299_950",
+      "state": "PENDING",
+      "node": "",
+      "index": 950
+    },
+    {
+      "job": "438299_951",
+      "state": "PENDING",
+      "node": "",
+      "index": 951
+    },
+    {
+      "job": "438299_952",
+      "state": "PENDING",
+      "node": "",
+      "index": 952
+    },
+    {
+      "job": "438299_953",
+      "state": "PENDING",
+      "node": "",
+      "index": 953
+    },
+    {
+      "job": "438299_954",
+      "state": "PENDING",
+      "node": "",
+      "index": 954
+    },
+    {
+      "job": "438299_955",
+      "state": "PENDING",
+      "node": "",
+      "index": 955
+    },
+    {
+      "job": "438299_956",
+      "state": "PENDING",
+      "node": "",
+      "index": 956
+    },
+    {
+      "job": "438299_957",
+      "state": "PENDING",
+      "node": "",
+      "index": 957
+    },
+    {
+      "job": "438299_958",
+      "state": "PENDING",
+      "node": "",
+      "index": 958
+    },
+    {
+      "job": "438299_959",
+      "state": "PENDING",
+      "node": "",
+      "index": 959
+    },
+    {
+      "job": "438299_960",
+      "state": "PENDING",
+      "node": "",
+      "index": 960
+    },
+    {
+      "job": "438299_961",
+      "state": "PENDING",
+      "node": "",
+      "index": 961
+    },
+    {
+      "job": "438299_962",
+      "state": "PENDING",
+      "node": "",
+      "index": 962
+    },
+    {
+      "job": "438299_963",
+      "state": "PENDING",
+      "node": "",
+      "index": 963
+    },
+    {
+      "job": "438299_964",
+      "state": "PENDING",
+      "node": "",
+      "index": 964
+    },
+    {
+      "job": "438299_965",
+      "state": "PENDING",
+      "node": "",
+      "index": 965
+    },
+    {
+      "job": "438299_966",
+      "state": "PENDING",
+      "node": "",
+      "index": 966
+    },
+    {
+      "job": "438299_967",
+      "state": "PENDING",
+      "node": "",
+      "index": 967
+    },
+    {
+      "job": "438299_968",
+      "state": "PENDING",
+      "node": "",
+      "index": 968
+    },
+    {
+      "job": "438299_969",
+      "state": "PENDING",
+      "node": "",
+      "index": 969
+    },
+    {
+      "job": "438299_970",
+      "state": "PENDING",
+      "node": "",
+      "index": 970
+    },
+    {
+      "job": "438299_971",
+      "state": "PENDING",
+      "node": "",
+      "index": 971
+    },
+    {
+      "job": "438299_972",
+      "state": "PENDING",
+      "node": "",
+      "index": 972
+    },
+    {
+      "job": "438299_973",
+      "state": "PENDING",
+      "node": "",
+      "index": 973
+    },
+    {
+      "job": "438299_974",
+      "state": "PENDING",
+      "node": "",
+      "index": 974
+    },
+    {
+      "job": "438299_975",
+      "state": "PENDING",
+      "node": "",
+      "index": 975
+    },
+    {
+      "job": "438299_976",
+      "state": "PENDING",
+      "node": "",
+      "index": 976
+    },
+    {
+      "job": "438299_977",
+      "state": "PENDING",
+      "node": "",
+      "index": 977
+    },
+    {
+      "job": "438299_978",
+      "state": "PENDING",
+      "node": "",
+      "index": 978
+    },
+    {
+      "job": "438299_979",
+      "state": "PENDING",
+      "node": "",
+      "index": 979
+    },
+    {
+      "job": "438299_980",
+      "state": "PENDING",
+      "node": "",
+      "index": 980
+    },
+    {
+      "job": "438299_981",
+      "state": "PENDING",
+      "node": "",
+      "index": 981
+    },
+    {
+      "job": "438299_982",
+      "state": "PENDING",
+      "node": "",
+      "index": 982
+    },
+    {
+      "job": "438299_983",
+      "state": "PENDING",
+      "node": "",
+      "index": 983
+    },
+    {
+      "job": "438299_984",
+      "state": "PENDING",
+      "node": "",
+      "index": 984
+    },
+    {
+      "job": "438299_985",
+      "state": "PENDING",
+      "node": "",
+      "index": 985
+    },
+    {
+      "job": "438299_986",
+      "state": "PENDING",
+      "node": "",
+      "index": 986
+    },
+    {
+      "job": "438299_987",
+      "state": "PENDING",
+      "node": "",
+      "index": 987
+    },
+    {
+      "job": "438299_988",
+      "state": "PENDING",
+      "node": "",
+      "index": 988
+    },
+    {
+      "job": "438299_989",
+      "state": "PENDING",
+      "node": "",
+      "index": 989
+    },
+    {
+      "job": "438299_990",
+      "state": "PENDING",
+      "node": "",
+      "index": 990
+    },
+    {
+      "job": "438299_991",
+      "state": "PENDING",
+      "node": "",
+      "index": 991
+    },
+    {
+      "job": "438299_992",
+      "state": "PENDING",
+      "node": "",
+      "index": 992
+    },
+    {
+      "job": "438299_993",
+      "state": "PENDING",
+      "node": "",
+      "index": 993
+    },
+    {
+      "job": "438299_994",
+      "state": "PENDING",
+      "node": "",
+      "index": 994
+    },
+    {
+      "job": "438299_995",
+      "state": "PENDING",
+      "node": "",
+      "index": 995
+    },
+    {
+      "job": "438299_996",
+      "state": "PENDING",
+      "node": "",
+      "index": 996
+    },
+    {
+      "job": "438299_997",
+      "state": "PENDING",
+      "node": "",
+      "index": 997
+    },
+    {
+      "job": "438299_998",
+      "state": "PENDING",
+      "node": "",
+      "index": 998
+    },
+    {
+      "job": "438299_999",
+      "state": "PENDING",
+      "node": "",
+      "index": 999
+    },
+    {
+      "job": "438299_1000",
+      "state": "PENDING",
+      "node": "",
+      "index": 1000
+    }
+  ],
+  "excluded_nodes": [
+    "bosque20",
+    "bosque26",
+    "bosque44",
+    "bosque46",
+    "bosque52",
+    "bosque56",
+    "bosque67",
+    "bosque70",
+    "bosque72",
+    "bosque81"
+  ],
+  "jobs": [
+    {
+      "job": "440012",
+      "offset": 0
+    },
+    {
+      "job": "440013",
+      "offset": 1001
+    }
+  ]
+}

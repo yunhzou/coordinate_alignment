@@ -95,7 +95,8 @@ def score(args):
 
 def partial(args):
     """Explicitly labelled positive-only evidence from completed cut records."""
-    from rxn_core.domain import AAMResult,AAMSearchMetrics
+    import pynauty
+    from golden_evaluation import colored_graph
     from rxn_core.search_graph import AAMSearchGraph
     directory,plan=load_case(args.run,args.index)
     ref=json.loads((directory/'reference.json').read_text())
@@ -106,16 +107,31 @@ def partial(args):
         save(directory/'status.json',dict(stage='complete',index=args.index,
             search_interrupted=True,evaluation_scope='saved partial cuts',updated=time.time()))
     started=time.perf_counter()
+    features=list(reversed(ref['features'])) if plan.reversed else ref['features']
+    expected=pynauty.certificate(colored_graph(features,project(plan.to_search_mapping(ref['mapping']),features)))
     reports=[]
     for path in chunks:
         if time.perf_counter()-started>75:
             break
         graph=AAMSearchGraph.from_record(json.loads(path.read_bytes()),copy=False)
-        result=AAMResult(plan.problem,plan.config,graph,AAMSearchMetrics.from_record({},0.0))
-        report=evaluate_planned(result,plan,ref['features'],ref['mapping'],symbolic=False)
-        report['cut']=str(path);reports.append(report)
+        seen=set();witness=None
+        for terminal in graph.terminals:
+            if time.perf_counter()-started>75:break
+            mapping=graph.states[terminal].mapping
+            heavy=project(mapping,features);key=tuple(sorted(heavy.items()))
+            if key in seen:continue
+            seen.add(key)
+            if pynauty.certificate(colored_graph(features,heavy))==expected:
+                witness=terminal;break
+        report=dict(cut=str(path),checked_heavy_representatives=len(seen),
+            reference_recovery='recovered' if witness is not None else 'unknown',
+            reference_annotation_complete=len(project(ref['mapping'],ref['features']))==len(ref['features'][1]['heavy']),
+            witness_terminal=witness,search_direction=plan.direction,
+            evaluation_seconds=time.perf_counter()-started)
+        reports.append(report)
         save(directory/'partial_checks.json',reports)
         if report['reference_recovery']=='recovered':
+            report['input_orientation_witness']=sorted(plan.to_input_mapping(graph.states[witness].mapping).items())
             report.update(search_incomplete=True,top1_correct=None,evaluation_scope='positive-only completed cut, not full sweep')
             finish(report)
             return
