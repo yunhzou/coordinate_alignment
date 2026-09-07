@@ -1,0 +1,23 @@
+{
+  "counts": {
+    "completed_cases": 1832,
+    "top_one_center_component": 1785,
+    "top1_wrong": 397,
+    "wrong_with_reference_representative": 353,
+    "same_all_cached_features": 80,
+    "equal_center_components": 338,
+    "reference_energy_higher": 163,
+    "top1_correct": 1435,
+    "no_reference_representative": 44,
+    "reference_energy_equal": 98,
+    "reference_energy_lower": 53
+  },
+  "reference_event_gaps": {
+    "0": 225,
+    "1": 57,
+    "2": 55,
+    "3": 11,
+    "4": 2,
+    "5": 3
+  }
+}
