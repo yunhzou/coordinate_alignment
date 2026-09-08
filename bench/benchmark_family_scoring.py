@@ -23,6 +23,7 @@ if __name__=='__main__':
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--slot',type=int,required=True)
     p.add_argument('--blind',action='store_true')
+    p.add_argument('--terminal',type=int)
     a=p.parse_args();index,direction=CASES[a.slot]
     out=a.output/f'{index}_{direction}.json'
     pair,_=plans(a.source,index);plan=pair[direction]
@@ -38,11 +39,13 @@ if __name__=='__main__':
         ranked=json.loads((base/'classes.json').read_text())
         terminals=list(dict.fromkeys([c['terminal'] for c in ranked[:8]]+
             random.Random(42).sample(list(aam.graph.terminals),min(24,len(aam.graph.terminals)))))
+        if a.terminal is not None:terminals=[a.terminal]
         started=time.perf_counter();incoming=array('q',[-1])*len(aam.graph.states)
         for edge in aam.graph.transitions:
             if incoming[edge.target]<0:incoming[edge.target]=edge.id
         record['path_index_seconds']=time.perf_counter()-started
-        record['selection']='first 8 reference-blind ranked classes plus 24 random terminals, random seed 42'
+        record['selection']=('specified diagnostic terminal' if a.terminal is not None else
+            'first 8 reference-blind ranked classes plus 24 random terminals, random seed 42')
         record['selected_terminals']=terminals;save(out,record)
         for terminal in terminals:
             transitions=[];state=terminal
