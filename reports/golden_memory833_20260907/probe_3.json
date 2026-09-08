@@ -1,0 +1,18 @@
+{
+  "event": "search_end",
+  "seconds": 90.10886079492047,
+  "rss_mib": 1100.109375,
+  "peak_mib": 1100.109375,
+  "seeds_finished": 5,
+  "profile_rows": 135033,
+  "states": 0,
+  "transitions": 0,
+  "stops": 0,
+  "partitions": 0,
+  "status": "diagnostic_limit",
+  "cap": 2000,
+  "requested_seeds": 10,
+  "input_sha256": "324d8debe660b7d5d14036083769cfe8b9b3854a352064080b2f29b66b90b836",
+  "legacy": true,
+  "traced": false
+}

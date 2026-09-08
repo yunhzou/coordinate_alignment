@@ -1,0 +1,83 @@
+{
+  "event": "search_end",
+  "seconds": 90.01334116817452,
+  "rss_mib": 2221.58203125,
+  "peak_mib": 2221.58203125,
+  "seeds_finished": 6,
+  "profile_rows": 160074,
+  "states": 335069,
+  "transitions": 335062,
+  "stops": 223016,
+  "partitions": 331,
+  "status": "diagnostic_limit",
+  "cap": 2000,
+  "requested_seeds": 10,
+  "input_sha256": "324d8debe660b7d5d14036083769cfe8b9b3854a352064080b2f29b66b90b836",
+  "legacy": false,
+  "traced": false,
+  "graphs": [
+    {
+      "states": 112907,
+      "transitions": 112906,
+      "terminals": 2000,
+      "capped_stops": 84401,
+      "terminal_ancestor_transitions": 6771,
+      "fragment_transitions": 112906,
+      "join_transitions": 0
+    },
+    {
+      "states": 28059,
+      "transitions": 28058,
+      "terminals": 2000,
+      "capped_stops": 11970,
+      "terminal_ancestor_transitions": 7064,
+      "fragment_transitions": 28058,
+      "join_transitions": 0
+    },
+    {
+      "states": 75243,
+      "transitions": 75242,
+      "terminals": 2000,
+      "capped_stops": 48117,
+      "terminal_ancestor_transitions": 11619,
+      "fragment_transitions": 75242,
+      "join_transitions": 0
+    },
+    {
+      "states": 65259,
+      "transitions": 65258,
+      "terminals": 2000,
+      "capped_stops": 42772,
+      "terminal_ancestor_transitions": 5702,
+      "fragment_transitions": 65258,
+      "join_transitions": 0
+    },
+    {
+      "states": 13,
+      "transitions": 12,
+      "terminals": 3,
+      "capped_stops": 0,
+      "terminal_ancestor_transitions": 12,
+      "fragment_transitions": 12,
+      "join_transitions": 0
+    },
+    {
+      "states": 42666,
+      "transitions": 42665,
+      "terminals": 2000,
+      "capped_stops": 21737,
+      "terminal_ancestor_transitions": 7851,
+      "fragment_transitions": 42665,
+      "join_transitions": 0
+    },
+    {
+      "states": 10922,
+      "transitions": 10921,
+      "terminals": 0,
+      "capped_stops": 4016,
+      "terminal_ancestor_transitions": 0,
+      "fragment_transitions": 10921,
+      "join_transitions": 0
+    }
+  ]
+}
