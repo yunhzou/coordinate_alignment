@@ -1,0 +1,14 @@
+{
+  "index": 1033,
+  "direction": "P_to_R",
+  "initial_extraction_wall_seconds": 15.113965941593051,
+  "resumed_extraction_wall_seconds": 30.433880975469947,
+  "resumed_full_viewer_generation_seconds": 52.930086156353354,
+  "cumulative_visited_paths": 27,
+  "complete_paths": 0,
+  "previous_candidates": 113,
+  "extended_candidates": 119,
+  "new_reference_equivalent_rank": 7,
+  "complete": false,
+  "note": "Extracts from saved AAM only; extraction wall time includes checkpoint writes. Current summary.json also records a later render-only pass."
+}

@@ -19,6 +19,45 @@ def group_factors(generators):
                  for level in reversed(group.basic_transversals) if len(level)>1)
 
 
+class SymbolicActions:
+    """Shared compact permutation-action encoder for feasibility and quotient queries."""
+    def __init__(self,solver,*,fresh=False):
+        self.solver=solver;self.fresh=fresh;self.variables=[];self.program=[]
+
+    @staticmethod
+    def constant(v):return (int(v),frozenset((int(v),)))
+
+    def symbol(self,domain):
+        import z3
+        domain=tuple(sorted(set(domain)))
+        if len(domain)==1:return self.constant(domain[0])
+        value=z3.FreshInt('orbit') if self.fresh else z3.Int(f'q{len(self.variables)}')
+        self.variables.append(value)
+        self.solver.add(z3.Or(*(value==p for p in domain)))
+        return value,frozenset(domain)
+
+    def lookup(self,value,table):
+        import z3
+        expression,support=value
+        if isinstance(expression,int):return table.get(expression,value)
+        images=[(p,table.get(p,self.constant(p))) for p in sorted(support)]
+        if all(isinstance(v[0],int) and v[0]==p for p,v in images):return value
+        out=images[-1][1][0]
+        for p,v in reversed(images[:-1]):out=z3.If(expression==p,v[0],out)
+        return out,frozenset().union(*(v[1] for _,v in images))
+
+    def act(self,values,generators,label):
+        for factor in group_factors(tuple(tuple(g) for g in generators)):
+            active=set().union(*(v[1] for v in values))
+            moved={p for p in active if p<len(factor[0]) and any(g[p]!=p for g in factor)}
+            if not moved:continue
+            choice=self.symbol(range(len(factor)))
+            table={p:self.lookup(choice,{i:self.constant(g[p]) for i,g in enumerate(factor)}) for p in moved}
+            values=[self.lookup(v,table) for v in values]
+            self.program.append(('group',label,choice[0],factor))
+        return values
+
+
 def compile_path(path, problem, reference, *, source_atoms, source_generators=(),
                target_generators=(), complete_reference=True,
                projected_atoms=None):
@@ -31,38 +70,13 @@ def compile_path(path, problem, reference, *, source_atoms, source_generators=()
     is conclusive for the full model, but its SAT result requires a full query.
     """
     import z3
-    start=time.perf_counter();solver=z3.Solver();serial=0;program=[]
+    start=time.perf_counter();solver=z3.Solver();encoder=SymbolicActions(solver);program=encoder.program
     nr,np_=problem.source_atom_count,problem.target_atom_count
     representative=path.mapping
     if projected_atoms is not None:
         selected=set(projected_atoms)
         representative={r:p for r,p in representative.items() if r in selected}
-    def constant(v):return (int(v),frozenset((int(v),)))
-    def symbol(domain):
-        nonlocal serial
-        domain=tuple(sorted(set(domain)))
-        if len(domain)==1:return constant(domain[0])
-        value=z3.Int(f'q{serial}');serial+=1
-        solver.add(z3.Or(*(value==p for p in domain)))
-        return value,frozenset(domain)
-    def lookup(value,table):
-        expression,support=value
-        if isinstance(expression,int):return table.get(expression,value)
-        images=[(p,table.get(p,constant(p))) for p in sorted(support)]
-        if all(isinstance(v[0],int) and v[0]==p for p,v in images):return value
-        out=images[-1][1][0]
-        for p,v in reversed(images[:-1]):out=z3.If(expression==p,v[0],out)
-        return out,frozenset().union(*(v[1] for _,v in images))
-    def act(values,generators,label):
-        for factor in group_factors(tuple(tuple(g) for g in generators)):
-            active=set().union(*(v[1] for v in values))
-            moved={p for p in active if p<len(factor[0]) and any(g[p]!=p for g in factor)}
-            if not moved:continue
-            choice=symbol(range(len(factor)))
-            table={p:lookup(choice,{i:constant(g[p]) for i,g in enumerate(factor)}) for p in moved}
-            values=[lookup(v,table) for v in values]
-            program.append(('group',label,choice[0],factor))
-        return values
+    constant,symbol,lookup,act=encoder.constant,encoder.symbol,encoder.lookup,encoder.act
     values=[constant(representative.get(r,np_)) for r in range(nr)]
     placements=[]
     for edge in path.transitions:

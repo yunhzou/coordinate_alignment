@@ -1,0 +1,21 @@
+[
+  {
+    "index": 1033,
+    "terminals": 7638,
+    "raw_heavy": 559,
+    "classes": 119,
+    "representative_reference_ranks": [
+      7
+    ],
+    "generation_seconds": 25.06770802102983,
+    "html_bytes": 84024455,
+    "archive_loading_seconds": 0.7332531232386827,
+    "rendering_seconds": 9.588814729824662,
+    "artifact_writing_seconds": 2.1713373363018036,
+    "pattern_extraction": {
+      "complete": false,
+      "visited_paths": 27,
+      "checkpoint": "reports/golden_pattern_extraction_20260908/case1033/pattern_checkpoint.json"
+    }
+  }
+]
