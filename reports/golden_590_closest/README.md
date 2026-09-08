@@ -1,5 +1,11 @@
 # Case 590: reference-nearest saved representative
 
+**Correction:** this older view constrained the seven carbons collectively, not
+the reference's specific five-carbon subset. It does not answer the requested
+five-carbon-choice comparison. See `../golden_590_correct_five/viewer.html`.
+Checking both required sets separately returned zero eligible representatives
+in either archive. This is not a negative verdict on every compressed realization.
+
 Open `viewer.html` offline or at `/golden_590_closest/viewer.html` on port 8765.
 Ground truth and the selected saved detection appear simultaneously, each with R and P.
 

@@ -37,6 +37,8 @@ def main(args):
     rlabels, plabels = labels(audit['mapped_reaction'])
     subset = {r for r,n in enumerate(rlabels) if n in args.subset}
     targets = {reference[r] for r in subset}
+    complement = {r for r,n in enumerate(rlabels) if n in args.complement}
+    complement_targets = {reference[r] for r in complement}
     best = None
     archives = []
     for policy in ('random', 'distance'):
@@ -46,6 +48,8 @@ def main(args):
         for terminal in graph.terminals:
             mapping = oriented.to_input_mapping(graph.states[terminal].mapping)
             if {mapping.get(r) for r in subset} != targets:
+                continue
+            if {mapping.get(r) for r in complement} != complement_targets:
                 continue
             count += 1
             differences = sum(mapping.get(r) != p for r,p in reference.items())
@@ -72,6 +76,9 @@ def main(args):
                 terminal=best[2], mapping=best[3], archive=best[4], scope=best[5],
                 steps=steps, context=dict(cuts=path.context.cuts))
         del graph
+    if best is None:
+        print('No saved representative satisfies BOTH required product allocations.', flush=True)
+        return
     records = [dict(label='Ground truth', mapping=reference, steps=[], context=None), selected]
     reactant, product = molecules(audit['mapped_reaction'], problem)
     owner = {a:i for i,atoms in enumerate(Chem.GetMolFrags(reactant)) for a in atoms}
@@ -100,7 +107,8 @@ def main(args):
         target_total=problem.target_atom_count, reaction=audit['mapped_reaction'])
     args.output.mkdir(parents=True, exist_ok=True)
     save(args.output/'mapping.json', {**payload, 'records':[{k:v for k,v in r.items() if k != 'drawings'} for r in records],
-        'differences':differences, 'required_source_map_labels':args.subset})
+        'differences':differences, 'required_source_map_labels':args.subset,
+        'required_complement_map_labels':args.complement})
     template = Path(__file__).with_name('golden_remaining_template.html').read_text()
     template = template.replace('21 unresolved cases • saved search results only • no reruns or reference-guided results inserted',
         'Post-hoc reference-nearest saved representative • no AAM rerun • not a top-ranked prediction')
@@ -110,7 +118,7 @@ def main(args):
     start = template.index('The detected choices are up to three')
     end = template.index('</p>', start)
     template = template[:start] + ('Selected across both saved archives by fewest literal heavy-atom reference disagreements, '
-        f'with source map-label subset {args.subset} required to occupy its reference target set. '
+        f'with source map-label subset {args.subset} and complementary subset {args.complement} each required to occupy its own reference target set. '
         'This uses the reference for display selection only. It does not search every realization inside compressed families, '
         'and literal differences can include equivalent symmetry choices.') + template[end:]
     template = template.replace('__DATA__', json.dumps([payload], separators=(',', ':')).replace('</', r'<\/'))
@@ -123,6 +131,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--index', type=int, required=True)
     p.add_argument('--subset', nargs='*', type=int, default=[])
+    p.add_argument('--complement', nargs='*', type=int, default=[])
     p.add_argument('--source', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--audit', type=Path, default=Path('data/aam_benchmarks/golden_original_20260906/audit.jsonl'))
