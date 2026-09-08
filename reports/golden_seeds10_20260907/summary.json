@@ -1,0 +1,51 @@
+{
+  "tested": 32,
+  "seeds": 10,
+  "outcomes": {
+    "not_recovered": 17,
+    "unknown": 6,
+    "recovered": 9
+  },
+  "recovered": [
+    602,
+    737,
+    775,
+    846,
+    850,
+    964,
+    1230,
+    1314,
+    1400
+  ],
+  "not_recovered": [
+    7,
+    19,
+    576,
+    603,
+    780,
+    845,
+    867,
+    871,
+    986,
+    1228,
+    1285,
+    1377,
+    1380,
+    1475,
+    1553,
+    1574,
+    1739
+  ],
+  "unknown": [
+    590,
+    833,
+    865,
+    1033,
+    1358,
+    1568
+  ],
+  "baseline_recovered": 1818,
+  "union_recovered": 1827,
+  "union_percent": 98.7034035656402,
+  "note": "Diagnostic union with previous fixed-run results; not a full-dataset ten-seed benchmark. Original unresolved case 1793 was not part of the requested 32 misses."
+}

@@ -1,0 +1,2123 @@
+[
+  {
+    "index": 602,
+    "reference_pairs": 12,
+    "reference_annotation_complete": true,
+    "top1_correct": true,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 1756,
+    "witness_terminal": 1756,
+    "candidate_terminals": 7464,
+    "unique_representative_chemistries": 177,
+    "unique_heavy_representatives": 400,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 0.8666666666666667,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 2.5356546193361282,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 2,
+      "formed": 6,
+      "bond_order_changed": 1
+    },
+    "search_direction": "R_to_P",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        11
+      ],
+      [
+        3,
+        10
+      ],
+      [
+        4,
+        9
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        6,
+        4
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        8,
+        7
+      ],
+      [
+        9,
+        6
+      ],
+      [
+        10,
+        5
+      ],
+      [
+        11,
+        1
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        14,
+        20
+      ],
+      [
+        15,
+        29
+      ],
+      [
+        16,
+        28
+      ],
+      [
+        17,
+        27
+      ],
+      [
+        18,
+        26
+      ],
+      [
+        19,
+        25
+      ],
+      [
+        20,
+        24
+      ],
+      [
+        21,
+        23
+      ],
+      [
+        22,
+        22
+      ],
+      [
+        23,
+        21
+      ],
+      [
+        24,
+        16
+      ],
+      [
+        25,
+        17
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/602/cuts/aam.pkl.gz",
+    "total_seconds": 3.32887580152601
+  },
+  {
+    "index": 737,
+    "reference_pairs": 20,
+    "reference_annotation_complete": true,
+    "top1_correct": false,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 220978,
+    "witness_terminal": 244070,
+    "candidate_terminals": 42481,
+    "unique_representative_chemistries": 263,
+    "unique_heavy_representatives": 446,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 33.675537107512355,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 3,
+      "formed": 4,
+      "bond_order_changed": 3
+    },
+    "search_direction": "R_to_P",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        11
+      ],
+      [
+        5,
+        10
+      ],
+      [
+        6,
+        18
+      ],
+      [
+        7,
+        17
+      ],
+      [
+        8,
+        12
+      ],
+      [
+        9,
+        14
+      ],
+      [
+        10,
+        15
+      ],
+      [
+        11,
+        13
+      ],
+      [
+        12,
+        16
+      ],
+      [
+        13,
+        5
+      ],
+      [
+        14,
+        4
+      ],
+      [
+        15,
+        6
+      ],
+      [
+        16,
+        7
+      ],
+      [
+        17,
+        8
+      ],
+      [
+        18,
+        9
+      ],
+      [
+        19,
+        19
+      ],
+      [
+        20,
+        21
+      ],
+      [
+        21,
+        20
+      ],
+      [
+        22,
+        23
+      ],
+      [
+        23,
+        24
+      ],
+      [
+        24,
+        22
+      ],
+      [
+        25,
+        37
+      ],
+      [
+        26,
+        43
+      ],
+      [
+        27,
+        42
+      ],
+      [
+        28,
+        41
+      ],
+      [
+        29,
+        38
+      ],
+      [
+        30,
+        40
+      ],
+      [
+        31,
+        39
+      ],
+      [
+        32,
+        45
+      ],
+      [
+        33,
+        46
+      ],
+      [
+        34,
+        44
+      ],
+      [
+        35,
+        27
+      ],
+      [
+        36,
+        26
+      ],
+      [
+        37,
+        29
+      ],
+      [
+        38,
+        28
+      ],
+      [
+        39,
+        31
+      ],
+      [
+        40,
+        30
+      ],
+      [
+        41,
+        33
+      ],
+      [
+        42,
+        32
+      ],
+      [
+        43,
+        35
+      ],
+      [
+        44,
+        36
+      ],
+      [
+        45,
+        34
+      ],
+      [
+        46,
+        25
+      ],
+      [
+        47,
+        47
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/737/cuts/aam.pkl.gz",
+    "total_seconds": 52.51713533140719
+  },
+  {
+    "index": 775,
+    "reference_pairs": 26,
+    "reference_annotation_complete": true,
+    "top1_correct": false,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 48052,
+    "witness_terminal": 48059,
+    "candidate_terminals": 24683,
+    "unique_representative_chemistries": 190,
+    "unique_heavy_representatives": 190,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 15.509393075481057,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 4,
+      "formed": 3,
+      "bond_order_changed": 1
+    },
+    "search_direction": "P_to_R",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        24
+      ],
+      [
+        7,
+        25
+      ],
+      [
+        8,
+        23
+      ],
+      [
+        9,
+        22
+      ],
+      [
+        10,
+        21
+      ],
+      [
+        11,
+        20
+      ],
+      [
+        12,
+        19
+      ],
+      [
+        13,
+        18
+      ],
+      [
+        14,
+        7
+      ],
+      [
+        15,
+        6
+      ],
+      [
+        16,
+        8
+      ],
+      [
+        17,
+        9
+      ],
+      [
+        18,
+        10
+      ],
+      [
+        19,
+        11
+      ],
+      [
+        20,
+        12
+      ],
+      [
+        21,
+        13
+      ],
+      [
+        22,
+        14
+      ],
+      [
+        23,
+        15
+      ],
+      [
+        24,
+        16
+      ],
+      [
+        25,
+        17
+      ],
+      [
+        26,
+        26
+      ],
+      [
+        27,
+        28
+      ],
+      [
+        28,
+        27
+      ],
+      [
+        29,
+        30
+      ],
+      [
+        30,
+        29
+      ],
+      [
+        31,
+        43
+      ],
+      [
+        33,
+        42
+      ],
+      [
+        34,
+        41
+      ],
+      [
+        35,
+        40
+      ],
+      [
+        36,
+        39
+      ],
+      [
+        38,
+        31
+      ],
+      [
+        39,
+        32
+      ],
+      [
+        40,
+        33
+      ],
+      [
+        41,
+        34
+      ],
+      [
+        42,
+        35
+      ],
+      [
+        43,
+        36
+      ],
+      [
+        44,
+        37
+      ],
+      [
+        45,
+        38
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/775/cuts/aam.pkl.gz",
+    "total_seconds": 19.981035003438592
+  },
+  {
+    "index": 846,
+    "reference_pairs": 42,
+    "reference_annotation_complete": true,
+    "top1_correct": null,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 10308,
+    "witness_terminal": 3998,
+    "candidate_terminals": 705,
+    "unique_representative_chemistries": 22,
+    "unique_heavy_representatives": 24,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 0.6287897888105363,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 2,
+      "formed": 2,
+      "bond_order_changed": 0
+    },
+    "search_direction": "R_to_P",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        16
+      ],
+      [
+        2,
+        15
+      ],
+      [
+        3,
+        14
+      ],
+      [
+        4,
+        13
+      ],
+      [
+        5,
+        12
+      ],
+      [
+        6,
+        11
+      ],
+      [
+        7,
+        10
+      ],
+      [
+        8,
+        7
+      ],
+      [
+        9,
+        8
+      ],
+      [
+        10,
+        9
+      ],
+      [
+        11,
+        6
+      ],
+      [
+        12,
+        5
+      ],
+      [
+        13,
+        4
+      ],
+      [
+        14,
+        3
+      ],
+      [
+        15,
+        2
+      ],
+      [
+        16,
+        40
+      ],
+      [
+        17,
+        41
+      ],
+      [
+        18,
+        39
+      ],
+      [
+        19,
+        37
+      ],
+      [
+        20,
+        38
+      ],
+      [
+        21,
+        0
+      ],
+      [
+        22,
+        17
+      ],
+      [
+        23,
+        18
+      ],
+      [
+        24,
+        19
+      ],
+      [
+        25,
+        20
+      ],
+      [
+        26,
+        21
+      ],
+      [
+        27,
+        22
+      ],
+      [
+        28,
+        23
+      ],
+      [
+        29,
+        24
+      ],
+      [
+        30,
+        25
+      ],
+      [
+        31,
+        26
+      ],
+      [
+        32,
+        27
+      ],
+      [
+        33,
+        28
+      ],
+      [
+        34,
+        29
+      ],
+      [
+        35,
+        30
+      ],
+      [
+        36,
+        31
+      ],
+      [
+        37,
+        32
+      ],
+      [
+        38,
+        33
+      ],
+      [
+        39,
+        34
+      ],
+      [
+        40,
+        35
+      ],
+      [
+        41,
+        36
+      ],
+      [
+        42,
+        44
+      ],
+      [
+        43,
+        45
+      ],
+      [
+        44,
+        60
+      ],
+      [
+        45,
+        59
+      ],
+      [
+        46,
+        58
+      ],
+      [
+        47,
+        57
+      ],
+      [
+        48,
+        56
+      ],
+      [
+        49,
+        55
+      ],
+      [
+        50,
+        54
+      ],
+      [
+        51,
+        52
+      ],
+      [
+        52,
+        53
+      ],
+      [
+        53,
+        51
+      ],
+      [
+        54,
+        50
+      ],
+      [
+        55,
+        49
+      ],
+      [
+        56,
+        47
+      ],
+      [
+        57,
+        48
+      ],
+      [
+        58,
+        46
+      ],
+      [
+        59,
+        42
+      ],
+      [
+        60,
+        43
+      ],
+      [
+        61,
+        61
+      ],
+      [
+        62,
+        63
+      ],
+      [
+        63,
+        62
+      ],
+      [
+        64,
+        65
+      ],
+      [
+        65,
+        64
+      ],
+      [
+        66,
+        66
+      ],
+      [
+        67,
+        67
+      ],
+      [
+        68,
+        69
+      ],
+      [
+        69,
+        70
+      ],
+      [
+        70,
+        68
+      ],
+      [
+        71,
+        71
+      ],
+      [
+        72,
+        72
+      ],
+      [
+        73,
+        74
+      ],
+      [
+        74,
+        75
+      ],
+      [
+        75,
+        73
+      ]
+    ],
+    "search_incomplete": true,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/846/cuts/cut_00001.json"
+  },
+  {
+    "index": 850,
+    "reference_pairs": 32,
+    "reference_annotation_complete": true,
+    "top1_correct": false,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 388106,
+    "witness_terminal": 388117,
+    "candidate_terminals": 49418,
+    "unique_representative_chemistries": 1146,
+    "unique_heavy_representatives": 3437,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 57.82553542824462,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 6,
+      "formed": 3,
+      "bond_order_changed": 0
+    },
+    "search_direction": "P_to_R",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        9,
+        9
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        11,
+        11
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        14,
+        14
+      ],
+      [
+        15,
+        25
+      ],
+      [
+        16,
+        24
+      ],
+      [
+        17,
+        26
+      ],
+      [
+        18,
+        15
+      ],
+      [
+        20,
+        16
+      ],
+      [
+        21,
+        17
+      ],
+      [
+        22,
+        18
+      ],
+      [
+        23,
+        19
+      ],
+      [
+        24,
+        20
+      ],
+      [
+        25,
+        21
+      ],
+      [
+        26,
+        22
+      ],
+      [
+        27,
+        23
+      ],
+      [
+        30,
+        27
+      ],
+      [
+        31,
+        28
+      ],
+      [
+        32,
+        29
+      ],
+      [
+        33,
+        30
+      ],
+      [
+        34,
+        31
+      ],
+      [
+        37,
+        38
+      ],
+      [
+        38,
+        36
+      ],
+      [
+        39,
+        37
+      ],
+      [
+        40,
+        35
+      ],
+      [
+        41,
+        32
+      ],
+      [
+        42,
+        34
+      ],
+      [
+        43,
+        33
+      ],
+      [
+        44,
+        40
+      ],
+      [
+        45,
+        39
+      ],
+      [
+        46,
+        41
+      ],
+      [
+        47,
+        42
+      ],
+      [
+        48,
+        43
+      ],
+      [
+        51,
+        50
+      ],
+      [
+        52,
+        52
+      ],
+      [
+        53,
+        51
+      ],
+      [
+        54,
+        55
+      ],
+      [
+        55,
+        53
+      ],
+      [
+        56,
+        54
+      ],
+      [
+        59,
+        44
+      ],
+      [
+        60,
+        46
+      ],
+      [
+        61,
+        45
+      ],
+      [
+        62,
+        49
+      ],
+      [
+        63,
+        47
+      ],
+      [
+        64,
+        48
+      ],
+      [
+        68,
+        56
+      ],
+      [
+        69,
+        58
+      ],
+      [
+        70,
+        57
+      ],
+      [
+        71,
+        59
+      ],
+      [
+        72,
+        60
+      ],
+      [
+        73,
+        62
+      ],
+      [
+        74,
+        61
+      ],
+      [
+        75,
+        65
+      ],
+      [
+        76,
+        63
+      ],
+      [
+        77,
+        64
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/850/cuts/aam.pkl.gz",
+    "total_seconds": 80.52599052991718
+  },
+  {
+    "index": 964,
+    "reference_pairs": 16,
+    "reference_annotation_complete": true,
+    "top1_correct": true,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 10156,
+    "witness_terminal": 10156,
+    "candidate_terminals": 27239,
+    "unique_representative_chemistries": 226,
+    "unique_heavy_representatives": 266,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 13.684730894863605,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 2,
+      "formed": 2,
+      "bond_order_changed": 0
+    },
+    "search_direction": "R_to_P",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        6,
+        2
+      ],
+      [
+        7,
+        0
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        9,
+        9
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        11,
+        11
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        14,
+        14
+      ],
+      [
+        15,
+        15
+      ],
+      [
+        16,
+        19
+      ],
+      [
+        17,
+        18
+      ],
+      [
+        18,
+        24
+      ],
+      [
+        19,
+        25
+      ],
+      [
+        20,
+        23
+      ],
+      [
+        21,
+        21
+      ],
+      [
+        22,
+        22
+      ],
+      [
+        23,
+        20
+      ],
+      [
+        24,
+        17
+      ],
+      [
+        25,
+        16
+      ],
+      [
+        26,
+        26
+      ],
+      [
+        27,
+        27
+      ],
+      [
+        28,
+        29
+      ],
+      [
+        29,
+        28
+      ],
+      [
+        30,
+        31
+      ],
+      [
+        31,
+        30
+      ],
+      [
+        32,
+        32
+      ],
+      [
+        33,
+        33
+      ],
+      [
+        34,
+        35
+      ],
+      [
+        35,
+        34
+      ],
+      [
+        36,
+        37
+      ],
+      [
+        37,
+        36
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/964/cuts/aam.pkl.gz",
+    "total_seconds": 18.188481295015663
+  },
+  {
+    "index": 1230,
+    "reference_pairs": 37,
+    "reference_annotation_complete": true,
+    "top1_correct": false,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 7217,
+    "witness_terminal": 5789,
+    "candidate_terminals": 16920,
+    "unique_representative_chemistries": 903,
+    "unique_heavy_representatives": 1886,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 17.17080128379166,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 3,
+      "formed": 2,
+      "bond_order_changed": 0
+    },
+    "search_direction": "P_to_R",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        11,
+        9
+      ],
+      [
+        12,
+        10
+      ],
+      [
+        13,
+        11
+      ],
+      [
+        14,
+        12
+      ],
+      [
+        15,
+        13
+      ],
+      [
+        16,
+        14
+      ],
+      [
+        17,
+        15
+      ],
+      [
+        18,
+        16
+      ],
+      [
+        19,
+        17
+      ],
+      [
+        20,
+        18
+      ],
+      [
+        21,
+        19
+      ],
+      [
+        22,
+        20
+      ],
+      [
+        23,
+        21
+      ],
+      [
+        24,
+        22
+      ],
+      [
+        25,
+        23
+      ],
+      [
+        26,
+        24
+      ],
+      [
+        27,
+        25
+      ],
+      [
+        28,
+        26
+      ],
+      [
+        29,
+        27
+      ],
+      [
+        30,
+        28
+      ],
+      [
+        31,
+        29
+      ],
+      [
+        32,
+        30
+      ],
+      [
+        33,
+        31
+      ],
+      [
+        34,
+        36
+      ],
+      [
+        35,
+        35
+      ],
+      [
+        36,
+        34
+      ],
+      [
+        37,
+        33
+      ],
+      [
+        38,
+        32
+      ],
+      [
+        39,
+        37
+      ],
+      [
+        40,
+        58
+      ],
+      [
+        41,
+        38
+      ],
+      [
+        42,
+        39
+      ],
+      [
+        43,
+        40
+      ],
+      [
+        44,
+        41
+      ],
+      [
+        45,
+        42
+      ],
+      [
+        46,
+        43
+      ],
+      [
+        47,
+        44
+      ],
+      [
+        48,
+        45
+      ],
+      [
+        49,
+        46
+      ],
+      [
+        50,
+        47
+      ],
+      [
+        51,
+        48
+      ],
+      [
+        52,
+        49
+      ],
+      [
+        53,
+        50
+      ],
+      [
+        54,
+        51
+      ],
+      [
+        55,
+        52
+      ],
+      [
+        56,
+        53
+      ],
+      [
+        57,
+        54
+      ],
+      [
+        58,
+        55
+      ],
+      [
+        59,
+        56
+      ],
+      [
+        60,
+        57
+      ],
+      [
+        61,
+        63
+      ],
+      [
+        62,
+        62
+      ],
+      [
+        63,
+        61
+      ],
+      [
+        64,
+        60
+      ],
+      [
+        65,
+        59
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1230/cuts/aam.pkl.gz",
+    "total_seconds": 21.301451612263918
+  },
+  {
+    "index": 1314,
+    "reference_pairs": 28,
+    "reference_annotation_complete": true,
+    "top1_correct": false,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 26178,
+    "witness_terminal": 40194,
+    "candidate_terminals": 23668,
+    "unique_representative_chemistries": 196,
+    "unique_heavy_representatives": 1679,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 15.931658490560949,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 5,
+      "formed": 4,
+      "bond_order_changed": 0
+    },
+    "search_direction": "P_to_R",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        9,
+        9
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        11,
+        11
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        14,
+        14
+      ],
+      [
+        15,
+        26
+      ],
+      [
+        16,
+        27
+      ],
+      [
+        17,
+        23
+      ],
+      [
+        18,
+        24
+      ],
+      [
+        19,
+        25
+      ],
+      [
+        20,
+        15
+      ],
+      [
+        21,
+        16
+      ],
+      [
+        23,
+        17
+      ],
+      [
+        24,
+        18
+      ],
+      [
+        25,
+        19
+      ],
+      [
+        26,
+        20
+      ],
+      [
+        27,
+        21
+      ],
+      [
+        28,
+        22
+      ],
+      [
+        29,
+        30
+      ],
+      [
+        30,
+        28
+      ],
+      [
+        31,
+        29
+      ],
+      [
+        32,
+        32
+      ],
+      [
+        33,
+        31
+      ],
+      [
+        34,
+        33
+      ],
+      [
+        35,
+        34
+      ],
+      [
+        36,
+        35
+      ],
+      [
+        37,
+        38
+      ],
+      [
+        38,
+        36
+      ],
+      [
+        39,
+        37
+      ],
+      [
+        40,
+        39
+      ],
+      [
+        41,
+        40
+      ],
+      [
+        42,
+        41
+      ],
+      [
+        43,
+        42
+      ],
+      [
+        44,
+        43
+      ],
+      [
+        45,
+        44
+      ],
+      [
+        46,
+        45
+      ],
+      [
+        47,
+        46
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1314/cuts/aam.pkl.gz",
+    "total_seconds": 19.21970735024661
+  },
+  {
+    "index": 1400,
+    "reference_pairs": 19,
+    "reference_annotation_complete": true,
+    "top1_correct": true,
+    "representative_recovery": true,
+    "reference_recovery": "recovered",
+    "top_terminal": 35771,
+    "witness_terminal": 35771,
+    "candidate_terminals": 16739,
+    "unique_representative_chemistries": 133,
+    "unique_heavy_representatives": 168,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 10.344959137961268,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "top_events": {
+      "broken": 2,
+      "formed": 2,
+      "bond_order_changed": 0
+    },
+    "search_direction": "P_to_R",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product",
+    "input_orientation_witness": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        16
+      ],
+      [
+        5,
+        17
+      ],
+      [
+        6,
+        18
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        5
+      ],
+      [
+        10,
+        6
+      ],
+      [
+        11,
+        7
+      ],
+      [
+        12,
+        8
+      ],
+      [
+        13,
+        9
+      ],
+      [
+        14,
+        10
+      ],
+      [
+        15,
+        11
+      ],
+      [
+        16,
+        12
+      ],
+      [
+        17,
+        13
+      ],
+      [
+        18,
+        14
+      ],
+      [
+        19,
+        15
+      ],
+      [
+        22,
+        21
+      ],
+      [
+        23,
+        19
+      ],
+      [
+        24,
+        20
+      ],
+      [
+        25,
+        22
+      ],
+      [
+        26,
+        24
+      ],
+      [
+        27,
+        23
+      ],
+      [
+        28,
+        25
+      ],
+      [
+        29,
+        41
+      ],
+      [
+        30,
+        40
+      ],
+      [
+        31,
+        43
+      ],
+      [
+        32,
+        42
+      ],
+      [
+        33,
+        44
+      ],
+      [
+        34,
+        27
+      ],
+      [
+        35,
+        26
+      ],
+      [
+        36,
+        29
+      ],
+      [
+        37,
+        28
+      ],
+      [
+        38,
+        31
+      ],
+      [
+        39,
+        30
+      ],
+      [
+        40,
+        32
+      ],
+      [
+        41,
+        33
+      ],
+      [
+        42,
+        34
+      ],
+      [
+        43,
+        35
+      ],
+      [
+        44,
+        36
+      ],
+      [
+        45,
+        37
+      ],
+      [
+        46,
+        38
+      ],
+      [
+        47,
+        39
+      ]
+    ],
+    "search_incomplete": false,
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1400/cuts/aam.pkl.gz",
+    "total_seconds": 12.885817714966834
+  }
+]

@@ -1,0 +1,674 @@
+[
+  {
+    "index": 7,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 30.548661617096514,
+    "capped": 1540,
+    "evaluation_seconds": 39.89883193210699,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826385.693595
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826429.548478
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/7/evaluation.json"
+  },
+  {
+    "index": 19,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 263.7738959300332,
+    "capped": 535025,
+    "evaluation_seconds": 153.00183498300612,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826621.7576058
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826779.6039896
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/19/evaluation.json"
+  },
+  {
+    "index": 576,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 18.770873957080767,
+    "capped": 15065,
+    "evaluation_seconds": 24.295725587988272,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826373.8553128
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826399.7893164
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/576/evaluation.json"
+  },
+  {
+    "index": 590,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": 232.53883032989688,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788826654.4222598
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826889.3125052
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/590/evaluation.json"
+  },
+  {
+    "index": 602,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": true,
+    "search_seconds": 9.914875635877252,
+    "capped": 754,
+    "evaluation_seconds": 3.32887580152601,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826364.9748514
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826384.2141867
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/602/evaluation.json"
+  },
+  {
+    "index": 603,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 60.66215505450964,
+    "capped": 40149,
+    "evaluation_seconds": 84.73510953597724,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826416.078827
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826506.955425
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/603/evaluation.json"
+  },
+  {
+    "index": 737,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 224.9501221673563,
+    "capped": 405053,
+    "evaluation_seconds": 52.51713533140719,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826582.095007
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826639.387853
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/737/evaluation.json"
+  },
+  {
+    "index": 775,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 68.82467081956565,
+    "capped": 87151,
+    "evaluation_seconds": 19.981035003438592,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826424.026943
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826448.606621
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/775/evaluation.json"
+  },
+  {
+    "index": 780,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 229.12234265799634,
+    "capped": 565333,
+    "evaluation_seconds": 233.2581325978972,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826852.0335343
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788827091.4994843
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/780/evaluation.json"
+  },
+  {
+    "index": 833,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": "verification interrupted",
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788826654.0373924
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788826894.1216786
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/833/evaluation.json"
+  },
+  {
+    "index": 845,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 64.46015976299532,
+    "capped": 57264,
+    "evaluation_seconds": 49.98909351415932,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826419.7560403
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826474.944541
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/845/evaluation.json"
+  },
+  {
+    "index": 846,
+    "outcome": "recovered",
+    "search_incomplete": true,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788826653.968764
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826676.0961668
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/846/evaluation.json"
+  },
+  {
+    "index": 850,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 273.0460418011062,
+    "capped": 586197,
+    "evaluation_seconds": 80.52599052991718,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826630.6705847
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826716.5493042
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/850/evaluation.json"
+  },
+  {
+    "index": 865,
+    "outcome": "unknown",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 64.92119348607957,
+    "capped": 30309,
+    "evaluation_seconds": 225.21534971985966,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826420.010883
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826650.4291272
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/865/evaluation.json"
+  },
+  {
+    "index": 867,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 51.76409019716084,
+    "capped": 64328,
+    "evaluation_seconds": 62.62068212777376,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826406.8691545
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826473.9546578
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/867/evaluation.json"
+  },
+  {
+    "index": 871,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 156.23301480524242,
+    "capped": 320479,
+    "evaluation_seconds": 171.70769362151623,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826512.725347
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826689.9090335
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/871/evaluation.json"
+  },
+  {
+    "index": 964,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": true,
+    "search_seconds": 53.720454395981506,
+    "capped": 59457,
+    "evaluation_seconds": 18.188481295015663,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826409.008083
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826429.127794
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/964/evaluation.json"
+  },
+  {
+    "index": 986,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 7.594494913006201,
+    "capped": 13330,
+    "evaluation_seconds": 5.243349794996902,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826362.3587232
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826369.3989801
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/986/evaluation.json"
+  },
+  {
+    "index": 1033,
+    "outcome": "unknown",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 53.23422697931528,
+    "capped": 9314,
+    "evaluation_seconds": 223.0700920522213,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826408.316018
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826634.469932
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1033/evaluation.json"
+  },
+  {
+    "index": 1228,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 66.20717689488083,
+    "capped": 153602,
+    "evaluation_seconds": 55.607623188756406,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826421.7190783
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826481.951972
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1228/evaluation.json"
+  },
+  {
+    "index": 1230,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 69.39664693083614,
+    "capped": 60150,
+    "evaluation_seconds": 21.301451612263918,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826424.5058255
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826450.0851371
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1230/evaluation.json"
+  },
+  {
+    "index": 1285,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 2.6797188073396683,
+    "capped": 3337,
+    "evaluation_seconds": 5.097881505265832,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826357.3567665
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826371.3401513
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1285/evaluation.json"
+  },
+  {
+    "index": 1314,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 53.95098175853491,
+    "capped": 31698,
+    "evaluation_seconds": 19.21970735024661,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826409.476382
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826432.299752
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1314/evaluation.json"
+  },
+  {
+    "index": 1358,
+    "outcome": "unknown",
+    "search_incomplete": false,
+    "top1": null,
+    "search_seconds": 280.2008549179882,
+    "capped": 473410,
+    "evaluation_seconds": null,
+    "reason": "verification interrupted",
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826638.4442089
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788826878.9789524
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1358/evaluation.json"
+  },
+  {
+    "index": 1377,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 112.4891956653446,
+    "capped": 212603,
+    "evaluation_seconds": 97.75854034069926,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826468.5202417
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826573.510995
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1377/evaluation.json"
+  },
+  {
+    "index": 1380,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 273.8519099764526,
+    "capped": 514508,
+    "evaluation_seconds": 229.9927535187453,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826631.6767874
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826868.2132585
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1380/evaluation.json"
+  },
+  {
+    "index": 1400,
+    "outcome": "recovered",
+    "search_incomplete": false,
+    "top1": true,
+    "search_seconds": 38.88192781154066,
+    "capped": 54445,
+    "evaluation_seconds": 12.885817714966834,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826394.1543884
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826412.89111
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1400/evaluation.json"
+  },
+  {
+    "index": 1475,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 20.717903171665967,
+    "capped": 9701,
+    "evaluation_seconds": 27.375002728775144,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826376.056776
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826416.589924
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1475/evaluation.json"
+  },
+  {
+    "index": 1553,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 11.384749121963978,
+    "capped": 2745,
+    "evaluation_seconds": 65.82500013709068,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826366.8021245
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826453.2364676
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1553/evaluation.json"
+  },
+  {
+    "index": 1568,
+    "outcome": "unknown",
+    "search_incomplete": false,
+    "top1": null,
+    "search_seconds": 242.6428556125611,
+    "capped": 618463,
+    "evaluation_seconds": null,
+    "reason": "verification interrupted",
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826600.4181535
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788826840.802919
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1568/evaluation.json"
+  },
+  {
+    "index": 1574,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 21.34278346411884,
+    "capped": 18690,
+    "evaluation_seconds": 108.52652748115361,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826376.4679945
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826497.9700272
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1574/evaluation.json"
+  },
+  {
+    "index": 1739,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "top1": false,
+    "search_seconds": 1.2222650470212102,
+    "capped": 0,
+    "evaluation_seconds": 2.9822715586051345,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788826356.1212971
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788826366.7008736
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seeds10_20260907/1739/evaluation.json"
+  }
+]
