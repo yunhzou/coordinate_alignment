@@ -5,6 +5,7 @@ symmetry_domains provide local pool permutations; exact group factors retain
 their correlations. No group elements or complete bijections are enumerated.
 """
 from functools import lru_cache
+from dataclasses import dataclass
 from itertools import combinations
 import time
 
@@ -18,10 +19,10 @@ def group_factors(generators):
                  for level in reversed(group.basic_transversals) if len(level)>1)
 
 
-def query_path(path, problem, reference, *, source_atoms, source_generators=(),
-               target_generators=(), complete_reference=True, timeout_ms=10000,
+def compile_path(path, problem, reference, *, source_atoms, source_generators=(),
+               target_generators=(), complete_reference=True,
                projected_atoms=None):
-    """Return a certified full explicit-atom realization, UNSAT, or unknown.
+    """Compile the shared correlated path constraints, without solving.
 
     Endpoint generators normalize reference identity only. They do not change
     the returned physical mapping. ``source_atoms`` is the reference-scored
@@ -118,13 +119,51 @@ def query_path(path, problem, reference, *, source_atoms, source_generators=(),
     normalized=act(normalized,target_generators,'target_equivalence')
     for atom,value in zip(source_atoms,normalized):
         if complete_reference or atom in reference:solver.add(value[0]==reference.get(atom,np_))
+    return CompiledFamily(solver,raw_values,representative,program,required,path,problem,
+                          projected_atoms,time.perf_counter()-start)
+
+
+@dataclass
+class CompiledFamily:
+    solver: object
+    values: list
+    representative: dict
+    program: list
+    required: dict
+    path: object
+    problem: object
+    projected_atoms: object
+    encoding_seconds: float
+
+    def realize(self, model):
+        return _realize(self,model)
+
+
+def query_path(path, problem, reference, *, source_atoms, source_generators=(),
+               target_generators=(), complete_reference=True, timeout_ms=10000,
+               projected_atoms=None):
+    """Return a certified full explicit-atom realization, UNSAT, or unknown."""
+    import z3
+    start=time.perf_counter()
+    compiled=compile_path(path,problem,reference,source_atoms=source_atoms,
+        source_generators=source_generators,target_generators=target_generators,
+        complete_reference=complete_reference,projected_atoms=projected_atoms)
+    solver=compiled.solver
     left=timeout_ms-1000*(time.perf_counter()-start)
     if left<=0:return 'unknown',dict(reason='encoding budget',seconds=time.perf_counter()-start)
     solver.set(timeout=max(1,int(left)))
     status=solver.check()
     if status!=z3.sat:return ('not_recovered' if status==z3.unsat else 'unknown'),dict(
         reason='unsat' if status==z3.unsat else solver.reason_unknown(),seconds=time.perf_counter()-start)
-    model=solver.model()
+    result=compiled.realize(solver.model())
+    result['seconds']=time.perf_counter()-start
+    return 'recovered',result
+
+
+def _realize(compiled,model):
+    raw_values=compiled.values;representative=compiled.representative
+    program=compiled.program;required=compiled.required
+    path=compiled.path;problem=compiled.problem;mapped=tuple(representative)
     def number(v):return v if isinstance(v,int) else model.eval(v,model_completion=True).as_long()
     actual=dict(representative);actions=[]
     for kind,edge,choice,data in program:
@@ -138,6 +177,6 @@ def query_path(path, problem, reference, *, source_atoms, source_generators=(),
     assert all(problem.product.wbo[actual[a],actual[b]]>=path.context.graph_floor and
         abs(w-problem.product.wbo[actual[a],actual[b]])<=path.context.iso_tolerance+1e-9
         for (a,b),w in required.items())
-    return 'recovered',dict(mapping=sorted(actual.items()),actions=actions,
-        seconds=time.perf_counter()-start,checked_fragment_edges=len(required),
-        scope='full_explicit' if projected_atoms is None else 'projection_only')
+    return dict(mapping=sorted(actual.items()),actions=actions,
+        checked_fragment_edges=len(required),
+        scope='full_explicit' if compiled.projected_atoms is None else 'projection_only')
