@@ -1,15 +1,17 @@
 """Full saved-Golden pattern extraction, with immutable inputs and explicit budgets."""
 import argparse
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor,ProcessPoolExecutor
 from dataclasses import asdict
 import gzip
 import hashlib
 from itertools import chain
 import json
 import os
+import multiprocessing
 from pathlib import Path
 import resource
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -22,6 +24,25 @@ from publication_analysis import certificate_id
 from rxn_core.artifacts import read_aam_checkpoint
 from rxn_core.pattern_collection import PatternEquivalence,extract_path_patterns
 from rxn_core.search_graph import frozen_value
+
+
+def _baseline_initialize(equivalence):
+    global _baseline_equivalence
+    _baseline_equivalence=equivalence
+
+
+def _baseline_key(mapping):
+    return _baseline_equivalence.key(mapping)
+
+
+def baseline_keys(equivalence,mappings,workers):
+    """Independent exact certificates; ordered output keeps ranking reproducible."""
+    if workers==1:
+        yield from map(equivalence.key,mappings)
+    else:
+        with ProcessPoolExecutor(max_workers=workers,mp_context=multiprocessing.get_context('fork'),
+                initializer=_baseline_initialize,initargs=(equivalence,)) as pool:
+            yield from pool.map(_baseline_key,mappings,chunksize=64)
 
 
 def family_key(path):
@@ -43,7 +64,7 @@ def worker(args):
     pair,default=plans(source,index);plan=pair[direction]
     base=source/'directions'/str(index)/direction;archive=base/'cuts/aam.pkl.gz'
     summary=dict(index=index,direction=direction,default_direction=default,complete=False,
-                 environment=metadata(),stage='loading',source_archive=str(archive))
+                 environment=metadata(),stage='loading',source_archive=str(archive),baseline_workers=args.baseline_workers)
     save(out/'summary.json',summary)
     if not archive.exists():
         summary.update(stage='missing_archive');save(out/'summary.json',summary);return
@@ -87,10 +108,11 @@ def worker(args):
         candidate_rows[key]=row;write(pattern_file,dict(record,**{k:v for k,v in row.items() if k!='key'}))
     try:
         # Preserve all prior displayed representatives before extending families.
-        for row in ranked:
+        mappings=(dict(aam.graph.states[row['terminal']].mapping) for row in ranked)
+        for row,key in zip(ranked,baseline_keys(eq,mappings,args.baseline_workers)):
             path=first(row['terminal']);mapping=path.mapping
             events=dict(row['events']);events['total']=sum(events.values())
-            candidate(dict(key=eq.key(mapping),mapping=sorted(mapping.items()),actions=[],terminal=path.terminal,
+            candidate(dict(key=key,mapping=sorted(mapping.items()),actions=[],terminal=path.terminal,
                 transitions=list(path.transitions),events=events,
                 origin='saved_representative'),certified_baseline=row)
         summary['baseline_candidates']=len(candidate_rows)
@@ -151,13 +173,16 @@ def dispatch(args):
         i,d=task;directory=args.run/'results'/str(i)/d
         summary=directory/'summary.json'
         if summary.exists() and json.loads(summary.read_text()).get('stage')=='finished':return
-        cmd=[sys.executable,str(Path(__file__).resolve()),'worker','--run',str(args.run),'--index',str(i),'--direction',d]
+        cmd=[sys.executable,str(Path(__file__).resolve()),'worker','--run',str(args.run),'--index',str(i),'--direction',d,
+             '--baseline-workers',str(args.baseline_workers)]
         env=dict(os.environ,OPENBLAS_NUM_THREADS='1',OMP_NUM_THREADS='1',PYTHONHASHSEED='0')
         with (args.run/'logs'/f'{i}_{d}.log').open('w') as log:
+            process=subprocess.Popen(cmd,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
             try:
-                result=subprocess.run(cmd,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=manifest['watchdog_seconds'])
-                status='ok' if result.returncode==0 else f'exit_{result.returncode}'
-            except subprocess.TimeoutExpired:status='watchdog_timeout'
+                code=process.wait(timeout=manifest['watchdog_seconds'])
+                status='ok' if code==0 else f'exit_{code}'
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid,signal.SIGKILL);process.wait();status='watchdog_timeout'
         save(args.run/'logs'/f'{i}_{d}.status.json',dict(index=i,direction=d,status=status))
         print(i,d,status,flush=True)
     with ThreadPoolExecutor(max_workers=args.workers) as pool:list(pool.map(run,tasks))
@@ -169,4 +194,5 @@ if __name__=='__main__':
     parser.add_argument('--index',type=int);parser.add_argument('--direction',choices=('R_to_P','P_to_R'))
     parser.add_argument('--case-seconds',type=float,default=60);parser.add_argument('--path-seconds',type=float,default=3)
     parser.add_argument('--workers',type=int,default=16);parser.add_argument('--shard',type=int,default=0);parser.add_argument('--shards',type=int,default=1)
+    parser.add_argument('--baseline-workers',type=int,default=1,help='Processes per archive for independent saved baseline certificates')
     args=parser.parse_args();{'init':initialize,'worker':worker,'dispatch':dispatch}[args.action](args)
