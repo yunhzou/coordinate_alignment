@@ -1,0 +1,306 @@
+{
+  "986": {
+    "baseline": {
+      "outcomes": {
+        "not_recovered": 1
+      },
+      "recovered_slots": [],
+      "completed_searches": 1,
+      "search_seconds": 0.3301106768194586
+    },
+    "random_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 6.786986832739785
+    },
+    "stable_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 6.431417266605422
+    },
+    "change_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 8.444368032738566
+    },
+    "random_single_cut": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 2.44532404653728
+    }
+  },
+  "1285": {
+    "baseline": {
+      "outcomes": {
+        "not_recovered": 1
+      },
+      "recovered_slots": [],
+      "completed_searches": 1,
+      "search_seconds": 0.024658966809511185
+    },
+    "random_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 2.91860921587795
+    },
+    "stable_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 1.3687750238459557
+    },
+    "change_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 1.3881801313254982
+    },
+    "random_single_cut": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 0.7459126969333738
+    }
+  },
+  "1553": {
+    "baseline": {
+      "outcomes": {
+        "not_recovered": 1
+      },
+      "recovered_slots": [],
+      "completed_searches": 1,
+      "search_seconds": 0.12392927589826286
+    },
+    "random_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 13.743230760097504
+    },
+    "stable_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 3.2726671770215034
+    },
+    "change_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 6.526111053302884
+    },
+    "random_single_cut": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 3.687082974007353
+    }
+  },
+  "1739": {
+    "baseline": {
+      "outcomes": {
+        "not_recovered": 1
+      },
+      "recovered_slots": [],
+      "completed_searches": 1,
+      "search_seconds": 0.05221065995283425
+    },
+    "random_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 5.940837255911902
+    },
+    "stable_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 0.9629371904302388
+    },
+    "change_anchor": {
+      "outcomes": {
+        "not_recovered": 15,
+        "recovered": 1
+      },
+      "recovered_slots": [
+        174
+      ],
+      "completed_searches": 16,
+      "search_seconds": 1.0268515665084124
+    },
+    "random_single_cut": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 1.0222857859916985
+    }
+  },
+  "300": {
+    "baseline": {
+      "outcomes": {
+        "recovered": 1
+      },
+      "recovered_slots": [
+        191
+      ],
+      "completed_searches": 1,
+      "search_seconds": 0.23139612935483456
+    },
+    "random_anchor": {
+      "outcomes": {
+        "not_recovered": 5,
+        "recovered": 11
+      },
+      "recovered_slots": [
+        193,
+        194,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        203,
+        204,
+        205
+      ],
+      "completed_searches": 16,
+      "search_seconds": 7.738605086691678
+    },
+    "stable_anchor": {
+      "outcomes": {
+        "recovered": 9,
+        "not_recovered": 7
+      },
+      "recovered_slots": [
+        208,
+        210,
+        214,
+        215,
+        216,
+        217,
+        218,
+        220,
+        221
+      ],
+      "completed_searches": 16,
+      "search_seconds": 3.7601177603937685
+    },
+    "change_anchor": {
+      "outcomes": {
+        "not_recovered": 15,
+        "recovered": 1
+      },
+      "recovered_slots": [
+        208
+      ],
+      "completed_searches": 16,
+      "search_seconds": 5.0472453974653035
+    },
+    "random_single_cut": {
+      "outcomes": {
+        "recovered": 16
+      },
+      "recovered_slots": [
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253
+      ],
+      "completed_searches": 16,
+      "search_seconds": 3.054692022735253
+    }
+  },
+  "600": {
+    "baseline": {
+      "outcomes": {
+        "not_recovered": 1
+      },
+      "recovered_slots": [],
+      "completed_searches": 1,
+      "search_seconds": 0.06659770105034113
+    },
+    "random_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 5.600343564292416
+    },
+    "stable_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 2.4883666560053825
+    },
+    "change_anchor": {
+      "outcomes": {
+        "not_recovered": 16
+      },
+      "recovered_slots": [],
+      "completed_searches": 16,
+      "search_seconds": 5.0382623604964465
+    },
+    "random_single_cut": {
+      "outcomes": {
+        "not_recovered": 15,
+        "recovered": 1
+      },
+      "recovered_slots": [
+        290
+      ],
+      "completed_searches": 16,
+      "search_seconds": 2.0609689485281706
+    }
+  }
+}
