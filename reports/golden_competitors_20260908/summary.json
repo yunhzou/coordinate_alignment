@@ -1,0 +1,124 @@
+{
+  "rxnmapper": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1851
+    },
+    "first_correct": 1547,
+    "any_correct": 1547,
+    "invalid_candidates": 0,
+    "successful_mapping_wall_sum_seconds": 104.54699743981473,
+    "successful_mapping_cpu_hours": 0.028877659915555565,
+    "successful_mapping_median_seconds": 0.05155663308687508,
+    "successful_mapping_max_seconds": 0.17829912202432752,
+    "all_request_wall_sum_seconds": 105.04936538077891,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "localmapper": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1851
+    },
+    "first_correct": 1605,
+    "any_correct": 1605,
+    "invalid_candidates": 0,
+    "successful_mapping_wall_sum_seconds": 544.9100645191502,
+    "successful_mapping_cpu_hours": 0.15097637443944442,
+    "successful_mapping_median_seconds": 0.2653314177878201,
+    "successful_mapping_max_seconds": 1.0512884249910712,
+    "all_request_wall_sum_seconds": 545.4799643319566,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "chython": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1846,
+      "mapping_error": 5
+    },
+    "first_correct": 1561,
+    "any_correct": 1561,
+    "invalid_candidates": 29,
+    "successful_mapping_wall_sum_seconds": 148.52340746484697,
+    "successful_mapping_cpu_hours": 0.3137068972300001,
+    "successful_mapping_median_seconds": 0.07290346710942686,
+    "successful_mapping_max_seconds": 2.2754556792788208,
+    "all_request_wall_sum_seconds": 149.4229759015143,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "slap_binary": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1851
+    },
+    "first_correct": 1399,
+    "any_correct": 1591,
+    "invalid_candidates": 0,
+    "successful_mapping_wall_sum_seconds": 138.86892907321453,
+    "successful_mapping_cpu_hours": 0.038556781561111114,
+    "successful_mapping_median_seconds": 0.03725738823413849,
+    "successful_mapping_max_seconds": 7.685650830157101,
+    "all_request_wall_sum_seconds": 139.90285513503477,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "slap_weighted": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1851
+    },
+    "first_correct": 1401,
+    "any_correct": 1564,
+    "invalid_candidates": 0,
+    "successful_mapping_wall_sum_seconds": 107.22052987711504,
+    "successful_mapping_cpu_hours": 0.029749277431944443,
+    "successful_mapping_median_seconds": 0.03313863417133689,
+    "successful_mapping_max_seconds": 6.899930150713772,
+    "all_request_wall_sum_seconds": 108.12599509535357,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "indigo": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1718,
+      "mapping_error": 133
+    },
+    "first_correct": 692,
+    "any_correct": 692,
+    "invalid_candidates": 510,
+    "successful_mapping_wall_sum_seconds": 315.8645576387644,
+    "successful_mapping_cpu_hours": 0.08772448270277776,
+    "successful_mapping_median_seconds": 0.008370965486392379,
+    "successful_mapping_max_seconds": 193.9485267959535,
+    "all_request_wall_sum_seconds": 337.3622475224547,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "rdt": {
+    "total": 1851,
+    "finished": 1851,
+    "statuses": {
+      "mapped": 1851
+    },
+    "first_correct": 1030,
+    "any_correct": 1030,
+    "invalid_candidates": 3,
+    "successful_mapping_wall_sum_seconds": 545.266252302099,
+    "successful_mapping_cpu_hours": 0.5247672541169445,
+    "successful_mapping_median_seconds": 0.14062719186767936,
+    "successful_mapping_max_seconds": 18.112655482720584,
+    "all_request_wall_sum_seconds": 545.8959999536164,
+    "timing_note": "Per-call compute only; startup, queue, evaluation and artifact saving excluded. Sum is not parallel elapsed."
+  },
+  "protocol": {
+    "denominator": 1851,
+    "strict_mapping_relation": true,
+    "no_core_algorithm_changes": true,
+    "evaluator_tests_passed": 18,
+    "inputs_endpoint_check_mismatches": 0,
+    "SAMMNet": "blocked: no public pretrained checkpoint found"
+  }
+}
