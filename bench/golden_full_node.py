@@ -17,6 +17,7 @@ from rxn_core import search_aam
 from rxn_core.aam import _initialize_finalization, _restore_finalized_cut
 from rxn_core.alignment.sweep import cut_sweep_items
 from rxn_core.domain import AAMResult, AAMSearchMetrics
+from rxn_core.artifacts import raw_cut_paths
 
 
 def aggregate(checks, expected):
@@ -68,21 +69,22 @@ def setup(run,index):
 
 
 def check_cut(raw):
-    raw=Path(raw);number=int(raw.stem.split('_')[1])
-    finalized=raw.with_name(raw.stem+'.finalized.pkl.gz')
+    raw=Path(raw);number=int(raw.name.split('_')[1].split('.')[0])
+    name=f'cut_{number:05d}'
+    finalized=raw.with_name(name+'.finalized.pkl.gz')
     _,graph,_=_restore_finalized_cut((number,str(raw),str(finalized)))
     aam=AAMResult(_PLAN.problem,_PLAN.config,graph,AAMSearchMetrics.from_record({},0))
     e=evaluate_planned(aam,_PLAN,_REF['features'],_REF['mapping'],seconds=200,query_timeout_ms=5000)
     e.update(archive=str(finalized),cut_index=number,top1_correct=None,
              witness_scope='terminal and path IDs are local to this cut archive')
-    save(_OUT/'checks'/f'{raw.stem}.json',e)
+    save(_OUT/'checks'/f'{name}.json',e)
     return e
 
 
 def score(args):
     m=json.loads((args.run/'manifest.json').read_text());index=m['indices'][args.slot]
     out,plan=load_case(args.run,index);(out/'checks').mkdir(exist_ok=True)
-    raw=sorted((out/'cuts').glob('cut_*.json'))
+    raw=raw_cut_paths(out/'cuts')
     if not raw:return
     with mp.get_context('fork').Pool(min(48,len(raw)),initializer=setup,
                                     initargs=(str(args.run),index)) as pool:
@@ -96,7 +98,7 @@ def finish(out,plan):
     outcome=aggregate(checks,expected)
     result=next((dict(e) for e in checks if e['reference_recovery']=='recovered'),{})
     result.update(reference_recovery=outcome,top1_correct=None,expected_cuts=expected,
-        checked_cuts=len(checks),search_incomplete=len(list((out/'cuts').glob('cut_*.json')))!=expected,
+        checked_cuts=len(checks),search_incomplete=len(raw_cut_paths(out/'cuts'))!=expected,
         verification_incomplete=len(checks)!=expected or any(e['reference_recovery']=='unknown' for e in checks))
     save(out/'evaluation.json',result)
 

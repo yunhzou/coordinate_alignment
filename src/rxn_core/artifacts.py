@@ -84,9 +84,13 @@ def read_aam_checkpoint(path):
 
 def write_graph_checkpoint(graph,path):
     """Save a trusted, finalized cut graph without expanding shared values."""
+    _write_graph_checkpoint(graph,path,'rxn_core.finalized_cut/v1')
+
+
+def _write_graph_checkpoint(graph,path,schema):
     path=Path(path);temporary=path.with_suffix(path.suffix+'.tmp')
     with gzip.open(temporary,'wb',compresslevel=1) as stream:
-        pickle.dump(('rxn_core.finalized_cut/v1',graph),stream,protocol=5)
+        pickle.dump((schema,graph),stream,protocol=5)
     temporary.replace(path)
 
 
@@ -105,6 +109,40 @@ def read_aam(stream):
         return aam_from_record(json.load(stream),copy_graph=False)
     finally:
         if enabled:gc.enable()
+
+
+def raw_cut_paths(directory):
+    """Completed raw cuts in either supported format, in canonical cut order."""
+    directory=Path(directory);paths={}
+    for path in (*directory.glob('cut_*.json'), *directory.glob('cut_*.raw.pkl.gz')):
+        index=int(path.name.split('_')[1].split('.')[0])
+        if index in paths:raise ValueError(f'Duplicate raw cut checkpoint {index}')
+        paths[index]=path
+    return [paths[index] for index in sorted(paths)]
+
+
+def write_raw_cut(graph,path):
+    """Persist the requested raw-cut format atomically; binary is trusted-only."""
+    path=Path(path)
+    if path.name.endswith('.raw.pkl.gz'):
+        _write_graph_checkpoint(graph,path,'rxn_core.raw_cut/v1')
+    elif path.suffix=='.json':
+        temporary=path.with_suffix('.json.tmp')
+        with temporary.open('w') as stream:json.dump(graph.to_record(copy=False),stream)
+        temporary.replace(path)
+    else:raise ValueError(f'Unsupported raw cut format: {path}')
+
+
+def read_raw_cut(path, *, tuple_pool=None):
+    """Read only trusted internal binary cuts; JSON remains interchange-safe."""
+    path=Path(path)
+    if path.name.endswith('.raw.pkl.gz'):
+        with gzip.open(path,'rb') as stream:schema,graph=pickle.load(stream)
+        if schema!='rxn_core.raw_cut/v1':raise ValueError('Unsupported raw cut checkpoint schema')
+        return graph
+    if path.suffix=='.json':
+        return AAMSearchGraph.from_record(json.loads(path.read_bytes()),copy=False,tuple_pool=tuple_pool)
+    raise ValueError(f'Unsupported raw cut format: {path}')
 
 
 def aam_json(result):

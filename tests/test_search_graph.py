@@ -101,6 +101,29 @@ def test_sibling_commits_share_snapshots_without_mutating_the_parent():
     assert len(parent.graph.states) == 3
 
 
+def test_deferred_bond_storage_is_shared_without_changing_records():
+    parent = _Branch()
+    for mapping, cuts in [({0: 1}, ((0, 2), (1, 3))),
+                          ({0: 2}, ((0, 2), (1, 3))),
+                          ({0: 3}, ((0, 2),))]:
+        branch = parent.fork()
+        branch.commit(FragmentPlacement(mapping, frozenset(mapping), frozenset(cuts),
+                       {'witness': mapping, 'blocks': []}, ()))
+        parent.graph.stop(branch, 'capped', count=2, limit=1)
+    graph = parent.graph.finish()
+    a, b, c = [e.match['deferred_edges'] for e in graph.transitions]
+    assert a is b and a[0] is c[0]
+    assert a == [[0, 2], [1, 3]]
+    assert len(graph.stops) == 3  # discarded-path diagnostics are preserved
+    record = graph.to_record()
+    restored = AAMSearchGraph.from_record(json.loads(json.dumps(record)), copy=False)
+    assert restored.to_record() == record
+    x, y, z = [e.match['deferred_edges'] for e in restored.transitions]
+    assert x is y and x[0] is z[0]
+    record['transitions'][0]['match']['deferred_edges'][0][0] = 99
+    assert a[0][0] == x[0][0] == 0  # public conversion owns its copy
+
+
 @pytest.mark.parametrize('seed', range(20))
 def test_cached_partitions_and_events_match_literal_commit(seed):
     """Compare the optimized commit against the pre-optimization definition."""

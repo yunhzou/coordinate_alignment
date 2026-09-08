@@ -1,0 +1,17 @@
+{
+  "tested": 1,
+  "seeds": 10,
+  "cap": 2000,
+  "outcomes": {
+    "unknown": 1
+  },
+  "recovered": [],
+  "not_recovered": [],
+  "unknown": [
+    833
+  ],
+  "baseline_recovered": 1827,
+  "union_recovered": 1827,
+  "union_percent": 98.7034035656402,
+  "note": "Diagnostic union with previous saved results; not a full-dataset new-policy benchmark. Original unresolved case 1793 was not part of the requested 32 misses."
+}

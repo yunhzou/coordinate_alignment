@@ -24,6 +24,27 @@ def frozen_value(value):
     return value
 
 
+class _BondRecords:
+    """Exact-value sharing of DAG-owned read-only bond lists."""
+    def __init__(self):
+        self.records = {}
+        self.rows = {}
+
+    def record(self, edges):
+        key = tuple(map(tuple, edges))
+        record = self.records.get(key)
+        if record is None:
+            record = []
+            for edge in key:
+                row = self.rows.get(edge)
+                if row is None:
+                    row = list(map(int, edge))
+                    self.rows[edge] = row
+                record.append(row)
+            self.records[key] = record
+        return record
+
+
 @dataclass(frozen=True)
 class SearchContext:
     source_atoms: tuple[int, ...]
@@ -360,12 +381,14 @@ class AAMSearchGraph:
             "islands": pairs(item["islands"]), "deferred_edges": pairs(item["deferred_edges"])})
             for item in record["states"])
         transitions = []
+        bonds = _BondRecords()
         for item in record["transitions"]:
             # Owned JSON input may transfer its nested storage to the graph.
             # The default remains detached for callers retaining the record.
             match = deepcopy(item["match"]) if copy else item["match"]
             if match is not None:
                 match = dict(match)
+                match['deferred_edges'] = bonds.record(match['deferred_edges'])
                 symmetry = dict(match["symmetry"])
                 match['symmetry'] = symmetry
                 symmetry["witness"] = {int(a): int(b) for a, b in symmetry["witness"].items()}
@@ -400,6 +423,15 @@ class SearchGraphBuilder:
         self.step = (0, 0)
         self.seed = None
         self._partitions = {}
+        self._bond_records = _BondRecords()
+
+    def bond_record(self, edges):
+        """DAG-owned read-only bond lists, shared by exact value.
+
+        Keep the public record shape; sharing storage does not merge paths or
+        change their assignment domains. Public to_record() still detaches.
+        """
+        return self._bond_records.record(sorted(edges))
 
     def merged_partition(self, previous, atoms):
         """Merge touched source islands once for all sibling target placements."""

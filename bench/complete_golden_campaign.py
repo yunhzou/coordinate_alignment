@@ -19,7 +19,7 @@ from golden_campaign import initialize,save
 from golden_evaluation import evaluate
 from rxn_core import AAMProblem,AAMSearchConfig,search_aam
 from rxn_core.aam import checkpoint_manifest
-from rxn_core.artifacts import read_aam,read_aam_checkpoint,write_aam_checkpoint
+from rxn_core.artifacts import read_aam,read_aam_checkpoint,write_aam_checkpoint,raw_cut_paths
 from rxn_core.domain import MolecularEndpoint
 
 
@@ -56,7 +56,7 @@ def init(args):
                 stream.seek(-1,2);complete_raw=stream.read()==b'\n'
         if (old/'partial_archive.json').exists():
             chunks=[Path(p) for p in json.loads((old/'partial_archive.json').read_text())['cuts']]
-        else:chunks=list((old/'cuts').glob('cut_*.json'))
+        else:chunks=raw_cut_paths(old/'cuts')
         for chunk in chunks:(cuts/chunk.name).symlink_to(chunk.resolve())
         save(cuts/'manifest.json',checkpoint_manifest(problem_at(new),config))
         plan=dict(index=index,original=str(old),saved_cuts=len(chunks),

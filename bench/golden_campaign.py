@@ -15,7 +15,7 @@ import time
 
 from golden_evaluation import prepare, evaluate
 from rxn_core import AAMProblem, AAMSearchConfig, search_aam
-from rxn_core.artifacts import aam_from_record,read_aam
+from rxn_core.artifacts import aam_from_record,read_aam,raw_cut_paths,read_raw_cut
 from rxn_core.domain import MolecularEndpoint
 
 
@@ -118,9 +118,8 @@ def partial_score(args):
     recorded family contains the reference. Original compressed cuts persist.
     """
     from rxn_core.domain import AAMResult,AAMSearchMetrics
-    from rxn_core.search_graph import AAMSearchGraph
     directory=args.run/str(args.index)
-    chunks=sorted((directory/'cuts').glob('cut_*.json'))
+    chunks=raw_cut_paths(directory/'cuts')
     if (directory/'partial_archive.json').exists():
         chunks=[Path(p) for p in json.loads((directory/'partial_archive.json').read_text())['cuts']]
     save(directory/'partial_archive.json',dict(cuts=[str(p.resolve()) for p in chunks],
@@ -132,7 +131,7 @@ def partial_score(args):
     started=time.perf_counter();reports=[]
     for chunk in chunks:
         if time.perf_counter()-started>110:break
-        graph=AAMSearchGraph.from_record(json.loads(chunk.read_text()))
+        graph=read_raw_cut(chunk)
         result=AAMResult(problem,config,graph,AAMSearchMetrics.from_record({},300))
         report=evaluate(result,reference['features'],reference['mapping'],symbolic=False)
         report['cut']=str(chunk)

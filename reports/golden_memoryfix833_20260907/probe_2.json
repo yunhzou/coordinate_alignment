@@ -1,0 +1,32 @@
+{
+  "event": "search_end",
+  "seconds": 26.750233272090554,
+  "rss_mib": 866.953125,
+  "peak_mib": 866.953125,
+  "seeds_finished": 1,
+  "profile_rows": 41210,
+  "states": 112907,
+  "transitions": 112906,
+  "stops": 86401,
+  "partitions": 38,
+  "status": "complete",
+  "cap": 2000,
+  "requested_seeds": 1,
+  "input_sha256": "324d8debe660b7d5d14036083769cfe8b9b3854a352064080b2f29b66b90b836",
+  "legacy": false,
+  "traced": false,
+  "graph_sha256": [
+    "dc3355320098f2e63b62192b6ba9ed820effe15880795c8f8d4094f86d58c26d"
+  ],
+  "graphs": [
+    {
+      "states": 112907,
+      "transitions": 112906,
+      "terminals": 2000,
+      "capped_stops": 84401,
+      "terminal_ancestor_transitions": 6771,
+      "fragment_transitions": 112906,
+      "join_transitions": 0
+    }
+  ]
+}

@@ -137,7 +137,7 @@ class _Branch:
             record = {
                 'island_idx': self.islands_R[next(iter(iso))],
                 'fragment': sorted(int(r) for r in iso.fragment),
-                'deferred_edges': [list(map(int, e)) for e in sorted(iso.deferred_edges)],
+                'deferred_edges': self.graph.bond_record(iso.deferred_edges),
                 'symmetry': iso.symmetry,
             }
             self.node = self.graph.commit(self.node, self, record, iso.preserved_bonds)

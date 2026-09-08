@@ -15,7 +15,7 @@ import time
 
 from golden_evaluation import prepare, evaluate_planned, project
 from rxn_core import AAMProblem,AAMSearchConfig,plan_aam_search,search_aam
-from rxn_core.artifacts import read_aam_checkpoint
+from rxn_core.artifacts import read_aam_checkpoint,raw_cut_paths,read_raw_cut
 from rxn_core.domain import MolecularEndpoint
 
 
@@ -97,10 +97,9 @@ def partial(args):
     """Explicitly labelled positive-only evidence from completed cut records."""
     import pynauty
     from golden_evaluation import colored_graph
-    from rxn_core.search_graph import AAMSearchGraph
     directory,plan=load_case(args.run,args.index)
     ref=json.loads((directory/'reference.json').read_text())
-    chunks=sorted((directory/'cuts').glob('cut_*.json'))
+    chunks=raw_cut_paths(directory/'cuts')
     save(directory/'partial_archive.json',dict(cuts=[str(p) for p in chunks],search_incomplete=True))
     def finish(report):
         save(directory/'evaluation.json',report)
@@ -113,7 +112,7 @@ def partial(args):
     for path in chunks:
         if time.perf_counter()-started>75:
             break
-        graph=AAMSearchGraph.from_record(json.loads(path.read_bytes()),copy=False)
+        graph=read_raw_cut(path)
         seen=set();witness=None
         for terminal in graph.terminals:
             if time.perf_counter()-started>75:break

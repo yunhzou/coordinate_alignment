@@ -11,7 +11,7 @@ import time
 
 from golden_policy_campaign import load_case,save,guarded
 from golden_evaluation import evaluate_planned
-from rxn_core.artifacts import read_aam_checkpoint
+from rxn_core.artifacts import read_aam_checkpoint,raw_cut_paths,read_raw_cut
 
 
 def init(args):
@@ -46,16 +46,15 @@ def score(args):
         e.update(search_incomplete=False,archive=str(archive),total_seconds=time.perf_counter()-start)
         save(out/'evaluation.json',e)
         return
-    from rxn_core.search_graph import AAMSearchGraph
     from rxn_core.search_symmetry import finalize_graph_symmetry
     from rxn_core.frag import build_graph
     from rxn_core.domain import AAMResult,AAMSearchMetrics
     target=build_graph(plan.problem.product.elements,plan.problem.product.wbo,plan.config.graph_floor)
     checks=[]
-    for cut in sorted((source/'cuts').glob('cut_*.json')):
+    for cut in raw_cut_paths(source/'cuts'):
         remaining=230-(time.perf_counter()-start)
         if remaining<=0:break
-        graph=AAMSearchGraph.from_record(json.loads(cut.read_bytes()),copy=False)
+        graph=read_raw_cut(cut)
         graph,_=finalize_graph_symmetry(graph,target,iso_tolerance=plan.config.iso_tolerance)
         aam=AAMResult(plan.problem,plan.config,graph,AAMSearchMetrics.from_record({},0))
         e=evaluate_planned(aam,plan,ref['features'],ref['mapping'],seconds=min(30,remaining),query_timeout_ms=3000)

@@ -1,0 +1,26 @@
+[
+  {
+    "index": 833,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 9,
+    "expected_cuts": 86,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788830246.0690753
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788830478.677872
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_memoryfix833_fullnode_20260907/833/evaluation.json"
+  }
+]

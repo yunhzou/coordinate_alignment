@@ -136,6 +136,24 @@ def test_compressed_checkpoint_preserves_typed_graph_and_json_content(tmp_path):
     assert json.dumps(aam_record(restored),sort_keys=True)==json.dumps(aam_record(result),sort_keys=True)
     assert restored.graph.fragment_placement(0)==result.graph.fragment_placement(0)
     assert not list(tmp_path.glob('*.tmp'))
+    assert list(tmp_path.glob('cut_*.raw.pkl.gz'))
+    assert not list(tmp_path.glob('cut_*.json'))
+
+
+def test_checkpoint_resume_accepts_explicit_mixed_cut_formats(tmp_path,monkeypatch):
+    from rxn_core import aam
+    from rxn_core.artifacts import raw_cut_paths,read_raw_cut,write_raw_cut
+    problem=AAMProblem(_endpoint('R'),_endpoint('P'))
+    config=AAMSearchConfig(seed_count=1)
+    original=search_aam(problem,config,intermediate_dir=tmp_path)
+    raw=raw_cut_paths(tmp_path)[0]
+    write_raw_cut(read_raw_cut(raw),raw.with_name(raw.stem+'.raw.pkl.gz'))
+    raw.unlink()
+    def forbidden(cut):raise AssertionError('Completed cut was searched again')
+    monkeypatch.setattr(aam,'_search_cut',forbidden)
+    resumed=search_aam(problem,config,intermediate_dir=tmp_path,resume=True,
+                       workers=2,archive_format='checkpoint')
+    assert resumed.graph.to_record()==original.graph.to_record()
 
 
 def test_search_aam_returns_complete_typed_hierarchy():

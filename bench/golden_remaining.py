@@ -14,7 +14,7 @@ import pynauty
 from golden_policy_campaign import load_case,save,guarded
 from golden_evaluation import project,colored_graph,endpoint_generators,evaluate_planned
 from rxn_core import AAMProblem,AAMSearchPlan,search_aam
-from rxn_core.artifacts import read_aam_checkpoint
+from rxn_core.artifacts import read_aam_checkpoint,raw_cut_paths,read_raw_cut
 
 
 def initialize(args):
@@ -64,7 +64,7 @@ def diagnose(args):
     archive=(source if job['variant']=='archive' else out)/'cuts/aam.pkl.gz'
     if not archive.exists():
         save(out/'diagnosis.json',dict(reference_recovery='unknown',reason='incomplete search; no full archive',
-            saved_cuts=len(list(archive.parent.glob('cut_*.json')))))
+            saved_cuts=len(raw_cut_paths(archive.parent))))
         return
     start=time.perf_counter();aam=read_aam_checkpoint(archive)
     ref=json.loads((source/'reference.json').read_text())
@@ -133,15 +133,14 @@ def worker(args):
 
 
 def check_partial(args):
-    from rxn_core.search_graph import AAMSearchGraph
     manifest,job,source,plan,out=context(args)
     ref=json.loads((source/'reference.json').read_text())
     features=list(reversed(ref['features'])) if plan.reversed else ref['features']
     expected=pynauty.certificate(colored_graph(features,project(plan.to_search_mapping(ref['mapping']),features)))
     start=time.perf_counter();checked=0
-    for cut in sorted((out/'cuts').glob('cut_*.json')):
+    for cut in raw_cut_paths(out/'cuts'):
         if time.perf_counter()-start>90:break
-        graph=AAMSearchGraph.from_record(json.loads(cut.read_bytes()),copy=False);seen=set()
+        graph=read_raw_cut(cut);seen=set()
         for terminal in graph.terminals:
             if time.perf_counter()-start>90:break
             mapping=project(graph.states[terminal].mapping,features);key=tuple(sorted(mapping.items()))

@@ -62,6 +62,14 @@ def probe(args):
     finally:signal.setitimer(signal.ITIMER_REAL,0)
     row=emit('search_end',status=status,cap=args.cap,requested_seeds=args.seeds,
              input_sha256=hashlib.sha256(data).hexdigest(),legacy=args.legacy,traced=args.trace)
+    if args.fingerprint:
+        fingerprints=[]
+        for graph in results:
+            digest=hashlib.sha256()
+            for chunk in json.JSONEncoder(sort_keys=True).iterencode(graph.to_record(copy=False)):
+                digest.update(chunk.encode())
+            fingerprints.append(digest.hexdigest())
+        row['graph_sha256']=fingerprints
     if args.trace:
         row['python_traced_bytes']=tracemalloc.get_traced_memory()
         row['allocation_sites']=[dict(site=str(s.traceback),bytes=s.size,count=s.count)
@@ -84,5 +92,6 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['prepare','probe'])
     p.add_argument('--source',type=Path);p.add_argument('--input',type=Path);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--package',type=Path);p.add_argument('--legacy',action='store_true');p.add_argument('--trace',action='store_true')
+    p.add_argument('--fingerprint',action='store_true')
     p.add_argument('--cap',type=int,default=100);p.add_argument('--seeds',type=int,default=10);p.add_argument('--seconds',type=int,default=90)
     a=p.parse_args();dict(prepare=prepare,probe=probe)[a.mode](a)

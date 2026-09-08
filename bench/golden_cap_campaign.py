@@ -111,9 +111,9 @@ def report(run, output):
 def check_partial(run, slot):
     """Positive-only certificate check of completed cuts; not a full evaluation."""
     import gc
+    from rxn_core.artifacts import raw_cut_paths,read_raw_cut
     import pynauty
     from golden_evaluation import colored_graph, project
-    from rxn_core.search_graph import AAMSearchGraph
     job = json.loads((run/'manifest.json').read_text())['jobs'][slot]
     directory = run/f"case{job['index']}_seeds{job['seeds']}_cap{job['cap']}"
     reference = json.loads((Path(job['source'])/'reference.json').read_text())
@@ -121,8 +121,8 @@ def check_partial(run, slot):
     expected = pynauty.certificate(colored_graph(features, project(reference['mapping'], features)))
     rows = []
     gc.disable()
-    for path in sorted((directory/'cuts').glob('cut_*.json')):
-        graph = AAMSearchGraph.from_record(json.loads(path.read_bytes()), copy=False)
+    for path in raw_cut_paths(directory/'cuts'):
+        graph = read_raw_cut(path)
         seen = set()
         hit = None
         for terminal in graph.terminals:
