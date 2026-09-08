@@ -128,7 +128,9 @@ def write_raw_cut(graph,path):
         _write_graph_checkpoint(graph,path,'rxn_core.raw_cut/v1')
     elif path.suffix=='.json':
         temporary=path.with_suffix('.json.tmp')
-        with temporary.open('w') as stream:json.dump(graph.to_record(copy=False),stream)
+        # Interchange JSON uses the fast C encoder. Large persistent searches
+        # select compact checkpoints to avoid expanding shared graph payloads.
+        temporary.write_text(json.dumps(graph.to_record(copy=False)))
         temporary.replace(path)
     else:raise ValueError(f'Unsupported raw cut format: {path}')
 

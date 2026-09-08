@@ -1,0 +1,3571 @@
+[
+  {
+    "slot": 0,
+    "task": {
+      "kind": "core",
+      "family": 0,
+      "name": "augmented_0"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 1,
+    "task": {
+      "kind": "core",
+      "family": 1,
+      "name": "augmented_1"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 2,
+    "task": {
+      "kind": "core",
+      "family": 2,
+      "name": "augmented_2"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 3,
+    "task": {
+      "kind": "core",
+      "family": 3,
+      "name": "augmented_3"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 4,
+    "task": {
+      "kind": "core",
+      "family": 4,
+      "name": "augmented_4"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 5,
+    "task": {
+      "kind": "core",
+      "family": 5,
+      "name": "augmented_5"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 6,
+    "task": {
+      "kind": "core",
+      "family": 6,
+      "name": "augmented_6"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 7,
+    "task": {
+      "kind": "core",
+      "family": 7,
+      "name": "augmented_7"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 8,
+    "task": {
+      "kind": "core",
+      "family": 8,
+      "name": "augmented_8"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 9,
+    "task": {
+      "kind": "core",
+      "family": 9,
+      "name": "augmented_9"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 10,
+    "task": {
+      "kind": "core",
+      "family": 10,
+      "name": "augmented_10"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 11,
+    "task": {
+      "kind": "core",
+      "family": 11,
+      "name": "augmented_11"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 12,
+    "task": {
+      "kind": "core",
+      "family": 12,
+      "name": "augmented_12"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 13,
+    "task": {
+      "kind": "core",
+      "family": 13,
+      "name": "augmented_13"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 14,
+    "task": {
+      "kind": "core",
+      "family": 14,
+      "name": "augmented_14"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 15,
+    "task": {
+      "kind": "core",
+      "family": 15,
+      "name": "augmented_15"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 16,
+    "task": {
+      "kind": "core",
+      "family": 16,
+      "name": "augmented_16"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 17,
+    "task": {
+      "kind": "core",
+      "family": 17,
+      "name": "augmented_17"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 18,
+    "task": {
+      "kind": "core",
+      "family": 18,
+      "name": "augmented_18"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 19,
+    "task": {
+      "kind": "core",
+      "family": 19,
+      "name": "augmented_19"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 20,
+    "task": {
+      "kind": "core",
+      "family": 20,
+      "name": "augmented_20"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 21,
+    "task": {
+      "kind": "core",
+      "family": 21,
+      "name": "augmented_21"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 22,
+    "task": {
+      "kind": "core",
+      "family": 22,
+      "name": "augmented_22"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 23,
+    "task": {
+      "kind": "core",
+      "family": 23,
+      "name": "augmented_23"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 24,
+    "task": {
+      "kind": "core",
+      "family": 24,
+      "name": "augmented_24"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 25,
+    "task": {
+      "kind": "core",
+      "family": 25,
+      "name": "augmented_25"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 26,
+    "task": {
+      "kind": "core",
+      "family": 26,
+      "name": "augmented_26"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 27,
+    "task": {
+      "kind": "core",
+      "family": 27,
+      "name": "augmented_27"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 28,
+    "task": {
+      "kind": "core",
+      "family": 28,
+      "name": "augmented_28"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 29,
+    "task": {
+      "kind": "core",
+      "family": 29,
+      "name": "augmented_29"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 30,
+    "task": {
+      "kind": "core",
+      "family": 30,
+      "name": "augmented_30"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 31,
+    "task": {
+      "kind": "core",
+      "family": 31,
+      "name": "augmented_31"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 32,
+    "task": {
+      "kind": "core",
+      "family": 32,
+      "name": "augmented_32"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 33,
+    "task": {
+      "kind": "core",
+      "family": 33,
+      "name": "augmented_33"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 34,
+    "task": {
+      "kind": "core",
+      "family": 34,
+      "name": "augmented_34"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 35,
+    "task": {
+      "kind": "core",
+      "family": 35,
+      "name": "augmented_35"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 36,
+    "task": {
+      "kind": "core",
+      "family": 36,
+      "name": "augmented_36"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 37,
+    "task": {
+      "kind": "core",
+      "family": 37,
+      "name": "augmented_37"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 38,
+    "task": {
+      "kind": "core",
+      "family": 38,
+      "name": "augmented_38"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 39,
+    "task": {
+      "kind": "core",
+      "family": 39,
+      "name": "augmented_39"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 40,
+    "task": {
+      "kind": "core",
+      "family": 40,
+      "name": "augmented_40"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 41,
+    "task": {
+      "kind": "core",
+      "family": 41,
+      "name": "augmented_41"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 42,
+    "task": {
+      "kind": "core",
+      "family": 42,
+      "name": "augmented_42"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 43,
+    "task": {
+      "kind": "core",
+      "family": 43,
+      "name": "augmented_43"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 44,
+    "task": {
+      "kind": "core",
+      "family": 44,
+      "name": "augmented_44"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 45,
+    "task": {
+      "kind": "core",
+      "family": 45,
+      "name": "augmented_45"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 46,
+    "task": {
+      "kind": "core",
+      "family": 46,
+      "name": "augmented_46"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 47,
+    "task": {
+      "kind": "core",
+      "family": 47,
+      "name": "augmented_47"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 48,
+    "task": {
+      "kind": "core",
+      "family": 48,
+      "name": "augmented_48"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 49,
+    "task": {
+      "kind": "core",
+      "family": 49,
+      "name": "augmented_49"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 50,
+    "task": {
+      "kind": "core",
+      "family": 50,
+      "name": "augmented_50"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 51,
+    "task": {
+      "kind": "core",
+      "family": 51,
+      "name": "augmented_51"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 52,
+    "task": {
+      "kind": "core",
+      "family": 52,
+      "name": "augmented_52"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 53,
+    "task": {
+      "kind": "core",
+      "family": 53,
+      "name": "augmented_53"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 54,
+    "task": {
+      "kind": "core",
+      "family": 54,
+      "name": "augmented_54"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 55,
+    "task": {
+      "kind": "core",
+      "family": 55,
+      "name": "augmented_55"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 56,
+    "task": {
+      "kind": "core",
+      "family": 56,
+      "name": "augmented_56"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 57,
+    "task": {
+      "kind": "core",
+      "family": 57,
+      "name": "augmented_57"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 58,
+    "task": {
+      "kind": "core",
+      "family": 58,
+      "name": "augmented_58"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 59,
+    "task": {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 1,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 60,
+    "task": {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 1,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 61,
+    "task": {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 62,
+    "task": {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 4,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 63,
+    "task": {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 4,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 64,
+    "task": {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 7,
+      "after": 7
+    },
+    "equal": true,
+    "median_seconds": {
+      "before": {
+        "binary_read": 0.04085252690128982,
+        "binary_write": 0.05778727284632623,
+        "cold_search": 1.672901418991387,
+        "json_read": 0.21409150282852352,
+        "json_write": 0.20350956288166344,
+        "warm_resume": 0.26200397801585495
+      },
+      "after": {
+        "binary_read": 0.04070683801546693,
+        "binary_write": 0.05729688610881567,
+        "cold_search": 1.674136218847707,
+        "json_read": 0.2130816332064569,
+        "json_write": 0.20311888284049928,
+        "warm_resume": 0.27435596799477935
+      }
+    },
+    "ratios": {
+      "binary_read": 0.9964337852056272,
+      "binary_write": 0.9915139318165326,
+      "cold_search": 1.0007381187213438,
+      "json_read": 0.9952829999849389,
+      "json_write": 0.9980802865691804,
+      "warm_resume": 1.0471442841153233
+    },
+    "records": {
+      "before": [
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 0,
+          "times": {
+            "cold_search": 1.7020262118894607,
+            "warm_resume": 0.26042573689483106,
+            "json_write": 0.20432698214426637,
+            "json_read": 0.21347326901741326,
+            "binary_write": 0.05778727284632623,
+            "binary_read": 0.04015636304393411
+          },
+          "peak_process_mib": 112.13671875,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6423195670358837,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013683337951079011,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.3922058183234185,
+            "checkpoint_seconds": 0.31952418107539415,
+            "symmetry_finalization_seconds": 0.018466462148353457,
+            "checkpoint_restore_and_finalize_seconds": 0.37772472901269794
+          },
+          "resume_equal": true,
+          "json_bytes": 3658220,
+          "binary_bytes": 174086
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 1,
+          "times": {
+            "cold_search": 1.669766893144697,
+            "warm_resume": 0.26216783886775374,
+            "json_write": 0.20350956288166344,
+            "json_read": 0.21474117296747863,
+            "binary_write": 0.05753790703602135,
+            "binary_read": 0.040574155980721116
+          },
+          "peak_process_mib": 112.203125,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6097493809647858,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013643433107063174,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.3949206995312124,
+            "checkpoint_seconds": 0.29331109998747706,
+            "symmetry_finalization_seconds": 0.018458653008565307,
+            "checkpoint_restore_and_finalize_seconds": 0.3574306699447334
+          },
+          "resume_equal": true,
+          "json_bytes": 3658219,
+          "binary_bytes": 174082
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 2,
+          "times": {
+            "cold_search": 1.672901418991387,
+            "warm_resume": 0.2608061560895294,
+            "json_write": 0.201864181086421,
+            "json_read": 0.21409150282852352,
+            "binary_write": 0.05792114790529013,
+            "binary_read": 0.04179746704176068
+          },
+          "peak_process_mib": 112.41796875,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.613325723912567,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.01359313097782433,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.385272352024913,
+            "checkpoint_seconds": 0.3356250594370067,
+            "symmetry_finalization_seconds": 0.01847178884781897,
+            "checkpoint_restore_and_finalize_seconds": 0.3595826649107039
+          },
+          "resume_equal": true,
+          "json_bytes": 3658214,
+          "binary_bytes": 174085
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 3,
+          "times": {
+            "cold_search": 1.6721666059456766,
+            "warm_resume": 0.2629083089996129,
+            "json_write": 0.2025616520550102,
+            "json_read": 0.21649404312483966,
+            "binary_write": 0.057658095844089985,
+            "binary_read": 0.04085252690128982
+          },
+          "peak_process_mib": 114.953125,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6123152310028672,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013759112916886806,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.392535992432386,
+            "checkpoint_seconds": 0.31785565824247897,
+            "symmetry_finalization_seconds": 0.01858539995737374,
+            "checkpoint_restore_and_finalize_seconds": 0.3575551798567176
+          },
+          "resume_equal": true,
+          "json_bytes": 3658217,
+          "binary_bytes": 174081
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 4,
+          "times": {
+            "cold_search": 1.6721161680761725,
+            "warm_resume": 0.26206992915831506,
+            "json_write": 0.20253398292697966,
+            "json_read": 0.21417584898881614,
+            "binary_write": 0.05786655005067587,
+            "binary_read": 0.04005872900597751
+          },
+          "peak_process_mib": 108.69921875,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6121828339528292,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013683096040040255,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.384324168087915,
+            "checkpoint_seconds": 0.3187475202139467,
+            "symmetry_finalization_seconds": 0.018415310885757208,
+            "checkpoint_restore_and_finalize_seconds": 0.35519749601371586
+          },
+          "resume_equal": true,
+          "json_bytes": 3658218,
+          "binary_bytes": 174082
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 5,
+          "times": {
+            "cold_search": 1.7079568018671125,
+            "warm_resume": 0.26200397801585495,
+            "json_write": 0.2048757839947939,
+            "json_read": 0.21075199986808002,
+            "binary_write": 0.057660421123728156,
+            "binary_read": 0.04129826603457332
+          },
+          "peak_process_mib": 113.3671875,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.64771837904118,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013734725071117282,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.395029758801684,
+            "checkpoint_seconds": 0.31828787364065647,
+            "symmetry_finalization_seconds": 0.018533372785896063,
+            "checkpoint_restore_and_finalize_seconds": 0.385898255975917
+          },
+          "resume_equal": true,
+          "json_bytes": 3658215,
+          "binary_bytes": 174083
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 6,
+          "times": {
+            "cold_search": 1.6956358491443098,
+            "warm_resume": 0.25917954207398,
+            "json_write": 0.20362346689216793,
+            "json_read": 0.21336644096300006,
+            "binary_write": 0.05795937404036522,
+            "binary_read": 0.04125728504732251
+          },
+          "peak_process_mib": 108.99609375,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6354818250983953,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013660402968525887,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.4067854036111385,
+            "checkpoint_seconds": 0.3221414752770215,
+            "symmetry_finalization_seconds": 0.018483034102246165,
+            "checkpoint_restore_and_finalize_seconds": 0.35619266889989376
+          },
+          "resume_equal": true,
+          "json_bytes": 3658219,
+          "binary_bytes": 174082
+        }
+      ],
+      "after": [
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 0,
+          "times": {
+            "cold_search": 1.6761810868047178,
+            "warm_resume": 0.27435596799477935,
+            "json_write": 0.20311888284049928,
+            "json_read": 0.2142383900936693,
+            "binary_write": 0.05726952594704926,
+            "binary_read": 0.04070683801546693
+          },
+          "peak_process_mib": 111.08984375,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6090744289103895,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015114969108253717,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.39769860683009,
+            "checkpoint_seconds": 0.11701239948160946,
+            "symmetry_finalization_seconds": 0.018870627973228693,
+            "checkpoint_restore_and_finalize_seconds": 0.35186525504104793
+          },
+          "resume_equal": true,
+          "json_bytes": 3658218,
+          "binary_bytes": 175764
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 1,
+          "times": {
+            "cold_search": 1.669672799995169,
+            "warm_resume": 0.2779253760818392,
+            "json_write": 0.20414366805925965,
+            "json_read": 0.21249424805864692,
+            "binary_write": 0.05766826099716127,
+            "binary_read": 0.04090508492663503
+          },
+          "peak_process_mib": 111.921875,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6019590361975133,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015262258006259799,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.4007674811873585,
+            "checkpoint_seconds": 0.11687056603841484,
+            "symmetry_finalization_seconds": 0.018866316881030798,
+            "checkpoint_restore_and_finalize_seconds": 0.34578803507611156
+          },
+          "resume_equal": true,
+          "json_bytes": 3658220,
+          "binary_bytes": 175765
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 2,
+          "times": {
+            "cold_search": 1.6727548108901829,
+            "warm_resume": 0.27297048503533006,
+            "json_write": 0.20357842184603214,
+            "json_read": 0.21400206885300577,
+            "binary_write": 0.05725266505032778,
+            "binary_read": 0.04068164201453328
+          },
+          "peak_process_mib": 112.28515625,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6056126488838345,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015469864010810852,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.403718500863761,
+            "checkpoint_seconds": 0.11923202010802925,
+            "symmetry_finalization_seconds": 0.018846849910914898,
+            "checkpoint_restore_and_finalize_seconds": 0.34703663899563253
+          },
+          "resume_equal": true,
+          "json_bytes": 3658219,
+          "binary_bytes": 175764
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 3,
+          "times": {
+            "cold_search": 1.6753581990487874,
+            "warm_resume": 0.2744895110372454,
+            "json_write": 0.20260553201660514,
+            "json_read": 0.2103282450698316,
+            "binary_write": 0.05774007900618017,
+            "binary_read": 0.056685359915718436
+          },
+          "peak_process_mib": 112.28515625,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6080111579503864,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015811275923624635,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.396659735124558,
+            "checkpoint_seconds": 0.11742546828463674,
+            "symmetry_finalization_seconds": 0.0188362798653543,
+            "checkpoint_restore_and_finalize_seconds": 0.3487208669539541
+          },
+          "resume_equal": true,
+          "json_bytes": 3658216,
+          "binary_bytes": 175766
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 4,
+          "times": {
+            "cold_search": 1.674136218847707,
+            "warm_resume": 0.2772810079623014,
+            "json_write": 0.20148259191773832,
+            "json_read": 0.21415915479883552,
+            "binary_write": 0.05818450800143182,
+            "binary_read": 0.042083787033334374
+          },
+          "peak_process_mib": 111.55078125,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6062414951156825,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015737502835690975,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.394296836806461,
+            "checkpoint_seconds": 0.11826658202335238,
+            "symmetry_finalization_seconds": 0.01861215801909566,
+            "checkpoint_restore_and_finalize_seconds": 0.34680146211758256
+          },
+          "resume_equal": true,
+          "json_bytes": 3658218,
+          "binary_bytes": 175764
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 5,
+          "times": {
+            "cold_search": 1.677501189056784,
+            "warm_resume": 0.27294071298092604,
+            "json_write": 0.20182122895494103,
+            "json_read": 0.2130816332064569,
+            "binary_write": 0.057233036030083895,
+            "binary_read": 0.039283780148252845
+          },
+          "peak_process_mib": 111.31640625,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.6102726119570434,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015256292885169387,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.400850364007056,
+            "checkpoint_seconds": 0.1183545843232423,
+            "symmetry_finalization_seconds": 0.018846389139071107,
+            "checkpoint_restore_and_finalize_seconds": 0.34988560783676803
+          },
+          "resume_equal": true,
+          "json_bytes": 3658218,
+          "binary_bytes": 175763
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tempo",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 6,
+          "times": {
+            "cold_search": 1.671268771868199,
+            "warm_resume": 0.2727172209415585,
+            "json_write": 0.20343328407034278,
+            "json_read": 0.21012353710830212,
+            "binary_write": 0.05729688610881567,
+            "binary_read": 0.03971913689747453
+          },
+          "peak_process_mib": 112.1484375,
+          "graph_sha256": "7272e961404eb2bdb8898809b24dd95c24fad7b0e08232326a50df1afeaec035",
+          "states": 1227,
+          "transitions": 1050,
+          "terminals": 406,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.604246020782739,
+            "cut_count": 59,
+            "raw_result_count": 406,
+            "retained_branch_count": 406,
+            "max_live_branches": 14,
+            "max_growth_candidates": 19,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.015204913914203644,
+            "completed_group_requests": 1050,
+            "completed_group_calculations": 1013,
+            "completed_group_cache_hits": 37,
+            "worker_search_seconds": 4.4009602149017155,
+            "checkpoint_seconds": 0.11636058078147471,
+            "symmetry_finalization_seconds": 0.018838291987776756,
+            "checkpoint_restore_and_finalize_seconds": 0.34585081902332604
+          },
+          "resume_equal": true,
+          "json_bytes": 3658219,
+          "binary_bytes": 175761
+        }
+      ]
+    }
+  },
+  {
+    "slot": 65,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 1,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 66,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 1,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 67,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 7,
+      "after": 7
+    },
+    "equal": true,
+    "median_seconds": {
+      "before": {
+        "binary_read": 0.019775768043473363,
+        "binary_write": 0.02670761407352984,
+        "cold_search": 2.7562839949969202,
+        "json_read": 0.0953355401288718,
+        "json_write": 0.08818599814549088,
+        "warm_resume": 0.4185968867968768
+      },
+      "after": {
+        "binary_read": 0.0196987041272223,
+        "binary_write": 0.026614035945385695,
+        "cold_search": 2.7071165561210364,
+        "json_read": 0.09637039504013956,
+        "json_write": 0.0875422228127718,
+        "warm_resume": 0.37417689990252256
+      }
+    },
+    "ratios": {
+      "binary_read": 0.9961031138673526,
+      "binary_write": 0.9964962003761733,
+      "cold_search": 0.9821616934375665,
+      "json_read": 1.010854870176105,
+      "json_write": 0.9926998010312592,
+      "warm_resume": 0.8938836185948298
+    },
+    "records": {
+      "before": [
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 0,
+          "times": {
+            "cold_search": 2.762333136983216,
+            "warm_resume": 0.41833484382368624,
+            "json_write": 0.08733860705979168,
+            "json_read": 0.0943458559922874,
+            "binary_write": 0.026518634986132383,
+            "binary_read": 0.019775768043473363
+          },
+          "peak_process_mib": 82.6640625,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.7335247029550374,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009241051971912384,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.3183722947724164,
+            "checkpoint_seconds": 0.12909218459390104,
+            "symmetry_finalization_seconds": 0.25653033005073667,
+            "checkpoint_restore_and_finalize_seconds": 2.96090729534626e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 88902
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 1,
+          "times": {
+            "cold_search": 2.7520888361614197,
+            "warm_resume": 0.4185968867968768,
+            "json_write": 0.08818599814549088,
+            "json_read": 0.09461290785111487,
+            "binary_write": 0.02729738410562277,
+            "binary_read": 0.021452876972034574
+          },
+          "peak_process_mib": 82.859375,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.722976790042594,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009201960172504187,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.31431695073843,
+            "checkpoint_seconds": 0.12827949365600944,
+            "symmetry_finalization_seconds": 0.25278499396517873,
+            "checkpoint_restore_and_finalize_seconds": 3.1741801649332047e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474391,
+          "binary_bytes": 88903
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 2,
+          "times": {
+            "cold_search": 2.750974461901933,
+            "warm_resume": 0.419524687808007,
+            "json_write": 0.08798950002528727,
+            "json_read": 0.09672132995910943,
+            "binary_write": 0.026479882886633277,
+            "binary_read": 0.019757167901843786
+          },
+          "peak_process_mib": 83.0546875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.722193127963692,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.00923437811434269,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.315072468481958,
+            "checkpoint_seconds": 0.12674921681173146,
+            "symmetry_finalization_seconds": 0.253122118068859,
+            "checkpoint_restore_and_finalize_seconds": 3.1208619475364685e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474389,
+          "binary_bytes": 88906
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 3,
+          "times": {
+            "cold_search": 2.7562839949969202,
+            "warm_resume": 1.3085469608195126,
+            "json_write": 0.08824054896831512,
+            "json_read": 0.10021805483847857,
+            "binary_write": 0.02726622112095356,
+            "binary_read": 0.01978578302077949
+          },
+          "peak_process_mib": 82.83984375,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.727346775820479,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009206251939758658,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.316586459055543,
+            "checkpoint_seconds": 0.12947926414199173,
+            "symmetry_finalization_seconds": 0.25256030913442373,
+            "checkpoint_restore_and_finalize_seconds": 3.0579976737499237e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 88906
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 4,
+          "times": {
+            "cold_search": 2.7536096200346947,
+            "warm_resume": 0.41734921699389815,
+            "json_write": 0.08837214601226151,
+            "json_read": 0.0953355401288718,
+            "binary_write": 0.026580826845020056,
+            "binary_read": 0.01969282398931682
+          },
+          "peak_process_mib": 82.80078125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.7246215979103,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009222266962751746,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.317492413101718,
+            "checkpoint_seconds": 0.12663973961025476,
+            "symmetry_finalization_seconds": 0.25224129809066653,
+            "checkpoint_restore_and_finalize_seconds": 3.055902197957039e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474389,
+          "binary_bytes": 88906
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 5,
+          "times": {
+            "cold_search": 2.761998781003058,
+            "warm_resume": 0.41900381119921803,
+            "json_write": 0.08832950005307794,
+            "json_read": 0.097960903076455,
+            "binary_write": 0.02670761407352984,
+            "binary_read": 0.021662328159436584
+          },
+          "peak_process_mib": 82.89453125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.732834736816585,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009273752104490995,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.325187363428995,
+            "checkpoint_seconds": 0.12820776528678834,
+            "symmetry_finalization_seconds": 0.25238610501401126,
+            "checkpoint_restore_and_finalize_seconds": 2.9851216822862625e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 88905
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 6,
+          "times": {
+            "cold_search": 3.544554802123457,
+            "warm_resume": 0.41754734399728477,
+            "json_write": 0.08806921122595668,
+            "json_read": 0.0944160281214863,
+            "binary_write": 0.026734313927590847,
+            "binary_read": 0.01967299380339682
+          },
+          "peak_process_mib": 83.046875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 3.5156276798807085,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009185092989355326,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.3324425106402487,
+            "checkpoint_seconds": 0.9020442983601242,
+            "symmetry_finalization_seconds": 0.25201632315292954,
+            "checkpoint_restore_and_finalize_seconds": 3.285938873887062e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 88905
+        }
+      ],
+      "after": [
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 0,
+          "times": {
+            "cold_search": 2.962784041883424,
+            "warm_resume": 0.39331887592561543,
+            "json_write": 0.08690881403163075,
+            "json_read": 0.09711837186478078,
+            "binary_write": 0.02653539110906422,
+            "binary_read": 0.019630947150290012
+          },
+          "peak_process_mib": 86.1640625,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.9339256840758026,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009431167971342802,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.329408821184188,
+            "checkpoint_seconds": 0.3183631864376366,
+            "symmetry_finalization_seconds": 0.258535839850083,
+            "checkpoint_restore_and_finalize_seconds": 4.429137334227562e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474389,
+          "binary_bytes": 90683
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 1,
+          "times": {
+            "cold_search": 2.7071165561210364,
+            "warm_resume": 0.3734469939954579,
+            "json_write": 0.0875422228127718,
+            "json_read": 0.09620731114409864,
+            "binary_write": 0.027550827944651246,
+            "binary_read": 0.01965892920270562
+          },
+          "peak_process_mib": 85.69140625,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.6780296058859676,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009387505007907748,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.3161514098756015,
+            "checkpoint_seconds": 0.08017882937565446,
+            "symmetry_finalization_seconds": 0.2537610719446093,
+            "checkpoint_restore_and_finalize_seconds": 4.022149369120598e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 90684
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 2,
+          "times": {
+            "cold_search": 2.7028427640907466,
+            "warm_resume": 0.37417689990252256,
+            "json_write": 0.08824795810505748,
+            "json_read": 0.09637039504013956,
+            "binary_write": 0.026614035945385695,
+            "binary_read": 0.019721904071047902
+          },
+          "peak_process_mib": 85.67578125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.673785146092996,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009343459969386458,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.312476806808263,
+            "checkpoint_seconds": 0.07894421112723649,
+            "symmetry_finalization_seconds": 0.2536736959591508,
+            "checkpoint_restore_and_finalize_seconds": 4.410045221447945e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 90683
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 3,
+          "times": {
+            "cold_search": 2.7938909539952874,
+            "warm_resume": 0.3719380609691143,
+            "json_write": 0.08781378390267491,
+            "json_read": 0.09503287309780717,
+            "binary_write": 0.02800390892662108,
+            "binary_read": 0.021212868159636855
+          },
+          "peak_process_mib": 85.515625,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.7651953399181366,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009397109039127827,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.3299634002614766,
+            "checkpoint_seconds": 0.15352186048403382,
+            "symmetry_finalization_seconds": 0.2538121589459479,
+            "checkpoint_restore_and_finalize_seconds": 4.844972863793373e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 90679
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 4,
+          "times": {
+            "cold_search": 2.702319846022874,
+            "warm_resume": 0.3748595709912479,
+            "json_write": 0.08711325097829103,
+            "json_read": 0.09715010481886566,
+            "binary_write": 0.02728888508863747,
+            "binary_read": 0.0196987041272223
+          },
+          "peak_process_mib": 85.7109375,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.6733379007782787,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009398662019520998,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.3140657427720726,
+            "checkpoint_seconds": 0.07779619144275784,
+            "symmetry_finalization_seconds": 0.2534737470559776,
+            "checkpoint_restore_and_finalize_seconds": 4.027038812637329e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 90682
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 5,
+          "times": {
+            "cold_search": 2.7047447899822146,
+            "warm_resume": 0.3740365169942379,
+            "json_write": 0.08775368006899953,
+            "json_read": 0.09530846285633743,
+            "binary_write": 0.026339001022279263,
+            "binary_read": 0.020483529893681407
+          },
+          "peak_process_mib": 85.6796875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.675913169980049,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009389566024765372,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.315930077340454,
+            "checkpoint_seconds": 0.07865857752040029,
+            "symmetry_finalization_seconds": 0.25318266195245087,
+            "checkpoint_restore_and_finalize_seconds": 4.334142431616783e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474391,
+          "binary_bytes": 90680
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 1,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 6,
+          "times": {
+            "cold_search": 2.7083643570076674,
+            "warm_resume": 0.37609539087861776,
+            "json_write": 0.08736743195913732,
+            "json_read": 0.09645682293921709,
+            "binary_write": 0.02659867098554969,
+            "binary_read": 0.019562650006264448
+          },
+          "peak_process_mib": 85.6875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 2.6794810199644417,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.009391331113874912,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 450,
+            "completed_group_cache_hits": 232,
+            "worker_search_seconds": 2.3202297950629145,
+            "checkpoint_seconds": 0.07797571760602295,
+            "symmetry_finalization_seconds": 0.25378271704539657,
+            "checkpoint_restore_and_finalize_seconds": 4.17511910200119e-06
+          },
+          "resume_equal": true,
+          "json_bytes": 1474392,
+          "binary_bytes": 90683
+        }
+      ]
+    }
+  },
+  {
+    "slot": 68,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 4,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 69,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 4,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 70,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 7,
+      "after": 7
+    },
+    "equal": true,
+    "median_seconds": {
+      "before": {
+        "binary_read": 0.019962267018854618,
+        "binary_write": 0.028210714925080538,
+        "cold_search": 0.9733509588986635,
+        "json_read": 0.09671804495155811,
+        "json_write": 0.08538875193335116,
+        "warm_resume": 0.1613153179641813
+      },
+      "after": {
+        "binary_read": 0.019912305986508727,
+        "binary_write": 0.02778441901318729,
+        "cold_search": 0.969243983970955,
+        "json_read": 0.09811670705676079,
+        "json_write": 0.0867116660811007,
+        "warm_resume": 0.15368161583319306
+      }
+    },
+    "ratios": {
+      "binary_read": 0.997497226527493,
+      "binary_write": 0.9848888653468951,
+      "cold_search": 0.995780581618417,
+      "json_read": 1.0144612321920197,
+      "json_write": 1.0154928385507043,
+      "warm_resume": 0.9526783802844858
+    },
+    "records": {
+      "before": [
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 0,
+          "times": {
+            "cold_search": 0.9733509588986635,
+            "warm_resume": 0.16029409621842206,
+            "json_write": 0.08638113900087774,
+            "json_read": 0.09637250495143235,
+            "binary_write": 0.028240728890523314,
+            "binary_read": 0.020191639894619584
+          },
+          "peak_process_mib": 80.46484375,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.94327187910676,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.01124009513296187,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.5228879037313163,
+            "checkpoint_seconds": 0.2519565613474697,
+            "symmetry_finalization_seconds": 0.006291212048381567,
+            "checkpoint_restore_and_finalize_seconds": 0.19730902300216258
+          },
+          "resume_equal": true,
+          "json_bytes": 1474387,
+          "binary_bytes": 93501
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 1,
+          "times": {
+            "cold_search": 1.0038710101507604,
+            "warm_resume": 0.16205762419849634,
+            "json_write": 0.08491631085053086,
+            "json_read": 0.09671804495155811,
+            "binary_write": 0.028053899062797427,
+            "binary_read": 0.01991495699621737
+          },
+          "peak_process_mib": 80.2265625,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9735726141370833,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.012186585925519466,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4860510372091085,
+            "checkpoint_seconds": 0.2520827546250075,
+            "symmetry_finalization_seconds": 0.006326921051368117,
+            "checkpoint_restore_and_finalize_seconds": 0.24171972717158496
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 93502
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 2,
+          "times": {
+            "cold_search": 0.9829593440517783,
+            "warm_resume": 0.1645809360779822,
+            "json_write": 0.08518135198391974,
+            "json_read": 0.09686060505919158,
+            "binary_write": 0.027856616070494056,
+            "binary_read": 0.019962267018854618
+          },
+          "peak_process_mib": 80.21875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9528546340297908,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.012515272945165634,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.490494835888967,
+            "checkpoint_seconds": 0.25027475063689053,
+            "symmetry_finalization_seconds": 0.006312635960057378,
+            "checkpoint_restore_and_finalize_seconds": 0.22277919901534915
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 93503
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 3,
+          "times": {
+            "cold_search": 0.9732988709583879,
+            "warm_resume": 0.16482210787944496,
+            "json_write": 0.08494431711733341,
+            "json_read": 0.09656287799589336,
+            "binary_write": 0.028210714925080538,
+            "binary_read": 0.019926558947190642
+          },
+          "peak_process_mib": 80.26171875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9429855870548636,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.012392726028338075,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.482065309304744,
+            "checkpoint_seconds": 0.24716740031726658,
+            "symmetry_finalization_seconds": 0.006306834053248167,
+            "checkpoint_restore_and_finalize_seconds": 0.21129907295107841
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 93502
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 4,
+          "times": {
+            "cold_search": 0.9580900790169835,
+            "warm_resume": 0.16116545698605478,
+            "json_write": 0.08630021288990974,
+            "json_read": 0.09666047198697925,
+            "binary_write": 0.02822466497309506,
+            "binary_read": 0.01993488217703998
+          },
+          "peak_process_mib": 80.10546875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9281752451788634,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.01149444910697639,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.486540630692616,
+            "checkpoint_seconds": 0.3007766050286591,
+            "symmetry_finalization_seconds": 0.006294213002547622,
+            "checkpoint_restore_and_finalize_seconds": 0.1980827439110726
+          },
+          "resume_equal": true,
+          "json_bytes": 1474387,
+          "binary_bytes": 93503
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 5,
+          "times": {
+            "cold_search": 1.1799422360491008,
+            "warm_resume": 0.1613153179641813,
+            "json_write": 0.08568128105252981,
+            "json_read": 0.11187914083711803,
+            "binary_write": 0.027875743806362152,
+            "binary_read": 0.033219034085050225
+          },
+          "peak_process_mib": 80.2421875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 1.1499164721462876,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.01196535094641149,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4940151490736753,
+            "checkpoint_seconds": 0.24929124116897583,
+            "symmetry_finalization_seconds": 0.0063671988900750875,
+            "checkpoint_restore_and_finalize_seconds": 0.4168359530158341
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 93501
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "before",
+          "repeat": 6,
+          "times": {
+            "cold_search": 0.9525202419608831,
+            "warm_resume": 0.1581672108732164,
+            "json_write": 0.08538875193335116,
+            "json_read": 0.10127884382382035,
+            "binary_write": 0.028277472127228975,
+            "binary_read": 0.02004828304052353
+          },
+          "peak_process_mib": 80.12109375,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9223152948543429,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.011068077990785241,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4898399121593684,
+            "checkpoint_seconds": 0.24598588375374675,
+            "symmetry_finalization_seconds": 0.006318478845059872,
+            "checkpoint_restore_and_finalize_seconds": 0.19516820716671646
+          },
+          "resume_equal": true,
+          "json_bytes": 1474391,
+          "binary_bytes": 93503
+        }
+      ],
+      "after": [
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 0,
+          "times": {
+            "cold_search": 0.9751322930678725,
+            "warm_resume": 0.15253173792734742,
+            "json_write": 0.08714607311412692,
+            "json_read": 0.09778757812455297,
+            "binary_write": 0.027707742992788553,
+            "binary_read": 0.019912305986508727
+          },
+          "peak_process_mib": 79.828125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.944901802111417,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.0148340561427176,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4910195965785533,
+            "checkpoint_seconds": 0.08310518506914377,
+            "symmetry_finalization_seconds": 0.0070292779710143805,
+            "checkpoint_restore_and_finalize_seconds": 0.19610497495159507
+          },
+          "resume_equal": true,
+          "json_bytes": 1474389,
+          "binary_bytes": 94942
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 1,
+          "times": {
+            "cold_search": 0.9696150398813188,
+            "warm_resume": 0.15625831787474453,
+            "json_write": 0.08638332807458937,
+            "json_read": 0.09672711207531393,
+            "binary_write": 0.027894231025129557,
+            "binary_read": 0.019999139942228794
+          },
+          "peak_process_mib": 79.79296875,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9395821671932936,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.014615970896556973,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.486861194949597,
+            "checkpoint_seconds": 0.08412505686283112,
+            "symmetry_finalization_seconds": 0.007100097136572003,
+            "checkpoint_restore_and_finalize_seconds": 0.19046228495426476
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 94939
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 2,
+          "times": {
+            "cold_search": 0.9646211210638285,
+            "warm_resume": 0.15325124096125364,
+            "json_write": 0.08680910104885697,
+            "json_read": 0.09693553694523871,
+            "binary_write": 0.027810910949483514,
+            "binary_read": 0.01980351796373725
+          },
+          "peak_process_mib": 79.828125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9344135529827327,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.013898035045713186,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4940279165748507,
+            "checkpoint_seconds": 0.08160979417152703,
+            "symmetry_finalization_seconds": 0.006534677930176258,
+            "checkpoint_restore_and_finalize_seconds": 0.18940432206727564
+          },
+          "resume_equal": true,
+          "json_bytes": 1474391,
+          "binary_bytes": 94941
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 3,
+          "times": {
+            "cold_search": 0.970736081013456,
+            "warm_resume": 0.15569718787446618,
+            "json_write": 0.08657021610997617,
+            "json_read": 0.10051362309604883,
+            "binary_write": 0.027603279100731015,
+            "binary_read": 0.019983365898951888
+          },
+          "peak_process_mib": 79.8984375,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9407277680002153,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.014770606998354197,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.494056926574558,
+            "checkpoint_seconds": 0.08498788625001907,
+            "symmetry_finalization_seconds": 0.006767525803297758,
+            "checkpoint_restore_and_finalize_seconds": 0.19073362997733057
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 94942
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 4,
+          "times": {
+            "cold_search": 0.9660565820522606,
+            "warm_resume": 0.1557649199385196,
+            "json_write": 0.08666440402157605,
+            "json_read": 0.09835605998523533,
+            "binary_write": 0.02778441901318729,
+            "binary_read": 0.01994604291394353
+          },
+          "peak_process_mib": 79.7890625,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9357185421977192,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.01384080108255148,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4873985373415053,
+            "checkpoint_seconds": 0.08254141849465668,
+            "symmetry_finalization_seconds": 0.006549966987222433,
+            "checkpoint_restore_and_finalize_seconds": 0.19391607702709734
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 94940
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 5,
+          "times": {
+            "cold_search": 0.9672331169713289,
+            "warm_resume": 0.15368161583319306,
+            "json_write": 0.0867116660811007,
+            "json_read": 0.09811670705676079,
+            "binary_write": 0.02794649894349277,
+            "binary_read": 0.01987761096097529
+          },
+          "peak_process_mib": 79.78125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9369712260086089,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.014420751016587019,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.4960876929108053,
+            "checkpoint_seconds": 0.08110031904652715,
+            "symmetry_finalization_seconds": 0.007143988972529769,
+            "checkpoint_restore_and_finalize_seconds": 0.1889653808902949
+          },
+          "resume_equal": true,
+          "json_bytes": 1474390,
+          "binary_bytes": 94944
+        },
+        {
+          "task": {
+            "kind": "pipeline",
+            "name": "tetraphenyl",
+            "workers": 4,
+            "format": "checkpoint"
+          },
+          "version": "after",
+          "repeat": 6,
+          "times": {
+            "cold_search": 0.969243983970955,
+            "warm_resume": 0.1520771619398147,
+            "json_write": 0.08722053514793515,
+            "json_read": 0.09847923601046205,
+            "binary_write": 0.027696897042915225,
+            "binary_read": 0.019780962029471993
+          },
+          "peak_process_mib": 79.80078125,
+          "graph_sha256": "3db9919f40a8ec6c5d8893ab54593706a4b436947347ce565d65e3ef9636f17b",
+          "states": 829,
+          "transitions": 682,
+          "terminals": 304,
+          "capped": false,
+          "cold_metrics": {
+            "elapsed_seconds": 0.9392320120241493,
+            "cut_count": 49,
+            "raw_result_count": 304,
+            "retained_branch_count": 304,
+            "max_live_branches": 8,
+            "max_growth_candidates": 43,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.01422288198955357,
+            "completed_group_requests": 682,
+            "completed_group_calculations": 634,
+            "completed_group_cache_hits": 48,
+            "worker_search_seconds": 2.488317508250475,
+            "checkpoint_seconds": 0.08260469790548086,
+            "symmetry_finalization_seconds": 0.006829435937106609,
+            "checkpoint_restore_and_finalize_seconds": 0.1915569209959358
+          },
+          "resume_equal": true,
+          "json_bytes": 1474388,
+          "binary_bytes": 94940
+        }
+      ]
+    }
+  },
+  {
+    "slot": 71,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 1,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 72,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 1,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 73,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 74,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 4,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 75,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 4,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 76,
+    "task": {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 77,
+    "task": {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 1,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 78,
+    "task": {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 1,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 79,
+    "task": {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 80,
+    "task": {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 4,
+      "format": "memory"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 81,
+    "task": {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 4,
+      "format": "json"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  },
+  {
+    "slot": 82,
+    "task": {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    "counts": {
+      "before": 0,
+      "after": 0
+    },
+    "equal": false,
+    "median_seconds": {},
+    "ratios": {},
+    "records": {
+      "before": [],
+      "after": []
+    }
+  }
+]

@@ -81,7 +81,7 @@ def _search_cut(cut):
     }
 
 
-def _search_cut_task(payload):
+def _search_cut_task(payload, *, in_process=False):
     """Checkpoint at the producer; a slow sibling cannot block persistence."""
     index, cut, checkpoint = payload
     graph, counts = _search_cut(cut)
@@ -93,7 +93,7 @@ def _search_cut_task(payload):
         write_raw_cut(graph,path)
         counts['checkpoint_seconds'] = time.perf_counter()-started
         # No graph is pickled through IPC or buffered in the parent.
-        return index, str(path), counts
+        return index, graph if in_process else str(path), counts
     return index, graph, counts
 
 
@@ -183,7 +183,7 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     workers = min(max(1, int(workers)), max(1,len(missing)))
     if workers == 1:
         _initialize_search(problem, config)
-        collect(map(_search_cut_task, tasks))
+        collect(_search_cut_task(task,in_process=requested_workers==1) for task in tasks)
     else:
         with mp.get_context('fork').Pool(workers, initializer=_initialize_search,
                 initargs=(problem, config)) as pool:

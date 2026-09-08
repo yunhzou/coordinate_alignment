@@ -1,0 +1,465 @@
+{
+  "before": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_memoryfix833_20260907/before",
+  "after": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_resource_regression_confirm_20260907/after",
+  "inputs": "/h/399/yunhengzou/coordinate_alignment/data/retro_runs/aam_memory_boundary_20260905/inputs",
+  "config": {
+    "cut_floor": 0.2,
+    "graph_floor": 0.2,
+    "iso_tolerance": 1.0,
+    "event_threshold": 0.5,
+    "metal_event_threshold": 0.3,
+    "seed_count": 3,
+    "branch_limit": 100,
+    "task_chunksize": 1,
+    "symmetry_repair": true,
+    "symmetry_repair_min_changes": 1,
+    "symmetry_repair_max_evaluations": 20000,
+    "anchors": []
+  },
+  "tasks": [
+    {
+      "kind": "core",
+      "family": 0,
+      "name": "augmented_0"
+    },
+    {
+      "kind": "core",
+      "family": 1,
+      "name": "augmented_1"
+    },
+    {
+      "kind": "core",
+      "family": 2,
+      "name": "augmented_2"
+    },
+    {
+      "kind": "core",
+      "family": 3,
+      "name": "augmented_3"
+    },
+    {
+      "kind": "core",
+      "family": 4,
+      "name": "augmented_4"
+    },
+    {
+      "kind": "core",
+      "family": 5,
+      "name": "augmented_5"
+    },
+    {
+      "kind": "core",
+      "family": 6,
+      "name": "augmented_6"
+    },
+    {
+      "kind": "core",
+      "family": 7,
+      "name": "augmented_7"
+    },
+    {
+      "kind": "core",
+      "family": 8,
+      "name": "augmented_8"
+    },
+    {
+      "kind": "core",
+      "family": 9,
+      "name": "augmented_9"
+    },
+    {
+      "kind": "core",
+      "family": 10,
+      "name": "augmented_10"
+    },
+    {
+      "kind": "core",
+      "family": 11,
+      "name": "augmented_11"
+    },
+    {
+      "kind": "core",
+      "family": 12,
+      "name": "augmented_12"
+    },
+    {
+      "kind": "core",
+      "family": 13,
+      "name": "augmented_13"
+    },
+    {
+      "kind": "core",
+      "family": 14,
+      "name": "augmented_14"
+    },
+    {
+      "kind": "core",
+      "family": 15,
+      "name": "augmented_15"
+    },
+    {
+      "kind": "core",
+      "family": 16,
+      "name": "augmented_16"
+    },
+    {
+      "kind": "core",
+      "family": 17,
+      "name": "augmented_17"
+    },
+    {
+      "kind": "core",
+      "family": 18,
+      "name": "augmented_18"
+    },
+    {
+      "kind": "core",
+      "family": 19,
+      "name": "augmented_19"
+    },
+    {
+      "kind": "core",
+      "family": 20,
+      "name": "augmented_20"
+    },
+    {
+      "kind": "core",
+      "family": 21,
+      "name": "augmented_21"
+    },
+    {
+      "kind": "core",
+      "family": 22,
+      "name": "augmented_22"
+    },
+    {
+      "kind": "core",
+      "family": 23,
+      "name": "augmented_23"
+    },
+    {
+      "kind": "core",
+      "family": 24,
+      "name": "augmented_24"
+    },
+    {
+      "kind": "core",
+      "family": 25,
+      "name": "augmented_25"
+    },
+    {
+      "kind": "core",
+      "family": 26,
+      "name": "augmented_26"
+    },
+    {
+      "kind": "core",
+      "family": 27,
+      "name": "augmented_27"
+    },
+    {
+      "kind": "core",
+      "family": 28,
+      "name": "augmented_28"
+    },
+    {
+      "kind": "core",
+      "family": 29,
+      "name": "augmented_29"
+    },
+    {
+      "kind": "core",
+      "family": 30,
+      "name": "augmented_30"
+    },
+    {
+      "kind": "core",
+      "family": 31,
+      "name": "augmented_31"
+    },
+    {
+      "kind": "core",
+      "family": 32,
+      "name": "augmented_32"
+    },
+    {
+      "kind": "core",
+      "family": 33,
+      "name": "augmented_33"
+    },
+    {
+      "kind": "core",
+      "family": 34,
+      "name": "augmented_34"
+    },
+    {
+      "kind": "core",
+      "family": 35,
+      "name": "augmented_35"
+    },
+    {
+      "kind": "core",
+      "family": 36,
+      "name": "augmented_36"
+    },
+    {
+      "kind": "core",
+      "family": 37,
+      "name": "augmented_37"
+    },
+    {
+      "kind": "core",
+      "family": 38,
+      "name": "augmented_38"
+    },
+    {
+      "kind": "core",
+      "family": 39,
+      "name": "augmented_39"
+    },
+    {
+      "kind": "core",
+      "family": 40,
+      "name": "augmented_40"
+    },
+    {
+      "kind": "core",
+      "family": 41,
+      "name": "augmented_41"
+    },
+    {
+      "kind": "core",
+      "family": 42,
+      "name": "augmented_42"
+    },
+    {
+      "kind": "core",
+      "family": 43,
+      "name": "augmented_43"
+    },
+    {
+      "kind": "core",
+      "family": 44,
+      "name": "augmented_44"
+    },
+    {
+      "kind": "core",
+      "family": 45,
+      "name": "augmented_45"
+    },
+    {
+      "kind": "core",
+      "family": 46,
+      "name": "augmented_46"
+    },
+    {
+      "kind": "core",
+      "family": 47,
+      "name": "augmented_47"
+    },
+    {
+      "kind": "core",
+      "family": 48,
+      "name": "augmented_48"
+    },
+    {
+      "kind": "core",
+      "family": 49,
+      "name": "augmented_49"
+    },
+    {
+      "kind": "core",
+      "family": 50,
+      "name": "augmented_50"
+    },
+    {
+      "kind": "core",
+      "family": 51,
+      "name": "augmented_51"
+    },
+    {
+      "kind": "core",
+      "family": 52,
+      "name": "augmented_52"
+    },
+    {
+      "kind": "core",
+      "family": 53,
+      "name": "augmented_53"
+    },
+    {
+      "kind": "core",
+      "family": 54,
+      "name": "augmented_54"
+    },
+    {
+      "kind": "core",
+      "family": 55,
+      "name": "augmented_55"
+    },
+    {
+      "kind": "core",
+      "family": 56,
+      "name": "augmented_56"
+    },
+    {
+      "kind": "core",
+      "family": 57,
+      "name": "augmented_57"
+    },
+    {
+      "kind": "core",
+      "family": 58,
+      "name": "augmented_58"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 1,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 1,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 4,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 4,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tempo",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 1,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 1,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 4,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 4,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetraphenyl",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 1,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 1,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 4,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 4,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "tetratbu",
+      "workers": 4,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 1,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 1,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 1,
+      "format": "checkpoint"
+    },
+    {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 4,
+      "format": "memory"
+    },
+    {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 4,
+      "format": "json"
+    },
+    {
+      "kind": "pipeline",
+      "name": "unequal",
+      "workers": 4,
+      "format": "checkpoint"
+    }
+  ],
+  "core_count": 59,
+  "repeats": 7,
+  "before_commit": "c2e7efe",
+  "after_commit": "e3e8d2f",
+  "note": "Three repetitions, alternating version order on the same allocation; core inputs are 59 augmented inputs from one prior experiment, not 59 independent reactions. Cold means no saved search intermediates, not a flushed OS page cache."
+}

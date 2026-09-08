@@ -17,6 +17,8 @@ def test_cut_worker_persists_graph_and_returns_only_reference(tmp_path, monkeypa
     assert counts['max_live_branches'] == 2
     assert counts['checkpoint_seconds'] >= 0
     assert not path.with_suffix('.json.tmp').exists()
+    _,owned,_=aam._search_cut_task((7,(),str(path)),in_process=True)
+    assert owned is graph  # serial calls do not serialize then reload the graph
 
 
 def test_in_memory_worker_and_online_profile_reducer(monkeypatch):
