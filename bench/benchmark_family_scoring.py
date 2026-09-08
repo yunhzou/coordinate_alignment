@@ -3,6 +3,8 @@ import argparse
 import json
 from pathlib import Path
 import resource
+import random
+from array import array
 import time
 
 from golden_publication import plans
@@ -20,6 +22,7 @@ if __name__=='__main__':
     p.add_argument('--source',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--slot',type=int,required=True)
+    p.add_argument('--blind',action='store_true')
     a=p.parse_args();index,direction=CASES[a.slot]
     out=a.output/f'{index}_{direction}.json'
     pair,_=plans(a.source,index);plan=pair[direction]
@@ -29,6 +32,29 @@ if __name__=='__main__':
     record=dict(index=index,direction=direction,archive_loading_seconds=time.perf_counter()-start,
                 explicit_atoms=[aam.problem.source_atom_count,aam.problem.target_atom_count],results=[])
     save(out,record)
+    if a.blind:
+        # Reference-blind selection: ranked representatives plus reproducible
+        # random terminals. Select one recorded path per terminal, not orbits.
+        ranked=json.loads((base/'classes.json').read_text())
+        terminals=list(dict.fromkeys([c['terminal'] for c in ranked[:8]]+
+            random.Random(42).sample(list(aam.graph.terminals),min(24,len(aam.graph.terminals)))))
+        started=time.perf_counter();incoming=array('q',[-1])*len(aam.graph.states)
+        for edge in aam.graph.transitions:
+            if incoming[edge.target]<0:incoming[edge.target]=edge.id
+        record['path_index_seconds']=time.perf_counter()-started
+        record['selection']='first 8 reference-blind ranked classes plus 24 random terminals, random seed 42'
+        record['selected_terminals']=terminals;save(out,record)
+        for terminal in terminals:
+            transitions=[];state=terminal
+            while incoming[state]>=0:
+                edge=aam.graph.transitions[incoming[state]];transitions.append(edge.id);state=edge.source
+            path=SearchPath(aam.graph,terminal,tuple(reversed(transitions)))
+            result=minimize_events(path,aam.problem,reverse=plan.reversed,seconds=3.)
+            result['terminal']=terminal;record['results'].append(result)
+            record['peak_rss_kib']=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            save(out,record)
+            print(json.dumps({k:v for k,v in result.items() if k!='mapping'}),flush=True)
+        raise SystemExit(0)
     terminal=evaluation['witness_terminal']
     start=time.perf_counter()
     path=(SearchPath(aam.graph,terminal,tuple(evaluation['witness_path']))
