@@ -1,0 +1,527 @@
+[
+  {
+    "index": 7,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/7/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 10689,
+        "distinct_raw_heavy": 46,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/7/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 11114,
+        "distinct_raw_heavy": 48,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 9.747500273399055,
+    "representatives": 3
+  },
+  {
+    "index": 19,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/19/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 30418,
+        "distinct_raw_heavy": 233,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/19/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 28784,
+        "distinct_raw_heavy": 218,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 76.20273547526449,
+    "representatives": 3
+  },
+  {
+    "index": 590,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/590/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 51974,
+        "distinct_raw_heavy": 1544,
+        "capped": true,
+        "evaluation": "unknown"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/590/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 51906,
+        "distinct_raw_heavy": 1671,
+        "capped": true,
+        "evaluation": "unknown"
+      }
+    ],
+    "generation_seconds": 129.4695145925507,
+    "representatives": 3
+  },
+  {
+    "index": 603,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/603/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 16409,
+        "distinct_raw_heavy": 928,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/603/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 16031,
+        "distinct_raw_heavy": 1007,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 18.78338297177106,
+    "representatives": 3
+  },
+  {
+    "index": 780,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/780/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 48002,
+        "distinct_raw_heavy": 762,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/780/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 47589,
+        "distinct_raw_heavy": 704,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 90.48622164316475,
+    "representatives": 3
+  },
+  {
+    "index": 833,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/833/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 26811,
+        "distinct_raw_heavy": 569,
+        "capped": true,
+        "evaluation": "unknown"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/833/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 31073,
+        "distinct_raw_heavy": 714,
+        "capped": true,
+        "evaluation": "unknown"
+      }
+    ],
+    "generation_seconds": 103.95446718204767,
+    "representatives": 3
+  },
+  {
+    "index": 845,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/845/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 19474,
+        "distinct_raw_heavy": 447,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/845/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 19564,
+        "distinct_raw_heavy": 462,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 17.677041064947844,
+    "representatives": 3
+  },
+  {
+    "index": 865,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/865/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 25719,
+        "distinct_raw_heavy": 676,
+        "capped": true,
+        "evaluation": "unknown"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/865/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 24642,
+        "distinct_raw_heavy": 759,
+        "capped": true,
+        "evaluation": "unknown"
+      }
+    ],
+    "generation_seconds": 21.377827974036336,
+    "representatives": 3
+  },
+  {
+    "index": 867,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/867/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 12990,
+        "distinct_raw_heavy": 159,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/867/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 13783,
+        "distinct_raw_heavy": 175,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 14.200923735275865,
+    "representatives": 3
+  },
+  {
+    "index": 871,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/871/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 39028,
+        "distinct_raw_heavy": 347,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/871/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 39062,
+        "distinct_raw_heavy": 362,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 56.08178560063243,
+    "representatives": 3
+  },
+  {
+    "index": 986,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/986/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 2191,
+        "distinct_raw_heavy": 30,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/986/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 2085,
+        "distinct_raw_heavy": 29,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 1.7552919890731573,
+    "representatives": 3
+  },
+  {
+    "index": 1228,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1228/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 17800,
+        "distinct_raw_heavy": 377,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1228/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 17355,
+        "distinct_raw_heavy": 386,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 21.32777495495975,
+    "representatives": 3
+  },
+  {
+    "index": 1285,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1285/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 1792,
+        "distinct_raw_heavy": 76,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1285/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 1648,
+        "distinct_raw_heavy": 97,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 1.108050400391221,
+    "representatives": 3
+  },
+  {
+    "index": 1358,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1358/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 29739,
+        "distinct_raw_heavy": 620,
+        "capped": true,
+        "evaluation": "unknown"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1358/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 29881,
+        "distinct_raw_heavy": 712,
+        "capped": true,
+        "evaluation": "unknown"
+      }
+    ],
+    "generation_seconds": 80.37625237368047,
+    "representatives": 3
+  },
+  {
+    "index": 1377,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1377/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 32833,
+        "distinct_raw_heavy": 454,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1377/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 31403,
+        "distinct_raw_heavy": 430,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 38.0855261310935,
+    "representatives": 3
+  },
+  {
+    "index": 1380,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1380/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 48920,
+        "distinct_raw_heavy": 828,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1380/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 49180,
+        "distinct_raw_heavy": 905,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 87.66807358711958,
+    "representatives": 3
+  },
+  {
+    "index": 1475,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1475/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 9031,
+        "distinct_raw_heavy": 419,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1475/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 9499,
+        "distinct_raw_heavy": 472,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 6.427476767450571,
+    "representatives": 3
+  },
+  {
+    "index": 1553,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1553/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 7108,
+        "distinct_raw_heavy": 270,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1553/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 6803,
+        "distinct_raw_heavy": 254,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 3.695812528952956,
+    "representatives": 3
+  },
+  {
+    "index": 1568,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1568/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 40649,
+        "distinct_raw_heavy": 720,
+        "capped": true,
+        "evaluation": "unknown"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1568/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 40633,
+        "distinct_raw_heavy": 855,
+        "capped": true,
+        "evaluation": "unknown"
+      }
+    ],
+    "generation_seconds": 79.07728223130107,
+    "representatives": 3
+  },
+  {
+    "index": 1574,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1574/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 8859,
+        "distinct_raw_heavy": 567,
+        "capped": true,
+        "evaluation": "not_recovered"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1574/cuts/aam.pkl.gz",
+        "scope": "complete saved sweep",
+        "terminals": 9053,
+        "distinct_raw_heavy": 499,
+        "capped": true,
+        "evaluation": "not_recovered"
+      }
+    ],
+    "generation_seconds": 8.62634093966335,
+    "representatives": 3
+  },
+  {
+    "index": 1793,
+    "archives": [
+      {
+        "policy": "random",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random/1793/cuts/cut_00000.raw.pkl.gz",
+        "scope": "partial run: first completed cut with terminal states only",
+        "terminals": 568,
+        "distinct_raw_heavy": 112,
+        "capped": true,
+        "evaluation": "unknown"
+      },
+      {
+        "policy": "distance",
+        "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/distance/1793/cuts/cut_00000.raw.pkl.gz",
+        "scope": "partial run: first completed cut with terminal states only",
+        "terminals": 344,
+        "distinct_raw_heavy": 22,
+        "capped": true,
+        "evaluation": "unknown"
+      }
+    ],
+    "generation_seconds": 4.496683869510889,
+    "representatives": 3
+  }
+]

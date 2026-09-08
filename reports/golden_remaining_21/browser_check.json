@@ -1,0 +1,133 @@
+{
+  "cases": 21,
+  "checked": [
+    {
+      "position": 0,
+      "choices": 3,
+      "heavy": 62,
+      "all": 156
+    },
+    {
+      "position": 1,
+      "choices": 3,
+      "heavy": 46,
+      "all": 96
+    },
+    {
+      "position": 2,
+      "choices": 3,
+      "heavy": 62,
+      "all": 110
+    },
+    {
+      "position": 3,
+      "choices": 3,
+      "heavy": 66,
+      "all": 126
+    },
+    {
+      "position": 4,
+      "choices": 3,
+      "heavy": 52,
+      "all": 102
+    },
+    {
+      "position": 5,
+      "choices": 3,
+      "heavy": 78,
+      "all": 164
+    },
+    {
+      "position": 6,
+      "choices": 3,
+      "heavy": 42,
+      "all": 76
+    },
+    {
+      "position": 7,
+      "choices": 3,
+      "heavy": 66,
+      "all": 132
+    },
+    {
+      "position": 8,
+      "choices": 3,
+      "heavy": 36,
+      "all": 84
+    },
+    {
+      "position": 9,
+      "choices": 3,
+      "heavy": 40,
+      "all": 96
+    },
+    {
+      "position": 10,
+      "choices": 3,
+      "heavy": 32,
+      "all": 55
+    },
+    {
+      "position": 11,
+      "choices": 3,
+      "heavy": 27,
+      "all": 61
+    },
+    {
+      "position": 12,
+      "choices": 3,
+      "heavy": 30,
+      "all": 50
+    },
+    {
+      "position": 13,
+      "choices": 3,
+      "heavy": 74,
+      "all": 162
+    },
+    {
+      "position": 14,
+      "choices": 3,
+      "heavy": 48,
+      "all": 83
+    },
+    {
+      "position": 15,
+      "choices": 3,
+      "heavy": 50,
+      "all": 103
+    },
+    {
+      "position": 16,
+      "choices": 3,
+      "heavy": 42,
+      "all": 69
+    },
+    {
+      "position": 17,
+      "choices": 3,
+      "heavy": 53,
+      "all": 99
+    },
+    {
+      "position": 18,
+      "choices": 3,
+      "heavy": 60,
+      "all": 111
+    },
+    {
+      "position": 19,
+      "choices": 3,
+      "heavy": 69,
+      "all": 131
+    },
+    {
+      "position": 20,
+      "choices": 3,
+      "heavy": 109,
+      "all": 219
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}
