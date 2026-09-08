@@ -31,3 +31,9 @@ Analysis arrays: 443234, 443236, 443238, 443240.
 Mode-combination arrays: 443241, 443242.
 
 These settings are not a claim that this fresh run reproduces the earlier 1840/1851 diagnostic-union result. Its accuracy will be measured independently.
+
+## Scheduler recovery
+
+Sixteen original search tasks remained in Slurm `CONFIGURING` for over an hour, without creating search directories. Only those unstarted tasks were cancelled and replaced (arrays 447646, 447647, 447648), excluding the affected nodes. The existing analysis dependencies were redirected to the replacements. Completed searches were not rerun and the frozen engine/configuration were not modified. The full action log is `reporting/recovery.json` in the artifact root; replacement allocations are included in final resource accounting.
+
+Thirteen other searches reached the fixed five-minute subprocess watchdog. Their partial cut checkpoints remain saved; they must not be described as completed negative searches. Their original outcomes remain visible in the fixed-budget benchmark.

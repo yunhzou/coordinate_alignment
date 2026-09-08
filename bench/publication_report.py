@@ -111,7 +111,11 @@ def main(args):
     analysis['interpretation']+='Directional elapsed sums are NOT measured concurrent bidirectional latency. '
     analysis['interpretation']+='Representative and family-recovery metrics are distinct. Event-window thresholds were fixed before the run.'
     jobs=json.loads((args.run/'jobs.json').read_text())
-    accounting=subprocess.run(['sacct','-j',','.join(str(j['job']) for j in jobs),'-P',
+    recovery_path=args.run/'reporting/recovery.json'
+    recovery=json.loads(recovery_path.read_text()) if recovery_path.exists() else {}
+    analysis['scheduler_recovery']=recovery
+    accounting_jobs=[str(j['job']) for j in jobs]+[str(j['job']) for j in recovery.get('replacement_jobs',[])]
+    accounting=subprocess.run(['sacct','-j',','.join(accounting_jobs),'-P',
         '--format=JobID,State,ElapsedRaw,TotalCPU,CPUTimeRAW,AllocCPUS,MaxRSS,NodeList,ExitCode,Submit,Start,End'],
         text=True,capture_output=True,timeout=60)
     (out/'slurm_accounting.psv').write_text(accounting.stdout)
