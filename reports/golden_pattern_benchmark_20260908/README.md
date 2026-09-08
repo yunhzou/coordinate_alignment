@@ -63,6 +63,9 @@ reference recovery as 100% extraction completeness.
 
 - Main pass: 16 nodes, up to 24 archive workers each (384 allocated logical CPUs).
   Two stalled allocations were replaced. Main batch elapsed: 11 minutes 57 seconds.
+  The completed case-1033 P→R preflight on bosque1 was reused; worker environments
+  are recorded individually. This validation pass is not a homogeneous-hardware
+  clean timing benchmark.
 - Two tail baselines contained 56,667 and 17,499 saved classes. Reuse of their saved
   scores/certificates removed redundant work; exact explicit-mapping certificates
   were then parallelized across 16 processes per archive. Live workers on the
