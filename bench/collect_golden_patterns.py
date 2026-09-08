@@ -22,12 +22,22 @@ def first_paths(graph):
     return path
 
 
-def collect(archive,aam,plan,mols,priority,out,seconds,per_path_seconds):
+def chemical_tags(plan,mols):
     atom_tags=tuple({a.GetIdx():(a.GetFormalCharge(),a.GetIsotope(),
         a.GetProp('_CIPCode') if a.HasProp('_CIPCode') else '') for a in mol.GetAtoms()} for mol in mols)
     bond_tags=tuple({tuple(sorted((b.GetBeginAtomIdx(),b.GetEndAtomIdx()))):str(b.GetStereo())
         for b in mol.GetBonds()} for mol in mols)
     if plan.reversed:atom_tags=atom_tags[::-1];bond_tags=bond_tags[::-1]
+    return atom_tags,bond_tags
+
+
+def equivalence_from_molecules(plan,mols):
+    atom_tags,bond_tags=chemical_tags(plan,mols)
+    return PatternEquivalence(plan.problem,atom_tags=atom_tags,bond_tags=bond_tags)
+
+
+def collect(archive,aam,plan,mols,priority,out,seconds,per_path_seconds):
+    atom_tags,bond_tags=chemical_tags(plan,mols)
     eq=PatternEquivalence(plan.problem,atom_tags=atom_tags,bond_tags=bond_tags)
     digest=hashlib.sha256()
     with archive.open('rb') as stream:

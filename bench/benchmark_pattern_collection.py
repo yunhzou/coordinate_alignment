@@ -73,25 +73,26 @@ def worker(args):
         nonlocal persist_seconds
         t=time.perf_counter();stream.write(json.dumps(record,separators=(',',':'))+'\n');stream.flush()
         persist_seconds+=time.perf_counter()-t
-    def candidate(record):
+    def candidate(record,certified_baseline=None):
         nonlocal verification_seconds
         key=record['key']
         if key in candidate_rows:return
         # Reference labels are computed only after reference-blind extraction.
         t=time.perf_counter();mapping=plan.to_input_mapping(record['mapping'])
-        correct=certificate_id(reference['features'],mapping)==expected
+        correct=(certificate_id(reference['features'],mapping)==expected if certified_baseline is None
+                 else certified_baseline['id']==expected)
         verification_seconds+=time.perf_counter()-t
         heavy=sum(plan.input_problem.reactant.elements[r]!='H' for r in mapping)
         row=dict(key=key,events=record['events'],heavy=heavy,total=len(mapping),reference_equivalent=correct)
         candidate_rows[key]=row;write(pattern_file,dict(record,**{k:v for k,v in row.items() if k!='key'}))
     try:
         # Preserve all prior displayed representatives before extending families.
-        from rxn_core.family_scoring import bond_events
         for row in ranked:
             path=first(row['terminal']);mapping=path.mapping
+            events=dict(row['events']);events['total']=sum(events.values())
             candidate(dict(key=eq.key(mapping),mapping=sorted(mapping.items()),actions=[],terminal=path.terminal,
-                transitions=list(path.transitions),events=bond_events(plan.problem,mapping,reverse=plan.reversed),
-                origin='saved_representative'))
+                transitions=list(path.transitions),events=events,
+                origin='saved_representative'),certified_baseline=row)
         summary['baseline_candidates']=len(candidate_rows)
         summary['baseline_reference']=any(r['reference_equivalent'] for r in candidate_rows.values())
         save(out/'summary.json',dict(summary,stage='extracting'))

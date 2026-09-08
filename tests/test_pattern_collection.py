@@ -63,3 +63,16 @@ def test_twin_quotient_matches_full_graph_certificate_for_all_small_maps():
             values=[(p,frozenset((p,))) for p in mapping.values()]
             solver=z3.Solver();solver.add(eq.orbit_membership(values,identity))
             assert (solver.check()==z3.sat)==(eq.key(mapping)==eq.key(identity))
+
+
+def test_twin_quotient_preserves_unmapped_atom_patterns():
+    import z3
+    from itertools import combinations
+    mol=endpoint('OOOO',[(0,1,1),(2,3,1)])
+    eq=PatternEquivalence(AAMProblem(mol,mol));known={0:0,1:2}
+    for source in combinations(range(4),2):
+        for target in permutations(range(4),2):
+            mapping=dict(zip(source,target))
+            values=[(mapping.get(r,4),frozenset((mapping.get(r,4),))) for r in range(4)]
+            solver=z3.Solver();solver.add(eq.orbit_membership(values,known))
+            assert (solver.check()==z3.sat)==(eq.key(mapping)==eq.key(known))
