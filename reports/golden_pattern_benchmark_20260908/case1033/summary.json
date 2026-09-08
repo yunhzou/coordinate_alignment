@@ -1,0 +1,19 @@
+{
+  "index": 1033,
+  "terminals": 7638,
+  "raw_heavy": 559,
+  "classes": 181,
+  "representative_reference_ranks": [
+    7
+  ],
+  "generation_seconds": 31.15826935134828,
+  "html_bytes": 127353628,
+  "archive_loading_seconds": 0.7414318285882473,
+  "rendering_seconds": 15.574622699990869,
+  "artifact_writing_seconds": 1.6498087104409933,
+  "pattern_extraction": {
+    "complete": false,
+    "visited_paths": 110,
+    "checkpoint": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_pattern_collection_20260908_v2/results/1033/P_to_R/patterns.jsonl.gz"
+  }
+}

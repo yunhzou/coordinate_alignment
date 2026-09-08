@@ -3,6 +3,8 @@ import argparse
 from collections import Counter
 import json
 from pathlib import Path
+import shutil
+import subprocess
 from golden_policy_campaign import save
 
 
@@ -53,4 +55,15 @@ def report(run):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--run',type=Path,required=True)
-    print(json.dumps(report(p.parse_args().run),indent=2))
+    p.add_argument('--output',type=Path);p.add_argument('--jobs',help='Comma-separated Slurm IDs for accounting export')
+    args=p.parse_args();result=report(args.run)
+    if args.output:
+        args.output.mkdir(parents=True,exist_ok=True)
+        save(args.output/'benchmark_report.json',result)
+        for name in ('per_case.json','manifest.json','repair_manifest.json','parallel_repair_manifest.json','exclusion_comparison.json'):
+            shutil.copy2(args.run/name,args.output/name)
+        if args.jobs:
+            accounting=subprocess.check_output(['sacct','-j',args.jobs,'--parsable2',
+                '--format=JobID,JobName,State,Start,End,ElapsedRaw,AllocCPUS,TotalCPU,MaxRSS'],text=True)
+            (args.output/'slurm_accounting.tsv').write_text(accounting)
+    print(json.dumps(result,indent=2))

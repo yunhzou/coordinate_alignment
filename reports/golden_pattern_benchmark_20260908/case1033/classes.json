@@ -1,0 +1,3732 @@
+[
+  {
+    "rank": 1,
+    "terminal": 52056,
+    "reference_equivalent": false,
+    "saved_terminals": 94,
+    "distinct_raw_heavy": 14,
+    "distinct_explicit_witnesses": 75,
+    "event_variants": [
+      [
+        2,
+        2,
+        0
+      ],
+      [
+        3,
+        3,
+        0
+      ],
+      [
+        4,
+        4,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 2,
+    "terminal": 43210,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "62a3f6816a8187e7dd01f2ae17cb83a6b68efc1e686ed29f698ea43f63f648a7",
+    "origin": "compressed_family",
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 3,
+    "terminal": 42549,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "e5d404646189447bfe549b27fd44352ec90e1a5e1cd376b6c739c140ff2fa49e",
+    "origin": "compressed_family",
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 4,
+    "terminal": 4865,
+    "reference_equivalent": false,
+    "saved_terminals": 1140,
+    "distinct_raw_heavy": 41,
+    "distinct_explicit_witnesses": 759,
+    "event_variants": [
+      [
+        2,
+        2,
+        2
+      ],
+      [
+        3,
+        3,
+        2
+      ],
+      [
+        4,
+        4,
+        2
+      ],
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 5,
+    "terminal": 52540,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        3,
+        3,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 6,
+    "terminal": 52057,
+    "reference_equivalent": false,
+    "saved_terminals": 94,
+    "distinct_raw_heavy": 14,
+    "distinct_explicit_witnesses": 75,
+    "event_variants": [
+      [
+        2,
+        2,
+        2
+      ],
+      [
+        3,
+        3,
+        2
+      ],
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 7,
+    "terminal": 43261,
+    "reference_equivalent": true,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "ca1629863efd85cb4b415d7d7fa0ace6732a8df78fa8cac02abe2132f46894af",
+    "origin": "compressed_family",
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 8,
+    "terminal": 43210,
+    "reference_equivalent": false,
+    "saved_terminals": 7,
+    "distinct_raw_heavy": 4,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        2,
+        2,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 9,
+    "terminal": 52058,
+    "reference_equivalent": false,
+    "saved_terminals": 94,
+    "distinct_raw_heavy": 14,
+    "distinct_explicit_witnesses": 75,
+    "event_variants": [
+      [
+        2,
+        2,
+        2
+      ],
+      [
+        3,
+        3,
+        2
+      ],
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 10,
+    "terminal": 42549,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 5,
+    "distinct_explicit_witnesses": 7,
+    "event_variants": [
+      [
+        2,
+        2,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 11,
+    "terminal": 43212,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "1a911e9366fc963cb6af9804b66c723ec26a48fe1d1f4a1aab8285367c07a86b",
+    "origin": "compressed_family",
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 12,
+    "terminal": 52606,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 5,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        3,
+        3,
+        2
+      ],
+      [
+        4,
+        4,
+        2
+      ],
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 13,
+    "terminal": 4866,
+    "reference_equivalent": false,
+    "saved_terminals": 1132,
+    "distinct_raw_heavy": 41,
+    "distinct_explicit_witnesses": 751,
+    "event_variants": [
+      [
+        2,
+        2,
+        4
+      ],
+      [
+        3,
+        3,
+        4
+      ],
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 14,
+    "terminal": 52541,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        3,
+        3,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 15,
+    "terminal": 53444,
+    "reference_equivalent": false,
+    "saved_terminals": 24,
+    "distinct_raw_heavy": 4,
+    "distinct_explicit_witnesses": 18,
+    "event_variants": [
+      [
+        4,
+        4,
+        0
+      ],
+      [
+        5,
+        5,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 16,
+    "terminal": 43261,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 4,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        3,
+        3,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 17,
+    "terminal": 4867,
+    "reference_equivalent": false,
+    "saved_terminals": 1138,
+    "distinct_raw_heavy": 41,
+    "distinct_explicit_witnesses": 757,
+    "event_variants": [
+      [
+        2,
+        2,
+        4
+      ],
+      [
+        3,
+        3,
+        4
+      ],
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 18,
+    "terminal": 52544,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        3,
+        3,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 19,
+    "terminal": 52059,
+    "reference_equivalent": false,
+    "saved_terminals": 94,
+    "distinct_raw_heavy": 14,
+    "distinct_explicit_witnesses": 75,
+    "event_variants": [
+      [
+        2,
+        2,
+        4
+      ],
+      [
+        3,
+        3,
+        4
+      ],
+      [
+        4,
+        4,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 20,
+    "terminal": 5036,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "77c61595d41716331f18c79fb34d6f49c656c5f78bbab1256a5d7e5cf869655a",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 21,
+    "terminal": 7191,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "227b033517929c6e37a15e73fa92abf607f12b1843f54ebf549dc7e1d09f49e8",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 22,
+    "terminal": 9220,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "53a85aa32b36e79613225f141e388576ad61ac1e91d349137e4474969732d906",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 23,
+    "terminal": 10447,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "17ca801367f429807a204dbcf758fe75d34f2192a9a3ff13803a9a715dae44af",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 24,
+    "terminal": 53446,
+    "reference_equivalent": false,
+    "saved_terminals": 24,
+    "distinct_raw_heavy": 4,
+    "distinct_explicit_witnesses": 18,
+    "event_variants": [
+      [
+        4,
+        4,
+        1
+      ],
+      [
+        5,
+        5,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 25,
+    "terminal": 43262,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "a90ff36da1b13db7b5cbfcca7a16b96f68f7db89f7e8cb88f2dc33523bd9fd5a",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 26,
+    "terminal": 43212,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        3,
+        3,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 27,
+    "terminal": 42942,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "8fa4a4b0c81c7566daaf9d992e60a1357370a79ea487db8f1d1846547d6fa4df",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 28,
+    "terminal": 52607,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 5,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        3,
+        3,
+        4
+      ],
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 29,
+    "terminal": 37547,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 30,
+    "terminal": 53445,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 31,
+    "terminal": 6799,
+    "reference_equivalent": false,
+    "saved_terminals": 238,
+    "distinct_raw_heavy": 20,
+    "distinct_explicit_witnesses": 214,
+    "event_variants": [
+      [
+        4,
+        4,
+        2
+      ],
+      [
+        5,
+        5,
+        2
+      ],
+      [
+        6,
+        6,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 32,
+    "terminal": 52610,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 5,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        3,
+        3,
+        4
+      ],
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 33,
+    "terminal": 4868,
+    "reference_equivalent": false,
+    "saved_terminals": 1130,
+    "distinct_raw_heavy": 41,
+    "distinct_explicit_witnesses": 749,
+    "event_variants": [
+      [
+        2,
+        2,
+        6
+      ],
+      [
+        3,
+        3,
+        6
+      ],
+      [
+        4,
+        4,
+        6
+      ],
+      [
+        5,
+        5,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 2,
+    "formed": 2,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 34,
+    "terminal": 52545,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        3,
+        3,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 35,
+    "terminal": 53452,
+    "reference_equivalent": false,
+    "saved_terminals": 24,
+    "distinct_raw_heavy": 4,
+    "distinct_explicit_witnesses": 18,
+    "event_variants": [
+      [
+        4,
+        4,
+        2
+      ],
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 36,
+    "terminal": 5036,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 37,
+    "terminal": 5038,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "561f1c8ab8a1090e57072da073196ee1d1728eca02f3e98e660f7939c5682665",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 38,
+    "terminal": 5040,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "94e94a0e72382aeac0e1e66500e97979f1276c2b02a66b88b91455505dc824e8",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 39,
+    "terminal": 7191,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        4,
+        4,
+        2
+      ],
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 40,
+    "terminal": 7199,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "b6681d120e7e029d2f17dd23e02191639141650052bf099ef2a8982fbd4a6a0f",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 41,
+    "terminal": 7195,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "5b53f5d09d19183ab1d8f90bfd5b7b5f83d681ebc5d6b6f7ccd68b9b76fe9de6",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 42,
+    "terminal": 9220,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        4,
+        4,
+        2
+      ],
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 43,
+    "terminal": 9218,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "4582c57d69dc6542fc5594115e23235c66a3979492caf85bb8ad818433753006",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 44,
+    "terminal": 9224,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "5eeb42f41f22f996ee56079b3995c10a1858564dcd786224a0ddc49455ea96d8",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 45,
+    "terminal": 10447,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 46,
+    "terminal": 10448,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "e3b474e4dd45f333c2f19de1169aeedcdc7d06338699e7a55c185939203e35f1",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 47,
+    "terminal": 10449,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "c74dc19df12b46c17ce13f7fd2efeb1ae3e6c5cbdcd83ed069c3fde7a32f566b",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 48,
+    "terminal": 37549,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 49,
+    "terminal": 53447,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 50,
+    "terminal": 6805,
+    "reference_equivalent": false,
+    "saved_terminals": 238,
+    "distinct_raw_heavy": 20,
+    "distinct_explicit_witnesses": 214,
+    "event_variants": [
+      [
+        4,
+        4,
+        3
+      ],
+      [
+        5,
+        5,
+        3
+      ],
+      [
+        6,
+        6,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 51,
+    "terminal": 53272,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        5,
+        5,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 52,
+    "terminal": 53445,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "bb5923e65d8d1d81e334c5b228e4c1650eab62f7daab1ec214e21f1c50dd95b3",
+    "origin": "compressed_family",
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 53,
+    "terminal": 53454,
+    "reference_equivalent": false,
+    "saved_terminals": 24,
+    "distinct_raw_heavy": 4,
+    "distinct_explicit_witnesses": 18,
+    "event_variants": [
+      [
+        4,
+        4,
+        3
+      ],
+      [
+        5,
+        5,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 54,
+    "terminal": 43262,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 3,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        4,
+        4,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 55,
+    "terminal": 42942,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 56,
+    "terminal": 42944,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "f1ee8505c9947e1508632609bdaba133a63199e7ecdff2d13d3d497d8425d3be",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 57,
+    "terminal": 53274,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 58,
+    "terminal": 53447,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "c11fd5034ec7056beb51cf4794f45a99cbcd776564c9a1abc81f2370aa2572cd",
+    "origin": "compressed_family",
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 59,
+    "terminal": 52611,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 5,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        3,
+        3,
+        6
+      ],
+      [
+        4,
+        4,
+        6
+      ],
+      [
+        5,
+        5,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 3,
+    "formed": 3,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 60,
+    "terminal": 37551,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 61,
+    "terminal": 53453,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 62,
+    "terminal": 6811,
+    "reference_equivalent": false,
+    "saved_terminals": 238,
+    "distinct_raw_heavy": 20,
+    "distinct_explicit_witnesses": 214,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ],
+      [
+        6,
+        6,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 63,
+    "terminal": 53325,
+    "reference_equivalent": false,
+    "saved_terminals": 47,
+    "distinct_raw_heavy": 10,
+    "distinct_explicit_witnesses": 46,
+    "event_variants": [
+      [
+        6,
+        6,
+        0
+      ],
+      [
+        7,
+        7,
+        0
+      ],
+      [
+        8,
+        8,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 64,
+    "terminal": 20849,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "74328fbef85e47f8b2a95d32e1d51f95e8c0a2a0e1a15cbf86119caf42f37aee",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 65,
+    "terminal": 20913,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "5a0474ab63db10c6ce15ae8aa503ff46567b2f3abc15c47231e510a8a0e0706c",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 66,
+    "terminal": 10653,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "e630506f5644412a880d1d8ed2d3fd80996472b5b7d83993b6e94a1b51060d79",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 67,
+    "terminal": 5038,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 68,
+    "terminal": 5040,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 69,
+    "terminal": 5042,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "e48c074bf846c978db7e7ffd244c4def76f1c2a5936972634ca22516ab838c40",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 70,
+    "terminal": 7199,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 71,
+    "terminal": 7195,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 72,
+    "terminal": 7203,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "ae8fab16ce38f32d6e705f910728b4b520fb4f99e7aea7caef167e500947e4d5",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 73,
+    "terminal": 9218,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 74,
+    "terminal": 9224,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ],
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 75,
+    "terminal": 9222,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "a686714520d52cd9819ca2a19a85e5b99d8f0f32e1cc6f794563b12cf587d5a2",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 76,
+    "terminal": 10448,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 77,
+    "terminal": 10449,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 78,
+    "terminal": 10450,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "20541b28deba4a894f22f4cdae46c4706d3f92490087fd17d76c7b5e1862192a",
+    "origin": "compressed_family",
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 79,
+    "terminal": 10702,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "f49497bb8033400761dfcad9d7680d73ebef2508c30cdaa6336d6b04826028d4",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 80,
+    "terminal": 37553,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 81,
+    "terminal": 53455,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        5,
+        5,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 82,
+    "terminal": 6817,
+    "reference_equivalent": false,
+    "saved_terminals": 238,
+    "distinct_raw_heavy": 20,
+    "distinct_explicit_witnesses": 214,
+    "event_variants": [
+      [
+        4,
+        4,
+        5
+      ],
+      [
+        5,
+        5,
+        5
+      ],
+      [
+        6,
+        6,
+        5
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 5
+  },
+  {
+    "rank": 83,
+    "terminal": 53280,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        5,
+        5,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 84,
+    "terminal": 53453,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "7dc3c08265c10dd393055dbaeca9a4d47438311791dc72dde453125560689a98",
+    "origin": "compressed_family",
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 85,
+    "terminal": 42944,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        5
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 5
+  },
+  {
+    "rank": 86,
+    "terminal": 20851,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "441ab6ef3f6b52556ebb39b4f583574efa2d3254cebb0e3e3902d2bbb74b7288",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 87,
+    "terminal": 20915,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "a03c901dab5c40fe6980d6637d27fe00f6e4b5959cfb233f6e94e6707a77d0cf",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 88,
+    "terminal": 53282,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        5,
+        5,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 89,
+    "terminal": 53455,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "7ee6641a3b48cdf2923f5a465d0d3834f620abfa045cc1ee604bf88f5b773358",
+    "origin": "compressed_family",
+    "broken": 5,
+    "formed": 5,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 90,
+    "terminal": 334,
+    "reference_equivalent": false,
+    "saved_terminals": 405,
+    "distinct_raw_heavy": 40,
+    "distinct_explicit_witnesses": 348,
+    "event_variants": [
+      [
+        6,
+        6,
+        2
+      ],
+      [
+        7,
+        7,
+        2
+      ],
+      [
+        8,
+        8,
+        2
+      ],
+      [
+        9,
+        9,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 91,
+    "terminal": 39533,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        7,
+        7,
+        0
+      ],
+      [
+        8,
+        8,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 7,
+    "formed": 7,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 92,
+    "terminal": 20849,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        2
+      ],
+      [
+        7,
+        7,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 93,
+    "terminal": 20857,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "b7cfce9191b1a96c9eadb7ee6043eecc05657f3c7338311d8e8396ad9a613cc8",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 94,
+    "terminal": 20913,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        2
+      ],
+      [
+        7,
+        7,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 95,
+    "terminal": 20921,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "b74f0789be10f438f18b3a4e24a1837cc9bacfbf2ecd26befbcdbcf644abe787",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 96,
+    "terminal": 10653,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        6,
+        6,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 97,
+    "terminal": 10657,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "876c4656915f585dad1c50e7d9511bdc693725f52540e650e99ca7f3a550dbf9",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 98,
+    "terminal": 10655,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "990725bcedebf1c890d248007678e9434ca98501992ce4a81a2c17d92efc8557",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 99,
+    "terminal": 5042,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 100,
+    "terminal": 7203,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        4,
+        4,
+        6
+      ],
+      [
+        5,
+        5,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 101,
+    "terminal": 9222,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        4,
+        4,
+        6
+      ],
+      [
+        5,
+        5,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 102,
+    "terminal": 10450,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        4,
+        4,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 4,
+    "formed": 4,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 103,
+    "terminal": 10702,
+    "reference_equivalent": false,
+    "saved_terminals": 12,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 12,
+    "event_variants": [
+      [
+        6,
+        6,
+        2
+      ],
+      [
+        7,
+        7,
+        2
+      ],
+      [
+        8,
+        8,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 104,
+    "terminal": 10704,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "1b212511dfea4f1f55deb92c81911c2a84b80892663818186c6703d64c0f5874",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 105,
+    "terminal": 10708,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "47a1d11564d1c1aa20de3e68795f7d021e6f8f59d7f74c0b2a975acde7f97443",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 106,
+    "terminal": 20851,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        3
+      ],
+      [
+        7,
+        7,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 107,
+    "terminal": 20859,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "e4b0a25c142bdd70e5126f0ef0746837cf51bd1c4e9960b369fb75e2d01a2899",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 108,
+    "terminal": 20915,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        3
+      ],
+      [
+        7,
+        7,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 109,
+    "terminal": 20923,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "e555fdf5eee65f051ca35943180e96e857655b5dcfacfea27e606073087e1c5d",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 110,
+    "terminal": 38809,
+    "reference_equivalent": false,
+    "saved_terminals": 61,
+    "distinct_raw_heavy": 15,
+    "distinct_explicit_witnesses": 61,
+    "event_variants": [
+      [
+        7,
+        7,
+        2
+      ],
+      [
+        8,
+        8,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 7,
+    "formed": 7,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 111,
+    "terminal": 9069,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "49875e08f2429d0c1703b9e99f8ec75fac6377b36653430f88e243b35084e259",
+    "origin": "compressed_family",
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 112,
+    "terminal": 20857,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        4
+      ],
+      [
+        7,
+        7,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 113,
+    "terminal": 20921,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        4
+      ],
+      [
+        7,
+        7,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 114,
+    "terminal": 10659,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "f00d375d4e4f213382beeef084e23e052ae1d2bafe3259801b8ee1345338502b",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 115,
+    "terminal": 36416,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        7,
+        7,
+        2
+      ],
+      [
+        8,
+        8,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 7,
+    "formed": 7,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 116,
+    "terminal": 38494,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "8973f839086f502967c77a27e62a089eb08145d994514ceba3586a2be9c81b22",
+    "origin": "compressed_family",
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 117,
+    "terminal": 10655,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        6,
+        6,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 118,
+    "terminal": 10657,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        6,
+        6,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 119,
+    "terminal": 10704,
+    "reference_equivalent": false,
+    "saved_terminals": 12,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 12,
+    "event_variants": [
+      [
+        6,
+        6,
+        4
+      ],
+      [
+        7,
+        7,
+        4
+      ],
+      [
+        8,
+        8,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 120,
+    "terminal": 10708,
+    "reference_equivalent": false,
+    "saved_terminals": 12,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 12,
+    "event_variants": [
+      [
+        6,
+        6,
+        4
+      ],
+      [
+        7,
+        7,
+        4
+      ],
+      [
+        8,
+        8,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 121,
+    "terminal": 10710,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "cf8c465158138d2f1170c440205abceb225d5784eeaf85b9262a6b934bcd72c9",
+    "origin": "compressed_family",
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 122,
+    "terminal": 38493,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "82210ce2ac527ad1e84e777942fdfe907c1e9a515e3413478d75848e54c6eed6",
+    "origin": "compressed_family",
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 123,
+    "terminal": 20859,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        5
+      ],
+      [
+        7,
+        7,
+        5
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 5
+  },
+  {
+    "rank": 124,
+    "terminal": 20923,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        6,
+        6,
+        5
+      ],
+      [
+        7,
+        7,
+        5
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 5
+  },
+  {
+    "rank": 125,
+    "terminal": 9069,
+    "reference_equivalent": false,
+    "saved_terminals": 12,
+    "distinct_raw_heavy": 7,
+    "distinct_explicit_witnesses": 12,
+    "event_variants": [
+      [
+        8,
+        8,
+        2
+      ],
+      [
+        9,
+        9,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 126,
+    "terminal": 336,
+    "reference_equivalent": false,
+    "saved_terminals": 43,
+    "distinct_raw_heavy": 16,
+    "distinct_explicit_witnesses": 43,
+    "event_variants": [
+      [
+        7,
+        7,
+        4
+      ],
+      [
+        8,
+        8,
+        4
+      ],
+      [
+        9,
+        9,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 7,
+    "formed": 7,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 127,
+    "terminal": 38814,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "10194d527463b89e1e65340a010b08bbe0437154e5fc75d0e13d9d62d6711c2c",
+    "origin": "compressed_family",
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 128,
+    "terminal": 38494,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        8,
+        8,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 129,
+    "terminal": 38498,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "ab879f91145afa08152634fac75ba6ca8a182c18b3677bf6844efb5ed5dd2939",
+    "origin": "compressed_family",
+    "broken": 9,
+    "formed": 9,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 130,
+    "terminal": 10659,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        6,
+        6,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 131,
+    "terminal": 10710,
+    "reference_equivalent": false,
+    "saved_terminals": 12,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 12,
+    "event_variants": [
+      [
+        6,
+        6,
+        6
+      ],
+      [
+        7,
+        7,
+        6
+      ],
+      [
+        8,
+        8,
+        6
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 6,
+    "formed": 6,
+    "bond_order_changed": 6
+  },
+  {
+    "rank": 132,
+    "terminal": 38493,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        8,
+        8,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 133,
+    "terminal": 38495,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "6de25da8549c811466b49cb0595e5196868c35181beaf721384a503da6f32268",
+    "origin": "compressed_family",
+    "broken": 9,
+    "formed": 9,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 134,
+    "terminal": 38814,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 3,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        8,
+        8,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 8,
+    "formed": 8,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 135,
+    "terminal": 34154,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "event_variants": [
+      [
+        9,
+        9,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 9,
+    "formed": 9,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 136,
+    "terminal": 38498,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        9,
+        9,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 9,
+    "formed": 9,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 137,
+    "terminal": 38495,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        9,
+        9,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 9,
+    "formed": 9,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 138,
+    "terminal": 63208,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        9,
+        9,
+        4
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 9,
+    "formed": 9,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 139,
+    "terminal": 34311,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        11,
+        11,
+        1
+      ],
+      [
+        12,
+        12,
+        1
+      ],
+      [
+        13,
+        13,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 11,
+    "formed": 11,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 140,
+    "terminal": 34312,
+    "reference_equivalent": false,
+    "saved_terminals": 6,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 6,
+    "event_variants": [
+      [
+        11,
+        11,
+        1
+      ],
+      [
+        12,
+        12,
+        1
+      ],
+      [
+        13,
+        13,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 11,
+    "formed": 11,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 141,
+    "terminal": 20454,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 3,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        11,
+        11,
+        3
+      ],
+      [
+        12,
+        12,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 11,
+    "formed": 11,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 142,
+    "terminal": 20453,
+    "reference_equivalent": false,
+    "saved_terminals": 4,
+    "distinct_raw_heavy": 3,
+    "distinct_explicit_witnesses": 4,
+    "event_variants": [
+      [
+        11,
+        11,
+        3
+      ],
+      [
+        12,
+        12,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 11,
+    "formed": 11,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 143,
+    "terminal": 20457,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "de13a7b8df13728b9314147733cd7f55f954e40a82d02d508f72d152718373da",
+    "origin": "compressed_family",
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 144,
+    "terminal": 34331,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        12,
+        12,
+        1
+      ],
+      [
+        13,
+        13,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 145,
+    "terminal": 34332,
+    "reference_equivalent": false,
+    "saved_terminals": 2,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 2,
+    "event_variants": [
+      [
+        12,
+        12,
+        1
+      ],
+      [
+        13,
+        13,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 146,
+    "terminal": 20458,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "5e1aeeb44451e5272993457aca73748bb9fda4bee36af838b24f6dc67633f240",
+    "origin": "compressed_family",
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 147,
+    "terminal": 20458,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        12,
+        12,
+        2
+      ],
+      [
+        13,
+        13,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 148,
+    "terminal": 20457,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        12,
+        12,
+        2
+      ],
+      [
+        13,
+        13,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 149,
+    "terminal": 34331,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "7659961f6e5c02125a39d15ea1de56804d63cfc3f0caecc4d2bc86d50e4878d4",
+    "origin": "compressed_family",
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 150,
+    "terminal": 34332,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "184544da2c6db1cb9dadcf71e24285d21a8018baae2753ed05f30140a2c68c2d",
+    "origin": "compressed_family",
+    "broken": 12,
+    "formed": 12,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 151,
+    "terminal": 34343,
+    "reference_equivalent": false,
+    "saved_terminals": 15,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 15,
+    "event_variants": [
+      [
+        13,
+        13,
+        1
+      ],
+      [
+        14,
+        14,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 13,
+    "formed": 13,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 152,
+    "terminal": 34344,
+    "reference_equivalent": false,
+    "saved_terminals": 15,
+    "distinct_raw_heavy": 2,
+    "distinct_explicit_witnesses": 15,
+    "event_variants": [
+      [
+        13,
+        13,
+        1
+      ],
+      [
+        14,
+        14,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 13,
+    "formed": 13,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 153,
+    "terminal": 39192,
+    "reference_equivalent": false,
+    "saved_terminals": 8,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 8,
+    "event_variants": [
+      [
+        13,
+        13,
+        2
+      ],
+      [
+        14,
+        14,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 13,
+    "formed": 13,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 154,
+    "terminal": 34343,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "ec5a20676e7e380892d72f75362b32c15f573da46ff92d24e224ce7b24390972",
+    "origin": "compressed_family",
+    "broken": 13,
+    "formed": 13,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 155,
+    "terminal": 34351,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        14,
+        14,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 14,
+    "formed": 14,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 156,
+    "terminal": 34352,
+    "reference_equivalent": false,
+    "saved_terminals": 3,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 3,
+    "event_variants": [
+      [
+        14,
+        14,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 14,
+    "formed": 14,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 157,
+    "terminal": 34344,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "64ca2a0e856847d0e435486e1a9b2ba197cbc04d5943f46678ce7723d6ded069",
+    "origin": "compressed_family",
+    "broken": 13,
+    "formed": 13,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 158,
+    "terminal": 34352,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "046e1e3cd29a8b3b90daaabb41b977cb7ba1ba8475cf97d883f87315a840d783",
+    "origin": "compressed_family",
+    "broken": 14,
+    "formed": 14,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 159,
+    "terminal": 18159,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "4970a2fb5c3bc76ab932b31638c9990fb93e24f362becc91d516d36ba20e0957",
+    "origin": "compressed_family",
+    "broken": 15,
+    "formed": 15,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 160,
+    "terminal": 18159,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "faba91a0f089ab978d612b2f52443306da64163788a1713b1fd56b53df170354",
+    "origin": "compressed_family",
+    "broken": 15,
+    "formed": 15,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 161,
+    "terminal": 34351,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "d63cb79f0a40e610256feb813d765b5c0a85a54577f06b450f4be85e8f302b99",
+    "origin": "compressed_family",
+    "broken": 14,
+    "formed": 14,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 162,
+    "terminal": 39192,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "a0f48ef784745f0c1f755f6278c6bb859d0bbfc681f4ec946458b0e522ccac90",
+    "origin": "compressed_family",
+    "broken": 13,
+    "formed": 13,
+    "bond_order_changed": 4
+  },
+  {
+    "rank": 163,
+    "terminal": 51631,
+    "reference_equivalent": false,
+    "saved_terminals": 73,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 73,
+    "event_variants": [
+      [
+        16,
+        16,
+        0
+      ],
+      [
+        17,
+        17,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 16,
+    "formed": 16,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 164,
+    "terminal": 18159,
+    "reference_equivalent": false,
+    "saved_terminals": 100,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 100,
+    "event_variants": [
+      [
+        15,
+        15,
+        2
+      ],
+      [
+        16,
+        16,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 15,
+    "formed": 15,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 165,
+    "terminal": 18159,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "c104317eb495ce948c65a4e47f50bd1129052c855fff627dcfac8de6dca2779b",
+    "origin": "compressed_family",
+    "broken": 15,
+    "formed": 15,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 166,
+    "terminal": 51631,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "db9805ae3e2623e0d347d4e2812382d43fb6095119dcda0adb7fdfb15c9b1d6b",
+    "origin": "compressed_family",
+    "broken": 16,
+    "formed": 16,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 167,
+    "terminal": 62686,
+    "reference_equivalent": false,
+    "saved_terminals": 48,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 48,
+    "event_variants": [
+      [
+        17,
+        17,
+        0
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 17,
+    "formed": 17,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 168,
+    "terminal": 62674,
+    "reference_equivalent": false,
+    "saved_terminals": 52,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 52,
+    "event_variants": [
+      [
+        17,
+        17,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 17,
+    "formed": 17,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 169,
+    "terminal": 62674,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "11d0ceb4e9002d9c3335526a4da0f8f3f9bb428e1f9b1cd15097c3af8ccfa448",
+    "origin": "compressed_family",
+    "broken": 17,
+    "formed": 17,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 170,
+    "terminal": 58600,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "c178e86986b5b506fcd87c8031d28228974a7052c846b37d64c7d93cce8a473c",
+    "origin": "compressed_family",
+    "broken": 18,
+    "formed": 18,
+    "bond_order_changed": 1
+  },
+  {
+    "rank": 171,
+    "terminal": 4790,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "468ef58960c7e5893557bee9e9458cd1ab072cc5c381bac57858a9b6cdf7092f",
+    "origin": "compressed_family",
+    "broken": 19,
+    "formed": 19,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 172,
+    "terminal": 4845,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "320646c054a92c57ed8ef3bc17d3c69a5344ad81915d7b3effe47acc73f3850f",
+    "origin": "compressed_family",
+    "broken": 19,
+    "formed": 19,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 173,
+    "terminal": 58600,
+    "reference_equivalent": false,
+    "saved_terminals": 100,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 100,
+    "event_variants": [
+      [
+        18,
+        18,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 18,
+    "formed": 18,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 174,
+    "terminal": 4790,
+    "reference_equivalent": false,
+    "saved_terminals": 36,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 36,
+    "event_variants": [
+      [
+        19,
+        19,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 19,
+    "formed": 19,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 175,
+    "terminal": 4845,
+    "reference_equivalent": false,
+    "saved_terminals": 43,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 43,
+    "event_variants": [
+      [
+        19,
+        19,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 19,
+    "formed": 19,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 176,
+    "terminal": 15318,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "5eb05b6ef75abc44e311d775afe347128b269dee1780ac4336673f43b6555c8e",
+    "origin": "compressed_family",
+    "broken": 20,
+    "formed": 20,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 177,
+    "terminal": 15318,
+    "reference_equivalent": false,
+    "saved_terminals": 1,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 1,
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "pattern_key": "6a5ea0ad79ba1953b86afd1aa10e9f838fb13706e046b999e9b50fbded831893",
+    "origin": "compressed_family",
+    "broken": 20,
+    "formed": 20,
+    "bond_order_changed": 0
+  },
+  {
+    "rank": 178,
+    "terminal": 15318,
+    "reference_equivalent": false,
+    "saved_terminals": 100,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 100,
+    "event_variants": [
+      [
+        20,
+        20,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 20,
+    "formed": 20,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 179,
+    "terminal": 33902,
+    "reference_equivalent": false,
+    "saved_terminals": 51,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 51,
+    "event_variants": [
+      [
+        29,
+        29,
+        2
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 29,
+    "formed": 29,
+    "bond_order_changed": 2
+  },
+  {
+    "rank": 180,
+    "terminal": 50327,
+    "reference_equivalent": false,
+    "saved_terminals": 100,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 100,
+    "event_variants": [
+      [
+        29,
+        29,
+        3
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 29,
+    "formed": 29,
+    "bond_order_changed": 3
+  },
+  {
+    "rank": 181,
+    "terminal": 33953,
+    "reference_equivalent": false,
+    "saved_terminals": 49,
+    "distinct_raw_heavy": 1,
+    "distinct_explicit_witnesses": 49,
+    "event_variants": [
+      [
+        30,
+        30,
+        1
+      ]
+    ],
+    "heavy_mapped": 49,
+    "total_mapped": 93,
+    "broken": 30,
+    "formed": 30,
+    "bond_order_changed": 1
+  }
+]

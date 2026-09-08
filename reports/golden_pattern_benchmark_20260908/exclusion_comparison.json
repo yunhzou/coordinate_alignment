@@ -1,0 +1,92 @@
+[
+  {
+    "index": 44,
+    "direction": "P_to_R",
+    "method": "previous",
+    "terminal": 211792,
+    "complete": false,
+    "reason": "canceled",
+    "solver_queries": 2,
+    "seconds": 2.999995505437255,
+    "constraint_encoding_seconds": 0.03983798064291477,
+    "pattern_keys": [
+      "a50247ea1cebfb4b01325990b0f8e10643239c814457c22c5a1b3de227ddf7a7",
+      "434056177af93f1c7590ee35340b14585f2ea5d6eff22491d59d9549eaafa2d7"
+    ]
+  },
+  {
+    "index": 44,
+    "direction": "P_to_R",
+    "method": "twin_quotient",
+    "terminal": 211792,
+    "complete": true,
+    "reason": "all_exact_pattern_classes_excluded",
+    "solver_queries": 2,
+    "seconds": 0.07572815380990505,
+    "constraint_encoding_seconds": 0.02564348839223385,
+    "pattern_keys": [
+      "a50247ea1cebfb4b01325990b0f8e10643239c814457c22c5a1b3de227ddf7a7",
+      "434056177af93f1c7590ee35340b14585f2ea5d6eff22491d59d9549eaafa2d7"
+    ]
+  },
+  {
+    "index": 865,
+    "direction": "P_to_R",
+    "method": "previous",
+    "terminal": 76484,
+    "complete": false,
+    "reason": "canceled",
+    "solver_queries": 2,
+    "seconds": 3.0001928471028805,
+    "constraint_encoding_seconds": 0.02881665527820587,
+    "pattern_keys": [
+      "1a1eee30f9e0fd4f817da060f71bbfedf13c499248d5372ae31504863ce0e71d",
+      "2ee8ed3987fce55a2a524347a2bf199e90a8487ba0c2d8496e50badf21b312db"
+    ]
+  },
+  {
+    "index": 865,
+    "direction": "P_to_R",
+    "method": "twin_quotient",
+    "terminal": 76484,
+    "complete": true,
+    "reason": "all_exact_pattern_classes_excluded",
+    "solver_queries": 2,
+    "seconds": 0.10843195021152496,
+    "constraint_encoding_seconds": 0.026278087869286537,
+    "pattern_keys": [
+      "1a1eee30f9e0fd4f817da060f71bbfedf13c499248d5372ae31504863ce0e71d",
+      "2ee8ed3987fce55a2a524347a2bf199e90a8487ba0c2d8496e50badf21b312db"
+    ]
+  },
+  {
+    "index": 1033,
+    "direction": "P_to_R",
+    "method": "previous",
+    "terminal": 52056,
+    "complete": false,
+    "reason": "canceled",
+    "solver_queries": 2,
+    "seconds": 3.000789215788245,
+    "constraint_encoding_seconds": 0.06204704940319061,
+    "pattern_keys": [
+      "30d009fc5575f42998ae90f1eb469b9538f15475041b5fc63d181338d3abc33f",
+      "31b8678ee7ae01534345b38a19346d2e6b37920ad5acc71ac926b0b9220d4ecf"
+    ]
+  },
+  {
+    "index": 1033,
+    "direction": "P_to_R",
+    "method": "twin_quotient",
+    "terminal": 52056,
+    "complete": true,
+    "reason": "all_exact_pattern_classes_excluded",
+    "solver_queries": 2,
+    "seconds": 0.18037930876016617,
+    "constraint_encoding_seconds": 0.05823417566716671,
+    "pattern_keys": [
+      "30d009fc5575f42998ae90f1eb469b9538f15475041b5fc63d181338d3abc33f",
+      "31b8678ee7ae01534345b38a19346d2e6b37920ad5acc71ac926b0b9220d4ecf"
+    ]
+  }
+]

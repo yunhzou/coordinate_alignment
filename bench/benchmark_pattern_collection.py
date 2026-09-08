@@ -88,6 +88,8 @@ def worker(args):
     expected=certificate_id(reference['features'],reference['mapping'])
     candidate_rows={};persist_seconds=0.;verification_seconds=0.;visited=0;duplicates=0;unresolved=0
     start=time.perf_counter();cpu=time.process_time();seen=set()
+    child_usage=resource.getrusage(resource.RUSAGE_CHILDREN)
+    child_cpu_start=child_usage.ru_utime+child_usage.ru_stime
     pattern_file=gzip.open(out/'patterns.jsonl.gz','wt')
     path_file=gzip.open(out/'paths.jsonl.gz','wt')
     def write(stream,record):
@@ -135,13 +137,17 @@ def worker(args):
     rows=sorted(candidate_rows.values(),key=lambda r:(-r['heavy'],-r['total'],r['events']['total'],r['key']))
     best=rows[0] if rows else None
     eligible=[r for r in rows if best and (r['heavy'],r['total'])==(best['heavy'],best['total'])]
+    child_usage=resource.getrusage(resource.RUSAGE_CHILDREN)
+    child_cpu=child_usage.ru_utime+child_usage.ru_stime-child_cpu_start
+    parent_cpu=time.process_time()-cpu
     summary.update(stage='finished',visited_families=visited,duplicate_histories=duplicates,
         unresolved_families=unresolved,candidates=len(rows),new_candidates=len(rows)-summary['baseline_candidates'],
         reference_recovered=any(r['reference_equivalent'] for r in rows),
         event_windows={str(n):any(r['reference_equivalent'] and r['events']['total']<=best['events']['total']+n
                                  for r in eligible) for n in range(21)},
         extraction_wall_seconds=time.perf_counter()-start-persist_seconds-verification_seconds,
-        worker_cpu_seconds=time.process_time()-cpu,persistence_wall_seconds=persist_seconds,
+        worker_cpu_seconds=parent_cpu+child_cpu,worker_parent_cpu_seconds=parent_cpu,
+        worker_child_cpu_seconds=child_cpu,persistence_wall_seconds=persist_seconds,
         reference_verification_wall_seconds=verification_seconds,peak_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
         archive_terminals=len(aam.graph.terminals))
     save(out/'candidates.json',rows);save(out/'summary.json',summary)
