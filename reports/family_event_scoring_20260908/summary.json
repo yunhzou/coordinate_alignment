@@ -1,0 +1,157 @@
+{
+  "roots": {
+    "initial": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/family_event_scoring_20260908",
+    "blind": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/family_event_scoring_blind_20260908",
+    "pruned": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/family_event_scoring_pruned_20260908",
+    "profile": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/family_event_scoring_profile_20260908"
+  },
+  "experiments": {
+    "initial": {
+      "count": 18,
+      "proven": 18,
+      "median_seconds": 0.18067655246704817,
+      "maximum_seconds": 0.3048396026715636,
+      "summed_path_wall_seconds": 2.8377094017341733,
+      "invariant_certificates": 3,
+      "zero_solver_queries": 3
+    },
+    "blind": {
+      "count": 192,
+      "proven": 183,
+      "median_seconds": 0.17933761281892657,
+      "maximum_seconds": 6.388279364444315,
+      "summed_path_wall_seconds": 82.87655922211707,
+      "invariant_certificates": 27,
+      "zero_solver_queries": 40,
+      "top8": {
+        "count": 48,
+        "proven": 48,
+        "median_seconds": 0.12236714363098145,
+        "maximum_seconds": 0.39660671167075634,
+        "summed_path_wall_seconds": 6.877219424583018,
+        "invariant_certificates": 6,
+        "zero_solver_queries": 15
+      },
+      "random24": {
+        "count": 144,
+        "proven": 135,
+        "median_seconds": 0.18424000311642885,
+        "maximum_seconds": 6.388279364444315,
+        "summed_path_wall_seconds": 75.99933979753405,
+        "invariant_certificates": 21,
+        "zero_solver_queries": 25
+      }
+    },
+    "pruned": {
+      "count": 192,
+      "proven": 182,
+      "median_seconds": 0.18371313391253352,
+      "maximum_seconds": 6.124462124891579,
+      "summed_path_wall_seconds": 83.34788643941283,
+      "invariant_certificates": 27,
+      "zero_solver_queries": 40,
+      "top8": {
+        "count": 48,
+        "proven": 48,
+        "median_seconds": 0.11952032754197717,
+        "maximum_seconds": 0.39656736981123686,
+        "summed_path_wall_seconds": 6.751834444701672,
+        "invariant_certificates": 6,
+        "zero_solver_queries": 15
+      },
+      "random24": {
+        "count": 144,
+        "proven": 134,
+        "median_seconds": 0.1900359676219523,
+        "maximum_seconds": 6.124462124891579,
+        "summed_path_wall_seconds": 76.59605199471116,
+        "invariant_certificates": 21,
+        "zero_solver_queries": 25
+      }
+    },
+    "profile": {
+      "count": 1,
+      "proven": 0,
+      "median_seconds": 3.0011826073750854,
+      "maximum_seconds": 3.0011826073750854,
+      "summed_path_wall_seconds": 3.0011826073750854,
+      "invariant_certificates": 0,
+      "zero_solver_queries": 0
+    }
+  },
+  "comparison": {
+    "paired_families": 192,
+    "contradictory_bounds": 0,
+    "pruning_retained": false,
+    "reason": "No demonstrated speed or proof-completion benefit."
+  },
+  "scope": "Five reactions, six directional archives; not a full Golden reranking. Explicit H; matching tolerance 1.0, scoring tolerance 0.5. Scoring excludes archive loading, path indexing and first library import. No full bijection enumeration in production; tiny exhaustive oracles only in tests.",
+  "targeted_witness_checks": [
+    {
+      "index": 0,
+      "direction": "P_to_R",
+      "representative_score": 11,
+      "optimal_score": 11,
+      "reference_equivalent": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "index": 1033,
+      "direction": "P_to_R",
+      "representative_score": 8,
+      "optimal_score": 6,
+      "reference_equivalent": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "index": 1786,
+      "direction": "P_to_R",
+      "representative_score": 5,
+      "optimal_score": 3,
+      "reference_equivalent": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "index": 44,
+      "direction": "P_to_R",
+      "representative_score": 6,
+      "optimal_score": 4,
+      "reference_equivalent": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "index": 44,
+      "direction": "R_to_P",
+      "representative_score": 6,
+      "optimal_score": 4,
+      "reference_equivalent": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "index": 865,
+      "direction": "P_to_R",
+      "representative_score": 13,
+      "optimal_score": 11,
+      "reference_equivalent": [
+        true,
+        true,
+        true
+      ]
+    }
+  ]
+}
