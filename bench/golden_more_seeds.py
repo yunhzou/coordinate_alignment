@@ -1,4 +1,4 @@
-"""Seed-count-only ablation on fixed-direction Golden misses."""
+"""Seed and branch-budget ablations on fixed-direction Golden misses."""
 import argparse
 from collections import Counter
 from dataclasses import asdict,replace
@@ -16,16 +16,22 @@ from golden_domain_rescore import score as verify_saved
 from rxn_core import AAMSearchConfig,search_aam
 
 
-def changed_config(config,seeds):
-    return replace(config,seed_count=seeds)
+def changed_config(config,seeds,cap=None):
+    changes=dict(seed_count=seeds)
+    if cap is not None:changes['branch_limit']=cap
+    return replace(config,**changes)
 
 
 def init(args):
     args.run.mkdir(parents=True,exist_ok=False)
     baseline=json.loads(args.summary.read_text())
     original=json.loads((args.source/'manifest.json').read_text())
-    config=changed_config(AAMSearchConfig(**original['config']),args.seeds)
+    config=changed_config(AAMSearchConfig(**original['config']),args.seeds,args.cap)
     indices=baseline['not_recovered']
+    if args.selection:
+        selection=json.loads(args.selection.read_text())
+        indices=sorted(selection['not_recovered']+selection['unknown'])
+        baseline['all_records']['recovered']=selection['union_recovered']
     assert len(indices)==len(set(indices))
     for index in indices:
         out=args.run/str(index);out.mkdir()
@@ -36,7 +42,8 @@ def init(args):
     save(args.run/'manifest.json',dict(source=str(args.run.resolve()),baseline_source=str(args.source.resolve()),
         indices=indices,config=asdict(config),baseline_config=original['config'],workers=args.workers,
         search_watchdog=300,score_watchdog=240,baseline_summary=baseline,
-        scope='Same default orientation and full single-edge sweep; only seed_count changes. Selected prior misses: diagnostic, not a full-bank new-policy benchmark.',
+        scope='Same default orientation and full single-edge sweep; only seed count and optional branch cap change. Selected prior misses: diagnostic, not a full-dataset new-policy benchmark.',
+        selection_source=str(args.selection) if args.selection else None,
         source_hashes={str(p.relative_to(args.run/'engine')):hashlib.sha256(p.read_bytes()).hexdigest()
             for p in (args.run/'engine').rglob('*.py')}))
     for index in indices:
@@ -79,13 +86,13 @@ def report(args):
             evaluation=str(path)))
         if e['reference_recovery']=='recovered':witnesses.append(dict(index=index,**e))
     recovered=[r['index'] for r in rows if r['outcome']=='recovered']
-    summary=dict(tested=len(rows),seeds=m['config']['seed_count'],outcomes=dict(Counter(r['outcome'] for r in rows)),
+    summary=dict(tested=len(rows),seeds=m['config']['seed_count'],cap=m['config']['branch_limit'],outcomes=dict(Counter(r['outcome'] for r in rows)),
         recovered=recovered,not_recovered=[r['index'] for r in rows if r['outcome']=='not_recovered'],
         unknown=[r['index'] for r in rows if r['outcome']=='unknown'],
         baseline_recovered=m['baseline_summary']['all_records']['recovered'],
         union_recovered=m['baseline_summary']['all_records']['recovered']+len(recovered),
         union_percent=100*(m['baseline_summary']['all_records']['recovered']+len(recovered))/m['baseline_summary']['all_records']['total'],
-        note='Diagnostic union with previous fixed-run results; not a full-dataset ten-seed benchmark. Original unresolved case 1793 was not part of the requested 32 misses.')
+        note='Diagnostic union with previous saved results; not a full-dataset new-policy benchmark. Original unresolved case 1793 was not part of the requested 32 misses.')
     args.output.mkdir(parents=True,exist_ok=True);save(args.output/'summary.json',summary);save(args.output/'cases.json',rows)
     save(args.output/'witnesses.json',witnesses);save(args.output/'manifest.json',m)
     if args.jobs:(args.output/'slurm_accounting.psv').write_text(subprocess.check_output(['sacct','-j',args.jobs,'-P','--format=JobID,State,ElapsedRaw,AllocCPUS,TotalCPU,MaxRSS,Start,End'],text=True))
@@ -96,5 +103,6 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['init','worker','search','score','report'])
     p.add_argument('--run',type=Path,required=True);p.add_argument('--source',type=Path);p.add_argument('--summary',type=Path)
     p.add_argument('--seeds',type=int,default=10);p.add_argument('--workers',type=int,default=4);p.add_argument('--slot',type=int)
+    p.add_argument('--cap',type=int);p.add_argument('--selection',type=Path)
     p.add_argument('--output',type=Path);p.add_argument('--jobs');a=p.parse_args()
     dict(init=init,worker=worker,search=search,score=verify_saved,report=report)[a.mode](a)
