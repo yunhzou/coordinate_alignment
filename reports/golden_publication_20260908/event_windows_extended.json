@@ -1,0 +1,230 @@
+{
+  "total": 1851,
+  "modes": {
+    "single": {
+      "windows": {
+        "0": {
+          "recovered": 1677,
+          "percent": 90.59967585089142
+        },
+        "1": {
+          "recovered": 1737,
+          "percent": 93.84116693679093
+        },
+        "2": {
+          "recovered": 1792,
+          "percent": 96.81253376553215
+        },
+        "3": {
+          "recovered": 1804,
+          "percent": 97.46083198271205
+        },
+        "4": {
+          "recovered": 1807,
+          "percent": 97.62290653700703
+        },
+        "5": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "6": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "7": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "8": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "9": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "10": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "15": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "20": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        },
+        "unlimited": {
+          "recovered": 1811,
+          "percent": 97.83900594273366
+        }
+      },
+      "gap_histogram": {
+        "0": 1677,
+        "1": 60,
+        "2": 55,
+        "3": 12,
+        "4": 3,
+        "5": 4
+      },
+      "excluded_cases": {
+        "no_matching_representative:not_recovered": [
+          7,
+          19,
+          576,
+          603,
+          780,
+          845,
+          867,
+          871,
+          986,
+          1228,
+          1285,
+          1377,
+          1380,
+          1475,
+          1553,
+          1574,
+          1739
+        ],
+        "no_matching_representative:recovered": [
+          44,
+          1112,
+          1118,
+          1313,
+          1351,
+          1506,
+          1595,
+          1729,
+          1786,
+          1817
+        ],
+        "no_matching_representative:unknown": [
+          590,
+          833,
+          865,
+          1033,
+          1358,
+          1568
+        ],
+        "incomplete_ranking": [
+          825,
+          1386,
+          1606,
+          1694,
+          1793,
+          1799,
+          1823
+        ]
+      }
+    },
+    "bidirectional": {
+      "windows": {
+        "0": {
+          "recovered": 1678,
+          "percent": 90.65370070232306
+        },
+        "1": {
+          "recovered": 1743,
+          "percent": 94.16531604538088
+        },
+        "2": {
+          "recovered": 1802,
+          "percent": 97.35278227984873
+        },
+        "3": {
+          "recovered": 1815,
+          "percent": 98.05510534846029
+        },
+        "4": {
+          "recovered": 1819,
+          "percent": 98.27120475418693
+        },
+        "5": {
+          "recovered": 1823,
+          "percent": 98.48730415991356
+        },
+        "6": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "7": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "8": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "9": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "10": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "15": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "20": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        },
+        "unlimited": {
+          "recovered": 1824,
+          "percent": 98.54132901134521
+        }
+      },
+      "gap_histogram": {
+        "0": 1678,
+        "1": 65,
+        "2": 59,
+        "3": 13,
+        "4": 4,
+        "5": 4,
+        "6": 1
+      },
+      "excluded_cases": {
+        "no_matching_representative:not_recovered": [
+          7,
+          19,
+          871,
+          986,
+          1228,
+          1285,
+          1377,
+          1475,
+          1553
+        ],
+        "no_matching_representative:recovered": [
+          44,
+          865,
+          1033,
+          1786
+        ],
+        "no_matching_representative:unknown": [
+          590,
+          1358
+        ],
+        "incomplete_ranking": [
+          825,
+          852,
+          1386,
+          1503,
+          1561,
+          1606,
+          1694,
+          1702,
+          1756,
+          1793,
+          1799,
+          1823
+        ]
+      }
+    }
+  },
+  "semantics": "Post-hoc windows on saved representatives in the best heavy/all-atom coverage tier. Not verification of every compressed symmetry alternative. No search rerun."
+}

@@ -19,6 +19,8 @@ Among completed directional searches, elapsed time including persistence has med
 
 `analytics.json`, `per_case.csv`, and `per_direction.csv` contain full metrics and timings. `summary.json` is the compact overview. Top-five compressed-family recovery is distinct from representative top-five: 1797/1851 single-direction and 1795/1851 bidirectional, with 8 and 14 unresolved respectively. The separately reported bond-event-window metrics are not top-k accuracy.
 
+Extended post-hoc bond-event windows are in `event_windows_extended.json`. Single-direction representative recovery plateaus at +5 (1811/1851, 97.84%); bidirectional plateaus at +6 (1824/1851, 98.54%). Larger windows, including unlimited events within the best coverage tier, add no cases. This ceiling is not full compressed-family recovery: the 27 remaining bidirectional records comprise 12 incomplete rankings, 4 cases recovered only through non-representative symmetry alternatives, 9 verified misses, and 2 unresolved family checks. No AAM was rerun for this extension.
+
 Full artifacts:
 `/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908`
 
