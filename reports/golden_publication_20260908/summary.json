@@ -1,0 +1,48 @@
+{
+  "total": 1851,
+  "modes": {
+    "single": {
+      "outcomes": {
+        "recovered": 1821,
+        "not_recovered": 17,
+        "unknown": 13
+      },
+      "certified_recovery_percent": 98.37925445705024,
+      "upper_bound_percent": 99.0815775256618,
+      "representative_topk": {
+        "1": 1437,
+        "3": 1756,
+        "5": 1786,
+        "10": 1798
+      },
+      "top5_family_outcomes": {
+        "recovered": 1797,
+        "not_recovered": 46,
+        "unknown": 8
+      },
+      "incomplete_rankings": 7
+    },
+    "bidirectional": {
+      "outcomes": {
+        "recovered": 1839,
+        "not_recovered": 9,
+        "unknown": 3
+      },
+      "certified_recovery_percent": 99.3517017828201,
+      "upper_bound_percent": 99.51377633711508,
+      "representative_topk": {
+        "1": 1434,
+        "3": 1756,
+        "5": 1789,
+        "10": 1807
+      },
+      "top5_family_outcomes": {
+        "recovered": 1795,
+        "not_recovered": 42,
+        "unknown": 14
+      },
+      "incomplete_rankings": 12
+    }
+  },
+  "completed_mode_records": 1851
+}

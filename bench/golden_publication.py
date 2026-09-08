@@ -281,7 +281,7 @@ def report(args):
             upper_bound_percent=100*(counts['recovered']+counts['unknown']+counts['pending'])/len(rows),
             representative_topk={str(k):sum(r.get('representative',{}).get('topk',{}).get(str(k),False) for r in records)
                                  for k in (1,3,5,10)},
-            top5_family_outcomes=dict(Counter(r.get('top5_family',{}).get('outcome','pending') for r in records)),
+            top5_family_outcomes=dict(Counter(r.get('top5_family',{}).get('outcome','unknown' if r else 'pending') for r in records)),
             incomplete_rankings=sum(not r.get('ranking_complete',False) for r in records))
     summary['completed_mode_records']=sum(bool(r['modes']) for r in rows)
     save(args.run/'summary.json',summary);save(args.run/'cases.json',rows)

@@ -26,6 +26,13 @@ def main(args):
     refresh(args)
     manifest=json.loads((args.run/'manifest.json').read_text())
     cases=json.loads((args.run/'cases.json').read_text())
+    # A finished mode with no ranking is unresolved, not still running.
+    summary=json.loads((args.run/'summary.json').read_text())
+    for name in ('single','bidirectional'):
+        records=[c.get('modes',{}).get(name,{}) for c in cases]
+        summary['modes'][name]['top5_family_outcomes']=dict(Counter(
+            m.get('top5_family',{}).get('outcome','unknown' if m else 'pending') for m in records))
+    save(args.run/'summary.json',summary)
     out=args.run/'publication';out.mkdir(exist_ok=True)
     table=[]
     for case in cases:

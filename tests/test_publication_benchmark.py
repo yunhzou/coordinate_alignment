@@ -45,3 +45,18 @@ def test_union_never_turns_unknown_into_a_negative():
     assert union_outcome(['not_recovered','unknown'])=='unknown'
     assert union_outcome(['recovered','unknown'])=='recovered'
     assert union_outcome(['not_recovered','not_recovered'])=='not_recovered'
+
+
+def test_finished_incomplete_ranking_is_unknown_not_pending(tmp_path):
+    import json
+    from types import SimpleNamespace
+    from golden_policy_campaign import save
+    from golden_publication import report
+    save(tmp_path/'manifest.json',dict(indices=[0,1]))
+    save(tmp_path/'results/0/result.json',dict(index=0,modes={
+        name:dict(reference_recovery='unknown',ranking_complete=False)
+        for name in ('single','bidirectional')}))
+    report(SimpleNamespace(run=tmp_path))
+    result=json.loads((tmp_path/'summary.json').read_text())
+    for mode in result['modes'].values():
+        assert mode['top5_family_outcomes']==dict(unknown=1,pending=1)
