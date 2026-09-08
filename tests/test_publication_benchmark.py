@@ -53,6 +53,7 @@ def test_finished_incomplete_ranking_is_unknown_not_pending(tmp_path):
     from golden_policy_campaign import save
     from golden_publication import report
     save(tmp_path/'manifest.json',dict(indices=[0,1]))
+    (tmp_path/'results/0').mkdir(parents=True)
     save(tmp_path/'results/0/result.json',dict(index=0,modes={
         name:dict(reference_recovery='unknown',ranking_complete=False)
         for name in ('single','bidirectional')}))
