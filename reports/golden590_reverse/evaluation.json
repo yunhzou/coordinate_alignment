@@ -1,0 +1,32 @@
+{
+  "reference_pairs": 31,
+  "reference_annotation_complete": true,
+  "top1_correct": false,
+  "representative_recovery": false,
+  "reference_recovery": "not_recovered",
+  "top_terminal": 445478,
+  "witness_terminal": null,
+  "candidate_terminals": 52738,
+  "unique_representative_chemistries": 723,
+  "unique_heavy_representatives": 1330,
+  "best_target_heavy_coverage": 1.0,
+  "best_target_all_atom_coverage": 1.0,
+  "capped": true,
+  "symbolic_queries": 0,
+  "unknown_queries": 0,
+  "evaluation_seconds": 148.75343645364046,
+  "verifier": "full_explicit_domain_and_group_v1",
+  "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+  "rejected_heavy_projections": 1129,
+  "top_events": {
+    "broken": 11,
+    "formed": 9,
+    "bond_order_changed": 3
+  },
+  "search_direction": "P_to_R",
+  "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+  "coverage_space": "original input product",
+  "direction": "P_to_R",
+  "search_incomplete": false,
+  "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden590_reverse_20260908/cuts/aam.pkl.gz"
+}

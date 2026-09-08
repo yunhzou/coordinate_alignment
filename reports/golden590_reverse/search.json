@@ -1,0 +1,23 @@
+{
+  "seconds": 66.95538052171469,
+  "metrics": {
+    "elapsed_seconds": 45.819086322560906,
+    "cut_count": 56,
+    "raw_result_count": 52738,
+    "retained_branch_count": 52738,
+    "max_live_branches": 100,
+    "max_growth_candidates": 92,
+    "subtree_branch_cap_count": 533903,
+    "worker_returned_branch_count": 0,
+    "parent_merge_seconds": 6.113725611940026,
+    "completed_group_requests": 223296,
+    "completed_group_calculations": 223253,
+    "completed_group_cache_hits": 43,
+    "worker_search_seconds": 132.09593599289656,
+    "checkpoint_seconds": 21.046934669837356,
+    "symmetry_finalization_seconds": 14.23479624465108,
+    "checkpoint_restore_and_finalize_seconds": 8.134949276223779
+  },
+  "capped": true,
+  "terminals": 52738
+}
