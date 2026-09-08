@@ -875,7 +875,7 @@ def _ordered_seed_nodes(g_R, rng, common_element_threshold=3):
 
 
 def _generate_seed_orders(g_R, n_trials, rng_seed=42,
-                          common_element_threshold=1):
+                          common_element_threshold=1, seed_selection='random'):
     """Generate at most `n_trials` deterministic seed orderings.
 
     Seeds are deterministic random orderings, not chemistry/core-prioritized
@@ -883,7 +883,15 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42,
     multiple times: that atom has no graph context, so it is retained but kept
     behind contextual atoms and is not used as an anchor unless no contextual
     anchor exists.
+
+    ``distance`` changes only the trial anchors: sample without replacement
+    with weight 1 + distance to the nearest previously selected anchor. An
+    unreachable atom has distance len(graph). The rest of each order retains
+    the original shuffle. Selection is adaptive to anchors, never to search
+    results, and adds O(n_trials * (vertices + edges)) preprocessing.
     """
+    if seed_selection not in ('random', 'distance'):
+        raise ValueError('unknown seed selection policy')
     nodes = _ordered_seed_nodes(
         g_R,
         random.Random(rng_seed),
@@ -901,8 +909,30 @@ def _generate_seed_orders(g_R, n_trials, rng_seed=42,
     n_trials = max(0, int(n_trials))
     if not anchors:
         return orders
+    remaining = []
+    nearest = {}
+    selection_rng = random.Random(rng_seed)
     for idx in range(n_trials):
-        anchor = anchors[idx % len(anchors)]
+        if seed_selection == 'random':
+            anchor = anchors[idx % len(anchors)]
+        else:
+            if not remaining:
+                remaining = list(anchors)
+                nearest = dict.fromkeys(anchors, len(nodes))
+            anchor = (anchors[0] if idx == 0 else selection_rng.choices(
+                remaining, weights=[1 + nearest[n] for n in remaining], k=1)[0])
+            remaining.remove(anchor)
+            # Unweighted graph distance; disconnected regions retain the largest
+            # weight. No matching, automorphism expansion or geometry is needed.
+            distances = {anchor: 0}
+            frontier = [anchor]
+            for node in frontier:
+                for neighbor in g_R.neighbors(node):
+                    if neighbor not in distances:
+                        distances[neighbor] = distances[node] + 1
+                        frontier.append(neighbor)
+            for node in remaining:
+                nearest[node] = min(nearest[node], distances.get(node, len(nodes)))
         rest = [
             n for n in _ordered_seed_nodes(
                 g_R,

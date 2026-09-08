@@ -117,8 +117,11 @@ class AAMSearchConfig:
     symmetry_repair_min_changes: int = 1
     symmetry_repair_max_evaluations: int = 20_000
     anchors: tuple[tuple[int, int], ...] = ()
+    seed_selection: str = 'random'
 
     def __post_init__(self):
+        if self.seed_selection not in ('random', 'distance'):
+            raise ValueError('unknown seed selection policy')
         if self.cut_floor <= 0 or self.graph_floor <= 0:
             raise ValueError("graph and cut floors must be positive")
         if self.iso_tolerance <= 0:

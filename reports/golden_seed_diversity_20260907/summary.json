@@ -1,0 +1,44 @@
+{
+  "outcomes": {
+    "random": {
+      "miss": {
+        "recovered": 9,
+        "not_recovered": 17,
+        "unknown": 7,
+        "pending": 0
+      },
+      "control": {
+        "recovered": 13,
+        "not_recovered": 0,
+        "unknown": 0,
+        "pending": 0
+      }
+    },
+    "distance": {
+      "miss": {
+        "recovered": 10,
+        "not_recovered": 17,
+        "unknown": 6,
+        "pending": 0
+      },
+      "control": {
+        "recovered": 13,
+        "not_recovered": 0,
+        "unknown": 0,
+        "pending": 0
+      }
+    }
+  },
+  "distance_only": [
+    576
+  ],
+  "random_only": [
+    964
+  ],
+  "paired_completed_searches": 45,
+  "paired_search_seconds": {
+    "random": 1832.9316299201455,
+    "distance": 1826.6860543589573
+  },
+  "paired_median_search_ratio": 1.000806945180763
+}

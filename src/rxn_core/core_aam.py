@@ -51,7 +51,7 @@ def search_core_assignments(
     unique = {}
     capped = 0
     for seed_index, order in enumerate(_generate_seed_orders(
-            graph_source, n_trials=config.seed_count)):
+            graph_source, n_trials=config.seed_count, seed_selection=config.seed_selection)):
         graph = find_islands(
             graph_source, graph_target, list(order),
             iso_tol=config.iso_tolerance,

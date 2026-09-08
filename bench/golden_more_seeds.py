@@ -27,6 +27,7 @@ def init(args):
     baseline=json.loads(args.summary.read_text())
     original=json.loads((args.source/'manifest.json').read_text())
     config=changed_config(AAMSearchConfig(**original['config']),args.seeds,args.cap)
+    config=replace(config,seed_selection=args.seed_selection)
     indices=baseline['not_recovered']
     if args.selection:
         selection=json.loads(args.selection.read_text())
@@ -42,7 +43,7 @@ def init(args):
     save(args.run/'manifest.json',dict(source=str(args.run.resolve()),baseline_source=str(args.source.resolve()),
         indices=indices,config=asdict(config),baseline_config=original['config'],workers=args.workers,
         search_watchdog=300,score_watchdog=240,baseline_summary=baseline,
-        scope='Same default orientation and full single-edge sweep; only seed count and optional branch cap change. Selected prior misses: diagnostic, not a full-dataset new-policy benchmark.',
+        scope='Same default orientation and full single-edge sweep; seed count, selection policy and optional branch cap ablation. Selected prior misses: diagnostic, not a full-dataset new-policy benchmark.',
         selection_source=str(args.selection) if args.selection else None,
         source_hashes={str(p.relative_to(args.run/'engine')):hashlib.sha256(p.read_bytes()).hexdigest()
             for p in (args.run/'engine').rglob('*.py')}))
@@ -106,5 +107,6 @@ if __name__=='__main__':
     p.add_argument('--run',type=Path,required=True);p.add_argument('--source',type=Path);p.add_argument('--summary',type=Path)
     p.add_argument('--seeds',type=int,default=10);p.add_argument('--workers',type=int,default=4);p.add_argument('--slot',type=int)
     p.add_argument('--cap',type=int);p.add_argument('--selection',type=Path)
+    p.add_argument('--seed-selection',choices=['random','distance'],default='random')
     p.add_argument('--output',type=Path);p.add_argument('--jobs');a=p.parse_args()
     dict(init=init,worker=worker,search=search,score=verify_saved,report=report)[a.mode](a)

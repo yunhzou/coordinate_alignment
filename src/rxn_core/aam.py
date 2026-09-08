@@ -45,10 +45,13 @@ def checkpoint_manifest(problem, config):
     def endpoint(value):
         return dict(elements=list(value.elements), wbo=value.wbo.tolist(),
                     coordinates=value.coordinates.tolist())
+    settings = asdict(config)
+    if config.seed_selection == 'random':
+        settings.pop('seed_selection')  # unchanged policy can resume older cuts
     return json.loads(json.dumps(dict(schema='rxn_core.aam_checkpoints/v2',
         seed_policy='independent_per_cut_blake2b_v1',
         reactant=endpoint(problem.reactant),product=endpoint(problem.product),
-        config=asdict(config))))
+        config=settings)))
 
 
 def _initialize_search(problem, config):
@@ -67,7 +70,8 @@ def _search_cut(cut):
     source.remove_edges_from(cut)
     source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
     graphs, profile = [], _GrowthCounts()
-    for order in _generate_seed_orders(source, n_trials=config.seed_count, rng_seed=cut_seed(cut)):
+    for order in _generate_seed_orders(source, n_trials=config.seed_count,
+            rng_seed=cut_seed(cut), seed_selection=config.seed_selection):
         graphs.append(find_islands(source, target, order,
             graph_floor=config.graph_floor, iso_tol=config.iso_tolerance,
             max_branches=config.branch_limit, p_orbits=target_orbits,
