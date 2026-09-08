@@ -1,0 +1,149 @@
+{
+  "index": 1285,
+  "direction": "P_to_R",
+  "reference_directed": true,
+  "reference": [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      3
+    ],
+    [
+      4,
+      4
+    ],
+    [
+      5,
+      5
+    ],
+    [
+      6,
+      6
+    ],
+    [
+      7,
+      13
+    ],
+    [
+      8,
+      10
+    ],
+    [
+      9,
+      11
+    ],
+    [
+      10,
+      14
+    ],
+    [
+      11,
+      8
+    ],
+    [
+      12,
+      7
+    ],
+    [
+      13,
+      9
+    ]
+  ],
+  "seed_order": [
+    21,
+    2,
+    10,
+    13,
+    19,
+    17,
+    16,
+    12,
+    5,
+    6,
+    8,
+    0,
+    15,
+    7,
+    20,
+    18,
+    3,
+    11,
+    14,
+    4,
+    9,
+    1
+  ],
+  "cap": 2000,
+  "rows": [
+    {
+      "policy": "ordinary",
+      "seconds": 0.02550915628671646,
+      "terminals": 2,
+      "capped": false,
+      "exact_reference_witnesses": [],
+      "best_exact_pairs": 11
+    },
+    {
+      "policy": "ordinary_native",
+      "seconds": 0.0042884740978479385,
+      "terminals": 2,
+      "capped": false,
+      "exact_reference_witnesses": [],
+      "best_exact_pairs": 11
+    },
+    {
+      "policy": "reference_constrained",
+      "seconds": 0.01798192411661148,
+      "terminals": 4,
+      "capped": false,
+      "exact_reference_witnesses": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "best_exact_pairs": 14
+    }
+  ],
+  "original_rdf_verified": true,
+  "native_python_graph_equal": true,
+  "reference_heavy_bond_changes": 9,
+  "ordinary_heavy_bond_changes": [
+    5,
+    6
+  ],
+  "ordinary_representative_reference_equivalent": false,
+  "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_cause1285_audit_20260908",
+  "ordinary_trace_reference_edge_conflicts": [
+    {
+      "seed": 10,
+      "source_edge": [
+        7,
+        8
+      ],
+      "target_edge": [
+        13,
+        10
+      ],
+      "source_wbo": 2.0,
+      "target_wbo": 0.0,
+      "fragment": [
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  ]
+}

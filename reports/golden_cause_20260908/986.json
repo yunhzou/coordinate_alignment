@@ -1,0 +1,188 @@
+{
+  "index": 986,
+  "direction": "R_to_P",
+  "reference_directed": true,
+  "reference": [
+    [
+      0,
+      8
+    ],
+    [
+      1,
+      9
+    ],
+    [
+      2,
+      10
+    ],
+    [
+      3,
+      11
+    ],
+    [
+      4,
+      12
+    ],
+    [
+      5,
+      13
+    ],
+    [
+      6,
+      14
+    ],
+    [
+      7,
+      0
+    ],
+    [
+      8,
+      15
+    ],
+    [
+      9,
+      1
+    ],
+    [
+      10,
+      2
+    ],
+    [
+      11,
+      4
+    ],
+    [
+      12,
+      3
+    ],
+    [
+      13,
+      5
+    ],
+    [
+      14,
+      6
+    ],
+    [
+      15,
+      7
+    ]
+  ],
+  "seed_order": [
+    16,
+    26,
+    21,
+    23,
+    20,
+    18,
+    7,
+    12,
+    17,
+    2,
+    10,
+    6,
+    8,
+    19,
+    5,
+    25,
+    13,
+    0,
+    15,
+    24,
+    3,
+    11,
+    14,
+    4,
+    22,
+    9,
+    1
+  ],
+  "cap": 2000,
+  "rows": [
+    {
+      "policy": "ordinary",
+      "seconds": 0.03178713098168373,
+      "terminals": 1,
+      "capped": false,
+      "exact_reference_witnesses": [],
+      "best_exact_pairs": 8
+    },
+    {
+      "policy": "ordinary_native",
+      "seconds": 0.038856374099850655,
+      "terminals": 1,
+      "capped": false,
+      "exact_reference_witnesses": [],
+      "best_exact_pairs": 8
+    },
+    {
+      "policy": "reference_constrained",
+      "seconds": 0.01931503415107727,
+      "terminals": 1,
+      "capped": false,
+      "exact_reference_witnesses": [
+        5
+      ],
+      "best_exact_pairs": 16
+    }
+  ],
+  "original_rdf_verified": true,
+  "native_python_graph_equal": true,
+  "reference_heavy_bond_changes": 7,
+  "ordinary_heavy_bond_changes": [
+    3
+  ],
+  "ordinary_representative_reference_equivalent": false,
+  "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_cause986_audit_20260908",
+  "diagnostic_swap_only": {
+    "source_atoms": [
+      11,
+      12
+    ],
+    "ordinary_equivalent": true,
+    "heavy_bond_changes": 3,
+    "original_reference_unchanged": true
+  },
+  "ordinary_trace_reference_edge_conflicts": [
+    {
+      "seed": 26,
+      "source_edge": [
+        13,
+        12
+      ],
+      "target_edge": [
+        5,
+        3
+      ],
+      "source_wbo": 1.5,
+      "target_wbo": 0.0,
+      "fragment": [
+        12,
+        13,
+        14,
+        26
+      ]
+    },
+    {
+      "seed": 26,
+      "source_edge": [
+        11,
+        10
+      ],
+      "target_edge": [
+        4,
+        2
+      ],
+      "source_wbo": 1.5,
+      "target_wbo": 0.0,
+      "fragment": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        26
+      ]
+    }
+  ]
+}

@@ -3,12 +3,15 @@ import argparse
 import json
 from pathlib import Path
 import time
+import pynauty
 
 from golden_policy_campaign import load_case,save
 from rxn_core.alignment.branch import find_islands,_generate_seed_orders
 from rxn_core.artifacts import write_graph_checkpoint
 from rxn_core.frag import build_graph
 from rxn_core.matcher.policy import AttributeNodeMatchPolicy
+from golden_evaluation import colored_graph,project
+from investigate_golden_mapping import original_reference_certificate
 
 
 def main(args):
@@ -26,11 +29,17 @@ def main(args):
             g.nodes[atom]['reference_label']='H' if g.nodes[atom]['element']=='H' else str(label)
     order=_generate_seed_orders(graphs[0],1)[0]
     rows=[]
-    for policy in ('ordinary','reference_constrained'):
-        events=[];start=time.perf_counter()
+    original=next(json.loads(line) for line in args.audit.read_text().splitlines()
+                  if json.loads(line)['index']==args.index)
+    original_verified=original_reference_certificate(original['mapped_reaction'])==pynauty.certificate(
+        colored_graph(raw['features'],project(raw['mapping'],raw['features'])))
+    save(args.output/'input_audit.json',dict(original_reference_verified=original_verified,
+        mapped_reaction=original['mapped_reaction'],audit=str(args.audit)))
+    for policy in ('ordinary','ordinary_native','reference_constrained'):
+        events=None if policy=='ordinary_native' else [];start=time.perf_counter()
         graph=find_islands(*graphs,order,iso_tol=plan.config.iso_tolerance,
             graph_floor=plan.config.graph_floor,max_branches=args.cap,
-            node_policy=AttributeNodeMatchPolicy(('element','reference_label')) if policy!='ordinary' else None,
+            node_policy=AttributeNodeMatchPolicy(('element','reference_label')) if policy=='reference_constrained' else None,
             events=events)
         write_graph_checkpoint(graph,args.output/f'{policy}.pkl.gz')
         save(args.output/f'{policy}.events.json',events)
@@ -46,4 +55,5 @@ def main(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
     p.add_argument('--index',type=int,required=True);p.add_argument('--cap',type=int,default=2000)
+    p.add_argument('--audit',type=Path,default=Path('data/aam_benchmarks/golden_original_20260906/audit.jsonl'))
     p.add_argument('--output',type=Path,required=True);main(p.parse_args())
