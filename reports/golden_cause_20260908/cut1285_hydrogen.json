@@ -1,0 +1,42 @@
+{
+  "reference_directed_cut_selection": true,
+  "index": 1285,
+  "direction": "P_to_R",
+  "config": {
+    "cut_floor": 0.2,
+    "graph_floor": 0.2,
+    "iso_tolerance": 1.0,
+    "event_threshold": 0.5,
+    "metal_event_threshold": 0.3,
+    "seed_count": 10,
+    "branch_limit": 2000,
+    "task_chunksize": 1,
+    "symmetry_repair": true,
+    "symmetry_repair_min_changes": 1,
+    "symmetry_repair_max_evaluations": 20000,
+    "anchors": [],
+    "seed_selection": "random"
+  },
+  "rows": [
+    {
+      "cuts": [
+        [
+          7,
+          8
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          10,
+          20
+        ]
+      ],
+      "search_seconds": 0.07224581949412823,
+      "capped": false,
+      "terminals": 144,
+      "outcome": "recovered"
+    }
+  ]
+}
