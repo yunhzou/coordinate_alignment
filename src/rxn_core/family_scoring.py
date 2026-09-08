@@ -122,6 +122,42 @@ def event_objective(compiled,*,reverse=False,bond_floor=.2,event_tolerance=.5):
     return objective,max(0,lower),dict(variable_bond_terms=len(terms),constant_bond_terms=removed)
 
 
+def tighten_supports(compiled):
+    """Arc consistency and forced-image propagation; never split group factors.
+
+    Every deletion is entailed by the existing fragment-edge, element, or
+    injectivity constraints. Coupled group choices remain in the solver.
+    """
+    import z3
+    problem=compiled.problem;sentinel=problem.target_atom_count
+    domains=[{p for p in support if p==sentinel or
+              problem.reactant.elements[r]==problem.product.elements[p]}
+             for r,(_,support) in enumerate(compiled.values)]
+    before=sum(map(len,domains));changed=True
+    while changed:
+        changed=False
+        fixed={next(iter(d)) for d in domains if len(d)==1 and sentinel not in d}
+        for r,domain in enumerate(domains):
+            if len(domain)>1:
+                new=domain-fixed
+                if new!=domain:domains[r]=new;changed=True
+        for (a,b),w in compiled.required.items():
+            for source,target in ((a,b),(b,a)):
+                new={p for p in domains[source] if p<sentinel and any(
+                    q<sentinel and p!=q and
+                    problem.product.wbo[p,q]>=compiled.path.context.graph_floor and
+                    abs(w-problem.product.wbo[p,q])<=compiled.path.context.iso_tolerance+1e-9
+                    for q in domains[target])}
+                if new!=domains[source]:domains[source]=new;changed=True
+        assert all(domains), 'Stored representative must satisfy the compiled path'
+    narrowed=[]
+    for (expression,support),domain in zip(compiled.values,domains):
+        if domain!=set(support):compiled.solver.add(z3.Or(*(expression==p for p in sorted(domain))))
+        narrowed.append((next(iter(domain)) if len(domain)==1 else expression,frozenset(domain)))
+    compiled.values=narrowed
+    return dict(atom_support_before=before,atom_support_after=sum(map(len,domains)))
+
+
 def minimize_events(path,problem,*,reverse=False,seconds=10.,bond_floor=.2,event_tolerance=.5):
     """Return a proven minimum or explicit bounds and an achievable witness."""
     import z3
@@ -139,6 +175,8 @@ def minimize_events(path,problem,*,reverse=False,seconds=10.,bond_floor=.2,event
         return result
     compiled=compile_path(path,problem,{},source_atoms=(),complete_reference=False)
     result['constraint_encoding_seconds']=compiled.encoding_seconds
+    stamp=time.perf_counter();result.update(tighten_supports(compiled))
+    result['support_propagation_seconds']=time.perf_counter()-stamp
     stamp=time.perf_counter()
     objective,lower,metrics=event_objective(compiled,reverse=reverse,
         bond_floor=bond_floor,event_tolerance=event_tolerance)
