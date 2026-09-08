@@ -1,0 +1,62 @@
+{
+  "outcomes": {
+    "not_recovered": 11,
+    "recovered": 10
+  },
+  "newly_recovered": [
+    603,
+    780,
+    833,
+    845,
+    865,
+    867,
+    1380,
+    1568,
+    1574,
+    1793
+  ],
+  "not_recovered": [
+    7,
+    19,
+    590,
+    871,
+    986,
+    1228,
+    1285,
+    1358,
+    1377,
+    1475,
+    1553
+  ],
+  "unknown": [],
+  "pending": [],
+  "baseline_recovered": 1830,
+  "diagnostic_union": 1840,
+  "benchmark_total": 1851,
+  "diagnostic_union_percent": 99.40572663425175,
+  "capped_cases": [
+    7,
+    19,
+    590,
+    603,
+    780,
+    833,
+    845,
+    865,
+    867,
+    871,
+    1228,
+    1285,
+    1358,
+    1377,
+    1380,
+    1475,
+    1553,
+    1568,
+    1574,
+    1793
+  ],
+  "search_watchdog_cases": [],
+  "score_watchdog_cases": [],
+  "note": "Only certified positives add to the earlier recovery union. Capped negatives are not exhaustive."
+}

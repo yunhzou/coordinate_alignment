@@ -1,0 +1,8447 @@
+[
+  {
+    "index": 7,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 81,
+    "input_P_atoms": 75,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 29,
+      "reference_annotation_complete": false,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 20327,
+      "witness_terminal": null,
+      "candidate_terminals": 11056,
+      "unique_representative_chemistries": 1368,
+      "unique_heavy_representatives": 2212,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 24.400620548054576,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 2,
+        "formed": 1,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/7/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 12.769500875845551,
+      "metrics": {
+        "elapsed_seconds": 9.669997856020927,
+        "cut_count": 82,
+        "raw_result_count": 11056,
+        "retained_branch_count": 11056,
+        "max_live_branches": 100,
+        "max_growth_candidates": 38,
+        "subtree_branch_cap_count": 37834,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.5096744541078806,
+        "completed_group_requests": 33569,
+        "completed_group_calculations": 32910,
+        "completed_group_cache_hits": 659,
+        "worker_search_seconds": 62.233271576464176,
+        "checkpoint_seconds": 2.6285090874880552,
+        "symmetry_finalization_seconds": 1.9016531500965357,
+        "checkpoint_restore_and_finalize_seconds": 1.624108660966158
+      },
+      "capped": true,
+      "terminals": 11056
+    },
+    "status": {
+      "index": 7,
+      "job": "443211",
+      "started": 1788885409.983451,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885452.1463828,
+      "wall_seconds": 42.16293239593506
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/7"
+  },
+  {
+    "index": 19,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 48,
+    "input_P_atoms": 48,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 23,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 81661,
+      "witness_terminal": null,
+      "candidate_terminals": 25914,
+      "unique_representative_chemistries": 365,
+      "unique_heavy_representatives": 365,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 48.00112145207822,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 1,
+        "formed": 3,
+        "bond_order_changed": 2
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/19/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 39.53136675618589,
+      "metrics": {
+        "elapsed_seconds": 27.217669069767,
+        "cut_count": 52,
+        "raw_result_count": 25914,
+        "retained_branch_count": 25914,
+        "max_live_branches": 100,
+        "max_growth_candidates": 38,
+        "subtree_branch_cap_count": 429667,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 4.054721480235457,
+        "completed_group_requests": 90242,
+        "completed_group_calculations": 89959,
+        "completed_group_cache_hits": 283,
+        "worker_search_seconds": 63.52375468797982,
+        "checkpoint_seconds": 12.09652091190219,
+        "symmetry_finalization_seconds": 8.507548060268164,
+        "checkpoint_restore_and_finalize_seconds": 4.733350722119212
+      },
+      "capped": true,
+      "terminals": 25914
+    },
+    "status": {
+      "index": 19,
+      "job": "443212",
+      "started": 1788885410.7408817,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885510.734462,
+      "wall_seconds": 99.99358057975769
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/19"
+  },
+  {
+    "index": 590,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 55,
+    "input_P_atoms": 55,
+    "reused": true,
+    "evaluation": {
+      "reference_pairs": 31,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 445478,
+      "witness_terminal": null,
+      "candidate_terminals": 52738,
+      "unique_representative_chemistries": 723,
+      "unique_heavy_representatives": 1330,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 148.75343645364046,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 1129,
+      "top_events": {
+        "broken": 11,
+        "formed": 9,
+        "bond_order_changed": 3
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "direction": "P_to_R",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden590_reverse_20260908/cuts/aam.pkl.gz"
+    },
+    "search": {
+      "seconds": 66.95538052171469,
+      "metrics": {
+        "elapsed_seconds": 45.819086322560906,
+        "cut_count": 56,
+        "raw_result_count": 52738,
+        "retained_branch_count": 52738,
+        "max_live_branches": 100,
+        "max_growth_candidates": 92,
+        "subtree_branch_cap_count": 533903,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 6.113725611940026,
+        "completed_group_requests": 223296,
+        "completed_group_calculations": 223253,
+        "completed_group_cache_hits": 43,
+        "worker_search_seconds": 132.09593599289656,
+        "checkpoint_seconds": 21.046934669837356,
+        "symmetry_finalization_seconds": 14.23479624465108,
+        "checkpoint_restore_and_finalize_seconds": 8.134949276223779
+      },
+      "capped": true,
+      "terminals": 52738
+    },
+    "status": {},
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden590_reverse_20260908"
+  },
+  {
+    "index": 603,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 63,
+    "input_P_atoms": 63,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 33,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 54597,
+      "witness_terminal": 74351,
+      "candidate_terminals": 12648,
+      "unique_representative_chemistries": 492,
+      "unique_heavy_representatives": 1091,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 4.746867859736085,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 3,
+        "formed": 3,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          3,
+          10
+        ],
+        [
+          4,
+          14
+        ],
+        [
+          5,
+          13
+        ],
+        [
+          6,
+          17
+        ],
+        [
+          7,
+          16
+        ],
+        [
+          8,
+          20
+        ],
+        [
+          9,
+          19
+        ],
+        [
+          10,
+          18
+        ],
+        [
+          11,
+          1
+        ],
+        [
+          12,
+          21
+        ],
+        [
+          13,
+          23
+        ],
+        [
+          14,
+          22
+        ],
+        [
+          15,
+          24
+        ],
+        [
+          16,
+          25
+        ],
+        [
+          17,
+          26
+        ],
+        [
+          18,
+          27
+        ],
+        [
+          19,
+          28
+        ],
+        [
+          20,
+          29
+        ],
+        [
+          21,
+          30
+        ],
+        [
+          22,
+          15
+        ],
+        [
+          23,
+          7
+        ],
+        [
+          24,
+          9
+        ],
+        [
+          25,
+          8
+        ],
+        [
+          26,
+          6
+        ],
+        [
+          27,
+          5
+        ],
+        [
+          28,
+          4
+        ],
+        [
+          29,
+          3
+        ],
+        [
+          30,
+          2
+        ],
+        [
+          31,
+          32
+        ],
+        [
+          32,
+          31
+        ],
+        [
+          33,
+          34
+        ],
+        [
+          34,
+          33
+        ],
+        [
+          35,
+          44
+        ],
+        [
+          36,
+          43
+        ],
+        [
+          37,
+          42
+        ],
+        [
+          38,
+          46
+        ],
+        [
+          39,
+          45
+        ],
+        [
+          40,
+          50
+        ],
+        [
+          41,
+          49
+        ],
+        [
+          42,
+          53
+        ],
+        [
+          43,
+          52
+        ],
+        [
+          44,
+          51
+        ],
+        [
+          45,
+          35
+        ],
+        [
+          46,
+          36
+        ],
+        [
+          47,
+          54
+        ],
+        [
+          48,
+          55
+        ],
+        [
+          49,
+          58
+        ],
+        [
+          50,
+          56
+        ],
+        [
+          51,
+          57
+        ],
+        [
+          52,
+          59
+        ],
+        [
+          53,
+          60
+        ],
+        [
+          54,
+          48
+        ],
+        [
+          55,
+          47
+        ],
+        [
+          56,
+          41
+        ],
+        [
+          57,
+          40
+        ],
+        [
+          58,
+          39
+        ],
+        [
+          59,
+          38
+        ],
+        [
+          60,
+          37
+        ],
+        [
+          61,
+          62
+        ],
+        [
+          62,
+          61
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/603/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 10.795020569115877,
+      "metrics": {
+        "elapsed_seconds": 7.945025756955147,
+        "cut_count": 66,
+        "raw_result_count": 12648,
+        "retained_branch_count": 12648,
+        "max_live_branches": 100,
+        "max_growth_candidates": 32,
+        "subtree_branch_cap_count": 52575,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.7334343194961548,
+        "completed_group_requests": 45281,
+        "completed_group_calculations": 44451,
+        "completed_group_cache_hits": 830,
+        "worker_search_seconds": 27.644351068884134,
+        "checkpoint_seconds": 2.759842960163951,
+        "symmetry_finalization_seconds": 1.9959817081689835,
+        "checkpoint_restore_and_finalize_seconds": 1.713903596624732
+      },
+      "capped": true,
+      "terminals": 12648
+    },
+    "status": {
+      "index": 603,
+      "job": "443213",
+      "started": 1788885409.983334,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885429.8422818,
+      "wall_seconds": 19.858948230743408
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/603"
+  },
+  {
+    "index": 780,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 54,
+    "input_P_atoms": 48,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 25,
+      "reference_annotation_complete": true,
+      "top1_correct": true,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 140840,
+      "witness_terminal": 140840,
+      "candidate_terminals": 36902,
+      "unique_representative_chemistries": 1607,
+      "unique_heavy_representatives": 2285,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 10.716112287715077,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 7,
+        "formed": 5,
+        "bond_order_changed": 1
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          4,
+          10
+        ],
+        [
+          6,
+          18
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          9,
+          4
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          12,
+          1
+        ],
+        [
+          13,
+          0
+        ],
+        [
+          14,
+          19
+        ],
+        [
+          15,
+          20
+        ],
+        [
+          16,
+          21
+        ],
+        [
+          17,
+          22
+        ],
+        [
+          18,
+          23
+        ],
+        [
+          19,
+          24
+        ],
+        [
+          20,
+          11
+        ],
+        [
+          21,
+          12
+        ],
+        [
+          22,
+          13
+        ],
+        [
+          23,
+          14
+        ],
+        [
+          24,
+          15
+        ],
+        [
+          25,
+          16
+        ],
+        [
+          26,
+          17
+        ],
+        [
+          27,
+          30
+        ],
+        [
+          28,
+          31
+        ],
+        [
+          29,
+          32
+        ],
+        [
+          30,
+          33
+        ],
+        [
+          31,
+          36
+        ],
+        [
+          32,
+          37
+        ],
+        [
+          33,
+          35
+        ],
+        [
+          34,
+          34
+        ],
+        [
+          37,
+          29
+        ],
+        [
+          38,
+          28
+        ],
+        [
+          39,
+          26
+        ],
+        [
+          40,
+          27
+        ],
+        [
+          41,
+          25
+        ],
+        [
+          42,
+          43
+        ],
+        [
+          43,
+          44
+        ],
+        [
+          44,
+          45
+        ],
+        [
+          45,
+          46
+        ],
+        [
+          46,
+          47
+        ],
+        [
+          49,
+          38
+        ],
+        [
+          50,
+          39
+        ],
+        [
+          51,
+          40
+        ],
+        [
+          52,
+          41
+        ],
+        [
+          53,
+          42
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/780/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 26.606356281787157,
+      "metrics": {
+        "elapsed_seconds": 19.402880581095815,
+        "cut_count": 55,
+        "raw_result_count": 36902,
+        "retained_branch_count": 36902,
+        "max_live_branches": 100,
+        "max_growth_candidates": 42,
+        "subtree_branch_cap_count": 116137,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 1.909943524748087,
+        "completed_group_requests": 153559,
+        "completed_group_calculations": 153486,
+        "completed_group_cache_hits": 73,
+        "worker_search_seconds": 74.03175717778504,
+        "checkpoint_seconds": 6.755530912429094,
+        "symmetry_finalization_seconds": 5.200559200718999,
+        "checkpoint_restore_and_finalize_seconds": 3.9595524668693542
+      },
+      "capped": true,
+      "terminals": 36902
+    },
+    "status": {
+      "index": 780,
+      "job": "443214",
+      "started": 1788885412.8848903,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885458.862051,
+      "wall_seconds": 45.977161169052124
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/780"
+  },
+  {
+    "index": 833,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 82,
+    "input_P_atoms": 82,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 39,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 63591,
+      "witness_terminal": 59289,
+      "candidate_terminals": 33198,
+      "unique_representative_chemistries": 817,
+      "unique_heavy_representatives": 1495,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 18.077380135655403,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 2,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          11,
+          14
+        ],
+        [
+          12,
+          15
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          14,
+          17
+        ],
+        [
+          15,
+          18
+        ],
+        [
+          16,
+          19
+        ],
+        [
+          17,
+          20
+        ],
+        [
+          18,
+          21
+        ],
+        [
+          19,
+          22
+        ],
+        [
+          20,
+          23
+        ],
+        [
+          21,
+          24
+        ],
+        [
+          22,
+          25
+        ],
+        [
+          23,
+          26
+        ],
+        [
+          24,
+          37
+        ],
+        [
+          25,
+          38
+        ],
+        [
+          26,
+          3
+        ],
+        [
+          27,
+          1
+        ],
+        [
+          28,
+          2
+        ],
+        [
+          29,
+          27
+        ],
+        [
+          30,
+          28
+        ],
+        [
+          31,
+          29
+        ],
+        [
+          32,
+          30
+        ],
+        [
+          33,
+          31
+        ],
+        [
+          34,
+          32
+        ],
+        [
+          35,
+          33
+        ],
+        [
+          36,
+          34
+        ],
+        [
+          37,
+          35
+        ],
+        [
+          38,
+          36
+        ],
+        [
+          39,
+          40
+        ],
+        [
+          40,
+          39
+        ],
+        [
+          41,
+          46
+        ],
+        [
+          42,
+          47
+        ],
+        [
+          43,
+          48
+        ],
+        [
+          44,
+          50
+        ],
+        [
+          45,
+          49
+        ],
+        [
+          46,
+          52
+        ],
+        [
+          47,
+          51
+        ],
+        [
+          48,
+          54
+        ],
+        [
+          49,
+          53
+        ],
+        [
+          50,
+          57
+        ],
+        [
+          51,
+          55
+        ],
+        [
+          52,
+          56
+        ],
+        [
+          53,
+          58
+        ],
+        [
+          54,
+          59
+        ],
+        [
+          55,
+          60
+        ],
+        [
+          56,
+          61
+        ],
+        [
+          57,
+          62
+        ],
+        [
+          58,
+          64
+        ],
+        [
+          59,
+          63
+        ],
+        [
+          60,
+          67
+        ],
+        [
+          61,
+          65
+        ],
+        [
+          62,
+          66
+        ],
+        [
+          63,
+          68
+        ],
+        [
+          64,
+          79
+        ],
+        [
+          65,
+          78
+        ],
+        [
+          66,
+          81
+        ],
+        [
+          67,
+          80
+        ],
+        [
+          68,
+          41
+        ],
+        [
+          69,
+          42
+        ],
+        [
+          70,
+          45
+        ],
+        [
+          71,
+          43
+        ],
+        [
+          72,
+          44
+        ],
+        [
+          73,
+          70
+        ],
+        [
+          74,
+          69
+        ],
+        [
+          75,
+          72
+        ],
+        [
+          76,
+          71
+        ],
+        [
+          77,
+          73
+        ],
+        [
+          78,
+          74
+        ],
+        [
+          79,
+          75
+        ],
+        [
+          80,
+          76
+        ],
+        [
+          81,
+          77
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/833/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 49.48640493862331,
+      "metrics": {
+        "elapsed_seconds": 34.4640718922019,
+        "cut_count": 86,
+        "raw_result_count": 33198,
+        "retained_branch_count": 33198,
+        "max_live_branches": 100,
+        "max_growth_candidates": 100,
+        "subtree_branch_cap_count": 380459,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 3.9478008467704058,
+        "completed_group_requests": 113820,
+        "completed_group_calculations": 113779,
+        "completed_group_cache_hits": 41,
+        "worker_search_seconds": 124.1456385422498,
+        "checkpoint_seconds": 14.592027923092246,
+        "symmetry_finalization_seconds": 9.752492975443602,
+        "checkpoint_restore_and_finalize_seconds": 5.784149568527937
+      },
+      "capped": true,
+      "terminals": 33198
+    },
+    "status": {
+      "index": 833,
+      "job": "443215",
+      "started": 1788885412.8848991,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885494.231313,
+      "wall_seconds": 81.34641432762146
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/833"
+  },
+  {
+    "index": 845,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 38,
+    "input_P_atoms": 38,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 21,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 44388,
+      "witness_terminal": 37226,
+      "candidate_terminals": 17544,
+      "unique_representative_chemistries": 447,
+      "unique_heavy_representatives": 447,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 4.133353816345334,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 2,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          18
+        ],
+        [
+          4,
+          19
+        ],
+        [
+          5,
+          20
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          11,
+          8
+        ],
+        [
+          12,
+          9
+        ],
+        [
+          13,
+          10
+        ],
+        [
+          14,
+          11
+        ],
+        [
+          15,
+          12
+        ],
+        [
+          16,
+          13
+        ],
+        [
+          17,
+          14
+        ],
+        [
+          18,
+          15
+        ],
+        [
+          19,
+          16
+        ],
+        [
+          20,
+          17
+        ],
+        [
+          21,
+          21
+        ],
+        [
+          22,
+          22
+        ],
+        [
+          23,
+          28
+        ],
+        [
+          24,
+          29
+        ],
+        [
+          25,
+          23
+        ],
+        [
+          26,
+          25
+        ],
+        [
+          27,
+          24
+        ],
+        [
+          28,
+          27
+        ],
+        [
+          29,
+          26
+        ],
+        [
+          30,
+          30
+        ],
+        [
+          31,
+          32
+        ],
+        [
+          32,
+          31
+        ],
+        [
+          33,
+          33
+        ],
+        [
+          34,
+          34
+        ],
+        [
+          35,
+          37
+        ],
+        [
+          36,
+          35
+        ],
+        [
+          37,
+          36
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/845/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 11.169728955253959,
+      "metrics": {
+        "elapsed_seconds": 8.233872389420867,
+        "cut_count": 40,
+        "raw_result_count": 17544,
+        "retained_branch_count": 17544,
+        "max_live_branches": 100,
+        "max_growth_candidates": 34,
+        "subtree_branch_cap_count": 48814,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.9474973250180483,
+        "completed_group_requests": 72092,
+        "completed_group_calculations": 71418,
+        "completed_group_cache_hits": 674,
+        "worker_search_seconds": 17.70945269986987,
+        "checkpoint_seconds": 2.6798727978020906,
+        "symmetry_finalization_seconds": 2.448643347248435,
+        "checkpoint_restore_and_finalize_seconds": 1.7529134638607502
+      },
+      "capped": true,
+      "terminals": 17544
+    },
+    "status": {
+      "index": 845,
+      "job": "443216",
+      "started": 1788885413.4783845,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885433.520193,
+      "wall_seconds": 20.04180908203125
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/845"
+  },
+  {
+    "index": 865,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 64,
+    "input_P_atoms": 68,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 33,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "recovered",
+      "top_terminal": 76484,
+      "witness_terminal": 76442,
+      "candidate_terminals": 20183,
+      "unique_representative_chemistries": 772,
+      "unique_heavy_representatives": 1731,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 0.9411764705882353,
+      "capped": true,
+      "symbolic_queries": 1,
+      "unknown_queries": 0,
+      "witness_path": [
+        76127,
+        76128,
+        76131,
+        76135,
+        76141
+      ],
+      "witness_actions": {
+        "mapping": [
+          [
+            0,
+            20
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            9
+          ],
+          [
+            3,
+            7
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            5,
+            10
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            8,
+            5
+          ],
+          [
+            9,
+            3
+          ],
+          [
+            10,
+            2
+          ],
+          [
+            11,
+            1
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            12
+          ],
+          [
+            14,
+            11
+          ],
+          [
+            15,
+            15
+          ],
+          [
+            16,
+            14
+          ],
+          [
+            17,
+            19
+          ],
+          [
+            18,
+            18
+          ],
+          [
+            19,
+            17
+          ],
+          [
+            20,
+            21
+          ],
+          [
+            21,
+            23
+          ],
+          [
+            22,
+            22
+          ],
+          [
+            23,
+            24
+          ],
+          [
+            24,
+            25
+          ],
+          [
+            25,
+            26
+          ],
+          [
+            26,
+            27
+          ],
+          [
+            27,
+            28
+          ],
+          [
+            28,
+            29
+          ],
+          [
+            29,
+            30
+          ],
+          [
+            30,
+            31
+          ],
+          [
+            31,
+            32
+          ],
+          [
+            32,
+            16
+          ],
+          [
+            36,
+            58
+          ],
+          [
+            37,
+            34
+          ],
+          [
+            38,
+            33
+          ],
+          [
+            39,
+            59
+          ],
+          [
+            41,
+            41
+          ],
+          [
+            42,
+            43
+          ],
+          [
+            43,
+            42
+          ],
+          [
+            44,
+            38
+          ],
+          [
+            45,
+            40
+          ],
+          [
+            46,
+            39
+          ],
+          [
+            47,
+            46
+          ],
+          [
+            48,
+            44
+          ],
+          [
+            49,
+            45
+          ],
+          [
+            50,
+            36
+          ],
+          [
+            51,
+            37
+          ],
+          [
+            52,
+            35
+          ],
+          [
+            53,
+            50
+          ],
+          [
+            54,
+            49
+          ],
+          [
+            55,
+            48
+          ],
+          [
+            56,
+            47
+          ],
+          [
+            57,
+            52
+          ],
+          [
+            58,
+            51
+          ],
+          [
+            59,
+            57
+          ],
+          [
+            60,
+            55
+          ],
+          [
+            61,
+            56
+          ],
+          [
+            62,
+            60
+          ],
+          [
+            63,
+            61
+          ],
+          [
+            64,
+            62
+          ],
+          [
+            65,
+            63
+          ],
+          [
+            66,
+            54
+          ],
+          [
+            67,
+            53
+          ]
+        ],
+        "actions": [
+          {
+            "kind": "domain",
+            "transition": 76131,
+            "permutation": [
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76131,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76128,
+            "permutation": [
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76128,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                34
+              ],
+              [
+                34,
+                33
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76128,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                59
+              ],
+              [
+                59,
+                58
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                42,
+                43
+              ],
+              [
+                43,
+                42
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                39,
+                40
+              ],
+              [
+                40,
+                39
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                44,
+                46
+              ],
+              [
+                45,
+                44
+              ],
+              [
+                46,
+                45
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                55,
+                56
+              ],
+              [
+                56,
+                55
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ]
+            ]
+          },
+          {
+            "kind": "domain",
+            "transition": 76127,
+            "permutation": [
+              [
+                53,
+                54
+              ],
+              [
+                54,
+                53
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                46
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                44
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                43
+              ],
+              [
+                43,
+                42
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                40
+              ],
+              [
+                40,
+                39
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                45
+              ],
+              [
+                45,
+                44
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                54
+              ],
+              [
+                54,
+                53
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                34
+              ],
+              [
+                34,
+                33
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                30
+              ],
+              [
+                30,
+                29
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          },
+          {
+            "kind": "group",
+            "transition": 76127,
+            "permutation": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                25
+              ],
+              [
+                26,
+                26
+              ],
+              [
+                27,
+                27
+              ],
+              [
+                28,
+                28
+              ],
+              [
+                29,
+                29
+              ],
+              [
+                30,
+                30
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                33,
+                33
+              ],
+              [
+                34,
+                34
+              ],
+              [
+                35,
+                35
+              ],
+              [
+                36,
+                36
+              ],
+              [
+                37,
+                37
+              ],
+              [
+                38,
+                38
+              ],
+              [
+                39,
+                39
+              ],
+              [
+                40,
+                40
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                42,
+                42
+              ],
+              [
+                43,
+                43
+              ],
+              [
+                44,
+                44
+              ],
+              [
+                45,
+                45
+              ],
+              [
+                46,
+                46
+              ],
+              [
+                47,
+                47
+              ],
+              [
+                48,
+                48
+              ],
+              [
+                49,
+                49
+              ],
+              [
+                50,
+                50
+              ],
+              [
+                51,
+                51
+              ],
+              [
+                52,
+                52
+              ],
+              [
+                53,
+                53
+              ],
+              [
+                54,
+                54
+              ],
+              [
+                55,
+                55
+              ],
+              [
+                56,
+                56
+              ],
+              [
+                57,
+                57
+              ],
+              [
+                58,
+                58
+              ],
+              [
+                59,
+                59
+              ],
+              [
+                60,
+                60
+              ],
+              [
+                61,
+                61
+              ],
+              [
+                62,
+                62
+              ],
+              [
+                63,
+                63
+              ]
+            ]
+          }
+        ],
+        "seconds": 0.16034099273383617,
+        "checked_fragment_edges": 60,
+        "scope": "full_explicit",
+        "heavy_mapping": [
+          [
+            0,
+            20
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            9
+          ],
+          [
+            3,
+            7
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            5,
+            10
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            8,
+            5
+          ],
+          [
+            9,
+            3
+          ],
+          [
+            10,
+            2
+          ],
+          [
+            11,
+            1
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            12
+          ],
+          [
+            14,
+            11
+          ],
+          [
+            15,
+            15
+          ],
+          [
+            16,
+            14
+          ],
+          [
+            17,
+            19
+          ],
+          [
+            18,
+            18
+          ],
+          [
+            19,
+            17
+          ],
+          [
+            20,
+            21
+          ],
+          [
+            21,
+            23
+          ],
+          [
+            22,
+            22
+          ],
+          [
+            23,
+            24
+          ],
+          [
+            24,
+            25
+          ],
+          [
+            25,
+            26
+          ],
+          [
+            26,
+            27
+          ],
+          [
+            27,
+            28
+          ],
+          [
+            28,
+            29
+          ],
+          [
+            29,
+            30
+          ],
+          [
+            30,
+            31
+          ],
+          [
+            31,
+            32
+          ],
+          [
+            32,
+            16
+          ]
+        ]
+      },
+      "evaluation_seconds": 56.035493820905685,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 1396,
+      "top_events": {
+        "broken": 4,
+        "formed": 7,
+        "bond_order_changed": 2
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_heavy_witness": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          11
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          10,
+          5
+        ],
+        [
+          11,
+          14
+        ],
+        [
+          12,
+          13
+        ],
+        [
+          13,
+          12
+        ],
+        [
+          14,
+          16
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          16,
+          32
+        ],
+        [
+          17,
+          19
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          19,
+          17
+        ],
+        [
+          20,
+          0
+        ],
+        [
+          21,
+          20
+        ],
+        [
+          22,
+          22
+        ],
+        [
+          23,
+          21
+        ],
+        [
+          24,
+          23
+        ],
+        [
+          25,
+          24
+        ],
+        [
+          26,
+          25
+        ],
+        [
+          27,
+          26
+        ],
+        [
+          28,
+          27
+        ],
+        [
+          29,
+          28
+        ],
+        [
+          30,
+          29
+        ],
+        [
+          31,
+          30
+        ],
+        [
+          32,
+          31
+        ]
+      ],
+      "input_orientation_witness": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          11
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          9,
+          2
+        ],
+        [
+          10,
+          5
+        ],
+        [
+          11,
+          14
+        ],
+        [
+          12,
+          13
+        ],
+        [
+          13,
+          12
+        ],
+        [
+          14,
+          16
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          16,
+          32
+        ],
+        [
+          17,
+          19
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          19,
+          17
+        ],
+        [
+          20,
+          0
+        ],
+        [
+          21,
+          20
+        ],
+        [
+          22,
+          22
+        ],
+        [
+          23,
+          21
+        ],
+        [
+          24,
+          23
+        ],
+        [
+          25,
+          24
+        ],
+        [
+          26,
+          25
+        ],
+        [
+          27,
+          26
+        ],
+        [
+          28,
+          27
+        ],
+        [
+          29,
+          28
+        ],
+        [
+          30,
+          29
+        ],
+        [
+          31,
+          30
+        ],
+        [
+          32,
+          31
+        ],
+        [
+          33,
+          38
+        ],
+        [
+          34,
+          37
+        ],
+        [
+          35,
+          52
+        ],
+        [
+          36,
+          50
+        ],
+        [
+          37,
+          51
+        ],
+        [
+          38,
+          44
+        ],
+        [
+          39,
+          46
+        ],
+        [
+          40,
+          45
+        ],
+        [
+          41,
+          41
+        ],
+        [
+          42,
+          43
+        ],
+        [
+          43,
+          42
+        ],
+        [
+          44,
+          48
+        ],
+        [
+          45,
+          49
+        ],
+        [
+          46,
+          47
+        ],
+        [
+          47,
+          56
+        ],
+        [
+          48,
+          55
+        ],
+        [
+          49,
+          54
+        ],
+        [
+          50,
+          53
+        ],
+        [
+          51,
+          58
+        ],
+        [
+          52,
+          57
+        ],
+        [
+          53,
+          67
+        ],
+        [
+          54,
+          66
+        ],
+        [
+          55,
+          60
+        ],
+        [
+          56,
+          61
+        ],
+        [
+          57,
+          59
+        ],
+        [
+          58,
+          36
+        ],
+        [
+          59,
+          39
+        ],
+        [
+          60,
+          62
+        ],
+        [
+          61,
+          63
+        ],
+        [
+          62,
+          64
+        ],
+        [
+          63,
+          65
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/865/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 12.508978225290775,
+      "metrics": {
+        "elapsed_seconds": 9.215028997510672,
+        "cut_count": 69,
+        "raw_result_count": 20183,
+        "retained_branch_count": 20183,
+        "max_live_branches": 100,
+        "max_growth_candidates": 28,
+        "subtree_branch_cap_count": 41134,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.7882547918707132,
+        "completed_group_requests": 80674,
+        "completed_group_calculations": 80456,
+        "completed_group_cache_hits": 218,
+        "worker_search_seconds": 35.20448501780629,
+        "checkpoint_seconds": 3.1586563512682915,
+        "symmetry_finalization_seconds": 2.3374652806669474,
+        "checkpoint_restore_and_finalize_seconds": 2.3351915702223778
+      },
+      "capped": true,
+      "terminals": 20183
+    },
+    "status": {
+      "index": 865,
+      "job": "443217",
+      "started": 1788885410.517697,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885485.0598304,
+      "wall_seconds": 74.54213356971741
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/865"
+  },
+  {
+    "index": 867,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 40,
+    "input_P_atoms": 44,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 18,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 109956,
+      "witness_terminal": 57548,
+      "candidate_terminals": 30708,
+      "unique_representative_chemistries": 612,
+      "unique_heavy_representatives": 1607,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 0.9090909090909091,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 7.58974770642817,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 4,
+        "formed": 6,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          16
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          3,
+          17
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          11
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          12,
+          4
+        ],
+        [
+          13,
+          3
+        ],
+        [
+          14,
+          2
+        ],
+        [
+          15,
+          5
+        ],
+        [
+          16,
+          6
+        ],
+        [
+          17,
+          13
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          19,
+          19
+        ],
+        [
+          20,
+          21
+        ],
+        [
+          21,
+          34
+        ],
+        [
+          22,
+          22
+        ],
+        [
+          23,
+          24
+        ],
+        [
+          24,
+          23
+        ],
+        [
+          25,
+          33
+        ],
+        [
+          26,
+          29
+        ],
+        [
+          27,
+          30
+        ],
+        [
+          28,
+          31
+        ],
+        [
+          29,
+          32
+        ],
+        [
+          30,
+          36
+        ],
+        [
+          31,
+          38
+        ],
+        [
+          32,
+          39
+        ],
+        [
+          33,
+          37
+        ],
+        [
+          34,
+          25
+        ],
+        [
+          35,
+          27
+        ],
+        [
+          36,
+          28
+        ],
+        [
+          37,
+          26
+        ],
+        [
+          38,
+          35
+        ],
+        [
+          39,
+          42
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/867/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 19.920933667570353,
+      "metrics": {
+        "elapsed_seconds": 14.4871775675565,
+        "cut_count": 43,
+        "raw_result_count": 30708,
+        "retained_branch_count": 30708,
+        "max_live_branches": 100,
+        "max_growth_candidates": 56,
+        "subtree_branch_cap_count": 58604,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 1.4134252648800611,
+        "completed_group_requests": 163512,
+        "completed_group_calculations": 163261,
+        "completed_group_cache_hits": 251,
+        "worker_search_seconds": 43.403021266683936,
+        "checkpoint_seconds": 5.3942866288125515,
+        "symmetry_finalization_seconds": 4.207762859761715,
+        "checkpoint_restore_and_finalize_seconds": 3.4205395467579365
+      },
+      "capped": true,
+      "terminals": 30708
+    },
+    "status": {
+      "index": 867,
+      "job": "443218",
+      "started": 1788885410.5177145,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885444.4577587,
+      "wall_seconds": 33.94004464149475
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/867"
+  },
+  {
+    "index": 871,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 46,
+    "input_P_atoms": 50,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 20,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 107389,
+      "witness_terminal": null,
+      "candidate_terminals": 40215,
+      "unique_representative_chemistries": 1173,
+      "unique_heavy_representatives": 1756,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 0.92,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 73.35076015256345,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 4,
+        "formed": 7,
+        "bond_order_changed": 2
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/871/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 32.44870552606881,
+      "metrics": {
+        "elapsed_seconds": 23.036024468019605,
+        "cut_count": 50,
+        "raw_result_count": 40215,
+        "retained_branch_count": 40215,
+        "max_live_branches": 100,
+        "max_growth_candidates": 86,
+        "subtree_branch_cap_count": 148444,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 2.452286299318075,
+        "completed_group_requests": 179000,
+        "completed_group_calculations": 178877,
+        "completed_group_cache_hits": 123,
+        "worker_search_seconds": 72.89641153812408,
+        "checkpoint_seconds": 8.480992583557963,
+        "symmetry_finalization_seconds": 6.555219020694494,
+        "checkpoint_restore_and_finalize_seconds": 4.7087080758064985
+      },
+      "capped": true,
+      "terminals": 40215
+    },
+    "status": {
+      "index": 871,
+      "job": "443219",
+      "started": 1788885411.3293934,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885528.1283638,
+      "wall_seconds": 116.79897117614746
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/871"
+  },
+  {
+    "index": 986,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 27,
+    "input_P_atoms": 28,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 16,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 2150,
+      "witness_terminal": null,
+      "candidate_terminals": 439,
+      "unique_representative_chemistries": 6,
+      "unique_heavy_representatives": 11,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 0.9642857142857143,
+      "capped": false,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 0.292306924238801,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 1,
+      "top_events": {
+        "broken": 2,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/986/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 0.28439834900200367,
+      "metrics": {
+        "elapsed_seconds": 0.23174231126904488,
+        "cut_count": 28,
+        "raw_result_count": 439,
+        "retained_branch_count": 439,
+        "max_live_branches": 15,
+        "max_growth_candidates": 16,
+        "subtree_branch_cap_count": 0,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.010339559987187386,
+        "completed_group_requests": 2062,
+        "completed_group_calculations": 1710,
+        "completed_group_cache_hits": 352,
+        "worker_search_seconds": 0.640105277299881,
+        "checkpoint_seconds": 0.28037355467677116,
+        "symmetry_finalization_seconds": 0.015240738168358803,
+        "checkpoint_restore_and_finalize_seconds": 0.07401826977729797
+      },
+      "capped": false,
+      "terminals": 439
+    },
+    "status": {
+      "index": 986,
+      "job": "443220",
+      "started": 1788885412.4717522,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885415.3593588,
+      "wall_seconds": 2.8876070976257324
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/986"
+  },
+  {
+    "index": 1228,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 35,
+    "input_P_atoms": 26,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 12,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 5519,
+      "witness_terminal": null,
+      "candidate_terminals": 11950,
+      "unique_representative_chemistries": 674,
+      "unique_heavy_representatives": 752,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 9.949450017884374,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 5,
+        "formed": 4,
+        "bond_order_changed": 2
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1228/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 4.815892204642296,
+      "metrics": {
+        "elapsed_seconds": 3.7590601928532124,
+        "cut_count": 34,
+        "raw_result_count": 11950,
+        "retained_branch_count": 11950,
+        "max_live_branches": 100,
+        "max_growth_candidates": 48,
+        "subtree_branch_cap_count": 10555,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.38658625446259975,
+        "completed_group_requests": 43426,
+        "completed_group_calculations": 43385,
+        "completed_group_cache_hits": 41,
+        "worker_search_seconds": 13.61311861500144,
+        "checkpoint_seconds": 1.06738668307662,
+        "symmetry_finalization_seconds": 0.9057641755789518,
+        "checkpoint_restore_and_finalize_seconds": 0.7591463532298803
+      },
+      "capped": true,
+      "terminals": 11950
+    },
+    "status": {
+      "index": 1228,
+      "job": "443221",
+      "started": 1788885433.6461504,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885451.784135,
+      "wall_seconds": 18.13798499107361
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1228"
+  },
+  {
+    "index": 1285,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 28,
+    "input_P_atoms": 22,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 14,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 2,
+      "witness_terminal": null,
+      "candidate_terminals": 923,
+      "unique_representative_chemistries": 32,
+      "unique_heavy_representatives": 44,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 0.4607595596462488,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 5,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1285/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 0.6462431643158197,
+      "metrics": {
+        "elapsed_seconds": 0.582988828420639,
+        "cut_count": 28,
+        "raw_result_count": 923,
+        "retained_branch_count": 923,
+        "max_live_branches": 100,
+        "max_growth_candidates": 14,
+        "subtree_branch_cap_count": 141,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.023637467995285988,
+        "completed_group_requests": 3055,
+        "completed_group_calculations": 2728,
+        "completed_group_cache_hits": 327,
+        "worker_search_seconds": 1.0277630425989628,
+        "checkpoint_seconds": 0.10090000741183758,
+        "symmetry_finalization_seconds": 0.024305125698447227,
+        "checkpoint_restore_and_finalize_seconds": 0.19023209065198898
+      },
+      "capped": true,
+      "terminals": 923
+    },
+    "status": {
+      "index": 1285,
+      "job": "443222",
+      "started": 1788885433.6881444,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885437.028101,
+      "wall_seconds": 3.339956760406494
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1285"
+  },
+  {
+    "index": 1358,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 81,
+    "input_P_atoms": 81,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 36,
+      "reference_annotation_complete": false,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 74093,
+      "witness_terminal": null,
+      "candidate_terminals": 17457,
+      "unique_representative_chemistries": 275,
+      "unique_heavy_representatives": 563,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 50.27348957397044,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 2,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1358/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 28.34137548878789,
+      "metrics": {
+        "elapsed_seconds": 19.8639621399343,
+        "cut_count": 85,
+        "raw_result_count": 17457,
+        "retained_branch_count": 17457,
+        "max_live_branches": 100,
+        "max_growth_candidates": 94,
+        "subtree_branch_cap_count": 254492,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 2.456307340413332,
+        "completed_group_requests": 60676,
+        "completed_group_calculations": 59214,
+        "completed_group_cache_hits": 1462,
+        "worker_search_seconds": 56.745493141934276,
+        "checkpoint_seconds": 8.064883535727859,
+        "symmetry_finalization_seconds": 5.265197968110442,
+        "checkpoint_restore_and_finalize_seconds": 3.962003057822585
+      },
+      "capped": true,
+      "terminals": 17457
+    },
+    "status": {
+      "index": 1358,
+      "job": "443223",
+      "started": 1788885438.2959154,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885526.487101,
+      "wall_seconds": 88.19118642807007
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1358"
+  },
+  {
+    "index": 1377,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 44,
+    "input_P_atoms": 39,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 22,
+      "reference_annotation_complete": false,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 210940,
+      "witness_terminal": null,
+      "candidate_terminals": 27811,
+      "unique_representative_chemistries": 938,
+      "unique_heavy_representatives": 938,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 31.265456261113286,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 8,
+        "formed": 6,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1377/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 18.718127071857452,
+      "metrics": {
+        "elapsed_seconds": 13.287199683487415,
+        "cut_count": 44,
+        "raw_result_count": 27811,
+        "retained_branch_count": 27811,
+        "max_live_branches": 100,
+        "max_growth_candidates": 52,
+        "subtree_branch_cap_count": 119973,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 1.694105064496398,
+        "completed_group_requests": 111108,
+        "completed_group_calculations": 110948,
+        "completed_group_cache_hits": 160,
+        "worker_search_seconds": 40.514724196866155,
+        "checkpoint_seconds": 4.934609966352582,
+        "symmetry_finalization_seconds": 3.8331064451485872,
+        "checkpoint_restore_and_finalize_seconds": 2.486900558695197
+      },
+      "capped": true,
+      "terminals": 27811
+    },
+    "status": {
+      "index": 1377,
+      "job": "443224",
+      "started": 1788885469.9500322,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885527.3883429,
+      "wall_seconds": 57.4383111000061
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1377"
+  },
+  {
+    "index": 1380,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 52,
+    "input_P_atoms": 51,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 25,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 23960,
+      "witness_terminal": 8,
+      "candidate_terminals": 5299,
+      "unique_representative_chemistries": 491,
+      "unique_heavy_representatives": 745,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 1.645544283092022,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 4,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          5,
+          9
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          7,
+          11
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          9,
+          13
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          12,
+          2
+        ],
+        [
+          13,
+          1
+        ],
+        [
+          14,
+          19
+        ],
+        [
+          15,
+          3
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          19,
+          20
+        ],
+        [
+          20,
+          0
+        ],
+        [
+          21,
+          24
+        ],
+        [
+          22,
+          23
+        ],
+        [
+          23,
+          21
+        ],
+        [
+          24,
+          22
+        ],
+        [
+          25,
+          30
+        ],
+        [
+          26,
+          29
+        ],
+        [
+          27,
+          32
+        ],
+        [
+          28,
+          33
+        ],
+        [
+          29,
+          31
+        ],
+        [
+          30,
+          28
+        ],
+        [
+          31,
+          35
+        ],
+        [
+          32,
+          34
+        ],
+        [
+          33,
+          37
+        ],
+        [
+          34,
+          36
+        ],
+        [
+          35,
+          39
+        ],
+        [
+          36,
+          40
+        ],
+        [
+          37,
+          38
+        ],
+        [
+          38,
+          42
+        ],
+        [
+          39,
+          41
+        ],
+        [
+          40,
+          43
+        ],
+        [
+          41,
+          44
+        ],
+        [
+          43,
+          27
+        ],
+        [
+          44,
+          26
+        ],
+        [
+          45,
+          46
+        ],
+        [
+          46,
+          47
+        ],
+        [
+          47,
+          45
+        ],
+        [
+          48,
+          25
+        ],
+        [
+          49,
+          49
+        ],
+        [
+          50,
+          50
+        ],
+        [
+          51,
+          48
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1380/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 4.7004423048347235,
+      "metrics": {
+        "elapsed_seconds": 3.558733657002449,
+        "cut_count": 54,
+        "raw_result_count": 5299,
+        "retained_branch_count": 5299,
+        "max_live_branches": 100,
+        "max_growth_candidates": 92,
+        "subtree_branch_cap_count": 11702,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.2590962443500757,
+        "completed_group_requests": 27109,
+        "completed_group_calculations": 26829,
+        "completed_group_cache_hits": 280,
+        "worker_search_seconds": 10.751036306843162,
+        "checkpoint_seconds": 1.0198721401393414,
+        "symmetry_finalization_seconds": 0.7669058870524168,
+        "checkpoint_restore_and_finalize_seconds": 0.9471513647586107
+      },
+      "capped": true,
+      "terminals": 5299
+    },
+    "status": {
+      "index": 1380,
+      "job": "443225",
+      "started": 1788885469.71012,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885479.4499094,
+      "wall_seconds": 9.739789962768555
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1380"
+  },
+  {
+    "index": 1475,
+    "original_direction": "R_to_P",
+    "direction": "P_to_R",
+    "input_R_atoms": 34,
+    "input_P_atoms": 35,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 18,
+      "reference_annotation_complete": false,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 21043,
+      "witness_terminal": null,
+      "candidate_terminals": 10768,
+      "unique_representative_chemistries": 201,
+      "unique_heavy_representatives": 528,
+      "best_target_heavy_coverage": 0.9047619047619048,
+      "best_target_all_atom_coverage": 0.9142857142857143,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 15.217707129195333,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 6,
+        "formed": 10,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1475/cuts/aam.pkl.gz",
+      "direction": "P_to_R"
+    },
+    "search": {
+      "seconds": 5.098777981474996,
+      "metrics": {
+        "elapsed_seconds": 3.893940892070532,
+        "cut_count": 37,
+        "raw_result_count": 10768,
+        "retained_branch_count": 10768,
+        "max_live_branches": 100,
+        "max_growth_candidates": 11,
+        "subtree_branch_cap_count": 13729,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.38556034304201603,
+        "completed_group_requests": 47521,
+        "completed_group_calculations": 47485,
+        "completed_group_cache_hits": 36,
+        "worker_search_seconds": 10.327074917033315,
+        "checkpoint_seconds": 1.4546439815312624,
+        "symmetry_finalization_seconds": 0.9287135452032089,
+        "checkpoint_restore_and_finalize_seconds": 1.0178131852298975
+      },
+      "capped": true,
+      "terminals": 10768
+    },
+    "status": {
+      "index": 1475,
+      "job": "443226",
+      "started": 1788885470.467056,
+      "direction": "P_to_R",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885494.5235925,
+      "wall_seconds": 24.05653691291809
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1475"
+  },
+  {
+    "index": 1553,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 64,
+    "input_P_atoms": 35,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 20,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 55390,
+      "witness_terminal": null,
+      "candidate_terminals": 10919,
+      "unique_representative_chemistries": 2706,
+      "unique_heavy_representatives": 2941,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 11.309957763180137,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 4,
+      "top_events": {
+        "broken": 4,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1553/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 6.688156673684716,
+      "metrics": {
+        "elapsed_seconds": 5.404697988182306,
+        "cut_count": 61,
+        "raw_result_count": 10919,
+        "retained_branch_count": 10919,
+        "max_live_branches": 100,
+        "max_growth_candidates": 28,
+        "subtree_branch_cap_count": 10279,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.36513066850602627,
+        "completed_group_requests": 46387,
+        "completed_group_calculations": 46225,
+        "completed_group_cache_hits": 162,
+        "worker_search_seconds": 32.83436895720661,
+        "checkpoint_seconds": 1.1641665641218424,
+        "symmetry_finalization_seconds": 0.8868928458541632,
+        "checkpoint_restore_and_finalize_seconds": 0.8971338924020529
+      },
+      "capped": true,
+      "terminals": 10919
+    },
+    "status": {
+      "index": 1553,
+      "job": "443227",
+      "started": 1788885469.7730842,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885491.2654765,
+      "wall_seconds": 21.492392778396606
+    },
+    "outcome": "not_recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1553"
+  },
+  {
+    "index": 1568,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 66,
+    "input_P_atoms": 45,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 23,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 103749,
+      "witness_terminal": 249518,
+      "candidate_terminals": 26557,
+      "unique_representative_chemistries": 1272,
+      "unique_heavy_representatives": 1735,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 8.583248192444444,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 3,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          7,
+          20
+        ],
+        [
+          8,
+          21
+        ],
+        [
+          9,
+          22
+        ],
+        [
+          10,
+          4
+        ],
+        [
+          11,
+          5
+        ],
+        [
+          12,
+          6
+        ],
+        [
+          13,
+          7
+        ],
+        [
+          14,
+          8
+        ],
+        [
+          15,
+          9
+        ],
+        [
+          16,
+          10
+        ],
+        [
+          17,
+          11
+        ],
+        [
+          18,
+          12
+        ],
+        [
+          19,
+          14
+        ],
+        [
+          20,
+          13
+        ],
+        [
+          21,
+          15
+        ],
+        [
+          22,
+          16
+        ],
+        [
+          23,
+          17
+        ],
+        [
+          24,
+          18
+        ],
+        [
+          25,
+          19
+        ],
+        [
+          26,
+          3
+        ],
+        [
+          37,
+          38
+        ],
+        [
+          40,
+          23
+        ],
+        [
+          41,
+          25
+        ],
+        [
+          42,
+          24
+        ],
+        [
+          43,
+          39
+        ],
+        [
+          44,
+          40
+        ],
+        [
+          45,
+          41
+        ],
+        [
+          46,
+          43
+        ],
+        [
+          47,
+          42
+        ],
+        [
+          48,
+          26
+        ],
+        [
+          49,
+          27
+        ],
+        [
+          50,
+          28
+        ],
+        [
+          51,
+          29
+        ],
+        [
+          52,
+          30
+        ],
+        [
+          53,
+          31
+        ],
+        [
+          54,
+          32
+        ],
+        [
+          55,
+          33
+        ],
+        [
+          56,
+          35
+        ],
+        [
+          57,
+          34
+        ],
+        [
+          59,
+          37
+        ],
+        [
+          60,
+          36
+        ],
+        [
+          63,
+          44
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1568/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 23.976433504372835,
+      "metrics": {
+        "elapsed_seconds": 17.22195248119533,
+        "cut_count": 63,
+        "raw_result_count": 26557,
+        "retained_branch_count": 26557,
+        "max_live_branches": 100,
+        "max_growth_candidates": 24,
+        "subtree_branch_cap_count": 134459,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 1.762320775538683,
+        "completed_group_requests": 94558,
+        "completed_group_calculations": 94410,
+        "completed_group_cache_hits": 148,
+        "worker_search_seconds": 86.80009685829282,
+        "checkpoint_seconds": 6.178860889747739,
+        "symmetry_finalization_seconds": 4.435893392190337,
+        "checkpoint_restore_and_finalize_seconds": 2.742734830826521
+      },
+      "capped": true,
+      "terminals": 26557
+    },
+    "status": {
+      "index": 1568,
+      "job": "443228",
+      "started": 1788885471.7172363,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885511.6099122,
+      "wall_seconds": 39.89267611503601
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1568"
+  },
+  {
+    "index": 1574,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 71,
+    "input_P_atoms": 60,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 31,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 882,
+      "witness_terminal": 214,
+      "candidate_terminals": 3376,
+      "unique_representative_chemistries": 527,
+      "unique_heavy_representatives": 755,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 1.327336348593235,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 3,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          9
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          11,
+          11
+        ],
+        [
+          12,
+          12
+        ],
+        [
+          13,
+          13
+        ],
+        [
+          14,
+          14
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          19,
+          19
+        ],
+        [
+          20,
+          20
+        ],
+        [
+          21,
+          21
+        ],
+        [
+          22,
+          22
+        ],
+        [
+          23,
+          23
+        ],
+        [
+          24,
+          24
+        ],
+        [
+          25,
+          26
+        ],
+        [
+          26,
+          27
+        ],
+        [
+          27,
+          28
+        ],
+        [
+          28,
+          29
+        ],
+        [
+          29,
+          30
+        ],
+        [
+          35,
+          25
+        ],
+        [
+          38,
+          31
+        ],
+        [
+          39,
+          32
+        ],
+        [
+          40,
+          33
+        ],
+        [
+          41,
+          35
+        ],
+        [
+          42,
+          34
+        ],
+        [
+          43,
+          37
+        ],
+        [
+          44,
+          36
+        ],
+        [
+          45,
+          39
+        ],
+        [
+          46,
+          38
+        ],
+        [
+          47,
+          40
+        ],
+        [
+          48,
+          42
+        ],
+        [
+          49,
+          41
+        ],
+        [
+          50,
+          43
+        ],
+        [
+          51,
+          45
+        ],
+        [
+          52,
+          44
+        ],
+        [
+          53,
+          47
+        ],
+        [
+          54,
+          48
+        ],
+        [
+          55,
+          46
+        ],
+        [
+          56,
+          50
+        ],
+        [
+          57,
+          49
+        ],
+        [
+          58,
+          52
+        ],
+        [
+          59,
+          51
+        ],
+        [
+          60,
+          53
+        ],
+        [
+          61,
+          54
+        ],
+        [
+          62,
+          58
+        ],
+        [
+          63,
+          59
+        ],
+        [
+          64,
+          57
+        ],
+        [
+          69,
+          55
+        ],
+        [
+          70,
+          56
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1574/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 3.9706608206033707,
+      "metrics": {
+        "elapsed_seconds": 3.230921817943454,
+        "cut_count": 69,
+        "raw_result_count": 3376,
+        "retained_branch_count": 3376,
+        "max_live_branches": 100,
+        "max_growth_candidates": 16,
+        "subtree_branch_cap_count": 5707,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 0.13678777404129505,
+        "completed_group_requests": 15184,
+        "completed_group_calculations": 14981,
+        "completed_group_cache_hits": 203,
+        "worker_search_seconds": 14.153192223981023,
+        "checkpoint_seconds": 0.9339276943355799,
+        "symmetry_finalization_seconds": 0.4624837525188923,
+        "checkpoint_restore_and_finalize_seconds": 0.6439171340316534
+      },
+      "capped": true,
+      "terminals": 3376
+    },
+    "status": {
+      "index": 1574,
+      "job": "443229",
+      "started": 1788885494.561148,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885502.498008,
+      "wall_seconds": 7.9368603229522705
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1574"
+  },
+  {
+    "index": 1793,
+    "original_direction": "P_to_R",
+    "direction": "R_to_P",
+    "input_R_atoms": 148,
+    "input_P_atoms": 71,
+    "reused": false,
+    "evaluation": {
+      "reference_pairs": 37,
+      "reference_annotation_complete": true,
+      "top1_correct": true,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 66836,
+      "witness_terminal": 66836,
+      "candidate_terminals": 80674,
+      "unique_representative_chemistries": 9464,
+      "unique_heavy_representatives": 10678,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 48.90318818576634,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 4,
+        "formed": 2,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          16,
+          0
+        ],
+        [
+          17,
+          1
+        ],
+        [
+          18,
+          2
+        ],
+        [
+          19,
+          3
+        ],
+        [
+          20,
+          4
+        ],
+        [
+          21,
+          5
+        ],
+        [
+          22,
+          6
+        ],
+        [
+          23,
+          7
+        ],
+        [
+          24,
+          8
+        ],
+        [
+          25,
+          9
+        ],
+        [
+          26,
+          10
+        ],
+        [
+          27,
+          11
+        ],
+        [
+          28,
+          12
+        ],
+        [
+          29,
+          13
+        ],
+        [
+          30,
+          14
+        ],
+        [
+          31,
+          15
+        ],
+        [
+          32,
+          16
+        ],
+        [
+          33,
+          35
+        ],
+        [
+          34,
+          36
+        ],
+        [
+          37,
+          18
+        ],
+        [
+          38,
+          17
+        ],
+        [
+          54,
+          25
+        ],
+        [
+          55,
+          24
+        ],
+        [
+          56,
+          26
+        ],
+        [
+          57,
+          27
+        ],
+        [
+          58,
+          28
+        ],
+        [
+          59,
+          29
+        ],
+        [
+          60,
+          30
+        ],
+        [
+          61,
+          31
+        ],
+        [
+          62,
+          32
+        ],
+        [
+          63,
+          23
+        ],
+        [
+          64,
+          22
+        ],
+        [
+          65,
+          21
+        ],
+        [
+          66,
+          20
+        ],
+        [
+          67,
+          19
+        ],
+        [
+          68,
+          34
+        ],
+        [
+          69,
+          33
+        ],
+        [
+          106,
+          38
+        ],
+        [
+          107,
+          39
+        ],
+        [
+          108,
+          37
+        ],
+        [
+          109,
+          40
+        ],
+        [
+          110,
+          41
+        ],
+        [
+          111,
+          43
+        ],
+        [
+          112,
+          42
+        ],
+        [
+          113,
+          45
+        ],
+        [
+          114,
+          44
+        ],
+        [
+          115,
+          46
+        ],
+        [
+          116,
+          47
+        ],
+        [
+          117,
+          48
+        ],
+        [
+          118,
+          49
+        ],
+        [
+          119,
+          50
+        ],
+        [
+          120,
+          51
+        ],
+        [
+          121,
+          53
+        ],
+        [
+          122,
+          52
+        ],
+        [
+          123,
+          55
+        ],
+        [
+          124,
+          54
+        ],
+        [
+          125,
+          56
+        ],
+        [
+          126,
+          57
+        ],
+        [
+          134,
+          63
+        ],
+        [
+          135,
+          64
+        ],
+        [
+          136,
+          65
+        ],
+        [
+          137,
+          66
+        ],
+        [
+          138,
+          62
+        ],
+        [
+          139,
+          61
+        ],
+        [
+          140,
+          60
+        ],
+        [
+          141,
+          59
+        ],
+        [
+          142,
+          58
+        ],
+        [
+          144,
+          70
+        ],
+        [
+          145,
+          69
+        ],
+        [
+          146,
+          68
+        ],
+        [
+          147,
+          67
+        ]
+      ],
+      "search_incomplete": false,
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1793/cuts/aam.pkl.gz",
+      "direction": "R_to_P"
+    },
+    "search": {
+      "seconds": 125.2380575016141,
+      "metrics": {
+        "elapsed_seconds": 99.26075012050569,
+        "cut_count": 145,
+        "raw_result_count": 80674,
+        "retained_branch_count": 80674,
+        "max_live_branches": 100,
+        "max_growth_candidates": 35,
+        "subtree_branch_cap_count": 478512,
+        "worker_returned_branch_count": 0,
+        "parent_merge_seconds": 6.328567620366812,
+        "completed_group_requests": 335699,
+        "completed_group_calculations": 335533,
+        "completed_group_cache_hits": 166,
+        "worker_search_seconds": 860.285533990711,
+        "checkpoint_seconds": 22.046070516109467,
+        "symmetry_finalization_seconds": 15.109610132873058,
+        "checkpoint_restore_and_finalize_seconds": 10.978521402925253
+      },
+      "capped": true,
+      "terminals": 80674
+    },
+    "status": {
+      "index": 1793,
+      "job": "443210",
+      "started": 1788885494.5621471,
+      "direction": "R_to_P",
+      "phase": "finished",
+      "search_exit": 0,
+      "score_exit": 0,
+      "finished": 1788885689.6146045,
+      "wall_seconds": 195.05245757102966
+    },
+    "outcome": "recovered",
+    "output": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_reverse_remaining21_20260908/cases/1793"
+  }
+]

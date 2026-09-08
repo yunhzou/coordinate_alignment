@@ -106,6 +106,10 @@ def report(args):
         pending=[r['index'] for r in rows if r['outcome'] == 'pending'],
         baseline_recovered=m['baseline_recovered'],diagnostic_union=m['baseline_recovered']+len(recovered),
         benchmark_total=m['benchmark_total'],
+        diagnostic_union_percent=100*(m['baseline_recovered']+len(recovered))/m['benchmark_total'],
+        capped_cases=[r['index'] for r in rows if r['search'].get('capped')],
+        search_watchdog_cases=[r['index'] for r in rows if r['status'].get('search_exit') == 'timeout'],
+        score_watchdog_cases=[r['index'] for r in rows if r['status'].get('score_exit') == 'timeout'],
         note='Only certified positives add to the earlier recovery union. Capped negatives are not exhaustive.')
     save(args.run/'cases.json',rows)
     save(args.run/'summary.json',summary)

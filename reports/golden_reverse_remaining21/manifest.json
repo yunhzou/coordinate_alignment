@@ -1,0 +1,182 @@
+{
+  "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_seed_diversity_20260907/random",
+  "cases": [
+    {
+      "index": 7,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 81,
+      "input_P_atoms": 75,
+      "reused": false
+    },
+    {
+      "index": 19,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 48,
+      "input_P_atoms": 48,
+      "reused": false
+    },
+    {
+      "index": 590,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 55,
+      "input_P_atoms": 55,
+      "reused": true
+    },
+    {
+      "index": 603,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 63,
+      "input_P_atoms": 63,
+      "reused": false
+    },
+    {
+      "index": 780,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 54,
+      "input_P_atoms": 48,
+      "reused": false
+    },
+    {
+      "index": 833,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 82,
+      "input_P_atoms": 82,
+      "reused": false
+    },
+    {
+      "index": 845,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 38,
+      "input_P_atoms": 38,
+      "reused": false
+    },
+    {
+      "index": 865,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 64,
+      "input_P_atoms": 68,
+      "reused": false
+    },
+    {
+      "index": 867,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 40,
+      "input_P_atoms": 44,
+      "reused": false
+    },
+    {
+      "index": 871,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 46,
+      "input_P_atoms": 50,
+      "reused": false
+    },
+    {
+      "index": 986,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 27,
+      "input_P_atoms": 28,
+      "reused": false
+    },
+    {
+      "index": 1228,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 35,
+      "input_P_atoms": 26,
+      "reused": false
+    },
+    {
+      "index": 1285,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 28,
+      "input_P_atoms": 22,
+      "reused": false
+    },
+    {
+      "index": 1358,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 81,
+      "input_P_atoms": 81,
+      "reused": false
+    },
+    {
+      "index": 1377,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 44,
+      "input_P_atoms": 39,
+      "reused": false
+    },
+    {
+      "index": 1380,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 52,
+      "input_P_atoms": 51,
+      "reused": false
+    },
+    {
+      "index": 1475,
+      "original_direction": "R_to_P",
+      "direction": "P_to_R",
+      "input_R_atoms": 34,
+      "input_P_atoms": 35,
+      "reused": false
+    },
+    {
+      "index": 1553,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 64,
+      "input_P_atoms": 35,
+      "reused": false
+    },
+    {
+      "index": 1568,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 66,
+      "input_P_atoms": 45,
+      "reused": false
+    },
+    {
+      "index": 1574,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 71,
+      "input_P_atoms": 60,
+      "reused": false
+    },
+    {
+      "index": 1793,
+      "original_direction": "P_to_R",
+      "direction": "R_to_P",
+      "input_R_atoms": 148,
+      "input_P_atoms": 71,
+      "reused": false
+    }
+  ],
+  "seeds": 10,
+  "cap": 100,
+  "workers": 16,
+  "search_watchdog": 300,
+  "score_watchdog": 260,
+  "baseline_recovered": 1830,
+  "benchmark_total": 1851,
+  "git_commit": "056bb9a8ccf4a6a3555011b2d427296a4fe008c7",
+  "note": "Fixed unresolved cohort; opposite search direction only. Reuse case 590. Diagnostic recovery union, not a new full-dataset policy score."
+}

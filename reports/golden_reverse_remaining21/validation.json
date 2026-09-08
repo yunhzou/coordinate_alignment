@@ -1,0 +1,102 @@
+[
+  {
+    "index": 603,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 63,
+    "reference_heavy_pairs": 33,
+    "certificate_sha256": "428801b7602a689018d3749fff73eb3b970e9cb79afd251a4924e810ec916cfc"
+  },
+  {
+    "index": 780,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 48,
+    "reference_heavy_pairs": 25,
+    "certificate_sha256": "5e8185852d2f6121433ddb50f362232db2ab72edd58db1abb6cc4d194d0cca91"
+  },
+  {
+    "index": 833,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 82,
+    "reference_heavy_pairs": 39,
+    "certificate_sha256": "00461567dccaebe144d78008ebca6c98821c3eb68c9d5cea455d1b8dfc8e09d5"
+  },
+  {
+    "index": 845,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 38,
+    "reference_heavy_pairs": 21,
+    "certificate_sha256": "a0d6001d488631430141ad0c060ac4ae68e6a8e37d67c959a6eff0298f6af0d6"
+  },
+  {
+    "index": 865,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 64,
+    "reference_heavy_pairs": 33,
+    "certificate_sha256": "ddba5b18e860943f90432089754bf761c53244e2cf80d4da54edd95777e60eac"
+  },
+  {
+    "index": 867,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 40,
+    "reference_heavy_pairs": 18,
+    "certificate_sha256": "66783aa12b5e7c1df3c422da107661e8d4558271db71e18bfecf1d233cbc36d0"
+  },
+  {
+    "index": 1380,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 51,
+    "reference_heavy_pairs": 25,
+    "certificate_sha256": "f67f67dc4550378938219d61c3d0cdc7f8312464c4f48f8696235ede70f8b3fb"
+  },
+  {
+    "index": 1568,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 45,
+    "reference_heavy_pairs": 23,
+    "certificate_sha256": "5984ed06dbb03cf70935fe9266ba0eb60f449098c32b04ee9fba7986ae91f268"
+  },
+  {
+    "index": 1574,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 60,
+    "reference_heavy_pairs": 31,
+    "certificate_sha256": "21e14f935d801d4d5389dc8bbb462b1958b5a13beadae7999a97300148f20fd7"
+  },
+  {
+    "index": 1793,
+    "original_orientation_certificate_matches": true,
+    "original_mapped_reaction_certificate_matches": true,
+    "injective": true,
+    "elements_match": true,
+    "mapped_explicit_atoms": 71,
+    "reference_heavy_pairs": 37,
+    "certificate_sha256": "74a90028b877ef247f69561d49e334b648a6bf4e68c1b63f2c8ebf531f976fa0"
+  }
+]
