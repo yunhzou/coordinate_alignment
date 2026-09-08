@@ -79,6 +79,8 @@ def report(args):
         e=json.loads(path.read_text()) if path.exists() else dict(reference_recovery='pending')
         search_path=out/'search.json';s=json.loads(search_path.read_text()) if search_path.exists() else {}
         rows.append(dict(index=index,outcome=e['reference_recovery'],search_incomplete=e.get('search_incomplete'),
+            verification_incomplete=e.get('verification_incomplete'),
+            checked_cuts=e.get('checked_cuts'),expected_cuts=e.get('expected_cuts'),
             top1=e.get('top1_correct'),search_seconds=s.get('seconds'),capped=s.get('metrics',{}).get('subtree_branch_cap_count'),
             evaluation_seconds=e.get('total_seconds'),reason=e.get('reason'),
             phase_status={phase:json.loads((out/f'{phase}_status.json').read_text())

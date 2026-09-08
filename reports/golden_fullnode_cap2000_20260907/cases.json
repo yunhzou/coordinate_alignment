@@ -1,0 +1,386 @@
+[
+  {
+    "index": 19,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 6,
+    "expected_cuts": 50,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828394.7872093
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828580.8270223
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/19/evaluation.json"
+  },
+  {
+    "index": 590,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 2,
+    "expected_cuts": 58,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828396.4306142
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788828636.6144207
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/590/evaluation.json"
+  },
+  {
+    "index": 603,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 66,
+    "expected_cuts": 66,
+    "top1": null,
+    "search_seconds": 0,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828093.0285676
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828128.649703
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/603/evaluation.json"
+  },
+  {
+    "index": 780,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 10,
+    "expected_cuts": 51,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828394.80373
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828623.490971
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/780/evaluation.json"
+  },
+  {
+    "index": 833,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 0,
+    "expected_cuts": 86,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": -9,
+        "finished": 1788828275.843543
+      },
+      "score": {
+        "exit_code": 1,
+        "finished": 1788828282.4141917
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/833/evaluation.json"
+  },
+  {
+    "index": 845,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 40,
+    "expected_cuts": 40,
+    "top1": null,
+    "search_seconds": 0,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828101.5602407
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828135.8417218
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/845/evaluation.json"
+  },
+  {
+    "index": 865,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 66,
+    "expected_cuts": 66,
+    "top1": null,
+    "search_seconds": 0,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828092.8299403
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828147.1577759
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/865/evaluation.json"
+  },
+  {
+    "index": 867,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 41,
+    "expected_cuts": 41,
+    "top1": null,
+    "search_seconds": 0,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828093.7108529
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828140.6849656
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/867/evaluation.json"
+  },
+  {
+    "index": 871,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 32,
+    "expected_cuts": 47,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828392.8735352
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788828632.9560997
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/871/evaluation.json"
+  },
+  {
+    "index": 1033,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 95,
+    "expected_cuts": 95,
+    "top1": null,
+    "search_seconds": 0,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828092.82782
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828136.804229
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1033/evaluation.json"
+  },
+  {
+    "index": 1228,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 28,
+    "expected_cuts": 28,
+    "top1": null,
+    "search_seconds": 227.4495318699628,
+    "capped": 1613359,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828329.408766
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828370.587121
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1228/evaluation.json"
+  },
+  {
+    "index": 1358,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 17,
+    "expected_cuts": 85,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828394.6918325
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788828634.761541
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1358/evaluation.json"
+  },
+  {
+    "index": 1377,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 42,
+    "expected_cuts": 42,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828394.768572
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828576.8653526
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1377/evaluation.json"
+  },
+  {
+    "index": 1380,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 10,
+    "expected_cuts": 52,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828394.3146613
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828608.5078895
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1380/evaluation.json"
+  },
+  {
+    "index": 1568,
+    "outcome": "unknown",
+    "search_incomplete": true,
+    "verification_incomplete": true,
+    "checked_cuts": 11,
+    "expected_cuts": 46,
+    "top1": null,
+    "search_seconds": null,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": "timeout",
+        "finished": 1788828394.7361653
+      },
+      "score": {
+        "exit_code": "timeout",
+        "finished": 1788828634.7871428
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1568/evaluation.json"
+  },
+  {
+    "index": 1574,
+    "outcome": "not_recovered",
+    "search_incomplete": false,
+    "verification_incomplete": false,
+    "checked_cuts": 62,
+    "expected_cuts": 62,
+    "top1": null,
+    "search_seconds": 0,
+    "capped": null,
+    "evaluation_seconds": null,
+    "reason": null,
+    "phase_status": {
+      "search": {
+        "exit_code": 0,
+        "finished": 1788828092.7685661
+      },
+      "score": {
+        "exit_code": 0,
+        "finished": 1788828168.0405726
+      }
+    },
+    "evaluation": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_fullnode_cap2000_20260907/1574/evaluation.json"
+  }
+]
