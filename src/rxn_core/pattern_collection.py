@@ -34,7 +34,41 @@ class PatternEquivalence:
                                for a,b in combinations(range(e.atom_count),2) if e.wbo[a,b]>bond_floor})
         self.generators=tuple(tuple(tuple(g[:len(self.atoms[side])])
             for g in pynauty.autgrp(self._graph((side,)))[0]) for side in (0,1))
+        self.twins=tuple(self._twins(side) for side in (0,1))
+        self.block_of=tuple({a:i for i,block in enumerate(blocks) for a in block}
+                            for blocks in self.twins)
+        self.quotient_generators=tuple(tuple(sorted({
+            tuple(self.block_of[side][g[block[0]]] for block in self.twins[side])
+            for g in self.generators[side]}-{tuple(range(len(self.twins[side])))})) for side in (0,1))
+        self.block_orbits=tuple(self._orbits(len(self.twins[side]),self.quotient_generators[side])
+                                for side in (0,1))
         self._invariance={}
+
+    @staticmethod
+    def _orbits(n,generators):
+        groups=[{i} for i in range(n)]
+        for g in generators:
+            for a,b in enumerate(g):
+                merged=groups[a]|groups[b]
+                for i in merged:groups[i]=merged
+        return tuple(frozenset(g) for g in groups)
+
+    def _twins(self,side):
+        """Maximal exact interchangeable blocks (including attached H groups).
+
+        Swapping two members fixes every other atom. The quotient therefore
+        removes only a full symmetric-group kernel, not correlated ring moves.
+        """
+        atoms,bonds=self.atoms[side],self.bonds[side];blocks=[]
+        def edge(a,b):return bonds.get(tuple(sorted((a,b))))
+        for a in range(len(atoms)):
+            for block in blocks:
+                b=block[0]
+                if atoms[a]==atoms[b] and all(edge(a,k)==edge(b,k)
+                    for k in range(len(atoms)) if k not in (a,b)):
+                    block.append(a);break
+            else:blocks.append([a])
+        return tuple(tuple(b) for b in blocks)
 
     def _graph(self,sides=(0,1),mapping=None):
         adjacency=defaultdict(set);colors=defaultdict(set);offsets={};count=0
@@ -78,15 +112,40 @@ class PatternEquivalence:
         return True
 
     def orbit_membership(self,values,mapping):
-        """Existence of an exact endpoint action, expressed without orbit lists."""
+        """Exact orbit membership on a twin-block contingency matrix.
+
+        Counts fully characterize an injective mapping modulo independent
+        within-block permutations. Only the remaining correlated block actions
+        are quantified; factorial hydrogen permutations never reach the solver.
+        """
         import z3
         solver=z3.Solver();encoder=SymbolicActions(solver,fresh=True)
-        nr=len(self.atoms[0]);sentinel=len(self.atoms[1]);mapping=dict(mapping)
-        source=encoder.act([encoder.constant(r) for r in range(nr)],self.generators[0],'source')
-        normalized=[encoder.lookup(v,{r:encoder.constant(mapping.get(r,sentinel)) for r in range(nr)})
-                    for v in source]
-        normalized=encoder.act(normalized,self.generators[1],'target')
-        equality=z3.And(*solver.assertions(),*(x[0]==y[0] for x,y in zip(values,normalized)))
+        mapping=dict(mapping);nr,np_=map(len,self.twins)
+        source=encoder.act([encoder.constant(r) for r in range(nr)],self.quotient_generators[0],'source')
+        target=encoder.act([encoder.constant(p) for p in range(np_)],self.quotient_generators[1],'target')
+        counts=defaultdict(int)
+        for r,p in mapping.items():counts[self.block_of[0][r],self.block_of[1][p]]+=1
+        cells=set()
+        for r,(_,support) in enumerate(values):
+            cells.update((self.block_of[0][r],self.block_of[1][p])
+                         for p in support if p in self.block_of[1])
+        for r,p in counts:
+            cells.update((a,b) for a in self.block_orbits[0][r] for b in self.block_orbits[1][p])
+        conditions=[]
+        for r,p in sorted(cells):
+            block,pblock=self.twins[0][r],self.twins[1][p]
+            terms=[]
+            for a in block:
+                expression,support=values[a];allowed=support.intersection(pblock)
+                if not allowed:continue
+                terms.append(1 if support.issubset(pblock) else z3.If(z3.Or(
+                    *(expression==b for b in allowed)),1,0))
+            rows={i:encoder.lookup(target[p],{j:encoder.constant(counts[i,j])
+                  for j in target[p][1]}) for i in source[r][1]}
+            expected=encoder.lookup(source[r],rows)[0]
+            actual=z3.Sum(terms) if terms else 0
+            conditions.append(actual==expected)
+        equality=z3.And(*solver.assertions(),*conditions)
         return z3.Exists(encoder.variables,equality) if encoder.variables else equality
 
 

@@ -49,3 +49,17 @@ def test_same_score_patterns_and_zero_budget_resume():
     result=extract_path_patterns(path,problem,eq,previous=partial['patterns'],seconds=5)
     assert result['complete'] and len(result['patterns'])==2
     assert {p['events']['total'] for p in result['patterns']}=={0}
+
+
+def test_twin_quotient_matches_full_graph_certificate_for_all_small_maps():
+    import z3
+    mol=endpoint('CCHHHH',[(0,1,1),(0,2,1),(0,3,1),(1,4,1),(1,5,1)])
+    eq=PatternEquivalence(AAMProblem(mol,mol))
+    assert sorted(map(len,eq.twins[0]))==[1,1,2,2]
+    identity=dict(enumerate(range(6)))
+    for carbons in permutations(range(2)):
+        for hydrogens in permutations(range(2,6)):
+            mapping=dict(enumerate((*carbons,*hydrogens)))
+            values=[(p,frozenset((p,))) for p in mapping.values()]
+            solver=z3.Solver();solver.add(eq.orbit_membership(values,identity))
+            assert (solver.check()==z3.sat)==(eq.key(mapping)==eq.key(identity))
