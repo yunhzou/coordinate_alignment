@@ -1,9 +1,0 @@
-{
-  "status": "not_covered",
-  "reason": "unsat",
-  "seconds": 6.889840068295598,
-  "families": 1455,
-  "reference_query": null,
-  "completed_cuts": 58,
-  "expected_cuts": 58
-}
