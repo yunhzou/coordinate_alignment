@@ -1,0 +1,18 @@
+{
+  "job": "454542",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes",
+    "--exclude=bosque8",
+    "--cpus-per-task=16",
+    "--mem=32G",
+    "--time=00:10:00",
+    "--job-name=elem_refine",
+    "--dependency=afterany:454403",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_output_comparison_20260908/refine_%j.out",
+    "--wrap",
+    "env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=/h/399/yunhengzou/coordinate_alignment/bench timeout --kill-after=5s 300 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_output_comparison_20260908/refine_driver.py refine_all --source /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908 --cap200 /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_case123_cap200_20260908 --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_output_comparison_20260908"
+  ],
+  "script_sha256": "5e16595f909ac15cadb4b550766830e22d7735d076760a4c3a1e856983f209ba"
+}

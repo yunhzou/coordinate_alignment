@@ -17,6 +17,9 @@ element-preserving mapping was returned or is represented by the native label
 groups; it does not establish a plausible mechanism or correct atom provenance.
 Expert review is required before interpreting chemical quality.
 
+[Saved-output comparison](../elementary140_output_comparison_20260908/README.md)
+checks actual mapping patterns and shared-WBO bond events, beyond feasibility.
+
 ## Native representations and budgets
 
 - AAM uses the existing continuous WBO matrices and corresponding XYZ coordinates.

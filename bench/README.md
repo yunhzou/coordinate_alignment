@@ -16,6 +16,7 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 | `golden_competitors.py` | Released mapper adapters, workers and default report |
 | `golden_slap_budget.py` | Fixed input-order plans, expanded SLAP evaluation, summary and retry plans |
 | `elementary_feasibility.py` | Native XYZ/WBO and SLAP XYZ holdout; reference-free feasibility, saved mappings, timing and reporting |
+| `compare_elementary_outputs.py` | Saved native mapping comparison, common WBO scores, symmetry checks and symbolic SLAP hydrogen refinement |
 
 The other Golden scripts record diagnostic experiments (seeds, caps, direction,
 anchors, ranking, memory, viewers). They are retained for provenance, not silently

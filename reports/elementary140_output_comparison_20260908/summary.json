@@ -1,0 +1,14 @@
+{
+  "cases": 140,
+  "event_comparison": {
+    "equal": 133,
+    "aam_fewer": 6,
+    "slap_fewer": 1
+  },
+  "best_aam_heavy_pattern_matches_any_slap": 128,
+  "exact_slap_heavy_map_seen_anywhere_in_aam": 107,
+  "slap_candidates_with_noninvariant_h_scores": 77,
+  "slap_candidates_with_unresolved_minimum": 0,
+  "analysis_seconds_sum": 122.02995038963854,
+  "accuracy": null
+}
