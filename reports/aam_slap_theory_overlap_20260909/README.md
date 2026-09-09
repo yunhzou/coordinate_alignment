@@ -1,9 +1,11 @@
 # AAM versus SLAP: search and retained alternatives
 
 [Offline 3D mapping comparison viewer](viewer.html): cases 135, 59 and 64.
-Opens on case 135 (AAM 7 events; SLAP 5), with original R/P geometries,
-explicit hydrogens, source-identity colors, clickable atom correspondence and
-per-bond WBO event tables. These are saved concrete witnesses, not ground truth.
+Opens on case 135 (AAM 7 events; SLAP 5), using the compact dark AAM layout:
+two large original-geometry R/P panels, linked rotation, AAM/SLAP selection,
+explicit hydrogens, event overlays and collapsible per-bond WBO tables.
+Source-identity colors are optional; element colors are the default.
+These are saved concrete witnesses, not ground truth.
 
 Our AAM is not simply a weaker SLAP. Their saved solution sets differ in both
 directions. SLAP is a strong, inexpensive approximate mapper; our experiments

@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AAM · mapping comparison</title><style>
+:root{color-scheme:dark;font:14px system-ui;color:#e2e8f0;background:#111}
+*{box-sizing:border-box}body{margin:0}header{height:58px;display:flex;align-items:center;gap:20px;padding:10px 20px;background:#222;border-bottom:1px solid #38404b}header strong{font-size:17px;white-space:nowrap}select,button{font:inherit;color:inherit;background:#252d37;border:1px solid #475363;border-radius:5px;padding:7px 10px;cursor:pointer}button.active{background:#23475d;border-color:#67c8eb}label{white-space:nowrap;color:#b7c4d2;cursor:pointer}input{accent-color:#65c7eb}.toolbar{display:flex;align-items:center;gap:16px;padding:10px 20px;background:#181c22;flex-wrap:wrap}.modes{display:flex;gap:8px;margin-right:auto}.metric{font-variant-numeric:tabular-nums;color:#c5d4e2}.muted{color:#91a3b6}#grid{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 206px);min-height:410px}.panel{position:relative;border:1px solid #303740;min-width:0}.view{position:absolute;inset:0}.caption{position:absolute;top:14px;left:18px;z-index:2;pointer-events:none}.caption b{font-size:23px}.caption span{display:block;color:#91a3b6;margin-top:4px}.panel-tools{position:absolute;right:16px;top:14px;z-index:2}.status{padding:10px 20px;background:#1b222b;border-bottom:1px solid #343f4a;color:#b8cbdc;min-height:40px}#summary{color:#f0cc84}details{padding:12px 20px;background:#181c22;border-bottom:1px solid #303740}summary{cursor:pointer;font-weight:600}table{width:100%;border-collapse:collapse;margin-top:12px;font-variant-numeric:tabular-nums}th,td{padding:8px;text-align:left;border-bottom:1px solid #303b48}tr[data-event],tr[data-r]{cursor:pointer}tr:hover{background:#253344}.legend{display:flex;gap:20px;padding:9px 20px;color:#b7c4d2;background:#171a20;font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#94a9bd}.note{color:#93a6b9;line-height:1.6;max-width:1000px}#inspect{color:#8ed7ef}@media(max-width:850px){header{height:auto;flex-wrap:wrap;gap:8px}.toolbar{gap:8px;padding:8px}#grid{height:65vh;min-height:360px}.caption{left:10px}.caption b{font-size:18px}.caption span{font-size:11px}.legend{flex-wrap:wrap;gap:8px}}
+</style></head><body>
+<header><strong>AAM / mapping comparison</strong><select id="case" aria-label="Reaction case"></select><span id="summary"></span></header>
+<div class="toolbar"><div class="modes"><button id="aam" class="active">Our AAM · 7</button><button id="slap">SLAP · 5</button></div><label><input id="hydrogen" type="checkbox" checked> H</label><label><input id="labels" type="checkbox"> Atom labels</label><label><input id="colors" type="checkbox"> Identity colors</label><label><input id="events" type="checkbox" checked> Bond events</label><button id="reset">Reset view</button></div>
+<div id="grid"><div class="panel"><div class="caption"><b>R</b><span>Original reactants</span></div><div id="r" class="view"></div></div><div class="panel"><div class="caption"><b>P</b><span>Product · mapped source identities</span></div><div id="p" class="view"></div></div></div>
+<div class="legend"><span><i class="dot" style="background:#f06475"></i>Broken</span><span><i class="dot" style="background:#53d5a0"></i>Formed</span><span><i class="dot" style="background:#edb858"></i>Order changed</span><span>Drag to rotate both · scroll to zoom · click an atom to trace R → P</span></div>
+<div class="status"><span id="metrics"></span> <span id="inspect"></span></div>
+<details id="event-details"><summary>Bond events · atom pairs and WBO values</summary><table><thead><tr><th>Event</th><th>R atoms → P atoms</th><th>WBO R → P</th></tr></thead><tbody id="event-rows"></tbody></table></details>
+<details><summary>Exact atom correspondence</summary><table><thead><tr><th>Source atom</th><th>Our AAM target</th><th>SLAP target</th></tr></thead><tbody id="pairs"></tbody></table></details>
+<details><summary>Mapping provenance and interpretation</summary><p class="note">Both choices are actual saved mappings, not ground truth. Original XYZ coordinates and WBO connectivity are preserved; no SMILES conversion or new AAM search. Every atom including H is scored. Bond presence: WBO &gt; 0.2; order-change threshold: 0.5. Single sticks depict connectivity, not integer bond order. Colored event overlays mark only existing edges on each endpoint. Identity colors, if enabled, identify source atoms—not fragments. The same r-index denotes the same input atom across both methods. Switching methods does not change geometry or relabel input atoms. Rotation is linked for comparison, not a new alignment calculation. Absence refers to saved families, not every possible search.</p><pre id="provenance"></pre></details>
+<script>__LIBRARY__</script><script>
+const DATA=__DATA__,$=id=>document.getElementById(id);let current,method=0,selected=[];
+const views=['r','p'].map(id=>$3Dmol.createViewer(id,{backgroundColor:'#111111'}));
+views[0].linkViewer(views[1]);views[1].linkViewer(views[0]);
+const eventColors={broken:'#f06475',formed:'#53d5a0',order_changed:'#edb858'};
+function color(i){let h=((i*137.508)%360)/60,c=.65*.84,x=c*(1-Math.abs(h%2-1)),m=.42-c/2,v=h<1?[c,x,0]:h<2?[x,c,0]:h<3?[0,c,x]:h<4?[0,x,c]:h<5?[x,0,c]:[c,0,x];return '#'+v.map(a=>Math.round((a+m)*255).toString(16).padStart(2,'0')).join('')}
+function mapping(k=method){return Object.fromEntries(current.records[k].mapping)}
+function identity(i,side){return side?Object.fromEntries(current.records[method].mapping.map(([a,b])=>[b,a]))[i]:i}
+function position(side,i){let a=current.endpoints[side].coordinates[i];return {x:a[0],y:a[1],z:a[2]}}
+function highlight(rs){selected=rs;style();$('inspect').textContent=' · '+rs.map(r=>`r${r} (${current.endpoints[0].elements[r]}): AAM → p${mapping(0)[r]}, SLAP → p${mapping(1)[r]}`).join(' | ')}
+function style(){views.forEach((v,side)=>{
+ v.setStyle({},{stick:{radius:.13},sphere:{scale:.25}});v.removeAllLabels();v.removeAllShapes();
+ current.endpoints[side].elements.forEach((elem,i)=>{const r=identity(i,side),p=side?i:mapping()[i];
+ if(elem==='H'&&!$('hydrogen').checked){v.setStyle({index:i},{});return}
+ if($('colors').checked)v.addStyle({index:i},{stick:{color:color(r),radius:.13}});
+ if(selected.includes(r))v.addStyle({index:i},{sphere:{color:'#71d1fa',scale:.36}});
+ if($('labels').checked||selected.includes(r))v.addLabel(`${elem} r${r} / p${p}`,{position:position(side,i),fontSize:12,backgroundColor:'#243444',fontColor:'white',backgroundOpacity:.85});
+ });
+ if($('events').checked)current.records[method].events.forEach(e=>{const pair=side?e.p:e.r,ep=current.endpoints[side];if(ep.wbo[pair[0]][pair[1]]<=.2)return;if(!$('hydrogen').checked&&pair.some(i=>ep.elements[i]==='H'))return;
+ v.addCylinder({start:position(side,pair[0]),end:position(side,pair[1]),radius:.17,color:eventColors[e.kind],fromCap:1,toCap:1});});v.render();
+ });}
+function render(reset=false){selected=[];$('inspect').textContent='';const rec=current.records[method];
+ $('aam').textContent=`Our AAM · ${current.records[0].counts.total} events`;$('slap').textContent=`SLAP · ${current.records[1].counts.total} events`;
+ $('aam').classList.toggle('active',method===0);$('slap').classList.toggle('active',method===1);
+ $('metrics').textContent=`${rec.name} — ${rec.counts.broken} broken · ${rec.counts.formed} formed · ${rec.counts.order_changed} order changed · 100% atoms mapped`;
+ views.forEach((v,side)=>{const camera=v.getView(),ep=current.endpoints[side];v.removeAllModels();const model=v.addModel();model.addAtoms(ep.elements.map((elem,i)=>({...position(side,i),elem,serial:i,index:i,properties:{r:identity(i,side)},bonds:ep.wbo[i].flatMap((w,j)=>w>.2&&j!==i?[j]:[]),bondOrder:ep.wbo[i].flatMap((w,j)=>w>.2&&j!==i?[1]:[])})));v.setClickable({},true,a=>highlight([a.properties.r]));if(reset){v.zoomTo();v.zoom(.65);}else v.setView(camera);});style();
+ $('event-rows').innerHTML=rec.events.map((e,j)=>`<tr data-event="${j}"><td style="color:${eventColors[e.kind]}">${e.kind.replace('_',' ')}</td><td>r${e.r.join('–r')} → p${e.p.join('–p')}</td><td>${e.wbo.map(w=>w.toFixed(3)).join(' → ')}</td></tr>`).join('');
+ $('event-rows').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>highlight(rec.events[+tr.dataset.event].r));
+ $('provenance').textContent=JSON.stringify({case:current.index,source:current.source,method:rec.name,...rec.provenance},null,2);
+}
+function select(){current=DATA[+$('case').value];method=0;$('summary').textContent=current.index===135?'SLAP pattern absent from saved AAM families · lower score':'SLAP pattern absent from saved AAM families · higher score';
+ $('pairs').innerHTML=current.endpoints[0].elements.map((e,r)=>`<tr data-r="${r}"><td>${e} r${r}</td><td>p${mapping(0)[r]}</td><td>p${mapping(1)[r]}</td></tr>`).join('');$('pairs').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>highlight([+tr.dataset.r]));render(true);}
+ $('case').innerHTML=DATA.map((c,i)=>`<option value="${i}">${c.index} · ${c.name}</option>`).join('');$('case').onchange=select;
+ $('aam').onclick=()=>{method=0;render()};$('slap').onclick=()=>{method=1;render()};['hydrogen','labels','colors','events'].forEach(id=>$(id).onchange=style);
+ $('reset').onclick=()=>{selected=[];views.forEach(v=>{v.zoomTo();v.zoom(.65)});style();$('inspect').textContent=''};
+ window.addEventListener('resize',()=>views.forEach(v=>{v.resize();v.render()}));select();
+</script></body></html>
