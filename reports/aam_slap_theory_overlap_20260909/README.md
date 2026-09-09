@@ -1,5 +1,9 @@
 # AAM versus SLAP: search and retained alternatives
 
+**Tolerance follow-up:** the [full tolerance1 rerun](../elementary140_tol1_20260909/README.md)
+recovers case135's 5-event pattern. Results below describe the original
+tolerance0.5 archives, not a general inability of AAM to find that mapping.
+
 [Offline 3D mapping comparison viewer](viewer.html): cases 135, 59 and 64.
 Opens on case 135 (AAM 7 events; SLAP 5), using the compact dark AAM layout:
 two large original-geometry R/P panels, linked rotation, AAM/SLAP selection,

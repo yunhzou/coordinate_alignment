@@ -123,7 +123,7 @@ def analyze(args):
         symbolic_queries=symbolic_queries,paths_checked=paths_checked,seconds=time.perf_counter()-start,
         scope='Heavy mapping families modulo shared score-preserving endpoint graph symmetry. Explicit H retained in feasibility. '
               'SLAP heavy labels are singleton in these saved outputs. Exclusion concerns saved families only, never all possible searches. '
-              'No chemical correctness labels; cap-200 follow-up included for case 123.')
+              f'No chemical correctness labels; search source: {root}.')
     args.run.mkdir(exist_ok=True,parents=True);save(args.run/f'{args.index}.json',result)
 
 

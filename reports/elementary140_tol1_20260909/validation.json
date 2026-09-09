@@ -1,0 +1,11 @@
+{
+  "searches_completed": 280,
+  "search_failures": 0,
+  "watchdog_kills": 0,
+  "followup_searches_completed": 2,
+  "independent_positive_and_extra_witness_checks": 298,
+  "viewer_builder": "All 140 displayed mappings independently rescored with bond_events; bijectivity and atom-pair event counts asserted. Explicit case123 cap200 override.",
+  "offline_browser": "140 selectable cases verified; case135 score5; case123 cap200 score3; AAM/SLAP toggle works; no JavaScript errors or external requests.",
+  "unit_tests": {"passed": 10, "seconds": 2.04, "files": ["tests/test_elementary_output_comparison.py", "tests/test_family_query.py"]},
+  "limitations": "No chemical accuracy labels. Negative family membership analysis is bounded; unresolved classes remain unresolved."
+}

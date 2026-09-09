@@ -10,9 +10,9 @@ from rxn_core.domain import MolecularEndpoint
 from rxn_core.family_scoring import bond_events
 
 
-def audit(base):
-    overlap = base / 'elementary_family_overlap_20260909'
-    comparison = base / 'elementary140_output_comparison_20260908'
+def audit(base, overlap=None, comparison=None):
+    overlap = overlap or base / 'elementary_family_overlap_20260909'
+    comparison = comparison or base / 'elementary140_output_comparison_20260908'
     checked = 0
     for index in range(140):
         row = json.loads((overlap / f'{index}.json').read_text())
@@ -74,5 +74,7 @@ def audit(base):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--base', type=Path, required=True)
+    p.add_argument('--overlap', type=Path)
+    p.add_argument('--comparison', type=Path)
     args = p.parse_args()
-    print(json.dumps(audit(args.base), indent=2))
+    print(json.dumps(audit(args.base, args.overlap, args.comparison), indent=2))

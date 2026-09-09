@@ -41,7 +41,7 @@ function render(reset=false){selected=[];$('inspect').textContent='';const rec=c
  $('event-rows').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>highlight(rec.events[+tr.dataset.event].r));
  $('provenance').textContent=JSON.stringify({case:current.index,source:current.source,method:rec.name,...rec.provenance},null,2);
 }
-function select(){current=DATA[+$('case').value];method=0;$('summary').textContent=current.index===135?'SLAP pattern absent from saved AAM families · lower score':'SLAP pattern absent from saved AAM families · higher score';
+function select(){current=DATA[+$('case').value];method=0;$('summary').textContent=current.note;
  $('pairs').innerHTML=current.endpoints[0].elements.map((e,r)=>`<tr data-r="${r}"><td>${e} r${r}</td><td>p${mapping(0)[r]}</td><td>p${mapping(1)[r]}</td></tr>`).join('');$('pairs').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>highlight([+tr.dataset.r]));render(true);}
  $('case').innerHTML=DATA.map((c,i)=>`<option value="${i}">${c.index} · ${c.name}</option>`).join('');$('case').onchange=select;
  $('aam').onclick=()=>{method=0;render()};$('slap').onclick=()=>{method=1;render()};['hydrogen','labels','colors','events'].forEach(id=>$(id).onchange=style);

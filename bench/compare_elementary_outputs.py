@@ -129,7 +129,7 @@ def compare(args):
         best_aam_heavy_pattern_matches_any_slap_modulo_score_preserving_symmetry=matching_best is not None,
         shared_best_example=matching_best,comparison_seconds=time.perf_counter()-start,
         scope='Saved terminal representatives only, not exhaustive AAM family extraction. '
-              'Case 123 uses the separate cap-200 follow-up. Symmetry comparison projects mappings to heavy atoms, '
+              f'Case source: {run}. Symmetry comparison projects mappings to heavy atoms, '
               'but endpoint graphs and event scores include explicit H. No stereo/energy/reference correctness claim.')
     args.run.mkdir(parents=True,exist_ok=True)
     save(args.run/f'{args.index}.json',result)
