@@ -5,6 +5,9 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Output information and continuous weights for TS structures](ts_weight_information_20260909/README.md)
+— interface audit and actual cached TS weights; no TS mapping-accuracy claim.
+
 [Dependency repair and native AAM scheduling experiment](dependency_fragment_repair_20260909/README.md)
 — unchanged seed/cut policy, exact compressed-result comparisons and paired
 timings; 1.24x overall in the tested stress workload, experimental dispatch only.
@@ -19,7 +22,9 @@ full-family or chemical accuracy.
 
 [140-step tolerance1 rerun, matched-cap comparison and full viewer](elementary140_tol1_20260909/README.md).
 
-[AAM versus SLAP: theory, family overlap and identical-graph oracle](aam_slap_theory_overlap_20260909/README.md).
+[AAM versus SLAP: theory and saved-family overlap](aam_slap_theory_overlap_20260909/README.md).
+The synthetic exact-oracle section is retained as an internal diagnostic only;
+it is excluded from the paper evidence by the user's decision (2026-09-09).
 
 Separate from Golden: [140 elementary-step native-input feasibility holdout](elementary140_feasibility_20260908/README.md).
 No reference atom mappings are available; this is not an accuracy benchmark.

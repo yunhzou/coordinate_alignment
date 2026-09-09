@@ -1,0 +1,40 @@
+{
+  "scope": "Initial-cost numerical audit of cached reference TS geometries, not mapping accuracy.",
+  "graph_floor": 0.2,
+  "slap_core": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/competitor_env_20260908/lib/python3.10/site-packages/slapmapper/core.py",
+  "slap_sha256": "62964b12866e691698d594bfdc65f84ae714fb049df4267a5f5964b5c7e5fa3c",
+  "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest",
+  "cases": [
+    {
+      "name": "pr1.tempo_ts1",
+      "atoms": 26,
+      "cells": 238,
+      "fractional_cells": 238,
+      "positive_to_zero": 168
+    },
+    {
+      "name": "pr16.carbocation_ts5",
+      "atoms": 18,
+      "cells": 162,
+      "fractional_cells": 162,
+      "positive_to_zero": 122
+    },
+    {
+      "name": "pr7.V.dodh_ts910",
+      "atoms": 28,
+      "cells": 228,
+      "fractional_cells": 228,
+      "positive_to_zero": 98
+    }
+  ],
+  "parent_commit": "e923b248c3148c8a0f27aaa6d04c84420be151fd",
+  "audit_cpu_seconds": 0.05126855100000005,
+  "audit_wall_including_case_writes": 0.12091018259525299,
+  "notes": [
+    "No AAM/SLAP full search, permutation oracle, TS optimization, or chemistry accuracy evaluation.",
+    "Initial element-labelled neighborhood matrices only; later refinements can retain other distinctions.",
+    "Weighted SMILES uses scaled discrete orders; this audit supplies raw continuous WBO directly.",
+    "Integer storage truncates each neighborhood cost, not each individual input edge.",
+    "Archived TS assignments are prior algorithm outputs, not independently curated atom identities."
+  ]
+}

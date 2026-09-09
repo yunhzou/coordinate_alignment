@@ -47,6 +47,10 @@ The native SLAP XYZ adapter uses distance-derived binary connectivity; our
 holdout uses WBO graphs. SLAP's core also supports weighted graphs: the adapter
 difference must not be portrayed as a fundamental binary-only limitation.
 
+The later [continuous-weight audit](../ts_weight_information_20260909/README.md)
+identifies integer assignment-cost storage in that pinned implementation. Weighted
+discrete bond orders and direct fractional WBO input must be distinguished.
+
 ## Saved elementary holdout: 140 cases
 
 No reference atom mappings exist here. These are structural comparisons, not
@@ -96,6 +100,11 @@ Negative family exclusions depend on the recorded path-action analysis; the
 witness audit is not a second independent proof of those exclusions.
 
 ## Identical-input exact oracle control
+
+**Internal diagnostic only; excluded from paper evidence by the user's decision
+on 2026-09-09.** The test and all saved results are retained for debugging. It is
+not an independently established benchmark and must not be used to support the
+paper's comparative performance claims.
 
 100 reproducible connected six-vertex binary graph pairs (all vertices C,
 maximum degree four, RNG 20260909) were supplied directly to both engines.

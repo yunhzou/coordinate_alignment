@@ -1,0 +1,9 @@
+Initial diagnostic command exited before producing a summary:
+TypeError: 'NoneType' object is not subscriptable
+at mechanism['gt']['event_terms'].
+
+Some historical mechanisms have gt=null: no saved TS assignment. The audit now
+records their IDs as archived_mechanisms_without_ts_assignment and does not invent
+event examples for them. Initial-cost matrices do not depend on TS assignments.
+The corrected audit uses a new audit_v2 directory. No mapper or quantum calculation
+was run in either attempt; this was analysis of cached data only.
