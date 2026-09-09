@@ -5,6 +5,10 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Exploratory SLAP-guided local-search experiments](slap_guided_pilot_20260909/README.md)
+— separate from fixed-policy publication results; best-score agreement is not
+full-family or chemical accuracy.
+
 [140-step tolerance1 rerun, matched-cap comparison and full viewer](elementary140_tol1_20260909/README.md).
 
 [AAM versus SLAP: theory, family overlap and identical-graph oracle](aam_slap_theory_overlap_20260909/README.md).
