@@ -5,6 +5,9 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+Separate from Golden: [140 elementary-step native-input feasibility holdout](elementary140_feasibility_20260908/README.md).
+No reference atom mappings are available; this is not an accuracy benchmark.
+
 | Experiment | Report and machine-readable results | Role |
 |---|---|---|
 | Fixed-policy AAM search | [Report](golden_publication_20260908/README.md), [per case](golden_publication_20260908/per_case.csv), [per direction](golden_publication_20260908/per_direction.csv), [analytics](golden_publication_20260908/analytics.json) | Original compressed archives; single and bidirectional search; seed 10, cap 100, tolerance 1.0, sweep cut |

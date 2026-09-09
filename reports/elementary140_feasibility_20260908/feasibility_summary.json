@@ -1,0 +1,52 @@
+{
+  "cases": 140,
+  "methods": {
+    "aam_R_to_P": {
+      "statuses": {
+        "finished": 140
+      },
+      "cases_with_full_assignment": 139,
+      "returned_call_cpu_seconds": 7777.679078824,
+      "accuracy": null,
+      "cpu_seconds_per_completed_call": {
+        "count": 140,
+        "mean": 55.55485056302857,
+        "median": 21.5135830925,
+        "max": 756.87561131
+      },
+      "capped_cases": 77
+    },
+    "aam_P_to_R": {
+      "statuses": {
+        "finished": 140
+      },
+      "cases_with_full_assignment": 139,
+      "returned_call_cpu_seconds": 10156.071861038,
+      "accuracy": null,
+      "cpu_seconds_per_completed_call": {
+        "count": 140,
+        "mean": 72.54337043598571,
+        "median": 21.096590159500003,
+        "max": 1007.708629554
+      },
+      "capped_cases": 82
+    },
+    "slap_xyz": {
+      "statuses": {
+        "mapped": 140
+      },
+      "cases_with_full_assignment": 140,
+      "returned_call_cpu_seconds": 10.871809214,
+      "accuracy": null,
+      "cpu_seconds_per_completed_call": {
+        "count": 140,
+        "mean": 0.0776557801,
+        "median": 0.065408293,
+        "max": 0.310181571
+      },
+      "capped_cases": null
+    }
+  },
+  "accuracy": null,
+  "note": "Full assignment is structural feasibility, not correctness. Only native XYZ/WBO and native XYZ runs are included. Unrequested MOL-derived SMILES runs were cancelled and excluded. CPU excludes killed workers without final readings; inspect Slurm accounting."
+}

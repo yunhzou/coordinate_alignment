@@ -1,0 +1,93 @@
+[
+  {
+    "method": "aam",
+    "replaced_unstarted_slots": [
+      100,
+      98,
+      94,
+      88,
+      71,
+      69,
+      68,
+      64,
+      62,
+      60,
+      53,
+      51,
+      50,
+      21,
+      0
+    ],
+    "original_job": "452980",
+    "job": "454377",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes",
+      "--nodes=1",
+      "--cpus-per-task=16",
+      "--mem=32G",
+      "--time=00:10:00",
+      "--array=100,98,94,88,71,69,68,64,62,60,53,51,50,21,0%12",
+      "--job-name=elem_aam",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/status/aam_%A_%a.out",
+      "--wrap",
+      "env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/dependencies:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/bench CUDA_VISIBLE_DEVICES= /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/bench/elementary_feasibility.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908 --method aam --slot \"$SLURM_ARRAY_TASK_ID\""
+    ],
+    "reason": "Node setup stalled; no search outputs created."
+  },
+  {
+    "method": "slap_xyz",
+    "replaced_unstarted_slots": [
+      138,
+      130,
+      123,
+      93,
+      83,
+      82,
+      76
+    ],
+    "original_job": "452981",
+    "job": "454378",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes",
+      "--nodes=1",
+      "--cpus-per-task=1",
+      "--mem=8G",
+      "--time=00:10:00",
+      "--array=138,130,123,93,83,82,76%12",
+      "--job-name=elem_slap_xyz",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/status/slap_xyz_%A_%a.out",
+      "--wrap",
+      "env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/dependencies:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/bench CUDA_VISIBLE_DEVICES= /project/yunhengzou/coordinate_alignment/aam_benchmarks/competitor_env_20260908/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/bench/elementary_feasibility.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908 --method slap_xyz --slot \"$SLURM_ARRAY_TASK_ID\""
+    ],
+    "reason": "Node setup stalled; no search outputs created."
+  },
+  {
+    "method": "aam",
+    "replaced_unstarted_slots": [
+      69,
+      64
+    ],
+    "original_job": "454377",
+    "job": "454399",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--exclude=bosque8",
+      "--partition=cpunodes",
+      "--nodes=1",
+      "--cpus-per-task=16",
+      "--mem=32G",
+      "--time=00:10:00",
+      "--array=69,64%12",
+      "--job-name=elem_aam",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/status/aam_%A_%a.out",
+      "--wrap",
+      "env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/dependencies:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/bench CUDA_VISIBLE_DEVICES= /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine/bench/elementary_feasibility.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908 --method aam --slot \"$SLURM_ARRAY_TASK_ID\""
+    ],
+    "reason": "Node setup stalled; no search outputs created."
+  }
+]

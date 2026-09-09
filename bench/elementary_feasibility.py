@@ -10,6 +10,8 @@ from pathlib import Path
 import shlex
 import shutil
 import signal
+import statistics
+import tarfile
 import subprocess
 import sys
 import time
@@ -18,7 +20,6 @@ from golden_competitors import save
 
 SOURCE = Path('/h/399/yunhengzou/appendix_final')
 BENCH_ROOT = Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks')
-SMILES_METHODS = ('rxnmapper', 'localmapper', 'slap_binary', 'slap_weighted', 'indigo', 'chython', 'rdt')
 
 
 def digest(path):
@@ -35,44 +36,27 @@ def valid_mapping(elements_r, elements_p, mapping):
 
 def prepare(args):
     import numpy as np
-    from rdkit import Chem, RDLogger
     from rxn_core import AAMSearchConfig
     from rxn_core.chemistry_computations.xyz import parse_xyz
     from rxn_core.chemistry_computations.xtb import load_cached_xtb
-    RDLogger.DisableLog('rdApp.*')
     args.run.mkdir(parents=True, exist_ok=False)
     (args.run/'inputs').mkdir(); (args.run/'status').mkdir()
     selection = SOURCE/'aam_neb_preservation/sweep_selections_140.json'
     selected = json.loads(selection.read_text())['cases']
-    records, smiles_rows = [], []
+    records = []
     for index, case in enumerate(selected):
         directory = args.run/'inputs'/str(index); directory.mkdir()
-        endpoints, smiles, audit = [], [], []
+        endpoints, audit = [], []
         for side, key in [('R', 'reactant_xyz'), ('P', 'product_xyz')]:
             cache = SOURCE/'bgcp_rerank_latest/work'/case['step_id']/'endpoints'/side
             elements, coords, wbo, xyz = load_cached_xtb(cache)
             expected_elements, expected_coords = parse_xyz(case[key])
             assert list(elements) == list(expected_elements) and np.array_equal(coords, expected_coords)
-            for source, name in [(xyz, f'{side}.xyz'), (cache/'wbo', f'{side}.wbo'),
-                                 (cache/'xtbtopo.mol', f'{side}.mol')]:
+            for source, name in [(xyz, f'{side}.xyz'), (cache/'wbo', f'{side}.wbo')]:
                 shutil.copy2(source, directory/name)
             endpoints.append(dict(elements=list(elements), coordinates=coords.tolist(),
                                   wbo=wbo.tolist(), label=side))
-            mol = Chem.MolFromMolFile(str(directory/f'{side}.mol'), sanitize=False, removeHs=False)
-            assert mol is not None and [a.GetSymbol() for a in mol.GetAtoms()] == list(elements)
-            for atom in mol.GetAtoms():
-                atom.SetAtomMapNum(0); atom.SetNoImplicit(True)
-            mol.UpdatePropertyCache(strict=False)
-            text = Chem.MolToSmiles(mol, canonical=False, allHsExplicit=True)
-            check = Chem.Mol(mol)
-            try:
-                Chem.SanitizeMol(check); sanitization_error = None
-            except Exception as error:
-                sanitization_error = str(error)
-            smiles.append(text)
-            audit.append(dict(side=side, mol_sanitization_error=sanitization_error,
-                mol_bond_types=dict(Counter(str(b.GetBondType()) for b in mol.GetBonds())),
-                source_cache=str(cache), atoms=len(elements)))
+            audit.append(dict(side=side, source_cache=str(cache), atoms=len(elements)))
         assert Counter(endpoints[0]['elements']) == Counter(endpoints[1]['elements'])
         save(directory/'input.json', dict(name=case['step_id'], reactant=endpoints[0], product=endpoints[1]))
         # Original component files are supplied to SLAP's native XYZ interface.
@@ -89,11 +73,8 @@ def prepare(args):
         records.append(dict(index=index, step_id=case['step_id'], endpoints=audit,
             full_composition=True, atoms=len(endpoints[0]['elements']),
             sha256={p.name:digest(p) for p in directory.iterdir() if p.is_file()}))
-        smiles_rows.append(dict(index=index, input_reaction='>>'.join(smiles)))
     config=asdict(AAMSearchConfig(seed_count=10, branch_limit=100, iso_tolerance=0.5))
     save(args.run/'inputs/manifest.json', dict(config=config, records=records))
-    with (args.run/'inputs.jsonl').open('w') as stream:
-        for row in smiles_rows: stream.write(json.dumps(row)+'\n')
     for folder in ('src', 'bench'):
         shutil.copytree(folder,args.run/'engine'/folder,ignore=shutil.ignore_patterns('__pycache__'))
     save(args.run/'manifest.json',dict(records=records, config=config, root_seed=42,
@@ -103,12 +84,9 @@ def prepare(args):
             for p in (args.run/'engine').rglob('*') if p.is_file()},
         reference_available=False, accuracy=None, watchdog_seconds=300,
         protocols=dict(aam='Cached continuous WBO; explicit H; two directions; seed 10; cap 100; tol 0.5; sweep cut.',
-            slap_xyz='Unmodified native map_3d; original components; binary adjacency; bond_scale=1.2; heavy symmetry.',
-            smiles='Cached xTB MOL exported without valence repairs; all explicit atoms, no implicit H. '
-                   'Input compatibility only; not equivalent to native WBO graphs or curated chemical SMILES.'),
+            slap_xyz='Unmodified native map_3d; original components; binary adjacency; bond_scale=1.2; heavy symmetry.'),
         previous_predictions_used=False, groundtruth_ts_used=False))
-    print(json.dumps(dict(cases=len(records), endpoints_with_valence_error=sum(
-        bool(e['mol_sanitization_error']) for r in records for e in r['endpoints']))))
+    print(json.dumps(dict(cases=len(records))))
 
 
 def aam(args):
@@ -187,22 +165,14 @@ def worker(args):
 def submit(args):
     manifest=json.loads((args.run/'manifest.json').read_text());n=len(manifest['records'])
     engine=args.run/'engine';jobs=[]
-    old=json.loads((BENCH_ROOT/'golden_competitors_full_20260908/rdt_submission.json').read_text())
-    for method in ('aam','slap_xyz',*SMILES_METHODS):
-        cpus=16 if method=='aam' else 8 if method in ('rdt','chython') else 1
-        python=(Path(sys.executable) if method=='aam' else BENCH_ROOT/(
-            'neural_competitor_env_20260908' if method in ('rxnmapper','localmapper')
-            else 'competitor_env_20260908')/'bin/python')
+    for method in ('aam','slap_xyz'):
+        cpus=16 if method=='aam' else 1
+        python=(Path(sys.executable) if method=='aam' else BENCH_ROOT/'competitor_env_20260908/bin/python')
         env=['env','OMP_NUM_THREADS=1','OPENBLAS_NUM_THREADS=1','MKL_NUM_THREADS=1',
              'PYTHONHASHSEED=0','RXN_CORE_NATIVE=1',f'PYTHONPATH={args.run}/dependencies:{engine}/src:{engine}/bench',
              'CUDA_VISIBLE_DEVICES=']
-        if method=='rdt': env += [f'RDT_JAVA={old["java"]}',f'RDT_CLASSPATH={old["classpath"]}']
-        if method in ('aam','slap_xyz'):
-            command=[str(python),str(engine/'bench/elementary_feasibility.py'),'worker','--run',str(args.run),
-                     '--method',method,'--slot']
-        else:
-            command=[str(python),str(engine/'bench/golden_competitors.py'),'worker','--run',str(args.run),
-                     '--method',method,'--shards',str(n),'--shard']
+        command=[str(python),str(engine/'bench/elementary_feasibility.py'),'worker','--run',str(args.run),
+                 '--method',method,'--slot']
         count=n*2 if method=='aam' else n
         options=['sbatch','--parsable','--partition=cpunodes_nia,cpunodes','--nodes=1',
             f'--cpus-per-task={cpus}','--mem=32G' if method=='aam' else '--mem=8G',
@@ -226,10 +196,108 @@ def freeze(args):
     save(args.run/'manifest.json',manifest)
 
 
+def report(args):
+    manifest=json.loads((args.run/'manifest.json').read_text())
+    records=[]
+    for case in manifest['records']:
+        index=case['index'];row=dict(index=index,step_id=case['step_id'],atoms=case['atoms'],methods={})
+        for direction in ('R_to_P','P_to_R'):
+            out=args.run/'directions'/str(index)/direction
+            status=args.run/'status'/f'aam_{index}_{direction}.json'
+            result=dict(status='pending')
+            if status.exists():
+                result['status']=str(json.loads(status.read_text())['exit'])
+            if (out/'feasibility.json').exists():
+                result.update(json.loads((out/'feasibility.json').read_text()),status='finished')
+                timing=json.loads((out/'search.json').read_text())
+                result['compute_cpu_seconds']=timing['compute_cpu_excluding_persistence_and_loading_seconds']
+                result['elapsed_including_io_seconds']=timing['elapsed_wall_including_io_seconds']
+            row['methods']['aam_'+direction]=result
+        for method in ('slap_xyz',):
+            path=args.run/method/f'{index}.json'
+            if not path.exists():
+                row['methods'][method]=dict(status='pending');continue
+            raw=json.loads(path.read_text());result={k:v for k,v in raw.items() if k not in ('candidates','traceback')}
+            candidates=raw.get('candidates',[]);result['returned_candidates']=len(candidates)
+            result['valid_full_candidates']=sum(c['full_element_assignment_exists'] for c in candidates)
+            row['methods'][method]=result
+        records.append(row)
+    summaries={}
+    for method in records[0]['methods']:
+        values=[r['methods'][method] for r in records]
+        summaries[method]=dict(statuses=dict(Counter(v['status'] for v in values)),
+            cases_with_full_assignment=sum(v.get('valid_full_terminal_mappings',v.get('valid_full_candidates',0))>0 for v in values),
+            returned_call_cpu_seconds=sum(v.get('compute_cpu_seconds',v.get('mapping_cpu_seconds',0)) for v in values),
+            accuracy=None)
+        times=[v.get('compute_cpu_seconds',v.get('mapping_cpu_seconds')) for v in values]
+        times=[x for x in times if x is not None]
+        summaries[method]['cpu_seconds_per_completed_call']=dict(count=len(times),
+            mean=statistics.mean(times) if times else None,
+            median=statistics.median(times) if times else None,max=max(times) if times else None)
+        summaries[method]['capped_cases']=(sum(v.get('capped',False) for v in values)
+                                          if method.startswith('aam_') else None)
+    save(args.run/'feasibility_per_case.json',records)
+    save(args.run/'feasibility_summary.json',dict(cases=len(records),methods=summaries,accuracy=None,
+        note='Full assignment is structural feasibility, not correctness. Only native XYZ/WBO and native XYZ runs are included. '
+             'Unrequested MOL-derived SMILES runs were cancelled and excluded. '
+             'CPU excludes killed workers without final readings; inspect Slurm accounting.'))
+    print(json.dumps(summaries,indent=2))
+
+
+def publish(args):
+    report(args)
+    destination=Path('reports/elementary140_feasibility_20260908');destination.mkdir(exist_ok=True)
+    for name in ('feasibility_per_case.json','feasibility_summary.json','manifest.json',
+                 'jobs.json','relocation.json','WITHDRAWN_SMILES_RUNS.md'):
+        shutil.copy2(args.run/name,destination/name)
+    jobs=[j['job'] for filename in ('jobs.json','relocation.json')
+          for j in json.loads((args.run/filename).read_text()) if j['method'] in ('aam','slap_xyz')]
+    accounting=subprocess.check_output(['sacct','-j',','.join(jobs),'-P',
+        '--format=JobID,State,ExitCode,ElapsedRaw,TotalCPU,CPUTimeRAW,AllocCPUS,MaxRSS,NodeList'],text=True)
+    (args.run/'slurm_native_accounting.psv').write_text(accounting)
+    shutil.copy2(args.run/'slurm_native_accounting.psv',destination/'slurm_native_accounting.psv')
+    shutil.copy2(__file__,args.run/'report_driver.py')
+    with tarfile.open(destination/'native_slap_outputs.tar.gz','w:gz') as archive:
+        for path in sorted((args.run/'slap_xyz').glob('*.json')):
+            archive.add(path,arcname='slap_xyz/'+path.name)
+    save(destination/'report_provenance.json',dict(script_sha256=digest(Path(__file__)),
+        ase_version='3.26.0',ase_location=str(args.run/'dependencies'),
+        source_run=str(args.run),accuracy=None))
+
+
+def relocate(args):
+    """Move only unstarted native allocations; never repeat completed searches."""
+    jobs=[j for j in json.loads((args.run/'jobs.json').read_text()) if j['method'] in ('aam','slap_xyz')]
+    recovered=json.loads((args.run/'relocation.json').read_text()) if (args.run/'relocation.json').exists() else []
+    jobs=jobs+list(recovered)
+    for job in jobs:
+        pending=subprocess.check_output(['squeue','-h','-j',job['job'],'-t','CONFIGURING','-o','%i'],text=True).split()
+        slots=[]
+        for identifier in pending:
+            slot=int(identifier.split('_')[1]);index=slot//2 if job['method']=='aam' else slot
+            direction=('R_to_P','P_to_R')[slot%2] if job['method']=='aam' else 'R_to_P'
+            if job['method']=='aam':
+                assert not (args.run/'directions'/str(index)/direction/'environment.json').exists()
+            else:
+                assert not (args.run/'slap_xyz'/f'{index}.json').exists()
+            subprocess.run(['scancel',identifier],check=True);slots.append(slot)
+        if not slots: continue
+        command=[('--partition=cpunodes' if x.startswith('--partition=') else
+                  '--array='+','.join(map(str,slots))+'%12' if x.startswith('--array=') else x)
+                 for x in job['command']]
+        if args.exclude: command.insert(2,'--exclude='+args.exclude)
+        replacement=subprocess.check_output(command,text=True).strip()
+        recovered.append(dict(method=job['method'],replaced_unstarted_slots=slots,
+            original_job=job['job'],job=replacement,command=command,reason='Node setup stalled; no search outputs created.'))
+        save(args.run/'relocation.json',recovered)
+    print(json.dumps(recovered,indent=2))
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=('prepare','aam','slap_xyz','worker','submit','freeze'))
+    p.add_argument('command',choices=('prepare','aam','slap_xyz','worker','submit','freeze','report','relocate','publish'))
     p.add_argument('--run',type=Path,required=True)
     p.add_argument('--index',type=int);p.add_argument('--slot',type=int)
+    p.add_argument('--exclude')
     p.add_argument('--direction',default='R_to_P');p.add_argument('--method')
     args=p.parse_args();globals()[args.command](args)
