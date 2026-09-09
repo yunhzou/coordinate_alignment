@@ -26,6 +26,9 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 | `cut_replay_kernel_probe.py` | Isolated pre/post native-binary output and timing regression probe |
 | `profile_fragment_pipeline.py` | Per-cut saved graphs and function/phase diagnostics for Python/native scheduling |
 | `audit_ts_weight_information.py` | Real cached TS fractional-cost and output-information audit; no mapping accuracy benchmark |
+| `compare_real_ts_mappings.py` | Blind real endpoint-to-TS mapping, five input/engine configurations, native archives and historical-core membership queries |
+| `score_real_ts_families.py` | Common all-H scoring of saved AAM paths / SLAP labels plus LAP fingerprints, without mapper reruns |
+| `publish_real_ts_comparison.py` | Verify and package those saved results and generate an offline mapping viewer |
 
 The other Golden scripts record diagnostic experiments (seeds, caps, direction,
 anchors, ranking, memory, viewers). They are retained for provenance, not silently

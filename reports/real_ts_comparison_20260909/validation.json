@@ -1,0 +1,24 @@
+{
+  "tests": {
+    "command": "env PYTHONPATH=src:bench .venv/bin/python -m pytest -q tests/test_real_ts_comparison.py tests/test_family_query.py tests/test_family_scoring.py tests/test_search_graph.py tests/test_elementary_output_comparison.py",
+    "passed": 64,
+    "seconds": 2.44
+  },
+  "independently_checked_full_H_witnesses": 5581,
+  "independent_score_implementation": "bench/publish_real_ts_comparison.py:scalar_events",
+  "checks": [
+    "Full source and target atom cardinality and injectivity",
+    "Element preservation including every explicit hydrogen",
+    "Saved event counts agree with independent scalar all-pairs counting",
+    "All 30 saved family unions have closed minimum bounds",
+    "Zero unresolved or inconsistent family units",
+    "All 50 viewer records agree with independent event counting",
+    "Both inline viewer scripts pass node --check",
+    "Python drivers and new evaluator tests pass py_compile"
+  ],
+  "viewer_selections": 25,
+  "viewer_records": 50,
+  "browser_visual_inspection_performed": false,
+  "production_AAM_changes": false,
+  "chemical_accuracy_validation": false
+}

@@ -1,0 +1,22 @@
+{
+  "original_job": "455891",
+  "unstarted_slots": [
+    29,
+    11
+  ],
+  "job": "455928",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes",
+    "--nodelist=bosque11",
+    "--cpus-per-task=1",
+    "--mem=6G",
+    "--time=00:10:00",
+    "--array=29,11",
+    "--job-name=ts_compare",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/real_ts_compare_20260909_EwGzgT/run/status/%A_%a.out",
+    "--wrap",
+    "env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_guided_pilot_20260909/dependencies:/project/yunhengzou/coordinate_alignment/aam_benchmarks/real_ts_compare_20260909_EwGzgT/run/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/real_ts_compare_20260909_EwGzgT/run/engine/bench timeout --kill-after=5s 300 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/real_ts_compare_20260909_EwGzgT/run/engine/bench/compare_real_ts_mappings.py task --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/real_ts_compare_20260909_EwGzgT/run --slot \"$SLURM_ARRAY_TASK_ID\""
+  ]
+}

@@ -1,0 +1,4078 @@
+{
+  "cases": [
+    {
+      "index": 0,
+      "name": "pr1.tempo_ts1",
+      "direction": "R_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "status": "complete",
+          "full_witnesses": 109,
+          "heavy_classes": 5,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.5993473019999995,
+          "phases": {
+            "prepare": {
+              "cpu": 0.001680930000000025,
+              "wall": 0.0027758385986089706
+            },
+            "search": {
+              "cpu": 0.42031303,
+              "wall": 0.4205437954515219
+            },
+            "symmetry": {
+              "cpu": 0.17501711499999967,
+              "wall": 0.17519761994481087
+            },
+            "persistence": {
+              "cpu": 0.03953069099999995,
+              "wall": 0.059425150975584984
+            },
+            "collect": {
+              "cpu": 0.0023362269999998575,
+              "wall": 0.0023496728390455246
+            }
+          },
+          "capped_units": 0,
+          "total_units": 27,
+          "best": {
+            "mapping": [
+              0,
+              5,
+              4,
+              3,
+              2,
+              1,
+              6,
+              10,
+              9,
+              8,
+              7,
+              11,
+              19,
+              20,
+              21,
+              22,
+              14,
+              13,
+              12,
+              15,
+              23,
+              24,
+              25,
+              17,
+              18,
+              16
+            ],
+            "origin": {
+              "cut": 9,
+              "terminal": 12
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.5008447355502872,
+            "certificate": "9508209e81e285f7a7f47614cbcce394c9fc338aa2bffcf051ccf8925f2520f8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "aam_binary": {
+          "status": "complete",
+          "full_witnesses": 109,
+          "heavy_classes": 6,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.6973954429999998,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0016183559999999875,
+              "wall": 0.002819858491420746
+            },
+            "search": {
+              "cpu": 0.49729025800000026,
+              "wall": 0.49758096039295197
+            },
+            "symmetry": {
+              "cpu": 0.1958624439999998,
+              "wall": 0.19610735587775707
+            },
+            "persistence": {
+              "cpu": 0.0436492750000001,
+              "wall": 0.06289095617830753
+            },
+            "collect": {
+              "cpu": 0.002624384999999785,
+              "wall": 0.002635970711708069
+            }
+          },
+          "capped_units": 0,
+          "total_units": 27,
+          "best": {
+            "mapping": [
+              0,
+              5,
+              4,
+              3,
+              2,
+              1,
+              6,
+              10,
+              9,
+              8,
+              7,
+              11,
+              19,
+              20,
+              21,
+              22,
+              14,
+              13,
+              12,
+              15,
+              23,
+              25,
+              24,
+              17,
+              18,
+              16
+            ],
+            "origin": {
+              "cut": 15,
+              "terminal": 31
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.5008447355502872,
+            "certificate": "9508209e81e285f7a7f47614cbcce394c9fc338aa2bffcf051ccf8925f2520f8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "slap_binary": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 2,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.12277156000000022,
+          "phases": {
+            "search": {
+              "cpu": 0.12207514000000019,
+              "wall": 0.12211249582469463
+            },
+            "persistence": {
+              "cpu": 0.014631120000000108,
+              "wall": 0.02039077691733837
+            },
+            "collect": {
+              "cpu": 0.0006964200000000309,
+              "wall": 0.0006995145231485367
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              19,
+              20,
+              21,
+              22,
+              14,
+              13,
+              12,
+              15,
+              23,
+              24,
+              25,
+              16,
+              17,
+              18
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 2.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.5008447355502874,
+            "certificate": "9508209e81e285f7a7f47614cbcce394c9fc338aa2bffcf051ccf8925f2520f8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "slap_weighted": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 8,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.26317429199999987,
+          "phases": {
+            "search": {
+              "cpu": 0.262754975,
+              "wall": 0.2628565151244402
+            },
+            "persistence": {
+              "cpu": 0.009954402000000306,
+              "wall": 0.01591806858778
+            },
+            "collect": {
+              "cpu": 0.0004193169999998636,
+              "wall": 0.0004217959940433502
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              21,
+              20,
+              19,
+              22,
+              16,
+              17,
+              18,
+              23,
+              24,
+              25
+            ],
+            "origin": {
+              "order": 0,
+              "candidate": 0,
+              "native_cost": 0.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.5010702820743203,
+            "certificate": "9508209e81e285f7a7f47614cbcce394c9fc338aa2bffcf051ccf8925f2520f8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "slap_float_cost": {
+          "status": "complete",
+          "full_witnesses": 7,
+          "heavy_classes": 3,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.06299882299999993,
+          "phases": {
+            "search": {
+              "cpu": 0.06244827499999994,
+              "wall": 0.06246676482260227
+            },
+            "persistence": {
+              "cpu": 0.013309252000000105,
+              "wall": 0.01916399970650673
+            },
+            "collect": {
+              "cpu": 0.000550547999999984,
+              "wall": 0.0005536545068025589
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              5,
+              4,
+              3,
+              2,
+              1,
+              6,
+              10,
+              18,
+              8,
+              7,
+              11,
+              19,
+              20,
+              21,
+              22,
+              14,
+              13,
+              12,
+              15,
+              9,
+              23,
+              24,
+              25,
+              16,
+              17
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 14.545649401741137
+            },
+            "events": {
+              "broken": 3,
+              "formed": 4,
+              "order_changed": 0,
+              "total": 7
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.5008447355502872,
+            "certificate": "9508209e81e285f7a7f47614cbcce394c9fc338aa2bffcf051ccf8925f2520f8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        }
+      },
+      "overlap": {
+        "aam_weighted": {
+          "aam_weighted": {
+            "shared": 5,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 5,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 2,
+            "only_left": 3
+          },
+          "slap_weighted": {
+            "shared": 1,
+            "only_left": 4
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 4
+          }
+        },
+        "aam_binary": {
+          "aam_weighted": {
+            "shared": 5,
+            "only_left": 1
+          },
+          "aam_binary": {
+            "shared": 6,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 2,
+            "only_left": 4
+          },
+          "slap_weighted": {
+            "shared": 1,
+            "only_left": 5
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 5
+          }
+        },
+        "slap_binary": {
+          "aam_weighted": {
+            "shared": 2,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 2,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 2,
+            "only_left": 0
+          },
+          "slap_weighted": {
+            "shared": 1,
+            "only_left": 1
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 1
+          }
+        },
+        "slap_weighted": {
+          "aam_weighted": {
+            "shared": 1,
+            "only_left": 7
+          },
+          "aam_binary": {
+            "shared": 1,
+            "only_left": 7
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 7
+          },
+          "slap_weighted": {
+            "shared": 8,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 2,
+            "only_left": 6
+          }
+        },
+        "slap_float_cost": {
+          "aam_weighted": {
+            "shared": 1,
+            "only_left": 2
+          },
+          "aam_binary": {
+            "shared": 1,
+            "only_left": 2
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 2
+          },
+          "slap_weighted": {
+            "shared": 2,
+            "only_left": 1
+          },
+          "slap_float_cost": {
+            "shared": 3,
+            "only_left": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 1,
+      "name": "pr1.tempo_ts1",
+      "direction": "P_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "status": "complete",
+          "full_witnesses": 111,
+          "heavy_classes": 9,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.5497395539999992,
+          "phases": {
+            "prepare": {
+              "cpu": 0.001599552000000004,
+              "wall": 0.005083590745925903
+            },
+            "search": {
+              "cpu": 0.388299259,
+              "wall": 0.3884746339172125
+            },
+            "symmetry": {
+              "cpu": 0.15762424699999966,
+              "wall": 0.15785033628344536
+            },
+            "persistence": {
+              "cpu": 0.03823599100000019,
+              "wall": 0.07046872563660145
+            },
+            "collect": {
+              "cpu": 0.002216495999999568,
+              "wall": 0.0022220686078071594
+            }
+          },
+          "capped_units": 0,
+          "total_units": 27,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              21,
+              20,
+              19,
+              22,
+              16,
+              17,
+              18,
+              23,
+              24,
+              25
+            ],
+            "origin": {
+              "cut": 6,
+              "terminal": 4
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.0784359004948654,
+            "certificate": "2492b1834c94f47f79d6682f7bd608495402205e746e0bcba8425f11408a07ba"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "aam_binary": {
+          "status": "complete",
+          "full_witnesses": 109,
+          "heavy_classes": 10,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.7694985410000011,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0017608060000000036,
+              "wall": 0.004306403920054436
+            },
+            "search": {
+              "cpu": 0.5491567040000005,
+              "wall": 0.5494161956012249
+            },
+            "symmetry": {
+              "cpu": 0.21576807500000034,
+              "wall": 0.21693739295005798
+            },
+            "persistence": {
+              "cpu": 0.04751125099999992,
+              "wall": 0.09543554112315178
+            },
+            "collect": {
+              "cpu": 0.0028129560000003107,
+              "wall": 0.0028201621025800705
+            }
+          },
+          "capped_units": 0,
+          "total_units": 27,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              21,
+              20,
+              19,
+              22,
+              17,
+              18,
+              16,
+              23,
+              24,
+              25
+            ],
+            "origin": {
+              "cut": 6,
+              "terminal": 29
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.0784359004948654,
+            "certificate": "2492b1834c94f47f79d6682f7bd608495402205e746e0bcba8425f11408a07ba"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "slap_binary": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 3,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.12391318300000043,
+          "phases": {
+            "search": {
+              "cpu": 0.12323406700000028,
+              "wall": 0.12328560464084148
+            },
+            "persistence": {
+              "cpu": 0.014193967000000085,
+              "wall": 0.019831467419862747
+            },
+            "collect": {
+              "cpu": 0.0006791160000001462,
+              "wall": 0.0006821155548095703
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              21,
+              20,
+              19,
+              22,
+              17,
+              18,
+              16,
+              24,
+              25,
+              23
+            ],
+            "origin": {
+              "order": 3,
+              "candidate": 0,
+              "native_cost": 2.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.0784359004948654,
+            "certificate": "2492b1834c94f47f79d6682f7bd608495402205e746e0bcba8425f11408a07ba"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "slap_weighted": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 9,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.23518702199999997,
+          "phases": {
+            "search": {
+              "cpu": 0.234663921,
+              "wall": 0.23481572791934013
+            },
+            "persistence": {
+              "cpu": 0.008476723999999991,
+              "wall": 0.014211650937795639
+            },
+            "collect": {
+              "cpu": 0.0005231009999999703,
+              "wall": 0.0005256962031126022
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              5,
+              4,
+              3,
+              2,
+              1,
+              10,
+              16,
+              8,
+              7,
+              9,
+              11,
+              12,
+              13,
+              14,
+              15,
+              21,
+              20,
+              19,
+              22,
+              25,
+              6,
+              23,
+              24,
+              18,
+              17
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 0.0
+            },
+            "events": {
+              "broken": 10,
+              "formed": 11,
+              "order_changed": 0,
+              "total": 21
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.0801154898464256,
+            "certificate": "2492b1834c94f47f79d6682f7bd608495402205e746e0bcba8425f11408a07ba"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        },
+        "slap_float_cost": {
+          "status": "complete",
+          "full_witnesses": 6,
+          "heavy_classes": 5,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.04555765399999978,
+          "phases": {
+            "search": {
+              "cpu": 0.045171583999999765,
+              "wall": 0.04518992453813553
+            },
+            "persistence": {
+              "cpu": 0.009333186999999965,
+              "wall": 0.01594599522650242
+            },
+            "collect": {
+              "cpu": 0.0003860700000000161,
+              "wall": 0.0003880038857460022
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              5,
+              1,
+              2,
+              3,
+              4,
+              0,
+              10,
+              7,
+              8,
+              17,
+              25,
+              11,
+              12,
+              13,
+              14,
+              15,
+              21,
+              20,
+              19,
+              22,
+              18,
+              16,
+              6,
+              9,
+              23,
+              24
+            ],
+            "origin": {
+              "order": 3,
+              "candidate": 0,
+              "native_cost": 29.152714648044917
+            },
+            "events": {
+              "broken": 6,
+              "formed": 7,
+              "order_changed": 0,
+              "total": 13
+            },
+            "heavy_events": 5,
+            "heavy_wbo_l1": 7.2522415693272695,
+            "certificate": "53e11ff048042d37d1262a3378b8ac66cd2b4cde15278040531d46b2259a6451"
+          },
+          "historical_core": {
+            "1": {
+              "status": "no_historical_TS_assignment",
+              "example": null
+            }
+          }
+        }
+      },
+      "overlap": {
+        "aam_weighted": {
+          "aam_weighted": {
+            "shared": 9,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 9,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 3,
+            "only_left": 6
+          },
+          "slap_weighted": {
+            "shared": 2,
+            "only_left": 7
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 9
+          }
+        },
+        "aam_binary": {
+          "aam_weighted": {
+            "shared": 9,
+            "only_left": 1
+          },
+          "aam_binary": {
+            "shared": 10,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 3,
+            "only_left": 7
+          },
+          "slap_weighted": {
+            "shared": 2,
+            "only_left": 8
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 10
+          }
+        },
+        "slap_binary": {
+          "aam_weighted": {
+            "shared": 3,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 3,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 3,
+            "only_left": 0
+          },
+          "slap_weighted": {
+            "shared": 2,
+            "only_left": 1
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 3
+          }
+        },
+        "slap_weighted": {
+          "aam_weighted": {
+            "shared": 2,
+            "only_left": 7
+          },
+          "aam_binary": {
+            "shared": 2,
+            "only_left": 7
+          },
+          "slap_binary": {
+            "shared": 2,
+            "only_left": 7
+          },
+          "slap_weighted": {
+            "shared": 9,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 9
+          }
+        },
+        "slap_float_cost": {
+          "aam_weighted": {
+            "shared": 0,
+            "only_left": 5
+          },
+          "aam_binary": {
+            "shared": 0,
+            "only_left": 5
+          },
+          "slap_binary": {
+            "shared": 0,
+            "only_left": 5
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 5
+          },
+          "slap_float_cost": {
+            "shared": 5,
+            "only_left": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "name": "pr16.carbocation_ts5",
+      "direction": "R_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "status": "complete",
+          "full_witnesses": 28,
+          "heavy_classes": 14,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.8325927639999999,
+          "phases": {
+            "prepare": {
+              "cpu": 0.001561888999999983,
+              "wall": 0.004928048700094223
+            },
+            "search": {
+              "cpu": 0.7849170080000001,
+              "wall": 0.7851406801491976
+            },
+            "symmetry": {
+              "cpu": 0.043126499999999846,
+              "wall": 0.04322695918381214
+            },
+            "persistence": {
+              "cpu": 0.030202471999999758,
+              "wall": 0.10550046525895596
+            },
+            "collect": {
+              "cpu": 0.0029873670000000185,
+              "wall": 0.002997336909174919
+            }
+          },
+          "capped_units": 5,
+          "total_units": 21,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17
+            ],
+            "origin": {
+              "cut": 0,
+              "terminal": 2
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8425449140531256,
+            "certificate": "f2022f0a3199b395fc651207662f95969f1ecbd966ad1b710e413f5d3fc8e134"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  10,
+                  14,
+                  8,
+                  11,
+                  15,
+                  9,
+                  6,
+                  7,
+                  2,
+                  5,
+                  0,
+                  3,
+                  12,
+                  13,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "cut": 1,
+                  "terminal": 7
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 2,
+                  "order_changed": 4,
+                  "total": 7
+                },
+                "heavy_events": 7,
+                "heavy_wbo_l1": 6.087958049754101,
+                "certificate": "b83c8c20061ce490000bb8edac78aad650536223658cbb2fc37a8bbfd70b1559"
+              }
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        },
+        "aam_binary": {
+          "status": "complete",
+          "full_witnesses": 36,
+          "heavy_classes": 18,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.3950744580000004,
+          "phases": {
+            "prepare": {
+              "cpu": 0.001698105999999977,
+              "wall": 0.0034808870404958725
+            },
+            "search": {
+              "cpu": 0.297391888,
+              "wall": 0.29753043316304684
+            },
+            "symmetry": {
+              "cpu": 0.09428167600000026,
+              "wall": 0.09542055800557137
+            },
+            "persistence": {
+              "cpu": 0.022170850999999936,
+              "wall": 0.04889947921037674
+            },
+            "collect": {
+              "cpu": 0.0017027880000001772,
+              "wall": 0.0017069168388843536
+            }
+          },
+          "capped_units": 0,
+          "total_units": 21,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17
+            ],
+            "origin": {
+              "cut": 0,
+              "terminal": 1
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8425449140531256,
+            "certificate": "f2022f0a3199b395fc651207662f95969f1ecbd966ad1b710e413f5d3fc8e134"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  10,
+                  14,
+                  8,
+                  11,
+                  15,
+                  9,
+                  6,
+                  7,
+                  2,
+                  5,
+                  0,
+                  3,
+                  12,
+                  13,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "cut": 1,
+                  "terminal": 2
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 2,
+                  "order_changed": 4,
+                  "total": 7
+                },
+                "heavy_events": 7,
+                "heavy_wbo_l1": 6.087958049754101,
+                "certificate": "b83c8c20061ce490000bb8edac78aad650536223658cbb2fc37a8bbfd70b1559"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  14,
+                  6,
+                  8,
+                  15,
+                  7,
+                  9,
+                  10,
+                  11,
+                  12,
+                  13,
+                  1,
+                  4,
+                  16,
+                  17,
+                  0,
+                  3,
+                  2,
+                  5
+                ],
+                "origin": {
+                  "cut": 13,
+                  "terminal": 4
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 2,
+                  "order_changed": 7,
+                  "total": 10
+                },
+                "heavy_events": 10,
+                "heavy_wbo_l1": 7.830441918420968,
+                "certificate": "fa8e86d0b1effc04e11ecad0ef9926acf9324ad19498ef3c03857c30731392aa"
+              }
+            }
+          }
+        },
+        "slap_binary": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 8,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.18679608000000003,
+          "phases": {
+            "search": {
+              "cpu": 0.18635730999999978,
+              "wall": 0.18642814829945564
+            },
+            "persistence": {
+              "cpu": 0.009973157999999982,
+              "wall": 0.016061842441558838
+            },
+            "collect": {
+              "cpu": 0.0004387700000002548,
+              "wall": 0.00044126249849796295
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17
+            ],
+            "origin": {
+              "order": 0,
+              "candidate": 0,
+              "native_cost": 2.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8425449140531256,
+            "certificate": "f2022f0a3199b395fc651207662f95969f1ecbd966ad1b710e413f5d3fc8e134"
+          },
+          "historical_core": {
+            "1": {
+              "status": "not_in_witnesses",
+              "example": null
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        },
+        "slap_weighted": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 10,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.1608405670000005,
+          "phases": {
+            "search": {
+              "cpu": 0.16040440400000033,
+              "wall": 0.16066440753638744
+            },
+            "persistence": {
+              "cpu": 0.010992448000000099,
+              "wall": 0.016890985891222954
+            },
+            "collect": {
+              "cpu": 0.00043616300000015595,
+              "wall": 0.0004451163113117218
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              16,
+              17,
+              14,
+              15
+            ],
+            "origin": {
+              "order": 0,
+              "candidate": 0,
+              "native_cost": 7.0
+            },
+            "events": {
+              "broken": 2,
+              "formed": 3,
+              "order_changed": 0,
+              "total": 5
+            },
+            "heavy_events": 5,
+            "heavy_wbo_l1": 5.340717262975026,
+            "certificate": "0667fe07e43412fb70e5c0bf555ef9d300716f2f0c734f73c323e5ce4eb49531"
+          },
+          "historical_core": {
+            "1": {
+              "status": "not_in_witnesses",
+              "example": null
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        },
+        "slap_float_cost": {
+          "status": "complete",
+          "full_witnesses": 4,
+          "heavy_classes": 4,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.06459580900000017,
+          "phases": {
+            "search": {
+              "cpu": 0.06401394900000024,
+              "wall": 0.06409109942615032
+            },
+            "persistence": {
+              "cpu": 0.014485515999999476,
+              "wall": 0.020443754270672798
+            },
+            "collect": {
+              "cpu": 0.0005818599999999341,
+              "wall": 0.0005818642675876617
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              6,
+              8,
+              10,
+              7,
+              9,
+              11,
+              1,
+              4,
+              0,
+              3,
+              12,
+              13,
+              16,
+              17,
+              2,
+              5,
+              14,
+              15
+            ],
+            "origin": {
+              "order": 7,
+              "candidate": 0,
+              "native_cost": 31.110947166382548
+            },
+            "events": {
+              "broken": 5,
+              "formed": 6,
+              "order_changed": 0,
+              "total": 11
+            },
+            "heavy_events": 11,
+            "heavy_wbo_l1": 15.529609394589048,
+            "certificate": "ebd8d6ccfc30a65f342e3cc116c70ce60aefc65c0c11b0301cf8b30df96ad28e"
+          },
+          "historical_core": {
+            "1": {
+              "status": "not_in_witnesses",
+              "example": null
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        }
+      },
+      "overlap": {
+        "aam_weighted": {
+          "aam_weighted": {
+            "shared": 14,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 14,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 7,
+            "only_left": 7
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 14
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 14
+          }
+        },
+        "aam_binary": {
+          "aam_weighted": {
+            "shared": 14,
+            "only_left": 4
+          },
+          "aam_binary": {
+            "shared": 18,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 8,
+            "only_left": 10
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 18
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 18
+          }
+        },
+        "slap_binary": {
+          "aam_weighted": {
+            "shared": 7,
+            "only_left": 1
+          },
+          "aam_binary": {
+            "shared": 8,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 8,
+            "only_left": 0
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 8
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 8
+          }
+        },
+        "slap_weighted": {
+          "aam_weighted": {
+            "shared": 0,
+            "only_left": 10
+          },
+          "aam_binary": {
+            "shared": 0,
+            "only_left": 10
+          },
+          "slap_binary": {
+            "shared": 0,
+            "only_left": 10
+          },
+          "slap_weighted": {
+            "shared": 10,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 10
+          }
+        },
+        "slap_float_cost": {
+          "aam_weighted": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "aam_binary": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "slap_binary": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "slap_float_cost": {
+            "shared": 4,
+            "only_left": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 3,
+      "name": "pr16.carbocation_ts5",
+      "direction": "P_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "status": "complete",
+          "full_witnesses": 8,
+          "heavy_classes": 4,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.4224291899999998,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0018416029999999695,
+              "wall": 0.00291239470243454
+            },
+            "search": {
+              "cpu": 0.39389547499999983,
+              "wall": 0.3940217010676861
+            },
+            "symmetry": {
+              "cpu": 0.02515102200000019,
+              "wall": 0.02529197186231613
+            },
+            "persistence": {
+              "cpu": 0.02050962299999992,
+              "wall": 0.03591039776802063
+            },
+            "collect": {
+              "cpu": 0.0015410899999998007,
+              "wall": 0.0015458334237337112
+            }
+          },
+          "capped_units": 1,
+          "total_units": 22,
+          "best": {
+            "mapping": [
+              12,
+              10,
+              8,
+              6,
+              2,
+              0,
+              11,
+              13,
+              7,
+              5,
+              3,
+              9,
+              14,
+              15,
+              1,
+              4,
+              16,
+              17
+            ],
+            "origin": {
+              "cut": 0,
+              "terminal": 1
+            },
+            "events": {
+              "broken": 0,
+              "formed": 0,
+              "order_changed": 4,
+              "total": 4
+            },
+            "heavy_events": 4,
+            "heavy_wbo_l1": 4.701872530925813,
+            "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  12,
+                  10,
+                  8,
+                  6,
+                  2,
+                  0,
+                  11,
+                  13,
+                  7,
+                  5,
+                  3,
+                  9,
+                  14,
+                  15,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "cut": 0,
+                  "terminal": 1
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 0,
+                  "order_changed": 4,
+                  "total": 4
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.701872530925813,
+                "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  12,
+                  10,
+                  8,
+                  6,
+                  2,
+                  0,
+                  11,
+                  13,
+                  7,
+                  5,
+                  3,
+                  9,
+                  14,
+                  15,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "cut": 0,
+                  "terminal": 1
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 0,
+                  "order_changed": 4,
+                  "total": 4
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.701872530925813,
+                "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+              }
+            }
+          }
+        },
+        "aam_binary": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 5,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.5963528260000002,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0015864870000000253,
+              "wall": 0.005245909094810486
+            },
+            "search": {
+              "cpu": 0.5302529090000004,
+              "wall": 0.5305785704404116
+            },
+            "symmetry": {
+              "cpu": 0.0633049649999996,
+              "wall": 0.06343456543982029
+            },
+            "persistence": {
+              "cpu": 0.02239744699999996,
+              "wall": 0.12251674756407738
+            },
+            "collect": {
+              "cpu": 0.001208465000000103,
+              "wall": 0.001203380525112152
+            }
+          },
+          "capped_units": 0,
+          "total_units": 22,
+          "best": {
+            "mapping": [
+              12,
+              10,
+              8,
+              6,
+              2,
+              0,
+              11,
+              13,
+              7,
+              5,
+              3,
+              9,
+              14,
+              15,
+              1,
+              4,
+              16,
+              17
+            ],
+            "origin": {
+              "cut": 0,
+              "terminal": 1
+            },
+            "events": {
+              "broken": 0,
+              "formed": 0,
+              "order_changed": 4,
+              "total": 4
+            },
+            "heavy_events": 4,
+            "heavy_wbo_l1": 4.701872530925813,
+            "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  12,
+                  10,
+                  8,
+                  6,
+                  2,
+                  0,
+                  11,
+                  13,
+                  7,
+                  5,
+                  3,
+                  9,
+                  14,
+                  15,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "cut": 0,
+                  "terminal": 1
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 0,
+                  "order_changed": 4,
+                  "total": 4
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.701872530925813,
+                "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  12,
+                  10,
+                  8,
+                  6,
+                  2,
+                  0,
+                  11,
+                  13,
+                  7,
+                  5,
+                  3,
+                  9,
+                  14,
+                  15,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "cut": 0,
+                  "terminal": 1
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 0,
+                  "order_changed": 4,
+                  "total": 4
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.701872530925813,
+                "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+              }
+            }
+          }
+        },
+        "slap_binary": {
+          "status": "complete",
+          "full_witnesses": 2,
+          "heavy_classes": 1,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.0435634709999998,
+          "phases": {
+            "search": {
+              "cpu": 0.04321611000000003,
+              "wall": 0.043243296444416046
+            },
+            "persistence": {
+              "cpu": 0.008302440000000466,
+              "wall": 0.014170782640576363
+            },
+            "collect": {
+              "cpu": 0.00034736099999976844,
+              "wall": 0.00034979917109012604
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              12,
+              10,
+              8,
+              6,
+              2,
+              0,
+              11,
+              13,
+              7,
+              5,
+              3,
+              9,
+              14,
+              15,
+              1,
+              4,
+              16,
+              17
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 0.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 0,
+              "order_changed": 4,
+              "total": 4
+            },
+            "heavy_events": 4,
+            "heavy_wbo_l1": 4.701872530925813,
+            "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  12,
+                  10,
+                  8,
+                  6,
+                  2,
+                  0,
+                  11,
+                  13,
+                  7,
+                  5,
+                  3,
+                  9,
+                  14,
+                  15,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "order": 1,
+                  "candidate": 0,
+                  "native_cost": 0.0
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 0,
+                  "order_changed": 4,
+                  "total": 4
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.701872530925813,
+                "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  12,
+                  10,
+                  8,
+                  6,
+                  2,
+                  0,
+                  11,
+                  13,
+                  7,
+                  5,
+                  3,
+                  9,
+                  14,
+                  15,
+                  1,
+                  4,
+                  16,
+                  17
+                ],
+                "origin": {
+                  "order": 1,
+                  "candidate": 0,
+                  "native_cost": 0.0
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 0,
+                  "order_changed": 4,
+                  "total": 4
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.701872530925813,
+                "certificate": "55a455547725a4b095ec4e89914cd01b1491178c097efdd4aa33dbd7fee450ce"
+              }
+            }
+          }
+        },
+        "slap_weighted": {
+          "status": "complete",
+          "full_witnesses": 7,
+          "heavy_classes": 4,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.2546003250000004,
+          "phases": {
+            "search": {
+              "cpu": 0.25408605800000006,
+              "wall": 0.25421641394495964
+            },
+            "persistence": {
+              "cpu": 0.013194110999999675,
+              "wall": 0.019207635894417763
+            },
+            "collect": {
+              "cpu": 0.0005142670000003458,
+              "wall": 0.0005172770470380783
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              10,
+              16,
+              14,
+              1,
+              0,
+              12,
+              17,
+              11,
+              4,
+              3,
+              13,
+              15,
+              8,
+              9,
+              2,
+              5,
+              6,
+              7
+            ],
+            "origin": {
+              "order": 4,
+              "candidate": 0,
+              "native_cost": 12.0
+            },
+            "events": {
+              "broken": 4,
+              "formed": 4,
+              "order_changed": 0,
+              "total": 8
+            },
+            "heavy_events": 8,
+            "heavy_wbo_l1": 8.639246713528104,
+            "certificate": "d0a65244ad18219ed6ecb577b8071431a8acac56072e67e08d3f6df99c8208d9"
+          },
+          "historical_core": {
+            "1": {
+              "status": "not_in_witnesses",
+              "example": null
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        },
+        "slap_float_cost": {
+          "status": "complete",
+          "full_witnesses": 9,
+          "heavy_classes": 9,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.08736252700000013,
+          "phases": {
+            "search": {
+              "cpu": 0.08675088500000006,
+              "wall": 0.08685242757201195
+            },
+            "persistence": {
+              "cpu": 0.015604299999999904,
+              "wall": 0.02187265269458294
+            },
+            "collect": {
+              "cpu": 0.0006116420000000788,
+              "wall": 0.0006154198199510574
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              12,
+              16,
+              14,
+              0,
+              1,
+              2,
+              17,
+              13,
+              3,
+              4,
+              5,
+              15,
+              8,
+              9,
+              6,
+              7,
+              10,
+              11
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 31.593652691422943
+            },
+            "events": {
+              "broken": 6,
+              "formed": 6,
+              "order_changed": 1,
+              "total": 13
+            },
+            "heavy_events": 13,
+            "heavy_wbo_l1": 15.709800546374368,
+            "certificate": "947377e93da23dd49a5d4967a61a09ddb5e0b5554b6e1ad12ec3cad0ef7ea865"
+          },
+          "historical_core": {
+            "1": {
+              "status": "not_in_witnesses",
+              "example": null
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        }
+      },
+      "overlap": {
+        "aam_weighted": {
+          "aam_weighted": {
+            "shared": 4,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 4,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 3
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 4
+          }
+        },
+        "aam_binary": {
+          "aam_weighted": {
+            "shared": 4,
+            "only_left": 1
+          },
+          "aam_binary": {
+            "shared": 5,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 4
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 5
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 5
+          }
+        },
+        "slap_binary": {
+          "aam_weighted": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 1
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 1
+          }
+        },
+        "slap_weighted": {
+          "aam_weighted": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "aam_binary": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "slap_binary": {
+            "shared": 0,
+            "only_left": 4
+          },
+          "slap_weighted": {
+            "shared": 4,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 0,
+            "only_left": 4
+          }
+        },
+        "slap_float_cost": {
+          "aam_weighted": {
+            "shared": 0,
+            "only_left": 9
+          },
+          "aam_binary": {
+            "shared": 0,
+            "only_left": 9
+          },
+          "slap_binary": {
+            "shared": 0,
+            "only_left": 9
+          },
+          "slap_weighted": {
+            "shared": 0,
+            "only_left": 9
+          },
+          "slap_float_cost": {
+            "shared": 9,
+            "only_left": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "name": "pr7.V.dodh_ts910",
+      "direction": "R_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "status": "complete",
+          "full_witnesses": 75,
+          "heavy_classes": 7,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.7352976060000003,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0018026979999999915,
+              "wall": 0.00735117681324482
+            },
+            "search": {
+              "cpu": 0.5410529079999999,
+              "wall": 0.5412652269005775
+            },
+            "symmetry": {
+              "cpu": 0.18976221100000007,
+              "wall": 0.19007916934788227
+            },
+            "persistence": {
+              "cpu": 0.04843670700000047,
+              "wall": 0.07309267669916153
+            },
+            "collect": {
+              "cpu": 0.00267978900000021,
+              "wall": 0.0026865601539611816
+            }
+          },
+          "capped_units": 0,
+          "total_units": 33,
+          "best": {
+            "mapping": [
+              4,
+              3,
+              2,
+              1,
+              0,
+              5,
+              10,
+              11,
+              8,
+              14,
+              15,
+              16,
+              17,
+              6,
+              7,
+              9,
+              13,
+              12,
+              18,
+              21,
+              20,
+              19,
+              22,
+              25,
+              26,
+              23,
+              24,
+              27
+            ],
+            "origin": {
+              "cut": 16,
+              "terminal": 44
+            },
+            "events": {
+              "broken": 1,
+              "formed": 3,
+              "order_changed": 1,
+              "total": 5
+            },
+            "heavy_events": 2,
+            "heavy_wbo_l1": 1.982938305071905,
+            "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  14,
+                  15,
+                  16,
+                  17,
+                  10,
+                  11,
+                  9,
+                  12,
+                  13,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  25,
+                  26,
+                  23,
+                  24,
+                  27
+                ],
+                "origin": {
+                  "cut": 16,
+                  "terminal": 19
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 1,
+                  "total": 5
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.995269455131841,
+                "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  14,
+                  15,
+                  16,
+                  9,
+                  10,
+                  11,
+                  17,
+                  12,
+                  13,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  25,
+                  26,
+                  23,
+                  24,
+                  27
+                ],
+                "origin": {
+                  "cut": 16,
+                  "terminal": 31
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 1,
+                  "total": 5
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.061537435017831,
+                "certificate": "d3f508b51f2a3aa94864cca24f921f1afcad2e57cc812520372e4da15b72a7f4"
+              }
+            }
+          }
+        },
+        "aam_binary": {
+          "status": "complete",
+          "full_witnesses": 170,
+          "heavy_classes": 27,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 1.3582607860000016,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0017756850000000268,
+              "wall": 0.005023764446377754
+            },
+            "search": {
+              "cpu": 1.0083771800000005,
+              "wall": 1.0087694246321917
+            },
+            "symmetry": {
+              "cpu": 0.3439304470000003,
+              "wall": 0.34415269643068314
+            },
+            "persistence": {
+              "cpu": 0.07570251600000016,
+              "wall": 0.102361299097538
+            },
+            "collect": {
+              "cpu": 0.004177474000000736,
+              "wall": 0.004185833036899567
+            }
+          },
+          "capped_units": 4,
+          "total_units": 33,
+          "best": {
+            "mapping": [
+              4,
+              3,
+              2,
+              1,
+              0,
+              5,
+              10,
+              11,
+              8,
+              14,
+              15,
+              16,
+              17,
+              6,
+              7,
+              9,
+              13,
+              12,
+              18,
+              21,
+              20,
+              19,
+              22,
+              25,
+              26,
+              24,
+              23,
+              27
+            ],
+            "origin": {
+              "cut": 16,
+              "terminal": 246
+            },
+            "events": {
+              "broken": 1,
+              "formed": 3,
+              "order_changed": 1,
+              "total": 5
+            },
+            "heavy_events": 2,
+            "heavy_wbo_l1": 1.982938305071905,
+            "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  14,
+                  15,
+                  16,
+                  17,
+                  10,
+                  11,
+                  9,
+                  12,
+                  13,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  26,
+                  25,
+                  24,
+                  23,
+                  27
+                ],
+                "origin": {
+                  "cut": 16,
+                  "terminal": 60
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 1,
+                  "total": 5
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.995269455131841,
+                "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  14,
+                  15,
+                  16,
+                  9,
+                  10,
+                  11,
+                  17,
+                  12,
+                  13,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  26,
+                  25,
+                  24,
+                  23,
+                  27
+                ],
+                "origin": {
+                  "cut": 16,
+                  "terminal": 287
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 1,
+                  "total": 5
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 4.061537435017831,
+                "certificate": "d3f508b51f2a3aa94864cca24f921f1afcad2e57cc812520372e4da15b72a7f4"
+              }
+            }
+          }
+        },
+        "slap_binary": {
+          "status": "complete",
+          "full_witnesses": 7,
+          "heavy_classes": 1,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.08544129100000009,
+          "phases": {
+            "search": {
+              "cpu": 0.08469362899999999,
+              "wall": 0.08474172651767731
+            },
+            "persistence": {
+              "cpu": 0.016170288999999838,
+              "wall": 0.022385936230421066
+            },
+            "collect": {
+              "cpu": 0.0007476620000000933,
+              "wall": 0.0007508993148803711
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              4,
+              3,
+              2,
+              1,
+              0,
+              5,
+              10,
+              11,
+              8,
+              14,
+              15,
+              16,
+              17,
+              6,
+              7,
+              9,
+              13,
+              12,
+              18,
+              21,
+              20,
+              19,
+              27,
+              25,
+              26,
+              23,
+              24,
+              22
+            ],
+            "origin": {
+              "order": 5,
+              "candidate": 0,
+              "native_cost": 4.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 2,
+              "total": 4
+            },
+            "heavy_events": 2,
+            "heavy_wbo_l1": 1.982938305071905,
+            "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  14,
+                  15,
+                  16,
+                  17,
+                  10,
+                  11,
+                  9,
+                  12,
+                  13,
+                  18,
+                  19,
+                  20,
+                  21,
+                  27,
+                  25,
+                  26,
+                  23,
+                  24,
+                  22
+                ],
+                "origin": {
+                  "order": 0,
+                  "candidate": 0,
+                  "native_cost": 4.0
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 2,
+                  "order_changed": 2,
+                  "total": 4
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.995269455131841,
+                "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+              }
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        },
+        "slap_weighted": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 7,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.23006831000000028,
+          "phases": {
+            "search": {
+              "cpu": 0.22966383600000007,
+              "wall": 0.22981948219239712
+            },
+            "persistence": {
+              "cpu": 0.009679198999999583,
+              "wall": 0.01579604111611843
+            },
+            "collect": {
+              "cpu": 0.00040447400000021005,
+              "wall": 0.00040680356323719025
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              14,
+              15,
+              16,
+              17,
+              10,
+              11,
+              9,
+              12,
+              13,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "origin": {
+              "order": 0,
+              "candidate": 0,
+              "native_cost": 3.0
+            },
+            "events": {
+              "broken": 5,
+              "formed": 7,
+              "order_changed": 1,
+              "total": 13
+            },
+            "heavy_events": 2,
+            "heavy_wbo_l1": 1.995269455131841,
+            "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  14,
+                  15,
+                  16,
+                  17,
+                  10,
+                  11,
+                  9,
+                  12,
+                  13,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  26,
+                  27
+                ],
+                "origin": {
+                  "order": 0,
+                  "candidate": 0,
+                  "native_cost": 3.0
+                },
+                "events": {
+                  "broken": 5,
+                  "formed": 7,
+                  "order_changed": 1,
+                  "total": 13
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.995269455131841,
+                "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+              }
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        },
+        "slap_float_cost": {
+          "status": "complete",
+          "full_witnesses": 8,
+          "heavy_classes": 5,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.07955343700000006,
+          "phases": {
+            "search": {
+              "cpu": 0.07893934200000008,
+              "wall": 0.07895095273852348
+            },
+            "persistence": {
+              "cpu": 0.015421064999999956,
+              "wall": 0.021374987438321114
+            },
+            "collect": {
+              "cpu": 0.0006140949999999812,
+              "wall": 0.0006168186664581299
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              4,
+              3,
+              2,
+              1,
+              0,
+              5,
+              10,
+              11,
+              8,
+              14,
+              15,
+              16,
+              17,
+              6,
+              7,
+              9,
+              13,
+              12,
+              18,
+              21,
+              20,
+              19,
+              22,
+              25,
+              26,
+              23,
+              24,
+              27
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 9.019896401249067
+            },
+            "events": {
+              "broken": 1,
+              "formed": 3,
+              "order_changed": 1,
+              "total": 5
+            },
+            "heavy_events": 2,
+            "heavy_wbo_l1": 1.982938305071905,
+            "certificate": "25cd41ce8d271d2e888f0c3b434efe072e6fefc7b9bb34b74e83c246174a3dee"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  0,
+                  3,
+                  2,
+                  1,
+                  5,
+                  4,
+                  10,
+                  11,
+                  8,
+                  14,
+                  15,
+                  16,
+                  17,
+                  6,
+                  7,
+                  9,
+                  13,
+                  12,
+                  18,
+                  24,
+                  19,
+                  21,
+                  22,
+                  25,
+                  20,
+                  23,
+                  26,
+                  27
+                ],
+                "origin": {
+                  "order": 5,
+                  "candidate": 0,
+                  "native_cost": 37.324759434859416
+                },
+                "events": {
+                  "broken": 7,
+                  "formed": 9,
+                  "order_changed": 1,
+                  "total": 17
+                },
+                "heavy_events": 8,
+                "heavy_wbo_l1": 10.40474180971275,
+                "certificate": "90131012465bdd4e28a356ae7f2fce01443faed2876e51f15c4c321c136f55ed"
+              }
+            },
+            "2": {
+              "status": "not_in_witnesses",
+              "example": null
+            }
+          }
+        }
+      },
+      "overlap": {
+        "aam_weighted": {
+          "aam_weighted": {
+            "shared": 7,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 7,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 6
+          },
+          "slap_weighted": {
+            "shared": 3,
+            "only_left": 4
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 6
+          }
+        },
+        "aam_binary": {
+          "aam_weighted": {
+            "shared": 7,
+            "only_left": 20
+          },
+          "aam_binary": {
+            "shared": 27,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 26
+          },
+          "slap_weighted": {
+            "shared": 3,
+            "only_left": 24
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 26
+          }
+        },
+        "slap_binary": {
+          "aam_weighted": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "slap_weighted": {
+            "shared": 1,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 0
+          }
+        },
+        "slap_weighted": {
+          "aam_weighted": {
+            "shared": 3,
+            "only_left": 4
+          },
+          "aam_binary": {
+            "shared": 3,
+            "only_left": 4
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 6
+          },
+          "slap_weighted": {
+            "shared": 7,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 2,
+            "only_left": 5
+          }
+        },
+        "slap_float_cost": {
+          "aam_weighted": {
+            "shared": 1,
+            "only_left": 4
+          },
+          "aam_binary": {
+            "shared": 1,
+            "only_left": 4
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 4
+          },
+          "slap_weighted": {
+            "shared": 2,
+            "only_left": 3
+          },
+          "slap_float_cost": {
+            "shared": 5,
+            "only_left": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 5,
+      "name": "pr7.V.dodh_ts910",
+      "direction": "P_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "status": "complete",
+          "full_witnesses": 70,
+          "heavy_classes": 20,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.9241175599999996,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0016343230000000486,
+              "wall": 0.0027528684586286545
+            },
+            "search": {
+              "cpu": 0.6211127249999993,
+              "wall": 0.6212996933609247
+            },
+            "symmetry": {
+              "cpu": 0.2954287529999998,
+              "wall": 0.29569005593657494
+            },
+            "persistence": {
+              "cpu": 0.06162877999999944,
+              "wall": 0.08498034626245499
+            },
+            "collect": {
+              "cpu": 0.0059417590000003795,
+              "wall": 0.005950041115283966
+            }
+          },
+          "capped_units": 0,
+          "total_units": 33,
+          "best": {
+            "mapping": [
+              8,
+              14,
+              17,
+              2,
+              13,
+              12,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              10,
+              11,
+              21,
+              20,
+              19,
+              18,
+              15,
+              16,
+              25,
+              26,
+              24,
+              23,
+              9,
+              22,
+              27
+            ],
+            "origin": {
+              "cut": 30,
+              "terminal": 9
+            },
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8777484176512542,
+            "certificate": "2e6391d34168dfb75f4271f1d5315834a89b77d4cf8245f47d1e95145ee643e8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  7,
+                  12,
+                  6,
+                  1,
+                  13,
+                  0,
+                  5,
+                  4,
+                  3,
+                  10,
+                  11,
+                  21,
+                  20,
+                  19,
+                  18,
+                  16,
+                  15,
+                  24,
+                  23,
+                  26,
+                  25,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "cut": 4,
+                  "terminal": 48
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 2,
+                  "total": 6
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 3.402986468464469,
+                "certificate": "2140dcde2c288f97210c21547f194caffd665d12edf2d06c52e400e9cf332806"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  7,
+                  12,
+                  6,
+                  1,
+                  13,
+                  0,
+                  5,
+                  4,
+                  3,
+                  10,
+                  11,
+                  21,
+                  20,
+                  19,
+                  18,
+                  16,
+                  15,
+                  24,
+                  23,
+                  26,
+                  25,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "cut": 4,
+                  "terminal": 48
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 2,
+                  "total": 6
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 3.402986468464469,
+                "certificate": "2140dcde2c288f97210c21547f194caffd665d12edf2d06c52e400e9cf332806"
+              }
+            }
+          }
+        },
+        "aam_binary": {
+          "status": "complete",
+          "full_witnesses": 70,
+          "heavy_classes": 22,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 1.0072362579999996,
+          "phases": {
+            "prepare": {
+              "cpu": 0.0017496019999999612,
+              "wall": 0.004400409758090973
+            },
+            "search": {
+              "cpu": 0.8905909849999994,
+              "wall": 0.8910773862153292
+            },
+            "symmetry": {
+              "cpu": 0.1134023960000003,
+              "wall": 0.1140326727181673
+            },
+            "persistence": {
+              "cpu": 0.032300738000000995,
+              "wall": 0.16493760608136654
+            },
+            "collect": {
+              "cpu": 0.0014932749999999606,
+              "wall": 0.0014992114156484604
+            }
+          },
+          "capped_units": 33,
+          "total_units": 33,
+          "best": {
+            "mapping": [
+              8,
+              14,
+              17,
+              2,
+              13,
+              12,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              10,
+              11,
+              21,
+              20,
+              19,
+              18,
+              15,
+              16,
+              26,
+              25,
+              24,
+              23,
+              9,
+              22,
+              27
+            ],
+            "origin": {
+              "cut": 1,
+              "terminal": 27
+            },
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8777484176512542,
+            "certificate": "2e6391d34168dfb75f4271f1d5315834a89b77d4cf8245f47d1e95145ee643e8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  7,
+                  12,
+                  6,
+                  1,
+                  13,
+                  0,
+                  5,
+                  4,
+                  3,
+                  10,
+                  11,
+                  21,
+                  20,
+                  19,
+                  18,
+                  16,
+                  15,
+                  24,
+                  23,
+                  26,
+                  25,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "cut": 4,
+                  "terminal": 12
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 2,
+                  "total": 6
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 3.402986468464469,
+                "certificate": "2140dcde2c288f97210c21547f194caffd665d12edf2d06c52e400e9cf332806"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  7,
+                  12,
+                  6,
+                  1,
+                  13,
+                  0,
+                  5,
+                  4,
+                  3,
+                  10,
+                  11,
+                  21,
+                  20,
+                  19,
+                  18,
+                  16,
+                  15,
+                  24,
+                  23,
+                  26,
+                  25,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "cut": 4,
+                  "terminal": 12
+                },
+                "events": {
+                  "broken": 1,
+                  "formed": 3,
+                  "order_changed": 2,
+                  "total": 6
+                },
+                "heavy_events": 4,
+                "heavy_wbo_l1": 3.402986468464469,
+                "certificate": "2140dcde2c288f97210c21547f194caffd665d12edf2d06c52e400e9cf332806"
+              }
+            }
+          }
+        },
+        "slap_binary": {
+          "status": "complete",
+          "full_witnesses": 7,
+          "heavy_classes": 3,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.04670025100000019,
+          "phases": {
+            "search": {
+              "cpu": 0.04628459100000015,
+              "wall": 0.04629142954945564
+            },
+            "persistence": {
+              "cpu": 0.008708598999999873,
+              "wall": 0.014536131173372269
+            },
+            "collect": {
+              "cpu": 0.0004156600000000399,
+              "wall": 0.0004176609218120575
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              8,
+              14,
+              17,
+              2,
+              13,
+              12,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              10,
+              11,
+              21,
+              20,
+              19,
+              18,
+              15,
+              16,
+              25,
+              26,
+              23,
+              24,
+              9,
+              22,
+              27
+            ],
+            "origin": {
+              "order": 0,
+              "candidate": 0,
+              "native_cost": 4.0
+            },
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8777484176512542,
+            "certificate": "2e6391d34168dfb75f4271f1d5315834a89b77d4cf8245f47d1e95145ee643e8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  12,
+                  13,
+                  10,
+                  3,
+                  11,
+                  4,
+                  5,
+                  0,
+                  1,
+                  6,
+                  7,
+                  19,
+                  20,
+                  21,
+                  18,
+                  16,
+                  15,
+                  23,
+                  24,
+                  25,
+                  26,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "order": 4,
+                  "candidate": 0,
+                  "native_cost": 4.0
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 2,
+                  "order_changed": 2,
+                  "total": 4
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.8185966103874245,
+                "certificate": "d433396e3f64ad99fca23028fe981d2819861c9a9a9c7ed7a548e00d72cfb1d8"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  12,
+                  13,
+                  10,
+                  3,
+                  11,
+                  4,
+                  5,
+                  0,
+                  1,
+                  6,
+                  7,
+                  19,
+                  20,
+                  21,
+                  18,
+                  16,
+                  15,
+                  23,
+                  24,
+                  25,
+                  26,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "order": 4,
+                  "candidate": 0,
+                  "native_cost": 4.0
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 2,
+                  "order_changed": 2,
+                  "total": 4
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.8185966103874245,
+                "certificate": "d433396e3f64ad99fca23028fe981d2819861c9a9a9c7ed7a548e00d72cfb1d8"
+              }
+            }
+          }
+        },
+        "slap_weighted": {
+          "status": "complete",
+          "full_witnesses": 10,
+          "heavy_classes": 6,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.2406265310000003,
+          "phases": {
+            "search": {
+              "cpu": 0.2401361270000002,
+              "wall": 0.24025901779532433
+            },
+            "persistence": {
+              "cpu": 0.010407739999999888,
+              "wall": 0.016144810244441032
+            },
+            "collect": {
+              "cpu": 0.0004904040000001109,
+              "wall": 0.0004926081746816635
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              8,
+              14,
+              17,
+              2,
+              13,
+              12,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              10,
+              11,
+              20,
+              26,
+              21,
+              18,
+              15,
+              16,
+              24,
+              19,
+              25,
+              23,
+              9,
+              22,
+              27
+            ],
+            "origin": {
+              "order": 3,
+              "candidate": 0,
+              "native_cost": 2.0
+            },
+            "events": {
+              "broken": 6,
+              "formed": 8,
+              "order_changed": 1,
+              "total": 15
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8777484176512542,
+            "certificate": "2e6391d34168dfb75f4271f1d5315834a89b77d4cf8245f47d1e95145ee643e8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  12,
+                  13,
+                  10,
+                  1,
+                  11,
+                  0,
+                  5,
+                  4,
+                  3,
+                  6,
+                  7,
+                  19,
+                  21,
+                  26,
+                  18,
+                  16,
+                  15,
+                  24,
+                  22,
+                  23,
+                  20,
+                  9,
+                  25,
+                  27
+                ],
+                "origin": {
+                  "order": 1,
+                  "candidate": 0,
+                  "native_cost": 6.0
+                },
+                "events": {
+                  "broken": 9,
+                  "formed": 11,
+                  "order_changed": 2,
+                  "total": 22
+                },
+                "heavy_events": 6,
+                "heavy_wbo_l1": 5.419126875920514,
+                "certificate": "42fb6fd6885709d6991dcff4493a12b824a4544576d692563ad4f29a471ba677"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  12,
+                  13,
+                  10,
+                  1,
+                  11,
+                  0,
+                  5,
+                  4,
+                  3,
+                  6,
+                  7,
+                  19,
+                  21,
+                  26,
+                  18,
+                  16,
+                  15,
+                  24,
+                  22,
+                  23,
+                  20,
+                  9,
+                  25,
+                  27
+                ],
+                "origin": {
+                  "order": 1,
+                  "candidate": 0,
+                  "native_cost": 6.0
+                },
+                "events": {
+                  "broken": 9,
+                  "formed": 11,
+                  "order_changed": 2,
+                  "total": 22
+                },
+                "heavy_events": 6,
+                "heavy_wbo_l1": 5.419126875920514,
+                "certificate": "42fb6fd6885709d6991dcff4493a12b824a4544576d692563ad4f29a471ba677"
+              }
+            }
+          }
+        },
+        "slap_float_cost": {
+          "status": "complete",
+          "full_witnesses": 7,
+          "heavy_classes": 3,
+          "class_scope": "Score-preserving endpoint-symmetry classes; AAM witness lower bound, not full-family count.",
+          "compute_cpu": 0.08194110400000021,
+          "phases": {
+            "search": {
+              "cpu": 0.08126277800000004,
+              "wall": 0.0823396872729063
+            },
+            "persistence": {
+              "cpu": 0.016621059999999965,
+              "wall": 0.021896950900554657
+            },
+            "collect": {
+              "cpu": 0.0006783260000001734,
+              "wall": 0.000682048499584198
+            }
+          },
+          "capped_units": 0,
+          "total_units": 10,
+          "best": {
+            "mapping": [
+              8,
+              14,
+              17,
+              2,
+              13,
+              12,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              10,
+              11,
+              21,
+              20,
+              19,
+              18,
+              15,
+              16,
+              25,
+              26,
+              24,
+              23,
+              9,
+              27,
+              22
+            ],
+            "origin": {
+              "order": 1,
+              "candidate": 0,
+              "native_cost": 4.9396473475175435
+            },
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "heavy_events": 1,
+            "heavy_wbo_l1": 1.8777484176512542,
+            "certificate": "2e6391d34168dfb75f4271f1d5315834a89b77d4cf8245f47d1e95145ee643e8"
+          },
+          "historical_core": {
+            "1": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  13,
+                  12,
+                  6,
+                  1,
+                  7,
+                  0,
+                  5,
+                  4,
+                  3,
+                  10,
+                  11,
+                  21,
+                  20,
+                  19,
+                  18,
+                  16,
+                  15,
+                  24,
+                  23,
+                  25,
+                  26,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "order": 3,
+                  "candidate": 0,
+                  "native_cost": 5.250195711917259
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 2,
+                  "order_changed": 2,
+                  "total": 4
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.7890652180580946,
+                "certificate": "a22cce626477a0ffe2c8d7c93f349d1296077c6f06b898f6f51cf647c02fec4e"
+              }
+            },
+            "2": {
+              "status": "witness_recovered",
+              "example": {
+                "mapping": [
+                  8,
+                  17,
+                  14,
+                  2,
+                  13,
+                  12,
+                  6,
+                  1,
+                  7,
+                  0,
+                  5,
+                  4,
+                  3,
+                  10,
+                  11,
+                  21,
+                  20,
+                  19,
+                  18,
+                  16,
+                  15,
+                  24,
+                  23,
+                  25,
+                  26,
+                  9,
+                  22,
+                  27
+                ],
+                "origin": {
+                  "order": 3,
+                  "candidate": 0,
+                  "native_cost": 5.250195711917259
+                },
+                "events": {
+                  "broken": 0,
+                  "formed": 2,
+                  "order_changed": 2,
+                  "total": 4
+                },
+                "heavy_events": 2,
+                "heavy_wbo_l1": 1.7890652180580946,
+                "certificate": "a22cce626477a0ffe2c8d7c93f349d1296077c6f06b898f6f51cf647c02fec4e"
+              }
+            }
+          }
+        }
+      },
+      "overlap": {
+        "aam_weighted": {
+          "aam_weighted": {
+            "shared": 20,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 11,
+            "only_left": 9
+          },
+          "slap_binary": {
+            "shared": 3,
+            "only_left": 17
+          },
+          "slap_weighted": {
+            "shared": 4,
+            "only_left": 16
+          },
+          "slap_float_cost": {
+            "shared": 2,
+            "only_left": 18
+          }
+        },
+        "aam_binary": {
+          "aam_weighted": {
+            "shared": 11,
+            "only_left": 11
+          },
+          "aam_binary": {
+            "shared": 22,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 3,
+            "only_left": 19
+          },
+          "slap_weighted": {
+            "shared": 4,
+            "only_left": 18
+          },
+          "slap_float_cost": {
+            "shared": 2,
+            "only_left": 20
+          }
+        },
+        "slap_binary": {
+          "aam_weighted": {
+            "shared": 3,
+            "only_left": 0
+          },
+          "aam_binary": {
+            "shared": 3,
+            "only_left": 0
+          },
+          "slap_binary": {
+            "shared": 3,
+            "only_left": 0
+          },
+          "slap_weighted": {
+            "shared": 2,
+            "only_left": 1
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 2
+          }
+        },
+        "slap_weighted": {
+          "aam_weighted": {
+            "shared": 4,
+            "only_left": 2
+          },
+          "aam_binary": {
+            "shared": 4,
+            "only_left": 2
+          },
+          "slap_binary": {
+            "shared": 2,
+            "only_left": 4
+          },
+          "slap_weighted": {
+            "shared": 6,
+            "only_left": 0
+          },
+          "slap_float_cost": {
+            "shared": 1,
+            "only_left": 5
+          }
+        },
+        "slap_float_cost": {
+          "aam_weighted": {
+            "shared": 2,
+            "only_left": 1
+          },
+          "aam_binary": {
+            "shared": 2,
+            "only_left": 1
+          },
+          "slap_binary": {
+            "shared": 1,
+            "only_left": 2
+          },
+          "slap_weighted": {
+            "shared": 1,
+            "only_left": 2
+          },
+          "slap_float_cost": {
+            "shared": 3,
+            "only_left": 0
+          }
+        }
+      }
+    }
+  ],
+  "scope": "Actual R/TS and P/TS mappings. Common heavy-edge score and saved historical core recovery, not chemical accuracy."
+}

@@ -1,0 +1,59 @@
+{
+  "inputs": [
+    {
+      "index": 0,
+      "name": "pr1.tempo_ts1",
+      "direction": "R_to_TS"
+    },
+    {
+      "index": 1,
+      "name": "pr1.tempo_ts1",
+      "direction": "P_to_TS"
+    },
+    {
+      "index": 2,
+      "name": "pr16.carbocation_ts5",
+      "direction": "R_to_TS"
+    },
+    {
+      "index": 3,
+      "name": "pr16.carbocation_ts5",
+      "direction": "P_to_TS"
+    },
+    {
+      "index": 4,
+      "name": "pr7.V.dodh_ts910",
+      "direction": "R_to_TS"
+    },
+    {
+      "index": 5,
+      "name": "pr7.V.dodh_ts910",
+      "direction": "P_to_TS"
+    }
+  ],
+  "methods": [
+    "aam_weighted",
+    "aam_binary",
+    "slap_binary",
+    "slap_weighted",
+    "slap_float_cost"
+  ],
+  "tasks": 30,
+  "seed_count": 10,
+  "root_seed": 42,
+  "input_order_seed": 20260909,
+  "branch_cap": 100,
+  "iso_tolerance": 1.0,
+  "graph_floor": 0.2,
+  "scoring_event_tolerance": 0.5,
+  "explicit_hydrogen": true,
+  "aam_cuts": "uncut plus every source edge, both AAM weight modes",
+  "slap_orders": 10,
+  "slap_break_sym": "heavy",
+  "float_variant": "Only LAP input matrix dtype corrected; all other upstream heuristics unchanged.",
+  "reference_role": "Historical algorithm-generated TS core assignments; evaluation only, not curated truth.",
+  "git_commit": "848e44bf889c250d179a95b654387b7e4be16370",
+  "driver_sha256": "2cedf07d5611d525e223c3c55ccd0dc419283c4c5867750f0fdc6215cd885d54",
+  "slap_sha256": "62964b12866e691698d594bfdc65f84ae714fb049df4267a5f5964b5c7e5fa3c",
+  "native_sha256": "44464a65da236a8e2f64570b2233b14babc9e71b5853ab729624167914ee1096"
+}

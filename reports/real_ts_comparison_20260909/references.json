@@ -1,0 +1,176 @@
+[
+  {
+    "index": 0,
+    "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr1.tempo_ts1/ts_stage.json",
+    "sha256": "302a7be2d8ca3bd98e1eec54b67bffbb908dda09520490eb4b458208f899d02a",
+    "references": [
+      {
+        "mechanism": 1,
+        "status": "no_historical_TS_assignment"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr1.tempo_ts1/ts_stage.json",
+    "sha256": "302a7be2d8ca3bd98e1eec54b67bffbb908dda09520490eb4b458208f899d02a",
+    "references": [
+      {
+        "mechanism": 1,
+        "status": "no_historical_TS_assignment"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr16.carbocation_ts5/ts_stage.json",
+    "sha256": "2c88315843af209cfe6e1d4bcf43151921dcd2bbe993ec7849d865cd58620e19",
+    "references": [
+      {
+        "mechanism": 1,
+        "status": "available",
+        "heavy_core": {
+          "0": 10,
+          "1": 14,
+          "2": 8,
+          "6": 6
+        },
+        "full_core": {
+          "0": 10,
+          "1": 14,
+          "2": 8,
+          "6": 6
+        }
+      },
+      {
+        "mechanism": 2,
+        "status": "available",
+        "heavy_core": {
+          "8": 12,
+          "10": 1,
+          "14": 0,
+          "16": 2
+        },
+        "full_core": {
+          "8": 12,
+          "10": 1,
+          "14": 0,
+          "16": 2
+        }
+      }
+    ]
+  },
+  {
+    "index": 3,
+    "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr16.carbocation_ts5/ts_stage.json",
+    "sha256": "2c88315843af209cfe6e1d4bcf43151921dcd2bbe993ec7849d865cd58620e19",
+    "references": [
+      {
+        "mechanism": 1,
+        "status": "available",
+        "heavy_core": {
+          "1": 10,
+          "12": 14,
+          "2": 8,
+          "3": 6
+        },
+        "full_core": {
+          "1": 10,
+          "12": 14,
+          "2": 8,
+          "3": 6
+        }
+      },
+      {
+        "mechanism": 2,
+        "status": "available",
+        "heavy_core": {
+          "0": 12,
+          "14": 1,
+          "5": 0,
+          "4": 2
+        },
+        "full_core": {
+          "0": 12,
+          "14": 1,
+          "5": 0,
+          "4": 2
+        }
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr7.V.dodh_ts910/ts_stage.json",
+    "sha256": "b8c276d5060187409b71751086be5edb6dcaf01ae547f5c0e760dfde5222a716",
+    "references": [
+      {
+        "mechanism": 1,
+        "status": "available",
+        "heavy_core": {
+          "8": 8,
+          "12": 17,
+          "15": 9
+        },
+        "full_core": {
+          "8": 8,
+          "12": 17,
+          "15": 9,
+          "22": 27
+        }
+      },
+      {
+        "mechanism": 2,
+        "status": "available",
+        "heavy_core": {
+          "11": 16,
+          "12": 9,
+          "15": 17
+        },
+        "full_core": {
+          "11": 16,
+          "12": 9,
+          "15": 17,
+          "27": 27
+        }
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "source": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr7.V.dodh_ts910/ts_stage.json",
+    "sha256": "b8c276d5060187409b71751086be5edb6dcaf01ae547f5c0e760dfde5222a716",
+    "references": [
+      {
+        "mechanism": 1,
+        "status": "available",
+        "heavy_core": {
+          "0": 8,
+          "1": 17,
+          "25": 9
+        },
+        "full_core": {
+          "0": 8,
+          "1": 17,
+          "25": 9,
+          "27": 27
+        }
+      },
+      {
+        "mechanism": 2,
+        "status": "available",
+        "heavy_core": {
+          "19": 16,
+          "25": 9,
+          "1": 17
+        },
+        "full_core": {
+          "19": 16,
+          "25": 9,
+          "1": 17,
+          "27": 27
+        }
+      }
+    ]
+  }
+]

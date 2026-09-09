@@ -1,0 +1,530 @@
+[
+  {
+    "index": 2,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "reference": {
+      "0": 10,
+      "1": 14,
+      "2": 8,
+      "6": 6
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 2,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "reference": {
+      "8": 12,
+      "10": 1,
+      "14": 0,
+      "16": 2
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.5621786806732416,
+    "example": null
+  },
+  {
+    "index": 2,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "reference": {
+      "0": 10,
+      "1": 14,
+      "2": 8,
+      "6": 6
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 2,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "reference": {
+      "8": 12,
+      "10": 1,
+      "14": 0,
+      "16": 2
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 2,
+    "method": "slap_binary",
+    "mechanism": "1",
+    "reference": {
+      "0": 10,
+      "1": 14,
+      "2": 8,
+      "6": 6
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.010463403537869453,
+    "example": null
+  },
+  {
+    "index": 2,
+    "method": "slap_binary",
+    "mechanism": "2",
+    "reference": {
+      "8": 12,
+      "10": 1,
+      "14": 0,
+      "16": 2
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.012777749449014664,
+    "example": null
+  },
+  {
+    "index": 2,
+    "method": "slap_weighted",
+    "mechanism": "1",
+    "reference": {
+      "0": 10,
+      "1": 14,
+      "2": 8,
+      "6": 6
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.009909003973007202,
+    "example": null
+  },
+  {
+    "index": 2,
+    "method": "slap_weighted",
+    "mechanism": "2",
+    "reference": {
+      "8": 12,
+      "10": 1,
+      "14": 0,
+      "16": 2
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.013055900111794472,
+    "example": null
+  },
+  {
+    "index": 2,
+    "method": "slap_float_cost",
+    "mechanism": "1",
+    "reference": {
+      "0": 10,
+      "1": 14,
+      "2": 8,
+      "6": 6
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.0042800139635801315,
+    "example": null
+  },
+  {
+    "index": 2,
+    "method": "slap_float_cost",
+    "mechanism": "2",
+    "reference": {
+      "8": 12,
+      "10": 1,
+      "14": 0,
+      "16": 2
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.005333647131919861,
+    "example": null
+  },
+  {
+    "index": 3,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "reference": {
+      "1": 10,
+      "12": 14,
+      "2": 8,
+      "3": 6
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "reference": {
+      "0": 12,
+      "14": 1,
+      "5": 0,
+      "4": 2
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "reference": {
+      "1": 10,
+      "12": 14,
+      "2": 8,
+      "3": 6
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "reference": {
+      "0": 12,
+      "14": 1,
+      "5": 0,
+      "4": 2
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "slap_binary",
+    "mechanism": "1",
+    "reference": {
+      "1": 10,
+      "12": 14,
+      "2": 8,
+      "3": 6
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "slap_binary",
+    "mechanism": "2",
+    "reference": {
+      "0": 12,
+      "14": 1,
+      "5": 0,
+      "4": 2
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "slap_weighted",
+    "mechanism": "1",
+    "reference": {
+      "1": 10,
+      "12": 14,
+      "2": 8,
+      "3": 6
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.011212768033146858,
+    "example": null
+  },
+  {
+    "index": 3,
+    "method": "slap_weighted",
+    "mechanism": "2",
+    "reference": {
+      "0": 12,
+      "14": 1,
+      "5": 0,
+      "4": 2
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.01021941564977169,
+    "example": null
+  },
+  {
+    "index": 3,
+    "method": "slap_float_cost",
+    "mechanism": "1",
+    "reference": {
+      "1": 10,
+      "12": 14,
+      "2": 8,
+      "3": 6
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.013902304694056511,
+    "example": null
+  },
+  {
+    "index": 3,
+    "method": "slap_float_cost",
+    "mechanism": "2",
+    "reference": {
+      "0": 12,
+      "14": 1,
+      "5": 0,
+      "4": 2
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.013029305264353752,
+    "example": null
+  },
+  {
+    "index": 4,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "reference": {
+      "8": 8,
+      "12": 17,
+      "15": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "reference": {
+      "11": 16,
+      "12": 9,
+      "15": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "reference": {
+      "8": 8,
+      "12": 17,
+      "15": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "reference": {
+      "11": 16,
+      "12": 9,
+      "15": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "slap_binary",
+    "mechanism": "1",
+    "reference": {
+      "8": 8,
+      "12": 17,
+      "15": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "slap_binary",
+    "mechanism": "2",
+    "reference": {
+      "11": 16,
+      "12": 9,
+      "15": 17
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.001531347632408142,
+    "example": null
+  },
+  {
+    "index": 4,
+    "method": "slap_weighted",
+    "mechanism": "1",
+    "reference": {
+      "8": 8,
+      "12": 17,
+      "15": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "slap_weighted",
+    "mechanism": "2",
+    "reference": {
+      "11": 16,
+      "12": 9,
+      "15": 17
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.0045071132481098175,
+    "example": null
+  },
+  {
+    "index": 4,
+    "method": "slap_float_cost",
+    "mechanism": "1",
+    "reference": {
+      "8": 8,
+      "12": 17,
+      "15": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "slap_float_cost",
+    "mechanism": "2",
+    "reference": {
+      "11": 16,
+      "12": 9,
+      "15": 17
+    },
+    "status": "excluded_from_saved_output",
+    "via": "symmetry_normalized_query",
+    "seconds": 0.002608528360724449,
+    "example": null
+  },
+  {
+    "index": 5,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "reference": {
+      "0": 8,
+      "1": 17,
+      "25": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "reference": {
+      "19": 16,
+      "25": 9,
+      "1": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "reference": {
+      "0": 8,
+      "1": 17,
+      "25": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "reference": {
+      "19": 16,
+      "25": 9,
+      "1": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "slap_binary",
+    "mechanism": "1",
+    "reference": {
+      "0": 8,
+      "1": 17,
+      "25": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "slap_binary",
+    "mechanism": "2",
+    "reference": {
+      "19": 16,
+      "25": 9,
+      "1": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "slap_weighted",
+    "mechanism": "1",
+    "reference": {
+      "0": 8,
+      "1": 17,
+      "25": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "slap_weighted",
+    "mechanism": "2",
+    "reference": {
+      "19": 16,
+      "25": 9,
+      "1": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "slap_float_cost",
+    "mechanism": "1",
+    "reference": {
+      "0": 8,
+      "1": 17,
+      "25": 9
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "slap_float_cost",
+    "mechanism": "2",
+    "reference": {
+      "19": 16,
+      "25": 9,
+      "1": 17
+    },
+    "status": "recovered",
+    "via": "literal_terminal_witness"
+  }
+]

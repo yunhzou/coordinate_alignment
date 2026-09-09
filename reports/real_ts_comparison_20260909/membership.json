@@ -1,0 +1,123 @@
+[
+  {
+    "index": 2,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 2,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "status": "excluded_from_saved_families",
+    "via": "compressed_family_query",
+    "paths_queried": 108,
+    "seconds": 0.8865307085216045,
+    "example": null,
+    "reference": {
+      "8": 12,
+      "10": 1,
+      "14": 0,
+      "16": 2
+    }
+  },
+  {
+    "index": 2,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 2,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 3,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 4,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_weighted",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_weighted",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_binary",
+    "mechanism": "1",
+    "status": "recovered",
+    "via": "terminal_witness"
+  },
+  {
+    "index": 5,
+    "method": "aam_binary",
+    "mechanism": "2",
+    "status": "recovered",
+    "via": "terminal_witness"
+  }
+]

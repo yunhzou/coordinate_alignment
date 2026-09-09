@@ -5,6 +5,10 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Concrete AAM / SLAP comparison on real endpoint-to-TS inputs](real_ts_comparison_20260909/README.md)
+— six pairs from three cached cases; actual saved alternatives, full-H event
+scores, binary/continuous ablation and offline viewer. Exploratory, not curated TS accuracy.
+
 [Output information and continuous weights for TS structures](ts_weight_information_20260909/README.md)
 — interface audit and actual cached TS weights; no TS mapping-accuracy claim.
 

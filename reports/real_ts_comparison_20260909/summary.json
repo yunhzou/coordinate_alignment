@@ -1,0 +1,3807 @@
+{
+  "rows": [
+    {
+      "index": 0,
+      "name": "pr1.tempo_ts1",
+      "direction": "R_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 5,
+          "capped_cuts": 0,
+          "cut_or_order_count": 27,
+          "compute_cpu": 0.5993473019999995,
+          "all_H_scoring_cpu": 11.111892755,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                21
+              ],
+              [
+                13,
+                20
+              ],
+              [
+                14,
+                19
+              ],
+              [
+                15,
+                22
+              ],
+              [
+                16,
+                14
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                12
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                25
+              ],
+              [
+                21,
+                23
+              ],
+              [
+                22,
+                24
+              ],
+              [
+                23,
+                17
+              ],
+              [
+                24,
+                18
+              ],
+              [
+                25,
+                16
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.010656038299202919,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "aam_binary": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 6,
+          "capped_cuts": 0,
+          "cut_or_order_count": 27,
+          "compute_cpu": 0.6973954429999998,
+          "all_H_scoring_cpu": 11.151954722000001,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                10
+              ],
+              [
+                8,
+                9
+              ],
+              [
+                9,
+                8
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                19
+              ],
+              [
+                13,
+                20
+              ],
+              [
+                14,
+                21
+              ],
+              [
+                15,
+                22
+              ],
+              [
+                16,
+                14
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                12
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                24
+              ],
+              [
+                21,
+                25
+              ],
+              [
+                22,
+                23
+              ],
+              [
+                23,
+                17
+              ],
+              [
+                24,
+                18
+              ],
+              [
+                25,
+                16
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.011384038254618645,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "slap_binary": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 2,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.12277156000000022,
+          "all_H_scoring_cpu": 0.397108874,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                19
+              ],
+              [
+                17,
+                20
+              ],
+              [
+                18,
+                21
+              ],
+              [
+                19,
+                22
+              ],
+              [
+                20,
+                17
+              ],
+              [
+                21,
+                18
+              ],
+              [
+                22,
+                16
+              ],
+              [
+                23,
+                24
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                25
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.009046660736203194,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_weighted": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 8,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.26317429199999987,
+          "all_H_scoring_cpu": 1.142170063,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                21
+              ],
+              [
+                17,
+                20
+              ],
+              [
+                18,
+                19
+              ],
+              [
+                19,
+                22
+              ],
+              [
+                20,
+                18
+              ],
+              [
+                21,
+                16
+              ],
+              [
+                22,
+                17
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                24
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.013795742765069008,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 3
+          }
+        },
+        "slap_float_cost": {
+          "full_H_events": 7,
+          "lower": 7,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 3,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.06299882299999993,
+          "all_H_scoring_cpu": 0.37060156199999994,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 7,
+            "upper": 7,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                10
+              ],
+              [
+                8,
+                18
+              ],
+              [
+                9,
+                8
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                19
+              ],
+              [
+                13,
+                20
+              ],
+              [
+                14,
+                21
+              ],
+              [
+                15,
+                22
+              ],
+              [
+                16,
+                14
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                12
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                9
+              ],
+              [
+                21,
+                23
+              ],
+              [
+                22,
+                24
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                16
+              ],
+              [
+                25,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 3,
+              "formed": 4,
+              "order_changed": 0,
+              "total": 7
+            },
+            "seconds": 0.0009411647915840149,
+            "order": "order_01.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 1,
+      "name": "pr1.tempo_ts1",
+      "direction": "P_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 9,
+          "capped_cuts": 0,
+          "cut_or_order_count": 27,
+          "compute_cpu": 0.5497395539999992,
+          "all_H_scoring_cpu": 11.194196928,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                10
+              ],
+              [
+                8,
+                9
+              ],
+              [
+                9,
+                8
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                19
+              ],
+              [
+                13,
+                20
+              ],
+              [
+                14,
+                21
+              ],
+              [
+                15,
+                22
+              ],
+              [
+                16,
+                14
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                12
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                24
+              ],
+              [
+                21,
+                23
+              ],
+              [
+                22,
+                25
+              ],
+              [
+                23,
+                16
+              ],
+              [
+                24,
+                17
+              ],
+              [
+                25,
+                18
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.012629523873329163,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "aam_binary": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 10,
+          "capped_cuts": 0,
+          "cut_or_order_count": 27,
+          "compute_cpu": 0.7694985410000011,
+          "all_H_scoring_cpu": 11.520873242999999,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                10
+              ],
+              [
+                8,
+                9
+              ],
+              [
+                9,
+                8
+              ],
+              [
+                10,
+                7
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                19
+              ],
+              [
+                13,
+                20
+              ],
+              [
+                14,
+                21
+              ],
+              [
+                15,
+                22
+              ],
+              [
+                16,
+                14
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                12
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                24
+              ],
+              [
+                21,
+                25
+              ],
+              [
+                22,
+                23
+              ],
+              [
+                23,
+                17
+              ],
+              [
+                24,
+                18
+              ],
+              [
+                25,
+                16
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.01154104433953762,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "slap_binary": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 3,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.12391318300000043,
+          "all_H_scoring_cpu": 0.42141368700000004,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                19
+              ],
+              [
+                17,
+                20
+              ],
+              [
+                18,
+                21
+              ],
+              [
+                19,
+                22
+              ],
+              [
+                20,
+                17
+              ],
+              [
+                21,
+                18
+              ],
+              [
+                22,
+                16
+              ],
+              [
+                23,
+                24
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                25
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.03415497951209545,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_weighted": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 9,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.23518702199999997,
+          "all_H_scoring_cpu": 1.139379386,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                19
+              ],
+              [
+                17,
+                20
+              ],
+              [
+                18,
+                21
+              ],
+              [
+                19,
+                22
+              ],
+              [
+                20,
+                18
+              ],
+              [
+                21,
+                16
+              ],
+              [
+                22,
+                17
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                24
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.013677302747964859,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 3
+          }
+        },
+        "slap_float_cost": {
+          "full_H_events": 11,
+          "lower": 11,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 5,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.04555765399999978,
+          "all_H_scoring_cpu": 0.342918694,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 11,
+            "upper": 11,
+            "mapping": [
+              [
+                0,
+                5
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                10
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                17
+              ],
+              [
+                10,
+                9
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                21
+              ],
+              [
+                17,
+                20
+              ],
+              [
+                18,
+                19
+              ],
+              [
+                19,
+                22
+              ],
+              [
+                20,
+                18
+              ],
+              [
+                21,
+                16
+              ],
+              [
+                22,
+                6
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                24
+              ]
+            ],
+            "events": {
+              "broken": 5,
+              "formed": 6,
+              "order_changed": 0,
+              "total": 11
+            },
+            "seconds": 0.008898785337805748,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "name": "pr16.carbocation_ts5",
+      "direction": "R_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 14,
+          "capped_cuts": 5,
+          "cut_or_order_count": 21,
+          "compute_cpu": 0.8325927639999999,
+          "all_H_scoring_cpu": 0.09228187999999998,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "method": "invariance",
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 2,
+            "transitions": [
+              1
+            ]
+          }
+        },
+        "aam_binary": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 18,
+          "capped_cuts": 0,
+          "cut_or_order_count": 21,
+          "compute_cpu": 0.3950744580000004,
+          "all_H_scoring_cpu": 0.18947344000000005,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "method": "invariance",
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "slap_binary": {
+          "full_H_events": 1,
+          "lower": 1,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 8,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.18679608000000003,
+          "all_H_scoring_cpu": 0.32662753199999994,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 1,
+            "upper": 1,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 1,
+              "order_changed": 0,
+              "total": 1
+            },
+            "seconds": 0.008729422464966774,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_weighted": {
+          "full_H_events": 5,
+          "lower": 5,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 10,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.1608405670000005,
+          "all_H_scoring_cpu": 0.33575380499999996,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 5,
+            "upper": 5,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                9
+              ],
+              [
+                10,
+                10
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                12,
+                12
+              ],
+              [
+                13,
+                13
+              ],
+              [
+                14,
+                16
+              ],
+              [
+                15,
+                17
+              ],
+              [
+                16,
+                14
+              ],
+              [
+                17,
+                15
+              ]
+            ],
+            "events": {
+              "broken": 2,
+              "formed": 3,
+              "order_changed": 0,
+              "total": 5
+            },
+            "seconds": 0.008708488196134567,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_float_cost": {
+          "full_H_events": 11,
+          "lower": 11,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 4,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.06459580900000017,
+          "all_H_scoring_cpu": 0.34926546599999997,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 11,
+            "upper": 11,
+            "mapping": [
+              [
+                0,
+                8
+              ],
+              [
+                1,
+                6
+              ],
+              [
+                2,
+                10
+              ],
+              [
+                3,
+                9
+              ],
+              [
+                4,
+                7
+              ],
+              [
+                5,
+                11
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                12
+              ],
+              [
+                11,
+                13
+              ],
+              [
+                12,
+                14
+              ],
+              [
+                13,
+                15
+              ],
+              [
+                14,
+                2
+              ],
+              [
+                15,
+                5
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 5,
+              "formed": 6,
+              "order_changed": 0,
+              "total": 11
+            },
+            "seconds": 0.0005702506750822067,
+            "order": "order_03.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 3,
+      "name": "pr16.carbocation_ts5",
+      "direction": "P_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 4,
+          "capped_cuts": 1,
+          "cut_or_order_count": 22,
+          "compute_cpu": 0.4224291899999998,
+          "all_H_scoring_cpu": 0.056230170000000024,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                12
+              ],
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                8
+              ],
+              [
+                3,
+                6
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                11
+              ],
+              [
+                7,
+                13
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                3
+              ],
+              [
+                11,
+                9
+              ],
+              [
+                12,
+                14
+              ],
+              [
+                13,
+                15
+              ],
+              [
+                14,
+                1
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 0,
+              "order_changed": 4,
+              "total": 4
+            },
+            "method": "invariance",
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "aam_binary": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 5,
+          "capped_cuts": 0,
+          "cut_or_order_count": 22,
+          "compute_cpu": 0.5963528260000002,
+          "all_H_scoring_cpu": 0.10558427799999998,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                12
+              ],
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                8
+              ],
+              [
+                3,
+                6
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                5,
+                0
+              ],
+              [
+                6,
+                11
+              ],
+              [
+                7,
+                13
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                5
+              ],
+              [
+                10,
+                3
+              ],
+              [
+                11,
+                9
+              ],
+              [
+                12,
+                14
+              ],
+              [
+                13,
+                15
+              ],
+              [
+                14,
+                1
+              ],
+              [
+                15,
+                4
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 0,
+              "order_changed": 4,
+              "total": 4
+            },
+            "method": "invariance",
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "slap_binary": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 1,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.0435634709999998,
+          "all_H_scoring_cpu": 0.33283453199999996,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                10
+              ],
+              [
+                1,
+                12
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                6
+              ],
+              [
+                5,
+                8
+              ],
+              [
+                6,
+                13
+              ],
+              [
+                7,
+                11
+              ],
+              [
+                8,
+                5
+              ],
+              [
+                9,
+                7
+              ],
+              [
+                10,
+                9
+              ],
+              [
+                11,
+                3
+              ],
+              [
+                12,
+                1
+              ],
+              [
+                13,
+                4
+              ],
+              [
+                14,
+                14
+              ],
+              [
+                15,
+                15
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 0,
+              "order_changed": 4,
+              "total": 4
+            },
+            "seconds": 0.008716238662600517,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_weighted": {
+          "full_H_events": 8,
+          "lower": 8,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 4,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.2546003250000004,
+          "all_H_scoring_cpu": 0.36800170199999993,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 8,
+            "upper": 8,
+            "mapping": [
+              [
+                0,
+                16
+              ],
+              [
+                1,
+                10
+              ],
+              [
+                2,
+                12
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                14
+              ],
+              [
+                6,
+                11
+              ],
+              [
+                7,
+                17
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                15
+              ],
+              [
+                11,
+                13
+              ],
+              [
+                12,
+                2
+              ],
+              [
+                13,
+                5
+              ],
+              [
+                14,
+                8
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                6
+              ],
+              [
+                17,
+                7
+              ]
+            ],
+            "events": {
+              "broken": 4,
+              "formed": 4,
+              "order_changed": 0,
+              "total": 8
+            },
+            "seconds": 0.0005410760641098022,
+            "order": "order_02.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_float_cost": {
+          "full_H_events": 13,
+          "lower": 13,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 9,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.08736252700000013,
+          "all_H_scoring_cpu": 0.336178745,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 13,
+            "upper": 13,
+            "mapping": [
+              [
+                0,
+                12
+              ],
+              [
+                1,
+                16
+              ],
+              [
+                2,
+                14
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                17
+              ],
+              [
+                7,
+                13
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                15
+              ],
+              [
+                12,
+                8
+              ],
+              [
+                13,
+                9
+              ],
+              [
+                14,
+                6
+              ],
+              [
+                15,
+                7
+              ],
+              [
+                16,
+                10
+              ],
+              [
+                17,
+                11
+              ]
+            ],
+            "events": {
+              "broken": 6,
+              "formed": 6,
+              "order_changed": 1,
+              "total": 13
+            },
+            "seconds": 0.00059456005692482,
+            "order": "order_01.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "name": "pr7.V.dodh_ts910",
+      "direction": "R_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 7,
+          "capped_cuts": 0,
+          "cut_or_order_count": 33,
+          "compute_cpu": 0.7352976060000003,
+          "all_H_scoring_cpu": 7.956418949000001,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                14
+              ],
+              [
+                10,
+                15
+              ],
+              [
+                11,
+                16
+              ],
+              [
+                12,
+                17
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                12
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                27
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                26
+              ],
+              [
+                25,
+                23
+              ],
+              [
+                26,
+                24
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 2,
+              "total": 4
+            },
+            "seconds": 0.009957365691661835,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "aam_binary": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 27,
+          "capped_cuts": 4,
+          "cut_or_order_count": 33,
+          "compute_cpu": 1.3582607860000016,
+          "all_H_scoring_cpu": 19.348479041,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                4
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                10
+              ],
+              [
+                7,
+                11
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                14
+              ],
+              [
+                10,
+                15
+              ],
+              [
+                11,
+                16
+              ],
+              [
+                12,
+                17
+              ],
+              [
+                13,
+                6
+              ],
+              [
+                14,
+                7
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                13
+              ],
+              [
+                17,
+                12
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                21
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                19
+              ],
+              [
+                22,
+                27
+              ],
+              [
+                23,
+                26
+              ],
+              [
+                24,
+                25
+              ],
+              [
+                25,
+                24
+              ],
+              [
+                26,
+                23
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 2,
+              "total": 4
+            },
+            "seconds": 0.010375509038567543,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 1,
+            "transitions": [
+              0
+            ]
+          }
+        },
+        "slap_binary": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 1,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.08544129100000009,
+          "all_H_scoring_cpu": 0.40163377699999997,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                14
+              ],
+              [
+                10,
+                15
+              ],
+              [
+                11,
+                16
+              ],
+              [
+                12,
+                17
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                12
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                27
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                26
+              ],
+              [
+                25,
+                24
+              ],
+              [
+                26,
+                23
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 2,
+              "total": 4
+            },
+            "seconds": 0.02570965699851513,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_weighted": {
+          "full_H_events": 4,
+          "lower": 4,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 7,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.23006831000000028,
+          "all_H_scoring_cpu": 0.7913375519999999,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 4,
+            "upper": 4,
+            "mapping": [
+              [
+                0,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                14
+              ],
+              [
+                10,
+                15
+              ],
+              [
+                11,
+                16
+              ],
+              [
+                12,
+                17
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                12
+              ],
+              [
+                17,
+                13
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                19
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                22,
+                27
+              ],
+              [
+                23,
+                26
+              ],
+              [
+                24,
+                25
+              ],
+              [
+                25,
+                24
+              ],
+              [
+                26,
+                23
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 2,
+              "total": 4
+            },
+            "seconds": 0.011898485943675041,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 2
+          }
+        },
+        "slap_float_cost": {
+          "full_H_events": 5,
+          "lower": 5,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 5,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.07955343700000006,
+          "all_H_scoring_cpu": 0.338426459,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 5,
+            "upper": 5,
+            "mapping": [
+              [
+                0,
+                4
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                5,
+                5
+              ],
+              [
+                6,
+                10
+              ],
+              [
+                7,
+                11
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                9,
+                14
+              ],
+              [
+                10,
+                15
+              ],
+              [
+                11,
+                16
+              ],
+              [
+                12,
+                17
+              ],
+              [
+                13,
+                6
+              ],
+              [
+                14,
+                7
+              ],
+              [
+                15,
+                9
+              ],
+              [
+                16,
+                13
+              ],
+              [
+                17,
+                12
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                21
+              ],
+              [
+                20,
+                20
+              ],
+              [
+                21,
+                19
+              ],
+              [
+                22,
+                22
+              ],
+              [
+                23,
+                25
+              ],
+              [
+                24,
+                26
+              ],
+              [
+                25,
+                23
+              ],
+              [
+                26,
+                24
+              ],
+              [
+                27,
+                27
+              ]
+            ],
+            "events": {
+              "broken": 1,
+              "formed": 3,
+              "order_changed": 1,
+              "total": 5
+            },
+            "seconds": 0.0008724946528673172,
+            "order": "order_01.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        }
+      }
+    },
+    {
+      "index": 5,
+      "name": "pr7.V.dodh_ts910",
+      "direction": "P_to_TS",
+      "methods": {
+        "aam_weighted": {
+          "full_H_events": 3,
+          "lower": 3,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 20,
+          "capped_cuts": 0,
+          "cut_or_order_count": 33,
+          "compute_cpu": 0.9241175599999996,
+          "all_H_scoring_cpu": 5.563168781,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 3,
+            "upper": 3,
+            "mapping": [
+              [
+                0,
+                8
+              ],
+              [
+                1,
+                14
+              ],
+              [
+                2,
+                17
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                12
+              ],
+              [
+                5,
+                13
+              ],
+              [
+                6,
+                10
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                11
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                0
+              ],
+              [
+                12,
+                1
+              ],
+              [
+                13,
+                6
+              ],
+              [
+                14,
+                7
+              ],
+              [
+                15,
+                19
+              ],
+              [
+                16,
+                20
+              ],
+              [
+                17,
+                21
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                16
+              ],
+              [
+                21,
+                26
+              ],
+              [
+                22,
+                25
+              ],
+              [
+                23,
+                24
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                9
+              ],
+              [
+                26,
+                27
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "method": "invariance",
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 5,
+            "transitions": [
+              1,
+              4
+            ]
+          }
+        },
+        "aam_binary": {
+          "full_H_events": 3,
+          "lower": 3,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 22,
+          "capped_cuts": 33,
+          "cut_or_order_count": 33,
+          "compute_cpu": 1.0072362579999996,
+          "all_H_scoring_cpu": 4.546630327999999,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 3,
+            "upper": 3,
+            "mapping": [
+              [
+                0,
+                8
+              ],
+              [
+                1,
+                14
+              ],
+              [
+                2,
+                17
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                13
+              ],
+              [
+                5,
+                12
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                21
+              ],
+              [
+                16,
+                20
+              ],
+              [
+                17,
+                19
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                16
+              ],
+              [
+                21,
+                26
+              ],
+              [
+                22,
+                25
+              ],
+              [
+                23,
+                24
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                9
+              ],
+              [
+                26,
+                27
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "seconds": 0.017850443720817566,
+            "graph": "cut_0000.pkl.gz",
+            "terminal": 7,
+            "transitions": [
+              0,
+              2
+            ]
+          }
+        },
+        "slap_binary": {
+          "full_H_events": 3,
+          "lower": 3,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 3,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.04670025100000019,
+          "all_H_scoring_cpu": 0.405178969,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 3,
+            "upper": 3,
+            "mapping": [
+              [
+                0,
+                8
+              ],
+              [
+                1,
+                14
+              ],
+              [
+                2,
+                17
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                13
+              ],
+              [
+                5,
+                12
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                21
+              ],
+              [
+                16,
+                20
+              ],
+              [
+                17,
+                19
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                16
+              ],
+              [
+                21,
+                25
+              ],
+              [
+                22,
+                26
+              ],
+              [
+                23,
+                23
+              ],
+              [
+                24,
+                24
+              ],
+              [
+                25,
+                9
+              ],
+              [
+                26,
+                27
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "seconds": 0.03721466474235058,
+            "order": "order_00.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        },
+        "slap_weighted": {
+          "full_H_events": 3,
+          "lower": 3,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 6,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.2406265310000003,
+          "all_H_scoring_cpu": 0.855083179,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 3,
+            "upper": 3,
+            "mapping": [
+              [
+                0,
+                8
+              ],
+              [
+                1,
+                14
+              ],
+              [
+                2,
+                17
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                13
+              ],
+              [
+                5,
+                12
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                21
+              ],
+              [
+                16,
+                20
+              ],
+              [
+                17,
+                19
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                16
+              ],
+              [
+                21,
+                26
+              ],
+              [
+                22,
+                25
+              ],
+              [
+                23,
+                24
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                9
+              ],
+              [
+                26,
+                22
+              ],
+              [
+                27,
+                27
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "seconds": 0.02194344438612461,
+            "order": "order_03.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 2
+          }
+        },
+        "slap_float_cost": {
+          "full_H_events": 3,
+          "lower": 3,
+          "full_H_minimum_proven": true,
+          "heavy_witness_classes": 3,
+          "capped_cuts": 0,
+          "cut_or_order_count": 10,
+          "compute_cpu": 0.08194110400000021,
+          "all_H_scoring_cpu": 0.334629809,
+          "best": {
+            "status": "optimal_in_family",
+            "lower": 3,
+            "upper": 3,
+            "mapping": [
+              [
+                0,
+                8
+              ],
+              [
+                1,
+                14
+              ],
+              [
+                2,
+                17
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                13
+              ],
+              [
+                5,
+                12
+              ],
+              [
+                6,
+                6
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                0
+              ],
+              [
+                10,
+                5
+              ],
+              [
+                11,
+                4
+              ],
+              [
+                12,
+                3
+              ],
+              [
+                13,
+                10
+              ],
+              [
+                14,
+                11
+              ],
+              [
+                15,
+                21
+              ],
+              [
+                16,
+                20
+              ],
+              [
+                17,
+                19
+              ],
+              [
+                18,
+                18
+              ],
+              [
+                19,
+                15
+              ],
+              [
+                20,
+                16
+              ],
+              [
+                21,
+                25
+              ],
+              [
+                22,
+                26
+              ],
+              [
+                23,
+                24
+              ],
+              [
+                24,
+                23
+              ],
+              [
+                25,
+                9
+              ],
+              [
+                26,
+                27
+              ],
+              [
+                27,
+                22
+              ]
+            ],
+            "events": {
+              "broken": 0,
+              "formed": 2,
+              "order_changed": 1,
+              "total": 3
+            },
+            "seconds": 0.0008415523916482925,
+            "order": "order_01.pkl.gz",
+            "candidate": 0,
+            "lap_fingerprints": 0
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "aam_weighted": {
+      "search_cpu": 3.149590404999999,
+      "symmetry_cpu": 0.8861098479999993,
+      "compute_cpu": 4.063523975999999,
+      "all_H_scoring_cpu": 35.974189463,
+      "capped_cuts": 6,
+      "heavy_witness_classes": 59
+    },
+    "aam_binary": {
+      "search_cpu": 3.773059924000001,
+      "symmetry_cpu": 1.0265500030000005,
+      "compute_cpu": 4.823818312000003,
+      "all_H_scoring_cpu": 46.862995051999995,
+      "capped_cuts": 37,
+      "heavy_witness_classes": 88
+    },
+    "slap_binary": {
+      "search_cpu": 0.6058608470000004,
+      "symmetry_cpu": 0.0,
+      "compute_cpu": 0.6091858360000008,
+      "all_H_scoring_cpu": 2.284797371,
+      "capped_cuts": 0,
+      "heavy_witness_classes": 18
+    },
+    "slap_weighted": {
+      "search_cpu": 1.3817093210000007,
+      "symmetry_cpu": 0.0,
+      "compute_cpu": 1.3844970470000013,
+      "all_H_scoring_cpu": 4.631725686999999,
+      "capped_cuts": 0,
+      "heavy_witness_classes": 44
+    },
+    "slap_float_cost": {
+      "search_cpu": 0.4185868130000001,
+      "symmetry_cpu": 0.0,
+      "compute_cpu": 0.4220093540000003,
+      "all_H_scoring_cpu": 2.072020735,
+      "capped_cuts": 0,
+      "heavy_witness_classes": 29
+    }
+  },
+  "rescored_full_atom_witnesses": 5581,
+  "reference_scope": "Historical heavy-core assignments, not curated chemical truth.",
+  "diversity_scope": "AAM heavy witness classes are lower bounds on retained compressed alternatives."
+}
