@@ -24,16 +24,19 @@ from rxn_core.aam import cut_seed
 from rxn_core.alignment.branch import _generate_seed_orders, find_islands
 from rxn_core.alignment.sweep import cut_sweep_items
 from rxn_core.artifacts import write_graph_checkpoint
-from rxn_core.cut_replay import CutReplay
+from rxn_core.cut_replay import CutReplay, FragmentRepair
 from rxn_core.frag import build_graph
 from rxn_core.matcher import _nauty_orbits
 from rxn_core.search_graph import AAMSearchGraph
 from rxn_core.search_symmetry import finalize_graph_symmetry, SymmetryWorkspace
+from rxn_core.native_search import find_islands_native
 from compare_elementary_outputs import event_counts
 
 SOURCE=Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909')
 POLICIES=('independent','shared_fresh','shared_whole','shared_checkpoint',
-          'shared_all','independent_all','shared_rolling','independent_rolling')
+          'shared_all','independent_all','shared_rolling','independent_rolling',
+          'independent_dependency','shared_dependency','independent_native','shared_native',
+          'independent_native_dependency','shared_native_dependency')
 
 
 def save(path,data):
@@ -89,8 +92,12 @@ def task(args):
         r=build_graph(problem.reactant.elements,problem.reactant.wbo,bond_cut=.2)
         p=build_graph(problem.product.elements,problem.product.wbo,bond_cut=.2)
         po=_nauty_orbits(p,wbo_tol=1.)
-        replay=(CutReplay(r,p,po,checkpoints=policy!='shared_whole',reference_only=not policy.endswith('rolling'))
-                if policy not in ('independent','shared_fresh') else None)
+        if policy.endswith('dependency'):
+            replay=FragmentRepair(r,p,po)
+        elif policy not in ('independent','shared_fresh','independent_native','shared_native'):
+            replay=CutReplay(r,p,po,checkpoints=policy!='shared_whole',reference_only=not policy.endswith('rolling'))
+        else:
+            replay=None
         return r,p,po,replay,_generate_seed_orders(r,seeds,rng_seed=42)
     source,target,p_orbits,replay,shared_orders=measure('setup',prepare)
     workspace=SymmetryWorkspace(target,1.) if policy.endswith(('all','rolling')) else None
@@ -105,7 +112,8 @@ def task(args):
             orders=(_generate_seed_orders(r,seeds,rng_seed=cut_seed(cut))
                     if policy.startswith('independent') else shared_orders)
             if args.seed_index is not None:orders=[orders[args.seed_index]]
-            graphs=[find_islands(r,target,order,graph_floor=.2,iso_tol=1.,max_branches=100,
+            matcher=find_islands_native if 'native' in policy else find_islands
+            graphs=[matcher(r,target,order,graph_floor=.2,iso_tol=1.,max_branches=100,
                         r_orbits=ro,p_orbits=p_orbits,cuts=cut,growth_replay=view) for order in orders]
             return AAMSearchGraph.combine(graphs)
         graph=measure('search',search)
@@ -162,7 +170,7 @@ def submit(args):
          f'PYTHONPATH={args.run}/engine/src:{args.run}/engine/bench',
          'timeout','--kill-after=5s','300',sys.executable,str(args.run/'engine/bench/cut_replay_pilot.py'),
          'task','--run',str(args.run),'--slot']
-    options=['sbatch','--parsable','--partition=cpunodes,cpunodes_nia',
+    options=['sbatch','--parsable','--partition='+args.partition,
              '--exclude=bosque5,bosque6,bosque8,bosque10',f'--cpus-per-task={workers}',f'--mem={max(4,workers*2)}G',
              '--time=00:10:00',f'--array=0-{len(tasks)-1}%{max(1,192//workers)}','--job-name=cut_replay',
              f'--output={args.run}/status/%A_%a.out','--wrap',shlex.join(cmd)+' "$SLURM_ARRAY_TASK_ID"']
@@ -186,9 +194,11 @@ def report(args):
         totals[p]=dict(tasks=len(chosen),timings={k:sum(r['timings'][k]['cpu'] for r in chosen)
             for k in chosen[0]['timings']},best=[(r['index'],r['direction'],r['best']) for r in chosen],
             peak_rss_mib=max(r['peak_rss_kib'] for r in chosen)/1024,
-            replay={k:sum(r['replay'][k] for r in chosen) for k in
+            replay={k:sum(r['replay'].get(k,0) for r in chosen) for k in
                     ('calls','full_hits','prefix_hits','logical_extensions','reused_extensions',
-                     'logical_certificates','reused_certificates','evictions')} if chosen[0]['replay'] else None)
+                     'logical_certificates','reused_certificates','evictions',
+                     'history_hits','topology_hits','boundary_rebases','dependency_checks',
+                     'mapping_misses','island_misses','topology_misses','boundary_misses')} if chosen[0]['replay'] else None)
     reference_rows=[]
     if args.reference is not None:
         reference_rows=[json.loads(f.read_text()) for f in args.reference.glob('results/*/*/*/summary.json')]
@@ -204,7 +214,10 @@ def report(args):
             if a['digest']!=b['digest']:mismatches.append((row['index'],row['direction'],row['policy'],a['cut']))
     comparisons=[]
     for policy,baseline in (('shared_all','shared_fresh'),('independent_all','independent'),
-                            ('shared_rolling','shared_fresh'),('independent_rolling','independent')):
+                            ('shared_rolling','shared_fresh'),('independent_rolling','independent'),
+                            ('shared_dependency','shared_fresh'),('independent_dependency','independent'),
+                            ('shared_native','shared_fresh'),('independent_native','independent'),
+                            ('shared_native_dependency','shared_fresh'),('independent_native_dependency','independent')):
         pairs=[(base.get((r['index'],r['direction'],baseline)),r) for r in rows if r['policy']==policy]
         pairs=[(a,b) for a,b in pairs if a is not None]
         if not pairs:continue
@@ -245,11 +258,13 @@ def submit_paired(args):
     stress=[(25,'R_to_P'),(76,'P_to_R'),(77,'P_to_R'),(114,'R_to_P')]
     pairs=[]
     for i,d in stress:
-        for policies in (('independent','independent_all','independent_rolling'),
-                         ('shared_fresh','shared_all','shared_rolling')):
+        groups=(args.pair_policies,) if args.pair_policies else (
+            ('independent','independent_all','independent_rolling'),
+            ('shared_fresh','shared_all','shared_rolling'))
+        for policies in groups:
             slots=[next(j for j,t in enumerate(tasks) if (t['index'],t['direction'],t['policy'])==(i,d,p)) for p in policies]
             # Counterbalance which method runs first, without changing search.
-            shift=len(pairs)%3;slots=slots[shift:]+slots[:shift]
+            shift=len(pairs)%len(slots);slots=slots[shift:]+slots[:shift]
             pairs.append(dict(index=i,direction=d,slots=slots))
     save(args.run/'pairs.json',pairs)
     cmd=['env','OMP_NUM_THREADS=1','OPENBLAS_NUM_THREADS=1','MKL_NUM_THREADS=1','PYTHONHASHSEED=0','RXN_CORE_NATIVE=1',
@@ -318,7 +333,13 @@ def archive(args):
         for pattern in ('*.json','*.log','*.txt','status/*','results/*/*/*/summary.json',
                         'results/*/*/*/seed_*/summary.json','results/114/*/*/seed_*/witnesses.json',
                         'engine/bench/cut_replay*.py','engine/native/src/*.h','engine/native/src/*.cpp',
-                        'engine/src/rxn_core/cut_replay.py','engine/src/rxn_core/search_symmetry.py'):
+                        'engine/bench/profile_fragment_pipeline.py','engine/src/rxn_core/native_search.py',
+                        'engine/src/rxn_core/cut_replay.py','engine/src/rxn_core/search_symmetry.py',
+                        'engine/src/rxn_core/alignment/branch.py','engine/src/rxn_core/growth/native.py',
+                        'profiles/*/*/*/summary.json','profiles/*/*/*/*.pstats',
+                        'profiles_native/*/*/*/summary.json','profiles_native/*/*/*/*.pstats',
+                        'profile_retry/driver/*','profile_retry/status/*',
+                        'profile_retry/profiles/*/*/*/summary.json','profile_retry/profiles/*/*/*/*.pstats'):
             selected.update((path,run.name+'/'+str(path.relative_to(run))) for path in run.glob(pattern) if path.is_file())
     for index in indices:
         path=SOURCE/f'inputs/{index}/input.json'
@@ -340,6 +361,8 @@ if __name__=='__main__':
     p.add_argument('--runs',type=Path,nargs='+');p.add_argument('--output',type=Path)
     p.add_argument('--seed-index',type=int)
     p.add_argument('--reference',type=Path)
+    p.add_argument('--partition',default='cpunodes')
+    p.add_argument('--pair-policies',nargs='+',choices=POLICIES)
     p.add_argument('--index',type=int);p.add_argument('--mechanism-reference',type=Path)
     p.add_argument('--indices',type=int,nargs='+',default=[0,4,59,64,114,123,135,136])
     p.add_argument('--seeds',type=int,default=1)

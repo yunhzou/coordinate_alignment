@@ -1,0 +1,126 @@
+{
+  "completed": 8,
+  "scheduled": 8,
+  "missing": [],
+  "totals": {
+    "independent": {
+      "tasks": 4,
+      "timings": {
+        "setup": 0.450435898,
+        "search": 827.7128862210001,
+        "symmetry": 501.6130593889999,
+        "score": 5.736339363000182,
+        "audit_encoding": 140.5687612370001,
+        "persistence": 40.34152071499998
+      },
+      "best": [
+        [
+          25,
+          "R_to_P",
+          5
+        ],
+        [
+          76,
+          "P_to_R",
+          3
+        ],
+        [
+          77,
+          "P_to_R",
+          8
+        ],
+        [
+          114,
+          "R_to_P",
+          4
+        ]
+      ],
+      "peak_rss_mib": 1576.00390625,
+      "replay": null
+    },
+    "independent_native_dependency": {
+      "tasks": 4,
+      "timings": {
+        "setup": 0.8122403469999999,
+        "search": 580.4778426289998,
+        "symmetry": 492.1283623490001,
+        "score": 5.544409573000032,
+        "audit_encoding": 138.8098951930002,
+        "persistence": 31.189952453000046
+      },
+      "best": [
+        [
+          25,
+          "R_to_P",
+          5
+        ],
+        [
+          76,
+          "P_to_R",
+          3
+        ],
+        [
+          77,
+          "P_to_R",
+          8
+        ],
+        [
+          114,
+          "R_to_P",
+          4
+        ]
+      ],
+      "peak_rss_mib": 921.4375,
+      "replay": {
+        "calls": 928772,
+        "full_hits": 590199,
+        "prefix_hits": 0,
+        "logical_extensions": 3327124,
+        "reused_extensions": 1690712,
+        "logical_certificates": 1938984,
+        "reused_certificates": 862680,
+        "evictions": 61282,
+        "history_hits": 589350,
+        "topology_hits": 65256,
+        "boundary_rebases": 111409,
+        "dependency_checks": 2654019,
+        "mapping_misses": 810460,
+        "island_misses": 6526,
+        "topology_misses": 1246796,
+        "boundary_misses": 38
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "policy": "independent_native_dependency",
+      "baseline": "independent",
+      "pairs": 4,
+      "phases": {
+        "setup": {
+          "before": 0.450435898,
+          "after": 0.8122403469999999
+        },
+        "search": {
+          "before": 827.7128862210001,
+          "after": 580.4778426289998
+        },
+        "symmetry": {
+          "before": 501.6130593889999,
+          "after": 492.1283623490001
+        },
+        "score": {
+          "before": 5.736339363000182,
+          "after": 5.544409573000032
+        }
+      },
+      "compute_cpu_before": 1335.512720871,
+      "compute_cpu_after": 1078.962854898,
+      "speedup": 1.237774511706664,
+      "changed_best": []
+    }
+  ],
+  "reference": null,
+  "exact_cut_graph_comparisons": 414,
+  "mismatches": []
+}

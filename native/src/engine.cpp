@@ -1385,12 +1385,14 @@ struct GrowResult {
 };
 
 #include "growth_checkpoint.h"
+#include "growth_dependencies.h"
 
 GrowResult grow_island(const Source& R, const Target& P, int seed, const std::vector<int>& mapping,
                        double graph_floor, double iso_tol, int min_lock_size, long max_branches,
                        const std::vector<Pair>* islands, const std::vector<Pair>& prior_deferred,
                        bool allow_mapped_seed, GrowthTrace* trace = nullptr,
-                       const GrowthTrace* previous = nullptr, int resume_step = -1) {
+                       const GrowthTrace* previous = nullptr, int resume_step = -1,
+                       GrowthDependencies* dependencies = nullptr) {
     SourceReadScope dependency_scope(R, trace ? &trace->reads : nullptr);
     GrowResult result;
     GrowProfile& prof = result.profile;
@@ -1403,6 +1405,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
         for (const auto& item : *islands) island_of[item.first] = item.second;
 
     std::vector<Cand> cands;
+    if (dependencies) dependencies->mapping_at(seed);
     if (mapping[seed] >= 0) {
         if (!allow_mapped_seed) {
             prof.result = "already_mapped";
@@ -1521,6 +1524,10 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
         edge_used(u, n) = 1;
         if (fragment[n]) { prof.fragment_skip_pops++; continue; }
         bool n_in_mapping = mapping[n] >= 0;
+        if (dependencies) {
+            dependencies->mapping_at(n);
+            if (n_in_mapping) dependencies->island_at(n, islands, island_of);
+        }
         prof.extend_calls++;
         if (n_in_mapping) prof.merge_calls++; else prof.free_extend_calls++;
         long old_count = (long)cands.size();
@@ -1580,6 +1587,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
             ctx.sig_fragment = fragment;
             ctx.sig_fragment[n] = 1;
             for (int a : ctx.island_atoms) ctx.sig_fragment[a] = 1;
+            if (dependencies) dependencies->boundary(ctx.sig_fragment);
             new_cands = extend_sym_cands(cands, ctx, canon, certificate_calls);
         }
         if ((long)new_cands.size() > max_branches) {
@@ -1614,6 +1622,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
         } else {
             prof.deferred++;
             Pair e{std::min(u, n), std::max(u, n)};
+            if (dependencies) dependencies->local_deferred.push_back(e);
             auto pos = std::lower_bound(deferred.begin(), deferred.end(), e);
             if (pos == deferred.end() || *pos != e) deferred.insert(pos, e);
         }
@@ -1627,6 +1636,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
         ctx.mapping = &mapping;
         ctx.locked_p = locked_p;
         ctx.iso_tol = iso_tol;
+        if (dependencies) dependencies->boundary(fragment);
         cands = dedup_sym_cands(cands, ctx, canon, fragment, deferred, certificate_calls);
     }
     prof.certificate_calls = certificate_calls;
@@ -1874,6 +1884,8 @@ py::object py_grow_island(const PySource& source, const PyTarget& target, int se
 }
 
 #include "growth_replay.h"
+#include "fragment_repair.h"
+#include "fragment_scheduler.h"
 
 }  // namespace
 
@@ -1912,4 +1924,6 @@ PYBIND11_MODULE(_engine, mod) {
             py::arg("min_lock_size"), py::arg("max_branches"), py::arg("islands"),
             py::arg("prior_deferred_edges"), py::arg("allow_mapped_seed"));
     register_growth_replay(mod);
+    register_fragment_repair(mod);
+    register_fragment_scheduler(mod);
 }

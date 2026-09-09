@@ -5,6 +5,10 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Dependency repair and native AAM scheduling experiment](dependency_fragment_repair_20260909/README.md)
+— unchanged seed/cut policy, exact compressed-result comparisons and paired
+timings; 1.24x overall in the tested stress workload, experimental dispatch only.
+
 [Exact incremental cut-replay experiment](incremental_cut_replay_20260909/README.md)
 — same-node paired timings and exact compressed-result comparisons; opt-in only,
 not a change to the publication search protocol.

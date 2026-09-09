@@ -24,6 +24,7 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 | `audit_aam_slap_overlap.py` | Independent saved-witness and oracle score verification |
 | `cut_replay_pilot.py` | Opt-in exact cut replay, paired same-node ablations, full compressed archives and saved-mechanism checks |
 | `cut_replay_kernel_probe.py` | Isolated pre/post native-binary output and timing regression probe |
+| `profile_fragment_pipeline.py` | Per-cut saved graphs and function/phase diagnostics for Python/native scheduling |
 
 The other Golden scripts record diagnostic experiments (seeds, caps, direction,
 anchors, ranking, memory, viewers). They are retained for provenance, not silently
