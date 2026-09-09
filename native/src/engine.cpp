@@ -19,6 +19,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <list>
 #include <memory>
 #include <queue>
 #include <stdexcept>
@@ -180,7 +181,38 @@ struct Target : Graph {
     int pair_bucket(int a, int b) const { return bucket[(size_t)a * n + b]; }
 };
 
-struct Source : Graph {};
+// Source topology dependencies, used only by the opt-in cut replay engine.
+// WBO values/elements never change between its cuts. Target canonicalization
+// depends on P, not on reactant topology or reactant automorphism orbits.
+struct SourceReads {
+    int step = -1;
+    std::vector<int> rows, pairs;
+    explicit SourceReads(int n) : rows(n, -2), pairs((size_t)n*n, -2) {}
+};
+
+struct Source : Graph {
+    mutable SourceReads* reads = nullptr;
+    bool has_edge(int a, int b) const {
+        if (reads) {
+            int& first = reads->pairs[(size_t)std::min(a,b)*n+std::max(a,b)];
+            if (first == -2) first = reads->step;
+        }
+        return Graph::has_edge(a,b);
+    }
+    const std::vector<int>& neighbors(int a) const {
+        if (reads && reads->rows[a] == -2) reads->rows[a] = reads->step;
+        return adj[a];
+    }
+};
+
+struct SourceReadScope {
+    const Source& source;
+    SourceReads* previous;
+    SourceReadScope(const Source& s, SourceReads* reads) : source(s), previous(s.reads) {
+        source.reads = reads;
+    }
+    ~SourceReadScope() { source.reads = previous; }
+};
 
 // ---------------------------------------------------------------------------
 // candidate state (rxn_core.matcher.state._SymCand / _SymBlock)
@@ -1352,10 +1384,14 @@ struct GrowResult {
     BranchCap cap{0, 0};
 };
 
+#include "growth_checkpoint.h"
+
 GrowResult grow_island(const Source& R, const Target& P, int seed, const std::vector<int>& mapping,
                        double graph_floor, double iso_tol, int min_lock_size, long max_branches,
                        const std::vector<Pair>* islands, const std::vector<Pair>& prior_deferred,
-                       bool allow_mapped_seed) {
+                       bool allow_mapped_seed, GrowthTrace* trace = nullptr,
+                       const GrowthTrace* previous = nullptr, int resume_step = -1) {
+    SourceReadScope dependency_scope(R, trace ? &trace->reads : nullptr);
     GrowResult result;
     GrowProfile& prof = result.profile;
     const int NR = R.n, NP = P.n;
@@ -1423,7 +1459,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
 
     std::priority_queue<HeapItem, std::vector<HeapItem>, std::greater<HeapItem>> heap;
     auto push_edges_from = [&](int atom) {
-        for (int nb : R.adj[atom]) {
+        for (int nb : R.neighbors(atom)) {
             if (fragment[nb]) continue;
             if (edge_used(atom, nb)) continue;
             double w = R.wbo(atom, nb);
@@ -1448,7 +1484,34 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
     Canonicalizer canon(&P, mapping);
     long certificate_calls = 0;
 
+    if (previous && resume_step >= 0) {
+        const auto& saved = *previous->checkpoints.at(resume_step);
+        cands = saved.cands;
+        fragment = saved.fragment;
+        fragment_size = saved.fragment_size;
+        used_edge = saved.used_edge;
+        deferred = saved.deferred;
+        heap = saved.heap;
+        prof = saved.profile;
+        certificate_calls = saved.certificate_calls;
+        if (trace) trace->inherit_prefix(*previous, resume_step);
+    }
+
+    auto checkpoint = [&]() {
+        if (!trace) return;
+        if (!trace->store_checkpoints) return;
+        trace->reads.step = (int)trace->checkpoints.size();
+        if (previous && trace->reads.step == resume_step) {
+            trace->checkpoints.push_back(previous->checkpoints.at(resume_step));
+        } else {
+            trace->checkpoints.push_back(std::make_shared<GrowthCheckpoint>(
+                GrowthCheckpoint{cands, fragment, used_edge, fragment_size,
+                                 deferred, heap, prof, certificate_calls}));
+        }
+    };
+
     while (!heap.empty()) {
+        checkpoint();
         HeapItem item = heap.top();
         heap.pop();
         prof.heap_pops++;
@@ -1475,7 +1538,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
         std::vector<Pair> dedupe_edges = deferred;
         for (int a = 0; a < NR; ++a) {
             if (!dedupe_fragment[a]) continue;
-            for (int nb : R.adj[a]) {
+            for (int nb : R.neighbors(a)) {
                 if (dedupe_fragment[nb]) continue;
                 if (R.wbo(a, nb) >= graph_floor)
                     dedupe_edges.push_back({std::min(a, nb), std::max(a, nb)});
@@ -1556,6 +1619,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
         }
     }
     // saturation quotient
+    checkpoint();
     {
         Context ctx;
         ctx.R = &R;
@@ -1746,22 +1810,7 @@ py::dict symmetry_state(const Cand& c) {
     return item;
 }
 
-py::object py_grow_island(const PySource& source, const PyTarget& target, int seed,
-                          const std::vector<int>& mapping, double graph_floor, double iso_tol,
-                          int min_lock_size, long max_branches, py::object islands_obj,
-                          const std::vector<Pair>& prior_deferred, bool allow_mapped_seed) {
-    std::vector<Pair> islands;
-    const std::vector<Pair>* islands_ptr = nullptr;
-    if (!islands_obj.is_none()) {
-        islands = islands_obj.cast<std::vector<Pair>>();
-        islands_ptr = &islands;
-    }
-    GrowResult res;
-    {
-        py::gil_scoped_release release;
-        res = grow_island(source.g, target.g, seed, mapping, graph_floor, iso_tol, min_lock_size,
-                          max_branches, islands_ptr, prior_deferred, allow_mapped_seed);
-    }
+py::object grow_result_dict(const GrowResult& res) {
     py::dict out;
     py::list isos;
     for (const auto& iso : res.isos) {
@@ -1805,6 +1854,27 @@ py::object py_grow_island(const PySource& source, const PyTarget& target, int se
     return out;
 }
 
+py::object py_grow_island(const PySource& source, const PyTarget& target, int seed,
+                          const std::vector<int>& mapping, double graph_floor, double iso_tol,
+                          int min_lock_size, long max_branches, py::object islands_obj,
+                          const std::vector<Pair>& prior_deferred, bool allow_mapped_seed) {
+    std::vector<Pair> islands;
+    const std::vector<Pair>* islands_ptr = nullptr;
+    if (!islands_obj.is_none()) {
+        islands = islands_obj.cast<std::vector<Pair>>();
+        islands_ptr = &islands;
+    }
+    GrowResult res;
+    {
+        py::gil_scoped_release release;
+        res = grow_island(source.g, target.g, seed, mapping, graph_floor, iso_tol, min_lock_size,
+                          max_branches, islands_ptr, prior_deferred, allow_mapped_seed);
+    }
+    return grow_result_dict(res);
+}
+
+#include "growth_replay.h"
+
 }  // namespace
 
 // native/src/freeze.cpp
@@ -1841,4 +1911,5 @@ PYBIND11_MODULE(_engine, mod) {
             py::arg("mapping"), py::arg("graph_floor"), py::arg("iso_tol"),
             py::arg("min_lock_size"), py::arg("max_branches"), py::arg("islands"),
             py::arg("prior_deferred_edges"), py::arg("allow_mapped_seed"));
+    register_growth_replay(mod);
 }

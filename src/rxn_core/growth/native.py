@@ -149,10 +149,12 @@ def applicable(g_R, g_P, p_orbits, node_policy, events, defer=False):
 
 def grow_island(g_R, g_P, seed, mapping, *, graph_floor, iso_tol, min_lock_size,
                 max_branches, islands_R, p_orbits, prior_deferred_edges,
-                allow_mapped_seed, profile, profile_context):
+                allow_mapped_seed, profile, profile_context, replay=None):
     """Run the native engine; returns None when the inputs are not covered."""
-    source_view = source_graph(g_R)
-    target_view = target_graph(g_P, p_orbits)
+    if replay is not None and (replay.source is not g_R or replay.target is not g_P):
+        raise ValueError("cut replay view belongs to different source/target graphs")
+    source_view = replay.source_view if replay is not None else source_graph(g_R)
+    target_view = replay.target_view if replay is not None else target_graph(g_P, p_orbits)
     if source_view is None or target_view is None:
         return None
     source_index = source_view.index
@@ -177,11 +179,12 @@ def grow_island(g_R, g_P, seed, mapping, *, graph_floor, iso_tol, min_lock_size,
             return None
         deferred.append((source_index[int(a)], source_index[int(b)]))
     started = time.perf_counter()
-    out = _engine.grow_island(
-        source_view.graph, target_view.graph, source_index[int(seed)], image,
-        float(graph_floor), float(iso_tol),
-        int(min_lock_size), int(max_branches), islands, deferred,
-        bool(allow_mapped_seed))
+    arguments = (source_index[int(seed)], image, float(graph_floor), float(iso_tol),
+                 int(min_lock_size), int(max_branches), islands, deferred, bool(allow_mapped_seed))
+    if replay is None:
+        out = _engine.grow_island(source_view.graph, target_view.graph, *arguments)
+    else:
+        out = replay.engine.grow(replay.cuts, *arguments)
     elapsed = time.perf_counter() - started
     if profile is not None:
         prof = {'seed': int(seed)}

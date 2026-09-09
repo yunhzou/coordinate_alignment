@@ -5,6 +5,10 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Exact incremental cut-replay experiment](incremental_cut_replay_20260909/README.md)
+— same-node paired timings and exact compressed-result comparisons; opt-in only,
+not a change to the publication search protocol.
+
 [Exploratory SLAP-guided local-search experiments](slap_guided_pilot_20260909/README.md)
 — separate from fixed-policy publication results; best-score agreement is not
 full-family or chemical accuracy.

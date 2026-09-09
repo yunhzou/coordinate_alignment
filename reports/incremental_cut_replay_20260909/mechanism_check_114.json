@@ -1,0 +1,558 @@
+{
+  "index": 114,
+  "input": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/inputs/114/input.json",
+  "reference": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/stages/pr7.V.dodh_ts910/rp_stage.json",
+  "input_sha256": "1b6ac96cc88364643cb438b6f467fe7ed3a74c50c941263495342b53bc5e7f4f",
+  "reference_sha256": "3cf529db1da6ec707e91555cd2f57e532bfb9d7ad5344e388b72da6821a6ae2d",
+  "bond_floor": 0.2,
+  "event_tolerance": 0.5,
+  "references": [
+    {
+      "id": 1,
+      "signature": [
+        [
+          [
+            8,
+            15
+          ],
+          [
+            12,
+            22
+          ]
+        ],
+        [
+          [
+            8,
+            12
+          ],
+          [
+            15,
+            22
+          ]
+        ],
+        []
+      ]
+    },
+    {
+      "id": 2,
+      "signature": [
+        [
+          [
+            11,
+            12
+          ],
+          [
+            15,
+            27
+          ]
+        ],
+        [
+          [
+            11,
+            15
+          ],
+          [
+            12,
+            27
+          ]
+        ],
+        []
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "direction": "R_to_P",
+      "policy": "independent",
+      "witnesses": 310,
+      "event_patterns": 38,
+      "reference_matches": [
+        {
+          "id": 1,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              9,
+              7,
+              3,
+              12,
+              11,
+              10,
+              6,
+              8,
+              0,
+              1,
+              19,
+              20,
+              2,
+              13,
+              14,
+              25,
+              5,
+              4,
+              18,
+              17,
+              16,
+              15,
+              27,
+              21,
+              22,
+              23,
+              24,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/independent/seed_00/witnesses.json"
+          }
+        },
+        {
+          "id": 2,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              9,
+              7,
+              3,
+              12,
+              11,
+              10,
+              6,
+              8,
+              0,
+              1,
+              19,
+              20,
+              25,
+              13,
+              14,
+              2,
+              5,
+              4,
+              18,
+              17,
+              16,
+              15,
+              26,
+              21,
+              22,
+              23,
+              24,
+              27
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/independent/seed_00/witnesses.json"
+          }
+        }
+      ]
+    },
+    {
+      "direction": "R_to_P",
+      "policy": "independent_all",
+      "witnesses": 310,
+      "event_patterns": 38,
+      "reference_matches": [
+        {
+          "id": 1,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              9,
+              7,
+              3,
+              12,
+              11,
+              10,
+              6,
+              8,
+              0,
+              1,
+              19,
+              20,
+              2,
+              13,
+              14,
+              25,
+              5,
+              4,
+              18,
+              17,
+              16,
+              15,
+              27,
+              21,
+              22,
+              23,
+              24,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/independent_all/seed_00/witnesses.json"
+          }
+        },
+        {
+          "id": 2,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              9,
+              7,
+              3,
+              12,
+              11,
+              10,
+              6,
+              8,
+              0,
+              1,
+              19,
+              20,
+              25,
+              13,
+              14,
+              2,
+              5,
+              4,
+              18,
+              17,
+              16,
+              15,
+              26,
+              21,
+              22,
+              23,
+              24,
+              27
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/independent_all/seed_00/witnesses.json"
+          }
+        }
+      ]
+    },
+    {
+      "direction": "R_to_P",
+      "policy": "independent_rolling",
+      "witnesses": 310,
+      "event_patterns": 38,
+      "reference_matches": [
+        {
+          "id": 1,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              9,
+              7,
+              3,
+              12,
+              11,
+              10,
+              6,
+              8,
+              0,
+              1,
+              19,
+              20,
+              2,
+              13,
+              14,
+              25,
+              5,
+              4,
+              18,
+              17,
+              16,
+              15,
+              27,
+              21,
+              22,
+              23,
+              24,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/independent_rolling/seed_00/witnesses.json"
+          }
+        },
+        {
+          "id": 2,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              9,
+              7,
+              3,
+              12,
+              11,
+              10,
+              6,
+              8,
+              0,
+              1,
+              19,
+              20,
+              25,
+              13,
+              14,
+              2,
+              5,
+              4,
+              18,
+              17,
+              16,
+              15,
+              26,
+              21,
+              22,
+              23,
+              24,
+              27
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/independent_rolling/seed_00/witnesses.json"
+          }
+        }
+      ]
+    },
+    {
+      "direction": "R_to_P",
+      "policy": "shared_all",
+      "witnesses": 232,
+      "event_patterns": 64,
+      "reference_matches": [
+        {
+          "id": 1,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              11,
+              12,
+              3,
+              7,
+              9,
+              10,
+              13,
+              14,
+              0,
+              2,
+              20,
+              19,
+              1,
+              6,
+              8,
+              25,
+              4,
+              5,
+              18,
+              15,
+              16,
+              17,
+              27,
+              23,
+              24,
+              21,
+              22,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/shared_all/seed_00/witnesses.json"
+          }
+        },
+        {
+          "id": 2,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              11,
+              12,
+              3,
+              7,
+              9,
+              10,
+              13,
+              14,
+              0,
+              1,
+              19,
+              20,
+              25,
+              6,
+              8,
+              2,
+              4,
+              5,
+              18,
+              15,
+              16,
+              17,
+              27,
+              21,
+              22,
+              23,
+              24,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/shared_all/seed_00/witnesses.json"
+          }
+        }
+      ]
+    },
+    {
+      "direction": "R_to_P",
+      "policy": "shared_fresh",
+      "witnesses": 232,
+      "event_patterns": 64,
+      "reference_matches": [
+        {
+          "id": 1,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              11,
+              12,
+              3,
+              7,
+              9,
+              10,
+              13,
+              14,
+              0,
+              2,
+              20,
+              19,
+              1,
+              6,
+              8,
+              25,
+              4,
+              5,
+              18,
+              15,
+              16,
+              17,
+              27,
+              23,
+              24,
+              21,
+              22,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/shared_fresh/seed_00/witnesses.json"
+          }
+        },
+        {
+          "id": 2,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              11,
+              12,
+              3,
+              7,
+              9,
+              10,
+              13,
+              14,
+              0,
+              1,
+              19,
+              20,
+              25,
+              6,
+              8,
+              2,
+              4,
+              5,
+              18,
+              15,
+              16,
+              17,
+              27,
+              21,
+              22,
+              23,
+              24,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/shared_fresh/seed_00/witnesses.json"
+          }
+        }
+      ]
+    },
+    {
+      "direction": "R_to_P",
+      "policy": "shared_rolling",
+      "witnesses": 232,
+      "event_patterns": 64,
+      "reference_matches": [
+        {
+          "id": 1,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              11,
+              12,
+              3,
+              7,
+              9,
+              10,
+              13,
+              14,
+              0,
+              2,
+              20,
+              19,
+              1,
+              6,
+              8,
+              25,
+              4,
+              5,
+              18,
+              15,
+              16,
+              17,
+              27,
+              23,
+              24,
+              21,
+              22,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/shared_rolling/seed_00/witnesses.json"
+          }
+        },
+        {
+          "id": 2,
+          "recovered": true,
+          "witness": {
+            "mapping": [
+              11,
+              12,
+              3,
+              7,
+              9,
+              10,
+              13,
+              14,
+              0,
+              1,
+              19,
+              20,
+              25,
+              6,
+              8,
+              2,
+              4,
+              5,
+              18,
+              15,
+              16,
+              17,
+              27,
+              21,
+              22,
+              23,
+              24,
+              26
+            ],
+            "artifact": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/cut_replay_paired_20260909_aihvmc/results/114/R_to_P/shared_rolling/seed_00/witnesses.json"
+          }
+        }
+      ]
+    }
+  ],
+  "scope": "Exact reactant-index event signatures of saved terminal witnesses, not chemical ground truth or an exhaustive expansion of compressed families."
+}

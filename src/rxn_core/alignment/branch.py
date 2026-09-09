@@ -563,7 +563,7 @@ def find_islands(g_R, g_P, seed_order,
                  p_orbits=None, r_orbits=None,
                  node_policy=None,
                  anchor_map=None,
-                 profile=None, cuts=()):
+                 profile=None, cuts=(), growth_replay=None):
     """Run growth over a single seed ordering, branching on
     non-set-unique locks. Returns an AAMSearchGraph of fragment decisions.
 
@@ -729,7 +729,8 @@ def find_islands(g_R, g_P, seed_order,
                 result = match_fragment(
                         g_R, g_P, seed=seed,
                         context=FragmentMatchContext(
-                            b.mapping, b.islands_R, tuple(b.deferred_edges), r_orbits, p_orbits),
+                            b.mapping, b.islands_R, tuple(b.deferred_edges), r_orbits, p_orbits,
+                            growth_replay),
                         config=FragmentMatchConfig(
                             graph_floor=graph_floor, iso_tolerance=iso_tol,
                             branch_limit=max_branches, node_policy=node_policy,

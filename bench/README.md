@@ -22,6 +22,8 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 | `slap_guided_pilot.py` / `slap_local_workflow.py` | Exploratory cheap proposals and targeted cuts; not the default AAM pipeline |
 | `aam_small_graph_oracle.py` | Identical binary-graph exact-oracle control for AAM and SLAP |
 | `audit_aam_slap_overlap.py` | Independent saved-witness and oracle score verification |
+| `cut_replay_pilot.py` | Opt-in exact cut replay, paired same-node ablations, full compressed archives and saved-mechanism checks |
+| `cut_replay_kernel_probe.py` | Isolated pre/post native-binary output and timing regression probe |
 
 The other Golden scripts record diagnostic experiments (seeds, caps, direction,
 anchors, ranking, memory, viewers). They are retained for provenance, not silently

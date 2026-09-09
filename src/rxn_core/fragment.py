@@ -46,6 +46,7 @@ class FragmentMatchContext:
     deferred_edges: tuple = ()
     source_orbits: object = None
     target_orbits: object = None
+    growth_replay: object = None
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,7 @@ def match_fragment(source, target, *, seed, context=None, config=None,
             p_orbits=target_orbits, r_orbits=source_orbits,
             prior_deferred_edges=context.deferred_edges,
             allow_mapped_seed=config.allow_mapped_seed,
+            replay=context.growth_replay,
             events=events, profile=profile, profile_context=profile_context)
     except IslandBranchLimitExceeded as exc:
         return FragmentMatchResult((), True, exc.count, exc.limit,

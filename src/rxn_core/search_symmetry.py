@@ -7,7 +7,23 @@ from .matcher.canonical import _CandidateAutomorphismCanonicalizer
 from .search_graph import frozen_value
 
 
-def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None):
+class SymmetryWorkspace:
+    """Exact finalization reuse for one fixed target/tolerance, not a search cap.
+
+    Owned by an explicit caller (typically one reaction), never process-global.
+    Keys include locked atom roles and the complete candidate symmetry record.
+    """
+    def __init__(self, target, iso_tolerance):
+        self.target = target
+        self.iso_tolerance = iso_tolerance
+        self.cache = {}
+        self.coloring_cache = {}
+        self.generators = {}
+        self.groups = {}
+        self.canonicalizer = None
+
+
+def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, workspace=None):
     """Finalize exact groups on ancestors of the requested result states.
 
     By default these are returned terminals. Capped/dead history stays in the
@@ -15,9 +31,13 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None):
     explicit state IDs (or all graph state IDs) to inspect that history too.
     Immutable generators and group tuples are interned within this result.
     """
-    cache, coloring_cache, edges = {}, {}, []
+    workspace = workspace or SymmetryWorkspace(target, iso_tolerance)
+    if workspace.target is not target or workspace.iso_tolerance != iso_tolerance:
+        raise ValueError('symmetry workspace belongs to another target or tolerance')
+    cache, coloring_cache, edges = workspace.cache, workspace.coloring_cache, []
+    previous_calculations, previous_colorings = len(cache), len(coloring_cache)
     selected = graph.ancestor_transitions(graph.terminals if states is None else states)
-    generators, groups = {}, {}
+    generators, groups = workspace.generators, workspace.groups
     def intern(raw):
         values = []
         for generator in raw:
@@ -27,7 +47,7 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None):
         return groups.setdefault(group, group)
     # One graph topology for this target, recolored sequentially for each exact
     # conditioned transition. No graph object escapes this finalization pass.
-    canonicalizer = None
+    canonicalizer = workspace.canonicalizer
     requests = 0
     for edge in graph.transitions:
         if edge.match is None:
@@ -48,6 +68,7 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None):
             candidate = candidate_from_record(state)
             if canonicalizer is None:
                 canonicalizer = _CandidateAutomorphismCanonicalizer(target, wbo_tol=iso_tolerance)
+                workspace.canonicalizer = canonicalizer
             locked_roles = defaultdict(list)
             for r, p in sorted(locked):
                 if p in canonicalizer.atom_index:
@@ -65,7 +86,7 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None):
         edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
     return replace(graph, transitions=tuple(edges)), {
         'completed_candidate_group_requests': requests,
-        'completed_candidate_group_calculations': len(cache),
-        'completed_candidate_group_cache_hits': requests - len(cache),
-        'exact_coloring_group_calculations': len(coloring_cache),
+        'completed_candidate_group_calculations': len(cache) - previous_calculations,
+        'completed_candidate_group_cache_hits': requests - (len(cache) - previous_calculations),
+        'exact_coloring_group_calculations': len(coloring_cache) - previous_colorings,
     }

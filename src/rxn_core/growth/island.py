@@ -44,7 +44,7 @@ def grow_island(g_R, g_P, seed, mapping,
                 node_policy=None,
                 allow_mapped_seed=False,
                 profile=None,
-                profile_context=None):
+                profile_context=None, replay=None):
     """
     Grow a fragment from `seed` using priority-queue propagation.
 
@@ -58,6 +58,8 @@ def grow_island(g_R, g_P, seed, mapping,
     existing trace_run.HTML viewer.
     """
     node_policy = as_node_match_policy(node_policy)
+    if replay is not None and not native.applicable(g_R, g_P, p_orbits, node_policy, events):
+        raise ValueError("cut replay requires the native element-policy matcher without trace events")
     if native.applicable(g_R, g_P, p_orbits, node_policy, events):
         out = native.grow_island(
             g_R, g_P, seed, mapping, graph_floor=graph_floor, iso_tol=iso_tol,
@@ -65,7 +67,7 @@ def grow_island(g_R, g_P, seed, mapping,
             islands_R=islands_R, p_orbits=p_orbits,
             prior_deferred_edges=prior_deferred_edges,
             allow_mapped_seed=allow_mapped_seed, profile=profile,
-            profile_context=profile_context)
+            profile_context=profile_context, replay=replay)
         if out is not None:
             return out
     record = events is not None
