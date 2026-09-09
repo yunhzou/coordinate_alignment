@@ -3,6 +3,9 @@
 Symmetry-aware WBO atom mapping, analytical R/P alignment, and
 mechanism-local transition-state analysis.
 
+Paper benchmarks: [results and artifact index](reports/README.md) ·
+[benchmark scripts and reproduction guide](bench/README.md).
+
 ## Design
 
 The computational API consists of immutable typed stages:
