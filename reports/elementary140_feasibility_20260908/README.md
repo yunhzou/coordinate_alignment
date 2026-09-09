@@ -38,6 +38,10 @@ Expert review is required before interpreting chemical quality.
 
 ## Caps, failures and alternatives
 
+Follow-up: [case 123 at cap 200](case123_cap200/README.md) returns full mappings
+in both directions. With this targeted follow-up, all 140 cases have a returned
+full AAM mapping. The fixed-cap-100 table above is intentionally unchanged.
+
 Case **123**, `pr9.carbene.rearr_ts41a-endo` (40 atoms), hits cap 100 in both AAM
 directions with zero completed terminals. This is a capped search outcome, not
 a claim that mapping the reaction is impossible. Its compressed graph, stops,

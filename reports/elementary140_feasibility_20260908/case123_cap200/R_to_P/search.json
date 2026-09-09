@@ -1,0 +1,72 @@
+{
+  "elapsed_wall_including_io_seconds": 5.5783576760441065,
+  "total_cpu_including_io_seconds": 24.594269999999998,
+  "compute_cpu_excluding_persistence_and_loading_seconds": 20.976685457,
+  "phases": {
+    "graph_merge/workers": {
+      "calls": 47,
+      "summed_wall_seconds": 0.44834609143435955,
+      "cpu_seconds": 0.4481371730000003
+    },
+    "cut_search_inclusive/workers": {
+      "calls": 47,
+      "summed_wall_seconds": 9.539273962378502,
+      "cpu_seconds": 9.447278232999997
+    },
+    "persistence/workers": {
+      "calls": 94,
+      "summed_wall_seconds": 2.0829358100891113,
+      "cpu_seconds": 1.9461547339999998
+    },
+    "loading/workers": {
+      "calls": 47,
+      "summed_wall_seconds": 0.5029352493584156,
+      "cpu_seconds": 0.4723347150000001
+    },
+    "symmetry/workers": {
+      "calls": 47,
+      "summed_wall_seconds": 7.66863882727921,
+      "cpu_seconds": 7.589026042000001
+    },
+    "graph_merge/parent": {
+      "calls": 1,
+      "summed_wall_seconds": 0.34931003488600254,
+      "cpu_seconds": 0.3493193069999996
+    },
+    "symmetry/parent": {
+      "calls": 1,
+      "summed_wall_seconds": 0.9945456683635712,
+      "cpu_seconds": 0.9945453930000001
+    },
+    "persistence/parent": {
+      "calls": 1,
+      "summed_wall_seconds": 1.2050583381205797,
+      "cpu_seconds": 1.199095094
+    }
+  },
+  "semantics": "CPU excludes measured checkpoint encoding/compression/writing and decoding/loading. Includes IPC, process setup, and profiling overhead. Phase wall values are summed worker durations, not parallel latency. cut_search includes within-cut graph merges; do not sum inclusive phases. No invalid subtraction of summed worker IO from elapsed wall time.",
+  "index": 123,
+  "direction": "R_to_P",
+  "metrics": {
+    "elapsed_seconds": 4.333406068384647,
+    "cut_count": 47,
+    "raw_result_count": 12258,
+    "retained_branch_count": 12258,
+    "max_live_branches": 200,
+    "max_growth_candidates": 200,
+    "subtree_branch_cap_count": 14359,
+    "worker_returned_branch_count": 0,
+    "parent_merge_seconds": 0.35080575570464134,
+    "completed_group_requests": 39925,
+    "completed_group_calculations": 39072,
+    "completed_group_cache_hits": 853,
+    "worker_search_seconds": 9.511962851509452,
+    "checkpoint_seconds": 1.178422775119543,
+    "symmetry_finalization_seconds": 1.0005527939647436,
+    "checkpoint_restore_and_finalize_seconds": 1.4350095242261887
+  },
+  "capped": true,
+  "terminals": 12258,
+  "peak_parent_rss_kib": 457720,
+  "seed_orders_sha256": "661a335bbc44c340be364b3339626b07af93a6318bfe2b7793bef4ee746da05e"
+}

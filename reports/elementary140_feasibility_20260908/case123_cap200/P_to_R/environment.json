@@ -1,0 +1,33 @@
+{
+  "host": "bosque6",
+  "platform": "Linux-5.15.0-177-generic-x86_64-with-glibc2.35",
+  "python": "3.12.12 (main, Oct 28 2025, 12:10:49) [Clang 20.1.4 ]",
+  "cpu_models": [
+    "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz"
+  ],
+  "affinity": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30
+  ],
+  "slurm": {
+    "SLURM_JOB_ID": "454401",
+    "SLURM_ARRAY_JOB_ID": "454401",
+    "SLURM_ARRAY_TASK_ID": "247",
+    "SLURM_CPUS_PER_TASK": "16",
+    "SLURM_JOB_PARTITION": "cpunodes"
+  }
+}

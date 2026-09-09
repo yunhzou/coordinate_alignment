@@ -1,0 +1,81 @@
+{
+  "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908",
+  "index": 123,
+  "config_before": {
+    "cut_floor": 0.2,
+    "graph_floor": 0.2,
+    "iso_tolerance": 0.5,
+    "event_threshold": 0.5,
+    "metal_event_threshold": 0.3,
+    "seed_count": 10,
+    "branch_limit": 100,
+    "task_chunksize": 1,
+    "symmetry_repair": true,
+    "symmetry_repair_min_changes": 1,
+    "symmetry_repair_max_evaluations": 20000,
+    "anchors": [],
+    "seed_selection": "random"
+  },
+  "config": {
+    "cut_floor": 0.2,
+    "graph_floor": 0.2,
+    "iso_tolerance": 0.5,
+    "event_threshold": 0.5,
+    "metal_event_threshold": 0.3,
+    "seed_count": 10,
+    "branch_limit": 200,
+    "task_chunksize": 1,
+    "symmetry_repair": true,
+    "symmetry_repair_min_changes": 1,
+    "symmetry_repair_max_evaluations": 20000,
+    "anchors": [],
+    "seed_selection": "random"
+  },
+  "records": [
+    {
+      "index": 123,
+      "step_id": "pr9.carbene.rearr_ts41a-endo",
+      "endpoints": [
+        {
+          "side": "R",
+          "mol_sanitization_error": "Can't kekulize mol.  Unkekulized atoms: 5",
+          "mol_bond_types": {
+            "SINGLE": 45,
+            "AROMATIC": 1
+          },
+          "source_cache": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/work/pr9.carbene.rearr_ts41a-endo/endpoints/R",
+          "atoms": 40
+        },
+        {
+          "side": "P",
+          "mol_sanitization_error": null,
+          "mol_bond_types": {
+            "SINGLE": 45,
+            "DOUBLE": 1
+          },
+          "source_cache": "/h/399/yunhengzou/appendix_final/bgcp_rerank_latest/work/pr9.carbene.rearr_ts41a-endo/endpoints/P",
+          "atoms": 40
+        }
+      ],
+      "full_composition": true,
+      "atoms": 40,
+      "sha256": {
+        "R.xyz": "6ff55e684f5c97452e3a2f2d78f749b9ecd642e93cbb087e3a1ef723952b386d",
+        "R.wbo": "8f4cbc463c0648366897b0d4933776b26b9710b6142ced5acd5f4e1635769e82",
+        "R.mol": "67ae669b0c23e9fb5eaef34e5c52669e3889b11505f06ad9651dbe0607cfd716",
+        "P.xyz": "e980da85d3a3070807f43a86722182bc39dd01f86a07fabef20072464b17a904",
+        "P.wbo": "7a03c919e5d43aaa702bed1ec5b7a06a80d84c3513c288e438bf3c2c1eaa0309",
+        "P.mol": "114462c248c7e82b68e40c01da064020231c54b7c17a4ef6b09f6f5bfaabc9bf",
+        "input.json": "85e2213c1bfa9fd27070f1234c2709f794f53f6929a3e84a43afc8cae8f01b40",
+        "R_component_0.xyz": "a745882f0fea0a96145f2714cb4a68621ebb302850b7f9f198c5905c69c38d53",
+        "P_component_0.xyz": "2b332de9ab6a0cef0dafa53b2f7f0ef5894e843cf6f3269cf9bf8b921a065b74",
+        "components.json": "66f27b84c2621bae082b9df26d31e6b75acf6a5feba5a82370ee0a1756486a13"
+      }
+    }
+  ],
+  "frozen_engine": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_feasibility_20260908/engine",
+  "source_manifest_sha256": "2b70b7c0d5fb98e79ba4bf3d290ab146a99a1424204e553e5e2608ded0e45f89",
+  "input_sha256": "85e2213c1bfa9fd27070f1234c2709f794f53f6929a3e84a43afc8cae8f01b40",
+  "only_search_change": "branch_limit",
+  "reference_available": false
+}

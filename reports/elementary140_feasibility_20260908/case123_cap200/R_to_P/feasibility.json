@@ -1,0 +1,9 @@
+{
+  "valid_full_terminal_mappings": 12258,
+  "terminals": 12258,
+  "capped": true,
+  "accuracy": null,
+  "note": "Terminal witnesses are not an exhaustive list of symmetry alternatives; full archives retained.",
+  "witness_export_including_io_seconds": 0.8678243905305862,
+  "witness_export_including_io_cpu_seconds": 0.8666367859999999
+}

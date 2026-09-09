@@ -1,0 +1,18 @@
+{
+  "job": "454401",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes",
+    "--exclude=bosque8",
+    "--nodes=1",
+    "--cpus-per-task=16",
+    "--mem=32G",
+    "--time=00:10:00",
+    "--array=246,247",
+    "--job-name=elem_cap200",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_case123_cap200_20260908/status/slurm_%A_%a.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_case123_cap200_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_case123_cap200_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_case123_cap200_20260908/engine/bench/elementary_feasibility.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_case123_cap200_20260908 --method aam --slot \"$SLURM_ARRAY_TASK_ID\""
+  ]
+}

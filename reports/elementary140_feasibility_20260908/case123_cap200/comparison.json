@@ -1,0 +1,93 @@
+{
+  "index": 123,
+  "results": [
+    {
+      "cap": 100,
+      "direction": "R_to_P",
+      "worker_exit": 0,
+      "valid_full_terminal_mappings": 0,
+      "terminals": 0,
+      "capped": true,
+      "accuracy": null,
+      "note": "Terminal witnesses are not an exhaustive list of symmetry alternatives; full archives retained.",
+      "witness_export_including_io_seconds": 0.0033688200637698174,
+      "witness_export_including_io_cpu_seconds": 0.0028010759999999024,
+      "cpu_seconds": 2.355390349,
+      "elapsed_including_io_seconds": 0.3334713764488697,
+      "contexts": 470,
+      "stops": {
+        "capped": 470
+      },
+      "cap_stages": {
+        "fragment_growth": 470
+      }
+    },
+    {
+      "cap": 100,
+      "direction": "P_to_R",
+      "worker_exit": 0,
+      "valid_full_terminal_mappings": 0,
+      "terminals": 0,
+      "capped": true,
+      "accuracy": null,
+      "note": "Terminal witnesses are not an exhaustive list of symmetry alternatives; full archives retained.",
+      "witness_export_including_io_seconds": 0.0032818503677845,
+      "witness_export_including_io_cpu_seconds": 0.0027479969999999465,
+      "cpu_seconds": 2.68137055,
+      "elapsed_including_io_seconds": 0.3375550229102373,
+      "contexts": 470,
+      "stops": {
+        "capped": 470
+      },
+      "cap_stages": {
+        "fragment_growth": 470
+      }
+    },
+    {
+      "cap": 200,
+      "direction": "R_to_P",
+      "worker_exit": 0,
+      "valid_full_terminal_mappings": 12258,
+      "terminals": 12258,
+      "capped": true,
+      "accuracy": null,
+      "note": "Terminal witnesses are not an exhaustive list of symmetry alternatives; full archives retained.",
+      "witness_export_including_io_seconds": 0.8678243905305862,
+      "witness_export_including_io_cpu_seconds": 0.8666367859999999,
+      "cpu_seconds": 20.976685457,
+      "elapsed_including_io_seconds": 5.5783576760441065,
+      "contexts": 470,
+      "stops": {
+        "objective_met": 12258,
+        "capped": 14359
+      },
+      "cap_stages": {
+        "fragment_growth": 228,
+        "combined_live_leaves": 14131
+      }
+    },
+    {
+      "cap": 200,
+      "direction": "P_to_R",
+      "worker_exit": 0,
+      "valid_full_terminal_mappings": 985,
+      "terminals": 985,
+      "capped": true,
+      "accuracy": null,
+      "note": "Terminal witnesses are not an exhaustive list of symmetry alternatives; full archives retained.",
+      "witness_export_including_io_seconds": 0.05200646258890629,
+      "witness_export_including_io_cpu_seconds": 0.051421877000000116,
+      "cpu_seconds": 3.155275274,
+      "elapsed_including_io_seconds": 0.4408343229442835,
+      "contexts": 470,
+      "stops": {
+        "objective_met": 985,
+        "capped": 270
+      },
+      "cap_stages": {
+        "fragment_growth": 270
+      }
+    }
+  ],
+  "accuracy": null
+}
