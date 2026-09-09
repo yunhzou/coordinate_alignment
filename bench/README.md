@@ -17,6 +17,9 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 | `golden_slap_budget.py` | Fixed input-order plans, expanded SLAP evaluation, summary and retry plans |
 | `elementary_feasibility.py` | Native XYZ/WBO and SLAP XYZ holdout; reference-free feasibility, saved mappings, timing and reporting |
 | `compare_elementary_outputs.py` | Saved native mapping comparison, common WBO scores, symmetry checks and symbolic SLAP hydrogen refinement |
+| `elementary_family_overlap.py` | Saved heavy-family membership and low-edit alternative witnesses |
+| `aam_small_graph_oracle.py` | Identical binary-graph exact-oracle control for AAM and SLAP |
+| `audit_aam_slap_overlap.py` | Independent saved-witness and oracle score verification |
 
 The other Golden scripts record diagnostic experiments (seeds, caps, direction,
 anchors, ranking, memory, viewers). They are retained for provenance, not silently

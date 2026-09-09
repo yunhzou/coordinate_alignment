@@ -5,6 +5,8 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[AAM versus SLAP: theory, family overlap and identical-graph oracle](aam_slap_theory_overlap_20260909/README.md).
+
 Separate from Golden: [140 elementary-step native-input feasibility holdout](elementary140_feasibility_20260908/README.md).
 No reference atom mappings are available; this is not an accuracy benchmark.
 

@@ -1,0 +1,12 @@
+{
+  "positive_overlap_and_extra_witnesses_checked": 298,
+  "oracle_cases_independently_rescored": 100,
+  "exact_minimum_recovery": {"aam": 100, "slap_default": 90, "slap_expanded": 92},
+  "overlap_class_statuses": {"represented": 159, "excluded_from_saved_families": 11, "unresolved": 6},
+  "pytest": {
+    "command": ".venv/bin/python -m pytest -q tests/test_elementary_output_comparison.py tests/test_family_query.py",
+    "passed": 10,
+    "seconds": 1.81
+  },
+  "scope": "Witness verification does not independently prove negative family exclusions. No core algorithm changes."
+}
