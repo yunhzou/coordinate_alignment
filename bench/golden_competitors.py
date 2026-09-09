@@ -22,7 +22,8 @@ import signal
 import sys
 
 
-METHODS = ('rxnmapper', 'localmapper', 'slap_binary', 'slap_weighted', 'indigo', 'chython', 'rdt')
+METHODS = ('rxnmapper', 'localmapper', 'slap_binary', 'slap_weighted', 'indigo', 'chython', 'rdt',
+           'slap_all_binary', 'slap_all_weighted')
 
 
 def save(path, value):
@@ -52,11 +53,11 @@ def mapper_process(connection, method):
                 invoke = lambda reaction: mapper.get_atom_map(reaction, return_dict=True)
         elif method.startswith('slap_'):
             from slapmapper.aam import SlapAAM
-            mapper = SlapAAM(binary=method == 'slap_binary')
+            mapper = SlapAAM(binary=method.endswith('binary'))
 
             def invoke(reaction):
                 mapper.reset()
-                mapper.map_smiles(reaction)
+                mapper.map_smiles(reaction, break_sym='all' if method.startswith('slap_all_') else 'heavy')
                 return mapper.results
         elif method == 'indigo':
             from indigo import Indigo

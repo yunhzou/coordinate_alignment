@@ -1,0 +1,20 @@
+{
+  "union_curve": {
+    "1": 1661,
+    "2": 1675,
+    "5": 1689,
+    "10": 1689
+  },
+  "all_modes_union": 1691,
+  "all_atom_additions": [
+    1304,
+    1504
+  ],
+  "unrecovered_with_any_timeout": [
+    1503,
+    1665,
+    1723,
+    1776,
+    1806
+  ]
+}
