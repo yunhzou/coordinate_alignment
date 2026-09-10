@@ -1,0 +1,14 @@
+{
+  "search_array": "467282",
+  "cancelled_unused_configuring_allocations": ["467282_3", "467282_10", "467282_17"],
+  "completed_search_tasks_before_cancellation": 3982,
+  "search_exit_codes": {"0": 3982},
+  "queue_claims": 3982,
+  "reason": "The dynamic queue finished every search on the working allocations. Three unused allocations remained CONFIGURING and blocked the analysis dependency.",
+  "completed_searches_cancelled_or_repeated": 0,
+  "analysis_array": "467283",
+  "analysis_started_via_original_dependency": true,
+  "manual_dependency_update_attempted": true,
+  "manual_dependency_update_applied": false,
+  "dependency_note": "The dependent analysis was already running when the update was attempted. Slurm rejected it as no longer pending; no dependency or running worker was changed."
+}

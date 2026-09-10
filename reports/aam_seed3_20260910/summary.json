@@ -1,0 +1,56 @@
+{
+  "golden": {
+    "cases": 1851,
+    "paired_complete_cases": 1837,
+    "paired_compute_cpu": {
+      "seeds3": 59466.761953548,
+      "seeds10": 176323.668534435
+    },
+    "paired_cpu_speedup": 2.9650793610079003,
+    "evaluation_complete_cases": {
+      "seeds3": 1851,
+      "seeds10": 1836
+    },
+    "recovery": {
+      "seeds3": {
+        "recovered": 1836,
+        "not_recovered": 10,
+        "unknown": 5
+      },
+      "seeds10": {
+        "recovered": 1836,
+        "not_recovered": 5,
+        "unknown": 10
+      }
+    },
+    "previously_recovered_now_not_verified": [
+      850,
+      1314,
+      1568
+    ],
+    "newly_verified_from_previous_unknown_or_miss": [
+      1786,
+      1799,
+      1823
+    ]
+  },
+  "holdout": {
+    "cases": 140,
+    "paired_complete_cases": 140,
+    "paired_compute_cpu": {
+      "seeds3": 3348.293445874,
+      "seeds10": 8516.41638361
+    },
+    "paired_cpu_speedup": 2.5435095583108223,
+    "evaluation_complete_cases": {
+      "seeds3": 140,
+      "seeds10": 140
+    },
+    "scope": "No annotated holdout ground truth. Event minima describe saved representatives only.",
+    "full_mapping_cases": {
+      "seeds3": 140,
+      "seeds10": 140
+    },
+    "same_best_events": 139
+  }
+}

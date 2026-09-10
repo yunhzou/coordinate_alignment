@@ -1,0 +1,19 @@
+{
+  "phase_statuses": {
+    "search": {
+      "0": 3982
+    },
+    "analyze": {
+      "0": 3982
+    }
+  },
+  "phase_execution_spans_seconds": {
+    "search": 263.68597769737244,
+    "analyze": 139.25371170043945
+  },
+  "full_search_cpu_by_dataset": {
+    "golden": 70570.725905102,
+    "holdout": 3348.293445874
+  },
+  "scope": "CPU excludes measured persistence/loading. Execution spans include persistence and dispatch, not initial Slurm queue. Bidirectional calls were independently scheduled; no equal-resource concurrent bidirectional latency claim."
+}

@@ -156,11 +156,13 @@ def submit(args):
 def collect(args):
     """Summarize saved results only; unknown evaluations are never negatives."""
     manifest=read(args.run/'manifest.json')
+    trial=f"seeds{manifest['original_config']['seed_count']}"
+    baseline=f"seeds{manifest['baseline_config']['seed_count']}"
     rows=[]
     for dataset,count in manifest['counts'].items():
         for index in range(count):
             variants={}
-            for name,root in (('seeds3',args.run),('seeds10',Path(manifest['baseline']))):
+            for name,root in ((trial,args.run),(baseline,Path(manifest['baseline']))):
                 directions={}
                 for direction in ('R_to_P','P_to_R'):
                     folder=result_folder(root,dict(dataset=dataset,index=index,direction=direction))
@@ -187,17 +189,21 @@ def collect(args):
     for dataset,count in manifest['counts'].items():
         selected=[r for r in rows if r['dataset']==dataset]
         paired=[r for r in selected if all(v['searches_complete'] for v in r['variants'].values())]
-        totals={name:sum(r['variants'][name]['compute_cpu'] for r in paired) for name in ('seeds3','seeds10')}
+        totals={name:sum(r['variants'][name]['compute_cpu'] for r in paired) for name in (trial,baseline)}
         summary=dict(cases=count,paired_complete_cases=len(paired),paired_compute_cpu=totals,
-                     paired_cpu_speedup=totals['seeds10']/totals['seeds3'] if totals['seeds3'] else None)
+                     paired_cpu_speedup=totals[baseline]/totals[trial] if totals[trial] else None)
+        summary['evaluation_complete_cases']={name:sum(all(d['evaluation_complete'] for d in r['variants'][name]['directions'].values())
+            for r in selected) for name in totals}
         if dataset=='golden':
             summary['recovery']={name:dict(Counter(r['variants'][name]['recovery'] for r in selected)) for name in totals}
             summary['previously_recovered_now_not_verified']=[r['index'] for r in selected
-                if r['variants']['seeds10']['recovery']=='recovered' and r['variants']['seeds3']['recovery']!='recovered']
+                if r['variants'][baseline]['recovery']=='recovered' and r['variants'][trial]['recovery']!='recovered']
+            summary['newly_verified_from_previous_unknown_or_miss']=[r['index'] for r in selected
+                if r['variants'][baseline]['recovery']!='recovered' and r['variants'][trial]['recovery']=='recovered']
         else:
             summary['scope']='No annotated holdout ground truth. Event minima describe saved representatives only.'
             summary['full_mapping_cases']={name:sum(r['variants'][name]['best_events'] is not None for r in selected) for name in totals}
-            summary['same_best_events']=sum(r['variants']['seeds3']['best_events']==r['variants']['seeds10']['best_events']
+            summary['same_best_events']=sum(r['variants'][trial]['best_events']==r['variants'][baseline]['best_events']
                 for r in selected if all(v['best_events'] is not None for v in r['variants'].values()))
         summaries[dataset]=summary
     save(args.run/'comparison/cases.json',rows)
@@ -205,9 +211,67 @@ def collect(args):
     print(json.dumps(summaries,indent=2),flush=True)
 
 
+def publish(args):
+    """Publish compact comparisons without repeating any mapping or evaluation."""
+    import csv
+    manifest=read(args.run/'manifest.json')
+    trial=f"seeds{manifest['original_config']['seed_count']}"
+    baseline=f"seeds{manifest['baseline_config']['seed_count']}"
+    statuses={phase:[read(p) for p in (args.run/f'status/{phase}').glob('*.json')]
+              for phase in ('search','analyze')}
+    assert all(len(rows)==manifest['tasks'] and all('finished' in r for r in rows) for rows in statuses.values())
+    rows=read(args.run/'comparison/cases.json')
+    destination=ROOT/f"reports/aam_seed{manifest['original_config']['seed_count']}_20260910"
+    destination.mkdir(exist_ok=True)
+    for name in ('manifest.json','submissions.json'):
+        shutil.copy2(args.run/name,destination/name)
+    shutil.copy2(args.run/'comparison/summary.json',destination/'summary.json')
+    shutil.copy2(args.run/'comparison/cases.json',destination/'case_metrics.json')
+    with (destination/'per_case.csv').open('w',newline='') as stream:
+        writer=csv.DictWriter(stream,fieldnames=['dataset','index','variant','recovery','searches_complete','compute_cpu_seconds','best_events'])
+        writer.writeheader()
+        for row in rows:
+            for variant,value in row['variants'].items():
+                writer.writerow(dict(dataset=row['dataset'],index=row['index'],variant=variant,
+                    recovery=value['recovery'] if row['dataset']=='golden' else 'no_ground_truth',
+                    searches_complete=value['searches_complete'],compute_cpu_seconds=value['compute_cpu'],best_events=value['best_events']))
+    timing=dict(phase_statuses={phase:dict(Counter(str(r.get('exit',r.get('status'))) for r in values))
+                               for phase,values in statuses.items()},
+        phase_execution_spans_seconds={phase:max(r['finished'] for r in values)-min(r['started'] for r in values if 'started' in r)
+                                       if any('started' in r for r in values) else None
+                                       for phase,values in statuses.items()},
+        full_search_cpu_by_dataset={dataset:sum(r['variants'][trial]['compute_cpu'] for r in rows if r['dataset']==dataset)
+                                    for dataset in manifest['counts']},
+        scope='CPU excludes measured persistence/loading. Execution spans include persistence and dispatch, not initial Slurm queue. '
+              'Bidirectional calls were independently scheduled; no equal-resource concurrent bidirectional latency claim.')
+    save(destination/'timing.json',timing)
+    slap_path=ROOT/'reports/slap_sweep_cut_20260910/case_metrics.json'
+    slap={r['index']:r for r in read(slap_path)}
+    common=[r for r in rows if r['dataset']=='golden' and all(v['searches_complete'] for v in r['variants'].values())
+            and not slap[r['index']]['incomplete_variants'] and not slap[r['index']]['mapping_errors']
+            and not slap[r['index']]['invalid_predictions']]
+    sums={name:sum(r['variants'][name]['compute_cpu'] for r in common) for name in (trial,baseline)}
+    sums['slap_sweep']=sum(slap[r['index']]['workflow_cpu_excluding_io'] for r in common)
+    save(destination/'slap_cpu_comparison.json',dict(paired_complete_cases=len(common),cpu_seconds=sums,
+        mean_cpu_seconds={k:v/len(common) for k,v in sums.items()},
+        trial_cpu_over_slap=sums[trial]/sums['slap_sweep'],
+        scope='Matched completed cases only. AAM includes IPC/process setup; SLAP workflow timer excludes worker startup. '
+              'Not an exact end-to-end latency or full-cost comparison; accuracy keeps all 1851 cases.'))
+    jobs=[r['job'].split(';')[0] for r in read(args.run/'submissions.json')]
+    fields=['JobID','State','ElapsedRaw','TotalCPU','AllocCPUS','Submit','Start','End','MaxRSS']
+    command=['sacct','-j',','.join(jobs),'--array','--noheader','--parsable2','--format='+','.join(fields)]
+    accounting=subprocess.check_output(command,text=True)
+    save(destination/'slurm_accounting.json',dict(command=command,
+        rows=[dict(zip(fields,line.split('|'))) for line in accounting.splitlines()]))
+    save(destination/'artifacts.json',dict(full_run=str(args.run),
+        native_engine=str(args.run/'original'),full_archives=str(args.run/'results'),
+        frozen_driver=str(args.run/'aam_seed_ablation.py'),baseline=manifest['baseline']))
+    print(json.dumps(dict(report=str(destination),timing=timing,slap_comparison=sums),indent=2),flush=True)
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command',choices=('prepare','batch','submit','collect'))
+    parser.add_argument('command',choices=('prepare','batch','submit','collect','publish'))
     parser.add_argument('--run',type=Path,required=True)
     parser.add_argument('--baseline',type=Path,default=BASELINE)
     parser.add_argument('--seeds',type=int,default=3)

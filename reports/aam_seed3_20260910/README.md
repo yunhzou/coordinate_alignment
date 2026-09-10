@@ -1,6 +1,64 @@
 # Three-seed bidirectional AAM ablation
 
-Status: preparing a fresh, separately archived experiment. No accuracy or speedup claim yet.
+## Result
+
+**Three seeds retain 99.19% verified bidirectional Golden recovery while using
+2.97× less search CPU on paired completed cases.** All 3,982 directional searches
+and all 3,982 analysis processes completed with exit zero; none reached a hard
+process watchdog. Soft verification budgets still leave five Golden cases unknown.
+
+| Native-reuse AAM | Recovered / 1,851 | Coverage | Verified absent | Unknown |
+| --- | ---: | ---: | ---: | ---: |
+| Saved ten-seed baseline | 1,836 | 99.19% | 5 | 10 |
+| Fresh three-seed variant | 1,836 | 99.19% | 10 | 5 |
+
+The equal recovery counts are **not identical case sets**. Case 1314 is no longer
+recovered with three seeds; cases 850 and 1568 are now unknown. Previous unknowns
+1786, 1799 and 1823 are now recovered. The latter two involved incomplete baseline
+searches/analysis; 1786 had unresolved baseline verification. These gains do not
+mean fewer seeds explore more possibilities. No union with the ten-seed outputs
+was used to obtain the three-seed percentage.
+
+On the 140-step XYZ/WBO holdout, both settings return full explicit-atom mappings
+for all 140 cases. Best representative event counts agree in 139/140. Case 123
+changes from 19 events (ten seeds) to 25 (three seeds). The holdout has no annotated
+ground truth; this is not an accuracy or complete-alternative-equivalence claim.
+
+## Compute and SLAP comparison
+
+On 1,837 Golden reactions where both AAM settings completed both searches,
+ten seeds cost 176,323.67 CPU-seconds and three seeds 59,466.76 CPU-seconds:
+**2.965× lower compute cost**. On all 140 holdout cases the reduction is **2.544×**
+(8,516.42 versus 3,348.29 CPU-seconds).
+
+For the same 1,807 Golden reactions completed by both AAM settings and the valid
+SLAP sweep, the saved timings are:
+
+| Search | CPU-seconds per reaction |
+| --- | ---: |
+| AAM ten seeds | 87.87 |
+| AAM three seeds | 29.77 |
+| SLAP + single-edge sweeps | 17.62 |
+
+This narrows the recorded compute ratio from **4.99× to 1.69×** relative to
+SLAP+sweep, whose standalone full-Golden coverage is 96.97%. Timing excludes
+measured saving/loading and uses mutually completed cases; it is not a measured
+end-to-end or equal-resource parallel latency ratio. AAM instrumentation includes
+IPC/process setup; the SLAP workflow timer excludes worker startup. SLAP's
+interrupted in-flight work is not included in this paired successful-work comparison.
+
+Across **all** Golden cases, including the difficult cases missing from the old
+ten-seed timing, the new search uses 70,570.73 CPU-seconds (19.603 CPU-hours).
+Do not substitute the smaller paired total for that complete workload total.
+
+Observed execution spans, measured separately from first actual worker start to
+last worker finish: search **263.69 seconds**, analysis **139.25 seconds**. These
+include persistence and dispatch, exclude initial Slurm queue, and are not a
+combined end-to-end duration. Search ran on 29 working 32-CPU allocations (928 CPUs
+maximum); three unused allocations stuck in startup were cancelled only after
+all work completed. Analysis used 32 × 8 CPUs. Each AAM search retained eight CPUs.
+
+## Protocol and artifacts
 
 Both the ten-seed baseline and this variation are **bidirectional**. This is
 the frozen native-reuse engine `98b01b1`, not the later adaptive-policy candidate.

@@ -2,6 +2,7 @@
 import argparse
 import gzip
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import pickle
@@ -11,10 +12,12 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'bench'))
 import slap_edge_sweep as sweep
-from slapmapper.aam import SlapAAM
-from slapmapper.aam._smiles import smiles2lgp,get_numbered_rxn_smiles
-from slapmapper.core import SlapMapper
 from rdkit import Chem
+HAS_SLAP=importlib.util.find_spec('slapmapper') is not None
+if HAS_SLAP:
+    from slapmapper.aam import SlapAAM
+    from slapmapper.aam._smiles import smiles2lgp,get_numbered_rxn_smiles
+    from slapmapper.core import SlapMapper
 
 
 def endpoints(reaction):
@@ -26,6 +29,7 @@ def endpoints(reaction):
     return out
 
 
+@unittest.skipUnless(HAS_SLAP,'Run these integration tests in the pinned SLAP environment')
 class EdgeSweepTests(unittest.TestCase):
     def test_uncut_matches_upstream_in_both_directions_and_modes(self):
         for reaction in ('CCO>>CC=O','CCBr.O>>CCO.Br','c1ccccc1.O>>Oc1ccccc1'):

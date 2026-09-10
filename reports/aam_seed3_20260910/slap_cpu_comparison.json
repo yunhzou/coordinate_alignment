@@ -1,0 +1,15 @@
+{
+  "paired_complete_cases": 1807,
+  "cpu_seconds": {
+    "seeds3": 53790.925280404,
+    "seeds10": 158774.617282945,
+    "slap_sweep": 31831.606439181
+  },
+  "mean_cpu_seconds": {
+    "seeds3": 29.76808261228777,
+    "seeds10": 87.86641797617321,
+    "slap_sweep": 17.615720220908134
+  },
+  "trial_cpu_over_slap": 1.6898589577368497,
+  "scope": "Matched completed cases only. AAM includes IPC/process setup; SLAP workflow timer excludes worker startup. Not an exact end-to-end latency or full-cost comparison; accuracy keeps all 1851 cases."
+}
