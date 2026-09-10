@@ -207,6 +207,25 @@ def submit(args):
     save(args.run/'submission.json',dict(job=job,command=command));print(job,flush=True)
 
 
+def submit_evaluation(args):
+    job=read(args.run/'submission.json')['job'].split(';')[0]
+    script=args.run/'evaluate_edge_sweep.py'
+    shutil.copy2(__file__,script)
+    (args.run/'evaluations').mkdir(exist_ok=True)
+    command=['sbatch','--parsable','--partition=cpunodes_nia','--exclude=bosque49,bosque56',
+        '--nodes=1','--cpus-per-task=1','--mem=4G','--time=00:10:00','--no-requeue',
+        f'--dependency=afterany:{job}',f'--array=0-{args.shards-1}%{args.shards}',
+        '--job-name=slap_sweep_eval',f'--output={args.run}/status/eval_%A_%a.out','--wrap',
+        shlex.join(['env','PYTHONDONTWRITEBYTECODE=1','OPENBLAS_NUM_THREADS=1','OMP_NUM_THREADS=1',
+            f'PYTHONPATH={args.run}:{ROOT / "src"}',
+            '/h/399/yunhengzou/coordinate_alignment/.venv/bin/python',str(script),'evaluate',
+            '--run',str(args.run),'--shards',str(args.shards),'--slot'])+' "$SLURM_ARRAY_TASK_ID"']
+    evaluation_job=subprocess.check_output(command,text=True).strip()
+    save(args.run/'evaluation_submission.json',dict(job=evaluation_job,command=command,
+        driver_sha256=hashlib.sha256(script.read_bytes()).hexdigest()))
+    print(evaluation_job,flush=True)
+
+
 def evaluate(args):
     from golden_competitors import signatures
     manifest=read(args.run/'manifest.json')
@@ -261,7 +280,7 @@ def summary(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=('prepare','case','batch','submit','evaluate','summary'))
+    p.add_argument('command',choices=('prepare','case','batch','submit','submit_evaluation','evaluate','summary'))
     p.add_argument('--run',type=Path,required=True)
     p.add_argument('--dataset',type=Path,default=DATASET)
     p.add_argument('--slot',type=int,default=0)
