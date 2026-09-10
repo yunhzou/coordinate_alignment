@@ -1,0 +1,43 @@
+[
+  {
+    "phase": "search",
+    "job": "467430",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--exclude=bosque49,bosque56",
+      "--nodes=1",
+      "--cpus-per-task=32",
+      "--mem=64G",
+      "--time=00:20:00",
+      "--no-requeue",
+      "--array=0-15%16",
+      "--job-name=aam_seed2_search",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/status/search_%A_%a.out",
+      "--wrap",
+      "env PYTHONDONTWRITEBYTECODE=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/aam_seed_ablation.py batch --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910 --phase search"
+    ]
+  },
+  {
+    "phase": "analyze",
+    "job": "467431",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--exclude=bosque49,bosque56",
+      "--nodes=1",
+      "--cpus-per-task=8",
+      "--mem=64G",
+      "--time=00:20:00",
+      "--no-requeue",
+      "--array=0-15%16",
+      "--job-name=aam_seed2_analyze",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/status/analyze_%A_%a.out",
+      "--dependency=afterany:467430",
+      "--wrap",
+      "env PYTHONDONTWRITEBYTECODE=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/aam_seed_ablation.py batch --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910 --phase analyze"
+    ]
+  }
+]

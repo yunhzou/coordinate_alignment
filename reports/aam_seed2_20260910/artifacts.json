@@ -1,0 +1,7 @@
+{
+  "full_run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910",
+  "native_engine": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/original",
+  "full_archives": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/results",
+  "frozen_driver": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_two_seeds_bidirectional_20260910/aam_seed_ablation.py",
+  "baseline": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910"
+}
