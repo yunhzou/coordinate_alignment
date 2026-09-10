@@ -1,0 +1,92 @@
+{
+  "date": "2026-09-10",
+  "scope": "Additional review-led web search; earlier targeted searches are documented separately. These are discovery queries, not a census of indexed literature.",
+  "batches": [
+    {
+      "queries": [
+        "atom atom mapping algorithms review survey maximum common subgraph 2025 2026",
+        "atom mapping algorithms review comparison Preciat 2017 algorithms CLCA DREAM ICMAP MWED",
+        "atom mapping algorithms review 2022 2023 Lin Golden maximum common substructure"
+      ],
+      "purpose": "Identify reviews and benchmark overviews spanning historical and recent AAM methods"
+    },
+    {
+      "queries": [
+        "\"Comparison and Enumeration of Chemical Graphs\"",
+        "\"atom mapping\" \"review\" \"2014\"",
+        "\"Maximum common subgraph isomorphism algorithms\" molecular science review",
+        "\"atom mapping\" \"review\" \"2025\""
+      ],
+      "purpose": "Locate historical graph/AAM reviews and recent coverage"
+    },
+    {
+      "queries": [
+        "\"Chen\" \"Taylor\" \"Automatic reaction mapping\"",
+        "\"Automatic reaction mapping and reaction center detection\" pdf",
+        "\"atom mapping\" \"review\" \"2024\""
+      ],
+      "purpose": "Follow Lin 2022 reference 7 to the dedicated AAM review; check newer reviews"
+    },
+    {
+      "queries": [
+        "\"Armitage\" \"Lynch\" \"substructural\" reactions 1967",
+        "\"Funatsu\" \"1988\" \"reaction\" \"53\" mapping",
+        "\"Canonical labeling\" \"clique approximation\" atom mapping Kumar Maranas 2014",
+        "\"Machine Learning Guided Atom Mapping\" Litsa 2019"
+      ],
+      "purpose": "Follow historical growth and canonicalization leads from the reviews to original publications"
+    },
+    {
+      "queries": [
+        "\"Automated reaction mapping\" \"Crabtree\" pdf",
+        "\"Efficient extraction of mapping rules\" Akutsu pdf",
+        "\"Computing atom mappings\" Heinonen pdf",
+        "\"ReactionMap\" Fooshee Andronico Baldi pdf"
+      ],
+      "purpose": "Retrieve primary algorithms for cut enumeration, A* search and ReactionMap"
+    },
+    {
+      "queries": [
+        "\"CLCA\" \"Maranas\" \"pdf\"",
+        "\"ReactionMap\" \"Fooshee\" \"pdf\" site:ics.uci.edu",
+        "\"Automated reaction mapping\" site:edu Crabtree Mehta",
+        "\"Automatic detection of structural similarities among chemical compounds\""
+      ],
+      "purpose": "Find author or publisher copies for the closest unresolved historical methods"
+    },
+    {
+      "queries": [
+        "site:pubs.acs.org/doi/10.1021/ci5003922 \"algorithm\" \"label\"",
+        "\"CLCA\" \"canonical\" \"Maranas\" -site:researchgate.net -site:metabeng.com",
+        "\"ReactionMap\" \"algorithm\" Fooshee Andronico Baldi -site:researchgate.net",
+        "\"First\" \"Floudas\" \"atom mapping\" 2011"
+      ],
+      "purpose": "Recover original CLCA/ReactionMap mechanism text and the DREAM formulation"
+    },
+    {
+      "queries": [
+        "\"Computing atom mappings for biochemical reactions\" pdf Heinonen",
+        "\"Quantifying and assessing the effect of chemical symmetry\" pdf",
+        "\"Recognition of largest common structural fragment\" Takahashi 1987",
+        "\"Accurate atom-mapping computation\" Latendresse full"
+      ],
+      "purpose": "Retrieve primary A* search, symmetry treatment, historical fragment growth and MWED papers"
+    },
+    {
+      "queries": [
+        "\"Quantifying and assessing the effect of chemical symmetry in metabolic pathways\"",
+        "\"Accurate atom-mapping computation for biochemical reactions\""
+      ],
+      "purpose": "Follow symmetry and weighted-edit originals without broad search terms"
+    },
+    {
+      "queries": [
+        "\"atom mapping\" \"fragment growth\"",
+        "\"atom mapping\" \"saturation\" symmetry",
+        "\"atom mapping\" \"deferred\" \"branch\"",
+        "\"common subgraph\" \"embedding\" \"greedy\" symmetry growth"
+      ],
+      "purpose": "Search the coupled fragment-growth, saturation, deferred-edge and embedding-retention mechanisms explicitly"
+    }
+  ]
+}

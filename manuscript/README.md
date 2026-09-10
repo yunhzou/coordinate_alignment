@@ -33,6 +33,8 @@ template assets, figure sources/data, figures, animations, and build scripts.
 | Verified initial bibliography | [references.bib](references.bib) |
 | Algorithm novelty assessment and closest prior work | [evidence/novelty-audit-20260910.md](evidence/novelty-audit-20260910.md) |
 | Specific transition rules and implementation comparisons | [evidence/mechanism-comparison-20260910.md](evidence/mechanism-comparison-20260910.md) |
+| Expanded literature assessment, five reviews/overviews and primary comparisons | [Report PDF](evidence/review-led-novelty-20260910.pdf) / [editable report](evidence/review-led-novelty-20260910.md) |
+| Inspection coverage, unresolved leads and source provenance | [Coverage CSV](evidence/review-coverage-20260910.csv) / [source manifest](evidence/review-source-manifest-20260910.json) / [query log](evidence/review-search-log-20260910.json) |
 | Items to resolve before submission | [EDITORIAL_NOTES.md](EDITORIAL_NOTES.md) |
 | Data provenance and figure-to-report mapping | [evidence/README.md](evidence/README.md) |
 | Source paths and SHA-256 hashes | [evidence/sources.json](evidence/sources.json) |
@@ -42,6 +44,17 @@ The original supplied ZIP remains outside this directory. The class retains
 its supplied layout, font, and branding, with XeTeX/Tectonic compatibility fixes.
 Journal wrappers in `journals/` remain unconfigured examples; only `preprint.tex`
 is the compiled paper. Their submission metadata must be replaced before use.
+
+The separate literature report expands the earlier audits with historical review
+trails and direct Indigo, RDT, SynKit approximate-growth and AMLGAM comparisons.
+Its coverage ledger separates original-method inspection from abstracts and
+unresolved leads. This report does not add benchmark results or replace the
+compiled manuscript. Rebuild it from this directory using the same Python/browser
+environment as the viewer validation:
+
+```bash
+PYTHONPATH=.build-deps ../../.venv/bin/python scripts/build_research_report.py
+```
 
 ## Figures and animations
 

@@ -65,3 +65,16 @@ atom-pair and fragment-shape branching, and compares the actual deduplication
 keys. OpenChemLib's concrete growth routine and FMCS are additional close
 comparators. Newly cached source hashes are in
 [mechanism-source-manifest.json](mechanism-source-manifest.json).
+
+The expanded [literature and mechanism assessment](review-led-novelty-20260910.md)
+is also available as a [linked PDF](review-led-novelty-20260910.pdf). It follows
+five reviews/overviews and adds direct comparisons with Indigo, contemporary RDT,
+SynKit's approximate growth routine, AMLGAM and other original methods.
+The [coverage ledger](review-coverage-20260910.csv) contains 44 entries: five
+reviews/overviews, 37 methods or implementation leads, and two general foundations.
+These are coverage entries, **not 44 fully audited algorithms**. Coverage ranges
+from inspected code and pseudocode to unresolved historical leads.
+The [query log](review-search-log-20260910.json) records 36 additional discovery
+queries, and the [source manifest](review-source-manifest-20260910.json) records
+download hashes, versions, and access limits. Retrieved third-party PDFs and
+source caches remain in ignored build storage rather than the distributable bundle.

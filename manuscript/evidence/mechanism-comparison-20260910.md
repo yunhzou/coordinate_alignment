@@ -5,6 +5,10 @@ and addresses the author's request to compare actual mechanisms, rather than
 listing shared ideas. Method naming remains provisional. The examined algorithm
 is the frozen benchmark baseline `98b01b175eeed31f70d13e7cbf178b80bf07c9e0`.
 
+The subsequent [review-led assessment](review-led-novelty-20260910.md) broadens
+the literature coverage and adds Indigo, RDT, SynKit approximate growth and
+AMLGAM comparisons. It records original-method access gaps explicitly.
+
 **Conclusion.** Its growth and branch scheduler is mechanically distinct from
 the inspected SLAP, OpenChemLib growth, FMCS, McSplit, and SynKit procedures.
 The differences change decisions and retained states, rather than merely names

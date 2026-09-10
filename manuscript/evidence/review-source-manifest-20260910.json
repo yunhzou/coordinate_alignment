@@ -1,0 +1,212 @@
+{
+  "date": "2026-09-10",
+  "baseline_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+  "scope": "Expanded review plus explicit reuse of earlier source inspections. Selected methods sections only; no new benchmarks, complete bibliography census, proof of priority, or certification of competitor implementations. Repository revisions refer to inspected snapshots and are not assigned historical publication dates.",
+  "counts": {
+    "ledger_entries": 44,
+    "by_category": {
+      "review_or_overview": 5,
+      "method_or_implementation": 37,
+      "general_foundation": 2
+    },
+    "by_coverage": {
+      "review_sections": 3,
+      "comparative_overview": 2,
+      "implementation_sections": 6,
+      "official_algorithm_documentation": 1,
+      "abstract_and_review": 2,
+      "primary_pseudocode": 2,
+      "primary_methods": 8,
+      "primary_theory": 2,
+      "author_slides": 1,
+      "abstract_and_partial_utility": 1,
+      "abstract_only": 2,
+      "historical_or_overview_lead": 14
+    },
+    "additional_discovery_queries": 36
+  },
+  "source_files": [
+    {
+      "name": "preciat2017",
+      "url": "https://orbilu.uni.lu/bitstream/10993/32592/1/atomMapping_GermanPreciat.pdf",
+      "status": "unavailable",
+      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)>",
+      "download_manifest": "downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "name": "akutsu2013",
+      "url": "https://repository.kulib.kyoto-u.ac.jp/dspace/bitstream/2433/172449/1/csbj.201302004.pdf",
+      "status": "unavailable",
+      "error": "Response is not a PDF",
+      "download_manifest": "downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "name": "duesbury2017",
+      "url": "https://eprints.whiterose.ac.uk/id/eprint/102232/3/MCS_review_final.pdf",
+      "status": "downloaded and text extracted",
+      "sha256": "7d87c56ba6b58a93f2473c04f65a8210d2acf8a786a4942020b9ea24ab6874d8",
+      "bytes": 643906,
+      "pages": 24,
+      "download_manifest": "downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "name": "lin2022",
+      "url": "https://eprints.lib.hokudai.ac.jp/dspace/bitstream/2115/88966/1/Varnek_AAM%20paper_for%20HUSCAP%20.pdf",
+      "status": "downloaded and text extracted",
+      "sha256": "f3a02795bdb0bc422559f650a1885c37eb9165329a1087b6a656f8b9a2b3bbbf",
+      "bytes": 871778,
+      "pages": 11,
+      "download_manifest": "downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "name": "chen2013",
+      "url": "https://bioinf.boku.ac.at/pub/793.301/chen-WIREsCompMolSci-rev-2013.pdf",
+      "sha256": "24565e551d052d4541f96e2d90804983c4a38382024e0df600e0db277d38e933",
+      "bytes": 1269638,
+      "status": "downloaded and text extracted",
+      "pages": 34,
+      "download_manifest": "downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "Indigo/reaction_automapper.cpp",
+      "url": "https://raw.githubusercontent.com/epam/Indigo/8642d73cca2b827a5351d8a8eb21816492381497/core/indigo-core/reaction/src/reaction_automapper.cpp",
+      "revision": "8642d73cca2b827a5351d8a8eb21816492381497",
+      "bytes": 78193,
+      "sha256": "d46e714b740207d677448de5d52ed3362fd119f73930e72b1bc5bda3bbf9ce5b",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "Indigo/max_common_subgraph.cpp",
+      "url": "https://raw.githubusercontent.com/epam/Indigo/8642d73cca2b827a5351d8a8eb21816492381497/core/indigo-core/graph/src/max_common_subgraph.cpp",
+      "revision": "8642d73cca2b827a5351d8a8eb21816492381497",
+      "bytes": 63108,
+      "sha256": "50a7a3d9b023b1ba80c6498154bb16dfe80076609ebca051aac8af2ed66b077a",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Retrieved as context; not an independent complete algorithm audit."
+    },
+    {
+      "file": "RDT/GameTheoryEngine.java",
+      "url": "https://raw.githubusercontent.com/asad/ReactionDecoder/0d6632251108e7a8f625d15c60607a136093c4d8/src/main/java/com/bioinceptionlabs/reactionblast/mapping/algorithm/GameTheoryEngine.java",
+      "revision": "0d6632251108e7a8f625d15c60607a136093c4d8",
+      "bytes": 70722,
+      "sha256": "2a4d5e8d9694c4116480c42e320693a00a215962f385ef599359346f818f1ffe",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "RDT/CalculationProcess.java",
+      "url": "https://raw.githubusercontent.com/asad/ReactionDecoder/0d6632251108e7a8f625d15c60607a136093c4d8/src/main/java/com/bioinceptionlabs/reactionblast/mapping/algorithm/CalculationProcess.java",
+      "revision": "0d6632251108e7a8f625d15c60607a136093c4d8",
+      "bytes": 19553,
+      "sha256": "a1a58aa5a3e3ec98e5995ad08202cf61502cc4e39db2b5cdc1a6505a4a545b3f",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Retrieved as context; not an independent complete algorithm audit."
+    },
+    {
+      "file": "RDT/GraphMatcher.java",
+      "url": "https://raw.githubusercontent.com/asad/ReactionDecoder/0d6632251108e7a8f625d15c60607a136093c4d8/src/main/java/com/bioinceptionlabs/reactionblast/mapping/GraphMatcher.java",
+      "revision": "0d6632251108e7a8f625d15c60607a136093c4d8",
+      "bytes": 67596,
+      "sha256": "86b12fc862bd8dbc854b630ee7d43a9e145058564ec1a41f08712871e9546ad8",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "CLCA/README.md",
+      "url": "https://raw.githubusercontent.com/maranasgroup/MetRxn/d311556fce7faeb23952980c4eec3680dd87840f/README.md",
+      "revision": "d311556fce7faeb23952980c4eec3680dd87840f",
+      "bytes": 9,
+      "sha256": "4c18dbdb4591a036eab8282cc5284eb0b0b660d8d7ba3b993919b7655fb58f18",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Repository orientation only."
+    },
+    {
+      "file": "CLCA/getInvariance.java",
+      "url": "https://raw.githubusercontent.com/maranasgroup/MetRxn/d311556fce7faeb23952980c4eec3680dd87840f/Alchemist/src/primeR/getInvariance.java",
+      "revision": "d311556fce7faeb23952980c4eec3680dd87840f",
+      "bytes": 343,
+      "sha256": "53271f2b433b171951e13cf37bc2f4e5d71c85e6bacde346ebb7ae2bfac7f985",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Repository orientation only."
+    },
+    {
+      "file": "CLCA/molProcess.java",
+      "url": "https://raw.githubusercontent.com/maranasgroup/MetRxn/d311556fce7faeb23952980c4eec3680dd87840f/Alchemist/src/primeR/molProcess.java",
+      "revision": "d311556fce7faeb23952980c4eec3680dd87840f",
+      "bytes": 47651,
+      "sha256": "473c576b136f15fcec13d29cfb1bd5e0ab79df83ebf9f7ea104335cd7652768c",
+      "status": "retrieved",
+      "pdf": null,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "amlgam2019.pdf",
+      "url": "https://www.kavrakilab.rice.edu/publications/litsa2019atom-mapping.pdf",
+      "revision": null,
+      "bytes": 3294017,
+      "sha256": "173f8aeb8f68ce3415f6ea2a50edb669f7960ac107c35dfd0bfaab7e3faff2ad",
+      "status": "retrieved",
+      "pdf": true,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "armitage1967.pdf",
+      "url": "https://pubs.rsc.org/en/content/articlepdf/1967/j3/j39670000521",
+      "revision": null,
+      "status": "HTTP Error 403: Forbidden",
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    },
+    {
+      "file": "synkit_approx_mcs.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Graph/Matcher/approx_mcs.py",
+      "revision": "b57f2a39f1807a2682913183b22e1d8d61531bba",
+      "sha256": "dc04c85904de83038450bb063ba5e506f83abf13027ef5a87c206b700161d0c7",
+      "status": "retrieved",
+      "bytes": 44281,
+      "download_manifest": "additional-downloads.json",
+      "inspection": "Selected sections only; see coverage ledger and report."
+    }
+  ],
+  "web_only_material": [
+    "Akutsu\u2013Nagamochi 2013 AAM section via web PDF",
+    "Preciat-Gonzalez 2017 via publisher HTML; alternate local download failed",
+    "AMNet 2024 primary method sections via publisher HTML",
+    "Petersen et al. arXiv:2503.22368v2 Sections 2\u20133 via HTML",
+    "Latendresse 2013 author slides 11\u201319 via web PDF",
+    "Primary abstracts and review leads as recorded in CSV"
+  ],
+  "related_manifests": [
+    "novelty-source-manifest.json",
+    "mechanism-source-manifest.json"
+  ],
+  "limitations": [
+    "Armitage\u2013Lynch original PDF returned HTTP 403.",
+    "Full methods remain unresolved for several older papers, CLCA, ReactionMap and Heinonen; review summaries do not count as original-method inspection.",
+    "RDT current code is not the 2016 release.",
+    "Alchemist labeling utilities do not establish complete coverage of CLCA.",
+    "Downloaded secondary publications are not redistributed in the evidence bundle."
+  ]
+}

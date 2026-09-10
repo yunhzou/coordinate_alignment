@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "pdf_pages": 8,
+  "numbered_sources": 30,
+  "coverage_entries": 44,
+  "verified_cached_source_hashes": 13,
+  "external_pdf_links": 40,
+  "pdf_sha256": "c54fccb8d57fb161f1d3bb35e7cc0c24971c79164e468e15a1700f09f8deb3bb",
+  "markdown_sha256": "6fc0eff736f0ad14acda17c1f2499ec2a26df0f89a56e9d6d2ebf17316ede2dd",
+  "checks": [
+    "numbered notes and references agree",
+    "coverage count agrees with manifest",
+    "downloaded source SHA-256 hashes agree",
+    "PDF text bounds within page margins",
+    "no empty or sparse pages",
+    "external PDF links present",
+    "no unresolved note markers or replacement characters"
+  ]
+}

@@ -41,6 +41,12 @@ animations. Resolve the following before treating it as a submission manuscript.
    ablation of single-edge constraint relaxation; the sweep unions individual
    cuts and does not establish that one fixed cut is sufficient.
 6. Revise related work using the [10 September novelty audit](evidence/novelty-audit-20260910.md).
+   The expanded [review-led assessment](evidence/review-led-novelty-20260910.pdf)
+   and [coverage ledger](evidence/review-coverage-20260910.csv) add historical
+   fragment-enumeration leads, direct Indigo/RDT/SynKit approximate-growth
+   comparisons, and AMLGAM's weighted objective/post-processing distinction.
+   Use the historical reviews as discovery sources; unresolved originals are
+   not evidence that their complete mechanisms have been excluded.
    For the specific algorithmic argument, use the follow-up
    [mechanism comparison](evidence/mechanism-comparison-20260910.md): aggregate
    accept/defer growth, saturation-level whole-mapping branches, whole-island
