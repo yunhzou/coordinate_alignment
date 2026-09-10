@@ -8,6 +8,7 @@ import argparse
 from collections import Counter
 from dataclasses import asdict
 import hashlib
+import errno
 import json
 import os
 from pathlib import Path
@@ -34,7 +35,15 @@ def save(path, value):
 
 
 def read(path):
-    return json.loads(path.read_text())
+    # Live status files are atomically replaced on NFS. A reader can briefly
+    # receive ESTALE for the replaced inode; reopen that same pathname only.
+    for attempt in range(3):
+        try:
+            return json.loads(path.read_text())
+        except OSError as error:
+            if error.errno != errno.ESTALE or attempt == 2:
+                raise
+            time.sleep(.01)
 
 
 def sha(path):
@@ -54,7 +63,7 @@ def environment():
 def prepare(args):
     from rxn_core import AAMSearchConfig
     args.run.mkdir(parents=True, exist_ok=False)
-    for folder in ('src', 'native', 'bench', 'tests'):
+    for folder in ('src', 'native', 'bench', 'tests', 'tools', 'benchmarks', 'docs/example_runs'):
         shutil.copytree(ROOT/folder, args.run/'engine'/folder,
                         ignore=shutil.ignore_patterns('__pycache__'))
     original = args.run/'original'
@@ -114,7 +123,7 @@ def prepare_revision(args):
     previous = read(reference/'manifest.json')
     assert previous['counts'] == COUNTS
     args.run.mkdir(parents=True, exist_ok=False)
-    for name in ('src', 'native', 'bench', 'tests'):
+    for name in ('src', 'native', 'bench', 'tests', 'tools', 'benchmarks', 'docs/example_runs'):
         shutil.copytree(ROOT/name, args.run/'engine'/name,
                         ignore=shutil.ignore_patterns('__pycache__'))
     for name in ('inputs', 'original'):
