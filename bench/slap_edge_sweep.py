@@ -236,17 +236,22 @@ def evaluate(args):
     for index in range(args.slot,len(audit),args.shards):
         expected_endpoints,expected=signatures(audit[index]['mapped_reaction'])
         attempts=[];classes=set();uncut=set();cut_only=set();cpu=0.;workflow=0.;calls=0;errors=0;invalid=0
+        mapping_wall=0.;encoding_cpu=0.;invalid_details=[]
         for task in tasks[4*index:4*index+4]:
             rows=records(folder(args.run,task)/'records.jsonl');hits=[];direction_classes=set()
             for row in rows:
                 calls+=1;cpu+=row['mapping_cpu'];workflow+=row['mapping_cpu']+row['graph_cpu']+row['export_cpu']
+                mapping_wall+=row['mapping_wall'];encoding_cpu+=row['encoding_cpu']
                 errors+=row['status']!='mapped'
                 for number,candidate in enumerate(row['candidates']):
                     try:
                         endpoints,actual=signatures(candidate['mapped_rxn'])
                         if endpoints!=expected_endpoints:raise ValueError('Endpoint chemistry changed')
                     except Exception:
-                        invalid+=1;continue
+                        invalid+=1
+                        invalid_details.append(dict(slot=task['slot'],ordinal=row['ordinal'],candidate=number,
+                                                    error=traceback.format_exc()))
+                        continue
                     classes.add(actual);direction_classes.add(actual)
                     (uncut if row['cut'] is None else cut_only).add(actual)
                     if actual==expected:hits.append(dict(cut=row['cut'],candidate=number,ordinal=row['ordinal']))
@@ -255,10 +260,12 @@ def evaluate(args):
             uncut_recovered=expected in uncut,cut_recovered=expected in cut_only,
             unique_classes=len(classes),uncut_classes=len(uncut),attempts=attempts,
             completed_calls=calls,mapping_errors=errors,invalid_predictions=invalid,
-            mapping_cpu=cpu,workflow_cpu_excluding_io=workflow))
+            invalid_details=invalid_details,mapping_cpu=cpu,mapping_wall_sum=mapping_wall,
+            encoding_cpu=encoding_cpu,workflow_cpu_excluding_io=workflow))
 
 
 def summary(args):
+    from collections import Counter
     m=read(args.run/'manifest.json');rows=[read(p) for p in (args.run/'evaluations').glob('*.json')]
     baselines=[read(ROOT/f'reports/golden_slap_budget_20260908/{name}_summary.json')
                for name in ('expanded','all_atoms')]
@@ -266,12 +273,16 @@ def summary(args):
                   if isinstance(v,dict) and 'unresolved_cases' in v]
     old_missing=set.intersection(*missing_sets)
     recovered={r['index'] for r in rows if r['recovered']}
+    statuses=[read(p) for p in (args.run/'status').glob('*.json')]
     result=dict(cases=m['cases'],evaluated=len(rows),uncut_recovered=sum(r['uncut_recovered'] for r in rows),
         sweep_union_recovered=len(recovered),expanded_baseline_recovered=m['cases']-len(old_missing),
         combined_with_expanded_baseline=m['cases']-len(old_missing-recovered),
         new_cases_beyond_expanded_baseline=sorted(old_missing & recovered),
         completed_calls=sum(r['completed_calls'] for r in rows),expected_calls=m['expected_calls'],
         mapping_cpu=sum(r['mapping_cpu'] for r in rows),workflow_cpu_excluding_io=sum(r['workflow_cpu_excluding_io'] for r in rows),
+        mapping_wall_sum=sum(r['mapping_wall_sum'] for r in rows),encoding_cpu=sum(r['encoding_cpu'] for r in rows),
+        task_statuses=dict(Counter(str(s.get('exit','running')) for s in statuses)),
+        incomplete_tasks=[s['slot'] for s in statuses if s.get('completed_cuts',0)!=s.get('expected_cuts',-1)],
         mapping_errors=sum(r['mapping_errors'] for r in rows),invalid_predictions=sum(r['invalid_predictions'] for r in rows),
         unrecovered=sorted(set(range(m['cases']))-recovered),
         scope='Fixed full denominator; alternatives scored on original endpoints; incomplete cuts remain untested')

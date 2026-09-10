@@ -1,0 +1,10 @@
+{
+  "job": "466542",
+  "pending_array_tasks": [24, 25, 26, 27, 28, 29, 30, 31],
+  "original_memory_gib": 96,
+  "updated_memory_gib": 64,
+  "workers_per_allocation_unchanged": 32,
+  "reason": "96 GiB prevented two allocations sharing 184000 MiB nodes despite spare CPUs; reduce reservations for unstarted tasks only.",
+  "algorithm_settings_changed": false,
+  "completed_work_repeated": false
+}
