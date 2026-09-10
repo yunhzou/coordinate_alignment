@@ -1,0 +1,311 @@
+"""Full Golden + XYZ/WBO holdout confirmation against a frozen original engine.
+
+Search never reads reference labels. Both directions, full checkpoints, fixed
+policies, and failed attempts are retained. Analysis runs in a separate process
+after persistence; a failed evaluation cannot destroy a successful search.
+"""
+import argparse
+from collections import Counter
+from dataclasses import asdict
+import hashlib
+import json
+import os
+from pathlib import Path
+import resource
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA = Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks')
+DIRECTIONS = ('R_to_P', 'P_to_R')
+SOURCES = dict(golden=DATA/'golden_publication_20260908',
+               holdout=DATA/'elementary140_tol1_20260909')
+COUNTS = dict(golden=1851, holdout=140)
+
+
+def save(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix+'.tmp')
+    temporary.write_text(json.dumps(value, indent=2)+'\n')
+    temporary.replace(path)
+
+
+def read(path):
+    return json.loads(path.read_text())
+
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def environment():
+    return dict(host=os.uname().nodename, python=sys.version,
+        affinity=sorted(os.sched_getaffinity(0)),
+        cpu_models=sorted({line.split(':', 1)[1].strip() for line in
+            Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name')}),
+        slurm={k:os.environ.get(k) for k in ('SLURM_JOB_ID', 'SLURM_CPUS_PER_TASK',
+                                         'SLURM_ARRAY_TASK_ID', 'SLURM_JOB_PARTITION')})
+
+
+def prepare(args):
+    from rxn_core import AAMSearchConfig
+    args.run.mkdir(parents=True, exist_ok=False)
+    for folder in ('src', 'native', 'bench', 'tests'):
+        shutil.copytree(ROOT/folder, args.run/'engine'/folder,
+                        ignore=shutil.ignore_patterns('__pycache__'))
+    original = args.run/'original'
+    original.mkdir()
+    commit = subprocess.check_output(['git', 'rev-parse', args.original_commit], text=True).strip()
+    archive = subprocess.check_output(['git', 'archive', commit, 'src', 'native'])
+    subprocess.run(['tar', '-x', '-C', str(original)], input=archive, check=True)
+    # Build the actual frozen baseline, not a current binary loaded into old
+    # Python or an approximately matching historical build.
+    subprocess.run(['timeout', '--kill-after=5s', '300', sys.executable,
+                    str(original/'native/build_engine.py')], check=True)
+    tasks, hashes = [], []
+    for dataset, count in COUNTS.items():
+        for index in range(count):
+            destination = args.run/f'inputs/{dataset}/{index}'
+            destination.mkdir(parents=True)
+            for name in ('input.json', 'reference.json') if dataset == 'golden' else ('input.json',):
+                shutil.copy2(SOURCES[dataset]/f'inputs/{index}/{name}', destination/name)
+                hashes.append(dict(dataset=dataset, index=index, file=name, sha256=sha(destination/name)))
+            raw = read(destination/'input.json')
+            small = 'P_to_R' if len(raw['reactant']['elements']) > len(raw['product']['elements']) else 'R_to_P'
+            tasks.extend(dict(dataset=dataset, index=index, direction=d, smaller_first=small) for d in DIRECTIONS)
+    # Interleave datasets so the entire holdout is not stuck behind Golden.
+    tasks.sort(key=lambda t:(t['index'], t['dataset'], t['direction']))
+    save(args.run/'tasks.json', tasks)
+    save(args.run/'input_hashes.json', hashes)
+    save(args.run/'manifest.json', dict(schema='adaptive_full_benchmark/v1', counts=COUNTS,
+        sources={k:str(v) for k,v in SOURCES.items()}, tasks=len(tasks), original_commit=commit,
+        experimental_commit=subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
+        original_config=asdict(AAMSearchConfig(seed_count=10, branch_limit=100, iso_tolerance=1.)),
+        adaptive_config=asdict(AAMSearchConfig(seed_count=1, branch_limit=100, iso_tolerance=1.)),
+        original_execution='reused_native', original_workers=args.workers,
+        adaptive_work_budgets=args.work_budgets, adaptive_cpu_seconds=args.cpu_seconds,
+        root_seed=42, python_hash_seed=0, explicit_H=True,
+        watchdog=dict(search_seconds=300, analysis_seconds=240, kill_after_seconds=5, slurm_minutes=10),
+        branch_cap_scope=dict(original='Native growth and synchronized live frontier',
+                              adaptive='Native growth only; agenda has declared work/CPU budget'),
+        modes=dict(single='smaller explicit endpoint to larger; R_to_P on ties',
+                   bidirectional='union of directional outputs, no splicing or reference selection'),
+        metrics='Unchanged Golden heavy-reference chemical symmetry and partial-annotation evaluator; '
+                'full explicit-H event scoring at 0.5. Holdout has NO annotated ground truth: '
+                'compare full mapping feasibility, event scores and original score-response heavy classes. '
+                'Absent representative classes are NOT claimed absent from compressed families.',
+        timing='CPU excludes measured checkpoint persistence/loading. Search and analysis separate. '
+               'Parallel elapsed includes IO, excludes queue; never subtract summed worker IO from elapsed. '
+               'Original uses multiple CPUs, adaptive one: compare CPU costs, not equal-resource latency.',
+        engine_sha256={str(p.relative_to(args.run)):sha(p) for directory in ('engine','original')
+                       for p in (args.run/directory).rglob('*') if p.is_file()
+                       and 'build' not in p.relative_to(args.run).parts}))
+    (args.run/'status').mkdir()
+    print(json.dumps(dict(run=str(args.run), directional_pairs=len(tasks), search_calls=2*len(tasks))), flush=True)
+
+
+def spec_and_folder(args):
+    spec = read(args.run/'tasks.json')[args.slot]
+    return spec, args.run/f"results/{spec['dataset']}/{spec['index']}/{spec['direction']}/{args.method}"
+
+
+def problem_plan(args, spec):
+    from rxn_core import AAMProblem, AAMSearchConfig
+    from rxn_core.domain import MolecularEndpoint
+    from rxn_core.search_orientation import AAMSearchPlan
+    raw = read(args.run/f"inputs/{spec['dataset']}/{spec['index']}/input.json")
+    endpoints = [MolecularEndpoint(**{k:v for k,v in raw[n].items()
+                    if k in ('elements', 'coordinates', 'wbo', 'label', 'metadata')})
+                 for n in ('reactant', 'product')]
+    original = AAMProblem(*endpoints, name=raw['name'])
+    reverse = spec['direction'] == 'P_to_R'
+    problem = AAMProblem(*reversed(endpoints), name=raw['name']) if reverse else original
+    config = AAMSearchConfig(**read(args.run/'manifest.json')[args.method+'_config'])
+    return raw, AAMSearchPlan(original, problem, config, reverse)
+
+
+def search(args):
+    from rxn_core import search_aam
+    from rxn_core.artifacts import write_aam_checkpoint
+    from publication_timing import SearchProfiler
+    spec, folder = spec_and_folder(args)
+    _, plan = problem_plan(args, spec)
+    manifest = read(args.run/'manifest.json')
+    folder.mkdir(parents=True, exist_ok=False)
+    save(folder/'environment.json', environment())
+    rows = []
+    if args.method == 'original':
+        with SearchProfiler(folder/'timing_events') as profiler:
+            result = search_aam(plan.problem, plan.config, workers=manifest['original_workers'],
+                execution=manifest['original_execution'], intermediate_dir=folder/'cuts', archive_format='checkpoint')
+        rows.append(dict(label='full_sweep', archive='cuts/aam.pkl.gz', **profiler.summary(),
+                         metrics=asdict(result.metrics), states=len(result.graph.states),
+                         terminals=len(result.graph.terminals), capped=result.graph.capped))
+    else:
+        from rxn_core.adaptive_seed_search import AdaptiveSeedSearch
+        cpu, wall = time.process_time(), time.perf_counter()
+        session = AdaptiveSeedSearch(plan.problem, plan.config)
+        cpu_used, wall_used = time.process_time()-cpu, time.perf_counter()-wall
+        for budget in manifest['adaptive_work_budgets']:
+            while session.agenda and session.work < budget and cpu_used < manifest['adaptive_cpu_seconds']:
+                cpu, wall = time.process_time(), time.perf_counter()
+                session.advance()
+                cpu_used += time.process_time()-cpu
+                wall_used += time.perf_counter()-wall
+                if session.work % 100 == 0:
+                    save(folder/'progress.json', dict(work=session.work, compute_cpu=cpu_used,
+                                                      compute_wall=wall_used, pending=len(session.agenda)))
+            cpu, wall = time.process_time(), time.perf_counter()
+            result = session.snapshot()
+            cpu_used += time.process_time()-cpu
+            wall_used += time.perf_counter()-wall
+            label = f'work_{session.work:05d}'
+            cpu, wall = time.process_time(), time.perf_counter()
+            write_aam_checkpoint(result.aam, folder/f'{label}.pkl.gz')
+            save(folder/f'{label}_pending.json', result.pending)
+            row = dict(label=label, archive=f'{label}.pkl.gz', work=result.work,
+                compute_cpu_excluding_persistence_and_loading_seconds=cpu_used,
+                compute_wall_excluding_io_seconds=wall_used,
+                checkpoint_cpu_seconds=time.process_time()-cpu, checkpoint_wall_seconds=time.perf_counter()-wall,
+                growth_calls=result.growth_calls, reused_states=result.reused_states,
+                pending=len(result.pending), agenda_exhausted=result.exhausted,
+                states=len(result.aam.graph.states), terminals=len(result.aam.graph.terminals),
+                capped=result.aam.graph.capped,
+                stop='agenda_exhausted' if result.exhausted else
+                     'cpu_budget' if cpu_used >= manifest['adaptive_cpu_seconds'] else 'work_budget')
+            rows.append(row)
+            save(folder/'search.json', dict(**spec, method=args.method, rows=rows, complete=False))
+            if result.exhausted or cpu_used >= manifest['adaptive_cpu_seconds']:
+                break
+    save(folder/'search.json', dict(**spec, method=args.method, rows=rows, complete=True,
+                                   max_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
+
+
+def holdout_classes(aam, plan, raw):
+    """One score per saved terminal, canonicalizing only its heavy relation."""
+    from compare_elementary_outputs import features, certificate, event_counts
+    feat = features(raw)
+    heavy = [i for i,e in enumerate(raw['reactant']['elements']) if e != 'H']
+    count = plan.input_problem.source_atom_count
+    vectors = sorted({tuple(mapping[i] for i in range(count)) for terminal in aam.graph.terminals
+        if len(mapping := plan.to_input_mapping(aam.graph.states[terminal].mapping)) == count})
+    groups, cache = {}, {}
+    for offset in range(0, len(vectors), 256):
+        batch = vectors[offset:offset+256]
+        scores = event_counts(plan.input_problem.reactant.wbo, plan.input_problem.product.wbo, batch)
+        for vector, counts in zip(batch, scores, strict=True):
+            assert len(set(vector)) == count
+            assert all(raw['reactant']['elements'][i] == raw['product']['elements'][p] for i,p in enumerate(vector))
+            relation = tuple(vector[a] for a in heavy)
+            if relation not in cache:
+                cache[relation] = hashlib.sha256(certificate(feat, vector, heavy)).hexdigest()
+            cid = cache[relation]
+            score = int(sum(counts))
+            if cid not in groups or score < groups[cid]['events']:
+                groups[cid] = dict(id=cid, events=score, counts=list(map(int, counts)), mapping=vector)
+    return dict(valid_full_representatives=len(vectors), classes=list(groups.values()),
+                best_events=min((r['events'] for r in groups.values()), default=None))
+
+
+def analyze(args):
+    from rxn_core.artifacts import read_aam_checkpoint
+    from golden_evaluation import evaluate_planned
+    from publication_analysis import rank_archive
+    spec, folder = spec_and_folder(args)
+    raw, plan = problem_plan(args, spec)
+    search_record = read(folder/'search.json')
+    # Final output first; smaller saved budgets are separate anytime results.
+    for row in reversed(search_record['rows']):
+        label = row['label']
+        cpu, wall = time.process_time(), time.perf_counter()
+        aam = read_aam_checkpoint(folder/row['archive'])
+        loading = dict(cpu=time.process_time()-cpu, wall=time.perf_counter()-wall)
+        cpu, wall = time.process_time(), time.perf_counter()
+        if spec['dataset'] == 'golden':
+            classes = rank_archive(aam, plan)
+            save(folder/f'{label}_classes.json', classes)
+            reference = read(args.run/f"inputs/golden/{spec['index']}/reference.json")
+            result = evaluate_planned(aam, plan, reference['features'], reference['mapping'],
+                                      seconds=60, query_timeout_ms=1500)
+        else:
+            result = holdout_classes(aam, plan, raw)
+            save(folder/f'{label}_classes.json', result.pop('classes'))
+        result.update(label=label, loading=loading, analysis_cpu=time.process_time()-cpu,
+                      analysis_wall=time.perf_counter()-wall)
+        save(folder/f'{label}_evaluation.json', result)
+
+
+def worker(args):
+    args.slot += args.offset
+    spec, folder = spec_and_folder(args)
+    status = args.run/f'status/{args.method}_{args.slot}.json'
+    record = dict(**spec, method=args.method, environment=environment(), started=time.time())
+    save(status, record)
+    source = args.run/('original' if args.method == 'original' else 'engine')/'src'
+    env = dict(os.environ, PYTHONPATH=f'{source}:{args.run}/engine/bench', RXN_CORE_NATIVE='1',
+               PYTHONHASHSEED='0', OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
+    common = ['--run', str(args.run), '--slot', str(args.slot), '--method', args.method]
+    for phase, seconds in (('search', 300), ('analyze', 240)):
+        if phase == 'analyze' and not (folder/'search.json').exists():
+            break
+        wall = time.perf_counter()
+        with (args.run/f'status/{args.method}_{args.slot}_{phase}.log').open('w') as log:
+            completed = subprocess.run(['timeout', '--kill-after=5s', str(seconds), sys.executable,
+                str(args.run/'engine/bench/adaptive_full_benchmark.py'), phase, *common],
+                env=env, stdout=log, stderr=subprocess.STDOUT)
+        record[phase] = dict(exit=completed.returncode, elapsed_including_io=time.perf_counter()-wall)
+        save(status, record)
+    record.update(complete=True, finished=time.time())
+    save(status, record)
+
+
+def submit(args):
+    tasks = read(args.run/'tasks.json')
+    manifest = read(args.run/'manifest.json')
+    jobs = []
+    for method in ('original', 'adaptive'):
+        cpus = manifest['original_workers'] if method == 'original' else 1
+        for start in range(0, len(tasks), 1000):
+            stop = min(start+1000, len(tasks))-1
+            command = [sys.executable, str(args.run/'engine/bench/adaptive_full_benchmark.py'),
+                       'worker', '--run', str(args.run), '--method', method, '--offset', str(start), '--slot']
+            options = ['sbatch', '--parsable', '--partition='+args.partition, '--nodes=1',
+                f'--cpus-per-task={cpus}', '--mem='+('24G' if method == 'original' else '6G'),
+                '--time=00:10:00', '--no-requeue', f'--array=0-{stop-start}%{max(1,args.cpu_budget//8//cpus)}',
+                '--job-name=full_'+method, f'--output={args.run}/status/%A_%a.out',
+                '--wrap', shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
+            if args.exclude:
+                options.insert(2, '--exclude='+args.exclude)
+            job = subprocess.check_output(options, text=True).strip()
+            jobs.append(dict(method=method, job=job, command=options))
+            save(args.run/'jobs.json', jobs)
+            print(method, start, stop, job, flush=True)
+
+
+def status(args):
+    rows = [read(p) for p in (args.run/'status').glob('*.json')]
+    print(json.dumps(dict(started=len(rows), completed=sum(r.get('complete', False) for r in rows),
+        searches=dict(Counter((r['method']+':'+str(r['search']['exit'])) for r in rows if 'search' in r)),
+        analysis=dict(Counter((r['method']+':'+str(r['analyze']['exit'])) for r in rows if 'analyze' in r))), indent=2))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=('prepare', 'submit', 'worker', 'search', 'analyze', 'status'))
+    parser.add_argument('--run', type=Path, required=True)
+    parser.add_argument('--original-commit', default='98b01b1')
+    parser.add_argument('--workers', type=int, default=8)
+    parser.add_argument('--work-budgets', type=int, nargs='+', default=[400, 1600, 6400])
+    parser.add_argument('--cpu-seconds', type=float, default=30.)
+    parser.add_argument('--cpu-budget', type=int, default=1024)
+    parser.add_argument('--partition', default='cpunodes_nia')
+    parser.add_argument('--exclude')
+    parser.add_argument('--slot', type=int)
+    parser.add_argument('--offset', type=int, default=0)
+    parser.add_argument('--method', choices=('original', 'adaptive'))
+    arguments = parser.parse_args()
+    globals()[arguments.command](arguments)
