@@ -14,6 +14,7 @@ class FragmentClosure:
     size: int
     next_atom: int
     candidates: int
+    atoms: frozenset
 
 
 class FragmentChoices:
@@ -30,6 +31,8 @@ class FragmentChoices:
         context = context or FragmentMatchContext()
         if self.config.allow_mapped_seed or self.config.node_policy is not None or not self.config.orbit_dedup:
             raise ValueError('Experimental choices require an unmapped seed and native element/orbit policy')
+        if context.growth_replay is not None:
+            raise ValueError('FragmentChoices does not support external growth replay')
         orbits = context.target_orbits
         if orbits is None:
             orbits = _nauty_orbits(target, wbo_tol=self.config.iso_tolerance)
@@ -48,9 +51,12 @@ class FragmentChoices:
             self.config.branch_limit, [(self.r.index[r], i) for r, i in (context.islands or {}).items()],
             [(self.r.index[a], self.r.index[b]) for a, b in context.deferred_edges])
         self.normal = self._decode(self.engine.normal(), time.perf_counter() - started)
-        self.closures = tuple(FragmentClosure(i, size, self.r.nodes[n], count)
-                              for i, size, n, count in self.engine.options()
+        self.closures = tuple(FragmentClosure(i, size, self.r.nodes[n], count,
+                                              frozenset(self.r.nodes[a] for a in atoms))
+                              for i, size, n, count, atoms in self.engine.options()
                               if size >= self.config.minimum_size)
+        self.frontier_atoms = frozenset().union(*(m.fragment for m in self.normal.matches),
+                                                *(c.atoms for c in self.closures))
 
     def _decode(self, raw, elapsed):
         placements = []

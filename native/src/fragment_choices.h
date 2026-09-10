@@ -21,8 +21,10 @@ public:
         py::list out;
         for (size_t i=0;i<frontiers.size();++i) {
             const auto& f=frontiers[i];
+            std::vector<int> atoms;
+            for (int a=0;a<source.n;++a) if (f.fragment[a]) atoms.push_back(a);
             out.append(py::make_tuple(i,std::count(f.fragment.begin(),f.fragment.end(),uint8_t{1}),
-                                      f.next_atom,f.cands.size()));
+                                      f.next_atom,f.cands.size(),atoms));
         }
         return out;
     }

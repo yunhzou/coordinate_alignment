@@ -7,6 +7,8 @@ from dataclasses import dataclass, replace
 import heapq
 import itertools
 import time
+import numpy as np
+from collections import Counter
 
 from .alignment.branch import _Branch, _generate_seed_orders
 from .domain import AAMResult, AAMSearchConfig, AAMSearchMetrics
@@ -30,18 +32,60 @@ class AdaptiveResult:
     exhausted: bool
 
 
+class _ChoiceAgenda:
+    """Stable queues per discrepancy depth; optionally share work fairly."""
+    def __init__(self, fair):
+        self.levels = {}
+        self.served = Counter()
+        self.serial = itertools.count()
+        self.count = 0
+        self.fair = fair
+
+    def __len__(self):
+        return self.count
+
+    def __iter__(self):
+        return itertools.chain.from_iterable(self.levels.values())
+
+    def push(self, priority, payload):
+        heapq.heappush(self.levels.setdefault(priority[0], []), (priority, next(self.serial), payload))
+        self.count += 1
+
+    def pop(self):
+        depth = min(self.levels, key=lambda d: (self.served[d], d)) if self.fair else min(self.levels)
+        item = heapq.heappop(self.levels[depth])
+        self.served[depth] += 1
+        self.count -= 1
+        if not self.levels[depth]:
+            del self.levels[depth]
+        return item
+
+    def reprioritize(self, function):
+        for depth, heap in self.levels.items():
+            self.levels[depth] = [(function(priority, task), serial, task) for priority, serial, task in heap]
+            heapq.heapify(self.levels[depth])
+
+
 class AdaptiveFragmentSearch:
     """One resumable search session with compressed, condition-dependent choices.
 
     advance() consumes one growth/closure operation. Callers own time/work
     budgets and can save snapshots without restarting completed work.
+
+    This experiment retains the native per-growth branch cap, not the mature
+    scheduler's synchronized live-frontier cap. The agenda is budgeted by the
+    caller. Snapshots persist results and pending descriptors, not native
+    sessions for cross-process resume. No cut sweep or symmetry-repair pass is
+    run by this scheduler.
     """
     def __init__(self, problem, config=None, *, policy='largest_first'):
         self.problem = problem
         self.config = config or AAMSearchConfig(seed_count=1)
         if self.config.seed_count != 1:
             raise ValueError('Adaptive search uses one persistent seed order')
-        if policy not in ('largest_first', 'smallest_first'):
+        if self.config.anchors:
+            raise ValueError('Adaptive search does not yet support anchored growth')
+        if policy not in ('largest_first', 'smallest_first', 'event_guided', 'fair_depth'):
             raise ValueError('unknown closure priority')
         self.policy = policy
         self.source, self.target = [build_graph(endpoint.elements, endpoint.wbo,
@@ -53,16 +97,41 @@ class AdaptiveFragmentSearch:
             self.order, anchors=self.config.anchors, graph_floor=self.config.graph_floor,
             iso_tolerance=self.config.iso_tolerance, branch_limit=self.config.branch_limit))
         self.workspace = ConditionedSymmetryWorkspace(self.target, self.config.iso_tolerance)
-        self.agenda = []
-        self.serial = itertools.count()
+        self.agenda = _ChoiceAgenda(fair=policy == 'fair_depth')
         self.seen = {}
         self.work = self.growth_calls = self.closure_calls = self.reused_states = 0
         self.elapsed = 0.
+        self.best_score = None
+        self.error_edges = ()
         root = _Branch(self.builder, self.config.anchors)
         self._schedule(root, 0, 0)
 
     def _push(self, priority, payload):
-        heapq.heappush(self.agenda, (priority, next(self.serial), payload))
+        self.agenda.push(priority, payload)
+
+    def _closure_priority(self, depth, session, option):
+        rank = option.size if self.policy == 'smallest_first' else -option.size
+        affected = 0.
+        if self.policy in ('event_guided', 'fair_depth'):
+            released = session.frontier_atoms - option.atoms
+            if released:
+                affected = sum(a in released or b in released for a, b in self.error_edges) / len(released)
+        return (depth, 1, -affected, rank)
+
+    def _feedback(self, mapping):
+        if self.policy not in ('event_guided', 'fair_depth') or not self.problem.balanced:
+            return
+        r = self.problem.reactant.wbo
+        images = [mapping[i] for i in range(len(r))]
+        p = self.problem.product.wbo[np.ix_(images, images)]
+        rb, pb = r > self.config.graph_floor, p > self.config.graph_floor
+        errors = np.triu((rb != pb) | (rb & pb & (np.abs(r-p) > self.config.event_threshold)), 1)
+        score = int(errors.sum())
+        if self.best_score is None or score < self.best_score:
+            self.best_score = score
+            self.error_edges = tuple(zip(*np.where(errors)))
+            self.agenda.reprioritize(lambda priority, task:
+                self._closure_priority(task[3], task[4], task[5]) if task[0] == 'close' else priority)
 
     def _schedule(self, branch, position, depth):
         while position < len(self.order) and self.order[position] in branch.mapping:
@@ -78,8 +147,10 @@ class AdaptiveFragmentSearch:
         self.seen[key] = branch
         if position == len(self.order):
             self.builder.stop(branch, 'objective_met' if len(branch.mapping) == len(self.source) else 'stalled')
+            if len(branch.mapping) == len(self.source):
+                self._feedback(branch.mapping)
         else:
-            self._push((depth, 0, -len(branch.mapping)), ('grow', branch, position, depth, None, None))
+            self._push((depth, 0, 0, -len(branch.mapping)), ('grow', branch, position, depth, None, None))
 
     def _commit(self, branch, result, position, depth):
         if result.capped:
@@ -98,7 +169,7 @@ class AdaptiveFragmentSearch:
         if not self.agenda:
             return False
         started = time.perf_counter()
-        _, _, (kind, branch, position, depth, session, closure) = heapq.heappop(self.agenda)
+        _, _, (kind, branch, position, depth, session, closure) = self.agenda.pop()
         seed = self.order[position]
         self.builder.seed = seed
         self.builder.step = (depth, position, self.work)
@@ -111,8 +182,8 @@ class AdaptiveFragmentSearch:
                 config=FragmentMatchConfig(graph_floor=self.config.graph_floor,
                     iso_tolerance=self.config.iso_tolerance, branch_limit=self.config.branch_limit))
             for option in session.closures:
-                rank = -option.size if self.policy == 'largest_first' else option.size
-                self._push((depth + 1, 1, rank), ('close', branch, position, depth + 1, session, option))
+                self._push(self._closure_priority(depth + 1, session, option),
+                           ('close', branch, position, depth + 1, session, option))
             self._commit(branch, session.normal, position, depth)
         else:
             self.closure_calls += 1

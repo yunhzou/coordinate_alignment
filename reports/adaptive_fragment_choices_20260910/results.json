@@ -1,0 +1,2704 @@
+{
+  "runs": {
+    "initial": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa",
+    "deeper": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n",
+    "feedback": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_feedback_20260910_I8Kjaa",
+    "fair": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_fair_20260910_fKvIsb"
+  },
+  "provenance": {
+    "initial": {
+      "manifest": {
+        "parent_commit": "e914b3a3045fba01a08b88fd98ef8dc427a58e34",
+        "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/conditioned_reuse_full_20260910_0o09px",
+        "input_sha256": {
+          "25": "b68e18799568e580beb124b821fc53fee88731117aaa00e355b2f3e20109dbf2",
+          "76": "a4ed808ca17fadb70038c6dc1428f6459b1c05c2930352323359b911906917aa",
+          "77": "a5c1d00ffe72bdb3f4ea4e86d1165f4c75a32dcffab10208124d7dac0fdd6425",
+          "114": "1b6ac96cc88364643cb438b6f467fe7ed3a74c50c941263495342b53bc5e7f4f"
+        },
+        "branch_cap": 100,
+        "seeds": 1,
+        "iso_tolerance": 1.0,
+        "explicit_H": true,
+        "root_seed": 42,
+        "work_budgets": [
+          100,
+          400,
+          1600
+        ],
+        "soft_search_seconds": 30.0,
+        "policy": "No event-score pruning",
+        "native_sha256": "c563ab44df21d045c58fa29fe83d37aa9a619a81149792aba2cd6c597a0673e0"
+      },
+      "implementation_sha256": "3add2ac93c1a4537fd6389956c764b854e1da586b628114b3eb7b72cde91707d",
+      "source_files": 90
+    },
+    "deeper": {
+      "manifest": {
+        "parent_commit": "e914b3a3045fba01a08b88fd98ef8dc427a58e34",
+        "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/conditioned_reuse_full_20260910_0o09px",
+        "input_sha256": {
+          "25": "b68e18799568e580beb124b821fc53fee88731117aaa00e355b2f3e20109dbf2",
+          "76": "a4ed808ca17fadb70038c6dc1428f6459b1c05c2930352323359b911906917aa",
+          "77": "a5c1d00ffe72bdb3f4ea4e86d1165f4c75a32dcffab10208124d7dac0fdd6425",
+          "114": "1b6ac96cc88364643cb438b6f467fe7ed3a74c50c941263495342b53bc5e7f4f"
+        },
+        "branch_cap": 100,
+        "seeds": 1,
+        "iso_tolerance": 1.0,
+        "explicit_H": true,
+        "root_seed": 42,
+        "work_budgets": [
+          1600,
+          6400,
+          25600
+        ],
+        "soft_search_seconds": 30.0,
+        "policy": "No event-score pruning",
+        "native_sha256": "c563ab44df21d045c58fa29fe83d37aa9a619a81149792aba2cd6c597a0673e0"
+      },
+      "implementation_sha256": "c9b0c2aeaf4240891a28165db7d91a25df8cd6f5a949b5e0308914ff94d69b8f",
+      "source_files": 90
+    },
+    "feedback": {
+      "manifest": {
+        "parent_commit": "e914b3a3045fba01a08b88fd98ef8dc427a58e34",
+        "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/conditioned_reuse_full_20260910_0o09px",
+        "input_sha256": {
+          "25": "b68e18799568e580beb124b821fc53fee88731117aaa00e355b2f3e20109dbf2",
+          "76": "a4ed808ca17fadb70038c6dc1428f6459b1c05c2930352323359b911906917aa",
+          "77": "a5c1d00ffe72bdb3f4ea4e86d1165f4c75a32dcffab10208124d7dac0fdd6425",
+          "114": "1b6ac96cc88364643cb438b6f467fe7ed3a74c50c941263495342b53bc5e7f4f"
+        },
+        "branch_cap": 100,
+        "seeds": 1,
+        "iso_tolerance": 1.0,
+        "explicit_H": true,
+        "root_seed": 42,
+        "work_budgets": [
+          100,
+          400,
+          1600,
+          6400
+        ],
+        "soft_search_seconds": 30.0,
+        "policy": "No event-score pruning",
+        "native_sha256": "c9fd92a1aaebf04f5f81c7708e8fe93dcee691324ec5412f757b34432eb4d4c2"
+      },
+      "implementation_sha256": "33312d043cf3536f0f48f8d475c0b016614d4cf0fe19b5a2758593aaa618d079",
+      "source_files": 90
+    },
+    "fair": {
+      "manifest": {
+        "parent_commit": "e914b3a3045fba01a08b88fd98ef8dc427a58e34",
+        "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/conditioned_reuse_full_20260910_0o09px",
+        "input_sha256": {
+          "25": "b68e18799568e580beb124b821fc53fee88731117aaa00e355b2f3e20109dbf2",
+          "76": "a4ed808ca17fadb70038c6dc1428f6459b1c05c2930352323359b911906917aa",
+          "77": "a5c1d00ffe72bdb3f4ea4e86d1165f4c75a32dcffab10208124d7dac0fdd6425",
+          "114": "1b6ac96cc88364643cb438b6f467fe7ed3a74c50c941263495342b53bc5e7f4f"
+        },
+        "branch_cap": 100,
+        "seeds": 1,
+        "iso_tolerance": 1.0,
+        "explicit_H": true,
+        "root_seed": 42,
+        "work_budgets": [
+          100,
+          400,
+          1600,
+          6400
+        ],
+        "soft_search_seconds": 30.0,
+        "policy": "No event-score pruning",
+        "native_sha256": "c9fd92a1aaebf04f5f81c7708e8fe93dcee691324ec5412f757b34432eb4d4c2"
+      },
+      "implementation_sha256": "a5743087fbfe4a80db64d0c876770104a2389fbff7a6027a8b06bdffcae23592",
+      "source_files": 90
+    }
+  },
+  "records": [
+    {
+      "run": "initial",
+      "slot": 0,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/0",
+      "index": 25,
+      "direction": "R_to_P",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 100,
+          "closures": 0,
+          "reused_states": 0,
+          "pending": 541,
+          "exhausted": false,
+          "states": 143,
+          "terminals": 22,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 22,
+          "compute_cpu": 0.37735235699999936,
+          "compute_wall": 0.37748369202017784,
+          "checkpoint_cpu": 0.01409844299999996,
+          "scoring_cpu": 0.0008080189999999376,
+          "max_rss_kib": 142896
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 399,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 1739,
+          "exhausted": false,
+          "states": 505,
+          "terminals": 84,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 64,
+          "compute_cpu": 0.8385186289999969,
+          "compute_wall": 0.8389579579234123,
+          "checkpoint_cpu": 0.02401241899999995,
+          "scoring_cpu": 0.0009826269999999582,
+          "max_rss_kib": 170692
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1596,
+          "closures": 4,
+          "reused_states": 0,
+          "pending": 6203,
+          "exhausted": false,
+          "states": 1952,
+          "terminals": 309,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 117,
+          "compute_cpu": 2.3282536640000036,
+          "compute_wall": 2.3295140899717808,
+          "checkpoint_cpu": 0.07899586000000003,
+          "scoring_cpu": 0.0015002660000003054,
+          "max_rss_kib": 270848
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 143,
+          "edges_checked": 4178,
+          "valid": true,
+          "validation_seconds": 0.016688384115695953
+        },
+        {
+          "label": "work_00400",
+          "states": 505,
+          "edges_checked": 11624,
+          "valid": true,
+          "validation_seconds": 0.036657560616731644
+        },
+        {
+          "label": "work_01600",
+          "states": 1952,
+          "edges_checked": 53948,
+          "valid": true,
+          "validation_seconds": 0.14214088208973408
+        }
+      ],
+      "family_diagnostic": {
+        "best": 5,
+        "paths": 110,
+        "seconds": 14.285149175673723,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 1,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/1",
+      "index": 25,
+      "direction": "R_to_P",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 100,
+          "closures": 0,
+          "reused_states": 0,
+          "pending": 541,
+          "exhausted": false,
+          "states": 143,
+          "terminals": 22,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 22,
+          "compute_cpu": 0.35992886999999996,
+          "compute_wall": 0.3600532244890928,
+          "checkpoint_cpu": 0.011920773000000051,
+          "scoring_cpu": 0.0007415969999999827,
+          "max_rss_kib": 143384
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 399,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 1762,
+          "exhausted": false,
+          "states": 559,
+          "terminals": 92,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 92,
+          "compute_cpu": 0.9881230639999998,
+          "compute_wall": 0.9885228648781776,
+          "checkpoint_cpu": 0.024198643000000075,
+          "scoring_cpu": 0.00128006100000011,
+          "max_rss_kib": 185904
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1599,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 5443,
+          "exhausted": false,
+          "states": 2049,
+          "terminals": 399,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 399,
+          "compute_cpu": 3.2189941679999965,
+          "compute_wall": 3.2202918585389853,
+          "checkpoint_cpu": 0.06621858299999994,
+          "scoring_cpu": 0.0040872649999998956,
+          "max_rss_kib": 315064
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 143,
+          "edges_checked": 4178,
+          "valid": true,
+          "validation_seconds": 0.01661229506134987
+        },
+        {
+          "label": "work_00400",
+          "states": 559,
+          "edges_checked": 9267,
+          "valid": true,
+          "validation_seconds": 0.038101596757769585
+        },
+        {
+          "label": "work_01600",
+          "states": 2049,
+          "edges_checked": 23000,
+          "valid": true,
+          "validation_seconds": 0.12313540652394295
+        }
+      ],
+      "family_diagnostic": {
+        "best": 5,
+        "paths": 107,
+        "seconds": 14.698266902938485,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 2,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/2",
+      "index": 76,
+      "direction": "P_to_R",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 100,
+          "closures": 0,
+          "reused_states": 0,
+          "pending": 203,
+          "exhausted": false,
+          "states": 142,
+          "terminals": 36,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 36,
+          "compute_cpu": 0.24418539399999928,
+          "compute_wall": 0.24429567344486713,
+          "checkpoint_cpu": 0.008466049000000031,
+          "scoring_cpu": 0.0007755520000000127,
+          "max_rss_kib": 130840
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 399,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 385,
+          "exhausted": false,
+          "states": 555,
+          "terminals": 153,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 117,
+          "compute_cpu": 0.5441451349999995,
+          "compute_wall": 0.5445206630975008,
+          "checkpoint_cpu": 0.018208278999999994,
+          "scoring_cpu": 0.0013855279999999137,
+          "max_rss_kib": 144036
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1597,
+          "closures": 3,
+          "reused_states": 0,
+          "pending": 959,
+          "exhausted": false,
+          "states": 2238,
+          "terminals": 632,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 536,
+          "compute_cpu": 1.5652142209999975,
+          "compute_wall": 1.566443219780922,
+          "checkpoint_cpu": 0.051710359999999955,
+          "scoring_cpu": 0.005344961000000037,
+          "max_rss_kib": 184992
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 142,
+          "edges_checked": 489,
+          "valid": true,
+          "validation_seconds": 0.011816777288913727
+        },
+        {
+          "label": "work_00400",
+          "states": 555,
+          "edges_checked": 2191,
+          "valid": true,
+          "validation_seconds": 0.028844565153121948
+        },
+        {
+          "label": "work_01600",
+          "states": 2238,
+          "edges_checked": 12671,
+          "valid": true,
+          "validation_seconds": 0.1090867854654789
+        }
+      ],
+      "family_diagnostic": {
+        "best": 21,
+        "paths": 108,
+        "seconds": 14.684282461181283,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 3,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/3",
+      "index": 76,
+      "direction": "P_to_R",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 100,
+          "closures": 0,
+          "reused_states": 0,
+          "pending": 203,
+          "exhausted": false,
+          "states": 142,
+          "terminals": 36,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 36,
+          "compute_cpu": 0.29950373600000046,
+          "compute_wall": 0.299630856141448,
+          "checkpoint_cpu": 0.009525309000000037,
+          "scoring_cpu": 0.0008180129999999508,
+          "max_rss_kib": 131080
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 398,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 2872,
+          "exhausted": false,
+          "states": 577,
+          "terminals": 166,
+          "capped": false,
+          "best_representative": 3,
+          "witnesses": 166,
+          "compute_cpu": 3.9282049410000024,
+          "compute_wall": 3.929025387391448,
+          "checkpoint_cpu": 0.023278299000000224,
+          "scoring_cpu": 0.0016008479999998215,
+          "max_rss_kib": 190516
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1598,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 3241,
+          "exhausted": false,
+          "states": 2347,
+          "terminals": 738,
+          "capped": false,
+          "best_representative": 3,
+          "witnesses": 738,
+          "compute_cpu": 4.808808504999992,
+          "compute_wall": 4.810166718438268,
+          "checkpoint_cpu": 0.05186388999999991,
+          "scoring_cpu": 0.006863275999999807,
+          "max_rss_kib": 229924
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 142,
+          "edges_checked": 489,
+          "valid": true,
+          "validation_seconds": 0.011836297810077667
+        },
+        {
+          "label": "work_00400",
+          "states": 577,
+          "edges_checked": 5526,
+          "valid": true,
+          "validation_seconds": 0.03497324883937836
+        },
+        {
+          "label": "work_01600",
+          "states": 2347,
+          "edges_checked": 6036,
+          "valid": true,
+          "validation_seconds": 0.10979162901639938
+        }
+      ],
+      "family_diagnostic": {
+        "best": 3,
+        "paths": 23,
+        "seconds": 14.438434638082981,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 4,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/4",
+      "index": 77,
+      "direction": "P_to_R",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 94,
+          "closures": 6,
+          "reused_states": 0,
+          "pending": 441,
+          "exhausted": false,
+          "states": 120,
+          "terminals": 24,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 16,
+          "compute_cpu": 0.19203601899999945,
+          "compute_wall": 0.19211806170642376,
+          "checkpoint_cpu": 0.03782222000000002,
+          "scoring_cpu": 0.000561111000000003,
+          "max_rss_kib": 133460
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 376,
+          "closures": 24,
+          "reused_states": 0,
+          "pending": 1543,
+          "exhausted": false,
+          "states": 469,
+          "terminals": 90,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 52,
+          "compute_cpu": 0.5739293829999976,
+          "compute_wall": 0.5743019785732031,
+          "checkpoint_cpu": 0.018572492000000107,
+          "scoring_cpu": 0.0006098360000001968,
+          "max_rss_kib": 156336
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1554,
+          "closures": 46,
+          "reused_states": 0,
+          "pending": 4084,
+          "exhausted": false,
+          "states": 2044,
+          "terminals": 486,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 368,
+          "compute_cpu": 1.7021871240000017,
+          "compute_wall": 1.7030829433351755,
+          "checkpoint_cpu": 0.05775919899999993,
+          "scoring_cpu": 0.002577916999999985,
+          "max_rss_kib": 219292
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 120,
+          "edges_checked": 1247,
+          "valid": true,
+          "validation_seconds": 0.01990561932325363
+        },
+        {
+          "label": "work_00400",
+          "states": 469,
+          "edges_checked": 4092,
+          "valid": true,
+          "validation_seconds": 0.02424076944589615
+        },
+        {
+          "label": "work_01600",
+          "states": 2044,
+          "edges_checked": 9616,
+          "valid": true,
+          "validation_seconds": 0.09057599119842052
+        }
+      ],
+      "family_diagnostic": {
+        "best": 11,
+        "paths": 101,
+        "seconds": 15.010764447972178,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 5,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/5",
+      "index": 77,
+      "direction": "P_to_R",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 99,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 399,
+          "exhausted": false,
+          "states": 153,
+          "terminals": 36,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 36,
+          "compute_cpu": 0.24679662899999977,
+          "compute_wall": 0.24691197276115417,
+          "checkpoint_cpu": 0.008499029999999963,
+          "scoring_cpu": 0.0007015739999999271,
+          "max_rss_kib": 131160
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 399,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 900,
+          "exhausted": false,
+          "states": 569,
+          "terminals": 153,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 153,
+          "compute_cpu": 0.611573966999998,
+          "compute_wall": 0.611935593187809,
+          "checkpoint_cpu": 0.016957350999999843,
+          "scoring_cpu": 0.0013895870000000254,
+          "max_rss_kib": 148976
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1598,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 2737,
+          "exhausted": false,
+          "states": 2242,
+          "terminals": 619,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 619,
+          "compute_cpu": 2.3048810539999987,
+          "compute_wall": 2.306058943271637,
+          "checkpoint_cpu": 0.05126692199999994,
+          "scoring_cpu": 0.005055345999999794,
+          "max_rss_kib": 211552
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 153,
+          "edges_checked": 468,
+          "valid": true,
+          "validation_seconds": 0.01017455942928791
+        },
+        {
+          "label": "work_00400",
+          "states": 569,
+          "edges_checked": 1181,
+          "valid": true,
+          "validation_seconds": 0.025254683569073677
+        },
+        {
+          "label": "work_01600",
+          "states": 2242,
+          "edges_checked": 3436,
+          "valid": true,
+          "validation_seconds": 0.08918716199696064
+        }
+      ],
+      "family_diagnostic": {
+        "best": 19,
+        "paths": 46,
+        "seconds": 15.016502814367414,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 6,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/6",
+      "index": 114,
+      "direction": "R_to_P",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 93,
+          "closures": 7,
+          "reused_states": 0,
+          "pending": 104,
+          "exhausted": false,
+          "states": 120,
+          "terminals": 23,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 8,
+          "compute_cpu": 0.029049820999999754,
+          "compute_wall": 0.029070328921079636,
+          "checkpoint_cpu": 0.003722909000000052,
+          "scoring_cpu": 0.00036893500000001467,
+          "max_rss_kib": 122076
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 381,
+          "closures": 19,
+          "reused_states": 0,
+          "pending": 702,
+          "exhausted": false,
+          "states": 479,
+          "terminals": 90,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 45,
+          "compute_cpu": 0.24986399599999987,
+          "compute_wall": 0.25010815262794495,
+          "checkpoint_cpu": 0.010776044999999956,
+          "scoring_cpu": 0.00030079000000005074,
+          "max_rss_kib": 127780
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1580,
+          "closures": 20,
+          "reused_states": 0,
+          "pending": 1070,
+          "exhausted": false,
+          "states": 1914,
+          "terminals": 328,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 275,
+          "compute_cpu": 0.6880011909999963,
+          "compute_wall": 0.6889062225818634,
+          "checkpoint_cpu": 0.02818936300000008,
+          "scoring_cpu": 0.0006786629999999683,
+          "max_rss_kib": 144956
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 120,
+          "edges_checked": 679,
+          "valid": true,
+          "validation_seconds": 0.0052865613251924515
+        },
+        {
+          "label": "work_00400",
+          "states": 479,
+          "edges_checked": 1923,
+          "valid": true,
+          "validation_seconds": 0.011702097952365875
+        },
+        {
+          "label": "work_01600",
+          "states": 1914,
+          "edges_checked": 2468,
+          "valid": true,
+          "validation_seconds": 0.03713848441839218
+        }
+      ],
+      "family_diagnostic": {
+        "best": 4,
+        "paths": 190,
+        "seconds": 14.996851492673159,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      },
+      "historical_114_patterns": {
+        "representative_ordinals": {
+          "1": null,
+          "2": 233
+        },
+        "scope": "Exact source-index event signatures in saved representatives, not chemical ground truth or exhaustive family exclusion."
+      }
+    },
+    {
+      "run": "initial",
+      "slot": 7,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_20260910_lRLOXa/results/7",
+      "index": 114,
+      "direction": "R_to_P",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 96,
+          "closures": 4,
+          "reused_states": 0,
+          "pending": 585,
+          "exhausted": false,
+          "states": 128,
+          "terminals": 26,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 25,
+          "compute_cpu": 0.07664336600000055,
+          "compute_wall": 0.0766924787312746,
+          "checkpoint_cpu": 0.009926647999999982,
+          "scoring_cpu": 0.0007348239999999118,
+          "max_rss_kib": 123548
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 395,
+          "closures": 5,
+          "reused_states": 0,
+          "pending": 931,
+          "exhausted": false,
+          "states": 503,
+          "terminals": 105,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 100,
+          "compute_cpu": 0.29710781400000164,
+          "compute_wall": 0.29746413230895996,
+          "checkpoint_cpu": 0.009397239000000002,
+          "scoring_cpu": 0.0003874809999999673,
+          "max_rss_kib": 129056
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1594,
+          "closures": 6,
+          "reused_states": 0,
+          "pending": 1271,
+          "exhausted": false,
+          "states": 1944,
+          "terminals": 343,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 330,
+          "compute_cpu": 0.5846473050000022,
+          "compute_wall": 0.5852645076811314,
+          "checkpoint_cpu": 0.02796056300000016,
+          "scoring_cpu": 0.0008025720000000014,
+          "max_rss_kib": 146080
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 128,
+          "edges_checked": 710,
+          "valid": true,
+          "validation_seconds": 0.005502752959728241
+        },
+        {
+          "label": "work_00400",
+          "states": 503,
+          "edges_checked": 1172,
+          "valid": true,
+          "validation_seconds": 0.011364718899130821
+        },
+        {
+          "label": "work_01600",
+          "states": 1944,
+          "edges_checked": 1674,
+          "valid": true,
+          "validation_seconds": 0.03838237375020981
+        }
+      ],
+      "family_diagnostic": {
+        "best": 4,
+        "paths": 202,
+        "seconds": 14.50078084692359,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      },
+      "historical_114_patterns": {
+        "representative_ordinals": {
+          "1": 235,
+          "2": 222
+        },
+        "scope": "Exact source-index event signatures in saved representatives, not chemical ground truth or exhaustive family exclusion."
+      }
+    },
+    {
+      "run": "deeper",
+      "slot": 0,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/0",
+      "index": 25,
+      "direction": "R_to_P",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1596,
+          "closures": 4,
+          "reused_states": 0,
+          "pending": 6203,
+          "exhausted": false,
+          "states": 1952,
+          "terminals": 309,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 117,
+          "compute_cpu": 2.2095945149999947,
+          "compute_wall": 2.210689602419734,
+          "checkpoint_cpu": 0.08181785099999983,
+          "scoring_cpu": 0.0016229550000002035,
+          "max_rss_kib": 270472
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6391,
+          "closures": 9,
+          "reused_states": 0,
+          "pending": 23280,
+          "exhausted": false,
+          "states": 7753,
+          "terminals": 1336,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 896,
+          "compute_cpu": 8.24433793699998,
+          "compute_wall": 8.248874720185995,
+          "checkpoint_cpu": 0.30987162400000123,
+          "scoring_cpu": 0.00881437099999971,
+          "max_rss_kib": 641580
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25561,
+          "closures": 39,
+          "reused_states": 0,
+          "pending": 119143,
+          "exhausted": false,
+          "states": 31189,
+          "terminals": 5624,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 1088,
+          "compute_cpu": 31.305730899000128,
+          "compute_wall": 31.325243465602398,
+          "checkpoint_cpu": 1.2404222209999958,
+          "scoring_cpu": 0.012921073999997645,
+          "max_rss_kib": 2243040
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 1952,
+          "edges_checked": 53948,
+          "valid": true,
+          "validation_seconds": 0.15414228662848473
+        },
+        {
+          "label": "work_06400",
+          "states": 7753,
+          "edges_checked": 178351,
+          "valid": true,
+          "validation_seconds": 0.7110545374453068
+        },
+        {
+          "label": "work_25600",
+          "states": 31189,
+          "edges_checked": 596452,
+          "valid": true,
+          "validation_seconds": 2.721743833273649
+        }
+      ]
+    },
+    {
+      "run": "deeper",
+      "slot": 1,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/1",
+      "index": 25,
+      "direction": "R_to_P",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1599,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 5443,
+          "exhausted": false,
+          "states": 2049,
+          "terminals": 399,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 399,
+          "compute_cpu": 3.2714217910000025,
+          "compute_wall": 3.2727016787976027,
+          "checkpoint_cpu": 0.0677074210000006,
+          "scoring_cpu": 0.004490325999999989,
+          "max_rss_kib": 314228
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6399,
+          "closures": 1,
+          "reused_states": 0,
+          "pending": 16558,
+          "exhausted": false,
+          "states": 8180,
+          "terminals": 1750,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 1750,
+          "compute_cpu": 11.260272763999938,
+          "compute_wall": 11.264638014137745,
+          "checkpoint_cpu": 0.2570311289999996,
+          "scoring_cpu": 0.01865519400000082,
+          "max_rss_kib": 722704
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25438,
+          "closures": 162,
+          "reused_states": 0,
+          "pending": 46095,
+          "exhausted": false,
+          "states": 32800,
+          "terminals": 7295,
+          "capped": true,
+          "best_representative": 5,
+          "witnesses": 7231,
+          "compute_cpu": 34.73990399999978,
+          "compute_wall": 34.75540866330266,
+          "checkpoint_cpu": 0.8463127919999991,
+          "scoring_cpu": 0.07750989399999497,
+          "max_rss_kib": 1983048
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 2049,
+          "edges_checked": 23000,
+          "valid": true,
+          "validation_seconds": 0.12643677182495594
+        },
+        {
+          "label": "work_06400",
+          "states": 8180,
+          "edges_checked": 62037,
+          "valid": true,
+          "validation_seconds": 0.6033818330615759
+        },
+        {
+          "label": "work_25600",
+          "states": 32800,
+          "edges_checked": 154159,
+          "valid": true,
+          "validation_seconds": 2.209163209423423
+        }
+      ]
+    },
+    {
+      "run": "deeper",
+      "slot": 2,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/2",
+      "index": 76,
+      "direction": "P_to_R",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1597,
+          "closures": 3,
+          "reused_states": 0,
+          "pending": 959,
+          "exhausted": false,
+          "states": 2238,
+          "terminals": 632,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 536,
+          "compute_cpu": 1.3493955789999972,
+          "compute_wall": 1.3501669634133577,
+          "checkpoint_cpu": 0.05196625499999996,
+          "scoring_cpu": 0.005227275999999836,
+          "max_rss_kib": 184740
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6394,
+          "closures": 6,
+          "reused_states": 0,
+          "pending": 2913,
+          "exhausted": false,
+          "states": 9156,
+          "terminals": 2748,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 2316,
+          "compute_cpu": 5.1496723479999815,
+          "compute_wall": 5.153184473514557,
+          "checkpoint_cpu": 0.2069748950000001,
+          "scoring_cpu": 0.02143321099999973,
+          "max_rss_kib": 352380
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25593,
+          "closures": 7,
+          "reused_states": 0,
+          "pending": 5536,
+          "exhausted": false,
+          "states": 38362,
+          "terminals": 12746,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 12050,
+          "compute_cpu": 19.033034615999682,
+          "compute_wall": 19.045140843838453,
+          "checkpoint_cpu": 0.8324723869999993,
+          "scoring_cpu": 0.10945047699999932,
+          "max_rss_kib": 957332
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 2238,
+          "edges_checked": 12671,
+          "valid": true,
+          "validation_seconds": 0.1106389444321394
+        },
+        {
+          "label": "work_06400",
+          "states": 9156,
+          "edges_checked": 48626,
+          "valid": true,
+          "validation_seconds": 0.5720545165240765
+        },
+        {
+          "label": "work_25600",
+          "states": 38362,
+          "edges_checked": 113827,
+          "valid": true,
+          "validation_seconds": 2.1505196634680033
+        }
+      ]
+    },
+    {
+      "run": "deeper",
+      "slot": 3,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/3",
+      "index": 76,
+      "direction": "P_to_R",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1598,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 3241,
+          "exhausted": false,
+          "states": 2347,
+          "terminals": 738,
+          "capped": false,
+          "best_representative": 3,
+          "witnesses": 738,
+          "compute_cpu": 4.8388208190000235,
+          "compute_wall": 4.840214975178242,
+          "checkpoint_cpu": 0.05400687199999954,
+          "scoring_cpu": 0.00703194000000007,
+          "max_rss_kib": 229968
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6397,
+          "closures": 3,
+          "reused_states": 0,
+          "pending": 4016,
+          "exhausted": false,
+          "states": 9617,
+          "terminals": 3198,
+          "capped": false,
+          "best_representative": 3,
+          "witnesses": 3198,
+          "compute_cpu": 8.303775310999992,
+          "compute_wall": 8.307388158515096,
+          "checkpoint_cpu": 0.19350586900000089,
+          "scoring_cpu": 0.03011665999999913,
+          "max_rss_kib": 383864
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25584,
+          "closures": 16,
+          "reused_states": 0,
+          "pending": 10158,
+          "exhausted": false,
+          "states": 37783,
+          "terminals": 12188,
+          "capped": false,
+          "best_representative": 3,
+          "witnesses": 12164,
+          "compute_cpu": 22.724001389000005,
+          "compute_wall": 22.73741974681616,
+          "checkpoint_cpu": 0.7946397929999982,
+          "scoring_cpu": 0.1079293670000041,
+          "max_rss_kib": 973596
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 2347,
+          "edges_checked": 6036,
+          "valid": true,
+          "validation_seconds": 0.11236863024532795
+        },
+        {
+          "label": "work_06400",
+          "states": 9617,
+          "edges_checked": 7042,
+          "valid": true,
+          "validation_seconds": 0.5448208712041378
+        },
+        {
+          "label": "work_25600",
+          "states": 37783,
+          "edges_checked": 15177,
+          "valid": true,
+          "validation_seconds": 2.090845439583063
+        }
+      ]
+    },
+    {
+      "run": "deeper",
+      "slot": 4,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/4",
+      "index": 77,
+      "direction": "P_to_R",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1554,
+          "closures": 46,
+          "reused_states": 0,
+          "pending": 4084,
+          "exhausted": false,
+          "states": 2044,
+          "terminals": 486,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 368,
+          "compute_cpu": 1.717588057999997,
+          "compute_wall": 1.7186336573213339,
+          "checkpoint_cpu": 0.05861277300000012,
+          "scoring_cpu": 0.002721435999999855,
+          "max_rss_kib": 219380
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6348,
+          "closures": 52,
+          "reused_states": 0,
+          "pending": 8515,
+          "exhausted": false,
+          "states": 9066,
+          "terminals": 2715,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 1672,
+          "compute_cpu": 5.064507559000025,
+          "compute_wall": 5.068090829998255,
+          "checkpoint_cpu": 0.19587934299999965,
+          "scoring_cpu": 0.011187988000000537,
+          "max_rss_kib": 386408
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25545,
+          "closures": 55,
+          "reused_states": 0,
+          "pending": 19620,
+          "exhausted": false,
+          "states": 38001,
+          "terminals": 12418,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 10136,
+          "compute_cpu": 17.828611126999874,
+          "compute_wall": 17.841764748096466,
+          "checkpoint_cpu": 0.814928682999998,
+          "scoring_cpu": 0.0763070670000019,
+          "max_rss_kib": 1039548
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 2044,
+          "edges_checked": 9616,
+          "valid": true,
+          "validation_seconds": 0.09759123250842094
+        },
+        {
+          "label": "work_06400",
+          "states": 9066,
+          "edges_checked": 28154,
+          "valid": true,
+          "validation_seconds": 0.5573636703193188
+        },
+        {
+          "label": "work_25600",
+          "states": 38001,
+          "edges_checked": 77337,
+          "valid": true,
+          "validation_seconds": 1.9658547155559063
+        }
+      ]
+    },
+    {
+      "run": "deeper",
+      "slot": 5,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/5",
+      "index": 77,
+      "direction": "P_to_R",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1598,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 2737,
+          "exhausted": false,
+          "states": 2242,
+          "terminals": 619,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 619,
+          "compute_cpu": 2.1641995210000005,
+          "compute_wall": 2.1651332210749388,
+          "checkpoint_cpu": 0.05218648700000017,
+          "scoring_cpu": 0.0050138570000002325,
+          "max_rss_kib": 211976
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6398,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 3727,
+          "exhausted": false,
+          "states": 8718,
+          "terminals": 2287,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 2287,
+          "compute_cpu": 5.070703669999985,
+          "compute_wall": 5.073683705180883,
+          "checkpoint_cpu": 0.17263549599999983,
+          "scoring_cpu": 0.017635551999999777,
+          "max_rss_kib": 350148
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25598,
+          "closures": 2,
+          "reused_states": 0,
+          "pending": 8613,
+          "exhausted": false,
+          "states": 34388,
+          "terminals": 8760,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 8760,
+          "compute_cpu": 16.20593244000002,
+          "compute_wall": 16.216760033741593,
+          "checkpoint_cpu": 0.6953943020000004,
+          "scoring_cpu": 0.06584486699999914,
+          "max_rss_kib": 911484
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 2242,
+          "edges_checked": 3436,
+          "valid": true,
+          "validation_seconds": 0.09624862298369408
+        },
+        {
+          "label": "work_06400",
+          "states": 8718,
+          "edges_checked": 3954,
+          "valid": true,
+          "validation_seconds": 0.45726017095148563
+        },
+        {
+          "label": "work_25600",
+          "states": 34388,
+          "edges_checked": 6893,
+          "valid": true,
+          "validation_seconds": 1.726297939196229
+        }
+      ]
+    },
+    {
+      "run": "deeper",
+      "slot": 6,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/6",
+      "index": 114,
+      "direction": "R_to_P",
+      "policy": "largest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1580,
+          "closures": 20,
+          "reused_states": 0,
+          "pending": 1070,
+          "exhausted": false,
+          "states": 1914,
+          "terminals": 328,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 275,
+          "compute_cpu": 0.7114903119999979,
+          "compute_wall": 0.7126188892871141,
+          "checkpoint_cpu": 0.029301350000000115,
+          "scoring_cpu": 0.0008130090000000312,
+          "max_rss_kib": 145256
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 5767,
+          "closures": 633,
+          "reused_states": 176,
+          "pending": 5724,
+          "exhausted": false,
+          "states": 7436,
+          "terminals": 1491,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 760,
+          "compute_cpu": 2.529817984000004,
+          "compute_wall": 2.5333674773573875,
+          "checkpoint_cpu": 0.14984288299999982,
+          "scoring_cpu": 0.0015753159999998267,
+          "max_rss_kib": 233724
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 24349,
+          "closures": 1251,
+          "reused_states": 212,
+          "pending": 18050,
+          "exhausted": false,
+          "states": 30729,
+          "terminals": 6164,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 3107,
+          "compute_cpu": 8.227541089999939,
+          "compute_wall": 8.239091185852885,
+          "checkpoint_cpu": 0.6010193400000006,
+          "scoring_cpu": 0.00610944499999988,
+          "max_rss_kib": 528272
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 1914,
+          "edges_checked": 2468,
+          "valid": true,
+          "validation_seconds": 0.043626999482512474
+        },
+        {
+          "label": "work_06400",
+          "states": 7436,
+          "edges_checked": 38494,
+          "valid": true,
+          "validation_seconds": 0.33025010488927364
+        },
+        {
+          "label": "work_25600",
+          "states": 30729,
+          "edges_checked": 75270,
+          "valid": true,
+          "validation_seconds": 1.1598489489406347
+        }
+      ],
+      "historical_114_patterns": {
+        "representative_ordinals": {
+          "1": 2550,
+          "2": 2571
+        },
+        "scope": "Exact source-index event signatures in saved representatives, not chemical ground truth or exhaustive family exclusion."
+      }
+    },
+    {
+      "run": "deeper",
+      "slot": 7,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_deeper_20260910_mzYH3n/results/7",
+      "index": 114,
+      "direction": "R_to_P",
+      "policy": "smallest_first",
+      "rows": [
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1594,
+          "closures": 6,
+          "reused_states": 0,
+          "pending": 1271,
+          "exhausted": false,
+          "states": 1944,
+          "terminals": 343,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 330,
+          "compute_cpu": 0.5913354959999937,
+          "compute_wall": 0.5920547097921371,
+          "checkpoint_cpu": 0.028399950000000063,
+          "scoring_cpu": 0.0009512860000000511,
+          "max_rss_kib": 145628
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6289,
+          "closures": 111,
+          "reused_states": 0,
+          "pending": 5656,
+          "exhausted": false,
+          "states": 7973,
+          "terminals": 1675,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 1519,
+          "compute_cpu": 2.200137468000004,
+          "compute_wall": 2.2030445989221334,
+          "checkpoint_cpu": 0.12632238100000004,
+          "scoring_cpu": 0.0029227160000000474,
+          "max_rss_kib": 227924
+        },
+        {
+          "label": "work_25600",
+          "work": 25600,
+          "growth": 25394,
+          "closures": 206,
+          "reused_states": 24,
+          "pending": 8319,
+          "exhausted": false,
+          "states": 32080,
+          "terminals": 6661,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 6133,
+          "compute_cpu": 7.767682137999993,
+          "compute_wall": 7.777493001893163,
+          "checkpoint_cpu": 0.5325985489999994,
+          "scoring_cpu": 0.01178718799999956,
+          "max_rss_kib": 512836
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_01600",
+          "states": 1944,
+          "edges_checked": 1674,
+          "valid": true,
+          "validation_seconds": 0.043437669053673744
+        },
+        {
+          "label": "work_06400",
+          "states": 7973,
+          "edges_checked": 8018,
+          "valid": true,
+          "validation_seconds": 0.29249213449656963
+        },
+        {
+          "label": "work_25600",
+          "states": 32080,
+          "edges_checked": 12474,
+          "valid": true,
+          "validation_seconds": 1.0612528696656227
+        }
+      ],
+      "historical_114_patterns": {
+        "representative_ordinals": {
+          "1": 250,
+          "2": 226
+        },
+        "scope": "Exact source-index event signatures in saved representatives, not chemical ground truth or exhaustive family exclusion."
+      }
+    },
+    {
+      "run": "feedback",
+      "slot": 0,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_feedback_20260910_I8Kjaa/results/0",
+      "index": 25,
+      "direction": "R_to_P",
+      "policy": "event_guided",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 100,
+          "closures": 0,
+          "reused_states": 0,
+          "pending": 541,
+          "exhausted": false,
+          "states": 143,
+          "terminals": 22,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 22,
+          "compute_cpu": 0.3585869350000003,
+          "compute_wall": 0.3587068375200033,
+          "checkpoint_cpu": 0.011218182000000132,
+          "scoring_cpu": 0.0006583440000000884,
+          "max_rss_kib": 143624
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 386,
+          "closures": 14,
+          "reused_states": 0,
+          "pending": 1501,
+          "exhausted": false,
+          "states": 478,
+          "terminals": 91,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 64,
+          "compute_cpu": 0.6922094730000007,
+          "compute_wall": 0.6926758531481028,
+          "checkpoint_cpu": 0.019829424000000095,
+          "scoring_cpu": 0.0009518349999999565,
+          "max_rss_kib": 166228
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1523,
+          "closures": 77,
+          "reused_states": 0,
+          "pending": 3296,
+          "exhausted": false,
+          "states": 1927,
+          "terminals": 400,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 224,
+          "compute_cpu": 1.8297131660000048,
+          "compute_wall": 1.8312421701848507,
+          "checkpoint_cpu": 0.051724410000000276,
+          "scoring_cpu": 0.0024812320000000554,
+          "max_rss_kib": 212768
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6233,
+          "closures": 167,
+          "reused_states": 0,
+          "pending": 7013,
+          "exhausted": false,
+          "states": 7896,
+          "terminals": 1653,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 1274,
+          "compute_cpu": 6.048432206999985,
+          "compute_wall": 6.054334111511707,
+          "checkpoint_cpu": 0.18514099700000042,
+          "scoring_cpu": 0.014146594999999706,
+          "max_rss_kib": 358548
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 143,
+          "edges_checked": 4178,
+          "valid": true,
+          "validation_seconds": 0.01686413586139679
+        },
+        {
+          "label": "work_00400",
+          "states": 478,
+          "edges_checked": 6012,
+          "valid": true,
+          "validation_seconds": 0.030974000692367554
+        },
+        {
+          "label": "work_01600",
+          "states": 1927,
+          "edges_checked": 11068,
+          "valid": true,
+          "validation_seconds": 0.10292188823223114
+        },
+        {
+          "label": "work_06400",
+          "states": 7896,
+          "edges_checked": 21599,
+          "valid": true,
+          "validation_seconds": 0.4880908206105232
+        }
+      ]
+    },
+    {
+      "run": "feedback",
+      "slot": 1,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_feedback_20260910_I8Kjaa/results/1",
+      "index": 76,
+      "direction": "P_to_R",
+      "policy": "event_guided",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 100,
+          "closures": 0,
+          "reused_states": 0,
+          "pending": 203,
+          "exhausted": false,
+          "states": 142,
+          "terminals": 36,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 36,
+          "compute_cpu": 0.256500234,
+          "compute_wall": 0.256581399589777,
+          "checkpoint_cpu": 0.008499844000000034,
+          "scoring_cpu": 0.0007062420000000236,
+          "max_rss_kib": 131996
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 393,
+          "closures": 7,
+          "reused_states": 0,
+          "pending": 278,
+          "exhausted": false,
+          "states": 555,
+          "terminals": 159,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 135,
+          "compute_cpu": 0.45166057700000173,
+          "compute_wall": 0.4519268050789833,
+          "checkpoint_cpu": 0.014976742999999848,
+          "scoring_cpu": 0.0014522359999999956,
+          "max_rss_kib": 140552
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1577,
+          "closures": 23,
+          "reused_states": 0,
+          "pending": 690,
+          "exhausted": false,
+          "states": 2249,
+          "terminals": 668,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 562,
+          "compute_cpu": 1.470210351000008,
+          "compute_wall": 1.471458163112402,
+          "checkpoint_cpu": 0.044704120000000014,
+          "scoring_cpu": 0.005214377000000159,
+          "max_rss_kib": 175452
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6367,
+          "closures": 33,
+          "reused_states": 0,
+          "pending": 3170,
+          "exhausted": false,
+          "states": 9045,
+          "terminals": 2663,
+          "capped": false,
+          "best_representative": 19,
+          "witnesses": 2311,
+          "compute_cpu": 6.296401674999962,
+          "compute_wall": 6.302783023566008,
+          "checkpoint_cpu": 0.17950358700000013,
+          "scoring_cpu": 0.021145719999999812,
+          "max_rss_kib": 323860
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 142,
+          "edges_checked": 489,
+          "valid": true,
+          "validation_seconds": 0.011920137330889702
+        },
+        {
+          "label": "work_00400",
+          "states": 555,
+          "edges_checked": 587,
+          "valid": true,
+          "validation_seconds": 0.027660492807626724
+        },
+        {
+          "label": "work_01600",
+          "states": 2249,
+          "edges_checked": 1332,
+          "valid": true,
+          "validation_seconds": 0.09714765287935734
+        },
+        {
+          "label": "work_06400",
+          "states": 9045,
+          "edges_checked": 4928,
+          "valid": true,
+          "validation_seconds": 0.4896191358566284
+        }
+      ]
+    },
+    {
+      "run": "feedback",
+      "slot": 2,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_feedback_20260910_I8Kjaa/results/2",
+      "index": 77,
+      "direction": "P_to_R",
+      "policy": "event_guided",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 93,
+          "closures": 7,
+          "reused_states": 0,
+          "pending": 218,
+          "exhausted": false,
+          "states": 131,
+          "terminals": 31,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 27,
+          "compute_cpu": 0.1469874319999993,
+          "compute_wall": 0.14704626612365246,
+          "checkpoint_cpu": 0.0071569689999999575,
+          "scoring_cpu": 0.0005075820000000064,
+          "max_rss_kib": 129200
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 393,
+          "closures": 7,
+          "reused_states": 0,
+          "pending": 240,
+          "exhausted": false,
+          "states": 530,
+          "terminals": 136,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 132,
+          "compute_cpu": 0.34117806099999914,
+          "compute_wall": 0.34141106717288494,
+          "checkpoint_cpu": 0.012643316999999987,
+          "scoring_cpu": 0.0012065449999998368,
+          "max_rss_kib": 136712
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1584,
+          "closures": 16,
+          "reused_states": 0,
+          "pending": 826,
+          "exhausted": false,
+          "states": 2138,
+          "terminals": 543,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 527,
+          "compute_cpu": 1.2558998440000027,
+          "compute_wall": 1.2571210395544767,
+          "checkpoint_cpu": 0.04154070500000007,
+          "scoring_cpu": 0.003911399000000149,
+          "max_rss_kib": 175940
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6384,
+          "closures": 16,
+          "reused_states": 0,
+          "pending": 1887,
+          "exhausted": false,
+          "states": 9083,
+          "terminals": 2691,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 2675,
+          "compute_cpu": 5.612334942999997,
+          "compute_wall": 5.618473529815674,
+          "checkpoint_cpu": 0.16863699399999987,
+          "scoring_cpu": 0.021092780000000033,
+          "max_rss_kib": 328748
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 131,
+          "edges_checked": 377,
+          "valid": true,
+          "validation_seconds": 0.009995179250836372
+        },
+        {
+          "label": "work_00400",
+          "states": 530,
+          "edges_checked": 418,
+          "valid": true,
+          "validation_seconds": 0.023169254884123802
+        },
+        {
+          "label": "work_01600",
+          "states": 2138,
+          "edges_checked": 1813,
+          "valid": true,
+          "validation_seconds": 0.08934010192751884
+        },
+        {
+          "label": "work_06400",
+          "states": 9083,
+          "edges_checked": 5118,
+          "valid": true,
+          "validation_seconds": 0.4942984003573656
+        }
+      ]
+    },
+    {
+      "run": "feedback",
+      "slot": 3,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_feedback_20260910_I8Kjaa/results/3",
+      "index": 114,
+      "direction": "R_to_P",
+      "policy": "event_guided",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 93,
+          "closures": 7,
+          "reused_states": 0,
+          "pending": 104,
+          "exhausted": false,
+          "states": 120,
+          "terminals": 23,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 8,
+          "compute_cpu": 0.03781906799999957,
+          "compute_wall": 0.03786887414753437,
+          "checkpoint_cpu": 0.004251051999999977,
+          "scoring_cpu": 0.0002899880000000188,
+          "max_rss_kib": 123184
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 387,
+          "closures": 13,
+          "reused_states": 0,
+          "pending": 552,
+          "exhausted": false,
+          "states": 483,
+          "terminals": 87,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 55,
+          "compute_cpu": 0.18400331200000009,
+          "compute_wall": 0.1842217706143856,
+          "checkpoint_cpu": 0.008225072999999972,
+          "scoring_cpu": 0.000276064999999992,
+          "max_rss_kib": 128200
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1586,
+          "closures": 14,
+          "reused_states": 0,
+          "pending": 926,
+          "exhausted": false,
+          "states": 1927,
+          "terminals": 336,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 300,
+          "compute_cpu": 0.5078548529999984,
+          "compute_wall": 0.5085621476173401,
+          "checkpoint_cpu": 0.026812555000000016,
+          "scoring_cpu": 0.0007448859999998891,
+          "max_rss_kib": 145904
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6347,
+          "closures": 53,
+          "reused_states": 0,
+          "pending": 2506,
+          "exhausted": false,
+          "states": 8090,
+          "terminals": 1738,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 1624,
+          "compute_cpu": 2.8555913879999943,
+          "compute_wall": 2.860168060287833,
+          "checkpoint_cpu": 0.11593383399999979,
+          "scoring_cpu": 0.0032306720000003786,
+          "max_rss_kib": 223420
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 120,
+          "edges_checked": 679,
+          "valid": true,
+          "validation_seconds": 0.005460156127810478
+        },
+        {
+          "label": "work_00400",
+          "states": 483,
+          "edges_checked": 1520,
+          "valid": true,
+          "validation_seconds": 0.011466758325695992
+        },
+        {
+          "label": "work_01600",
+          "states": 1927,
+          "edges_checked": 2067,
+          "valid": true,
+          "validation_seconds": 0.0417451374232769
+        },
+        {
+          "label": "work_06400",
+          "states": 8090,
+          "edges_checked": 4304,
+          "valid": true,
+          "validation_seconds": 0.2730890307575464
+        }
+      ],
+      "historical_114_patterns": {
+        "representative_ordinals": {
+          "1": 1439,
+          "2": 1408
+        },
+        "scope": "Exact source-index event signatures in saved representatives, not chemical ground truth or exhaustive family exclusion."
+      }
+    },
+    {
+      "run": "fair",
+      "slot": 0,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_fair_20260910_fKvIsb/results/0",
+      "index": 25,
+      "direction": "R_to_P",
+      "policy": "fair_depth",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 87,
+          "closures": 13,
+          "reused_states": 0,
+          "pending": 322,
+          "exhausted": false,
+          "states": 183,
+          "terminals": 22,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 11,
+          "compute_cpu": 0.30757263600000007,
+          "compute_wall": 0.3076865505427122,
+          "checkpoint_cpu": 0.016128852999999888,
+          "scoring_cpu": 0.0005126199999998526,
+          "max_rss_kib": 143956
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 349,
+          "closures": 51,
+          "reused_states": 0,
+          "pending": 661,
+          "exhausted": false,
+          "states": 537,
+          "terminals": 115,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 43,
+          "compute_cpu": 0.6890958919999991,
+          "compute_wall": 0.6895604245364666,
+          "checkpoint_cpu": 0.025417234000000066,
+          "scoring_cpu": 0.0008438499999998683,
+          "max_rss_kib": 156372
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1353,
+          "closures": 247,
+          "reused_states": 0,
+          "pending": 1939,
+          "exhausted": false,
+          "states": 1920,
+          "terminals": 528,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 154,
+          "compute_cpu": 2.2060864470000023,
+          "compute_wall": 2.2082362230867147,
+          "checkpoint_cpu": 0.06278657100000018,
+          "scoring_cpu": 0.0019577139999999993,
+          "max_rss_kib": 204628
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 5569,
+          "closures": 831,
+          "reused_states": 0,
+          "pending": 5848,
+          "exhausted": false,
+          "states": 7607,
+          "terminals": 2025,
+          "capped": false,
+          "best_representative": 5,
+          "witnesses": 616,
+          "compute_cpu": 6.600635910999973,
+          "compute_wall": 6.607598243281245,
+          "checkpoint_cpu": 0.20851855699999966,
+          "scoring_cpu": 0.006232291999999973,
+          "max_rss_kib": 366268
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 183,
+          "edges_checked": 8986,
+          "valid": true,
+          "validation_seconds": 0.023708568885922432
+        },
+        {
+          "label": "work_00400",
+          "states": 537,
+          "edges_checked": 12990,
+          "valid": true,
+          "validation_seconds": 0.04512336105108261
+        },
+        {
+          "label": "work_01600",
+          "states": 1920,
+          "edges_checked": 25106,
+          "valid": true,
+          "validation_seconds": 0.11659669317305088
+        },
+        {
+          "label": "work_06400",
+          "states": 7607,
+          "edges_checked": 76668,
+          "valid": true,
+          "validation_seconds": 0.5286247991025448
+        }
+      ],
+      "family_diagnostic": {
+        "best": 5,
+        "paths": 89,
+        "seconds": 14.900685956701636,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "fair",
+      "slot": 1,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_fair_20260910_fKvIsb/results/1",
+      "index": 76,
+      "direction": "P_to_R",
+      "policy": "fair_depth",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 91,
+          "closures": 9,
+          "reused_states": 0,
+          "pending": 296,
+          "exhausted": false,
+          "states": 202,
+          "terminals": 14,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 12,
+          "compute_cpu": 0.2533998620000012,
+          "compute_wall": 0.2535312231630087,
+          "checkpoint_cpu": 0.010972179999999998,
+          "scoring_cpu": 0.00047624499999998626,
+          "max_rss_kib": 132984
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 390,
+          "closures": 10,
+          "reused_states": 0,
+          "pending": 423,
+          "exhausted": false,
+          "states": 611,
+          "terminals": 147,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 110,
+          "compute_cpu": 0.6532547870000015,
+          "compute_wall": 0.6537238974124193,
+          "checkpoint_cpu": 0.02025418000000001,
+          "scoring_cpu": 0.00124160299999998,
+          "max_rss_kib": 145376
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1587,
+          "closures": 13,
+          "reused_states": 0,
+          "pending": 704,
+          "exhausted": false,
+          "states": 2346,
+          "terminals": 696,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 524,
+          "compute_cpu": 2.0709563729999987,
+          "compute_wall": 2.072873752564192,
+          "checkpoint_cpu": 0.05576270699999997,
+          "scoring_cpu": 0.005202697000000089,
+          "max_rss_kib": 181484
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 6363,
+          "closures": 37,
+          "reused_states": 0,
+          "pending": 1409,
+          "exhausted": false,
+          "states": 9374,
+          "terminals": 2955,
+          "capped": false,
+          "best_representative": 21,
+          "witnesses": 2337,
+          "compute_cpu": 6.5576160329999995,
+          "compute_wall": 6.564015636220574,
+          "checkpoint_cpu": 0.20944803799999967,
+          "scoring_cpu": 0.021547220000000422,
+          "max_rss_kib": 325040
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 202,
+          "edges_checked": 1517,
+          "valid": true,
+          "validation_seconds": 0.015988962724804878
+        },
+        {
+          "label": "work_00400",
+          "states": 611,
+          "edges_checked": 3225,
+          "valid": true,
+          "validation_seconds": 0.034014830365777016
+        },
+        {
+          "label": "work_01600",
+          "states": 2346,
+          "edges_checked": 7646,
+          "valid": true,
+          "validation_seconds": 0.11750968918204308
+        },
+        {
+          "label": "work_06400",
+          "states": 9374,
+          "edges_checked": 17947,
+          "valid": true,
+          "validation_seconds": 0.5366075206547976
+        }
+      ],
+      "family_diagnostic": {
+        "best": 21,
+        "paths": 101,
+        "seconds": 14.964129846543074,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "fair",
+      "slot": 2,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_fair_20260910_fKvIsb/results/2",
+      "index": 77,
+      "direction": "P_to_R",
+      "policy": "fair_depth",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 83,
+          "closures": 17,
+          "reused_states": 0,
+          "pending": 250,
+          "exhausted": false,
+          "states": 133,
+          "terminals": 36,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 19,
+          "compute_cpu": 0.14421543400000114,
+          "compute_wall": 0.1442885771393776,
+          "checkpoint_cpu": 0.008245325000000081,
+          "scoring_cpu": 0.0004807090000000791,
+          "max_rss_kib": 129588
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 331,
+          "closures": 69,
+          "reused_states": 2,
+          "pending": 345,
+          "exhausted": false,
+          "states": 530,
+          "terminals": 179,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 79,
+          "compute_cpu": 0.43381280800000155,
+          "compute_wall": 0.43415189161896706,
+          "checkpoint_cpu": 0.01925409999999994,
+          "scoring_cpu": 0.0007995119999999467,
+          "max_rss_kib": 140164
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1320,
+          "closures": 280,
+          "reused_states": 35,
+          "pending": 617,
+          "exhausted": false,
+          "states": 2038,
+          "terminals": 660,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 291,
+          "compute_cpu": 1.4044593800000031,
+          "compute_wall": 1.4060055520385504,
+          "checkpoint_cpu": 0.05201226700000028,
+          "scoring_cpu": 0.0022661839999997824,
+          "max_rss_kib": 174444
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 5490,
+          "closures": 910,
+          "reused_states": 185,
+          "pending": 1260,
+          "exhausted": false,
+          "states": 8213,
+          "terminals": 2507,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 1285,
+          "compute_cpu": 4.9125728020000015,
+          "compute_wall": 4.918118705973029,
+          "checkpoint_cpu": 0.1775564670000005,
+          "scoring_cpu": 0.008514211000000493,
+          "max_rss_kib": 293672
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 133,
+          "edges_checked": 919,
+          "valid": true,
+          "validation_seconds": 0.01079174131155014
+        },
+        {
+          "label": "work_00400",
+          "states": 530,
+          "edges_checked": 2002,
+          "valid": true,
+          "validation_seconds": 0.02706103026866913
+        },
+        {
+          "label": "work_01600",
+          "states": 2038,
+          "edges_checked": 4960,
+          "valid": true,
+          "validation_seconds": 0.09639438055455685
+        },
+        {
+          "label": "work_06400",
+          "states": 8213,
+          "edges_checked": 11446,
+          "valid": true,
+          "validation_seconds": 0.4552785065025091
+        }
+      ],
+      "family_diagnostic": {
+        "best": 11,
+        "paths": 101,
+        "seconds": 15.05181597173214,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      }
+    },
+    {
+      "run": "fair",
+      "slot": 3,
+      "path": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_fragment_fair_20260910_fKvIsb/results/3",
+      "index": 114,
+      "direction": "R_to_P",
+      "policy": "fair_depth",
+      "rows": [
+        {
+          "label": "work_00100",
+          "work": 100,
+          "growth": 71,
+          "closures": 29,
+          "reused_states": 4,
+          "pending": 29,
+          "exhausted": false,
+          "states": 110,
+          "terminals": 30,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 5,
+          "compute_cpu": 0.02583159000000035,
+          "compute_wall": 0.025873033329844475,
+          "checkpoint_cpu": 0.002678037000000022,
+          "scoring_cpu": 0.00024007999999997587,
+          "max_rss_kib": 121312
+        },
+        {
+          "label": "work_00400",
+          "work": 400,
+          "growth": 305,
+          "closures": 95,
+          "reused_states": 14,
+          "pending": 95,
+          "exhausted": false,
+          "states": 444,
+          "terminals": 122,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 13,
+          "compute_cpu": 0.09675453900000053,
+          "compute_wall": 0.09691617265343666,
+          "checkpoint_cpu": 0.008564808000000035,
+          "scoring_cpu": 0.00020711399999995272,
+          "max_rss_kib": 126028
+        },
+        {
+          "label": "work_01600",
+          "work": 1600,
+          "growth": 1224,
+          "closures": 376,
+          "reused_states": 106,
+          "pending": 400,
+          "exhausted": false,
+          "states": 1797,
+          "terminals": 441,
+          "capped": false,
+          "best_representative": 11,
+          "witnesses": 74,
+          "compute_cpu": 0.6609348319999961,
+          "compute_wall": 0.6620730143040419,
+          "checkpoint_cpu": 0.029238725000000132,
+          "scoring_cpu": 0.00030781000000001946,
+          "max_rss_kib": 140920
+        },
+        {
+          "label": "work_06400",
+          "work": 6400,
+          "growth": 4805,
+          "closures": 1595,
+          "reused_states": 622,
+          "pending": 2108,
+          "exhausted": false,
+          "states": 7269,
+          "terminals": 1816,
+          "capped": false,
+          "best_representative": 4,
+          "witnesses": 511,
+          "compute_cpu": 2.6226940929999936,
+          "compute_wall": 2.6270326916128397,
+          "checkpoint_cpu": 0.12388365400000012,
+          "scoring_cpu": 0.0010908140000003286,
+          "max_rss_kib": 208268
+        }
+      ],
+      "host": "bosque6",
+      "scope": "Search+setup+symmetry CPU/wall exclude persistence/evaluation. Scores are representatives, not family minima.",
+      "validation": [
+        {
+          "label": "work_00100",
+          "states": 110,
+          "edges_checked": 474,
+          "valid": true,
+          "validation_seconds": 0.004951059818267822
+        },
+        {
+          "label": "work_00400",
+          "states": 444,
+          "edges_checked": 1917,
+          "valid": true,
+          "validation_seconds": 0.010892899706959724
+        },
+        {
+          "label": "work_01600",
+          "states": 1797,
+          "edges_checked": 4088,
+          "valid": true,
+          "validation_seconds": 0.0440230667591095
+        },
+        {
+          "label": "work_06400",
+          "states": 7269,
+          "edges_checked": 11280,
+          "valid": true,
+          "validation_seconds": 0.30581734143197536
+        }
+      ],
+      "family_diagnostic": {
+        "best": 4,
+        "paths": 167,
+        "seconds": 14.993806511163712,
+        "scope": "Budgeted diagnostic: one conditional path per selected terminal representative; not exhaustive family traversal or a proof of global optimality. All correlations retained inside each tested path."
+      },
+      "historical_114_patterns": {
+        "representative_ordinals": {
+          "1": 468,
+          "2": 432
+        },
+        "scope": "Exact source-index event signatures in saved representatives, not chemical ground truth or exhaustive family exclusion."
+      }
+    }
+  ],
+  "tests": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "483",
+      "time": "97.167",
+      "timestamp": "2026-09-09T22:16:49.734559-04:00",
+      "hostname": "bosque6"
+    }
+  ],
+  "default_regression": {
+    "rows": [
+      {
+        "index": 25,
+        "baseline_median_cpu": 0.380563701,
+        "current_median_cpu": 0.377377697,
+        "ratio": 0.9916281978769175,
+        "exact_graph_equality": true
+      },
+      {
+        "index": 76,
+        "baseline_median_cpu": 0.283494441,
+        "current_median_cpu": 0.28459109400000004,
+        "ratio": 1.0038683404024844,
+        "exact_graph_equality": true
+      },
+      {
+        "index": 77,
+        "baseline_median_cpu": 0.0833908830000003,
+        "current_median_cpu": 0.08474658299999982,
+        "ratio": 1.0162571728614447,
+        "exact_graph_equality": true
+      },
+      {
+        "index": 114,
+        "baseline_median_cpu": 0.004328942000000335,
+        "current_median_cpu": 0.004394948000000065,
+        "ratio": 1.0152476055349609,
+        "exact_graph_equality": true
+      }
+    ],
+    "scope": "Three fresh-cache trials per case/engine, one pinned CPU; setup+uncut search+symmetry. Imports, input loading, digest and persistence excluded. Small smoke test, not a full-benchmark performance claim."
+  },
+  "saved_full_sweep_representative_best": {
+    "25": 5,
+    "76": 3,
+    "77": 8,
+    "114": 4
+  },
+  "scope": "Small fixed-direction pilot. Search times exclude persistence and diagnostic scoring. No proof of optimality, exhaustive coverage or production speedup."
+}

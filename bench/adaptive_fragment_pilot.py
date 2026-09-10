@@ -30,11 +30,12 @@ def prepare(args):
         hashes[i]=hashlib.sha256(path.read_bytes()).hexdigest()
     tasks=[dict(index=i,direction=d,policy=p) for i,d in
         ((25,'R_to_P'),(76,'P_to_R'),(77,'P_to_R'),(114,'R_to_P'))
-        for p in ('largest_first','smallest_first')]
+        for p in args.policies]
     save(args.run/'tasks.json',tasks)
     save(args.run/'manifest.json',dict(parent_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         source=str(source),input_sha256=hashes,branch_cap=100,seeds=1,iso_tolerance=1.,explicit_H=True,
-        root_seed=42,work_budgets=[100,400,1600],soft_search_seconds=30.,policy='No event-score pruning',
+        root_seed=42,work_budgets=args.work_budgets,soft_search_seconds=args.search_seconds,policy='No event-score pruning',
+        watchdog=dict(worker_seconds=300,kill_after_seconds=5,slurm_minutes=10,requeue=False),
         native_sha256=hashlib.sha256(next((args.run/'engine/src/rxn_core').glob('_engine*.so')).read_bytes()).hexdigest()))
 
 
@@ -44,7 +45,7 @@ def submit(args):
         f'PYTHONPATH={args.run}/engine/src:{args.run}/engine/bench','timeout','--kill-after=5s','300',
         sys.executable,str(args.run/'engine/bench/adaptive_fragment_pilot.py'),'worker','--run',str(args.run),'--slot']
     options=['sbatch','--parsable','--partition=cpunodes','--nodelist=bosque6','--nodes=1','--cpus-per-task=1',
-        '--mem=8G','--time=00:10:00',f'--array=0-{n-1}', '--job-name=adaptive_closure',
+        '--mem=8G','--time=00:10:00','--no-requeue',f'--array=0-{n-1}', '--job-name=adaptive_closure',
         f'--output={args.run}/status/%A_%a.out','--wrap',shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
     job=subprocess.check_output(options,text=True).strip();save(args.run/'submission.json',dict(job=job,command=options));print(job)
 
@@ -101,4 +102,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('command',choices=('prepare','submit','worker'))
     p.add_argument('--run',type=Path,required=True);p.add_argument('--slot',type=int)
+    p.add_argument('--work-budgets',type=int,nargs='+',default=[100,400,1600])
+    p.add_argument('--search-seconds',type=float,default=30.)
+    p.add_argument('--policies',nargs='+',default=['largest_first','smallest_first'],
+                   choices=['largest_first','smallest_first','event_guided','fair_depth'])
     args=p.parse_args();globals()[args.command](args)

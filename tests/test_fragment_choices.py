@@ -82,3 +82,41 @@ def test_partial_composition_and_visible_growth_caps():
     for path in itertools.islice(result.aam.graph.paths(),100):
         assert len(path.mapping)<=5 and len(path.mapping)==len(set(path.mapping.values()))
     assert result.aam.graph.capped or result.pending or result.aam.graph.terminals
+
+
+def test_event_feedback_only_reorders_pending_choices():
+    session=AdaptiveFragmentSearch(problem(),policy='event_guided')
+    session.advance()
+    assert session.best_score==0
+    before={serial for _,serial,_ in session.agenda}
+    session.best_score=None
+    session._feedback({i:i for i in range(7)})
+    assert {serial for _,serial,_ in session.agenda}==before
+    for _ in range(30):session.advance()
+    assert session.snapshot().aam.graph.terminals
+
+
+def test_fair_agenda_does_not_starve_deeper_choices():
+    from rxn_core.adaptive_search import _ChoiceAgenda
+    agenda=_ChoiceAgenda(fair=True)
+    for i in range(100):agenda.push((1,0,i),i)
+    assert agenda.pop()[2]==0
+    agenda.push((2,1,0),'deeper')
+    assert agenda.pop()[2]=='deeper'
+    assert len(agenda)==99
+
+
+def test_fair_search_can_revise_more_than_one_fragment():
+    session=AdaptiveFragmentSearch(problem(),policy='fair_depth')
+    for _ in range(150):session.advance()
+    assert session.agenda.served[2]>0
+    g=session.snapshot().aam.graph
+    assert nx.is_directed_acyclic_graph(nx.DiGraph((e.source,e.target) for e in g.transitions))
+
+
+def test_experimental_unsupported_context_is_explicit():
+    with pytest.raises(ValueError, match='anchored growth'):
+        AdaptiveFragmentSearch(problem(), AAMSearchConfig(seed_count=1, anchors=((0,0),)))
+    with pytest.raises(ValueError, match='external growth replay'):
+        FragmentChoices(graph(3,[(0,1),(1,2)]), graph(3,[(0,1),(1,2)]), seed=0,
+                        context=FragmentMatchContext(growth_replay=object()))
