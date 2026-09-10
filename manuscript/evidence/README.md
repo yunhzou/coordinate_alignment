@@ -57,3 +57,11 @@ techniques. It is a targeted assessment, not proof of historical priority.
 [The source manifest](novelty-source-manifest.json) pins inspected code and records
 availability limits. This assessment adds no new benchmark results; its proposed
 component ablations remain future work.
+
+The follow-up [mechanism comparison](mechanism-comparison-20260910.md) makes the
+comparison at the level of state and transition rules. It inspects the frozen
+native loop as well as Python, distinguishes aggregate fragment commitment from
+atom-pair and fragment-shape branching, and compares the actual deduplication
+keys. OpenChemLib's concrete growth routine and FMCS are additional close
+comparators. Newly cached source hashes are in
+[mechanism-source-manifest.json](mechanism-source-manifest.json).

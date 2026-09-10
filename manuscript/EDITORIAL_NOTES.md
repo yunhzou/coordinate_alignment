@@ -41,6 +41,14 @@ animations. Resolve the following before treating it as a submission manuscript.
    ablation of single-edge constraint relaxation; the sweep unions individual
    cuts and does not establish that one fixed cut is sufficient.
 6. Revise related work using the [10 September novelty audit](evidence/novelty-audit-20260910.md).
+   For the specific algorithmic argument, use the follow-up
+   [mechanism comparison](evidence/mechanism-comparison-20260910.md): aggregate
+   accept/defer growth, saturation-level whole-mapping branches, whole-island
+   absorption, and contextual continuation equality. Compare OpenChemLib's
+   immediate neighbor-pair commitment and FMCS's fragment-shape enumeration.
+   Incremental embedding reuse alone can reproduce a fresh subgraph search under
+   ideal completeness assumptions; distinguish representation efficiency from
+   the search policy's substantive decisions.
    The initial five scientific references are insufficient for a novelty argument.
    Add the closest comparisons: SMSD/McSplit, Jaworski's neighborhood expansion
    and cut search, Mann's constraint-based mapping, Ali's symmetry-distinct

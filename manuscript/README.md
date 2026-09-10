@@ -32,6 +32,7 @@ template assets, figure sources/data, figures, animations, and build scripts.
 | Supporting information | [includes/supplement.tex](includes/supplement.tex) |
 | Verified initial bibliography | [references.bib](references.bib) |
 | Algorithm novelty assessment and closest prior work | [evidence/novelty-audit-20260910.md](evidence/novelty-audit-20260910.md) |
+| Specific transition rules and implementation comparisons | [evidence/mechanism-comparison-20260910.md](evidence/mechanism-comparison-20260910.md) |
 | Items to resolve before submission | [EDITORIAL_NOTES.md](EDITORIAL_NOTES.md) |
 | Data provenance and figure-to-report mapping | [evidence/README.md](evidence/README.md) |
 | Source paths and SHA-256 hashes | [evidence/sources.json](evidence/sources.json) |

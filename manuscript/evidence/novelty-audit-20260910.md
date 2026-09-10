@@ -5,6 +5,12 @@ draft; naming is still provisional. This assessment concerns the frozen benchmar
 source `98b01b175eeed31f70d13e7cbf178b80bf07c9e0`, rather than subsequent development
 changes. No benchmarks were rerun.
 
+The subsequent [mechanism comparison](mechanism-comparison-20260910.md) addresses
+the specific state transitions and equivalence relations, including closer
+OpenChemLib/FMCS comparisons and direct inspection of the native growth loop.
+Use that comparison when framing the algorithmic contribution; this initial
+audit also documents broader background precedents.
+
 **Assessment.** The implementation expresses a specific, custom search design.
 This review did not identify an earlier publication or inspected implementation
 with the same complete combination of shared-fragment growth, compressed live

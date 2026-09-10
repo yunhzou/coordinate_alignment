@@ -1,0 +1,63 @@
+{
+  "date": "2026-09-10",
+  "baseline_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+  "scope": "Additional cached primary source for mechanism comparison; selected growth, support and root-pair operations inspected. ReactionCenterMapper was downloaded as context; its internal completion algorithm was not audited. No competitor runs or full native/Python parity tests were performed.",
+  "cached_files": [
+    {
+      "file": "own/native/src/engine.cpp",
+      "revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "source_path": "native/src/engine.cpp",
+      "sha256": "ffcfe970abd7792891d57f839409f6f2ee3467537c3f3cd003eb34fb5c74e971"
+    },
+    {
+      "file": "own/src/rxn_core/matcher/support.py",
+      "revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "source_path": "src/rxn_core/matcher/support.py",
+      "sha256": "48bdec614c3da44bd32fa14e08bdf637206a2570a82e5744341f17c1d0c50106"
+    },
+    {
+      "file": "own/src/rxn_core/growth/frontier.py",
+      "revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "source_path": "src/rxn_core/growth/frontier.py",
+      "sha256": "3d0788338e6a861163dcfb12763e5ae714438da4f53518afb5a0dd09abbe86c7"
+    },
+    {
+      "file": "ocl/SimilarityGraphBasedReactionMapper.java",
+      "url": "https://raw.githubusercontent.com/Actelion/openchemlib/0754c781c23f7570b13866e202836b5449282ad6/src/main/java/com/actelion/research/chem/reaction/mapping/SimilarityGraphBasedReactionMapper.java",
+      "revision": "0754c781c23f7570b13866e202836b5449282ad6",
+      "sha256": "39e933cf1fc2f25cb7a6a2ab1f86c62459b7366d18121ad8f4f5afbf0bd77109"
+    },
+    {
+      "file": "ocl/RootAtomPairSource.java",
+      "url": "https://raw.githubusercontent.com/Actelion/openchemlib/0754c781c23f7570b13866e202836b5449282ad6/src/main/java/com/actelion/research/chem/reaction/mapping/RootAtomPairSource.java",
+      "revision": "0754c781c23f7570b13866e202836b5449282ad6",
+      "sha256": "0160906608d5e3b1c68746db36940e7b68f8353646e0e9d6d5dc822fe7b9bae4"
+    },
+    {
+      "file": "ocl/ReactionCenterMapper.java",
+      "url": "https://raw.githubusercontent.com/Actelion/openchemlib/0754c781c23f7570b13866e202836b5449282ad6/src/main/java/com/actelion/research/chem/reaction/mapping/ReactionCenterMapper.java",
+      "revision": "0754c781c23f7570b13866e202836b5449282ad6",
+      "sha256": "4ed1a3514452893e302117f03716c03e1bdcfaf2fea1a1a7d2d84dcadd7e0d34"
+    }
+  ],
+  "related_manifest": "novelty-source-manifest.json",
+  "primary_algorithm_descriptions": [
+    {
+      "name": "FMCS Python algorithm documentation",
+      "url": "https://www.rdkit.org/docs/source/rdkit.Chem.fmcs.fmcs.html"
+    },
+    {
+      "name": "McSplit Algorithm 1",
+      "url": "https://www.ijcai.org/proceedings/2017/0099.pdf"
+    },
+    {
+      "name": "Jaworski 2019 main-article algorithm description",
+      "url": "https://www.nature.com/articles/s41467-019-09440-2",
+      "limit": "Supplementary algorithm PDF was unavailable in the preceding audit."
+    },
+    {
+      "name": "gSpan Subprocedure 1",
+      "url": "https://sites.cs.ucsb.edu/~xyan/papers/gSpan-short.pdf"
+    }
+  ]
+}
