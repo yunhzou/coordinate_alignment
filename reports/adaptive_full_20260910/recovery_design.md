@@ -110,3 +110,16 @@ skip these provably empty decisions, including synchronized steps where every
 live branch is in that situation. Retain the frontier and its cap admission
 semantics. This is a necessary condition on the current state, not a chemical
 filter, approximate coverage rule, changed seed selection, or reduced budget.
+
+## Fresh confirmation: finalization lifetime
+
+In the equal-core `shared_capacity_full_20260910` run, Golden 852 P-to-R
+saved all 95 raw and all 95 finalized cuts, and completed parent graph merging
+in 18.015 CPU seconds, before the 300-second watchdog interrupted collection.
+No cut search is missing. Parent symmetry processing still has cyclic GC
+enabled while creating temporary ancestor lists and interned records over the
+large retained acyclic DAG. Apply the same scoped GC suspension already used
+for graph merging and checkpoint decoding; restore the caller's state even on
+exceptions. This must not change selected edges, group records or search order.
+Validate identical output with GC initially enabled and disabled. Continue from
+the saved cuts, and retain fresh versus continuation timing separately.
