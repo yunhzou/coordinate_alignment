@@ -14,7 +14,7 @@ from .alignment.branch import _Branch, _generate_seed_orders
 from .domain import AAMResult, AAMSearchMetrics
 from .fragment import match_fragment, FragmentMatchConfig, FragmentMatchContext
 from .matcher import _nauty_orbits
-from .search_graph import SearchContext, SearchGraphBuilder, FragmentTransition, SearchStop, frozen_value
+from .search_graph import SearchContext, SearchGraphBuilder, FragmentTransition, SearchStop
 from .search_symmetry import finalize_graph_symmetry
 
 
@@ -23,7 +23,7 @@ class _SharedGraphBuilder(SearchGraphBuilder):
     def __init__(self, context):
         super().__init__(context)
         self.nodes = {}
-        self.edges = set()
+        self.edges = {}
         self.stop_keys = set()
 
     def state(self, branch):
@@ -34,9 +34,13 @@ class _SharedGraphBuilder(SearchGraphBuilder):
 
     def commit(self, parent, branch, match, preserved_bonds):
         node = self.state(branch)
-        key = (parent, node, frozen_value(match), tuple(preserved_bonds))
-        if key not in self.edges:
-            self.edges.add(key)
+        # Index by endpoints, then compare complete records exactly. Recursively
+        # freezing every record duplicated the largest payloads just for hashing.
+        # The DAG already owns them; no approximate digest or dropped field is needed.
+        siblings = self.edges.setdefault((parent, node), [])
+        if not any(self.transitions[i].match == match and
+                   self.transitions[i].preserved_bonds == preserved_bonds for i in siblings):
+            siblings.append(len(self.transitions))
             self.transitions.append(FragmentTransition(len(self.transitions), parent,
                 node, self.seed, self.step, match, preserved_bonds))
         return node
@@ -56,10 +60,11 @@ edges and the cut condition, not the history or which policy reached it.
 Policy cursors/frontier admission remain separate: their cap decisions are
 unchanged. Identical growth output is never expanded into bijections.
 """
-    def __init__(self, problem, config, *, condition):
+    def __init__(self, problem, config, *, condition, profile=None):
         if config.anchors:
             raise ValueError('Shared policy search currently accepts unanchored AAM only')
         self.problem, self.config, self.condition = problem, config, condition
+        self.profile = profile
         self.source, self.target = condition.source, condition.target
         self.source_orbits = _nauty_orbits(self.source, wbo_tol=config.iso_tolerance)
         self.orders = _generate_seed_orders(self.source, config.seed_count,
@@ -72,6 +77,7 @@ unchanged. Identical growth output is never expanded into bijections.
         self.branches = {self.root.state_key():self.root}
         self.decisions = {}
         self.work = self.growth_calls = self.reused_states = 0
+        self.max_live_branches = 0
         self.elapsed = 0.
         self.frontiers = {}
         self.agenda = deque()
@@ -92,7 +98,8 @@ unchanged. Identical growth output is never expanded into bijections.
                 tuple(branch.deferred_edges), self.source_orbits, self.condition.orbits,
                 growth_replay=self.condition.growth_replay),
             config=FragmentMatchConfig(graph_floor=self.config.graph_floor,
-                iso_tolerance=self.config.iso_tolerance, branch_limit=self.config.branch_limit))
+                iso_tolerance=self.config.iso_tolerance, branch_limit=self.config.branch_limit),
+            profile=self.profile)
         if result.capped:
             self.builder.stop(branch, 'capped', stage='fragment_growth',
                               count=result.branch_count, limit=result.branch_limit)
@@ -141,6 +148,7 @@ unchanged. Identical growth output is never expanded into bijections.
                     seen.update(local)
                     progressed |= bool(additions) and changed
                 branches = sorted(admitted, key=lambda branch:-len(branch.mapping))
+                self.max_live_branches = max(self.max_live_branches, len(branches))
         for branch in branches:
             self.builder.stop(branch, 'objective_met' if len(branch.mapping)==len(self.source) else 'stalled')
         self.frontiers.pop(index, None)

@@ -143,10 +143,11 @@ def prepare_revision(args):
             for p in (args.run/'engine').rglob('*') if p.is_file()},
         baseline_reuse='Original artifacts and their original recorded timings; no mapper rerun or retiming.',
         batch_workers=args.batch_workers, batch_tasks=args.batch_tasks)
-    if args.adaptive_policy == 'shared_policies':
+    if args.adaptive_policy in ('shared_policies', 'shared_cut_workers'):
         manifest['adaptive_config'] = dict(previous['original_config'])
         manifest['branch_cap_scope'] = dict(original='Native growth and synchronized live frontier',
             adaptive='Identical per-policy native growth and synchronized live frontier')
+    manifest['adaptive_workers'] = args.adaptive_workers
     save(args.run/'manifest.json', manifest)
     (args.run/'status').mkdir()
     print(json.dumps(dict(run=str(args.run), candidate_calls=len(tasks), original_artifacts=str(reference))), flush=True)
@@ -182,10 +183,12 @@ def search(args):
     folder.mkdir(parents=True, exist_ok=False)
     save(folder/'environment.json', environment())
     rows = []
-    if args.method == 'original':
+    if args.method == 'original' or manifest.get('adaptive_policy') == 'shared_cut_workers':
+        workers = manifest['original_workers'] if args.method=='original' else manifest['adaptive_workers']
+        execution = manifest['original_execution'] if args.method=='original' else 'shared_policies'
         with SearchProfiler(folder/'timing_events') as profiler:
-            result = search_aam(plan.problem, plan.config, workers=manifest['original_workers'],
-                execution=manifest['original_execution'], intermediate_dir=folder/'cuts', archive_format='checkpoint')
+            result = search_aam(plan.problem, plan.config, workers=workers,
+                execution=execution, intermediate_dir=folder/'cuts', archive_format='checkpoint')
         rows.append(dict(label='full_sweep', archive='cuts/aam.pkl.gz', **profiler.summary(),
                          metrics=asdict(result.metrics), states=len(result.graph.states),
                          terminals=len(result.graph.terminals), capped=result.graph.capped))
@@ -326,10 +329,11 @@ def batch_worker(args):
     manifest = read(args.run/'manifest.json')
     cores = sorted(os.sched_getaffinity(0))
     count = manifest['batch_workers']
-    assert len(cores) >= count
+    inner = manifest.get('adaptive_workers', 1)
+    assert len(cores) >= count*inner
     available = SimpleQueue()
-    for core in cores[:count]:
-        available.put(core)
+    for index in range(count):
+        available.put(','.join(map(str,cores[index*inner:(index+1)*inner])))
     start = args.slot*manifest['batch_tasks']
     end = min(start+manifest['batch_tasks'], len(read(args.run/'tasks.json')))
     def run_one(slot):
@@ -357,12 +361,13 @@ def submit_batches(args):
     tasks = len(read(args.run/'tasks.json'))
     batches = (tasks+manifest['batch_tasks']-1)//manifest['batch_tasks']
     workers = manifest['batch_workers']
+    cpus = workers*manifest.get('adaptive_workers',1)
     command = [sys.executable, str(args.run/'engine/bench/adaptive_full_benchmark.py'),
                'batch_worker', '--run', str(args.run), '--slot']
     options = ['sbatch', '--parsable', '--partition='+args.partition,
-        '--nodes=1', f'--cpus-per-task={workers}', f'--mem={4*workers}G',
+        '--nodes=1', f'--cpus-per-task={cpus}', f'--mem={4*cpus}G',
         '--time=01:00:00', '--no-requeue',
-        f'--array=0-{batches-1}%{max(1,args.cpu_budget//workers)}',
+        f'--array=0-{batches-1}%{max(1,args.cpu_budget//cpus)}',
         '--job-name=adaptive_cut_batch', f'--output={args.run}/status/%A_%a.out',
         '--wrap', shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
     if args.exclude:
@@ -630,7 +635,8 @@ if __name__ == '__main__':
     parser.add_argument('--method', choices=('original', 'adaptive'))
     parser.add_argument('--monitor-seconds', type=int, default=7200)
     parser.add_argument('--reference-run', type=Path)
-    parser.add_argument('--adaptive-policy', choices=('seed_frontier','cut_interleaved','shared_policies'), default='cut_interleaved')
+    parser.add_argument('--adaptive-policy', choices=('seed_frontier','cut_interleaved','shared_policies','shared_cut_workers'), default='cut_interleaved')
+    parser.add_argument('--adaptive-workers', type=int, default=1)
     parser.add_argument('--batch-workers', type=int, default=16)
     parser.add_argument('--batch-tasks', type=int, default=64)
     parser.add_argument('--report-workers', type=int, default=16)

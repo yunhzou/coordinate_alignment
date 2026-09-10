@@ -79,3 +79,23 @@ def test_shared_growth_cache_and_saved_snapshot_preserve_groups():
             pass
         assert plain.snapshot().aam.graph == child.snapshot().aam.graph
     assert sum(c.reused_states for c in outer.sessions.values()) > 0
+
+
+@pytest.mark.parametrize('workers', [1, 2])
+def test_cut_worker_backend_preserves_full_fragment_content_and_checkpoint_identity(tmp_path, workers):
+    from rxn_core import search_aam
+    from test_fragment_choices import problem
+    config = AAMSearchConfig(seed_count=3, iso_tolerance=1., branch_limit=100)
+    original = search_aam(problem(6), config, workers=workers, execution='reused_native')
+    directory = tmp_path/'cuts'
+    shared = search_aam(problem(6), config, workers=workers, execution='shared_policies',
+                        intermediate_dir=directory, archive_format='checkpoint')
+    # Conditioned symmetry is finalized too: compare complete records, not only scores.
+    assert contents(shared.graph) == contents(original.graph)
+    assert len(list(directory.glob('*.raw.pkl.gz'))) == shared.metrics.cut_count
+    resumed = search_aam(problem(6), config, workers=workers, execution='shared_policies',
+                         intermediate_dir=directory, archive_format='checkpoint', resume=True)
+    assert resumed.graph == shared.graph
+    with pytest.raises(ValueError, match='configuration differs'):
+        search_aam(problem(6), config, workers=workers, execution='reused_native',
+                   intermediate_dir=directory, archive_format='checkpoint', resume=True)

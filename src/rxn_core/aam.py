@@ -21,6 +21,7 @@ from .search_symmetry import finalize_graph_symmetry
 _SEARCH_CONTEXT = None
 _SEARCH_REPAIR = None
 _FINALIZATION_WORKSPACE = None
+_SEARCH_EXECUTION = 'reference'
 
 
 class _GrowthCounts:
@@ -57,14 +58,15 @@ def checkpoint_manifest(problem, config):
 
 
 def _initialize_search(problem, config, execution='reference'):
-    global _SEARCH_CONTEXT, _SEARCH_REPAIR, _FINALIZATION_WORKSPACE
+    global _SEARCH_CONTEXT, _SEARCH_REPAIR, _FINALIZATION_WORKSPACE, _SEARCH_EXECUTION
+    _SEARCH_EXECUTION = execution
     target = build_graph(problem.product.elements, problem.product.wbo,
                          bond_cut=config.graph_floor)
     _SEARCH_CONTEXT = (problem, config, target,
                        _nauty_orbits(target, wbo_tol=config.iso_tolerance))
     _SEARCH_REPAIR = None
     _FINALIZATION_WORKSPACE = None
-    if execution == 'reused_native':
+    if execution in ('reused_native', 'shared_policies'):
         from .cut_replay import FragmentRepair
         source = build_graph(problem.reactant.elements, problem.reactant.wbo,
                              bond_cut=config.graph_floor)
@@ -85,6 +87,26 @@ def _search_cut(cut):
         from .native_search import find_islands_native
         source = view.source
         matcher = find_islands_native
+    if _SEARCH_EXECUTION == 'shared_policies':
+        from .adaptive_search import AdaptiveSearchCondition
+        from .shared_seed_search import SharedSeedSearch
+        condition = AdaptiveSearchCondition(source, target, (), target_orbits, None, cut, view)
+        gc_enabled = gc.isenabled()
+        try:
+            # These DAG/cache records are acyclic; avoid repeatedly scanning
+            # the growing cut heap. Restore the caller's setting at the boundary.
+            gc.disable()
+            profile = _GrowthCounts()
+            session = SharedSeedSearch(problem, config, condition=condition, profile=profile)
+            while session.advance():
+                pass
+            graph = session.builder.finish()
+            return graph, {'search_seconds':time.perf_counter()-started,
+                'max_live_branches':session.max_live_branches,
+                'max_growth_candidates':profile.maximum}
+        finally:
+            if gc_enabled:
+                gc.enable()
     source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
     graphs, profile = [], _GrowthCounts()
     for order in _generate_seed_orders(source, n_trials=config.seed_count,
@@ -123,7 +145,7 @@ def _initialize_finalization(problem,config,execution='reference'):
     # Workers own acyclic archive data. Do not scan/copy a fork-inherited heap.
     gc.disable()
     _initialize_search(problem,config)
-    if execution == 'reused_native':
+    if execution in ('reused_native', 'shared_policies'):
         from .conditioned_symmetry import ConditionedSymmetryWorkspace
         _FINALIZATION_WORKSPACE = ConditionedSymmetryWorkspace(_SEARCH_CONTEXT[2], config.iso_tolerance)
 
@@ -164,12 +186,18 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     dependency-validated fragment reuse and conditioned symmetry workspace. It
     preserves the seed/cut policy and output graph; it requires the native engine
     and never switches to a different search implementation on failure.
+
+    execution='shared_policies' preserves those same seed orders and frontier
+    admissions while sharing equal conditional decisions and fragment DAG
+    records across policies within each cut. Independent cuts use the same
+    producer-side checkpoint/worker pipeline; completed runtime caches are
+    released at each cut boundary. The native fragment-growth kernel is unchanged.
     """
     if not isinstance(problem, AAMProblem):
         raise TypeError('search_aam requires an AAMProblem')
-    if execution not in ('reference', 'reused_native'):
+    if execution not in ('reference', 'reused_native', 'shared_policies'):
         raise ValueError('unknown AAM execution backend')
-    if execution == 'reused_native':
+    if execution in ('reused_native', 'shared_policies'):
         from .growth.native import available
         if not available():
             raise ValueError('reused_native execution requires the built native engine')
@@ -187,6 +215,8 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
         directory.mkdir(parents=True, exist_ok=True)
         manifest_path = directory / 'manifest.json'
         identity = checkpoint_manifest(problem,config)
+        if execution == 'shared_policies':
+            identity['execution'] = execution
         if resume:
             if json.loads(manifest_path.read_text()) != identity:
                 raise ValueError('Checkpoint input or configuration differs from this search')
@@ -256,10 +286,11 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
             if gc_enabled:gc.enable()
         del tuple_pool
     metrics['checkpoint_restore_and_finalize_seconds']=time.perf_counter()-restore_started
-    for graph in graphs:
-        metrics['max_live_branches']=max(metrics['max_live_branches'],
-            max((sum(graph.states[t].context==context for t in graph.terminals)
-                 for context in range(len(graph.contexts))),default=0))
+    if execution != 'shared_policies':
+        for graph in graphs:
+            metrics['max_live_branches']=max(metrics['max_live_branches'],
+                max((sum(graph.states[t].context==context for t in graph.terminals)
+                     for context in range(len(graph.contexts))),default=0))
     merge_started = time.perf_counter()
     gc_enabled = gc.isenabled()
     try:
@@ -272,7 +303,7 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
                          bond_cut=config.graph_floor)
     symmetry_started = time.perf_counter()
     workspace = None
-    if execution == 'reused_native':
+    if execution in ('reused_native', 'shared_policies'):
         from .conditioned_symmetry import ConditionedSymmetryWorkspace
         workspace = ConditionedSymmetryWorkspace(target, config.iso_tolerance)
     graph, groups = finalize_graph_symmetry(graph, target, iso_tolerance=config.iso_tolerance,
