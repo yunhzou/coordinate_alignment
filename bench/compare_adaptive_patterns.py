@@ -8,6 +8,7 @@ import numpy as np
 
 from adaptive_fragment_pilot import save
 from compare_elementary_outputs import features, certificate
+from score_equivalence import element_pair_features
 
 
 def main(args):
@@ -18,7 +19,9 @@ def main(args):
     baseline=baseline/str(summary['index'])/summary['direction']/'independent_native_dependency'
     raw=json.loads((args.run/f"inputs/{summary['index']}.json").read_text())
     if summary['direction']=='P_to_R':raw['reactant'],raw['product']=raw['product'],raw['reactant']
-    feat=features(raw)
+    feat=element_pair_features(raw) if args.element_pair else features(raw)
+    prefix='pair_' if args.element_pair else ''
+    if args.checkpoint_label:prefix+=args.checkpoint_label+'_'
     heavy=[i for i,e in enumerate(raw['reactant']['elements']) if e!='H']
     previous=[json.loads(p.read_text()) for p in sorted(baseline.glob('seed_*/witnesses.json'))]
     # Historical witness exports are normalized to R->P even when their search
@@ -26,7 +29,7 @@ def main(args):
     if summary['direction']=='P_to_R':
         for data in previous:data['mappings']=[np.argsort(v).tolist() for v in data['mappings']]
     best=min(sum(events) for data in previous for events in data['events'])
-    label=summary['rows'][-1]['label']
+    label=args.checkpoint_label or summary['rows'][-1]['label']
     current=[json.loads((folder/f'{label}_witnesses.json').read_text())]
     classes={}
     for name,datasets in (('baseline',previous),('adaptive',current)):
@@ -54,14 +57,17 @@ def main(args):
         rows.append(dict(delta=delta,event_limit=best+delta,baseline_patterns=len(expected),
             recovered_patterns=len(expected & observed),adaptive_patterns=len(observed),
             missing=sorted(expected-observed),new=sorted(observed-expected)))
-    save(folder/'pattern_comparison.json',dict(rows=rows,baseline=str(baseline),
+    save(folder/f'{prefix}pattern_comparison.json',dict(rows=rows,baseline=str(baseline),
+        equivalence='element_pair_score_response' if args.element_pair else 'all_bond_weights_score_response',
         seconds=time.perf_counter()-started,
         scope='Saved representative heavy-atom relations modulo exact event-response endpoint graph automorphisms. Full-H event counts. Missing representative class does not prove absence from compressed families. No independent chemical ground truth.'))
-    save(folder/'pattern_witnesses.json',classes)
+    save(folder/f'{prefix}pattern_witnesses.json',classes)
     print(json.dumps([{k:v for k,v in row.items() if k not in ('missing','new')} for row in rows]),flush=True)
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--run',type=Path,required=True);p.add_argument('--slot',type=int,required=True)
+    p.add_argument('--element-pair',action='store_true')
+    p.add_argument('--checkpoint-label')
     main(p.parse_args())

@@ -1,5 +1,10 @@
 # Adaptive sequential fragment choices: bounded pilot
 
+Later investigation: [shared-state seed search results](seed_search_results.md)
+recover all four saved minimum scores and all best-score heavy classes under
+the explicitly stated element-compatible scoring symmetry. The original
+closure-only experiment below remains preserved as a negative result.
+
 **Outcome: useful prototype, not a demonstrated replacement for sweep-cut.**
 Native growth can expose earlier fragment boundaries cheaply and continue from
 saved conditional states. It found both historical vanadium event patterns

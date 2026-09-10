@@ -66,3 +66,13 @@ def test_completed_route_yields_before_all_normal_siblings_are_expanded():
     agenda.yield_to_alternatives=True
     assert agenda.pop()[2]=='alternative'
     assert len(agenda)==99
+
+
+def test_known_region_seeds_are_not_starved_by_new_regions():
+    from rxn_core.adaptive_seed_search import _SeedAgenda
+    agenda=_SeedAgenda()
+    for i in range(100):agenda.push((1,1,0,i),i)
+    agenda.push((1,1,1,0),'known region')
+    assert agenda.pop()[2]==0
+    assert agenda.pop()[2]=='known region'
+    assert len(agenda)==99

@@ -20,6 +20,7 @@ class _SeedAgenda:
         self.ordinary=[]
         self.levels={}
         self.served=Counter()
+        self.region_served=Counter()
         self.serial=itertools.count()
         self.yield_to_alternatives=False
 
@@ -34,15 +35,17 @@ class _SeedAgenda:
         if priority[1]==0:
             self.ordinary.append(item)
         else:
-            heapq.heappush(self.levels.setdefault(priority[0],[]),item)
+            heapq.heappush(self.levels.setdefault((priority[0],priority[2]),[]),item)
 
     def pop(self):
         if self.levels and (self.yield_to_alternatives or not self.ordinary):
-            depth=min(self.levels,key=lambda d:(self.levels[d][0][0][2],self.served[d],d))
+            depth,region=min(self.levels,key=lambda group:(self.region_served[group[1]],group[1],
+                                                         self.served[group[0]],group[0]))
             self.served[depth] += 1
+            self.region_served[region] += 1
             self.yield_to_alternatives=False
-            item=heapq.heappop(self.levels[depth])
-            if not self.levels[depth]:del self.levels[depth]
+            item=heapq.heappop(self.levels[(depth,region)])
+            if not self.levels[(depth,region)]:del self.levels[(depth,region)]
             return item
         return self.ordinary.pop()
 

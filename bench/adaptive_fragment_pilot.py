@@ -44,9 +44,10 @@ def submit(args):
     command=['env','OMP_NUM_THREADS=1','OPENBLAS_NUM_THREADS=1','MKL_NUM_THREADS=1','PYTHONHASHSEED=0',
         f'PYTHONPATH={args.run}/engine/src:{args.run}/engine/bench','timeout','--kill-after=5s','300',
         sys.executable,str(args.run/'engine/bench/adaptive_fragment_pilot.py'),'worker','--run',str(args.run),'--slot']
-    options=['sbatch','--parsable','--partition=cpunodes','--nodelist=bosque6','--nodes=1','--cpus-per-task=1',
+    options=['sbatch','--parsable','--partition=cpunodes','--nodes=1','--cpus-per-task=1',
         '--mem=8G','--time=00:10:00','--no-requeue',f'--array=0-{n-1}', '--job-name=adaptive_closure',
         f'--output={args.run}/status/%A_%a.out','--wrap',shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
+    if args.node:options.insert(2,f'--nodelist={args.node}')
     job=subprocess.check_output(options,text=True).strip();save(args.run/'submission.json',dict(job=job,command=options));print(job)
 
 
@@ -105,6 +106,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('command',choices=('prepare','submit','worker'))
     p.add_argument('--run',type=Path,required=True);p.add_argument('--slot',type=int)
+    p.add_argument('--node',help='Optional node pin for matched-hardware timing')
     p.add_argument('--work-budgets',type=int,nargs='+',default=[100,400,1600])
     p.add_argument('--search-seconds',type=float,default=30.)
     p.add_argument('--policies',nargs='+',default=['largest_first','smallest_first'],
