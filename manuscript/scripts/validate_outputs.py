@@ -42,7 +42,7 @@ assert max(f['candidates'] for f in traces[0]['frames'])==42
 assert sum(f['event']=='terminal' for f in traces[0]['frames'])==2
 assert sum(f['event']=='consumed' for f in traces[1]['frames'])==8
 
-figures=['fig1_algorithm','fig2_golden','fig3_holdout','fig4_event_windows','fig5_growth']
+figures=['fig1_algorithm','fig2_growth','fig3_golden','fig4_holdout','figS1_slap_ablation','figS2_event_windows']
 for name in figures:
     for suffix in ['pdf','png','svg']:assert (MAN/'figs'/f'{name}.{suffix}').stat().st_size>1000
     assert len(pymupdf.open(MAN/'figs'/f'{name}.pdf'))==1

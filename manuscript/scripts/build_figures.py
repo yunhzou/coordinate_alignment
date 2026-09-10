@@ -61,27 +61,45 @@ box(5.8,.28,3.95,1.58,'04  Compile retained families','Merge equal or contained 
 ax.text(.2,-.3,'Schematic: joins require equal assignments, island partitions and deferred edges at a compatible continuation.',fontsize=8,color=INK)
 save(fig,'fig1_algorithm')
 
-# Figure 2: full-denominator recovery and paired successful-work compute.
-fig,axes=plt.subplots(1,2,figsize=(10,4.6),gridspec_kw={'width_ratios':[1.15,1]},layout='constrained')
-labels=['SLAP: uncut control','SLAP: earlier expanded','SLAP: single-edge sweep','AAM: 1 seed + sweep','AAM: 2 seeds + sweep','AAM: 3 seeds + sweep','AAM: 10 seeds + sweep']
-counts=[slap['uncut_recovered'],slap['expanded_baseline_recovered'],slap['sweep_union_recovered']]+[methods[k]['golden_outcomes']['recovered'] for k in ['seeds1','seeds2','seeds3','seeds10']]
-colors=[ORANGE]*3+[GREEN]*4;y=np.arange(len(labels))
-axes[0].barh(y,np.asarray(counts)/N*100,color=colors,height=.65)
-for i,v in enumerate(counts):axes[0].text(v/N*100+1,i,f'{v:,}  ({v/N*100:.2f}%)',va='center',fontsize=8)
-axes[0].set(yticks=y,yticklabels=labels,xlim=(0,125),xticks=[0,25,50,75,100],xlabel='Verified reference recovery (%)')
-axes[0].invert_yaxis();axes[0].set_title('a  All 1,851 Golden records',loc='left');axes[0].grid(axis='x',alpha=.16);axes[0].set_axisbelow(True)
-ax=axes[1]
-for k,label in [('seeds1','1 seed'),('seeds2','2 seeds'),('seeds3','3 seeds'),('seeds10','10 seeds'),('slap_sweep','SLAP + sweep')]:
-    d=methods[k]; x=d['common_mean_cpu_seconds']; y=d['golden_recovery_percent']; c=ORANGE if k=='slap_sweep' else GREEN
-    ax.scatter(x,y,s=65,color=c,zorder=3)
-    ax.annotate(label,(x,y),xytext=(0,10 if k!='seeds2' else -17),textcoords='offset points',ha='center',fontsize=8.5,color=c)
-ax.set(xscale='log',xlim=(8,130),ylim=(96.5,99.65),xlabel='Search CPU seconds / reaction (log scale)',ylabel='Verified recovery on all 1,851 (%)')
-ax.set_xticks([10,20,50,100],labels=['10','20','50','100']);ax.grid(alpha=.2);ax.set_title('b  Compute on 1,807 common completed cases',loc='left')
-fig.get_layout_engine().set(rect=(0,.07,1,1))
-fig.text(.02,.012,'Both directions. CPU excludes measured persistence/loading; instrumentation and interrupted-work accounting differ. No latency claim.',fontsize=8,color=INK)
-save(fig,'fig2_golden')
+# Figure 3: GRAFT recovery and the paired cost of seed diversity.
+fig,axes=plt.subplots(1,2,figsize=(9.4,3.9),gridspec_kw={'width_ratios':[1.3,1]},layout='constrained')
+keys=['seeds1','seeds2','seeds3','seeds10']
+labels=['1 seed order','2 seed orders','3 seed orders','10 seed orders']
+counts=[methods[k]['golden_outcomes']['recovered'] for k in keys]
+y=np.arange(len(labels))
+axes[0].barh(y,np.asarray(counts)/N*100,color=GREEN,height=.57)
+for i,v in enumerate(counts):
+    axes[0].text(v/N*100+1.5,i,f'{v:,}  ({v/N*100:.2f}%)',va='center',fontsize=8.5)
+axes[0].set(yticks=y,yticklabels=labels,xlim=(0,140),xticks=[0,25,50,75,100],xlabel='Verified reference recovery (%)')
+axes[0].invert_yaxis();axes[0].set_title('a  GRAFT on all 1,851 Golden records',loc='left')
+axes[0].grid(axis='x',alpha=.16);axes[0].set_axisbelow(True)
+costs=[methods[k]['common_mean_cpu_seconds'] for k in keys]
+axes[1].barh(y,costs,color=[GREEN,BLUE,BLUE,BLUE],height=.57)
+for i,v in enumerate(costs):axes[1].text(v+1.5,i,f'{v:.2f}',va='center',fontsize=8.5)
+axes[1].set(yticks=y,yticklabels=labels,xlim=(0,107),xticks=[0,25,50,75,100],xlabel='Mean recorded search CPU seconds / reaction')
+axes[1].invert_yaxis();axes[1].set_title('b  Same 1,807 completed reactions',loc='left')
+axes[1].grid(axis='x',alpha=.16);axes[1].set_axisbelow(True)
+fig.get_layout_engine().set(rect=(0,.13,1,1))
+fig.text(.02,.065,f'One seed order uses {costs[-1]/costs[0]:.2f}-fold less recorded CPU than ten; verified recovery differs by three records.',fontsize=8.5,color=INK)
+fig.text(.02,.015,'Both directions; uncut + single-edge sweeps; frozen baseline 98b01b1. CPU excludes measured saving/loading and interrupted work.',fontsize=8,color=INK)
+save(fig,'fig3_golden')
 
-# Figure 3: reference-free holdout, strict cap 100 only.
+# Supporting Figure S1: the matched uncut/single-edge SLAP ablation only.
+fig,ax=plt.subplots(figsize=(7.1,3.2),layout='constrained')
+counts=[slap['uncut_recovered'],slap['sweep_union_recovered']]
+values=np.asarray(counts)/N*100
+ax.barh([1,0],values,color=[GRAY,ORANGE],height=.5)
+for y,v,n in zip([1,0],values,counts):
+    ax.text(v+1.2,y,f'{n:,} / {N:,}  ({v:.2f}%)',va='center',fontsize=9)
+ax.set(yticks=[1,0],yticklabels=['Uncut control','Single-edge sweep'],xlim=(0,132),xticks=[0,25,50,75,100],ylim=(-.65,1.85),xlabel='Verified reference recovery (%)')
+ax.set_title('SLAP: effect of single-edge constraint relaxation',loc='left')
+ax.text(0,1.55,f'+{counts[1]-counts[0]} recovered references  |  +{values[1]-values[0]:.2f} percentage points',color=ORANGE,weight='bold',fontsize=10)
+ax.grid(axis='x',alpha=.16);ax.set_axisbelow(True)
+fig.get_layout_engine().set(rect=(0,.1,1,1))
+fig.text(.02,.018,'Both directions and bond modes; one original ordering. Sweep = uncut + union of individual edge deletions.',fontsize=8,color=INK)
+save(fig,'figS1_slap_ablation')
+
+# Figure 4: reference-free coordinate collection, strict cap 100 only.
 rows=read('holdout_scores.json'); ov=read('holdout_overlap.json')
 assert len(rows)==140
 x=np.array([r['slap_events'] for r in rows]); y=np.array([r['new_events'] for r in rows])
@@ -92,22 +110,22 @@ ct=Counter(zip(x,y))
 axes[0].plot([0,22],[0,22],color=GRAY,lw=1,ls='--')
 for (a,b),n in ct.items():axes[0].scatter(a,b,s=24+18*np.sqrt(n),color=GREEN if b<=a else ORANGE,alpha=.8,edgecolors='white',linewidths=.5)
 axes[0].annotate('case 123\nstrict cap 100',(3,19),xytext=(8,19),fontsize=8,arrowprops=dict(arrowstyle='-',color=GRAY))
-axes[0].set(xlim=(-1,23),ylim=(-1,23),xlabel='SLAP: best saved event count',ylabel='AAM: best saved event count')
-axes[0].set_title('a  133 ties; 6 AAM-lower; 1 SLAP-lower',loc='left',fontsize=9)
+axes[0].set(xlim=(-1,23),ylim=(-1,23),xlabel='SLAP: best saved event count',ylabel='GRAFT: best saved event count')
+axes[0].set_title('a  Best saved scores (133 ties)',loc='left',fontsize=9)
 st=ov['target_class_statuses']; vals=[st['represented'],st['excluded_from_saved_families'],st['unresolved']]
 axes[1].barh([2,1,0],vals,color=[GREEN,ORANGE,GRAY],height=.6)
 for yy,n in zip([2,1,0],vals):axes[1].text(n+3,yy,str(n),va='center',fontsize=9)
 axes[1].set(yticks=[2,1,0],yticklabels=['Represented','Excluded','Unresolved'],xlim=(0,185),xlabel='SLAP heavy mapping classes')
-axes[1].set_title('b  Membership in saved AAM families',loc='left',fontsize=9)
+axes[1].set_title('b  SLAP-class membership in GRAFT',loc='left',fontsize=9)
 wins=[0,1,2,5]; nums=[ov['aam_extra_cases_by_event_window'][str(k)] for k in wins]
 axes[2].bar(range(4),nums,color=BLUE,width=.6)
 for j,n in enumerate(nums):axes[2].text(j,n+3,str(n),ha='center',fontsize=9)
-axes[2].set(xticks=range(4),xticklabels=['0','+1','+2','+5'],ylim=(0,155),xlabel='Events above best saved AAM score',ylabel='Cases with an extra AAM heavy pattern')
-axes[2].set_title('c  Alternatives absent from saved SLAP',loc='left',fontsize=9)
+axes[2].set(xticks=range(4),xticklabels=['0','+1','+2','+5'],ylim=(0,155),xlabel='Events above best saved GRAFT score',ylabel='Cases with an extra GRAFT heavy pattern')
+axes[2].set_title('c  Additional GRAFT alternatives',loc='left',fontsize=9)
 fig.get_layout_engine().set(rect=(0,.08,1,1));fig.text(.015,.01,'140 XYZ/WBO cases, 10 seed orders, tolerance 1.0, cap 100. No reference mappings. Marker area reflects repeated score pairs.',fontsize=8)
-save(fig,'fig3_holdout')
+save(fig,'fig4_holdout')
 
-# Figure 4: concrete recovery under the separate publication engine.
+# Supporting Figure S2: concrete recovery under the separate publication engine.
 coll=read('collection.json');fig,ax=plt.subplots(figsize=(6.7,3.6),layout='constrained')
 for k,c,label in [('single',BLUE,'Smaller to larger'),('bidirectional',GREEN,'Both directions')]:
     yy=[coll['modes'][k]['event_windows'][str(w)] for w in range(7)]
@@ -115,7 +133,7 @@ for k,c,label in [('single',BLUE,'Smaller to larger'),('bidirectional',GREEN,'Bo
     ax.annotate(f'{yy[-1]:,}/{N:,} ({yy[-1]/N*100:.2f}%)',(6,yy[-1]/N*100),xytext=(-5,9 if k=='bidirectional' else -15),textcoords='offset points',ha='right',fontsize=8.5,color=c)
 ax.set(xlabel='Additional bond events above best collected candidate',ylabel='Concrete reference recovery (%)',xticks=range(7),ylim=(89.5,100.2))
 ax.legend(loc='lower right',frameon=False);ax.grid(alpha=.2);ax.set_title('Earlier frozen publication engine: concrete candidate collection',loc='left',fontsize=10)
-save(fig,'fig4_event_windows')
+save(fig,'figS2_event_windows')
 
 def normalize_trace(raw):
     frames=[];locked={};deferred=[];island=0;count=0;local={}
@@ -169,7 +187,7 @@ def molecule(ax,ep,active=(),mapping=None,deferred=(),label=True):
             ax.text(a,b,str(mapping.get(i,i) if mapping is not None else i),fontsize=5.1,ha='center',va='center',color='white' if on else '#65777C',zorder=4)
     ax.set_aspect('equal');ax.axis('off');ax.margins(.18)
 
-# Figure 5: genuine molecular snapshots with the measured candidate trajectory.
+# Figure 2: genuine molecular snapshots with the measured candidate trajectory.
 t=traces[0];selected=[0,6,14,17]
 fig=plt.figure(figsize=(9,5.1));gs=fig.add_gridspec(3,4,height_ratios=[1,1,.7],hspace=.25,wspace=.12)
 for j,i in enumerate(selected):
@@ -179,7 +197,7 @@ fig.text(.02,.75,'R',color=INK,weight='bold');fig.text(.02,.43,'P',color=INK,wei
 ax=fig.add_subplot(gs[2,:]);ff=[f for f in t['frames'] if f['event'] in ('seed_start','commit')]
 ax.plot([len(f['active']) for f in ff],[f['candidates'] for f in ff],'-o',color=GREEN,ms=3)
 ax.set(xlabel='Atoms in the growing fragment',ylabel='Live candidates',xticks=[1,4,8,12,16,18]);ax.grid(alpha=.15)
-fig.suptitle('Continuous growth on an 18-atom carbocation endpoint pair',fontsize=11,weight='bold',y=.99)
+fig.suptitle('GRAFT: continuous growth on an 18-atom carbocation endpoint pair',fontsize=11,weight='bold',y=.99)
 fig.subplots_adjust(left=.09,right=.98,bottom=.12,top=.9)
-save(fig,'fig5_growth')
-print('Generated five figures (PDF/SVG/PNG), seed table, and animation data.')
+save(fig,'fig2_growth')
+print('Generated four main and two supporting figures (PDF/SVG/PNG), seed table, and animation data.')

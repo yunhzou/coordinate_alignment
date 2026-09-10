@@ -6,16 +6,21 @@ these copies; it does not rerun a benchmark or read reference labels during sear
 
 | Snapshot | Use | Original report/workload |
 | --- | --- | --- |
-| `seed_comparison.json` | Figure 2, Table 1, seed recovery and CPU | `reports/aam_seed1_2_20260910/comparison.json` |
-| `slap_sweep.json` | Figure 2, SLAP controls/sweep/completion | `reports/slap_sweep_cut_20260910/summary.json` |
+| `seed_comparison.json` | Figure 3, Table 1, GRAFT seed recovery and CPU | `reports/aam_seed1_2_20260910/comparison.json` |
+| `slap_sweep.json` | Figure S1, supporting SLAP cut ablation/completion | `reports/slap_sweep_cut_20260910/summary.json` |
 | `publication.json` | Earlier frozen recovery/ranking | `reports/golden_publication_20260908/analytics.json` |
-| `collection.json` | Figure 3, concrete event windows | `reports/golden_pattern_benchmark_20260908/benchmark_report.json` |
+| `collection.json` | Figure S2, concrete event windows | `reports/golden_pattern_benchmark_20260908/benchmark_report.json` |
 | `competitors.json` | Supporting Table 2 | `reports/golden_competitors_20260908/summary.json` |
 | `holdout_scores.json` | Figure 4a, strict-cap full-H scores | `elementary140_tol1_20260909/tolerance_per_case.json` |
 | `holdout_overlap.json` | Figure 4b/c, membership and extras | `elementary140_tol1_20260909/overlap/summary.json` |
 | `holdout_manifest.json` | Native-input protocol | `elementary140_tol1_20260909/manifest.json` |
 | `adaptive_no_sweep.json` | Separate adaptive no-sweep Golden/holdout result | `adaptive_full_20260910/comparison/summary.json` |
 | `adaptive_manifest.json` | No-sweep version, agenda/cap/budgets | `adaptive_full_20260910/manifest.json` |
+
+GRAFT is the manuscript's working method name. Original report identifiers (AAM)
+and all source snapshots remain unchanged. Main benchmark panels use the frozen
+`98b01b1` baseline; the earlier-engine and adaptive-policy results remain separate
+in supporting information. Figure 2 illustrates recorded growth on case 64.
 
 Report paths are relative to the manuscript's parent worktree. Workload paths
 are relative to `/project/yunhengzou/coordinate_alignment/aam_benchmarks`.

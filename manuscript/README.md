@@ -1,7 +1,12 @@
-# Continuous fragment growth manuscript
+# GRAFT manuscript
 
 First draft, 10 September 2026, using the supplied Matter Lab preprint template.
-The title is descriptive. The author order is Yunheng Zou, Olalla Nieto Faza, Shifa Hussain,
+Working title: **GRAFT: Symmetry-Aware Atom Mapping through Continuous Fragment Growth**.
+GRAFT is the proposed method name; benchmark files retain their original AAM identifiers.
+The paper centers on continuous growth, conditional branching, and context-preserving
+deduplication. The SLAP single-edge sweep is a supporting cut-policy ablation.
+
+The author order is Yunheng Zou, Olalla Nieto Faza, Shifa Hussain,
 Varinia Bernales, and Alán Aspuru-Guzik, with Bernales and Aspuru-Guzik as principal
 investigators. The supplied affiliation numbering is applied to Zou (1, 6),
 Bernales (2, 7), and Aspuru-Guzik (1–9). Nieto Faza is affiliated with the
@@ -38,16 +43,18 @@ is the compiled paper. Their submission metadata must be replaced before use.
 
 ## Figures and animations
 
-All five figures have vector PDF/SVG and 240-dpi PNG versions in `figs/`.
+Four main figures and two supporting figures have vector PDF/SVG and 240-dpi PNG
+versions in `figs/`.
 Figure numbering below follows the compiled paper.
 
 | Figure | Content | Source basename |
 | --- | --- | --- |
 | 1 | Growth, candidate deduplication, branching and state sharing | `fig1_algorithm` |
-| 2 | Golden recovery and paired recorded search CPU | `fig2_golden` |
-| 3 | Concrete recovery within event windows, earlier engine | `fig4_event_windows` |
-| 4 | 140-case scores, family membership and extra alternatives | `fig3_holdout` |
-| 5 | Recorded molecular growth and live candidate counts | `fig5_growth` |
+| 2 | Recorded molecular growth and live candidate counts | `fig2_growth` |
+| 3 | GRAFT Golden recovery and paired recorded search CPU | `fig3_golden` |
+| 4 | 140-case scores, family membership and extra alternatives | `fig4_holdout` |
+| S1 | Supporting SLAP single-edge constraint ablation | `figS1_slap_ablation` |
+| S2 | Concrete recovery within event windows, earlier engine | `figS2_event_windows` |
 
 - [Movie 1, MP4](animations/movie1_continuous_growth.mp4): 19.1 seconds,
   continuous growth and two retained placements on an 18-atom example.

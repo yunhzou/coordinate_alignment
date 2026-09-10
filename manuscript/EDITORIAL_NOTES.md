@@ -12,8 +12,10 @@ animations. Resolve the following before treating it as a submission manuscript.
    affiliation. Confirm whether both PIs are corresponding authors and supply contact
    details if desired. Equal-contribution symbols from the reference article
    have not been transferred to this author list. Confirm the method name, title,
-   individual contributions, funding and competing interests. “AAM” in the plots
-   is the workspace shorthand, not a newly assigned official method name.
+   individual contributions, funding and competing interests. The proposed method
+   name is **GRAFT**, with working title **GRAFT: Symmetry-Aware Atom Mapping through
+   Continuous Fragment Growth**. Source reports and software APIs retain their
+   original AAM identifiers.
 2. Document the provenance and selection of the 140 elementary steps, the precise
    calculation method/version used for their cached WBO matrices, and which
    structures/data may be redistributed publicly. No WBO calculation level or
@@ -34,7 +36,10 @@ animations. Resolve the following before treating it as a submission manuscript.
    ongoing weighted fragment extension, conditional saturated-placement
    branching, local boundary-aware canonicalization, exact continuation-state
    joins, and downstream correlated-family equality/containment. The current
-   evidence does not isolate their individual performance contributions.
+   evidence does not isolate their individual performance contributions. The
+   algorithm is the central contribution. SLAP sweep results serve as a supporting
+   ablation of single-edge constraint relaxation; the sweep unions individual
+   cuts and does not establish that one fixed cut is sufficient.
 6. Expand related work and software citations for a target journal. The initial
    five scientific references were checked against primary records; no universal
    novelty, global optimality, physical mechanism or TS-accuracy claim is made.

@@ -48,7 +48,7 @@ for ci,t in enumerate(DATA):
                            ffmpeg_params=['-movflags','+faststart']) as writer:
         for i,f in enumerate(frames):
             fig=plt.figure(figsize=(12.8,7.2),dpi=100,facecolor='#f7faf7')
-            fig.text(.04,.94,'CONTINUOUS FRAGMENT GROWTH',fontsize=11,color='#007f68',weight='bold')
+            fig.text(.04,.94,'GRAFT · CONTINUOUS FRAGMENT GROWTH',fontsize=11,color='#007f68',weight='bold')
             fig.text(.04,.88,f['title'],fontsize=18,color='#203b37',weight='bold')
             fig.text(.04,.835,t['name']+f"  ·  case {t['case']}  ·  event {i+1}/{len(frames)}",fontsize=10,color='#617771')
             ax=fig.add_axes([.035,.22,.445,.55]);molecule(ax,t['input']['reactant'],f,'R')

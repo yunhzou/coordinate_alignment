@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Continuous fragment growth — recorded search</title>
+<title>GRAFT — recorded continuous fragment growth</title>
 <style>
 :root{--ink:#203b37;--green:#007f68;--orange:#c96b2c;--blue:#3269a8;--muted:#617771}
 *{box-sizing:border-box}body{margin:0;background:#f2f6f3;color:var(--ink);font:15px system-ui,-apple-system,sans-serif}
@@ -12,7 +12,7 @@ main{max-width:1280px;margin:auto;padding:28px}header{display:flex;justify-conte
 .timeline{display:flex;align-items:center;gap:15px;margin-top:18px}#scrub{flex:1;accent-color:var(--green)}#counter{font-variant-numeric:tabular-nums;font-size:13px;min-width:62px}#steps{flex:1;min-width:220px}.note{font-size:12px;margin-top:14px;max-width:1000px}#hover{font-size:12px;min-height:20px;padding:0 24px;color:var(--green)}
 @media(max-width:700px){main{padding:15px}header{display:block}h1{font-size:25px}.molecules{grid-template-columns:1fr}.panel+.panel{border-left:0;border-top:1px solid #eee}canvas.mol{height:300px}.stats{gap:12px;flex-wrap:wrap}.stagehead{padding:16px}.badge{display:none}.graphrow{display:block}.graphrow p{max-width:none;margin-bottom:8px}.timeline{flex-wrap:wrap}.timeline #steps{flex-basis:100%;min-width:0;max-width:100%}}
 </style></head><body><main>
-<header><div><div class="eyebrow">Recorded algorithm · supplementary visualization</div><h1>Watch a fragment become a mapping</h1><p>Follow weighted growth, candidate refinement, and retained alternatives.</p></div>
+<header><div><div class="eyebrow">GRAFT · recorded algorithm events</div><h1>Watch a fragment become a mapping</h1><p>Follow weighted growth, candidate refinement, and retained alternatives.</p></div>
 <label>Example <select id="case"><option value="0">Carbocation · branching</option><option value="1">TEMPO · successive fragments</option></select></label></header>
 <div class="tools"><button class="primary" id="play">Play</button><button id="prev" aria-label="Previous event">←</button><button id="next" aria-label="Next event">→</button><label>Speed <select id="speed"><option value="1500">Slow</option><option value="800" selected>Normal</option><option value="300">Fast</option></select></label><label><input type="checkbox" id="hydrogens" checked>Hydrogens</label><label title="Large structures label heavy atoms and the newly added atom. Hover any atom for its identity."><input type="checkbox" id="labels" checked>Atom labels</label><label>Zoom <select id="zoom"><option value="1">1×</option><option value="1.4">1.4×</option><option value="1.8">1.8×</option></select></label><button id="reset">Reset view</button><label>Witness <select id="witness"></select></label></div>
 <section id="stage" aria-label="Recorded molecular growth animation">
