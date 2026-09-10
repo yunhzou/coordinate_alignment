@@ -81,6 +81,13 @@ Numerical interpretation to preserve during editing:
 - SLAP sweep recovery is 1,795; union with an older expanded run is 1,797 and
   has a different budget. The 1,661 uncut control combines both directions and
   bond modes; it is not the default single-call result.
+  The [complete saved-output recount](evidence/slap-sweep-count-audit-20260910/README.md)
+  reproduces these totals. Standalone nonrecoveries are 52 completed misses plus
+  four unresolved cases; the expanded union has 50 plus four. Case 1665 timed
+  out in both directions. The four unresolved cases contain nine unfinished
+  variants, not four jobs, and completing them is an extended-budget follow-up.
+  The 59,466.8/176,323.7 three/ten-seed CPU totals use an AAM-only common set of
+  1,837 cases; the manuscript's SLAP-inclusive comparison uses 1,807 cases.
 - Paired CPU uses 1,807 mutually completed Golden cases. Instrumentation differs
   and interrupted work is omitted. It does not establish latency or total cost.
 - The primary 140-case comparison keeps cap 100. Case 123's cap-200 result is

@@ -78,3 +78,9 @@ The [query log](review-search-log-20260910.json) records 36 additional discovery
 queries, and the [source manifest](review-source-manifest-20260910.json) records
 download hashes, versions, and access limits. Retrieved third-party PDFs and
 source caches remain in ignored build storage rather than the distributable bundle.
+
+The [SLAP counting audit](slap-sweep-count-audit-20260910/README.md) re-scores
+all 572,753 saved candidate outputs and reproduces 1,795/1,851. It distinguishes
+52 completed standalone misses from four unresolved cases, records their nine
+unfinished variants, separates the older expanded union's 1,797 result, and
+checks the case sets behind the quoted AAM CPU figures. No mapper was rerun.

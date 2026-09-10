@@ -11,9 +11,9 @@ Binary single-edge sweeps recover 1,785 Golden references and weighted sweeps re
 \label{fig:slap-ablation}
 \end{figure}
 
-Of 355,104 planned calls, 352,210 are recorded: 352,208 succeeded and two had upstream exceptions. No returned mapping fails strict format and endpoint-preservation validation. There are 65 watchdog-limited variants among 7,404 case/direction/mode variants; their completed cuts remain included.
+Of 355,104 planned calls, 352,210 are recorded: 352,208 succeeded and two had upstream exceptions. All returned mappings pass strict format and endpoint-preservation checks. Of 7,404 direction/mode variants, 65 reached the watchdog; their completed cuts remain included. Standalone nonrecoveries comprise 52 fully swept misses and four unresolved cases (1503, 1665, 1723, 1776), containing nine unfinished variants. Case 1665 timed out in both directions. Incomplete nonrecovery does not establish absence.
 
-Earlier expanded SLAP, with a separate ordering budget, recovers 1,691 (91.36\%). Its union with the new sweep recovers 1,797 (97.08\%), a separate result that is excluded from the ablation figure. Of 54 remaining cases in that union, 50 were fully swept and valid and four were incomplete.
+Earlier expanded SLAP uses an additional ordering budget and recovers 1,691 (91.36\%). Its union with the sweep adds cases 1071 and 1595, reaching 1,797 (97.08\%); 50 completed misses and four unresolved cases remain. This separate union is excluded from the ablation figure.
 
 \subsection{Default competitor reproduction}
 All 1,851 Golden records were submitted to the released configurations in \Cref{tab:competitors}. These are saved common-evaluator results, not literature numbers. SLAP's first output is not asserted to be a separately ranked top-1. Chython denotes its released ONNX implementation rather than a historical GraphormerMapper checkpoint.

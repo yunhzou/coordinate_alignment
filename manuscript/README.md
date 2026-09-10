@@ -35,6 +35,7 @@ template assets, figure sources/data, figures, animations, and build scripts.
 | Specific transition rules and implementation comparisons | [evidence/mechanism-comparison-20260910.md](evidence/mechanism-comparison-20260910.md) |
 | Expanded literature assessment, five reviews/overviews and primary comparisons | [Report PDF](evidence/review-led-novelty-20260910.pdf) / [editable report](evidence/review-led-novelty-20260910.md) |
 | Inspection coverage, unresolved leads and source provenance | [Coverage CSV](evidence/review-coverage-20260910.csv) / [source manifest](evidence/review-source-manifest-20260910.json) / [query log](evidence/review-search-log-20260910.json) |
+| SLAP sweep recount, timeout classification and rerun handoff | [Count audit](evidence/slap-sweep-count-audit-20260910/README.md) |
 | Items to resolve before submission | [EDITORIAL_NOTES.md](EDITORIAL_NOTES.md) |
 | Data provenance and figure-to-report mapping | [evidence/README.md](evidence/README.md) |
 | Source paths and SHA-256 hashes | [evidence/sources.json](evidence/sources.json) |

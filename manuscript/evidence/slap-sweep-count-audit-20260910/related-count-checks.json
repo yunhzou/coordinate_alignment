@@ -1,0 +1,54 @@
+{
+  "older_expanded_recovered": 1691,
+  "combined_with_older_expanded_recovered": 1797,
+  "older_only_additions": [
+    1071,
+    1595
+  ],
+  "standalone_completed_misses": 52,
+  "standalone_unresolved_misses": [
+    1503,
+    1665,
+    1723,
+    1776
+  ],
+  "unfinished_variants_for_unresolved_cases": 9,
+  "unfinished_calls_for_unresolved_cases": 661,
+  "cases_with_watchdog": 36,
+  "recovered_cases_with_watchdog": 32,
+  "aam_pair": {
+    "cases": 1837,
+    "cpu_seconds": {
+      "seeds3": 59466.761953548,
+      "seeds10": 176323.668534435
+    },
+    "verified": {
+      "seeds3": 1836,
+      "seeds10": 1836
+    },
+    "three_only": [
+      1786,
+      1799,
+      1823
+    ],
+    "ten_only": [
+      850,
+      1314,
+      1568
+    ]
+  },
+  "paper_common_timing": {
+    "cases": 1807,
+    "cpu_seconds": {
+      "seeds3": 53790.925280404,
+      "seeds10": 158774.617282945,
+      "slap_sweep": 31831.606439181
+    }
+  },
+  "source_hashes": {
+    "reports/aam_seed3_20260910/case_metrics.json": "a41d6cc6e9642f1029c3fea4ed2313d5133fa2a7379451a4d3bc142fbfc35b08",
+    "reports/golden_slap_budget_20260908/expanded_summary.json": "98f95f529219c7ed5bb61ef5e5fb6176de23b6ef04b616404d13290d711445b5",
+    "reports/golden_slap_budget_20260908/all_atoms_summary.json": "f31a5235a1ef7623324db2af96570cd4c6ae2fe3c83ece3076f7d474d0958503",
+    "manuscript/evidence/seed_comparison.json": "452e6573db95e23f3d1e44a3545b36bfaef63aa184734c8566402b2ca79ca5ba"
+  }
+}
