@@ -13,6 +13,7 @@ from types import SimpleNamespace
 
 from adaptive_full_benchmark import read, save, spec_and_folder, problem_plan, analyze
 from publication_timing import SearchProfiler
+from ranked_reference_check import check_ranked_reference
 
 
 def prepare(args):
@@ -45,7 +46,7 @@ def finish(args):
     manifest = read(args.run/'manifest.json')
     raw, plan = problem_plan(args,spec)
     collector_commit = subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-    record = dict(previous, continuation=dict(collector_commit=collector_commit,started=time.time(),
+    record = dict(previous, complete=False, continuation=dict(collector_commit=collector_commit,started=time.time(),
         source='Existing raw/finalized cut checkpoints; same search config and execution backend'))
     started = time.perf_counter()
     if previous.get('search',{}).get('exit') != 0:
@@ -85,9 +86,47 @@ def finish(args):
     print(json.dumps(dict(slot=args.slot,**spec,complete=True)),flush=True)
 
 
+def evaluate_saved(args):
+    """Finish only evaluation; use a persisted representative witness when present."""
+    args.slot = read(args.run/'continuation_tasks.json')[args.ordinal]
+    args.method = 'adaptive'
+    spec, folder = spec_and_folder(args)
+    _, plan = problem_plan(args,spec)
+    row = read(folder/'search.json')['rows'][-1]
+    target = folder/f"{row['label']}_evaluation.json"
+    start = time.perf_counter()
+    if not target.exists():
+        classes_path = folder/f"{row['label']}_classes.json"
+        if not classes_path.exists():
+            analyze(args)
+        else:
+            _evaluate_classes(args,spec,folder,plan,row,classes_path,target,start)
+    path = args.run/f'status/adaptive_{args.slot}.json'
+    record = read(path)
+    record['analyze'] = dict(exit=0,elapsed_including_io=time.perf_counter()-start,continued=True)
+    record['complete'] = True
+    save(path,record)
+    save(args.run/f'continuations/{args.slot}/finished.json',record)
+    print(json.dumps(dict(slot=args.slot,**spec,complete=True)))
+
+
+def _evaluate_classes(args,spec,folder,plan,row,classes_path,target,start):
+    classes = read(classes_path)
+    reference = read(args.run/f"inputs/golden/{spec['index']}/reference.json")
+    result = check_ranked_reference(classes,plan,reference,row)
+    if result is None:
+        from rxn_core.artifacts import read_aam_checkpoint
+        from golden_evaluation import evaluate_planned
+        aam = read_aam_checkpoint(folder/row['archive'])
+        result = evaluate_planned(aam,plan,reference['features'],reference['mapping'],seconds=60,query_timeout_ms=1500)
+    result.update(label=row['label'],reused_ranked_classes=True,
+                  continuation_evaluation_wall=time.perf_counter()-start)
+    save(target,result)
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=['prepare','finish'])
+    p.add_argument('command',choices=['prepare','finish','evaluate_saved'])
     p.add_argument('--run',type=Path,required=True)
     p.add_argument('--ordinal',type=int)
     args=p.parse_args()

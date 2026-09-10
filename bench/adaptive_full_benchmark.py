@@ -273,6 +273,7 @@ def analyze(args):
     from rxn_core.artifacts import read_aam_checkpoint
     from golden_evaluation import evaluate_planned
     from publication_analysis import rank_archive
+    from ranked_reference_check import check_ranked_reference
     spec, folder = spec_and_folder(args)
     raw, plan = problem_plan(args, spec)
     search_record = read(folder/'search.json')
@@ -287,8 +288,10 @@ def analyze(args):
             classes = rank_archive(aam, plan)
             save(folder/f'{label}_classes.json', classes)
             reference = read(args.run/f"inputs/golden/{spec['index']}/reference.json")
-            result = evaluate_planned(aam, plan, reference['features'], reference['mapping'],
-                                      seconds=60, query_timeout_ms=1500)
+            result = check_ranked_reference(classes, plan, reference, row)
+            if result is None:
+                result = evaluate_planned(aam, plan, reference['features'], reference['mapping'],
+                                          seconds=60, query_timeout_ms=1500)
         else:
             result = holdout_classes(aam, plan, raw)
             save(folder/f'{label}_classes.json', result.pop('classes'))

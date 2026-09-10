@@ -81,6 +81,25 @@ def test_shared_growth_cache_and_saved_snapshot_preserve_groups():
     assert sum(c.reused_states for c in outer.sessions.values()) > 0
 
 
+@pytest.mark.parametrize('cap', [1, 3, 100])
+def test_element_exhaustion_skips_only_impossible_growth(cap, monkeypatch):
+    """Other elements can remain available when a particular seed is impossible."""
+    source = MolecularEndpoint(('C',)*5+('O',)*3, np.zeros((8,3)), np.zeros((8,8)))
+    target = MolecularEndpoint(('C','O','N'), np.zeros((3,3)), np.zeros((3,3)))
+    problem = AAMProblem(source,target)
+    config = AAMSearchConfig(seed_count=3, branch_limit=cap, iso_tolerance=1.)
+    outer = AdaptiveCutSearch(problem,config,policy='shared')
+    pruned = outer._session(0)
+    while pruned.advance():
+        pass
+    reference = SharedSeedSearch(problem,config,condition=pruned.condition)
+    monkeypatch.setattr(reference,'_can_seed',lambda branch,seed: seed not in branch.mapping)
+    while reference.advance():
+        pass
+    assert contents(pruned.builder.finish()) == contents(reference.builder.finish())
+    assert pruned.growth_calls < reference.growth_calls
+
+
 @pytest.mark.parametrize('workers', [1, 2])
 def test_cut_worker_backend_preserves_full_fragment_content_and_checkpoint_identity(tmp_path, workers):
     from rxn_core import search_aam

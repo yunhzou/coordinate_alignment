@@ -4,7 +4,7 @@ Policies retain the original shuffled order, repeated passes and synchronized
 frontier cap. Only equal conditional states/decisions and fragment records are
 shared. This is not a smaller seed sample or a reference-guided recovery pass.
 """
-from collections import deque
+from collections import Counter, deque
 from dataclasses import replace
 import time
 
@@ -66,6 +66,10 @@ unchanged. Identical growth output is never expanded into bijections.
         self.problem, self.config, self.condition = problem, config, condition
         self.profile = profile
         self.source, self.target = condition.source, condition.target
+        self.source_elements = {atom:data['element'] for atom,data in self.source.nodes(data=True)}
+        self.target_elements = {atom:data['element'] for atom,data in self.target.nodes(data=True)}
+        self.target_counts = Counter(self.target_elements.values())
+        self.available_elements = {}
         self.source_orbits = _nauty_orbits(self.source, wbo_tol=config.iso_tolerance)
         self.orders = _generate_seed_orders(self.source, config.seed_count,
             rng_seed=cut_seed(condition.cuts), seed_selection=config.seed_selection)
@@ -117,6 +121,15 @@ unchanged. Identical growth output is never expanded into bijections.
         self.decisions[key] = (children, changed)
         return children, changed
 
+    def _can_seed(self, branch, seed):
+        if seed in branch.mapping:
+            return False
+        if branch.node not in self.available_elements:
+            remaining = self.target_counts.copy()
+            remaining.subtract(self.target_elements[p] for p in branch.mapping.values())
+            self.available_elements[branch.node] = frozenset(e for e,n in remaining.items() if n>0)
+        return self.source_elements[seed] in self.available_elements[branch.node]
+
     def _policy(self, index, order):
         """Original synchronized admission, with growth supplied by the shared DAG."""
         branches, progressed, pass_no = [self.root], True, 0
@@ -125,12 +138,15 @@ unchanged. Identical growth output is never expanded into bijections.
             progressed = False
             pass_no += 1
             for position, seed in enumerate(order):
-                if not any(seed not in branch.mapping for branch in branches) and len(branches) <= cap:
+                # Equal elements and injectivity are mandatory. If this seed has
+                # no remaining target capacity, original growth can only carry
+                # the branch unchanged. Keep its place in frontier admission.
+                if not any(self._can_seed(branch,seed) for branch in branches) and len(branches) <= cap:
                     continue
                 admitted, seen = [], set()
                 for branch in branches:
                     self.frontiers[index] = tuple(branches) + tuple(admitted)
-                    if seed in branch.mapping:
+                    if not self._can_seed(branch,seed):
                         subtree, changed = (branch,), False
                     else:
                         subtree, changed = yield (index, pass_no, position, seed, branch)
