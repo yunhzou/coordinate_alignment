@@ -1,0 +1,21 @@
+{
+  "job": "466767",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--exclude=bosque49,bosque56",
+    "--nodes=1",
+    "--cpus-per-task=1",
+    "--mem=4G",
+    "--time=00:10:00",
+    "--no-requeue",
+    "--dependency=afterany:466542",
+    "--array=0-63%64",
+    "--job-name=slap_sweep_eval",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/status/eval_%A_%a.out",
+    "--wrap",
+    "env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910:/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/src /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/evaluate_edge_sweep.py evaluate --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910 --shards 64 --slot \"$SLURM_ARRAY_TASK_ID\""
+  ],
+  "driver_sha256": "67ed96c495deaaa63143af366cd5b8688b18149d881ac95c0c693e98afd19138"
+}

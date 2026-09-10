@@ -1,0 +1,30 @@
+{
+  "full_run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910",
+  "native_outputs": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/outputs",
+  "frozen_mapping_driver": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/slap_edge_sweep.py",
+  "frozen_evaluation_driver": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/evaluate_edge_sweep.py",
+  "prior_evaluation_submissions": [
+    {
+      "job": "466615",
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=cpunodes_nia",
+        "--exclude=bosque49,bosque56",
+        "--nodes=1",
+        "--cpus-per-task=1",
+        "--mem=4G",
+        "--time=00:10:00",
+        "--no-requeue",
+        "--dependency=afterany:466542",
+        "--array=0-63%64",
+        "--job-name=slap_sweep_eval",
+        "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/status/eval_%A_%a.out",
+        "--wrap",
+        "env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910:/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/src /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910/evaluate_edge_sweep.py evaluate --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/slap_edge_sweep_full_20260910 --shards 64 --slot \"$SLURM_ARRAY_TASK_ID\""
+      ],
+      "driver_sha256": "3c080b5ab6e6c4b50eac6962824c5bccfcabddda291a7d4250d617bb0c6921d4"
+    }
+  ],
+  "note": "Only the pending evaluator was replaced to record more timing fields; no mapping was rerun."
+}

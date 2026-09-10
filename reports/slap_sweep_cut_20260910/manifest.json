@@ -1,0 +1,33 @@
+{
+  "cases": 1851,
+  "tasks": 7404,
+  "expected_calls": 355104,
+  "dataset": "/h/399/yunhengzou/coordinate_alignment/data/aam_benchmarks/golden_original_20260906",
+  "audit_sha256": "d7c0f678b2a8112a0d96036e5553f0ea9d28959217d082b05772c1213199bd0e",
+  "commit": "8cb38919542c392293c1410ed83d8d1ccf67206d",
+  "upstream_commit": "ea248fd9494f52f4865193e87a98cc92c62b5f9e",
+  "vendor_sha256": {
+    "vendor/slapmapper/__init__.py": "51e2853ffeaa40e1e4aca7a77fb7e0a907239e9664bf041a09d314113d33a547",
+    "vendor/slapmapper/_idxmapstr.py": "b6753b6c864a49a18143d036eb15979fd060024759209b575d013c2a4239db3d",
+    "vendor/slapmapper/core.py": "62964b12866e691698d594bfdc65f84ae714fb049df4267a5f5964b5c7e5fa3c",
+    "vendor/slapmapper/aam/__init__.py": "7c8504d57e6275a0ca7c8e0586b11888846b84170061507be3a6c22c170fde6e",
+    "vendor/slapmapper/aam/aam.py": "9a68c1d7f37d09b1835aef703adf4e3a56d6d152a297d9a892502f6ddddb8be5",
+    "vendor/slapmapper/aam/_geom.py": "f2950f95eb91da313f248cf50db4753fa481699380fe01f01c35b78652b85d32",
+    "vendor/slapmapper/aam/_smiles.py": "f56413cdb6a8ec1303179f7c87dbcc9241e2c6cabea038cddb63225d2333e7a5"
+  },
+  "script_sha256": "a6d1e3951945744ce647e27746aba18f9cb3e84b53ed647bdad4e4d2abdc7614",
+  "python": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/competitor_env_20260908/bin/python",
+  "workers_per_node": 32,
+  "batches": 32,
+  "seed": 20260910,
+  "hash_seed": 0,
+  "watchdog_seconds": 300,
+  "add_Hs": true,
+  "break_sym": "heavy",
+  "cut_scope": "Uncut plus every single source edge, including H bonds; no atoms removed",
+  "objective_scope": "SLAP optimizes each perturbed graph; outputs restored to original endpoints for evaluation",
+  "balancing": "Unchanged upstream smiles2lgp element-balancing placeholders",
+  "native_archive": "native.bin: independent gzip/pickle frames; records.jsonl: committed offsets and lengths",
+  "evaluation": "Original strict heavy-atom relation modulo endpoint chemical symmetry, including unmatched atoms",
+  "scheduling": "Largest label-free structural work estimates distributed across nodes; no search-policy effect"
+}

@@ -274,10 +274,17 @@ def summary(args):
     old_missing=set.intersection(*missing_sets)
     recovered={r['index'] for r in rows if r['recovered']}
     statuses=[read(p) for p in (args.run/'status').glob('*.json')]
+    complete={r['index'] for r in rows if not r['mapping_errors'] and not r['invalid_predictions']
+              and all(a['completed_cuts']==a['expected_cuts'] for a in r['attempts'])}
     result=dict(cases=m['cases'],evaluated=len(rows),uncut_recovered=sum(r['uncut_recovered'] for r in rows),
         sweep_union_recovered=len(recovered),expanded_baseline_recovered=m['cases']-len(old_missing),
         combined_with_expanded_baseline=m['cases']-len(old_missing-recovered),
         new_cases_beyond_expanded_baseline=sorted(old_missing & recovered),
+        sweep_recovery_by_mode={mode:sum(any(a['mode']==mode and a['hits'] for a in r['attempts'])
+                                         for r in rows) for mode in ('binary','weighted')},
+        fully_swept_valid_cases=len(complete),
+        combined_unrecovered_fully_swept=sorted((old_missing-recovered)&complete),
+        combined_unrecovered_incomplete=sorted((old_missing-recovered)-complete),
         completed_calls=sum(r['completed_calls'] for r in rows),expected_calls=m['expected_calls'],
         mapping_cpu=sum(r['mapping_cpu'] for r in rows),workflow_cpu_excluding_io=sum(r['workflow_cpu_excluding_io'] for r in rows),
         mapping_wall_sum=sum(r['mapping_wall_sum'] for r in rows),encoding_cpu=sum(r['encoding_cpu'] for r in rows),
@@ -285,13 +292,45 @@ def summary(args):
         incomplete_tasks=[s['slot'] for s in statuses if s.get('completed_cuts',0)!=s.get('expected_cuts',-1)],
         mapping_errors=sum(r['mapping_errors'] for r in rows),invalid_predictions=sum(r['invalid_predictions'] for r in rows),
         unrecovered=sorted(set(range(m['cases']))-recovered),
+        timing_scope='Completed calls only; interrupted in-flight mapping CPU is not recorded. Do not treat this as total campaign CPU.',
         scope='Fixed full denominator; alternatives scored on original endpoints; incomplete cuts remain untested')
     save(args.run/'summary.json',result);print(json.dumps(result,indent=2),flush=True)
 
 
+def publish(args):
+    """Keep compact paper-query artifacts in Git; native outputs stay on project storage."""
+    manifest=read(args.run/'manifest.json')
+    rows=[read(p) for p in (args.run/'evaluations').glob('*.json')]
+    assert len(rows)==manifest['cases'], 'Do not publish a partial benchmark as final'
+    summary(args)
+    destination=ROOT/'reports/slap_sweep_cut_20260910'
+    for name in ('summary.json','manifest.json','submission.json','evaluation_submission.json'):
+        shutil.copy2(args.run/name,destination/name)
+    compact=[]
+    for row in sorted(rows,key=lambda r:r['index']):
+        value={k:v for k,v in row.items() if k not in ('attempts','invalid_details')}
+        value['ground_truth_witnesses']=[dict(slot=a['slot'],direction=a['direction'],mode=a['mode'],
+            **a['hits'][0]) for a in row['attempts'] if a['hits']]
+        value['incomplete_variants']=[a['slot'] for a in row['attempts']
+                                      if a['completed_cuts']!=a['expected_cuts']]
+        compact.append(value)
+    save(destination/'case_metrics.json',compact)
+    jobs=[read(args.run/name)['job'].split(';')[0] for name in ('submission.json','evaluation_submission.json')]
+    fields=['JobID','State','ElapsedRaw','TotalCPU','AllocCPUS','Start','End','MaxRSS']
+    command=['sacct','-j',','.join(jobs),'--array','--noheader','--parsable2','--format='+','.join(fields)]
+    accounting=subprocess.check_output(command,text=True)
+    save(destination/'slurm_accounting.json',dict(command=command,
+        rows=[dict(zip(fields,line.split('|'))) for line in accounting.splitlines()]))
+    save(destination/'artifacts.json',dict(full_run=str(args.run),native_outputs=str(args.run/'outputs'),
+        frozen_mapping_driver=str(args.run/'slap_edge_sweep.py'),
+        frozen_evaluation_driver=str(args.run/'evaluate_edge_sweep.py'),
+        prior_evaluation_submissions=[read(p) for p in args.run.glob('evaluation_submission_*cancelled_before_start.json')],
+        note='Only the pending evaluator was replaced to record more timing fields; no mapping was rerun.'))
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=('prepare','case','batch','submit','submit_evaluation','evaluate','summary'))
+    p.add_argument('command',choices=('prepare','case','batch','submit','submit_evaluation','evaluate','summary','publish'))
     p.add_argument('--run',type=Path,required=True)
     p.add_argument('--dataset',type=Path,default=DATASET)
     p.add_argument('--slot',type=int,default=0)
