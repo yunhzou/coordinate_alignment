@@ -3,7 +3,7 @@ from types import SimpleNamespace as S
 
 import pytest
 
-from golden_evaluation import prepare, evaluate_planned, project
+from golden_evaluation import prepare, evaluate_planned
 from publication_analysis import rank_archive
 from ranked_reference_check import check_ranked_reference
 from rxn_core import AAMProblem, AAMSearchConfig
@@ -28,7 +28,12 @@ def test_saved_certificate_equals_original_representative_evaluation(reverse, pa
     reference = {r:p for r,p in mapping.items() if problem.reactant.elements[r]!='H'}
     # Different full-H witnesses share a heavy-atom class; selection must retain
     # the same score, coverage and exact relation (including unmatched atoms).
-    alternatives = [mapping, dict(reversed(list(mapping.items())))]
+    alternative = dict(mapping)
+    hydrogens = [r for r in mapping if problem.reactant.elements[r]=='H']
+    if len(hydrogens)>1:
+        a,b = hydrogens[0],hydrogens[-1]
+        alternative[a],alternative[b] = alternative[b],alternative[a]
+    alternatives = [alternative, mapping]
     graph = S(terminals=(0,1), states=[S(mapping=tuple(plan.to_search_mapping(m).items()))
               for m in alternatives], capped=False, paths=lambda:iter(()))
     aam = S(graph=graph, problem=search_problem)

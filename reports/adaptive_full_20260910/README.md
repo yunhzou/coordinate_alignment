@@ -22,6 +22,11 @@ The diagnostic Golden 1636 R-to-P uncut profile fell from 21.483 to 0.857 CPU
 seconds with 1,124 states and 1,123 transitions in both runs. This is a local
 profile, **not** a claimed full-benchmark speedup. Focused tests compare complete
 correlated fragment records, states and stop reasons against the original.
+The complete repository suite passed: **518 tests in 203.61 seconds**, Slurm
+job `466076`; the unabridged log is retained in the preceding campaign folder
+as `capacity_full_tests_466076.out`. Saved-certificate verification tests include
+both orientations, unequal composition, partial reference relations and
+different explicit-H witnesses within one heavy-atom class.
 
 Current full artifacts:
 
