@@ -12,15 +12,17 @@ import networkx as nx
 
 
 class SeedAblationTests(unittest.TestCase):
-    def test_three_orders_are_the_ten_order_prefix_for_every_cut(self):
+    def test_reduced_orders_are_the_ten_order_prefix_for_every_cut(self):
         graph=nx.Graph()
         for i,e in enumerate(('C','C','O','H','H','H','H','H','H','Cl')):
             graph.add_node(i,element=e)
         graph.add_edges_from(((0,1),(1,2),(0,3),(0,4),(0,5),(1,6),(1,7),(2,8)))
         for cut in ((),*((edge,) for edge in graph.edges)):
             source=graph.copy();source.remove_edges_from(cut)
-            self.assertEqual(_generate_seed_orders(source,3,rng_seed=cut_seed(cut)),
-                             _generate_seed_orders(source,10,rng_seed=cut_seed(cut))[:3])
+            original=_generate_seed_orders(source,10,rng_seed=cut_seed(cut))
+            for count in (1,2,3):
+                with self.subTest(cut=cut,seeds=count):
+                    self.assertEqual(_generate_seed_orders(source,count,rng_seed=cut_seed(cut)),original[:count])
 
     def test_dynamic_queue_claims_each_task_exactly_once(self):
         with tempfile.TemporaryDirectory() as directory:
