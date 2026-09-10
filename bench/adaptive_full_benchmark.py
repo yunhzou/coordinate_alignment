@@ -293,9 +293,117 @@ def status(args):
         analysis=dict(Counter((r['method']+':'+str(r['analyze']['exit'])) for r in rows if 'analyze' in r))), indent=2))
 
 
+def compare(args):
+    """Read saved outputs only; unknowns remain in both fixed denominators."""
+    from publication_analysis import union_outcome, merge_classes, certificate_id
+    tasks = read(args.run/'tasks.json')
+    rows, totals = [], {}
+    for dataset, count in COUNTS.items():
+        for index in range(count):
+            specification = next(t for t in tasks if t['dataset'] == dataset and t['index'] == index)
+            methods = {}
+            for method in ('original', 'adaptive'):
+                directed = {}
+                for direction in DIRECTIONS:
+                    folder = args.run/f'results/{dataset}/{index}/{direction}/{method}'
+                    search_path = folder/'search.json'
+                    record = read(search_path) if search_path.exists() else {}
+                    last = record['rows'][-1] if record else {}
+                    label = last.get('label', 'missing')
+                    evaluation_path = folder/f'{label}_evaluation.json'
+                    classes_path = folder/f'{label}_classes.json'
+                    evaluation = read(evaluation_path) if evaluation_path.exists() else {}
+                    classes = read(classes_path) if classes_path.exists() else None
+                    directed[direction] = dict(search=record, evaluation=evaluation, classes=classes)
+                modes = {}
+                for mode, directions in (('single', [specification['smaller_first']]),
+                                         ('bidirectional', list(DIRECTIONS))):
+                    values = [directed[d] for d in directions]
+                    available = [v['classes'] for v in values if v['classes'] is not None]
+                    data = dict(searches_complete=sum(v['search'].get('complete', False) for v in values),
+                        expected_searches=len(directions), classes_complete=len(available) == len(directions),
+                        capped_directions=sum(v['search']['rows'][-1]['capped'] for v in values if v['search']),
+                        compute_cpu=sum(v['search']['rows'][-1]['compute_cpu_excluding_persistence_and_loading_seconds']
+                                        for v in values if v['search'].get('complete')))
+                    if dataset == 'golden':
+                        reference = read(args.run/f'inputs/golden/{index}/reference.json')
+                        expected = certificate_id(reference['features'], reference['mapping'])
+                        classes = merge_classes(available)
+                        data['reference_recovery'] = union_outcome([
+                            v['evaluation'].get('reference_recovery', 'unknown') for v in values])
+                        best = classes[0]['key'][:3] if classes else None
+                        hit = next((r for r in classes if r['id'] == expected), None)
+                        data['representative_event_windows'] = {str(delta):bool(hit and
+                            hit['key'][:2] == best[:2] and hit['key'][2] <= best[2]+delta)
+                            for delta in range(11)}
+                        data['class_count'] = len(classes)
+                    else:
+                        merged = {}
+                        for group in available:
+                            for row in group:
+                                if row['id'] not in merged or row['events'] < merged[row['id']]['events']:
+                                    merged[row['id']] = row
+                        data['class_events'] = {k:v['events'] for k,v in merged.items()}
+                        data['best_events'] = min(data['class_events'].values(), default=None)
+                        data['full_mapping_found'] = bool(merged)
+                    modes[mode] = data
+                methods[method] = modes
+            row = dict(dataset=dataset, index=index, methods=methods)
+            if dataset == 'holdout':
+                row['comparison'] = {}
+                for mode in ('single', 'bidirectional'):
+                    before, after = (methods[m][mode] for m in ('original', 'adaptive'))
+                    limit = before['best_events']
+                    windows = []
+                    if limit is not None:
+                        for delta in range(3):
+                            expected = {k for k,v in before['class_events'].items() if v <= limit+delta}
+                            observed = {k for k,v in after['class_events'].items() if v <= limit+delta}
+                            windows.append(dict(delta=delta, original=len(expected), shared=len(expected & observed),
+                                unresolved=sorted(expected-observed), new=len(observed-expected)))
+                    row['comparison'][mode] = dict(event_windows=windows,
+                        scope='Saved representative heavy classes under unchanged original equivalence. '
+                              'Unresolved classes require compressed-family queries, not assumed absent.')
+            rows.append(row)
+    for dataset, count in COUNTS.items():
+        selected = [r for r in rows if r['dataset'] == dataset]
+        for mode in ('single', 'bidirectional'):
+            summary = {}
+            for method in ('original', 'adaptive'):
+                values = [r['methods'][method][mode] for r in selected]
+                summary[method] = dict(cases=count, searches_complete=sum(v['searches_complete'] for v in values),
+                    expected_searches=sum(v['expected_searches'] for v in values),
+                    compute_cpu_completed=sum(v['compute_cpu'] for v in values),
+                    capped_directions=sum(v['capped_directions'] for v in values),
+                    classes_complete=sum(v['classes_complete'] for v in values))
+                if dataset == 'golden':
+                    summary[method]['reference_recovery'] = dict(Counter(v['reference_recovery'] for v in values))
+                    summary[method]['event_windows'] = {str(d):sum(v['representative_event_windows'][str(d)]
+                                                                 for v in values) for d in range(11)}
+                else:
+                    summary[method]['full_mapping_found'] = sum(v['full_mapping_found'] for v in values)
+            if dataset == 'golden':
+                summary['original_recovered_not_yet_recovered_by_adaptive'] = [r['index'] for r in selected
+                    if r['methods']['original'][mode]['reference_recovery'] == 'recovered'
+                    and r['methods']['adaptive'][mode]['reference_recovery'] != 'recovered']
+            else:
+                summary['event_comparison'] = dict(Counter('unknown' if None in (
+                    a := r['methods']['original'][mode]['best_events'],
+                    b := r['methods']['adaptive'][mode]['best_events']) else
+                    'adaptive_worse' if b > a else 'adaptive_better' if b < a else 'equal'
+                    for r in selected))
+            totals[dataset+'_'+mode] = summary
+    save(args.run/'comparison/per_case.json', rows)
+    save(args.run/'comparison/summary.json', dict(totals=totals,
+        scope='Full fixed denominators. Live report; unavailable results remain unknown. '
+              'No change to original equivalence, no reference-guided search, no top-k truncation. '
+              'CPU is completed measured work only; failed/censored cost is in worker status and Slurm accounting.'))
+    print(json.dumps(totals, indent=2))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('prepare', 'submit', 'worker', 'search', 'analyze', 'status'))
+    parser.add_argument('command', choices=('prepare', 'submit', 'worker', 'search', 'analyze', 'status', 'compare'))
     parser.add_argument('--run', type=Path, required=True)
     parser.add_argument('--original-commit', default='98b01b1')
     parser.add_argument('--workers', type=int, default=8)
