@@ -27,11 +27,14 @@ class AdaptiveCutSearch:
     compressed growth results across cuts only when their inputs are equivalent.
     No witnesses are substituted for correlated placements.
     """
-    def __init__(self, problem, config=None):
+    def __init__(self, problem, config=None, *, policy='adaptive'):
         self.problem = problem
         self.config = config or AAMSearchConfig(seed_count=1)
-        if self.config.seed_count != 1 or self.config.anchors:
+        if policy not in ('adaptive', 'shared'):
+            raise ValueError('Unknown cut search policy')
+        if (policy == 'adaptive' and self.config.seed_count != 1) or self.config.anchors:
             raise ValueError('Adaptive cut search uses one guide per cut and no external anchors')
+        self.policy = policy
         self.source, self.target = [build_graph(e.elements, e.wbo,
             bond_cut=self.config.graph_floor) for e in (problem.reactant, problem.product)]
         self.orbits = _nauty_orbits(self.target, wbo_tol=self.config.iso_tolerance)
@@ -51,7 +54,11 @@ class AdaptiveCutSearch:
                                                  seed_selection=self.config.seed_selection)[0])
             condition = AdaptiveSearchCondition(view.source, self.target, order, self.orbits,
                                                 self.workspace, cut, view)
-            self.sessions[index] = AdaptiveSeedSearch(self.problem, self.config, condition=condition)
+            if self.policy == 'shared':
+                from .shared_seed_search import SharedSeedSearch
+                self.sessions[index] = SharedSeedSearch(self.problem, self.config, condition=condition)
+            else:
+                self.sessions[index] = AdaptiveSeedSearch(self.problem, self.config, condition=condition)
         return self.sessions[index]
 
     def advance(self):

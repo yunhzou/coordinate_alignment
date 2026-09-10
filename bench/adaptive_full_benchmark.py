@@ -143,6 +143,10 @@ def prepare_revision(args):
             for p in (args.run/'engine').rglob('*') if p.is_file()},
         baseline_reuse='Original artifacts and their original recorded timings; no mapper rerun or retiming.',
         batch_workers=args.batch_workers, batch_tasks=args.batch_tasks)
+    if args.adaptive_policy == 'shared_policies':
+        manifest['adaptive_config'] = dict(previous['original_config'])
+        manifest['branch_cap_scope'] = dict(original='Native growth and synchronized live frontier',
+            adaptive='Identical per-policy native growth and synchronized live frontier')
     save(args.run/'manifest.json', manifest)
     (args.run/'status').mkdir()
     print(json.dumps(dict(run=str(args.run), candidate_calls=len(tasks), original_artifacts=str(reference))), flush=True)
@@ -190,11 +194,13 @@ def search(args):
         from rxn_core.adaptive_cut_search import AdaptiveCutSearch
         cpu, wall = time.process_time(), time.perf_counter()
         policy = manifest.get('adaptive_policy', 'seed_frontier')
-        session = {'seed_frontier':AdaptiveSeedSearch,
-                   'cut_interleaved':AdaptiveCutSearch}[policy](plan.problem, plan.config)
+        session = (AdaptiveCutSearch(plan.problem, plan.config, policy='shared')
+                   if policy == 'shared_policies' else
+                   {'seed_frontier':AdaptiveSeedSearch,
+                    'cut_interleaved':AdaptiveCutSearch}[policy](plan.problem, plan.config))
         cpu_used, wall_used = time.process_time()-cpu, time.perf_counter()-wall
         for budget in manifest['adaptive_work_budgets']:
-            while session.agenda and session.work < budget and cpu_used < manifest['adaptive_cpu_seconds']:
+            while session.agenda and (budget == 0 or session.work < budget) and cpu_used < manifest['adaptive_cpu_seconds']:
                 cpu, wall = time.process_time(), time.perf_counter()
                 session.advance()
                 cpu_used += time.process_time()-cpu
@@ -220,7 +226,7 @@ def search(args):
                 capped=result.aam.graph.capped,
                 stop='agenda_exhausted' if result.exhausted else
                      'cpu_budget' if cpu_used >= manifest['adaptive_cpu_seconds'] else 'work_budget')
-            if policy == 'cut_interleaved':
+            if policy in ('cut_interleaved', 'shared_policies'):
                 row.update(visited_cuts=len(session.sessions), total_cuts=len(session.cuts),
                            native_reuse=session.repair.stats())
             rows.append(row)
@@ -590,7 +596,8 @@ if __name__ == '__main__':
     parser.add_argument('--run', type=Path, required=True)
     parser.add_argument('--original-commit', default='98b01b1')
     parser.add_argument('--workers', type=int, default=8)
-    parser.add_argument('--work-budgets', type=int, nargs='+', default=[400, 1600, 6400])
+    parser.add_argument('--work-budgets', type=int, nargs='+', default=[400, 1600, 6400],
+                        help='Saved decision budgets; 0 means exhaust the declared policies, subject to watchdog/CPU budget')
     parser.add_argument('--cpu-seconds', type=float, default=30.)
     parser.add_argument('--cpu-budget', type=int, default=1024)
     parser.add_argument('--partition', default='cpunodes_nia')
@@ -600,7 +607,7 @@ if __name__ == '__main__':
     parser.add_argument('--method', choices=('original', 'adaptive'))
     parser.add_argument('--monitor-seconds', type=int, default=7200)
     parser.add_argument('--reference-run', type=Path)
-    parser.add_argument('--adaptive-policy', choices=('seed_frontier','cut_interleaved'), default='cut_interleaved')
+    parser.add_argument('--adaptive-policy', choices=('seed_frontier','cut_interleaved','shared_policies'), default='cut_interleaved')
     parser.add_argument('--batch-workers', type=int, default=16)
     parser.add_argument('--batch-tasks', type=int, default=64)
     arguments = parser.parse_args()
