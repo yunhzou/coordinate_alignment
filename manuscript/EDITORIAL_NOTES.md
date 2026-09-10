@@ -3,12 +3,13 @@
 The paper is a substantive first draft with generated figures and recorded-event
 animations. Resolve the following before treating it as a submission manuscript.
 
-1. Author order supplied by Yunheng Zou: Yunheng Zou; Olalla; Shifa Hussain;
+1. Author order supplied by Yunheng Zou: Yunheng Zou; Olalla Nieto Faza; Shifa Hussain;
    Varinia Bernales; Alán Aspuru-Guzik. Bernales and Aspuru-Guzik are the principal
    investigators. The provided institutional reference assigns Zou to 1 and 6,
    Bernales to 2 and 7, and Aspuru-Guzik to 1–9; those affiliations are now in the
-   paper. Supply Olalla's full name and the affiliation numbers for Olalla and
-   Hussain. Confirm whether both PIs are corresponding authors and supply contact
+   paper. Nieto Faza's University of Vigo affiliation is confirmed and listed
+   under number 10 with her Department of Organic Chemistry. Supply Hussain's
+   affiliation. Confirm whether both PIs are corresponding authors and supply contact
    details if desired. Equal-contribution symbols from the reference article
    have not been transferred to this author list. Confirm the method name, title,
    individual contributions, funding and competing interests. “AAM” in the plots
