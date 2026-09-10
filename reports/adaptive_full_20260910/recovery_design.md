@@ -98,3 +98,15 @@ Optimize collection without changing records: direct dataclass constructors
 for index-offset copies, and identity memoization of immutable generator tuples
 during group interning. Validate equality against the existing implementation
 and replay saved full-benchmark artifacts through the corrected collection path.
+
+## Certified empty-growth overhead
+
+Profiling the uncut Golden 1636 R-to-P case after collection fixes shows
+74,498 fragment calls for only 1,124 stored states (21.48 profiled CPU seconds).
+Most time is in the Python/native growth boundary. For a fixed locked mapping,
+a source atom cannot start an injective same-element match if no target atom
+of that element remains. Cache remaining target-element capacity per state and
+skip these provably empty decisions, including synchronized steps where every
+live branch is in that situation. Retain the frontier and its cap admission
+semantics. This is a necessary condition on the current state, not a chemical
+filter, approximate coverage rule, changed seed selection, or reduced budget.
