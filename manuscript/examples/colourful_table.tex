@@ -1,0 +1,72 @@
+\PassOptionsToPackage{table}{xcolor}
+
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+
+
+% Standard NeurIPS Packages
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{bbm}
+
+% User-specific Packages from COLM submission
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{cleveref} % Must be loaded AFTER hyperref
+
+\usepackage{subcaption}
+\usepackage{caption}
+
+\title{An Examplar of Tables with Colourful Headings and Highlighted Values}
+
+\begin{document}
+
+\maketitle
+
+\begin{table*}[ht]
+\centering
+\small
+% \setlength{\tabcolsep}{4pt}
+\rowcolors{2}{gray!5}{white}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccc}
+\toprule
+\rowcolor{blue!15}  % TODO: colour for the headings
+Dataset (\textit{Solution Source}) & Gated Subset & $\alpha_T^{0}$ & $\alpha_E^{0}$ & $\delta_{E \to T}^w$ & $\delta_{T \to E}^w$ & $\Delta_w$ & $\delta_{E \to T}^\ell$ & $\delta_{T \to E}^\ell$ & $\Delta_\ell$ \\
+\midrule
+GPQA-Main (G) & 27.9\% & 33.5 & 29.6 & -3.2 & 26.4 & \cellcolor{green!15}\textbf{+29.6} & 14.4 & 36.8 & \cellcolor{green!15}\textbf{+22.4} \\
+GPQA-Main (D) & 27.7\% & 31.5 & 24.2 & 24.2 & 53.2 & \cellcolor{green!15}\textbf{+29.0} & 13.7 & 47.6 & \cellcolor{green!15}\textbf{+33.9} \\
+GPQA-Diamond (G) & 29.3\% & 37.1 & 24.1 & 8.6 & 25.9 & \cellcolor{green!15}\textbf{+17.2} & 12.1 & 48.3 & \cellcolor{green!15}\textbf{+36.2} \\
+GPQA-Diamond (D) & 19.2\% & 38.4 & 18.4 & 21.1 & 50.0 & \cellcolor{green!15}\textbf{+28.9} & 2.6 & 36.8 & \cellcolor{green!15}\textbf{+34.2} \\
+MMLU Mathematics (G) & 47.0\% & 38.0 & 21.3 & 4.3 & 36.2 & \cellcolor{green!15}\textbf{+31.9} & 14.9 & 40.4 & \cellcolor{green!15}\textbf{+25.5} \\
+MMLU Mathematics (D) & 50.0\% & 39.0 & 32.0 & 18.0 & 28.0 & \cellcolor{green!15}\textbf{+10.0} & 24.0 & 32.0 & \cellcolor{green!15}\textbf{+8.0} \\
+MMLU Psychology (G) & 86.8\% & 93.6 & 8.0 & -1.5 & 85.8 & \cellcolor{green!15}\textbf{+87.3} & 0.2 & 86.7 & \cellcolor{green!15}\textbf{+86.5} \\
+MMLU Psychology (D) & 84.0\% & 92.8 & 11.1 & 1.1 & 85.8 & \cellcolor{green!15}\textbf{+84.7} & 0.7 & 84.9 & \cellcolor{green!15}\textbf{+84.3} \\
+GSM8K (G) & 95.0\% & 27.4 & 29.5 & 6.3 & 1.1 & \cellcolor{red!15}\textbf{-5.3} & 4.2 & 0.0 & \cellcolor{red!15}\textbf{-4.2} \\
+GSM8K (D) & 95.0\% & 26.3 & 27.4 & 5.3 & 4.2 & \cellcolor{red!15}\textbf{-1.1} & 4.2 & 2.1 & \cellcolor{red!15}\textbf{-2.1} \\
+\bottomrule
+\end{tabular}}
+\caption{
+Evidence for directional asymmetry in our initial investigations. All values are percentages (\%) measured on the matched gate-passing subset. 
+$\alpha_T^{0}$ and $\alpha_E^{0}$ denote zero-shot accuracies on the target and exemplar distributions, respectively. 
+$\delta_{E \to T}^w$ and $\delta_{E \to T}^\ell$ denote forward gains over $\alpha_T^{0}$ under worked-solution and label-only prompting, while 
+$\delta_{T \to E}^w$ and $\delta_{T \to E}^\ell$ denote reverse gains over $\alpha_E^{0}$. 
+We define $\Delta_w := \delta_{T \to E}^w - \delta_{E \to T}^w$ and $\Delta_\ell := \delta_{T \to E}^\ell - \delta_{E \to T}^\ell$, 
+so more \emph{positive} values indicate stronger reverse-favoured asymmetry. 
+For each dataset run, (G) and (D) denote generator- and discriminator-sourced worked solutions, respectively.
+}
+\label{tab:asymmetry-standardized}
+\end{table*}
+
+\end{document}

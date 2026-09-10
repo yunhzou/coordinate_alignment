@@ -1,0 +1,54 @@
+{
+  "seed_comparison.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/aam_seed1_2_20260910/comparison.json",
+    "sha256": "452e6573db95e23f3d1e44a3545b36bfaef63aa184734c8566402b2ca79ca5ba"
+  },
+  "slap_sweep.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/slap_sweep_cut_20260910/summary.json",
+    "sha256": "8526651e1cf78c975a11d9ed93ffce773ffc67d3fdd0484f6cf6f9f464429030"
+  },
+  "publication.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/golden_publication_20260908/analytics.json",
+    "sha256": "eda206cb994c1da4e133791efa93968686ed9a94482ca5e1b6001a778a9c9ec9"
+  },
+  "collection.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/golden_pattern_benchmark_20260908/benchmark_report.json",
+    "sha256": "d70ceadd23667c5796ef6b8d689331db3380df25aa2c00788a0ab3622e5cc1d6"
+  },
+  "competitors.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/golden_competitors_20260908/summary.json",
+    "sha256": "e2cbaefaf8f6294ee86296a6fdaab85f3d0b66db12834bbe72c9a5dd5dafb179"
+  },
+  "holdout_scores.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/tolerance_per_case.json",
+    "sha256": "4dc070ab1cd71fa71bdbffb0ef83d8a3e660f5db745e80427f9eee09976c8e1e"
+  },
+  "holdout_overlap.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/overlap/summary.json",
+    "sha256": "6d917bfea3c44c6d37b80b5e74e2ffb7f6d63e2143a8d83f3e9ec2f375b38f10"
+  },
+  "holdout_manifest.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/manifest.json",
+    "sha256": "9b3919bc98e61b2dcaceeee886194bb7afdb328e23f17779bf236178d2dc02af"
+  },
+  "case64_input.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/inputs/64/input.json",
+    "sha256": "8a471bc868281f8487bbb8476dc784d472542ba5272ccc7d354a677f260ac562"
+  },
+  "case135_input.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/inputs/135/input.json",
+    "sha256": "2f3399883d423ab68dea10d1a95447e1eff0ec52eb61d85b0ea6197f40dda59c"
+  },
+  "case1_input.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/inputs/1/input.json",
+    "sha256": "d02bcd8bc33f669e18922076d6a750eaea0a97fb0df3552adc992231b581c9e3"
+  },
+  "adaptive_no_sweep.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910/comparison/summary.json",
+    "sha256": "7360bb6ced7e17347ffdc4d1153b492eb86a18e332f0d02043f56744d77fc360"
+  },
+  "adaptive_manifest.json": {
+    "source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910/manifest.json",
+    "sha256": "c021ebb15b06c4c4203c2884c3e2f58ee9b6f90185e8efad90d9a71a9495bcbe"
+  }
+}

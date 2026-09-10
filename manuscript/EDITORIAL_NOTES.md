@@ -1,0 +1,58 @@
+# Author review for the first draft
+
+The paper is a substantive first draft with generated figures and recorded-event
+animations. Resolve the following before treating it as a submission manuscript.
+
+1. Confirm the method name, title, author order, affiliations, corresponding
+   author, contributions, funding and competing interests. “AAM” in the plots is
+   the workspace shorthand, not a newly assigned official method name. Confirm
+   the template's institutional logos are appropriate for the final author list.
+2. Document the provenance and selection of the 140 elementary steps, the precise
+   calculation method/version used for their cached WBO matrices, and which
+   structures/data may be redistributed publicly. No WBO calculation level or
+   dataset citation has been invented. This collection was inspected during
+   development and lacks reference mappings; its results are feasibility,
+   score and alternative-coverage evidence, not held-out chemical accuracy.
+3. Decide which frozen engine is the main public release. The newer seed ablation
+   uses `98b01b1` (1,836 verified at ten orders); the earlier publication/collection
+   uses `bb0a7d7` (1,839 verified). The draft keeps them separate. Later adaptive
+   or shared-policy optimizations are not silently substituted.
+4. The located full Golden no-sweep experiment is the adaptive agenda at
+   `0ce0f17`, with 1,723 verified, 33 absent and 95 unknown. It also changes
+   scheduler and cap policy. It cannot serve as a pure “sweep on/off” ablation
+   of the mature scheduler. The draft reports it under its actual scope. If a
+   separate matched-policy no-sweep report is intended, identify that artifact
+   before substituting numbers.
+5. Review the method description against the intended core contribution:
+   ongoing weighted fragment extension, conditional saturated-placement
+   branching, local boundary-aware canonicalization, exact continuation-state
+   joins, and downstream correlated-family equality/containment. The current
+   evidence does not isolate their individual performance contributions.
+6. Expand related work and software citations for a target journal. The initial
+   five scientific references were checked against primary records; no universal
+   novelty, global optimality, physical mechanism or TS-accuracy claim is made.
+7. Supply a public code URL, archive DOI, licensing and reproducible environment
+   for the frozen benchmark releases. The included compact evidence supports
+   figure regeneration; it is not the entire multi-gigabyte mapping archive.
+
+Numerical interpretation to preserve during editing:
+
+- Golden recovery concerns a verified reference witness among retained families,
+  not top-1 prediction. All 1,851 records remain in denominators; unknowns are
+  not counted as successes or certified absences.
+- One, two, three and ten “seeds” mean seed orderings per cut, not the number of
+  atoms attempted or a single atom-pair initialization.
+- SLAP sweep recovery is 1,795; union with an older expanded run is 1,797 and
+  has a different budget. The 1,661 uncut control combines both directions and
+  bond modes; it is not the default single-call result.
+- Paired CPU uses 1,807 mutually completed Golden cases. Instrumentation differs
+  and interrupted work is omitted. It does not establish latency or total cost.
+- The primary 140-case comparison keeps cap 100. Case 123's cap-200 result is
+  a separate follow-up. An extra low-event mapping is not automatically a
+  chemically correct alternative.
+- Figure 1 is schematic. Movies use actual event traces and terminal mappings,
+  sample at most five witnesses per event, and illustrate an event-enabled Python
+  path. Their timing is chosen for presentation and is unrelated to runtime.
+
+The user previously excluded the synthetic six-vertex exact-oracle diagnostic
+from paper comparisons; it remains excluded.

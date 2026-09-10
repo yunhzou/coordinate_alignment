@@ -1,0 +1,105 @@
+%--------------------------------------------------------------------
+%    shared preamble packages and commands
+%--------------------------------------------------------------------
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{titlesec}
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% For theorems and such
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{bm}
+
+% To solve complain "Package cleveref Error: cleveref must be loaded after amsmath!."
+\usepackage[noabbrev,nameinlink]{cleveref}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{assets/math_commands}
+
+% ============ Our packages =================
+\usepackage{orcidlink}
+\usepackage{comment}
+\usepackage[version=4]{mhchem}
+\usepackage{longtable}
+\usepackage{array}
+\renewcommand{\arraystretch}{1.7}
+\usepackage{multirow}           % tabular cells spanning multiple rows
+\usepackage{amsfonts}           % blackboard math symbols
+\usepackage{nicefrac}
+\usepackage{duckuments}         % sample images
+\usepackage{thmtools,thm-restate}
+\usepackage{enumitem}
+% \usepackage{todonotes}
+\usepackage{xcolor,colortbl}
+\usepackage{tikz}
+\usepackage{tikz-cd}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{gensymb}
+\usepackage{textcomp} % Alternative to gensymb
+\newcommand{\perthousand}{‰} % Manually define
+% \usepackage{svg}
+\usepackage[inkscapelatex=false]{svg}
+
+% ============ Our math commands =================
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newcommand*{\ldblbrace}{\{\mskip-5mu\{}
+\newcommand*{\rdblbrace}{\}\mskip-5mu\}}
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\black}[1]{\textcolor{black}{#1}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\teal}[1]{\textcolor{teal}{#1}}
+\newcommand{\yellow}[1]{\textcolor{yellow}{#1}}
+\newcommand{\magenta}[1]{\textcolor{magenta}{#1}}
+\newcommand{\gray}[1]{\textcolor{gray}{#1}}
+
+% ============ Our affiliations =================
+\newcommand{\addressCHEM}{Department of Chemistry, University of Toronto,  80 St. George St., Toronto, ON M5S 3H6, Canada}
+\newcommand{\addressAC}{Acceleration Consortium, 700 University Ave., Toronto, ON M7A 2S4, Canada}
+\newcommand{\addressCS}{Department of Computer Science, University of Toronto, 40 St George St., Toronto, ON M5S 2E4, Canada}
+\newcommand{\addressVECTOR}{Vector Institute for Artificial Intelligence, W1140-108 College St., Schwartz Reisman Innovation Campus, Toronto, ON M5G 0C6, Canada}
+\newcommand{\addressMSE}{Department of Materials Science \& Engineering, University of Toronto, 184 College St., Toronto, ON M5S 3E4, Canada}
+\newcommand{\addressCHEMENG}{Department of Chemical Engineering \& Applied Chemistry, University of Toronto, 200 College St., Toronto, ON M5S 3E5, Canada}
+\newcommand{\addressMEDICALSCI}{Institute of Medical Science, 1 King's College Circle, Medical Sciences Building, Room 2374, Toronto, ON M5S 1A8, Canada}
+\newcommand{\addressCIFAR}{Canadian Institute for Advanced Research (CIFAR), 661 University Ave., Toronto,
+ON M5G 1M1, Canada}
+\newcommand{\addressNVIDIA}{NVIDIA, 431 King St W \#6th, Toronto, ON M5V 1K4, Canada}
+\newcommand{\addressMS}{Institute of Medical Science, 1 King's College Circle, Medical Sciences Building, Room 2374, Toronto, ON M5S 1A8, Canada}
+
+%==============Acknowledgements==============
+\newcommand{\acknowAC}{This research is part of the University of Toronto’s Acceleration Consortium, which receives funding from the CFREF-2022-00042 Canada First Research Excellence Fund. }
+\newcommand{\acknowGEN}[1]{This research was enabled in part by support provided by #1 and the Digital Research Alliance of Canada (\url{https://www.alliancecan.ca}). }
+\newcommand{\acknowSciNet}[1]{Computations were performed on the #1 supercomputer at the SciNet HPC Consortium. SciNet is funded by: the Canada Foundation for Innovation; the Government of Ontario; Ontario Research Fund - Research Excellence; and the University of Toronto.}
+% \newcommand{\acknowWestGrid}{This research was enabled in part by support provided by WestGrid 
+% (\url{www.westgrid.ca}) and the Digital Research Alliance of Canada (\url{alliancecan.ca}).}
+\newcommand{\acknowCalcQueb}[1]{Computations were made on the supercomputer #1 from École de technologie supérieure, managed by Calcul Québec and the Digital Research Alliance of Canada. The operation of this supercomputer is funded by the Canada Foundation for Innovation (CFI), Ministère de l’Économie, des Sciences et de l’Innovation du Québec (MESI) and le Fonds de recherche du Québec – Nature et technologies (FRQ-NT).}
+\newcommand{\acknowDARPA}{This work was supported by the Defense Advanced Research Projects Agency (DARPA) under Agreement No.~HR0011262E022.}
+
+
+%--------------------------------------------------------------------
+%--------------------------------------------------------------------
+%    Ensure provision of doi and mydoi commands
+%    mydoi is useful when journal templates suppress the doi command
+%    NB providecommand will be ignored if a command already exists
+%--------------------------------------------------------------------
+\providecommand{\doi}[1]{\href{https://doi.org/#1}{doi:#1}}
+\providecommand{\mydoi}[1]{\href{https://doi.org/#1}{doi:#1}}
+%--------------------------------------------------------------------

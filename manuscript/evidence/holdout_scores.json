@@ -1,0 +1,1402 @@
+[
+  {
+    "index": 0,
+    "name": "pr1.tempo_ts1",
+    "old_events": 0,
+    "new_events": 0,
+    "slap_events": 0,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 1,
+    "name": "pr1.tempo_ts10",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 2,
+    "name": "pr1.tempo_ts2",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 3,
+    "name": "pr1.tempo_ts3",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 4,
+    "name": "pr1.tempo_ts4",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 5,
+    "name": "pr1.tempo_ts5",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 6,
+    "name": "pr1.tempo_ts6",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 7,
+    "name": "pr1.tempo_ts8",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 8,
+    "name": "pr1.tempo_ts9",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 9,
+    "name": "pr10.carborane_ts1",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 10,
+    "name": "pr10.carborane_ts2",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 12,
+    "name": "pr11.cycloadditions_tsIIIa",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 13,
+    "name": "pr11.cycloadditions_tsIIIb",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 14,
+    "name": "pr11.cycloadditions_tsIIa",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 15,
+    "name": "pr11.cycloadditions_tsIIb",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 16,
+    "name": "pr11.cycloadditions_tsIVa",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 17,
+    "name": "pr11.cycloadditions_tsIVb",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 18,
+    "name": "pr11.cycloadditions_tsIa",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 19,
+    "name": "pr11.cycloadditions_tsIb",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 20,
+    "name": "pr13.Cyclobutane_JOC2023_TS-CD1-3_step2",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 21,
+    "name": "pr13.Cyclobutane_JOC2023_TS-CD_step1",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 22,
+    "name": "pr13.Cyclobutane_JOC2023_TS-D1G-3_step3G",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 23,
+    "name": "pr13.Cyclobutane_JOC2023_multiplicity_fixed_TS-CD1-3_step2",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 24,
+    "name": "pr13.Cyclobutane_JOC2023_multiplicity_fixed_TS-D1G-3_step3G",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 25,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS11_step1_reductive_coupling",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 26,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS12_step2_prot_oxidation",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 27,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS13_step3_bHelimination",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 28,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS14_step4_reductive_elimination",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 29,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS1_step1_OxidativeAdition_bluepath",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 30,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS2_step1_OxidativeAdition_blackpath",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 31,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS3_step2_alkene_inserion",
+    "old_events": 7,
+    "new_events": 7,
+    "slap_events": 9,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 32,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-a_step1_halogen_abstraction_mult1",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 33,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-a_step1_halogen_abstraction_mult3",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 34,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-a_step1_halogen_abstraction_mult5",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 35,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-b_step2_radical_recombination_mult2",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 36,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-b_step2_radical_recombination_mult4",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 37,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-b_step2_radical_recombination_mult6",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 38,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult2",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 39,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult4",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 40,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult6",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 41,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_Step3_bluepath_side_reation_mult2",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 42,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_Step3_bluepath_side_reation_mult4",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 43,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_Step3_bluepath_side_reation_mult6",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 44,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_prime_step2_redPath_mult3",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 45,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_prime_step2_redPath_mult5",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 46,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS7_step1_radical_recombination_mult2",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 47,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS7_step1_radical_recombination_mult6",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 48,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult2",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 49,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult4",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 50,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-a_step1_halogen_abstraction_mult3",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 51,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-a_step1_halogen_abstraction_mult5",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 52,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-b_step2_radical_recombination_mult2",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 53,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-b_step2_radical_recombination_mult4",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 54,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-b_step2_radical_recombination_mult6",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 55,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS2_prime_step2_redPath_mult3",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 56,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS2_prime_step2_redPath_mult5",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 57,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS7_step1_radical_recombination_mult2",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 58,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS7_step1_radical_recombination_mult6",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 59,
+    "name": "pr16.carbocation_ts11",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 60,
+    "name": "pr16.carbocation_ts12",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 61,
+    "name": "pr16.carbocation_ts2",
+    "old_events": 0,
+    "new_events": 0,
+    "slap_events": 0,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 62,
+    "name": "pr16.carbocation_ts3",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 63,
+    "name": "pr16.carbocation_ts4",
+    "old_events": 0,
+    "new_events": 0,
+    "slap_events": 0,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 9,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 65,
+    "name": "pr16.carbocation_ts7",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 66,
+    "name": "pr16.carbocation_ts8",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 67,
+    "name": "pr16.carbocation_ts9",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 68,
+    "name": "pr17.carbene.ins_ts6a",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 69,
+    "name": "pr17.carbene.ins_ts8",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 70,
+    "name": "pr18.Au.alkyl_tsBC",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 71,
+    "name": "pr19.heck_ts1",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 72,
+    "name": "pr19.heck_ts9",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 73,
+    "name": "pr2.mbh_ts1",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 74,
+    "name": "pr2.mbh_ts2",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 75,
+    "name": "pr2.mbh_ts8",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 76,
+    "name": "pr3.Suzuki.Ni_ts11.TM",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 77,
+    "name": "pr3.Suzuki.Ni_ts14.RE",
+    "old_events": 8,
+    "new_events": 8,
+    "slap_events": 8,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 78,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-A",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 79,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-B",
+    "old_events": 0,
+    "new_events": 0,
+    "slap_events": 0,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 80,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-C",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 81,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-D",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 82,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-A",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 83,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-B",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 84,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-C",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 85,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-D",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 86,
+    "name": "pr5.Noyori_ts26",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 87,
+    "name": "pr5.Noyori_ts45",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 88,
+    "name": "pr5.Noyori_ts56",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 89,
+    "name": "pr5.Noyori_ts5H2",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 90,
+    "name": "pr5.Noyori_ts65",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 91,
+    "name": "pr6.AlNHCs_tsI",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 92,
+    "name": "pr6.AlNHCs_tsII",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 93,
+    "name": "pr7.V.dodh_ts1011-triplet",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 94,
+    "name": "pr7.V.dodh_ts1015",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 95,
+    "name": "pr7.V.dodh_ts1112-triplet",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 96,
+    "name": "pr7.V.dodh_ts13",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 97,
+    "name": "pr7.V.dodh_ts1314",
+    "old_events": 7,
+    "new_events": 7,
+    "slap_events": 7,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 98,
+    "name": "pr7.V.dodh_ts14",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 99,
+    "name": "pr7.V.dodh_ts141",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 100,
+    "name": "pr7.V.dodh_ts156",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 102,
+    "name": "pr7.V.dodh_ts25-singlet",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 103,
+    "name": "pr7.V.dodh_ts25-triplet",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 104,
+    "name": "pr7.V.dodh_ts32",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 7,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 105,
+    "name": "pr7.V.dodh_ts45-singlet",
+    "old_events": 7,
+    "new_events": 7,
+    "slap_events": 7,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 106,
+    "name": "pr7.V.dodh_ts45-triplet",
+    "old_events": 7,
+    "new_events": 7,
+    "slap_events": 7,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 107,
+    "name": "pr7.V.dodh_ts56-singlet",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 108,
+    "name": "pr7.V.dodh_ts56-triplet",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 109,
+    "name": "pr7.V.dodh_ts61",
+    "old_events": 7,
+    "new_events": 7,
+    "slap_events": 7,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 110,
+    "name": "pr7.V.dodh_ts67",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 111,
+    "name": "pr7.V.dodh_ts71",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 112,
+    "name": "pr7.V.dodh_ts81",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 113,
+    "name": "pr7.V.dodh_ts81-b",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 114,
+    "name": "pr7.V.dodh_ts910",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 115,
+    "name": "pr7.V.dodh_ts910-water",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 116,
+    "name": "pr8.ketenes_ts1prime",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 117,
+    "name": "pr8.ketenes_ts2prime",
+    "old_events": 1,
+    "new_events": 1,
+    "slap_events": 1,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 118,
+    "name": "pr9.carbene.rearr_ts10",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 119,
+    "name": "pr9.carbene.rearr_ts11",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 120,
+    "name": "pr9.carbene.rearr_ts13a",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 121,
+    "name": "pr9.carbene.rearr_ts33",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 122,
+    "name": "pr9.carbene.rearr_ts39-endo",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 123,
+    "name": "pr9.carbene.rearr_ts41a-endo",
+    "old_events": 3,
+    "new_events": 19,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": false,
+    "old_cap": 200,
+    "new_cap": 100
+  },
+  {
+    "index": 124,
+    "name": "pr9.carbene.rearr_ts42",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 125,
+    "name": "pr9.carbene.rearr_ts47a",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 126,
+    "name": "TS_01",
+    "old_events": 3,
+    "new_events": 3,
+    "slap_events": 3,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 127,
+    "name": "TS_02",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 128,
+    "name": "TS_03",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 129,
+    "name": "TS_04",
+    "old_events": 8,
+    "new_events": 8,
+    "slap_events": 8,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 130,
+    "name": "TS_05",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 131,
+    "name": "TS_07",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 132,
+    "name": "TS_08",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 133,
+    "name": "TS_09",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 134,
+    "name": "TS_10",
+    "old_events": 6,
+    "new_events": 6,
+    "slap_events": 6,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 135,
+    "name": "TS_11",
+    "old_events": 7,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 136,
+    "name": "TS_12",
+    "old_events": 5,
+    "new_events": 5,
+    "slap_events": 5,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 137,
+    "name": "TS_13",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 138,
+    "name": "TS_15",
+    "old_events": 4,
+    "new_events": 4,
+    "slap_events": 4,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  },
+  {
+    "index": 139,
+    "name": "TS_16",
+    "old_events": 2,
+    "new_events": 2,
+    "slap_events": 2,
+    "shared_best_heavy_pattern": true,
+    "old_cap": 100,
+    "new_cap": 100
+  }
+]

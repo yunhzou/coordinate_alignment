@@ -1,0 +1,16 @@
+[
+  {
+    "file": "movie1_continuous_growth.mp4",
+    "case": 64,
+    "events": 21,
+    "duration_seconds": 19.1,
+    "scope": "Illustrative frozen-engine uncut replay, root seed 42, cap 100, matching tolerance 1.0, explicit H. Event trace follows the scheduler first branch only; graph stores all retained branches. Not a benchmark rerun, molecular dynamics, or reference mapping."
+  },
+  {
+    "file": "movie2_deferred_boundaries.mp4",
+    "case": 1,
+    "events": 70,
+    "duration_seconds": 58.9,
+    "scope": "Illustrative frozen-engine uncut replay, root seed 42, cap 100, matching tolerance 1.0, explicit H. Event trace follows the scheduler first branch only; graph stores all retained branches. Not a benchmark rerun, molecular dynamics, or reference mapping."
+  }
+]

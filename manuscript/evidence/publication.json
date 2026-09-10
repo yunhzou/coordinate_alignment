@@ -1,0 +1,1819 @@
+{
+  "denominator": 1851,
+  "modes": {
+    "single": {
+      "recovery_outcomes": {
+        "recovered": 1821,
+        "not_recovered": 17,
+        "unknown": 13
+      },
+      "certified_recovery_percent": 98.37925445705024,
+      "upper_bound_percent": 99.0815775256618,
+      "incomplete_rankings": 7,
+      "top5_family_outcomes": {
+        "recovered": 1797,
+        "not_recovered": 46,
+        "unknown": 8
+      },
+      "compute_cpu_completed_cases": {
+        "count": 1844,
+        "sum": 120414.316913124,
+        "mean": 65.30060570126031,
+        "median": 16.814205073,
+        "p90": 159.9982625803,
+        "p95": 289.6742850994498,
+        "maximum": 1640.260396327
+      },
+      "class_counts": {
+        "count": 1844,
+        "sum": 202029,
+        "mean": 109.56019522776573,
+        "median": 47.0,
+        "p90": 270.4000000000001,
+        "p95": 424.5499999999997,
+        "maximum": 2858
+      },
+      "topk": {
+        "1": {
+          "correct": 1437,
+          "total": 1851,
+          "percent": 77.63371150729336,
+          "upper_bound_percent": 78.01188546731497
+        },
+        "3": {
+          "correct": 1756,
+          "total": 1851,
+          "percent": 94.86763911399244,
+          "upper_bound_percent": 95.24581307401405
+        },
+        "5": {
+          "correct": 1786,
+          "total": 1851,
+          "percent": 96.48838465694219,
+          "upper_bound_percent": 96.8665586169638
+        },
+        "10": {
+          "correct": 1798,
+          "total": 1851,
+          "percent": 97.1366828741221,
+          "upper_bound_percent": 97.5148568341437
+        }
+      },
+      "event_windows": {
+        "0": {
+          "correct": 1677,
+          "total": 1851,
+          "percent": 90.59967585089142,
+          "candidates": {
+            "count": 1844,
+            "sum": 2505,
+            "mean": 1.3584598698481563,
+            "median": 1.0,
+            "p90": 2.0,
+            "p95": 3.0,
+            "maximum": 33
+          }
+        },
+        "1": {
+          "correct": 1737,
+          "total": 1851,
+          "percent": 93.84116693679093,
+          "candidates": {
+            "count": 1844,
+            "sum": 2949,
+            "mean": 1.599240780911063,
+            "median": 1.0,
+            "p90": 2.0,
+            "p95": 3.0,
+            "maximum": 47
+          }
+        },
+        "2": {
+          "correct": 1792,
+          "total": 1851,
+          "percent": 96.81253376553215,
+          "candidates": {
+            "count": 1844,
+            "sum": 6357,
+            "mean": 3.4473969631236443,
+            "median": 3.0,
+            "p90": 6.0,
+            "p95": 8.0,
+            "maximum": 65
+          }
+        },
+        "3": {
+          "correct": 1804,
+          "total": 1851,
+          "percent": 97.46083198271205,
+          "candidates": {
+            "count": 1844,
+            "sum": 11104,
+            "mean": 6.021691973969631,
+            "median": 3.0,
+            "p90": 13.0,
+            "p95": 19.0,
+            "maximum": 230
+          }
+        },
+        "5": {
+          "correct": 1811,
+          "total": 1851,
+          "percent": 97.83900594273366,
+          "candidates": {
+            "count": 1844,
+            "sum": 25095,
+            "mean": 13.609002169197398,
+            "median": 7.0,
+            "p90": 29.0,
+            "p95": 41.84999999999991,
+            "maximum": 396
+          }
+        }
+      }
+    },
+    "bidirectional": {
+      "recovery_outcomes": {
+        "recovered": 1839,
+        "not_recovered": 9,
+        "unknown": 3
+      },
+      "certified_recovery_percent": 99.3517017828201,
+      "upper_bound_percent": 99.51377633711508,
+      "incomplete_rankings": 12,
+      "top5_family_outcomes": {
+        "recovered": 1795,
+        "not_recovered": 42,
+        "unknown": 14
+      },
+      "compute_cpu_completed_cases": {
+        "count": 1839,
+        "sum": 326451.692500427,
+        "mean": 177.51587411659978,
+        "median": 51.149300794999995,
+        "p90": 468.8912978102001,
+        "p95": 821.6131195192,
+        "maximum": 4034.7122900260006
+      },
+      "class_counts": {
+        "count": 1839,
+        "sum": 1218806,
+        "mean": 662.7547580206634,
+        "median": 163,
+        "p90": 1521.4000000000003,
+        "p95": 2758.8999999999974,
+        "maximum": 56704
+      },
+      "topk": {
+        "1": {
+          "correct": 1434,
+          "total": 1851,
+          "percent": 77.47163695299838,
+          "upper_bound_percent": 78.11993517017828
+        },
+        "3": {
+          "correct": 1756,
+          "total": 1851,
+          "percent": 94.86763911399244,
+          "upper_bound_percent": 95.51593733117234
+        },
+        "5": {
+          "correct": 1789,
+          "total": 1851,
+          "percent": 96.65045921123716,
+          "upper_bound_percent": 97.29875742841708
+        },
+        "10": {
+          "correct": 1807,
+          "total": 1851,
+          "percent": 97.62290653700703,
+          "upper_bound_percent": 98.27120475418693
+        }
+      },
+      "event_windows": {
+        "0": {
+          "correct": 1678,
+          "total": 1851,
+          "percent": 90.65370070232306,
+          "candidates": {
+            "count": 1839,
+            "sum": 2564,
+            "mean": 1.3942359978249048,
+            "median": 1,
+            "p90": 2.0,
+            "p95": 3.0,
+            "maximum": 55
+          }
+        },
+        "1": {
+          "correct": 1743,
+          "total": 1851,
+          "percent": 94.16531604538088,
+          "candidates": {
+            "count": 1839,
+            "sum": 3070,
+            "mean": 1.6693855356171832,
+            "median": 1,
+            "p90": 3.0,
+            "p95": 4.0,
+            "maximum": 85
+          }
+        },
+        "2": {
+          "correct": 1802,
+          "total": 1851,
+          "percent": 97.35278227984873,
+          "candidates": {
+            "count": 1839,
+            "sum": 6841,
+            "mean": 3.7199564980967916,
+            "median": 3,
+            "p90": 7.0,
+            "p95": 9.0,
+            "maximum": 87
+          }
+        },
+        "3": {
+          "correct": 1815,
+          "total": 1851,
+          "percent": 98.05510534846029,
+          "candidates": {
+            "count": 1839,
+            "sum": 12221,
+            "mean": 6.645459488852637,
+            "median": 4,
+            "p90": 15.0,
+            "p95": 21.0,
+            "maximum": 141
+          }
+        },
+        "5": {
+          "correct": 1823,
+          "total": 1851,
+          "percent": 98.48730415991356,
+          "candidates": {
+            "count": 1839,
+            "sum": 32314,
+            "mean": 17.571506253398585,
+            "median": 10,
+            "p90": 37.0,
+            "p95": 53.0,
+            "maximum": 401
+          }
+        }
+      }
+    }
+  },
+  "paired": {
+    "additional_certified_cases": [
+      576,
+      603,
+      780,
+      825,
+      833,
+      845,
+      865,
+      867,
+      1033,
+      1380,
+      1386,
+      1568,
+      1574,
+      1606,
+      1694,
+      1739,
+      1793,
+      1823
+    ],
+    "impossible_union_regressions": [],
+    "top1_gains": [
+      576,
+      780,
+      1506,
+      1759,
+      1809
+    ],
+    "top1_losses": [
+      181,
+      879,
+      1264,
+      1641,
+      1751
+    ]
+  },
+  "directional_searches": {
+    "total": 3702,
+    "completed": 3689,
+    "process_exits": {
+      "0": 3689,
+      "timeout": 13
+    },
+    "cap_hits": 2850,
+    "compute_cpu_completed": {
+      "count": 3689,
+      "sum": 325633.277805243,
+      "mean": 88.27142255495879,
+      "median": 19.333867182,
+      "p90": 213.22567156020006,
+      "p95": 413.58499270899995,
+      "maximum": 2754.619808749
+    },
+    "elapsed_wall_completed": {
+      "count": 3689,
+      "sum": 58862.95237042126,
+      "mean": 15.956343824998987,
+      "median": 4.1559159914031625,
+      "p90": 42.119897792022684,
+      "p95": 75.8613036558032,
+      "maximum": 279.9601982058957
+    },
+    "persistence_cpu": {
+      "count": 3689,
+      "sum": 36840.300406271,
+      "mean": 9.986527624361887,
+      "median": 1.7794335299999995,
+      "p90": 27.163911595200034,
+      "p95": 49.4668195078,
+      "maximum": 242.622313419
+    },
+    "hardware": {
+      "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz": 3700,
+      "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz": 2
+    }
+  },
+  "interpretation": "Fixed full benchmark, not union with prior experiments. Every record remains in denominators. Timing distributions describe completed cases and list their count; timeouts are censored, not zero. Net CPU removes measured archive persistence/loading and retains IPC/metadata/profiling overhead. Directional elapsed sums are NOT measured concurrent bidirectional latency. Representative and family-recovery metrics are distinct. Event-window thresholds were fixed before the run.",
+  "scheduler_recovery": {
+    "time": 1788891837.485651,
+    "old_tasks": [
+      "443233_10",
+      "443233_11",
+      "443233_12",
+      "443233_13",
+      "443233_22",
+      "443233_23",
+      "443233_38",
+      "443235_3",
+      "443235_11",
+      "443235_21",
+      "443235_36",
+      "443237_9",
+      "443237_13",
+      "443233_0",
+      "443233_2",
+      "443233_5"
+    ],
+    "excluded_nodes": [
+      "bosque20",
+      "bosque26",
+      "bosque46",
+      "bosque48",
+      "bosque52",
+      "bosque56",
+      "bosque67",
+      "bosque74",
+      "bosque77",
+      "bosque78",
+      "bosque81",
+      "bosque83"
+    ],
+    "replacement_jobs": [
+      {
+        "job": "447646",
+        "replaces_array": 443233,
+        "slots": [
+          0,
+          2,
+          5,
+          10,
+          11,
+          12,
+          13,
+          22,
+          23,
+          38
+        ],
+        "offset": 0
+      },
+      {
+        "job": "447647",
+        "replaces_array": 443235,
+        "slots": [
+          3,
+          11,
+          21,
+          36
+        ],
+        "offset": 1000
+      },
+      {
+        "job": "447648",
+        "replaces_array": 443237,
+        "slots": [
+          9,
+          13
+        ],
+        "offset": 2000
+      },
+      {
+        "job": "447886",
+        "replaces_task": "447646_13",
+        "offset": 0,
+        "slots": [
+          13
+        ],
+        "partition": "cpunodes"
+      },
+      {
+        "job": "447887",
+        "replaces_task": "447647_11",
+        "offset": 1000,
+        "slots": [
+          11
+        ],
+        "partition": "cpunodes"
+      },
+      {
+        "job": "448761",
+        "phase": "analyze",
+        "replaces_array": 443238,
+        "slots": [
+          150,
+          155,
+          160,
+          166,
+          171,
+          137,
+          147
+        ],
+        "offset": 2000,
+        "partition": "cpunodes"
+      },
+      {
+        "job": "451724",
+        "phase": "combine",
+        "replaces_array": 443241,
+        "slots": [
+          429,
+          433,
+          452,
+          469,
+          473,
+          483,
+          490,
+          495,
+          507,
+          509,
+          510,
+          522,
+          383,
+          390,
+          395,
+          382,
+          287,
+          299,
+          313,
+          321,
+          328,
+          330,
+          331,
+          353,
+          354,
+          355,
+          357,
+          364,
+          380,
+          139,
+          143,
+          150,
+          167,
+          174,
+          47,
+          57,
+          8,
+          21,
+          41
+        ],
+        "offset": 0,
+        "partition": "cpunodes"
+      },
+      {
+        "job": "451826",
+        "phase": "combine",
+        "replaces_array": 443242,
+        "slots": [
+          342,
+          344,
+          258,
+          282,
+          285,
+          286,
+          299,
+          302,
+          303,
+          108,
+          114,
+          122,
+          144,
+          145,
+          13,
+          21
+        ],
+        "offset": 1000,
+        "partition": "cpunodes"
+      },
+      {
+        "job": "452121",
+        "phase": "combine_batch",
+        "tasks_file": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/reporting/combine_batch_tasks.json",
+        "count": 557,
+        "workers": 8,
+        "partition": "cpunodes_nia",
+        "node": "bosque79"
+      }
+    ],
+    "actions": [
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443234"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443236"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443238"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes_nia",
+          "--cpus-per-task=16",
+          "--mem=32G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_recover",
+          "--exclude=bosque20,bosque26,bosque46,bosque48,bosque52,bosque56,bosque67,bosque74,bosque77,bosque78,bosque81,bosque83",
+          "--array=0,2,5,10,11,12,13,22,23,38%16",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%A_%a.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase search --offset 0 --slot \"$SLURM_ARRAY_TASK_ID\""
+        ],
+        "output": "447646"
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443234",
+          "Dependency=afterany:447646",
+          "ExcNodeList=bosque20,bosque26,bosque46,bosque48,bosque52,bosque56,bosque67,bosque74,bosque77,bosque78,bosque81,bosque83"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes_nia",
+          "--cpus-per-task=16",
+          "--mem=32G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_recover",
+          "--exclude=bosque20,bosque26,bosque46,bosque48,bosque52,bosque56,bosque67,bosque74,bosque77,bosque78,bosque81,bosque83",
+          "--array=3,11,21,36%16",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%A_%a.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase search --offset 1000 --slot \"$SLURM_ARRAY_TASK_ID\""
+        ],
+        "output": "447647"
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443236",
+          "Dependency=afterany:447647",
+          "ExcNodeList=bosque20,bosque26,bosque46,bosque48,bosque52,bosque56,bosque67,bosque74,bosque77,bosque78,bosque81,bosque83"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes_nia",
+          "--cpus-per-task=16",
+          "--mem=32G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_recover",
+          "--exclude=bosque20,bosque26,bosque46,bosque48,bosque52,bosque56,bosque67,bosque74,bosque77,bosque78,bosque81,bosque83",
+          "--array=9,13%16",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%A_%a.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase search --offset 2000 --slot \"$SLURM_ARRAY_TASK_ID\""
+        ],
+        "output": "447648"
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443238",
+          "Dependency=afterany:447648",
+          "ExcNodeList=bosque20,bosque26,bosque46,bosque48,bosque52,bosque56,bosque67,bosque74,bosque77,bosque78,bosque81,bosque83"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scancel",
+          "443233_10",
+          "443233_11",
+          "443233_12",
+          "443233_13",
+          "443233_22",
+          "443233_23",
+          "443233_38",
+          "443235_3",
+          "443235_11",
+          "443235_21",
+          "443235_36",
+          "443237_9",
+          "443237_13",
+          "443233_0",
+          "443233_2",
+          "443233_5"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443234"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443236"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443238"
+        ],
+        "output": ""
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443234",
+          "ArrayTaskThrottle=64"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788891961.7984233,
+        "note": "Finished array elements may report already finished; pending array throttle verified separately."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443236",
+          "ArrayTaskThrottle=64"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788891961.8043823,
+        "note": "Finished array elements may report already finished; pending array throttle verified separately."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443238",
+          "ArrayTaskThrottle=64"
+        ],
+        "stdout": "",
+        "stderr": "443238_0-50,52-55,58-65,68,70-83,85...: Job has already finished\n",
+        "exit": 1,
+        "time": 1788891961.8126845,
+        "note": "Finished array elements may report already finished; pending array throttle verified separately."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443241",
+          "ArrayTaskThrottle=64"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788891961.8205416,
+        "note": "Finished array elements may report already finished; pending array throttle verified separately."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443242",
+          "ArrayTaskThrottle=64"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788891961.8270538,
+        "note": "Finished array elements may report already finished; pending array throttle verified separately."
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443234"
+        ],
+        "output": "",
+        "time": 1788891998.6948712
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes",
+          "--cpus-per-task=16",
+          "--mem=32G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_recover",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%j.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase search --offset 0 --slot 13"
+        ],
+        "output": "447886",
+        "time": 1788891998.7059648
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443234",
+          "Dependency=afterany:447886"
+        ],
+        "output": "",
+        "time": 1788891998.797713
+      },
+      {
+        "command": [
+          "scancel",
+          "447646_13"
+        ],
+        "output": "",
+        "time": 1788891998.8095596
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443234"
+        ],
+        "output": "",
+        "time": 1788891998.8179185
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443236"
+        ],
+        "output": "",
+        "time": 1788891998.833289
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes",
+          "--cpus-per-task=16",
+          "--mem=32G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_recover",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%j.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase search --offset 1000 --slot 11"
+        ],
+        "output": "447887",
+        "time": 1788891998.8479958
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443236",
+          "Dependency=afterany:447887"
+        ],
+        "output": "",
+        "time": 1788891998.8792403
+      },
+      {
+        "command": [
+          "scancel",
+          "447647_11"
+        ],
+        "output": "",
+        "time": 1788891998.8876195
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443236"
+        ],
+        "output": "",
+        "time": 1788891998.9116583
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443241"
+        ],
+        "output": "",
+        "time": 1788892160.8211756
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "443242"
+        ],
+        "output": "",
+        "time": 1788892160.8319976
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes",
+          "--cpus-per-task=1",
+          "--mem=24G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_ana_retry",
+          "--array=150,155,160,166,171,137,147%24",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%A_%a.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase analyze --offset 2000 --slot \"$SLURM_ARRAY_TASK_ID\""
+        ],
+        "output": "448761",
+        "time": 1788892160.8430054
+      },
+      {
+        "command": [
+          "scancel",
+          "443238_150",
+          "443238_155",
+          "443238_160",
+          "443238_166",
+          "443238_171",
+          "443238_137",
+          "443238_147"
+        ],
+        "output": "",
+        "time": 1788892160.8597853
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443241",
+          "Dependency=afterany:443234:443236:443238:443240:448761"
+        ],
+        "output": "",
+        "time": 1788892160.8666549
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443241"
+        ],
+        "output": "",
+        "time": 1788892160.8809044
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443242",
+          "Dependency=afterany:443234:443236:443238:443240:448761"
+        ],
+        "output": "",
+        "time": 1788892160.897305
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "443242"
+        ],
+        "output": "",
+        "time": 1788892160.9220648
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443236",
+          "ArrayTaskThrottle=128"
+        ],
+        "stdout": "",
+        "stderr": "443236_74,101,114,123,129,151,180-1...: Job has already finished\n",
+        "exit": 1,
+        "time": 1788892551.2049246
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443241",
+          "Dependency=0"
+        ],
+        "output": "",
+        "time": 1788892855.9342237,
+        "reason": "All 3702 analysis worker completion records verified. Bypass scheduler epilog-only dependencies."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443242",
+          "Dependency=0"
+        ],
+        "output": "",
+        "time": 1788892855.9410937,
+        "reason": "All 3702 analysis worker completion records verified. Bypass scheduler epilog-only dependencies."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443241",
+          "ArrayTaskThrottle=128"
+        ],
+        "stdout": "",
+        "stderr": "443241_0-7,9-20,22-40,42-46,49-56,5...: Job has already finished\n",
+        "exit": 1,
+        "time": 1788892952.9961214
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443242",
+          "ArrayTaskThrottle=128"
+        ],
+        "stdout": "",
+        "stderr": "443242_0-12,14-20,22-32,34-107,109-...: Job has already finished\n",
+        "exit": 1,
+        "time": 1788892953.037202
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "446266"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893086.0660355
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes",
+          "--cpus-per-task=1",
+          "--mem=24G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_comb_retry",
+          "--array=429,433,452,469,473,483,490,495,507,509,510,522,383,390,395,382,287,299,313,321,328,330,331,353,354,355,357,364,380,139,143,150,167,174,47,57,8,21,41%32",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%A_%a.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase combine --offset 0 --slot \"$SLURM_ARRAY_TASK_ID\""
+        ],
+        "stdout": "451724\n",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893086.0743635
+      },
+      {
+        "command": [
+          "scancel",
+          "443241_429",
+          "443241_433",
+          "443241_452",
+          "443241_469",
+          "443241_473",
+          "443241_483",
+          "443241_490",
+          "443241_495",
+          "443241_507",
+          "443241_509",
+          "443241_510",
+          "443241_522",
+          "443241_383",
+          "443241_390",
+          "443241_395",
+          "443241_382",
+          "443241_287",
+          "443241_299",
+          "443241_313",
+          "443241_321",
+          "443241_328",
+          "443241_330",
+          "443241_331",
+          "443241_353",
+          "443241_354",
+          "443241_355",
+          "443241_357",
+          "443241_364",
+          "443241_380",
+          "443241_139",
+          "443241_143",
+          "443241_150",
+          "443241_167",
+          "443241_174",
+          "443241_47",
+          "443241_57",
+          "443241_8",
+          "443241_21",
+          "443241_41"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893087.1686482
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes",
+          "--cpus-per-task=1",
+          "--mem=24G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_comb_retry",
+          "--array=342,344,258,282,285,286,299,302,303,108,114,122,144,145,13,21%32",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/status/slurm_%A_%a.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench/golden_publication.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --phase combine --offset 1000 --slot \"$SLURM_ARRAY_TASK_ID\""
+        ],
+        "stdout": "451826\n",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893087.731333
+      },
+      {
+        "command": [
+          "scancel",
+          "443242_342",
+          "443242_344",
+          "443242_258",
+          "443242_282",
+          "443242_285",
+          "443242_286",
+          "443242_299",
+          "443242_302",
+          "443242_303",
+          "443242_108",
+          "443242_114",
+          "443242_122",
+          "443242_144",
+          "443242_145",
+          "443242_13",
+          "443242_21"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893088.412644
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443241",
+          "Partition=cpunodes"
+        ],
+        "stdout": "",
+        "stderr": "443241_0-589,591-597,599-650: Job has already finished\n443241_590,598,651-751: Job is no longer pending execution\n",
+        "exit": 1,
+        "time": 1788893088.4387443
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=443242",
+          "Partition=cpunodes"
+        ],
+        "stdout": "",
+        "stderr": "443242_0-313,315-350,352-357,359-36...: Job has already finished\n443242_314,351,358,365: Job is no longer pending execution\n",
+        "exit": 1,
+        "time": 1788893088.5162926
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=446266",
+          "Dependency=afterany:443241:443242:451724:451826"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893088.7069893
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "446266"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893088.7805898
+      },
+      {
+        "command": [
+          "scontrol",
+          "hold",
+          "446266"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893241.334619
+      },
+      {
+        "command": [
+          "scancel",
+          "443241_919",
+          "443241_921",
+          "443241_939",
+          "443241_944",
+          "443241_832",
+          "443241_833",
+          "443241_836",
+          "443241_838",
+          "443241_842",
+          "443241_848",
+          "443241_852",
+          "443241_853",
+          "443241_855",
+          "443241_858",
+          "443241_868",
+          "443241_873",
+          "443241_874",
+          "443241_767",
+          "443241_769",
+          "443242_410",
+          "443242_411",
+          "443242_412",
+          "443242_416",
+          "443242_420",
+          "443242_422",
+          "451826_13",
+          "451826_21",
+          "451826_108",
+          "451826_114",
+          "451826_122",
+          "451826_144",
+          "451826_145",
+          "451826_258",
+          "451826_282",
+          "451826_285",
+          "451826_286",
+          "451826_299",
+          "451826_302",
+          "451826_303",
+          "451826_342",
+          "451826_344",
+          "451724_8",
+          "451724_21",
+          "451724_41",
+          "451724_47",
+          "451724_57",
+          "451724_139",
+          "451724_143",
+          "451724_150",
+          "451724_167",
+          "451724_174",
+          "451724_287",
+          "451724_299",
+          "451724_313",
+          "451724_321",
+          "451724_328",
+          "451724_330",
+          "451724_331",
+          "451724_353",
+          "451724_354",
+          "451724_355",
+          "451724_357",
+          "451724_364",
+          "451724_380",
+          "451724_382",
+          "451724_383",
+          "451724_390",
+          "451724_395",
+          "451724_429",
+          "451724_433",
+          "451724_452",
+          "451724_469",
+          "451724_473",
+          "451724_483",
+          "451724_490",
+          "451724_495",
+          "451724_507",
+          "451724_509",
+          "451724_510",
+          "451724_522",
+          "443242_439",
+          "443242_440",
+          "443242_441",
+          "443242_442",
+          "443242_443",
+          "443242_444",
+          "443242_445",
+          "443242_446",
+          "443242_447",
+          "443242_448",
+          "443242_449",
+          "443242_450",
+          "443242_451",
+          "443242_452",
+          "443242_453",
+          "443242_454",
+          "443242_455",
+          "443242_456",
+          "443242_457",
+          "443242_458",
+          "443242_459",
+          "443242_460",
+          "443242_461",
+          "443242_462",
+          "443242_463",
+          "443242_464",
+          "443242_465",
+          "443242_466",
+          "443242_467",
+          "443242_468",
+          "443242_469",
+          "443242_470",
+          "443242_471",
+          "443242_472",
+          "443242_473",
+          "443242_474",
+          "443242_475",
+          "443242_476",
+          "443242_477",
+          "443242_478",
+          "443242_479",
+          "443242_480",
+          "443242_481",
+          "443242_482",
+          "443242_483",
+          "443242_484",
+          "443242_485",
+          "443242_486",
+          "443242_487",
+          "443242_488",
+          "443242_489",
+          "443242_490",
+          "443242_491",
+          "443242_492",
+          "443242_493",
+          "443242_494",
+          "443242_495",
+          "443242_496",
+          "443242_497",
+          "443242_498",
+          "443242_499",
+          "443242_500",
+          "443242_501",
+          "443242_502",
+          "443242_503",
+          "443242_504",
+          "443242_505",
+          "443242_506",
+          "443242_507",
+          "443242_508",
+          "443242_509",
+          "443242_510",
+          "443242_511",
+          "443242_512",
+          "443242_513",
+          "443242_514",
+          "443242_515",
+          "443242_516",
+          "443242_517",
+          "443242_518",
+          "443242_519",
+          "443242_520",
+          "443242_521",
+          "443242_522",
+          "443242_523",
+          "443242_524",
+          "443242_525",
+          "443242_526",
+          "443242_527",
+          "443242_528",
+          "443242_529",
+          "443242_530",
+          "443242_531",
+          "443242_532",
+          "443242_533",
+          "443242_534",
+          "443242_535",
+          "443242_536",
+          "443242_537",
+          "443242_538",
+          "443242_539",
+          "443242_540",
+          "443242_541",
+          "443242_542",
+          "443242_543",
+          "443242_544",
+          "443242_545",
+          "443242_546",
+          "443242_547",
+          "443242_548",
+          "443242_549",
+          "443242_550",
+          "443242_551",
+          "443242_552",
+          "443242_553",
+          "443242_554",
+          "443242_555",
+          "443242_556",
+          "443242_557",
+          "443242_558",
+          "443242_559",
+          "443242_560",
+          "443242_561",
+          "443242_562",
+          "443242_563",
+          "443242_564",
+          "443242_565",
+          "443242_566",
+          "443242_567",
+          "443242_568",
+          "443242_569",
+          "443242_570",
+          "443242_571",
+          "443242_572",
+          "443242_573",
+          "443242_574",
+          "443242_575",
+          "443242_576",
+          "443242_577",
+          "443242_578",
+          "443242_579",
+          "443242_580",
+          "443242_581",
+          "443242_582",
+          "443242_583",
+          "443242_584",
+          "443242_585",
+          "443242_586",
+          "443242_587",
+          "443242_588",
+          "443242_589",
+          "443242_590",
+          "443242_591",
+          "443242_592",
+          "443242_593",
+          "443242_594",
+          "443242_595",
+          "443242_596",
+          "443242_597",
+          "443242_598",
+          "443242_599",
+          "443242_600",
+          "443242_601",
+          "443242_602",
+          "443242_603",
+          "443242_604",
+          "443242_605",
+          "443242_606",
+          "443242_607",
+          "443242_608",
+          "443242_609",
+          "443242_610",
+          "443242_611",
+          "443242_612",
+          "443242_613",
+          "443242_614",
+          "443242_615",
+          "443242_616",
+          "443242_617",
+          "443242_618",
+          "443242_619",
+          "443242_620",
+          "443242_621",
+          "443242_622",
+          "443242_623",
+          "443242_624",
+          "443242_625",
+          "443242_626",
+          "443242_627",
+          "443242_628",
+          "443242_629",
+          "443242_630",
+          "443242_631",
+          "443242_632",
+          "443242_633",
+          "443242_634",
+          "443242_635",
+          "443242_636",
+          "443242_637",
+          "443242_638",
+          "443242_639",
+          "443242_640",
+          "443242_641",
+          "443242_642",
+          "443242_643",
+          "443242_644",
+          "443242_645",
+          "443242_646",
+          "443242_647",
+          "443242_648",
+          "443242_649",
+          "443242_650",
+          "443242_651",
+          "443242_652",
+          "443242_653",
+          "443242_654",
+          "443242_655",
+          "443242_656",
+          "443242_657",
+          "443242_658",
+          "443242_659",
+          "443242_660",
+          "443242_661",
+          "443242_662",
+          "443242_663",
+          "443242_664",
+          "443242_665",
+          "443242_666",
+          "443242_667",
+          "443242_668",
+          "443242_669",
+          "443242_670",
+          "443242_671",
+          "443242_672",
+          "443242_673",
+          "443242_674",
+          "443242_675",
+          "443242_676",
+          "443242_677",
+          "443242_678",
+          "443242_679",
+          "443242_680",
+          "443242_681",
+          "443242_682",
+          "443242_683",
+          "443242_684",
+          "443242_685",
+          "443242_686",
+          "443242_687",
+          "443242_688",
+          "443242_689",
+          "443242_690",
+          "443242_691",
+          "443242_692",
+          "443242_693",
+          "443242_694",
+          "443242_695",
+          "443242_696",
+          "443242_697",
+          "443242_698",
+          "443242_699",
+          "443242_700",
+          "443242_701",
+          "443242_702",
+          "443242_703",
+          "443242_704",
+          "443242_705",
+          "443242_706",
+          "443242_707",
+          "443242_708",
+          "443242_709",
+          "443242_710",
+          "443242_711",
+          "443242_712",
+          "443242_713",
+          "443242_714",
+          "443242_715",
+          "443242_716",
+          "443242_717",
+          "443242_718",
+          "443242_719",
+          "443242_720",
+          "443242_721",
+          "443242_722",
+          "443242_723",
+          "443242_724",
+          "443242_725",
+          "443242_726",
+          "443242_727",
+          "443242_728",
+          "443242_729",
+          "443242_730",
+          "443242_731",
+          "443242_732",
+          "443242_733",
+          "443242_734",
+          "443242_735",
+          "443242_736",
+          "443242_737",
+          "443242_738",
+          "443242_739",
+          "443242_740",
+          "443242_741",
+          "443242_742",
+          "443242_743",
+          "443242_744",
+          "443242_745",
+          "443242_746",
+          "443242_747",
+          "443242_748",
+          "443242_749",
+          "443242_750",
+          "443242_751",
+          "443242_752",
+          "443242_753",
+          "443242_754",
+          "443242_755",
+          "443242_756",
+          "443242_757",
+          "443242_758",
+          "443242_759",
+          "443242_760",
+          "443242_761",
+          "443242_762",
+          "443242_763",
+          "443242_764",
+          "443242_765",
+          "443242_766",
+          "443242_767",
+          "443242_768",
+          "443242_769",
+          "443242_770",
+          "443242_771",
+          "443242_772",
+          "443242_773",
+          "443242_774",
+          "443242_775",
+          "443242_776",
+          "443242_777",
+          "443242_778",
+          "443242_779",
+          "443242_780",
+          "443242_781",
+          "443242_782",
+          "443242_783",
+          "443242_784",
+          "443242_785",
+          "443242_786",
+          "443242_787",
+          "443242_788",
+          "443242_789",
+          "443242_790",
+          "443242_791",
+          "443242_792",
+          "443242_793",
+          "443242_794",
+          "443242_795",
+          "443242_796",
+          "443242_797",
+          "443242_798",
+          "443242_799",
+          "443242_800",
+          "443242_801",
+          "443242_802",
+          "443242_803",
+          "443242_804",
+          "443242_805",
+          "443242_806",
+          "443242_807",
+          "443242_808",
+          "443242_809",
+          "443242_810",
+          "443242_811",
+          "443242_812",
+          "443242_813",
+          "443242_814",
+          "443242_815",
+          "443242_816",
+          "443242_817",
+          "443242_818",
+          "443242_819",
+          "443242_820",
+          "443242_821",
+          "443242_822",
+          "443242_823",
+          "443242_824",
+          "443242_825",
+          "443242_826",
+          "443242_827",
+          "443242_828",
+          "443242_829",
+          "443242_830",
+          "443242_831",
+          "443242_832",
+          "443242_833",
+          "443242_834",
+          "443242_835",
+          "443242_836",
+          "443242_837",
+          "443242_838",
+          "443242_839",
+          "443242_840",
+          "443242_841",
+          "443242_842",
+          "443242_843",
+          "443242_844",
+          "443242_845",
+          "443242_846",
+          "443242_847",
+          "443242_848",
+          "443242_849",
+          "443242_850",
+          "443241_954",
+          "443241_955",
+          "443241_956",
+          "443241_957",
+          "443241_958",
+          "443241_959",
+          "443241_960",
+          "443241_961",
+          "443241_962",
+          "443241_963",
+          "443241_964",
+          "443241_965",
+          "443241_966",
+          "443241_967",
+          "443241_968",
+          "443241_969",
+          "443241_970",
+          "443241_971",
+          "443241_972",
+          "443241_973",
+          "443241_974",
+          "443241_975",
+          "443241_976",
+          "443241_977",
+          "443241_978",
+          "443241_979",
+          "443241_980",
+          "443241_981",
+          "443241_982",
+          "443241_983",
+          "443241_984",
+          "443241_985",
+          "443241_986",
+          "443241_987",
+          "443241_988",
+          "443241_989",
+          "443241_990",
+          "443241_991",
+          "443241_992",
+          "443241_993",
+          "443241_994",
+          "443241_995",
+          "443241_996",
+          "443241_997",
+          "443241_998",
+          "443241_999",
+          "443241_653",
+          "443241_654",
+          "443241_658",
+          "443241_666",
+          "443241_669",
+          "443241_676",
+          "443241_680",
+          "443241_686",
+          "443241_693",
+          "443241_696",
+          "443241_703",
+          "443241_706",
+          "443241_709",
+          "443241_712",
+          "443241_727",
+          "443241_728",
+          "443241_733",
+          "443241_734",
+          "443241_749"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893242.7382085
+      },
+      {
+        "command": [
+          "sbatch",
+          "--parsable",
+          "--partition=cpunodes_nia",
+          "--nodelist=bosque79",
+          "--cpus-per-task=8",
+          "--mem=160G",
+          "--time=00:10:00",
+          "--job-name=gold_paper_comb_batch",
+          "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/reporting/combine_batch_%j.log",
+          "--wrap",
+          "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/engine/bench PYTHONHASHSEED=0 RXN_CORE_NATIVE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /h/399/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/reporting/publication_combine_batch.py --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908 --tasks /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_publication_20260908/reporting/combine_batch_tasks.json --workers 8"
+        ],
+        "stdout": "452121\n",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893243.2073932
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=446266",
+          "Dependency=afterany:452121"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exit": 0,
+        "time": 1788893243.4051247
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=452121",
+          "TimeLimit=00:11:00"
+        ],
+        "stdout": "",
+        "stderr": "Job has already finished for job 452121\n",
+        "exit": 1,
+        "time": 1788893845.2963321,
+        "reason": "One final comparison worker remains; allow its unchanged 300-second watchdog to finish and persist status. No search or verification budget changed. This allocation dispatched 557 separate comparisons."
+      },
+      {
+        "command": [
+          "scontrol",
+          "update",
+          "JobId=446266",
+          "Dependency=0"
+        ],
+        "stdout": "",
+        "exit": 0,
+        "time": 1788893865.2461345,
+        "reason": "All 1851 comparison completion records verified."
+      },
+      {
+        "command": [
+          "scontrol",
+          "release",
+          "446266"
+        ],
+        "stdout": "",
+        "exit": 0,
+        "time": 1788893865.2547855,
+        "reason": "All 1851 comparison completion records verified."
+      }
+    ]
+  },
+  "accounting_export": {
+    "exit": 0,
+    "stderr": ""
+  }
+}

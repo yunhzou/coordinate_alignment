@@ -1,0 +1,48 @@
+\section{Supporting Information}
+
+\subsection{Default competitor reproduction}
+All 1,851 Golden records were submitted to the released configurations in \Cref{tab:competitors}. These are saved common-evaluator results, not literature numbers. SLAP's first output is not asserted to be a separately ranked top-1. Chython denotes its released ONNX implementation rather than a historical GraphormerMapper checkpoint.
+
+\begin{table}[h]
+\centering\small
+\caption{\textbf{Released implementations under the common evaluator.} Correctness columns give counts out of 1,851. Output cardinalities and search budgets differ.}
+\label{tab:competitors}
+\begin{tabular}{lrrr}\toprule
+Implementation & First correct & Any correct & Exceptions\\\midrule
+RXNMapper 0.4.3 & 1,547 & 1,547 & 0\\
+LocalMapper 0.1.5 & 1,605 & 1,605 & 0\\
+Chython 2.18 / chython-rxnmap 2.0 & 1,561 & 1,561 & 5\\
+SLAPMapper 1.0.0, binary & 1,399 & 1,591 & 0\\
+SLAPMapper 1.0.0, weighted & 1,401 & 1,564 & 0\\
+Indigo 1.46.0 & 692 & 692 & 133\\
+RDT 4.0.0 & 1,030 & 1,030 & 0 after retry\\\bottomrule
+\end{tabular}
+\end{table}
+
+Indigo returned 503 predictions with duplicate heavy-atom labels and seven with changed endpoint chemistry, in addition to exceptions. Duplicate labels were observed in its native API on an inspected example. The score should not be generalized to historical Indigo benchmarks. Chython returned 29 endpoint-modifying predictions. RDT required worker restart and retry after a JVM failure and broken-pipe cascade; 232 affected initial attempts remain archived. Three final RDT candidates failed validation.
+
+\subsection{Separate experimental versions}
+The seed ablation uses \texttt{98b01b1}; the earlier publication run uses \texttt{bb0a7d7}. The former's ten-order evaluation has 1,836 recoveries, five absences, and ten unknowns. The latter has 1,839 recoveries, nine absences, and three unknowns. Similar high-level settings do not establish output equivalence. The earlier run completed 3,689 of 3,702 directional searches; 13 reached the watchdog. Its representative top-5 recovery is 1,789/1,851 (96.65\%), distinct from top-5 family and event-window recovery.
+
+The adaptive no-sweep experiment is pinned to \texttt{0ce0f17} with one CPU per directional call. It is separate from later shared-policy optimizations retaining the original sweep. Its final saved full-denominator report contains 1,723 recoveries, 33 absences, and 95 unknowns. Budget completion does not imply agenda exhaustion or successful symbolic verification.
+
+Relative to ten orders, one order no longer verifies cases 44, 602, 850, 912, 1314, 1384, and 1568; 912 is unknown and the other six are absent. Two orders no longer verify 44, 602, 850, 1314, 1384, and 1568; 850 and 1568 are unknown. Both fresh runs verify 1033, 1786, 1799, and 1823, previously unknown. Identifiers are zero-based.
+
+\subsection{Accounting scopes}
+Across all Golden records, fresh one-, two-, and three-order searches consume 27,084.86, 49,161.91, and 70,570.73 instrumented CPU-seconds. Holdout totals are 1,475.45, 2,417.94, and 3,348.29 seconds. Full-workload totals differ from the common subset.
+
+Completed SLAP sweep calls consume 14.479 CPU-hours of native mapping; mapping plus preparation and export uses 14.934 CPU-hours. Interrupted calls lack final readings. Scheduler TotalCPU fields cannot recover missing consumption on this cluster. Neither these totals nor reserved CPU-hours establish actual total campaign CPU. Mapping spans 8 minutes 9 seconds and separate evaluation spans 35 seconds under allocations different from AAM's. These spans are not a matched-latency comparison.
+
+\subsection{Holdout follow-ups}
+At tolerance 1.0 and cap 100, case 123 has no full R-to-P output and a 19-event P-to-R representative. Its separate cap-200 follow-up returns a three-event mapping. Substitution changes SLAP-class membership from 159 represented, 12 excluded, and five unknown to 160 represented, 11 excluded, and five unknown. It is excluded from the fixed-cap panels.
+
+Earlier tolerance-0.5 and proposal-guided studies use distinct policies. In an exploratory uncut holdout ablation, one random ordering matches the full-search best score in 133/140 cases and ten orderings in 138/140. These are score-agreement observations, not Golden accuracy or proof of family equivalence.
+
+\subsection{Supplementary animations}
+\textbf{Movie 1: continuous growth and retained placements.}
+Carbocation example \texttt{pr16.carbocation\_ts5} (case 64) displays actual extension events and two terminal representatives from an uncut, one-order replay. Changing assignments reflect candidate refinement, not physical reaction motion.
+
+\textbf{Movie 2: deferred boundaries and successive fragments.}
+TEMPO example \texttt{pr1.tempo\_ts10} (case 1) follows first-branch events through four fragment decisions and eight deferred-edge observations. A deferred boundary is search evidence, not automatically a chemically broken bond.
+
+The standalone HTML viewer offers playback, scrubbing, case selection, candidate inspection, explicit-H display, and rotation of original coordinates. Extension traces sample at most five witnesses; live-candidate counts can be larger. The saved graph retains terminal branches. Movies are selected views, not enumeration of all compressed assignments. Inputs, events, frozen source hashes, and the bookkeeping-binary hash accompany the figure data.

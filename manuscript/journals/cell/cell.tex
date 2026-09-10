@@ -1,0 +1,337 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%  Welcome to the Cell Press LaTeX template,     
+%%%  version 1.10. This is a minimalist template    
+%%%  to help you organize your article for            
+%%%  publication at Cell Press. PLEASE NOTE:
+
+%%%  (1) If you submit your final manuscript materials 
+%%%  in LaTeX format, our typesetters will prepare 
+%%%  a Word file for use in production. This conversion 
+%%%  process allows us to copyedit your paper, fix 
+%%%  any typos, and add formatting and tagging. The 
+%%%  conversion process will add approximately 3 
+%%%  business days to the production timeline. 
+%%%  Authors using LaTeX should keep this in mind 
+%%%  when considering deadlines.
+
+%%%  (2) Keep your LaTeX files as simple as possible. 
+%%%  Avoid the use of elaborate local macros and/or 
+%%%  customized external style files. If you need 
+%%%  additional macros, please keep them simple and 
+%%%  include them in the actual .tex document preamble. 
+%%%  Source code should be set up so that all .sty 
+%%%  and .bst files called by the main .tex file are 
+%%%  in the same directory as the main .tex file. 
+
+%%%  (3) Cell Press publishes more than 40 journals, 
+%%%  some of which may have different or additional 
+%%%  formatting requirements not specified in this 
+%%%  template. When revising your paper before 
+%%%  acceptance, please review the formatting 
+%%%  guidelines, including the Final Files Requirements, 
+%%%  for the journal you are publishing with.
+
+%%%  Please send feedback on this template to lshipp@cell.com. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt,letterpaper]{article}
+\usepackage[a4paper, total={7in, 10in}]{geometry}
+\renewcommand{\familydefault}{\sfdefault}
+
+%--------------------------------------------------------------------
+%    shared preamble packages and commands
+%--------------------------------------------------------------------
+\input{assets/shared-preamble.tex}
+
+\usepackage{helvet}
+\usepackage{authblk}
+\usepackage[super,comma,sort&compress]  
+   {natbib}\bibliographystyle{numbered}
+\usepackage[right]{lineno} \linenumbers
+
+\makeatletter
+\renewcommand{\maketitle}{\bgroup\setlength{\parindent}{0pt}
+\begin{flushleft}
+  \textbf{\@title}
+  
+  \@author
+\end{flushleft}\egroup}
+\makeatother
+
+%%%  Insert title below; leave date empty.
+
+\title{This is an awesome paper...}
+\date{}
+
+%%%  Author first and last names should be spelled 
+%%%  out in their entirety (do not abbreviate "J.H. 
+%%%  Watson" unless this is how the author's name 
+%%%  always appears). Middle initials are OK. Do 
+%%%  not include titles, positions, or degrees.
+
+%%%  Use numbered footnotes to indicate institutional 
+%%%  affiliations. Authors may have multiple 
+%%%  institutional affiliations, and affiliations 
+%%%  may be shared among multiple authors.
+
+%%%  After the institutional affiliations, numbered 
+%%%  footnotes may be used to indicate an author's 
+%%%  present address, equal contribution status, 
+%%%  and/or senior author status. Corresponding 
+%%%  authors may additionally include Twitter (X) 
+%%%  handles as a means of contact.
+
+%%%  The final numbered footnote should indicate 
+%%%  which author is the lead contact (required). 
+%%%  One author must be designated as the lead contact. 
+%%%  There can be no more than one lead contact. 
+
+%%%  Corresponding authors should be indicated with 
+%%%  asterisks (*). Use 2 asterisks (**) for the 
+%%%  second-listed corresponding author, 3 (***) for 
+%%%  the third-listed, and so on. The lead contact 
+%%%  must be a corresponding author. Additional 
+%%%  authors may also serve as corresponding authors.
+
+\author[1,2,3,4,6,7,8,*]{Al\'an Aspuru-Guzik}
+
+
+%%%  Institutional affiliations should contain the 
+%%%  following information at minimum: department(s)/
+%%%  subunit(s), institution, city, state/region (if 
+%%%  applicable), and country. 
+
+
+\affil[1]{Department of Chemistry, University of Toronto, Toronto, ON M5S 3H6, Canada}
+\affil[2]{Department of Computer Science, University of Toronto, Toronto, ON M5S 2E4, Canada}
+\affil[3]{Vector Institute for Artificial Intelligence, Toronto, ON, M5G 1M1, Canada}
+\affil[4]{Department of Materials Science \& Engineering, University of Toronto, Toronto, ON M5S 3E4, Canada}
+\affil[5]{Department of Chemical Engineering \& Applied Chemistry, University of Toronto, Toronto, ON M5S 3E5, Canada}
+\affil[6]{Canadian Institute for Advanced Research
+(CIFAR), Toronto, ON M5G 1M1, Canada}
+\affil[7]{Acceleration Consortium, Toronto, ON M5S 3H6, Canada}
+\affil[8] {NVIDIA, 431 King St W \#6th, M5V 1K4, Toronto, Canada }
+
+
+%%%  List only one email address per corresponding author.
+
+\affil[*]{Correspondence: alan@aspuru.com}
+
+\begin{document}
+
+\maketitle
+
+\section*{SUMMARY}
+\input{includes/include-abstract}
+
+\input{includes/include-body}
+
+\input{includes/include-acknowledgement}
+
+\section*{AUTHOR CONTRIBUTIONS}
+
+%%%  This component is required for most research papers. 
+%%%  Mention each individual author with a statement 
+%%%  outlining the contribution of each author to the work.
+
+Conceptualization, S.C.P. and S.Y.W.; methodology, A.B., S.C.P., and S.Y.W.; investigation, M.E., A.N.V., N.A.V., S.C.P., and S.Y.W.; writing-–original draft, S.C.P. and S.Y.W.; writing-–review \& editing, S.C.P. and S.Y.W.; funding acquisition, S.C.P. and S.Y.W.; resources, M.E.V and C.K.B.; supervision, A.B., N.L.W., and A.A.D.
+
+\section*{DECLARATION OF INTERESTS}
+
+%%%  This component is required for all articles, even 
+%%%  if the authors have no competing interests; if 
+%%%  this is the case, insert "The authors declare no 
+%%%  competing interests." Please refer to the 
+%%%  declaration of interests policy: 
+%%%  https://www.cell.com/declaration-of-interests
+
+S.Y.W. is an employee and shareholder of COMPANY. M.E.V. is a founder of COMPANY and a member of its scientific advisory board.
+
+\section*{DECLARATION OF GENERATIVE AI AND AI-ASSISTED TECHNOLOGIES}
+
+%%%  If generative AI and AI-assisted technologies 
+%%%  were used in the writing process, this must 
+%%%  be disclosed in the paper. This declaration 
+%%%  does not apply to the use of basic tools for 
+%%%  checking grammar, spelling, references, etc. 
+%%%  If you have nothing to disclose, please do not 
+%%%  include this component.
+
+During the preparation of this work, the author(s) used GPT-4o in order to improve the presentation and fix grammar errors. After using this tool or service, the author(s) reviewed and edited the content as needed and take(s) full responsibility for the content of the publication.
+
+\section*{SUPPLEMENTAL INFORMATION INDEX}
+
+%%%  Supplemental information must be uploaded as 
+%%%  separate files. In the main text, please list the 
+%%%  files to be included in a brief index. For details, 
+%%%  please review the supplemental information guidelines: 
+
+%%%  Journals with a general "methods" section: 
+%%%  http://www.cell.com/supplemental-information
+
+%%%  Journals with STAR Methods: 
+%%%  https://www.cell.com/STAR-supplemental-information
+
+\begin{description}
+  \item Figures S1-S5 and their legends in a PDF
+  \item Table S1. A descriptive title for an Excel file that was too large to appear in the PDF
+  \item Table S2. Another descriptive title for a different Excel file
+  \item Data S1. Raw data on x, y, and z
+\end{description}
+
+%%%  REFERENCES: As of 2023, all Cell Press journals 
+%%%  use Numbered (AMA) style. We recommend placing 
+%%%  your references in the included "references.bib" 
+%%%  file.
+
+
+\bibliography{references}
+
+
+
+\bigskip
+
+%%%  In your References, please include only articles 
+%%%  that are published (online publication and 
+%%%  preprint servers are OK). Unpublished data, 
+%%%  submitted and/or accepted manuscripts, abstracts, 
+%%%  and personal communications should be cited within 
+%%%  the text only ("unpublished data," "data not 
+%%%  shown," "Alice Smith, personal communication") 
+%%%  and not included in the references list. Personal 
+%%%  communication should be documented by a letter 
+%%%  of permission. Whenever possible, please make 
+%%%  sure your .bib file has the complete author lists 
+%%%  for each item (at minimum, the first 11 authors 
+%%%  listed). 
+
+\newpage
+
+
+
+
+
+
+All Cell Press \textbf{life and medical science} journals, and the multidisciplinary journal \textbf{iScience}, use the \textbf{\href{https://www.cell.com/star-authors-guide}{STAR Methods}} format for reporting materials and methods. Other Cell Press journals use a non-structured \textbf{methods} format; for those journals, please \textbf{delete} the contents of this page from the template and refer instead to the \textbf{methods} template on page 3.
+
+If you are publishing in a STAR Methods journal, please refer to the appropriate guide for authors:
+\begin{itemize}
+\item \textit{Cell} authors should download the guide for \textit{Cell} authors \href{https://www.cell.com/pb-assets/journals/research/cell/methods/Methods_Guide_Cell-1678470557763.pdf}{available here}
+\item All other journal authors should use \href{https://www.cell.com/pb-assets/journals/research/cell/methods/Methods_Guide_general-1678470557763.pdf}{this version of the guide}
+\end{itemize}
+
+
+\section*{STAR METHODS}
+
+%%%  The STAR Methods should appear in your main 
+%%%  manuscript file after the figure legends, main 
+%%%  table(s) and table legend(s).
+
+\subsection*{Key resources table}
+
+\textit{To create the KRT, please use the \href{https://star-methods.com}{KRT webform} or the \href{http://www.cell.com/pb-assets/journals/research/cell/methods/table-template1.docx}{Word template} and upload this file separately.}
+
+\subsection*{Experimental model and study participant details}
+
+%%%  Please list here under separate headings 
+%%%  all the experimental models/study participants 
+%%%  (animals, human participants, plants, microbe 
+%%%  strains, cell lines, primary cell cultures) 
+%%%  used in the study. For each model, provide 
+%%%  information related to their species/strain, 
+%%%  genotype, age/developmental stage, sex (and 
+%%%  gender, ancestry, race, and ethnicity if 
+%%%  reported for human studies), maintenance, 
+%%%  and care, including institutional permission 
+%%%  and oversight information for the studies 
+%%%  the experimental animal/human participant 
+%%%  study. The influence (or association) of sex, 
+%%%  gender, or both on the results of the study 
+%%%  must be reported. In cases where it cannot, 
+%%%  authors should discuss this as a limitation 
+%%%  to their research’s generalizability.
+
+%%%  Please omit this component if your study does 
+%%%  not use experimental models typical in the 
+%%%  life sciences (e.g., if your study is 
+%%%  computational or physical science research). 
+
+\subsection*{Method details}
+
+%%%  Please provide precise details of all the 
+%%%  procedures in the paper (behavioral task, 
+%%%  generation of reagents, biological assays, 
+%%%  modeling, etc.) such that it is clear how, 
+%%%  when, where, and why procedures were 
+%%%  performed. We encourage authors to provide 
+%%%  information related to the experimental 
+%%%  design as suggested by NIH and ARRIVE 
+%%%  guidelines (e.g., information about 
+%%%  replicates, randomization, blinding, sample 
+%%%  size estimation, and the criteria for 
+%%%  inclusion and exclusion of any data or 
+%%%  subjects).
+
+\subsection*{Quantification and statistical analysis}
+
+%%%  Please describe here all statistical analysis 
+%%%  and software used. We ask authors to indicate 
+%%%  in this component where all of the statistical 
+%%%  details of experiments can be found (e.g., in 
+%%%  the figure legends, figures, results, etc.), 
+%%%  including the statistical tests used, exact 
+%%%  value of n, what n represents (e.g., number 
+%%%  of animals, number of cells, etc.), definition 
+%%%  of center, and dispersion and precision 
+%%%  measures (e.g., mean, median, SD, SEM, confidence 
+%%%  intervals). Also, please summarize in this 
+%%%  component how significance was defined, the 
+%%%  statistical methods used to determine strategies 
+%%%  for randomization and/or stratification, sample 
+%%%  size estimation, and inclusion and exclusion 
+%%%  of any data or subjects, as well as any methods 
+%%%  used to determine whether the data met 
+%%%  assumptions of the statistical approach.
+
+\subsection*{Additional resources}
+
+%%%  Please provide links to websites that provide 
+%%%  further information relevant to the study 
+%%%  (e.g., protocol download, troubleshooting 
+%%%  forum, etc.). Clinical trial registry numbers 
+%%%  and links should also be placed here. Please 
+%%%  briefly describe the resource and its 
+%%%  relevance for the paper. Please report this 
+%%%  information as: “Description: URL.”
+
+Cell.com homepage: https://www.cell.com
+\newline Templates for Cell Press authors: https://www.cell.com/article-templates
+
+%%%  ADDITIONAL MANUSCRIPT COMPONENTS:
+
+%%%  Depending on the journal and the article 
+%%%  type, you may be asked to upload the 
+%%%  following as separate files: graphical 
+%%%  abstract, highlights, eTOC blurb (In 
+%%%  Brief), and/or other article components 
+%%%  such as a "bigger picture" statement. 
+%%%  These items are typically not required for 
+%%%  initial submissions. Please refer to the 
+%%%  journal's website, your acceptance 
+%%%  letter, and/or the Final Files 
+%%%  Requirements checklist to see if any of
+%%%  these items are required (at any stage).
+
+
+% \section*{Notes for us:}
+% Outline topics mentioned: (Mar 14 2025)
+% \begin{itemize}
+%     \item For a single session, we should be able to export the execution history as a jupyter notebook. The jupyter notebook should be runnable and obtain the same results. This execution history should be published in the SI.
+%     \item The execution history can then be easily modified by users and scaled for their own purposes. Execution history can also be used as episodic memory and used to train future models. This is a major use-case for El Agente - prototyping workflows.
+%     \item For each homework example, we should query AgentNet 5 times, and ask for an output report, and then human-verify whether it is correct/satisfactory. This gives us quantitative metrics, and then we can also compare different LLMs.
+%     \item 
+% \end{itemize} 
+
+\end{document}

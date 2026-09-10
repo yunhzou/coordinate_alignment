@@ -1,0 +1,29 @@
+{
+  "cases": 140,
+  "target_class_statuses": {
+    "represented": 159,
+    "unresolved": 5,
+    "excluded_from_saved_families": 12
+  },
+  "all_slap_classes_represented_cases": 132,
+  "cases_with_excluded_slap_class": [
+    11,
+    59,
+    64,
+    123
+  ],
+  "cases_with_unresolved_slap_class": [
+    4,
+    6,
+    7,
+    31
+  ],
+  "aam_extra_cases_by_event_window": {
+    "0": 97,
+    "1": 99,
+    "2": 132,
+    "5": 138
+  },
+  "symbolic_queries": 12571,
+  "seconds_sum": 1083.7118291780353
+}

@@ -6,6 +6,13 @@ mechanism-local transition-state analysis.
 Paper benchmarks: [results and artifact index](reports/README.md) ·
 [benchmark scripts and reproduction guide](bench/README.md).
 
+## Current work and stable versions
+
+See the [branch guide](docs/BRANCHES.md) for preserved pre-acceleration baselines,
+active development, and archived experiments. The
+[paper branch](https://github.com/yunhzou/coordinate_alignment/tree/paper/continuous-fragment-growth/manuscript)
+contains the manuscript PDF, figures, animations, and reproducible figure data.
+
 ## Design
 
 The computational API consists of immutable typed stages:

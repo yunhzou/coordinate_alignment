@@ -1,0 +1,30 @@
+% NOTE:
+% All editing commands contain curly braces {} around them so that 
+% they can easily be searched for in the final document via cmd + f.
+
+% Highlighted comments for authors
+\usepackage{soul, color}
+\newcommand{\Note}[1]{}
+\renewcommand{\Note}[1]{#1}  % comment out this re-definition to suppress all Notes
+\newcommand{\NoteSigned}[3]{{\textcolor{#2}{\Note{\textbf{[#1: #3]}}}}}
+% Alternative with highlighter color rather than text colour
+%\renewcommand{\NoteSigned}[3]{{\sethlcolor{#2}\Note{\hl{#1: #3}}}}
+
+% Specific author comments
+\newcommand{\pl}[1]{\NoteSigned{PL}{blue}{#1}}  % use for notes from Pietro
+\newcommand{\tc}[1]{\NoteSigned{TC}{green}{#1}}
+\newcommand{\cb}[1]{\NoteSigned{CB}{brown}{#1}}
+\newcommand{\cj}[1]{\NoteSigned{CJ}{purple}{#1}}
+\newcommand{\sm}[1]{\NoteSigned{SM}{magenta}{#1}}
+
+% Inline todo: Flag something in the text to be done
+\newcommand{\itodo}[1]{\NoteSigned{TODO}{red}{#1}}
+% Preliminary: Flag preliminary statements or results
+\newcommand{\prelim}[1]{\NoteSigned{Prelim}{grey}{#1}}
+
+% Convenient other commands
+\newcommand{\sowhat}{$\rightarrow$~}
+
+
+% Variant of the TODO box for addressing reviewer comments
+\newcommand{\bluebox}[1]{\todo[color=blue!20!white]{#1}}

@@ -1,0 +1,10 @@
+# Keep supplied template formatting intact and focus reviews on manuscript text.
+*.sty linguist-vendored whitespace=-blank-at-eol,-blank-at-eof
+assets/** linguist-vendored whitespace=-blank-at-eol,-blank-at-eof
+journals/** linguist-vendored whitespace=-blank-at-eol,-blank-at-eof
+examples/** linguist-vendored whitespace=-blank-at-eol,-blank-at-eof
+editing_commands.tex linguist-vendored whitespace=-blank-at-eol,-blank-at-eof
+figs/*.svg linguist-generated whitespace=-blank-at-eol
+evidence/*.json linguist-generated
+includes/generated-seed-table.tex linguist-generated
+animations/index.html linguist-generated
