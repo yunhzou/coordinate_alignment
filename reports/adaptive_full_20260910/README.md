@@ -1,6 +1,41 @@
 # Full-dataset adaptive search confirmation
 
-Status: running; the four-case pilot is not a confirmation of equivalence.
+Status: full confirmation of the exact shared-policy implementation is running.
+The earlier four-case pilot and faster but incomplete adaptive searches are
+not confirmations of equivalence.
+
+## Current confirmation
+
+Frozen candidate `2d04f60`, original `98b01b1`. All 1,851 Golden and 140
+holdout cases, both directions, identical original ten seed orders per cut,
+full sweep, cap 100, explicit H, matching tolerance 1.0 and scoring 0.5.
+Both implementations now receive eight CPUs per reaction. The current batch
+campaign allocates at most 1,024 CPUs and retains independent 300-second
+search and 240-second evaluation watchdogs.
+
+The new backend shares identical conditional decisions across the original
+policies. A necessary element-capacity check skips growth only when no unused
+target atom of the seed element exists. Frontier admission and both cap stages
+remain unchanged. Original native fragment growth is not replaced.
+
+The diagnostic Golden 1636 R-to-P uncut profile fell from 21.483 to 0.857 CPU
+seconds with 1,124 states and 1,123 transitions in both runs. This is a local
+profile, **not** a claimed full-benchmark speedup. Focused tests compare complete
+correlated fragment records, states and stop reasons against the original.
+
+Current full artifacts:
+
+`/project/yunhengzou/coordinate_alignment/aam_benchmarks/shared_capacity_full_20260910`
+
+The preceding shared per-cut campaign and its explicit checkpoint continuations
+remain at `../shared_cut_workers_full_20260910`. No completed cut was rematched
+to regenerate reporting. Saved full-atom ranking witnesses can now certify
+representative recovery without loading and rescoring the whole archive; absent
+representative certificates still require the unchanged compressed-family query.
+Search never receives reference labels. Fresh paired timing excludes continued
+archive construction, failures, loading and persistence; queue time is separate.
+
+## Earlier adaptive campaign (retained experiment)
 
 Every proposed search optimization must be checked against the original on
 **all 1,851 Golden reactions and all 140 XYZ/WBO holdout steps**. Small examples
