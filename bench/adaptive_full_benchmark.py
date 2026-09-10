@@ -403,78 +403,101 @@ def status(args):
         analysis=dict(Counter((r['method']+':'+str(r['analyze']['exit'])) for r in rows if 'analyze' in r))), indent=2))
 
 
-def compare(args):
-    """Read saved outputs only; unknowns remain in both fixed denominators."""
+def compare_case(payload):
+    """One saved case; independent of other cases and safe to analyze in parallel."""
     from publication_analysis import union_outcome, merge_classes, certificate_id
+    run, specification = payload
+    dataset, index = specification['dataset'], specification['index']
+    methods = {}
+    method_classes = {}
+    for method in ('original', 'adaptive'):
+        directed = {}
+        for direction in DIRECTIONS:
+            folder = run/f'results/{dataset}/{index}/{direction}/{method}'
+            search_path = folder/'search.json'
+            record = read(search_path) if search_path.exists() else {}
+            last = record['rows'][-1] if record else {}
+            label = last.get('label', 'missing')
+            evaluation_path = folder/f'{label}_evaluation.json'
+            classes_path = folder/f'{label}_classes.json'
+            evaluation = read(evaluation_path) if evaluation_path.exists() else {}
+            classes = read(classes_path) if classes_path.exists() else None
+            directed[direction] = dict(search=record, evaluation=evaluation, classes=classes)
+        method_classes[method] = {direction:None if value['classes'] is None else
+            {r['id']:tuple(r['key'][:3]) if dataset=='golden' else r['events'] for r in value['classes']}
+            for direction,value in directed.items()}
+        modes = {}
+        for mode, directions in (('single', [specification['smaller_first']]),
+                                 ('bidirectional', list(DIRECTIONS))):
+            values = [directed[d] for d in directions]
+            available = [v['classes'] for v in values if v['classes'] is not None]
+            data = dict(searches_complete=sum(v['search'].get('complete', False) for v in values),
+                expected_searches=len(directions), classes_complete=len(available) == len(directions),
+                capped_directions=sum(v['search']['rows'][-1]['capped'] for v in values if v['search']),
+                compute_cpu=sum(v['search']['rows'][-1]['compute_cpu_excluding_persistence_and_loading_seconds']
+                                for v in values if v['search'].get('complete')))
+            if dataset == 'golden':
+                reference = read(run/f'inputs/golden/{index}/reference.json')
+                expected = certificate_id(reference['features'], reference['mapping'])
+                classes = merge_classes(available)
+                data['reference_recovery'] = union_outcome([
+                    v['evaluation'].get('reference_recovery', 'unknown') for v in values])
+                best = classes[0]['key'][:3] if classes else None
+                hit = next((r for r in classes if r['id'] == expected), None)
+                data['representative_event_windows'] = {str(delta):bool(hit and
+                    hit['key'][:2] == best[:2] and hit['key'][2] <= best[2]+delta)
+                    for delta in range(11)}
+                data['class_count'] = len(classes)
+            else:
+                merged = {}
+                for group in available:
+                    for row in group:
+                        if row['id'] not in merged or row['events'] < merged[row['id']]['events']:
+                            merged[row['id']] = row
+                data['class_events'] = {k:v['events'] for k,v in merged.items()}
+                data['best_events'] = min(data['class_events'].values(), default=None)
+                data['full_mapping_found'] = bool(merged)
+            modes[mode] = data
+        methods[method] = modes
+    row = dict(dataset=dataset, index=index, methods=methods)
+    row['directional_class_comparison'] = {}
+    for direction in DIRECTIONS:
+        before, after = (method_classes[method][direction] for method in ('original','adaptive'))
+        row['directional_class_comparison'][direction] = (
+            dict(status='unavailable') if before is None or after is None else
+            dict(status='compared', original=len(before), candidate=len(after),
+                missing=sorted(before.keys()-after.keys()),
+                worse_scores=sorted(k for k in before.keys() & after.keys() if after[k]>before[k]),
+                new=len(after.keys()-before.keys())))
+    if dataset == 'holdout':
+        row['comparison'] = {}
+        for mode in ('single', 'bidirectional'):
+            before, after = (methods[m][mode] for m in ('original', 'adaptive'))
+            limit = before['best_events']
+            windows = []
+            if limit is not None:
+                for delta in range(3):
+                    expected = {k for k,v in before['class_events'].items() if v <= limit+delta}
+                    observed = {k for k,v in after['class_events'].items() if v <= limit+delta}
+                    windows.append(dict(delta=delta, original=len(expected), shared=len(expected & observed),
+                        unresolved=sorted(expected-observed), new=len(observed-expected)))
+            row['comparison'][mode] = dict(event_windows=windows,
+                scope='Saved representative heavy classes under unchanged original equivalence. '
+                      'Unresolved classes require compressed-family queries, not assumed absent.')
+    return row
+
+
+def compare(args):
+    """Read saved outputs in parallel; retain the complete fixed denominators."""
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing as mp
     tasks = read(args.run/'tasks.json')
-    rows, totals = [], {}
-    for dataset, count in COUNTS.items():
-        for index in range(count):
-            specification = next(t for t in tasks if t['dataset'] == dataset and t['index'] == index)
-            methods = {}
-            for method in ('original', 'adaptive'):
-                directed = {}
-                for direction in DIRECTIONS:
-                    folder = args.run/f'results/{dataset}/{index}/{direction}/{method}'
-                    search_path = folder/'search.json'
-                    record = read(search_path) if search_path.exists() else {}
-                    last = record['rows'][-1] if record else {}
-                    label = last.get('label', 'missing')
-                    evaluation_path = folder/f'{label}_evaluation.json'
-                    classes_path = folder/f'{label}_classes.json'
-                    evaluation = read(evaluation_path) if evaluation_path.exists() else {}
-                    classes = read(classes_path) if classes_path.exists() else None
-                    directed[direction] = dict(search=record, evaluation=evaluation, classes=classes)
-                modes = {}
-                for mode, directions in (('single', [specification['smaller_first']]),
-                                         ('bidirectional', list(DIRECTIONS))):
-                    values = [directed[d] for d in directions]
-                    available = [v['classes'] for v in values if v['classes'] is not None]
-                    data = dict(searches_complete=sum(v['search'].get('complete', False) for v in values),
-                        expected_searches=len(directions), classes_complete=len(available) == len(directions),
-                        capped_directions=sum(v['search']['rows'][-1]['capped'] for v in values if v['search']),
-                        compute_cpu=sum(v['search']['rows'][-1]['compute_cpu_excluding_persistence_and_loading_seconds']
-                                        for v in values if v['search'].get('complete')))
-                    if dataset == 'golden':
-                        reference = read(args.run/f'inputs/golden/{index}/reference.json')
-                        expected = certificate_id(reference['features'], reference['mapping'])
-                        classes = merge_classes(available)
-                        data['reference_recovery'] = union_outcome([
-                            v['evaluation'].get('reference_recovery', 'unknown') for v in values])
-                        best = classes[0]['key'][:3] if classes else None
-                        hit = next((r for r in classes if r['id'] == expected), None)
-                        data['representative_event_windows'] = {str(delta):bool(hit and
-                            hit['key'][:2] == best[:2] and hit['key'][2] <= best[2]+delta)
-                            for delta in range(11)}
-                        data['class_count'] = len(classes)
-                    else:
-                        merged = {}
-                        for group in available:
-                            for row in group:
-                                if row['id'] not in merged or row['events'] < merged[row['id']]['events']:
-                                    merged[row['id']] = row
-                        data['class_events'] = {k:v['events'] for k,v in merged.items()}
-                        data['best_events'] = min(data['class_events'].values(), default=None)
-                        data['full_mapping_found'] = bool(merged)
-                    modes[mode] = data
-                methods[method] = modes
-            row = dict(dataset=dataset, index=index, methods=methods)
-            if dataset == 'holdout':
-                row['comparison'] = {}
-                for mode in ('single', 'bidirectional'):
-                    before, after = (methods[m][mode] for m in ('original', 'adaptive'))
-                    limit = before['best_events']
-                    windows = []
-                    if limit is not None:
-                        for delta in range(3):
-                            expected = {k for k,v in before['class_events'].items() if v <= limit+delta}
-                            observed = {k for k,v in after['class_events'].items() if v <= limit+delta}
-                            windows.append(dict(delta=delta, original=len(expected), shared=len(expected & observed),
-                                unresolved=sorted(expected-observed), new=len(observed-expected)))
-                    row['comparison'][mode] = dict(event_windows=windows,
-                        scope='Saved representative heavy classes under unchanged original equivalence. '
-                              'Unresolved classes require compressed-family queries, not assumed absent.')
-            rows.append(row)
+    specifications = {(t['dataset'],t['index']):t for t in tasks}
+    payloads = [(args.run,specifications[(dataset,index)])
+                for dataset,count in COUNTS.items() for index in range(count)]
+    with ProcessPoolExecutor(max_workers=args.report_workers, mp_context=mp.get_context('spawn')) as pool:
+        rows = list(pool.map(compare_case, payloads, chunksize=4))
+    totals = {}
     for dataset, count in COUNTS.items():
         selected = [r for r in rows if r['dataset'] == dataset]
         for mode in ('single', 'bidirectional'):
@@ -610,5 +633,6 @@ if __name__ == '__main__':
     parser.add_argument('--adaptive-policy', choices=('seed_frontier','cut_interleaved','shared_policies'), default='cut_interleaved')
     parser.add_argument('--batch-workers', type=int, default=16)
     parser.add_argument('--batch-tasks', type=int, default=64)
+    parser.add_argument('--report-workers', type=int, default=16)
     arguments = parser.parse_args()
     globals()[arguments.command](arguments)

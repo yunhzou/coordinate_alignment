@@ -65,3 +65,22 @@ are retained. No ground-truth-derived guides and no original-result fallback.
 This changes scheduling/storage, not growth, matching tolerance, or scoring.
 Measure the cost honestly; restoring equivalence takes precedence over calling
 a smaller, incomplete search an acceleration. Use a fresh full benchmark.
+
+## Shared-policy full-run resource finding
+
+The exact shared-policy differential tests pass (weighted graphs, unequal
+composition, both cap stages and complete correlated fragment records).
+Previously missing cases 21 and 1246 now recover after policy exhaustion.
+The first full run nevertheless exposed an implementation/resource failure:
+round-robin retained every cut's branch dictionaries and decision caches at
+once. Slurm job 465803 reached 65,068,852 KiB, with individual workers above
+6 GiB; workers were killed in its 64-GiB allocation. Further expensive calls
+hit the 300-second one-CPU watchdog. These are not successful comparisons.
+
+Move the same shared policy scheduler into the established per-cut worker
+pipeline. Each worker finishes, checkpoints and releases a cut; multiple cuts
+run concurrently with an explicit CPU budget. Reuse existing producer-side
+checkpoints, independent finalization, timing and bounded worker orchestration.
+Do not alter fragment growth or retry via another mapper. Preserve this failed
+attempt and its counters, and run the complete benchmark again under the
+corrected, frozen execution backend.
