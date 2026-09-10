@@ -17,13 +17,14 @@ from publication_timing import SearchProfiler
 
 def prepare(args):
     tasks = read(args.run/'tasks.json')
-    pending = []
+    path = args.run/'continuation_tasks.json'
+    pending = read(path) if path.exists() else []
     for slot, spec in enumerate(tasks):
         path = args.run/f'status/adaptive_{slot}.json'
         status = read(path) if path.exists() else {}
         if not status.get('complete'):
             continue  # active/queued work belongs to the original allocation
-        if status.get('search',{}).get('exit') != 0 or status.get('analyze',{}).get('exit') != 0:
+        if slot not in pending and (status.get('search',{}).get('exit') != 0 or status.get('analyze',{}).get('exit') != 0):
             pending.append(slot)
     save(args.run/'continuation_tasks.json', pending)
     print(json.dumps(dict(pending=pending, count=len(pending))))

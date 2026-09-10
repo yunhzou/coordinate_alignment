@@ -441,6 +441,8 @@ def compare_case(payload):
             available = [v['classes'] for v in values if v['classes'] is not None]
             data = dict(searches_complete=sum(v['search'].get('complete', False) for v in values),
                 expected_searches=len(directions), classes_complete=len(available) == len(directions),
+                fresh_timing=all(v['search'].get('complete',False) and
+                    v['search']['rows'][-1].get('timing_source')!='checkpoint_continuation' for v in values),
                 capped_directions=sum(v['search']['rows'][-1]['capped'] for v in values if v['search']),
                 compute_cpu=sum(v['search']['rows'][-1]['compute_cpu_excluding_persistence_and_loading_seconds']
                                 for v in values if v['search'].get('complete')))
@@ -534,6 +536,13 @@ def compare(args):
                     'adaptive_worse' if b > a else 'adaptive_better' if b < a else 'equal'
                     for r in selected))
             totals[dataset+'_'+mode] = summary
+            paired = [r for r in selected if all(r['methods'][m][mode]['fresh_timing']
+                                                for m in ('original','adaptive'))]
+            summary['paired_fresh_timing'] = dict(cases=len(paired),
+                original_cpu=sum(r['methods']['original'][mode]['compute_cpu'] for r in paired),
+                candidate_cpu=sum(r['methods']['adaptive'][mode]['compute_cpu'] for r in paired),
+                scope='Same cases only; excludes failed/incomplete searches and checkpoint continuations. '
+                      'Worker counts remain explicit in the manifests; CPU costs are not equal-core wall speedups.')
     save(args.run/'comparison/per_case.json', rows)
     save(args.run/'comparison/summary.json', dict(totals=totals,
         scope='Full fixed denominators. Live report; unavailable results remain unknown. '
