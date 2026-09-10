@@ -108,6 +108,37 @@ def prepare(args):
     print(json.dumps(dict(run=str(args.run), directional_pairs=len(tasks), search_calls=2*len(tasks))), flush=True)
 
 
+def prepare_revision(args):
+    """Freeze a fresh candidate; retain the already measured original baseline."""
+    reference = args.reference_run.resolve()
+    previous = read(reference/'manifest.json')
+    assert previous['counts'] == COUNTS
+    args.run.mkdir(parents=True, exist_ok=False)
+    for name in ('src', 'native', 'bench', 'tests'):
+        shutil.copytree(ROOT/name, args.run/'engine'/name,
+                        ignore=shutil.ignore_patterns('__pycache__'))
+    for name in ('inputs', 'original'):
+        (args.run/name).symlink_to(reference/name, target_is_directory=True)
+    for name in ('tasks.json', 'input_hashes.json'):
+        shutil.copy2(reference/name, args.run/name)
+    tasks = read(args.run/'tasks.json')
+    for task in tasks:
+        folder = Path(f"results/{task['dataset']}/{task['index']}/{task['direction']}")
+        (args.run/folder).mkdir(parents=True)
+        (args.run/folder/'original').symlink_to(reference/folder/'original', target_is_directory=True)
+    manifest = dict(previous, reference_run=str(reference), methods=['adaptive'],
+        adaptive_policy=args.adaptive_policy, adaptive_work_budgets=args.work_budgets,
+        adaptive_cpu_seconds=args.cpu_seconds,
+        experimental_commit=subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
+        engine_sha256={str(p.relative_to(args.run/'engine')):sha(p)
+            for p in (args.run/'engine').rglob('*') if p.is_file()},
+        baseline_reuse='Original artifacts and their original recorded timings; no mapper rerun or retiming.',
+        batch_workers=args.batch_workers, batch_tasks=args.batch_tasks)
+    save(args.run/'manifest.json', manifest)
+    (args.run/'status').mkdir()
+    print(json.dumps(dict(run=str(args.run), candidate_calls=len(tasks), original_artifacts=str(reference))), flush=True)
+
+
 def spec_and_folder(args):
     spec = read(args.run/'tasks.json')[args.slot]
     return spec, args.run/f"results/{spec['dataset']}/{spec['index']}/{spec['direction']}/{args.method}"
@@ -147,8 +178,11 @@ def search(args):
                          terminals=len(result.graph.terminals), capped=result.graph.capped))
     else:
         from rxn_core.adaptive_seed_search import AdaptiveSeedSearch
+        from rxn_core.adaptive_cut_search import AdaptiveCutSearch
         cpu, wall = time.process_time(), time.perf_counter()
-        session = AdaptiveSeedSearch(plan.problem, plan.config)
+        policy = manifest.get('adaptive_policy', 'seed_frontier')
+        session = {'seed_frontier':AdaptiveSeedSearch,
+                   'cut_interleaved':AdaptiveCutSearch}[policy](plan.problem, plan.config)
         cpu_used, wall_used = time.process_time()-cpu, time.perf_counter()-wall
         for budget in manifest['adaptive_work_budgets']:
             while session.agenda and session.work < budget and cpu_used < manifest['adaptive_cpu_seconds']:
@@ -177,6 +211,9 @@ def search(args):
                 capped=result.aam.graph.capped,
                 stop='agenda_exhausted' if result.exhausted else
                      'cpu_budget' if cpu_used >= manifest['adaptive_cpu_seconds'] else 'work_budget')
+            if policy == 'cut_interleaved':
+                row.update(visited_cuts=len(session.sessions), total_cuts=len(session.cuts),
+                           native_reuse=session.repair.stats())
             rows.append(row)
             save(folder/'search.json', dict(**spec, method=args.method, rows=rows, complete=False))
             if result.exhausted or cpu_used >= manifest['adaptive_cpu_seconds']:
@@ -261,6 +298,64 @@ def worker(args):
         save(status, record)
     record.update(complete=True, finished=time.time())
     save(status, record)
+
+
+def batch_worker(args):
+    """Reuse a Slurm allocation, not reaction results, across independent calls.
+
+    Each worker is pinned to one CPU and retains its independent search and
+    evaluation watchdogs. Existing attempts are never silently rerun.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from queue import SimpleQueue
+    manifest = read(args.run/'manifest.json')
+    cores = sorted(os.sched_getaffinity(0))
+    count = manifest['batch_workers']
+    assert len(cores) >= count
+    available = SimpleQueue()
+    for core in cores[:count]:
+        available.put(core)
+    start = args.slot*manifest['batch_tasks']
+    end = min(start+manifest['batch_tasks'], len(read(args.run/'tasks.json')))
+    def run_one(slot):
+        status = args.run/f'status/adaptive_{slot}.json'
+        if status.exists():
+            return dict(slot=slot, existing_attempt=True)
+        core = available.get()
+        try:
+            command = ['taskset', '-c', str(core), 'timeout', '--kill-after=5s', '550',
+                sys.executable, str(args.run/'engine/bench/adaptive_full_benchmark.py'),
+                'worker', '--run', str(args.run), '--method', 'adaptive', '--slot', str(slot)]
+            code = subprocess.run(command).returncode
+            row = dict(slot=slot, exit=code, core=core)
+            print(json.dumps(row), flush=True)
+            return row
+        finally:
+            available.put(core)
+    with ThreadPoolExecutor(max_workers=count) as pool:
+        results = list(pool.map(run_one, range(start, end)))
+    save(args.run/f'batches/{args.slot}.json', dict(tasks=results, environment=environment()))
+
+
+def submit_batches(args):
+    manifest = read(args.run/'manifest.json')
+    tasks = len(read(args.run/'tasks.json'))
+    batches = (tasks+manifest['batch_tasks']-1)//manifest['batch_tasks']
+    workers = manifest['batch_workers']
+    command = [sys.executable, str(args.run/'engine/bench/adaptive_full_benchmark.py'),
+               'batch_worker', '--run', str(args.run), '--slot']
+    options = ['sbatch', '--parsable', '--partition='+args.partition,
+        '--nodes=1', f'--cpus-per-task={workers}', f'--mem={4*workers}G',
+        '--time=01:00:00', '--no-requeue',
+        f'--array=0-{batches-1}%{max(1,args.cpu_budget//workers)}',
+        '--job-name=adaptive_cut_batch', f'--output={args.run}/status/%A_%a.out',
+        '--wrap', shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
+    if args.exclude:
+        options.insert(2, '--exclude='+args.exclude)
+    job = subprocess.check_output(options, text=True).strip()
+    save(args.run/'batch_submission.json', dict(job=job, command=options,
+        allocation_scope='Batch lifetime only; every individual AAM retains a 300-second hard watchdog.'))
+    print(job, flush=True)
 
 
 def submit(args):
@@ -481,7 +576,8 @@ def watch(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('prepare', 'submit', 'worker', 'search', 'analyze', 'status', 'compare', 'watch'))
+    parser.add_argument('command', choices=('prepare', 'prepare_revision', 'submit', 'submit_batches',
+        'worker', 'batch_worker', 'search', 'analyze', 'status', 'compare', 'watch'))
     parser.add_argument('--run', type=Path, required=True)
     parser.add_argument('--original-commit', default='98b01b1')
     parser.add_argument('--workers', type=int, default=8)
@@ -494,5 +590,9 @@ if __name__ == '__main__':
     parser.add_argument('--offset', type=int, default=0)
     parser.add_argument('--method', choices=('original', 'adaptive'))
     parser.add_argument('--monitor-seconds', type=int, default=7200)
+    parser.add_argument('--reference-run', type=Path)
+    parser.add_argument('--adaptive-policy', choices=('seed_frontier','cut_interleaved'), default='cut_interleaved')
+    parser.add_argument('--batch-workers', type=int, default=16)
+    parser.add_argument('--batch-tasks', type=int, default=64)
     arguments = parser.parse_args()
     globals()[arguments.command](arguments)

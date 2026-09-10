@@ -32,6 +32,27 @@ class AdaptiveResult:
     exhausted: bool
 
 
+@dataclass(frozen=True)
+class AdaptiveSearchCondition:
+    """Prepared directed graphs and one explicit topology/seed condition."""
+    source: object
+    target: object
+    order: tuple
+    orbits: object
+    workspace: object
+    cuts: tuple = ()
+    growth_replay: object = None
+
+    @classmethod
+    def uncut(cls, problem, config):
+        source, target = [build_graph(endpoint.elements, endpoint.wbo,
+            bond_cut=config.graph_floor) for endpoint in (problem.reactant, problem.product)]
+        order = tuple(_generate_seed_orders(source, 1, rng_seed=42,
+                                             seed_selection=config.seed_selection)[0])
+        return cls(source, target, order, _nauty_orbits(target, wbo_tol=config.iso_tolerance),
+                   ConditionedSymmetryWorkspace(target, config.iso_tolerance))
+
+
 class _ChoiceAgenda:
     """Stable queues per discrepancy depth; optionally share work fairly."""
     def __init__(self, fair):
@@ -78,7 +99,7 @@ class AdaptiveFragmentSearch:
     sessions for cross-process resume. No cut sweep or symmetry-repair pass is
     run by this scheduler.
     """
-    def __init__(self, problem, config=None, *, policy='largest_first'):
+    def __init__(self, problem, config=None, *, policy='largest_first', condition=None):
         self.problem = problem
         self.config = config or AAMSearchConfig(seed_count=1)
         if self.config.seed_count != 1:
@@ -88,15 +109,13 @@ class AdaptiveFragmentSearch:
         if policy not in ('largest_first', 'smallest_first', 'event_guided', 'fair_depth'):
             raise ValueError('unknown closure priority')
         self.policy = policy
-        self.source, self.target = [build_graph(endpoint.elements, endpoint.wbo,
-            bond_cut=self.config.graph_floor) for endpoint in (problem.reactant, problem.product)]
-        self.orbits = _nauty_orbits(self.target, wbo_tol=self.config.iso_tolerance)
-        self.order = tuple(_generate_seed_orders(self.source, 1, rng_seed=42,
-                                                 seed_selection=self.config.seed_selection)[0])
+        self.condition = condition or AdaptiveSearchCondition.uncut(problem, self.config)
+        self.source, self.target = self.condition.source, self.condition.target
+        self.orbits, self.order = self.condition.orbits, self.condition.order
         self.builder = SearchGraphBuilder(SearchContext(tuple(sorted(self.source)), tuple(sorted(self.target)),
-            self.order, anchors=self.config.anchors, graph_floor=self.config.graph_floor,
+            self.order, cuts=self.condition.cuts, anchors=self.config.anchors, graph_floor=self.config.graph_floor,
             iso_tolerance=self.config.iso_tolerance, branch_limit=self.config.branch_limit))
-        self.workspace = ConditionedSymmetryWorkspace(self.target, self.config.iso_tolerance)
+        self.workspace = self.condition.workspace
         self.agenda = _ChoiceAgenda(fair=policy == 'fair_depth')
         self.seen = {}
         self.work = self.growth_calls = self.closure_calls = self.reused_states = 0

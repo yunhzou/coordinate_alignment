@@ -57,9 +57,9 @@ class AdaptiveSeedSearch(AdaptiveFragmentSearch):
     compressed placement. There is one lazy seed task per discovered state.
     Native per-growth cap and caller-owned work/time budgets still apply.
     """
-    def __init__(self, problem, config=None):
+    def __init__(self, problem, config=None, *, condition=None):
         self.seed_trials = {}
-        super().__init__(problem, config)
+        super().__init__(problem, config, condition=condition)
         pending=tuple(self.agenda)
         self.agenda=_SeedAgenda()
         for priority,_,payload in pending:self.agenda.push(priority,payload)
@@ -104,7 +104,8 @@ class AdaptiveSeedSearch(AdaptiveFragmentSearch):
         trial['tried'].add(seed)
         result=match_fragment(self.source,self.target,seed=seed,
             context=FragmentMatchContext(branch.mapping,branch.islands_R,
-                tuple(branch.deferred_edges),self.source_orbits,self.orbits),
+                tuple(branch.deferred_edges),self.source_orbits,self.orbits,
+                growth_replay=self.condition.growth_replay),
             config=FragmentMatchConfig(graph_floor=self.config.graph_floor,
                 iso_tolerance=self.config.iso_tolerance,branch_limit=self.config.branch_limit))
         for match in result.matches:
