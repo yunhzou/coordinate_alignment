@@ -1394,6 +1394,50 @@ struct GrowResult {
     BranchCap cap{0, 0};
 };
 
+// Optional observation only. No heap/edge matrix copies and no change to growth.
+struct FragmentFrontier {
+    std::vector<Cand> cands;
+    std::vector<uint8_t> fragment;
+    std::vector<Pair> deferred;
+    int next_atom;
+};
+
+void finish_fragment(const Source& R, const Target& P, const std::vector<int>& mapping,
+                     std::vector<Cand> cands, const std::vector<uint8_t>& fragment,
+                     const std::vector<Pair>& deferred, double iso_tol, int min_lock_size,
+                     long max_branches, Canonicalizer& canon, long& certificate_calls,
+                     GrowResult& result) {
+    auto& prof=result.profile;
+    int fragment_size=std::count(fragment.begin(),fragment.end(),uint8_t{1});
+    Context ctx;ctx.R=&R;ctx.P=&P;ctx.mapping=&mapping;ctx.iso_tol=iso_tol;
+    ctx.locked_p.assign(P.n,0);
+    for (int p:mapping) if (p>=0) ctx.locked_p[p]=1;
+    cands=dedup_sym_cands(cands,ctx,canon,fragment,deferred,certificate_calls);
+    prof.certificate_calls=certificate_calls;prof.final_fragment_size=fragment_size;
+    prof.final_cands=(long)cands.size();
+    if (cands.empty() || fragment_size<min_lock_size) {
+        prof.result=cands.empty() ? "no_cands" : "too_small";return;
+    }
+    bool set_unique=true;
+    for (const auto& c:cands) if (c.has_open_choice()) {set_unique=false;break;}
+    if (set_unique && cands.size()>1)
+        for (size_t i=1;i<cands.size();++i)
+            if (cands[i].img!=cands[0].img) {set_unique=false;break;}
+    if (!set_unique && (long)cands.size()>max_branches) {
+        prof.result="subtree_branch_cap";prof.branches=(long)cands.size();
+        result.capped=true;result.cap={(long)cands.size(),max_branches};return;
+    }
+    prof.result=set_unique ? "success" : "branched";
+    prof.branches=set_unique ? 1 : (long)cands.size();
+    for (size_t i=0;i<(set_unique ? 1 : cands.size());++i) {
+        IsoOut iso;
+        for (int r:cands[i].mapped) iso.mapping.push_back({r,cands[i].img[r]});
+        iso.deferred_edges=deferred;
+        for (int r=0;r<R.n;++r) if (fragment[r]) iso.fragment.push_back(r);
+        iso.cand=std::move(cands[i]);result.isos.push_back(std::move(iso));
+    }
+}
+
 #include "growth_checkpoint.h"
 #include "growth_dependencies.h"
 
@@ -1403,7 +1447,8 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
                        bool allow_mapped_seed, GrowthTrace* trace = nullptr,
                        const GrowthTrace* previous = nullptr, int resume_step = -1,
                        GrowthDependencies* dependencies = nullptr,
-                       ExtensionCache* extension_cache = nullptr) {
+                       ExtensionCache* extension_cache = nullptr,
+                       std::vector<FragmentFrontier>* choices = nullptr) {
     SourceReadScope dependency_scope(R, trace ? &trace->reads : nullptr);
     GrowResult result;
     GrowProfile& prof = result.profile;
@@ -1601,6 +1646,8 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
             if (dependencies) dependencies->boundary(ctx.sig_fragment);
             new_cands = extend_sym_cands(cands, ctx, canon, certificate_calls, extension_cache);
         }
+        if (choices && !new_cands.empty())
+            choices->push_back({cands,fragment,deferred,n});
         if ((long)new_cands.size() > max_branches) {
             prof.result = "live_branch_cap";
             prof.final_cands = (long)new_cands.size();
@@ -1640,57 +1687,9 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
     }
     // saturation quotient
     checkpoint();
-    {
-        Context ctx;
-        ctx.R = &R;
-        ctx.P = &P;
-        ctx.mapping = &mapping;
-        ctx.locked_p = locked_p;
-        ctx.iso_tol = iso_tol;
-        if (dependencies) dependencies->boundary(fragment);
-        cands = dedup_sym_cands(cands, ctx, canon, fragment, deferred, certificate_calls);
-    }
-    prof.certificate_calls = certificate_calls;
-    prof.final_fragment_size = fragment_size;
-    if (cands.empty() || fragment_size < min_lock_size) {
-        prof.result = cands.empty() ? "no_cands" : "too_small";
-        prof.final_cands = (long)cands.size();
-        return result;
-    }
-    auto emit = [&](const Cand& c) {
-        IsoOut iso;
-        for (int r : c.mapped) iso.mapping.push_back({r, c.img[r]});
-        iso.deferred_edges = deferred;
-        for (int r = 0; r < NR; ++r)
-            if (fragment[r]) iso.fragment.push_back(r);
-        iso.cand = c;
-        result.isos.push_back(std::move(iso));
-    };
-    // _set_unique
-    bool set_unique = true;
-    for (const auto& c : cands)
-        if (c.has_open_choice()) { set_unique = false; break; }
-    if (set_unique && cands.size() > 1) {
-        for (size_t i = 1; i < cands.size(); ++i)
-            if (cands[i].img != cands[0].img) { set_unique = false; break; }
-    }
-    prof.final_cands = (long)cands.size();
-    if (set_unique) {
-        prof.result = "success";
-        prof.branches = 1;
-        emit(cands[0]);
-        return result;
-    }
-    if ((long)cands.size() > max_branches) {
-        prof.result = "subtree_branch_cap";
-        prof.branches = (long)cands.size();
-        result.capped = true;
-        result.cap = {(long)cands.size(), max_branches};
-        return result;
-    }
-    prof.result = "branched";
-    prof.branches = (long)cands.size();
-    for (const auto& c : cands) emit(c);
+    if (dependencies) dependencies->boundary(fragment);
+    finish_fragment(R,P,mapping,std::move(cands),fragment,deferred,iso_tol,min_lock_size,
+                    max_branches,canon,certificate_calls,result);
     return result;
 }
 
@@ -1897,6 +1896,7 @@ py::object py_grow_island(const PySource& source, const PyTarget& target, int se
 #include "growth_replay.h"
 #include "fragment_repair.h"
 #include "fragment_scheduler.h"
+#include "fragment_choices.h"
 
 }  // namespace
 
@@ -1937,4 +1937,5 @@ PYBIND11_MODULE(_engine, mod) {
     register_growth_replay(mod);
     register_fragment_repair(mod);
     register_fragment_scheduler(mod);
+    register_fragment_choices(mod);
 }
