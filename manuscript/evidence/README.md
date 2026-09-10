@@ -48,3 +48,12 @@ Scientific claims also rely on the human-readable reports for accounting scope,
 exceptions, case follow-ups, evaluator definitions and excluded experiments.
 Those reports remain in the worktree; consult them before changing a comparison.
 The compact bundle does not contain every original candidate or timing log.
+
+The [scientific novelty audit](novelty-audit-20260910.md) compares the frozen
+`98b01b1` search design with primary literature and selected author implementations.
+It identifies a plausible algorithmic contribution in the combined representation
+and transition rules, while documenting substantial precedents for the individual
+techniques. It is a targeted assessment, not proof of historical priority.
+[The source manifest](novelty-source-manifest.json) pins inspected code and records
+availability limits. This assessment adds no new benchmark results; its proposed
+component ablations remain future work.

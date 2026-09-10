@@ -1,0 +1,143 @@
+{
+  "date": "2026-09-10",
+  "scope": "Source files inspected for a targeted scientific novelty assessment; no runtime comparison or correctness certification of third-party implementations.",
+  "own_frozen_source": [
+    {
+      "path": "src/rxn_core/alignment/branch.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "53d52eba4d7c9adce3605de56737b2b4d09b224eff80eec59a4f219536f4757d",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/alignment/branch.py"
+    },
+    {
+      "path": "src/rxn_core/alignment/index_chirality.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "6e4622bc3339c97b84fbee11bcae55181948e863b641e1ca69dbbd2a8800a761",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/alignment/index_chirality.py"
+    },
+    {
+      "path": "src/rxn_core/analytical.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "9ba73e9f23652940730d84a152268ad02fa6c197122d9c6a544524b4964de28c",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/analytical.py"
+    },
+    {
+      "path": "src/rxn_core/conditioned_symmetry.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "10a404c957783481e98e5341b6cc826c77ee0c9173518928392406e24f4178df",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/conditioned_symmetry.py"
+    },
+    {
+      "path": "src/rxn_core/family_query.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "ee2f9e3b259b19daf4ed50f83f923eed7f937f56d419fcb715be6c7b77856ad8",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/family_query.py"
+    },
+    {
+      "path": "src/rxn_core/growth/island.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "52fe1375c7cd4951ee0163287531fecc44917d711252a73f01b168b93b4c30fe",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/growth/island.py"
+    },
+    {
+      "path": "src/rxn_core/growth/native.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "08bfbce38e499cd82ffe717ccfb1afa5c58440a86b70efa544359d813b8b98d8",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/growth/native.py"
+    },
+    {
+      "path": "src/rxn_core/matcher/canonical.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "c9b62ad482facb860f8c9b34105cdcdceed50ab77be248de2ea2bc75aa8a2e8b",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/matcher/canonical.py"
+    },
+    {
+      "path": "src/rxn_core/matcher/dedupe.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "29cc95f6bdb2a2878a28cadef6538ba246d2b9fb68ae6d1afe3b93e2f0fe05f9",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/matcher/dedupe.py"
+    },
+    {
+      "path": "src/rxn_core/matcher/extend.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "5f522ebaf9bb458242b24e2843c448291027dcbd72d6ec9beb7a1319480f9dd5",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/matcher/extend.py"
+    },
+    {
+      "path": "src/rxn_core/matcher/state.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "227dc4ce2759a9aa94626beab76fecab5e9778520ecb7ca2b1f4da900c6e1bae",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/matcher/state.py"
+    },
+    {
+      "path": "src/rxn_core/search_graph.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "8e2160d57538107566de88b287ab5b1a7bac783d5b95d131bb9db715ed2a6963",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/search_graph.py"
+    },
+    {
+      "path": "src/rxn_core/search_symmetry.py",
+      "git_revision": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+      "sha256": "2e9bf8db03a7296d834f424e80359ac1c8d7c2912b836b3b6d5aeb031bacb92b",
+      "url": "https://github.com/yunhzou/coordinate_alignment/blob/98b01b175eeed31f70d13e7cbf178b80bf07c9e0/src/rxn_core/search_symmetry.py"
+    }
+  ],
+  "third_party_source": [
+    {
+      "file": "synkit/exact/branching.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Chem/Reaction/Mapper/exact/branching.py",
+      "bytes": 17800,
+      "sha256": "e2241bfb136cd291264f54a47e3206a601d2b05e28460d5d446b2a82b703a7dc"
+    },
+    {
+      "file": "synkit/exact/enumerate.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Chem/Reaction/Mapper/exact/enumerate.py",
+      "bytes": 34433,
+      "sha256": "77f78151f7cac8a76f79d533c602f6b0141a61297d8500f88c3ebe3c2dc992e9"
+    },
+    {
+      "file": "synkit/exact/kernel.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Chem/Reaction/Mapper/exact/kernel.py",
+      "bytes": 9115,
+      "sha256": "46fdb4f5d0b7d076ef3e610fd0a3e4945b47217513afbd36335f8f9eeaa90b5f"
+    },
+    {
+      "file": "synkit/exact/certificate.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Chem/Reaction/Mapper/exact/certificate.py",
+      "bytes": 4619,
+      "sha256": "17ba416d5538f206d3574ff4e427eb16b858cb290f9f4e518b504460c666a663"
+    },
+    {
+      "file": "synkit/graph/automorphism.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Chem/Reaction/Mapper/graph/automorphism.py",
+      "bytes": 3606,
+      "sha256": "d4657d29c6bcd664ffa29ed9dfdbc15cc5aedee3d0b36a7510c856afe2e44a8d"
+    },
+    {
+      "file": "synkit/slap/sequential.py",
+      "url": "https://raw.githubusercontent.com/TieuLongPhan/SynKit/b57f2a39f1807a2682913183b22e1d8d61531bba/synkit/Chem/Reaction/Mapper/slap/sequential.py",
+      "bytes": 25089,
+      "sha256": "a80b544ac64bc5fa63968152eddd5fcd239ed8b59e0da158f3e05a9f535d2e81"
+    },
+    {
+      "file": "slap/core.py",
+      "url": "https://raw.githubusercontent.com/shin1koda/slap-mapper/ea248fd9494f52f4865193e87a98cc92c62b5f9e/src/slapmapper/core.py",
+      "bytes": 27887,
+      "sha256": "62964b12866e691698d594bfdc65f84ae714fb049df4267a5f5964b5c7e5fa3c"
+    },
+    {
+      "file": "OpenChemLib/SSSearcher.java",
+      "git_revision": "0754c781c23f7570b13866e202836b5449282ad6",
+      "version": "2026.2.0",
+      "url": "https://raw.githubusercontent.com/Actelion/openchemlib/0754c781c23f7570b13866e202836b5449282ad6/src/main/java/com/actelion/research/chem/SSSearcher.java",
+      "bytes": 73994,
+      "sha256": "48ae709a46ea3f174152b123ba0b6ced9439b4f9aeb1c361b4f8166fac11c774"
+    }
+  ],
+  "availability_limits": [
+    "SLAP preprint PDF could not be retrieved; frozen author source inspected.",
+    "Jaworski 2019 supplementary PDF could not be retrieved; primary main article inspected.",
+    "ReactionMap 2013, CLCA 2014 and Heinonen 2011 were screened at publisher/PubMed abstract level only.",
+    "Ali 2025 technical sections were inspected through indexed primary-publisher text; its full PDF was not retrieved.",
+    "NEBscape 2026 was screened through indexed primary-publisher text for downstream mapping motivation."
+  ]
+}

@@ -40,9 +40,19 @@ animations. Resolve the following before treating it as a submission manuscript.
    algorithm is the central contribution. SLAP sweep results serve as a supporting
    ablation of single-edge constraint relaxation; the sweep unions individual
    cuts and does not establish that one fixed cut is sufficient.
-6. Expand related work and software citations for a target journal. The initial
-   five scientific references were checked against primary records; no universal
-   novelty, global optimality, physical mechanism or TS-accuracy claim is made.
+6. Revise related work using the [10 September novelty audit](evidence/novelty-audit-20260910.md).
+   The initial five scientific references are insufficient for a novelty argument.
+   Add the closest comparisons: SMSD/McSplit, Jaworski's neighborhood expansion
+   and cut search, Mann's constraint-based mapping, Ali's symmetry-distinct
+   enumeration, Laffitte's partial-map extensions, and the inspected SLAP/SynKit
+   implementations. SLAP already branches and suppresses repeated states.
+   Emphasize the specific shared-fragment transition, compressed placements,
+   contextual continuation joins and correlated families; fragment growth,
+   branching and symmetry reduction alone are established ideas. The targeted
+   audit found no exact match for the complete design but does not establish
+   priority. The related-work revision and matched component ablations remain
+   outstanding; no global optimality, physical mechanism or TS-accuracy claim
+   is established by this assessment.
 7. Supply a public code URL, archive DOI, licensing and reproducible environment
    for the frozen benchmark releases. The included compact evidence supports
    figure regeneration; it is not the entire multi-gigabyte mapping archive.
