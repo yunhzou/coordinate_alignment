@@ -72,6 +72,7 @@ def prepare(args):
         baseline_config=old['original_config'],changed_config_fields=['seed_count'],
         seed_policy='First N of the same deterministic per-cut seed orders; no new seed selection',
         search_watchdog=300,analysis_watchdog=240,cpu_budget=args.cpu_budget,node_cpus=args.node_cpus,
+        analysis_node_cpus=args.analysis_cpus,
         git_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         original_sha256={str(p.relative_to(args.run/'original')):sha(p) for p in (args.run/'original').rglob('*') if p.is_file()},
         adapter_sha256={str(p.relative_to(args.run/'engine/bench')):sha(p) for p in (args.run/'engine/bench').rglob('*.py')},
@@ -99,7 +100,8 @@ def batch(args):
     manifest=read(args.run/'manifest.json');tasks=read(args.run/'tasks.json')
     cores=sorted(os.sched_getaffinity(0))
     width=manifest['original_workers'] if args.phase=='search' else 1
-    assert len(cores)>=manifest['node_cpus'] and manifest['node_cpus']%width==0
+    allocation=manifest['node_cpus'] if args.phase=='search' else manifest['analysis_node_cpus']
+    assert len(cores)>=allocation and allocation%width==0
     env=dict(os.environ,PYTHONPATH=f'{args.run}/original/src:{args.run}/engine/bench',RXN_CORE_NATIVE='1',
         PYTHONHASHSEED='0',PYTHONDONTWRITEBYTECODE='1',OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',MKL_NUM_THREADS='1')
     def work(affinity):
@@ -121,17 +123,25 @@ def batch(args):
             with status.with_suffix('.log').open('w') as log:
                 code=subprocess.run(command,env=env,stdout=log,stderr=subprocess.STDOUT).returncode
             save(status,dict(**row,exit=code,finished=time.time(),elapsed_including_startup_io=time.perf_counter()-start))
-    groups=[cores[i:i+width] for i in range(0,manifest['node_cpus'],width)]
+    groups=[cores[i:i+width] for i in range(0,allocation,width)]
     with ThreadPoolExecutor(max_workers=len(groups)) as pool:list(pool.map(work,groups))
 
 
 def submit(args):
     manifest=read(args.run/'manifest.json')
+    assert not (args.run/'submissions.json').exists(), 'Do not resubmit a started campaign'
+    manifest['analysis_node_cpus']=args.analysis_cpus
+    # Finalize the orchestration snapshot before any worker starts. The frozen
+    # AAM engine, configuration and baseline adapters are never modified.
+    shutil.copy2(__file__,args.run/'aam_seed_ablation.py')
+    manifest['driver_sha256']=sha(Path(__file__))
+    save(args.run/'manifest.json',manifest)
     allocations=manifest['cpu_budget']//manifest['node_cpus']
     jobs=[]
     for phase in ('search','analyze'):
+        cpus=manifest['node_cpus'] if phase=='search' else manifest['analysis_node_cpus']
         command=['sbatch','--parsable','--partition=cpunodes_nia','--exclude=bosque49,bosque56',
-            '--nodes=1',f"--cpus-per-task={manifest['node_cpus']}",'--mem=64G','--time=00:20:00','--no-requeue',
+            '--nodes=1',f'--cpus-per-task={cpus}','--mem=64G','--time=00:20:00','--no-requeue',
             f'--array=0-{allocations-1}%{allocations}',f'--job-name=aam_seed{manifest["original_config"]["seed_count"]}_{phase}',
             f'--output={args.run}/status/{phase}_%A_%a.out']
         if jobs:command.append('--dependency=afterany:'+jobs[0]['job'].split(';')[0])
@@ -203,5 +213,6 @@ if __name__=='__main__':
     parser.add_argument('--seeds',type=int,default=3)
     parser.add_argument('--cpu-budget',type=int,default=1024)
     parser.add_argument('--node-cpus',type=int,default=32)
+    parser.add_argument('--analysis-cpus',type=int,default=8)
     parser.add_argument('--phase',choices=('search','analyze'))
     args=parser.parse_args();globals()[args.command](args)
