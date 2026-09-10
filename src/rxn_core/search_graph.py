@@ -405,11 +405,12 @@ class AAMSearchGraph:
             c, s, t = len(contexts), len(states), len(transitions)
             contexts.extend(graph.contexts)
             roots.extend(root + s for root in graph.roots)
-            states.extend(replace(state, id=state.id+s, context=state.context+c)
-                          for state in graph.states)
-            transitions.extend(replace(edge, id=edge.id+t, source=edge.source+s,
-                                       target=edge.target+s) for edge in graph.transitions)
-            stops.extend(replace(stop, state=stop.state+s) for stop in graph.stops)
+            states.extend(SearchState(state.id+s, state.context+c, state.mapping,
+                state.islands, state.deferred_edges) for state in graph.states)
+            transitions.extend(FragmentTransition(edge.id+t, edge.source+s, edge.target+s,
+                edge.seed, edge.step, edge.match, edge.preserved_bonds) for edge in graph.transitions)
+            stops.extend(SearchStop(stop.state+s, stop.reason, stop.seed, stop.stage,
+                stop.count, stop.limit, stop.step) for stop in graph.stops)
         return cls(tuple(contexts), tuple(roots), tuple(states), tuple(transitions), tuple(stops))
 
 

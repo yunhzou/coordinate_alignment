@@ -56,13 +56,21 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
     previous_calculations, previous_colorings = len(cache), workspace.coloring_count()
     selected = graph.ancestor_transitions(graph.terminals if states is None else states)
     generators, groups = workspace.generators, workspace.groups
+    immutable_groups = {}
     def intern(raw):
+        if isinstance(raw, tuple) and id(raw) in immutable_groups:
+            return immutable_groups[id(raw)][1]
         values = []
         for generator in raw:
             value = tuple(generator)
             values.append(generators.setdefault(value, value))
         group = tuple(values)
-        return groups.setdefault(group, group)
+        group = groups.setdefault(group, group)
+        if isinstance(raw, tuple):
+            # Keep the original tuple alive too: identities cannot be recycled
+            # during this pass. Mutable inputs still take the value-based path.
+            immutable_groups[id(raw)] = (raw, group)
+        return group
     # One graph topology for this target, recolored sequentially for each exact
     # conditioned transition. No graph object escapes this finalization pass.
     requests = 0
@@ -72,8 +80,12 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
             continue
         state = edge.match['symmetry']
         if state.get('automorph_group_source') == 'conditioned_search_transition':
-            symmetry = {**state, 'automorph_generators': intern(state['automorph_generators'])}
-            edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
+            group = intern(state['automorph_generators'])
+            if group is state['automorph_generators']:
+                edges.append(edge)
+            else:
+                symmetry = {**state, 'automorph_generators': group}
+                edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
             continue
         if edge.id not in selected:
             edges.append(edge)
