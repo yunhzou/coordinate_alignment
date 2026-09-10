@@ -55,6 +55,7 @@ def worker(args):
     from rxn_core import AAMProblem,AAMSearchConfig
     from rxn_core.domain import MolecularEndpoint
     from rxn_core.adaptive_search import AdaptiveFragmentSearch
+    from rxn_core.adaptive_seed_search import AdaptiveSeedSearch
     from rxn_core.artifacts import write_aam_checkpoint
     from compare_elementary_outputs import event_counts
     spec=json.loads((args.run/'tasks.json').read_text())[args.slot]
@@ -66,7 +67,9 @@ def worker(args):
     problem=AAMProblem(*endpoints,name=raw['name'])
     folder=args.run/f'results/{args.slot}';folder.mkdir(parents=True,exist_ok=False)
     cpu=time.process_time();wall=time.perf_counter()
-    session=AdaptiveFragmentSearch(problem,AAMSearchConfig(seed_count=1,branch_limit=100,iso_tolerance=1.),policy=spec['policy'])
+    config=AAMSearchConfig(seed_count=1,branch_limit=100,iso_tolerance=1.)
+    session=(AdaptiveSeedSearch(problem,config) if spec['policy']=='seed_frontier' else
+             AdaptiveFragmentSearch(problem,config,policy=spec['policy']))
     compute_cpu=time.process_time()-cpu;compute_wall=time.perf_counter()-wall
     rows=[]
     def snapshot(label):
@@ -105,5 +108,5 @@ if __name__=='__main__':
     p.add_argument('--work-budgets',type=int,nargs='+',default=[100,400,1600])
     p.add_argument('--search-seconds',type=float,default=30.)
     p.add_argument('--policies',nargs='+',default=['largest_first','smallest_first'],
-                   choices=['largest_first','smallest_first','event_guided','fair_depth'])
+                   choices=['largest_first','smallest_first','event_guided','fair_depth','seed_frontier'])
     args=p.parse_args();globals()[args.command](args)
