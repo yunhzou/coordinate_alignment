@@ -23,9 +23,12 @@ class ConditionedSymmetryWorkspace(SymmetryWorkspace):
             cache_bytes,
         )
 
-    def conditioned_generators(self, candidate, locked):
+    def conditioned_generators(self, candidate, locked, intern=tuple):
         roles = self.canonicalizer._candidate_roles(candidate, group_domains=True)
-        return self.engine.generators(locked, {p: repr(role) for p, role in roles.items()})
+        return intern(self.engine.generators(locked, {p: repr(role) for p, role in roles.items()}))
+
+    def coloring_count(self):
+        return self.engine.stats()['group_solves']
 
     def stats(self):
         return dict(self.engine.stats())

@@ -241,6 +241,8 @@ inline bool contains(const std::vector<int>& sorted, int x) {
     return std::binary_search(sorted.begin(), sorted.end(), x);
 }
 
+struct CandidateCacheKey { std::string value; size_t hash; };
+
 struct Cand {
     std::vector<int> img;     // NR entries, -1 = unmapped
     std::vector<int> mapped;  // ascending mapped R atoms
@@ -248,6 +250,7 @@ struct Cand {
     std::vector<int> exact_fixed;  // sorted unique
     long long mult = 1;
     std::vector<Block> automorph;
+    mutable std::shared_ptr<const CandidateCacheKey> extension_key;
 
     bool has(int r) const { return img[r] >= 0; }
     bool has_open_choice() const {
@@ -319,6 +322,7 @@ bool make_cand(const std::vector<int>& raw, const std::vector<Block>& blocks,
     sort_unique(exact_fixed);
     out.exact_fixed = std::move(exact_fixed);
     out.mult = mult;
+    out.extension_key.reset();
     out.automorph.clear();
     for (const auto& block : automorph) {
         std::vector<int> r_atoms = block.r;
@@ -392,6 +396,7 @@ bool with_witness(const Cand& c, const std::vector<Pair>& assignments, int NR, i
 Cand with_multiplicity(const Cand& c, long long mult) {
     Cand out = c;
     out.mult = mult;
+    out.extension_key.reset();
     return out;
 }
 

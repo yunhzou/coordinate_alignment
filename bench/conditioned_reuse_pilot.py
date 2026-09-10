@@ -16,7 +16,7 @@ import numpy as np
 SOURCE = Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909')
 OLD_ENGINE = Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks/real_ts_compare_20260909_EwGzgT/run/engine/src')
 CASES = ((25, 'R_to_P'), (76, 'P_to_R'), (77, 'P_to_R'), (114, 'R_to_P'))
-MODES = ('baseline', 'repair', 'symmetry', 'extensions', 'combined')
+MODES = ('baseline', 'current', 'repair', 'shared_symmetry', 'symmetry', 'extensions', 'combined')
 
 
 def save(path, data):
@@ -30,11 +30,18 @@ def prepare(args):
     shutil.copytree(OLD_ENGINE, args.run/'baseline/src', ignore=shutil.ignore_patterns('__pycache__'))
     for name in ('src', 'native', 'bench'):
         shutil.copytree(root/name, args.run/'engine'/name, ignore=shutil.ignore_patterns('__pycache__'))
+    (args.run/'inputs').mkdir()
+    input_hashes={}
+    for index,_ in CASES:
+        dest=args.run/f'inputs/{index}.json'
+        shutil.copy2(SOURCE/f'inputs/{index}/input.json', dest)
+        input_hashes[index]=hashlib.sha256(dest.read_bytes()).hexdigest()
     tasks = [dict(index=i, direction=d, seed=s, repeat=r) for r in range(args.repeats)
              for i,d in CASES for s in range(args.seeds)]
     save(args.run/'tasks.json', tasks)
     save(args.run/'manifest.json', dict(parent_commit=subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
         source=str(SOURCE), old_engine=str(OLD_ENGINE), modes=args.modes, tasks=len(tasks),
+        input_sha256=input_hashes,
         original_seed_count=10, tested_seed_indices=list(range(args.seeds)), repeats=args.repeats,
         iso_tolerance=1., event_tolerance=.5, branch_cap=100, explicit_H=True,
         seed_policy='unchanged cut_seed(cut), original ten-order generation; select specified seed index',
@@ -50,7 +57,7 @@ def submit(args):
     command=['env','OMP_NUM_THREADS=1','OPENBLAS_NUM_THREADS=1','MKL_NUM_THREADS=1','PYTHONHASHSEED=0',
         sys.executable,str(args.run/'engine/bench/conditioned_reuse_pilot.py'),'paired','--run',str(args.run),'--slot']
     options=['sbatch','--parsable','--partition=cpunodes','--nodes=1','--cpus-per-task=1','--mem=6G',
-        '--time=00:10:00',f'--array=0-{len(tasks)-1}%48','--job-name=conditioned_reuse',
+        '--time=00:10:00',f'--array=0-{len(tasks)-1}','--job-name=conditioned_reuse',
         f'--output={args.run}/status/%A_%a.out','--wrap',shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
     job=subprocess.check_output(options,text=True).strip()
     save(args.run/'submission.json',dict(job=job,command=options));print(job)
@@ -79,11 +86,11 @@ def worker(args):
     from rxn_core.frag import build_graph
     from rxn_core.matcher import _nauty_orbits
     from rxn_core.native_search import find_islands_native
-    from rxn_core.search_symmetry import finalize_graph_symmetry
+    from rxn_core.search_symmetry import finalize_graph_symmetry, SymmetryWorkspace
 
     spec=json.loads((args.run/'tasks.json').read_text())[args.slot]
     folder=args.run/f'results/{args.slot}/{args.mode}';folder.mkdir(parents=True,exist_ok=False)
-    raw=json.loads((SOURCE/f"inputs/{spec['index']}/input.json").read_text())
+    raw=json.loads((args.run/f"inputs/{spec['index']}.json").read_text())
     left,right=(raw[k] for k in ('reactant','product'))
     if spec['direction']=='P_to_R':left,right=right,left
     phases={}
@@ -97,11 +104,13 @@ def worker(args):
         p=build_graph(right['elements'],np.asarray(right['wbo']),bond_cut=.2)
         po=_nauty_orbits(p,wbo_tol=1.)
         repair=None;workspace=None
-        if args.mode!='baseline':
+        if args.mode not in ('baseline','current'):
             repair=FragmentRepair(r,p,po,extension_cache_bytes=64*2**20 if args.mode in ('extensions','combined') else 0)
         if args.mode in ('symmetry','combined'):
             from rxn_core.conditioned_symmetry import ConditionedSymmetryWorkspace
             workspace=ConditionedSymmetryWorkspace(p,1.)
+        elif args.mode=='shared_symmetry':
+            workspace=SymmetryWorkspace(p,1.)
         return r,p,po,repair,workspace
     source,target,orbits,repair,workspace=measure('setup',setup)
     cuts=cut_sweep_items(np.asarray(left['wbo']),.2)
@@ -113,7 +122,7 @@ def worker(args):
             if view is None:r.remove_edges_from(cut)
             ro=_nauty_orbits(r,wbo_tol=1.)
             order=_generate_seed_orders(r,10,rng_seed=cut_seed(cut))[spec['seed']]
-            matcher=find_islands if args.mode=='baseline' else find_islands_native
+            matcher=find_islands if args.mode in ('baseline','current') else find_islands_native
             return matcher(r,target,order,graph_floor=.2,iso_tol=1.,max_branches=100,
                 r_orbits=ro,p_orbits=orbits,cuts=cut,growth_replay=view)
         graph=measure('search',search)

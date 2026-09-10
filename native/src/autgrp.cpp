@@ -180,6 +180,7 @@ public:
                 std::string value="('atom', "+std::get<0>(key)+", ("+std::get<1>(key)+", "+std::get<2>(key)+"))";
                 size_t bytes=sizeof(ColorKey)+sizeof(std::string)+128+value.size()
                     +std::get<0>(key).size()+std::get<1>(key).size()+std::get<2>(key).size();
+                if(bytes>budget/4) {colored[value].push_back(vertices[i]);continue;}
                 if(color_bytes+bytes>budget/4) {color_cache.clear();color_bytes=0;++clears;}
                 color_bytes+=bytes;
                 found=color_cache.emplace(std::move(key),std::move(value)).first;

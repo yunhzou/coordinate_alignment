@@ -22,7 +22,7 @@ class SymmetryWorkspace:
         self.groups = {}
         self.canonicalizer = None
 
-    def conditioned_generators(self, candidate, locked):
+    def conditioned_generators(self, candidate, locked, intern=tuple):
         if self.canonicalizer is None:
             self.canonicalizer = _CandidateAutomorphismCanonicalizer(self.target, wbo_tol=self.iso_tolerance)
         canonicalizer = self.canonicalizer
@@ -34,8 +34,11 @@ class SymmetryWorkspace:
             locked_roles={p: tuple(roles) for p, roles in locked_roles.items()})
         key = tuple(vertices for _label, vertices in coloring)
         if key not in self.coloring_cache:
-            self.coloring_cache[key] = canonicalizer.atom_generators(candidate, colored_vertices=coloring)
+            self.coloring_cache[key] = intern(canonicalizer.atom_generators(candidate, colored_vertices=coloring))
         return self.coloring_cache[key]
+
+    def coloring_count(self):
+        return len(self.coloring_cache)
 
 
 def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, workspace=None):
@@ -50,7 +53,7 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
     if workspace.target is not target or workspace.iso_tolerance != iso_tolerance:
         raise ValueError('symmetry workspace belongs to another target or tolerance')
     cache, coloring_cache, edges = workspace.cache, workspace.coloring_cache, []
-    previous_calculations, previous_colorings = len(cache), len(coloring_cache)
+    previous_calculations, previous_colorings = len(cache), workspace.coloring_count()
     selected = graph.ancestor_transitions(graph.terminals if states is None else states)
     generators, groups = workspace.generators, workspace.groups
     def intern(raw):
@@ -80,7 +83,7 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
         key = (locked, frozen_value(state))
         if key not in cache:
             candidate = candidate_from_record(state)
-            cache[key] = intern(workspace.conditioned_generators(candidate, locked))
+            cache[key] = workspace.conditioned_generators(candidate, locked, intern)
         symmetry = {**state, 'automorph_generators': cache[key],
                     'automorph_group_source': 'conditioned_search_transition'}
         edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
@@ -88,5 +91,5 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
         'completed_candidate_group_requests': requests,
         'completed_candidate_group_calculations': len(cache) - previous_calculations,
         'completed_candidate_group_cache_hits': requests - (len(cache) - previous_calculations),
-        'exact_coloring_group_calculations': len(coloring_cache) - previous_colorings,
+        'exact_coloring_group_calculations': workspace.coloring_count() - previous_colorings,
     }

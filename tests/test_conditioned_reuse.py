@@ -71,8 +71,8 @@ def test_conditioned_generators_keep_correlated_ring_symmetry_and_sparse_indices
     target.graph['wbo_matrix'] = expanded
     reference = SymmetryWorkspace(target, 1.)
     optimized = ConditionedSymmetryWorkspace(target, 1., cache_bytes=budget)
-    for _ in range(50):
-        locked = tuple((int(i), int(i*7)) for i in sorted(rng.choice(20, 4, replace=False)))
+    for trial in range(50):
+        locked = tuple((int(i), int(i*7)) for i in sorted(rng.choice(20, [0,1,2,4][trial%4], replace=False)))
         state = dict(witness={0:0, 1:7}, blocks=[], exact_fixed=[], multiplicity=1,
                      automorph_blocks=[dict(r_atoms=[0,1], p_atoms=list(range(0,140,7)), extendable=False)])
         candidate = candidate_from_record(state)

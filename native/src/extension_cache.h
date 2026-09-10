@@ -1,9 +1,18 @@
 // Exact per-candidate extension reuse. Scoped to one fixed source-WBO/target
 // pair; source cuts may change. Dedupe, admission and caps still execute normally.
 class ExtensionCache {
-    struct Entry { std::string key; std::vector<Cand> children; size_t bytes; };
+    struct Key {
+        std::shared_ptr<const CandidateCacheKey> candidate;
+        std::string context;
+        size_t hash;
+        bool operator==(const Key& other) const {
+            return context==other.context && (candidate==other.candidate || candidate->value==other.candidate->value);
+        }
+    };
+    struct KeyHash { size_t operator()(const Key& key) const {return key.hash;} };
+    struct Entry { Key key; std::vector<Cand> children; size_t bytes; };
     std::list<Entry> lru;
-    std::unordered_map<std::string, std::list<Entry>::iterator> entries;
+    std::unordered_map<Key, std::list<Entry>::iterator, KeyHash> entries;
     size_t budget, resident=0, peak=0;
     long calls=0, hits=0, negative_hits=0, evictions=0;
 
@@ -26,10 +35,15 @@ class ExtensionCache {
         }
         return n;
     }
-    static std::string key_for(const Cand& c,const Context& ctx) {
+    static Key key_for(const Cand& c,const Context& ctx) {
+        if (!c.extension_key) {
+            std::string value;
+            vector(value,c.img);blocks(value,c.blocks);vector(value,c.exact_fixed);
+            scalar(value,c.mult);blocks(value,c.automorph);
+            size_t hash=std::hash<std::string>()(value);
+            c.extension_key=std::make_shared<CandidateCacheKey>(CandidateCacheKey{std::move(value),hash});
+        }
         std::string key;
-        vector(key,c.img);blocks(key,c.blocks);vector(key,c.exact_fixed);
-        scalar(key,c.mult);blocks(key,c.automorph);
         scalar(key,ctx.n);scalar(key,ctx.iso_tol);vector(key,ctx.fragment_old);
         vector(key,ctx.bonded_in_frag);vector(key,ctx.r_wbos);
         scalar(key,ctx.strict_r);scalar(key,ctx.strict_w);
@@ -59,7 +73,8 @@ class ExtensionCache {
                 for (int r:b.r) scalar(key,ctx.R->has_edge(r,a));
             }
         }
-        return key;
+        size_t hash=c.extension_key->hash ^ (std::hash<std::string>()(key)<<1);
+        return {c.extension_key,std::move(key),hash};
     }
 public:
     explicit ExtensionCache(size_t cache_bytes):budget(cache_bytes) {}
@@ -77,7 +92,8 @@ public:
             Cand child;
             if (extend_locked_merge(c,ctx,child)) children.push_back(std::move(child));
         } else extend_free_atom(c,ctx,children);
-        size_t size=sizeof(Entry)+2*key.capacity()+192+children.capacity()*sizeof(Cand);
+        size_t size=sizeof(Entry)+sizeof(Key)+2*key.context.capacity()+key.candidate->value.capacity()
+            +sizeof(CandidateCacheKey)+192+children.capacity()*sizeof(Cand);
         for (const auto& child:children) size+=bytes(child);
         if (size<=budget) {
             while (!lru.empty() && resident+size>budget) {
