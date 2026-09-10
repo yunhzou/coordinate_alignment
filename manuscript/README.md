@@ -1,8 +1,12 @@
 # Continuous fragment growth manuscript
 
 First draft, 10 September 2026, using the supplied Matter Lab preprint template.
-The title is descriptive; the method name, author list, affiliations, funding,
-and contribution statements remain for author confirmation.
+The title is descriptive. The author order is Yunheng Zou, Olalla, Shifa Hussain,
+Varinia Bernales, and Alán Aspuru-Guzik, with Bernales and Aspuru-Guzik as principal
+investigators. The supplied affiliation numbering is applied to Zou (1, 6),
+Bernales (2, 7), and Aspuru-Guzik (1–9). Olalla's full name and the affiliations
+of Olalla and Hussain remain to be supplied. Corresponding-author designation,
+the method name, funding, and contribution statements remain for confirmation.
 
 Start with [the compiled paper](manuscript.pdf) and the
 [offline interactive animation](animations/index.html). Download the HTML file
