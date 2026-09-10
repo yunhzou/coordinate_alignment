@@ -43,3 +43,31 @@ def test_pre_finalized_immutable_group_is_only_interned_once():
     assert raw.iterations == 1
     assert repeated == finalized
     assert repeated.transitions[0].match['symmetry']['automorph_generators'] is raw
+def test_finalization_scoped_gc_preserves_records_and_restores_caller_state():
+    import gc
+    import pytest
+    from rxn_core import AAMSearchConfig, search_aam
+    from rxn_core.frag import build_graph
+    from rxn_core.search_symmetry import finalize_graph_symmetry, SymmetryWorkspace
+    from test_fragment_choices import problem
+    sample=problem(6)
+    aam=search_aam(sample,AAMSearchConfig(seed_count=3,iso_tolerance=1.))
+    target=build_graph(sample.product.elements,sample.product.wbo)
+    initial=gc.isenabled()
+    try:
+        gc.enable()
+        enabled=finalize_graph_symmetry(aam.graph,target,iso_tolerance=1.)
+        assert gc.isenabled()
+        gc.disable()
+        disabled=finalize_graph_symmetry(aam.graph,target,iso_tolerance=1.)
+        assert not gc.isenabled()
+        assert enabled==disabled
+        gc.enable()
+        with pytest.raises(ValueError,match='another target'):
+            finalize_graph_symmetry(aam.graph,target,iso_tolerance=1.,
+                                    workspace=SymmetryWorkspace(target.copy(),1.))
+        assert gc.isenabled()
+    finally:
+        if initial:gc.enable()
+        else:gc.disable()
+

@@ -76,6 +76,9 @@ def finish(args):
         record['search'] = dict(exit=0,elapsed_including_io=time.perf_counter()-started,continued=True)
         save(status_path,record)
         del result
+    if args.collect_only:
+        print(json.dumps(dict(slot=args.slot,**spec,search_complete=True)),flush=True)
+        return
     started = time.perf_counter()
     analyze(args)
     record['analyze'] = dict(exit=0,elapsed_including_io=time.perf_counter()-started,continued=True)
@@ -129,5 +132,7 @@ if __name__=='__main__':
     p.add_argument('command',choices=['prepare','finish','evaluate_saved'])
     p.add_argument('--run',type=Path,required=True)
     p.add_argument('--ordinal',type=int)
+    p.add_argument('--collect-only',action='store_true',
+                   help='Separate checkpoint collection from the independently guarded evaluation phase')
     args=p.parse_args()
     globals()[args.command](args)

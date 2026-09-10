@@ -1,6 +1,7 @@
 """Finalize exact symmetry on recorded fragment transitions, without events."""
 from dataclasses import replace
 from collections import defaultdict
+import gc
 
 from .matcher.state import candidate_from_record
 from .matcher.canonical import _CandidateAutomorphismCanonicalizer
@@ -49,6 +50,17 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
     explicit state IDs (or all graph state IDs) to inspect that history too.
     Immutable generators and group tuples are interned within this result.
     """
+    enabled = gc.isenabled()
+    try:
+        gc.disable()
+        return _finalize_graph_symmetry(graph, target, iso_tolerance=iso_tolerance,
+                                       states=states, workspace=workspace)
+    finally:
+        if enabled:
+            gc.enable()
+
+
+def _finalize_graph_symmetry(graph, target, *, iso_tolerance, states, workspace):
     workspace = workspace or SymmetryWorkspace(target, iso_tolerance)
     if workspace.target is not target or workspace.iso_tolerance != iso_tolerance:
         raise ValueError('symmetry workspace belongs to another target or tolerance')
