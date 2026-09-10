@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from adaptive_full_benchmark import holdout_classes
+from adaptive_full_benchmark import holdout_classes, elapsed_seconds
 from rxn_core import AAMProblem, AAMSearchConfig
 from rxn_core.domain import MolecularEndpoint
 from rxn_core.search_orientation import AAMSearchPlan
@@ -44,3 +44,10 @@ def test_holdout_missing_full_mapping_is_not_reported_as_zero_events():
     result = holdout_classes(SimpleNamespace(graph=graph), plan, raw)
     assert result['valid_full_representatives'] == 0
     assert result['best_events'] is None
+
+
+def test_scheduler_watchdog_elapsed_formats():
+    assert elapsed_seconds('9:59') == 599
+    assert elapsed_seconds('10:01') == 601
+    assert elapsed_seconds('1:00:00') == 3600
+    assert elapsed_seconds('1-00:00:00') == 86400

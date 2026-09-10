@@ -55,3 +55,14 @@ Full artifacts:
 Driver: `bench/adaptive_full_benchmark.py`. `compare` reads saved artifacts
 without rerunning AAM. The final report must identify recovery losses as well
 as speedups before any decision to replace the mature pipeline.
+
+Original search arrays: `457271`–`457274`; adaptive arrays: `457275`–`457278`.
+Search engine/driver freeze: `0ce0f17`; subsequent reporting and monitor code
+does not alter that frozen search or its evaluations.
+
+A separate bounded campaign monitor refreshes the full comparison from saved
+outputs. It replaces only allocations stuck in `CONFIGURING` for ten minutes
+that have never started a worker, using the same frozen worker on `cpunodes`.
+Started/failed calculations are not silently rerun. Scheduler actions are
+journaled separately. The monitor's two-hour allocation is not an AAM run;
+each AAM subprocess retains its independent five-minute watchdog.

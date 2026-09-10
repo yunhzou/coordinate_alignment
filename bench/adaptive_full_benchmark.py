@@ -401,9 +401,87 @@ def compare(args):
     print(json.dumps(totals, indent=2))
 
 
+def elapsed_seconds(value):
+    days, clock = value.split('-', 1) if '-' in value else ('0', value)
+    seconds = 0
+    for component in clock.split(':'):
+        seconds = 60*seconds+int(component)
+    return 86400*int(days)+seconds
+
+
+def watch(args):
+    """Bounded campaign monitor; only replace allocations that never started.
+
+    Every replacement uses the same frozen worker and limits. A started or
+    failed search is never silently retried. Scheduler cleanup state is not a
+    substitute for actual saved worker completion records.
+    """
+    jobs = read(args.run/'jobs.json')
+    expected = 2*len(read(args.run/'tasks.json'))
+    deadline = time.monotonic()+args.monitor_seconds
+    recovered = set()
+    journal = []
+    last_report = -1
+    while time.monotonic() < deadline:
+        rows = [read(p) for p in (args.run/'status').glob('*.json')]
+        complete = sum(r.get('complete', False) for r in rows)
+        save(args.run/'monitor.json', dict(started=len(rows), complete=complete, expected=expected,
+             updated=time.time(), replacements=journal, monitor_deadline_reached=False))
+        print(json.dumps(dict(started=len(rows), complete=complete, expected=expected)), flush=True)
+        if complete == expected or complete//1000 > last_report:
+            with (args.run/'monitor_report.log').open('w') as log:
+                subprocess.run(['timeout', '--kill-after=5s', '300', sys.executable, __file__,
+                    'compare', '--run', str(args.run)], stdout=log, stderr=subprocess.STDOUT)
+            last_report = complete//1000
+        if complete == expected:
+            return
+        try:
+            listing = subprocess.run(['squeue', '-h', '-j', ','.join(j['job'] for j in jobs),
+                '-t', 'CONFIGURING', '-o', '%i|%M|%N'], text=True, capture_output=True, timeout=30)
+        except subprocess.TimeoutExpired:
+            print('Scheduler query timed out; worker watchdogs remain independent', flush=True)
+            time.sleep(30)
+            continue
+        if listing.returncode == 0:
+            for line in listing.stdout.splitlines():
+                job_id, elapsed, host = line.split('|')
+                if '_' not in job_id or job_id in recovered:
+                    continue
+                if elapsed_seconds(elapsed) < 600:
+                    continue
+                parent, local_slot = job_id.split('_')
+                job = next(j for j in jobs if j['job'] == parent)
+                command = shlex.split(job['command'][-1])
+                offset = int(command[command.index('--offset')+1])
+                slot = offset+int(local_slot)
+                method = job['method']
+                worker_status = args.run/f'status/{method}_{slot}.json'
+                if worker_status.exists():
+                    continue
+                subprocess.run(['scancel', job_id], check=True, timeout=30)
+                recovered.add(job_id)
+                entry = dict(job=job_id, slot=slot, method=method, host=host, elapsed=elapsed,
+                             reason='CONFIGURING >= 10 minutes, worker never started', time=time.time())
+                # Recheck after cancellation to avoid racing a late worker start.
+                if worker_status.exists():
+                    entry['replacement'] = None
+                    entry['reason'] += '; late-start race, no automatic search retry'
+                else:
+                    replacement = list(job['command'])
+                    replacement = [a for a in replacement if not a.startswith('--array=')]
+                    replacement[replacement.index('--partition=cpunodes_nia')] = '--partition=cpunodes'
+                    replacement[-1] = shlex.join(command[:-1]+[str(local_slot)])
+                    entry['replacement'] = subprocess.check_output(replacement, text=True, timeout=30).strip()
+                journal.append(entry)
+                save(args.run/'scheduler_recovery.json', journal)
+        time.sleep(30)
+    save(args.run/'monitor.json', dict(started=len(rows), complete=complete, expected=expected,
+         updated=time.time(), replacements=journal, monitor_deadline_reached=True))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('prepare', 'submit', 'worker', 'search', 'analyze', 'status', 'compare'))
+    parser.add_argument('command', choices=('prepare', 'submit', 'worker', 'search', 'analyze', 'status', 'compare', 'watch'))
     parser.add_argument('--run', type=Path, required=True)
     parser.add_argument('--original-commit', default='98b01b1')
     parser.add_argument('--workers', type=int, default=8)
@@ -415,5 +493,6 @@ if __name__ == '__main__':
     parser.add_argument('--slot', type=int)
     parser.add_argument('--offset', type=int, default=0)
     parser.add_argument('--method', choices=('original', 'adaptive'))
+    parser.add_argument('--monitor-seconds', type=int, default=7200)
     arguments = parser.parse_args()
     globals()[arguments.command](arguments)
