@@ -8,6 +8,9 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 
 | Script | Responsibility |
 |---|---|
+| `conditioned_reuse_pilot.py` | Frozen-engine, same-node conditioning/growth-reuse ablations; complete graph checks, recoverable timers and saved outputs |
+| `public_reuse_pilot.py` | Public AAM reference/reused-native integration, parent+worker CPU accounting and full raw/final checkpoints |
+| `publish_conditioned_reuse.py` | Verify and package those saved experiments, logs, source hashes and tests without rerunning matching |
 | `prepare_golden_benchmark.py` | Dataset preparation and pinned inputs |
 | `golden_publication.py` | Fixed-policy search, analysis and mode comparison |
 | `collect_golden_patterns.py` | Concrete pattern extraction from saved compressed AAM archives |

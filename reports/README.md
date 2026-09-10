@@ -5,6 +5,10 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Exact conditioned symmetry and fragment reuse](conditioned_reuse_20260910/README.md)
+— full ten-seed stress ablation: 1.58x compute speedup, 24,840 exact graph checks;
+opt-in public backend, unchanged seed/cut policy, rejected slower extension cache.
+
 [Concrete AAM / SLAP comparison on real endpoint-to-TS inputs](real_ts_comparison_20260909/README.md)
 — six pairs from three cached cases; actual saved alternatives, full-H event
 scores, binary/continuous ablation and offline viewer. Exploratory, not curated TS accuracy.

@@ -19,6 +19,8 @@ from .search_symmetry import finalize_graph_symmetry
 
 
 _SEARCH_CONTEXT = None
+_SEARCH_REPAIR = None
+_FINALIZATION_WORKSPACE = None
 
 
 class _GrowthCounts:
@@ -54,29 +56,44 @@ def checkpoint_manifest(problem, config):
         config=settings)))
 
 
-def _initialize_search(problem, config):
-    global _SEARCH_CONTEXT
+def _initialize_search(problem, config, execution='reference'):
+    global _SEARCH_CONTEXT, _SEARCH_REPAIR, _FINALIZATION_WORKSPACE
     target = build_graph(problem.product.elements, problem.product.wbo,
                          bond_cut=config.graph_floor)
     _SEARCH_CONTEXT = (problem, config, target,
                        _nauty_orbits(target, wbo_tol=config.iso_tolerance))
+    _SEARCH_REPAIR = None
+    _FINALIZATION_WORKSPACE = None
+    if execution == 'reused_native':
+        from .cut_replay import FragmentRepair
+        source = build_graph(problem.reactant.elements, problem.reactant.wbo,
+                             bond_cut=config.graph_floor)
+        _SEARCH_REPAIR = FragmentRepair(source, target, _SEARCH_CONTEXT[3])
 
 
 def _search_cut(cut):
     started = time.perf_counter()
     problem, config, target, target_orbits = _SEARCH_CONTEXT
-    source = build_graph(problem.reactant.elements, problem.reactant.wbo,
-                         bond_cut=config.graph_floor)
-    source.remove_edges_from(cut)
+    view = (_SEARCH_REPAIR.for_cut(tuple(edge for edge in cut if _SEARCH_REPAIR.source.has_edge(*edge)))
+            if _SEARCH_REPAIR is not None else None)
+    if view is None:
+        source = build_graph(problem.reactant.elements, problem.reactant.wbo,
+                             bond_cut=config.graph_floor)
+        source.remove_edges_from(cut)
+        matcher = find_islands
+    else:
+        from .native_search import find_islands_native
+        source = view.source
+        matcher = find_islands_native
     source_orbits = _nauty_orbits(source, wbo_tol=config.iso_tolerance)
     graphs, profile = [], _GrowthCounts()
     for order in _generate_seed_orders(source, n_trials=config.seed_count,
             rng_seed=cut_seed(cut), seed_selection=config.seed_selection):
-        graphs.append(find_islands(source, target, order,
+        graphs.append(matcher(source, target, order,
             graph_floor=config.graph_floor, iso_tol=config.iso_tolerance,
             max_branches=config.branch_limit, p_orbits=target_orbits,
             r_orbits=source_orbits, anchor_map=dict(config.anchors),
-            profile=profile, cuts=cut))
+            profile=profile, cuts=cut, growth_replay=view))
     graph = AAMSearchGraph.combine(graphs)
     return graph, {
         'search_seconds': time.perf_counter() - started,
@@ -101,10 +118,14 @@ def _search_cut_task(payload, *, in_process=False):
     return index, graph, counts
 
 
-def _initialize_finalization(problem,config):
+def _initialize_finalization(problem,config,execution='reference'):
+    global _FINALIZATION_WORKSPACE
     # Workers own acyclic archive data. Do not scan/copy a fork-inherited heap.
     gc.disable()
     _initialize_search(problem,config)
+    if execution == 'reused_native':
+        from .conditioned_symmetry import ConditionedSymmetryWorkspace
+        _FINALIZATION_WORKSPACE = ConditionedSymmetryWorkspace(_SEARCH_CONTEXT[2], config.iso_tolerance)
 
 
 def _restore_finalized_cut(payload):
@@ -115,14 +136,15 @@ def _restore_finalized_cut(payload):
     graph=(data if isinstance(data,AAMSearchGraph) else
            read_raw_cut(data))
     _problem,config,target,_orbits=_SEARCH_CONTEXT
-    graph,counts=finalize_graph_symmetry(graph,target,iso_tolerance=config.iso_tolerance)
+    graph,counts=finalize_graph_symmetry(graph,target,iso_tolerance=config.iso_tolerance,
+                                       workspace=_FINALIZATION_WORKSPACE)
     if checkpoint is not None:write_graph_checkpoint(graph,checkpoint)
     return index,graph,counts
 
 
 def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
                *, workers: int = 1, intermediate_dir=None, resume=False,
-               archive_format='json') -> AAMResult:
+               archive_format='json', execution='reference') -> AAMResult:
     """Return raw matching histories; repair/grouping/ranking are separate calls.
 
     When supplied, intermediate_dir receives each completed cut graph before
@@ -137,9 +159,20 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     resume=True reuses cuts only after verifying their input/configuration
     manifest. Invocation timings exclude the earlier checkpointed work;
     resulting graph and cut counts still describe the whole search.
+
+    execution='reused_native' explicitly selects the native sequential scheduler,
+    dependency-validated fragment reuse and conditioned symmetry workspace. It
+    preserves the seed/cut policy and output graph; it requires the native engine
+    and never switches to a different search implementation on failure.
     """
     if not isinstance(problem, AAMProblem):
         raise TypeError('search_aam requires an AAMProblem')
+    if execution not in ('reference', 'reused_native'):
+        raise ValueError('unknown AAM execution backend')
+    if execution == 'reused_native':
+        from .growth.native import available
+        if not available():
+            raise ValueError('reused_native execution requires the built native engine')
     from .artifacts import raw_cut_paths,read_raw_cut
     config = config or AAMSearchConfig()
     requested_workers=max(1,int(workers))
@@ -186,11 +219,11 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     # This also prevents forked cut workers from inheriting that archive heap.
     workers = min(max(1, int(workers)), max(1,len(missing)))
     if workers == 1:
-        _initialize_search(problem, config)
+        _initialize_search(problem, config, execution)
         collect(_search_cut_task(task,in_process=requested_workers==1) for task in tasks)
     else:
         with mp.get_context('fork').Pool(workers, initializer=_initialize_search,
-                initargs=(problem, config)) as pool:
+                initargs=(problem, config, execution)) as pool:
             collect(pool.imap_unordered(_search_cut_task, tasks,
                                         chunksize=config.task_chunksize))
     # These JSON records are acyclic. Repeated cyclic-GC scans while restoring
@@ -205,7 +238,7 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
         try:
             gc.disable()
             with mp.get_context('fork').Pool(min(requested_workers,len(cuts)),
-                    initializer=_initialize_finalization,initargs=(problem,config)) as pool:
+                    initializer=_initialize_finalization,initargs=(problem,config,execution)) as pool:
                 for index,graph,counts in pool.imap_unordered(_restore_finalized_cut,payloads,chunksize=1):
                     graphs[index]=graph
                     for key,value in counts.items():metrics[key]=metrics.get(key,0)+value
@@ -238,7 +271,12 @@ def search_aam(problem: AAMProblem, config: AAMSearchConfig | None = None,
     target = build_graph(problem.product.elements, problem.product.wbo,
                          bond_cut=config.graph_floor)
     symmetry_started = time.perf_counter()
-    graph, groups = finalize_graph_symmetry(graph, target, iso_tolerance=config.iso_tolerance)
+    workspace = None
+    if execution == 'reused_native':
+        from .conditioned_symmetry import ConditionedSymmetryWorkspace
+        workspace = ConditionedSymmetryWorkspace(target, config.iso_tolerance)
+    graph, groups = finalize_graph_symmetry(graph, target, iso_tolerance=config.iso_tolerance,
+                                          workspace=workspace)
     metrics.update(symmetry_finalization_seconds=time.perf_counter()-symmetry_started,
                    worker_search_seconds=worker_search_seconds, checkpoint_seconds=checkpoint_seconds)
     for key,value in groups.items():metrics[key]=metrics.get(key,0)+value

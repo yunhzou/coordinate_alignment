@@ -1,0 +1,168 @@
+[
+  {
+    "index": 77,
+    "direction": "P_to_R",
+    "methods": {
+      "reference": {
+        "timing": {
+          "index": 77,
+          "direction": "P_to_R",
+          "execution": "reference",
+          "name": "pr3.Suzuki.Ni_ts14.RE",
+          "host": "bosque6",
+          "cpu_including_persistence": 291.34545099999997,
+          "checkpoint_cpu": 31.794820654000002,
+          "compute_cpu_excluding_checkpoint_writes": 259.550630346,
+          "elapsed_including_persistence": 54.00096845626831,
+          "metrics": {
+            "elapsed_seconds": 41.435508539900184,
+            "cut_count": 109,
+            "raw_result_count": 54555,
+            "retained_branch_count": 54555,
+            "max_live_branches": 100,
+            "max_growth_candidates": 98,
+            "subtree_branch_cap_count": 193922,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 2.8084033466875553,
+            "completed_group_requests": 196116,
+            "completed_group_calculations": 195897,
+            "completed_group_cache_hits": 219,
+            "worker_search_seconds": 142.2986932490021,
+            "checkpoint_seconds": 11.287440882995725,
+            "symmetry_finalization_seconds": 7.146214788779616,
+            "checkpoint_restore_and_finalize_seconds": 12.057795096188784
+          },
+          "scope": "Parent+all worker CPU. Excludes measured checkpoint writes; includes restoration, IPC and graph merging. Actual elapsed includes persistence."
+        },
+        "validation": {
+          "digest": "8aa674da0f255efb83e004865a6c90a315854f719ab8ea315441190320eaf844",
+          "states": 501736,
+          "terminals": 54555,
+          "capped": true
+        }
+      },
+      "reused_native": {
+        "timing": {
+          "index": 77,
+          "direction": "P_to_R",
+          "execution": "reused_native",
+          "name": "pr3.Suzuki.Ni_ts14.RE",
+          "host": "bosque6",
+          "cpu_including_persistence": 224.36951599999998,
+          "checkpoint_cpu": 29.536222905000002,
+          "compute_cpu_excluding_checkpoint_writes": 194.833293095,
+          "elapsed_including_persistence": 45.58993086591363,
+          "metrics": {
+            "elapsed_seconds": 34.09578460454941,
+            "cut_count": 109,
+            "raw_result_count": 54555,
+            "retained_branch_count": 54555,
+            "max_live_branches": 100,
+            "max_growth_candidates": 98,
+            "subtree_branch_cap_count": 193922,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 2.7977044843137264,
+            "completed_group_requests": 196116,
+            "completed_group_calculations": 195444,
+            "completed_group_cache_hits": 672,
+            "worker_search_seconds": 118.41330814920366,
+            "checkpoint_seconds": 10.050231985747814,
+            "symmetry_finalization_seconds": 7.291958482936025,
+            "checkpoint_restore_and_finalize_seconds": 7.353287091478705
+          },
+          "scope": "Parent+all worker CPU. Excludes measured checkpoint writes; includes restoration, IPC and graph merging. Actual elapsed includes persistence."
+        },
+        "validation": {
+          "digest": "8aa674da0f255efb83e004865a6c90a315854f719ab8ea315441190320eaf844",
+          "states": 501736,
+          "terminals": 54555,
+          "capped": true
+        }
+      }
+    },
+    "exact": true
+  },
+  {
+    "index": 114,
+    "direction": "R_to_P",
+    "methods": {
+      "reference": {
+        "timing": {
+          "index": 114,
+          "direction": "R_to_P",
+          "execution": "reference",
+          "name": "pr7.V.dodh_ts910",
+          "host": "bosque6",
+          "cpu_including_persistence": 1.22322,
+          "checkpoint_cpu": 0.13672750500000005,
+          "compute_cpu_excluding_checkpoint_writes": 1.086492495,
+          "elapsed_including_persistence": 0.2518050726503134,
+          "metrics": {
+            "elapsed_seconds": 0.2024658676236868,
+            "cut_count": 33,
+            "raw_result_count": 463,
+            "retained_branch_count": 463,
+            "max_live_branches": 6,
+            "max_growth_candidates": 7,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.008629394695162773,
+            "completed_group_requests": 1625,
+            "completed_group_calculations": 1224,
+            "completed_group_cache_hits": 401,
+            "worker_search_seconds": 0.4998421799391508,
+            "checkpoint_seconds": 0.10364053584635258,
+            "symmetry_finalization_seconds": 0.013769442215561867,
+            "checkpoint_restore_and_finalize_seconds": 0.07746571861207485
+          },
+          "scope": "Parent+all worker CPU. Excludes measured checkpoint writes; includes restoration, IPC and graph merging. Actual elapsed includes persistence."
+        },
+        "validation": {
+          "digest": "5a0b50a6dd55af44cd585e712fd810abcc6b9c7147c75b51a9fd81f51cbb0bab",
+          "states": 1955,
+          "terminals": 463,
+          "capped": false
+        }
+      },
+      "reused_native": {
+        "timing": {
+          "index": 114,
+          "direction": "R_to_P",
+          "execution": "reused_native",
+          "name": "pr7.V.dodh_ts910",
+          "host": "bosque6",
+          "cpu_including_persistence": 1.061042,
+          "checkpoint_cpu": 0.13688787999999993,
+          "compute_cpu_excluding_checkpoint_writes": 0.9241541200000001,
+          "elapsed_including_persistence": 0.24502655304968357,
+          "metrics": {
+            "elapsed_seconds": 0.19763203151524067,
+            "cut_count": 33,
+            "raw_result_count": 463,
+            "retained_branch_count": 463,
+            "max_live_branches": 6,
+            "max_growth_candidates": 7,
+            "subtree_branch_cap_count": 0,
+            "worker_returned_branch_count": 0,
+            "parent_merge_seconds": 0.008592627942562103,
+            "completed_group_requests": 1625,
+            "completed_group_calculations": 1102,
+            "completed_group_cache_hits": 523,
+            "worker_search_seconds": 0.4552522599697113,
+            "checkpoint_seconds": 0.09572959691286087,
+            "symmetry_finalization_seconds": 0.01543593779206276,
+            "checkpoint_restore_and_finalize_seconds": 0.0677629355341196
+          },
+          "scope": "Parent+all worker CPU. Excludes measured checkpoint writes; includes restoration, IPC and graph merging. Actual elapsed includes persistence."
+        },
+        "validation": {
+          "digest": "5a0b50a6dd55af44cd585e712fd810abcc6b9c7147c75b51a9fd81f51cbb0bab",
+          "states": 1955,
+          "terminals": 463,
+          "capped": false
+        }
+      }
+    },
+    "exact": true
+  }
+]

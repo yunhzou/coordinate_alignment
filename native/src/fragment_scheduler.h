@@ -47,6 +47,7 @@ struct ScheduledGraph {
     std::vector<ScheduledStop> stops;
     int seed=-1,pass=0,position=0;
     long growth_calls=0;
+    long max_growth_candidates=0;
     int state(const ScheduledBranch& b) {
         states.push_back({b.mapping,b.labels,b.deferred});
         return (int)states.size()-1;
@@ -204,6 +205,7 @@ ScheduledGraph schedule_fragments(const Source& source,const Target& target,
                                       &branch->islands,branch->deferred,anchor).first
                     : grow_island(source,target,seed,branch->mapping,graph_floor,iso_tol,1,max_branches,
                                   &branch->islands,branch->deferred,anchor);
+                graph.max_growth_candidates=std::max(graph.max_growth_candidates,result.profile.max_cands_before);
                 if (result.capped) {
                     graph.stop(*branch,"capped","fragment_growth",result.cap.count,result.cap.limit);
                     continue;
@@ -289,6 +291,7 @@ py::dict scheduled_graph_record(const ScheduledGraph& graph,const std::vector<in
     }
     py::dict out;out["states"]=states;out["transitions"]=transitions;out["stops"]=stops;
     out["roots"]=py::make_tuple(0);out["growth_calls"]=graph.growth_calls;
+    out["max_growth_candidates"]=graph.max_growth_candidates;
     return out;
 }
 

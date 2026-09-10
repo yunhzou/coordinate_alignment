@@ -46,10 +46,11 @@ def find_islands_native(source, target, seed_order, *, graph_floor=.2, iso_tol=1
     native_cpu=time.process_time()-cpu if profile is not None else 0.
     native_wall=time.perf_counter()-wall if profile is not None else 0.
     growth_calls=record.pop('growth_calls')
+    max_growth_candidates=record.pop('max_growth_candidates')
     record.update(schema='rxn_core.aam_search_graph/v1',contexts=(asdict(context),))
     cpu=time.process_time() if profile is not None else 0.
     graph=AAMSearchGraph.from_record(record,copy=False)
     if profile is not None:
-        profile.append(dict(growth_calls=growth_calls,native_schedule_and_export_cpu=native_cpu,
+        profile.append(dict(growth_calls=growth_calls,max_cands_before=max_growth_candidates,native_schedule_and_export_cpu=native_cpu,
             python_graph_cpu=time.process_time()-cpu,extend_elapsed_sec=native_wall))
     return graph

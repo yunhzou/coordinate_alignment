@@ -68,6 +68,10 @@ def paired(args):
     shift=args.slot%len(modes);modes=modes[shift:]+modes[:shift]
     started=time.perf_counter()
     for mode in modes:
+        if mode=='shared_symmetry':
+            recover_one(args.run,args.slot,os.uname().nodename)
+        if (args.run/f'results/{args.slot}/{mode}/summary.json').exists():
+            print('SAVED',mode,flush=True);continue
         folder='baseline' if mode=='baseline' else 'engine'
         env=dict(os.environ,PYTHONPATH=f'{args.run}/{folder}/src:{args.run}/engine/bench',RXN_CORE_NATIVE='1')
         print('START',mode,flush=True)
@@ -134,7 +138,9 @@ def worker(args):
                          capped=graph.capped,groups=groups))
         save(folder/'progress.json',dict(completed=len(rows),total=len(cuts),phases=phases))
     save(folder/'summary.json',dict(**spec,mode=args.mode,name=raw['name'],phases=phases,cuts=rows,
-        repair=None if repair is None else repair.stats(),symmetry=None if workspace is None else workspace.stats(),
+        repair=None if repair is None else repair.stats(),symmetry=(None if workspace is None else
+            dict(group_solves=workspace.coloring_count(),cached_partitions=len(workspace.coloring_cache))
+            if args.mode=='shared_symmetry' else workspace.stats()),
         host=os.uname().nodename,peak_worker_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
         compute_cpu=sum(phases[k]['cpu'] for k in ('setup','search','symmetry')),
         scope='one CPU; no queue/import/input-loading/persistence/audit encoding in compute; full graphs saved'))
@@ -144,7 +150,8 @@ def worker(args):
 def report(args):
     tasks=json.loads((args.run/'tasks.json').read_text())
     modes=json.loads((args.run/'manifest.json').read_text())['modes']
-    totals={m:dict(compute_cpu=0.,search_cpu=0.,symmetry_cpu=0.,peak_worker_rss_kib=0) for m in modes}
+    totals={m:dict(compute_cpu=0.,search_cpu=0.,symmetry_cpu=0.,peak_worker_rss_kib=None,
+                   rss_measurements=0) for m in modes}
     rows=[];mismatches=[];missing=[];checks=0
     for slot,spec in enumerate(tasks):
         found={}
@@ -154,7 +161,9 @@ def report(args):
             data=json.loads(path.read_text());found[mode]=data
             totals[mode]['compute_cpu']+=data['compute_cpu']
             for phase in ('search','symmetry'):totals[mode][phase+'_cpu']+=data['phases'][phase]['cpu']
-            totals[mode]['peak_worker_rss_kib']=max(totals[mode]['peak_worker_rss_kib'],data['peak_worker_rss_kib'])
+            if data['peak_worker_rss_kib'] is not None:
+                totals[mode]['peak_worker_rss_kib']=max(totals[mode]['peak_worker_rss_kib'] or 0,data['peak_worker_rss_kib'])
+                totals[mode]['rss_measurements']+=1
         if 'baseline' in found:
             for mode,data in found.items():
                 if mode=='baseline':continue
@@ -168,9 +177,73 @@ def report(args):
     print(json.dumps({k:v for k,v in result.items() if k!='rows'},indent=2))
 
 
+def recover_one(run, slot, host):
+    """Recover only the known post-persistence statistics-export failure."""
+    from rxn_core.artifacts import read_graph_checkpoint
+    folder=run/f'results/{slot}/shared_symmetry'
+    if (folder/'summary.json').exists() or not (folder/'progress.json').exists():return False
+    progress=json.loads((folder/'progress.json').read_text())
+    if progress['completed']!=progress['total']:return False
+    spec=json.loads((run/'tasks.json').read_text())[slot]
+    rows=[]
+    for ordinal in range(progress['total']):
+        graph=read_graph_checkpoint(folder/f'cut_{ordinal:04d}.pkl.gz')
+        rows.append(dict(cut=graph.contexts[0].cuts,
+            digest=hashlib.sha256(json.dumps(graph.to_record(copy=False),sort_keys=True,separators=(',',':')).encode()).hexdigest(),
+            states=len(graph.states),terminals=len(graph.terminals),capped=graph.capped,groups=None))
+    raw=json.loads((run/f"inputs/{spec['index']}.json").read_text())
+    phases=progress['phases']
+    save(folder/'summary.json',dict(**spec,mode='shared_symmetry',name=raw['name'],phases=phases,cuts=rows,
+        repair=None,symmetry=None,host=host,peak_worker_rss_kib=None,
+        compute_cpu=sum(phases[k]['cpu'] for k in ('setup','search','symmetry')),
+        recovered_from_complete_checkpoints=True,
+        scope='Original completed search phase timers; statistics exporter failed after persistence. No mapper rerun. RSS/cache counters unavailable.'))
+    return True
+
+
+def recover(args):
+    """Serial recovery utility; large campaigns recover in parallel in paired()."""
+    tasks=json.loads((args.run/'tasks.json').read_text())
+    job=json.loads((args.run/'submission.json').read_text())['job']
+    accounting=subprocess.check_output(['sacct','-j',job,'-nP','--format=JobID,State,NodeList'],text=True)
+    hosts={int(row[0].split('_')[1]):row[2] for line in accounting.splitlines()
+           if len(row:=line.split('|'))>=3 and '_' in row[0] and '.' not in row[0]}
+    recovered=[slot for slot in range(len(tasks)) if recover_one(args.run,slot,hosts[slot])]
+    save(args.run/'report_recovery.json',dict(slots=recovered,accounting=accounting))
+    print('recovered',len(recovered),flush=True)
+
+
+def resume(args):
+    tasks=json.loads((args.run/'tasks.json').read_text())
+    modes=json.loads((args.run/'manifest.json').read_text())['modes']
+    original=json.loads((args.run/'submission.json').read_text())['job']
+    accounting=subprocess.check_output(['sacct','-j',original,'-nP','--format=JobID,State,NodeList'],text=True)
+    by_host={}
+    for line in accounting.splitlines():
+        row=line.split('|')
+        if len(row)<3 or '_' not in row[0] or '.' in row[0]:continue
+        slot=int(row[0].split('_')[1])
+        if row[1] not in ('FAILED','COMPLETED'):continue
+        if any(not (args.run/f'results/{slot}/{mode}/summary.json').exists() for mode in modes):
+            by_host.setdefault(row[2],[]).append(slot)
+    submissions=[]
+    for host,slots in by_host.items():
+        command=['env','OMP_NUM_THREADS=1','OPENBLAS_NUM_THREADS=1','MKL_NUM_THREADS=1','PYTHONHASHSEED=0',
+            sys.executable,str(Path(__file__).resolve()),'paired','--run',str(args.run),'--slot']
+        options=['sbatch','--parsable','--partition=cpunodes','--nodes=1','--nodelist',host,
+            '--cpus-per-task=1','--mem=6G','--time=00:10:00','--array',','.join(map(str,slots)),
+            '--job-name=conditioned_resume',f'--output={args.run}/status/resume_%A_%a.out',
+            '--wrap',shlex.join(command)+' "$SLURM_ARRAY_TASK_ID"']
+        job=subprocess.check_output(options,text=True).strip()
+        submissions.append(dict(job=job,host=host,slots=slots,command=options))
+    save(args.run/'resume_submission.json',dict(submissions=submissions,driver=str(Path(__file__).resolve()),
+        driver_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))
+    print(submissions)
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=('prepare','submit','paired','worker','report'))
+    p.add_argument('command',choices=('prepare','submit','paired','worker','report','recover','resume'))
     p.add_argument('--run',type=Path,required=True);p.add_argument('--slot',type=int)
     p.add_argument('--mode',choices=MODES);p.add_argument('--modes',choices=MODES,nargs='+',default=list(MODES))
     p.add_argument('--seeds',type=int,default=1);p.add_argument('--repeats',type=int,default=1)

@@ -61,8 +61,9 @@ def test_smt_allocations_are_budgeted_and_used():
         SlurmBudget(2,worker_cpus=1,coordinator_cpus=1,allocation_quantum=2)
 
 
-def test_fused_worker_yields_and_reuses_evidence_on_resume(tmp_path):
+def test_fused_worker_yields_and_reuses_evidence_on_resume(tmp_path, monkeypatch):
     import gzip
+    monkeypatch.delenv('SLURM_JOB_ID', raising=False)
     query = tmp_path/'query'
     for part in ('sources','indexes','parts'):
         (query/part).mkdir(parents=True)

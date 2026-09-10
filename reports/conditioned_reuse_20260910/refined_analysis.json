@@ -1,0 +1,1334 @@
+{
+  "totals": {
+    "baseline": {
+      "compute_cpu": 121.16479345600004,
+      "search_cpu": 73.46791698300007,
+      "symmetry_cpu": 47.666296174999985,
+      "peak_worker_rss_kib": 863088,
+      "rss_measurements": 4
+    },
+    "current": {
+      "compute_cpu": 122.91558337300005,
+      "search_cpu": 75.01233267200001,
+      "symmetry_cpu": 47.872291797000024,
+      "peak_worker_rss_kib": 862216,
+      "rss_measurements": 4
+    },
+    "repair": {
+      "compute_cpu": 98.90625668199996,
+      "search_cpu": 52.28332226899998,
+      "symmetry_cpu": 46.54375576299998,
+      "peak_worker_rss_kib": 465200,
+      "rss_measurements": 4
+    },
+    "shared_symmetry": {
+      "compute_cpu": 114.83433612400002,
+      "search_cpu": 62.44337131899998,
+      "symmetry_cpu": 52.313874372000036,
+      "peak_worker_rss_kib": null,
+      "rss_measurements": 0
+    },
+    "symmetry": {
+      "compute_cpu": 77.33874535100003,
+      "search_cpu": 56.30906764099999,
+      "symmetry_cpu": 20.92819932900003,
+      "peak_worker_rss_kib": 578468,
+      "rss_measurements": 4
+    },
+    "extensions": {
+      "compute_cpu": 105.68705839199993,
+      "search_cpu": 58.571812042,
+      "symmetry_cpu": 47.03540349099993,
+      "peak_worker_rss_kib": 553272,
+      "rss_measurements": 4
+    },
+    "combined": {
+      "compute_cpu": 82.46022649499992,
+      "search_cpu": 61.095532917999996,
+      "symmetry_cpu": 21.25849139899993,
+      "peak_worker_rss_kib": 665756,
+      "rss_measurements": 4
+    }
+  },
+  "missing": [],
+  "mismatches": [],
+  "exact_cut_checks": 2484,
+  "rows": [
+    {
+      "index": 25,
+      "direction": "R_to_P",
+      "seed": 0,
+      "repeat": 0,
+      "slot": 0,
+      "methods": {
+        "baseline": {
+          "compute_cpu": 51.63532375000004,
+          "phases": {
+            "setup": {
+              "cpu": 0.011358741999999977,
+              "wall": 0.012003976851701736
+            },
+            "search": {
+              "cpu": 31.938001261000025,
+              "wall": 31.949573853984475
+            },
+            "symmetry": {
+              "cpu": 19.685963747000013,
+              "wall": 19.6908590067178
+            },
+            "audit_encoding": {
+              "cpu": 3.4735015500000097,
+              "wall": 3.474592277780175
+            },
+            "persistence": {
+              "cpu": 1.2889589150000316,
+              "wall": 2.6596235148608685
+            }
+          },
+          "peak_worker_rss_kib": 863088,
+          "repair": null,
+          "symmetry": null
+        },
+        "current": {
+          "compute_cpu": 52.022709349,
+          "phases": {
+            "setup": {
+              "cpu": 0.011711773000000036,
+              "wall": 0.013177534565329552
+            },
+            "search": {
+              "cpu": 32.364134962,
+              "wall": 32.37211689725518
+            },
+            "symmetry": {
+              "cpu": 19.646862614,
+              "wall": 19.650581197813153
+            },
+            "audit_encoding": {
+              "cpu": 3.5320207580000007,
+              "wall": 3.5327581632882357
+            },
+            "persistence": {
+              "cpu": 1.3651530140000039,
+              "wall": 3.389396622776985
+            }
+          },
+          "peak_worker_rss_kib": 862216,
+          "repair": null,
+          "symmetry": null
+        },
+        "repair": {
+          "compute_cpu": 36.274753657000005,
+          "phases": {
+            "setup": {
+              "cpu": 0.041805908,
+              "wall": 0.04275166243314743
+            },
+            "search": {
+              "cpu": 17.459580215000003,
+              "wall": 17.46513900719583
+            },
+            "symmetry": {
+              "cpu": 18.773367534000005,
+              "wall": 18.777421914041042
+            },
+            "audit_encoding": {
+              "cpu": 3.3589671020000065,
+              "wall": 3.3595205452293158
+            },
+            "persistence": {
+              "cpu": 0.7604929260000477,
+              "wall": 1.0667198188602924
+            }
+          },
+          "peak_worker_rss_kib": 357088,
+          "repair": {
+            "calls": 25174,
+            "full_hits": 20618,
+            "prefix_hits": 0,
+            "history_hits": 20566,
+            "topology_hits": 4514,
+            "boundary_rebases": 3172,
+            "dependency_checks": 226298,
+            "mapping_misses": 63492,
+            "island_misses": 2590,
+            "topology_misses": 139598,
+            "boundary_misses": 0,
+            "logical_extensions": 123250,
+            "reused_extensions": 94873,
+            "logical_certificates": 85358,
+            "reused_certificates": 55668,
+            "entries": 4556,
+            "resident_bytes": 32837856,
+            "peak_resident_bytes": 32837856,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0
+          },
+          "symmetry": null
+        },
+        "shared_symmetry": {
+          "compute_cpu": 38.38781248399998,
+          "phases": {
+            "setup": {
+              "cpu": 0.03959013099999997,
+              "wall": 0.04065927118062973
+            },
+            "search": {
+              "cpu": 19.47793369499997,
+              "wall": 19.483996445313096
+            },
+            "symmetry": {
+              "cpu": 18.870288658000014,
+              "wall": 18.873219344764948
+            },
+            "audit_encoding": {
+              "cpu": 3.3780392320000017,
+              "wall": 3.3787069637328386
+            },
+            "persistence": {
+              "cpu": 0.7618088700000151,
+              "wall": 1.4113219678401947
+            }
+          },
+          "peak_worker_rss_kib": null,
+          "repair": null,
+          "symmetry": null
+        },
+        "symmetry": {
+          "compute_cpu": 26.336398740999986,
+          "phases": {
+            "setup": {
+              "cpu": 0.04235817999999997,
+              "wall": 0.04325544461607933
+            },
+            "search": {
+              "cpu": 18.096793795999975,
+              "wall": 18.118737321346998
+            },
+            "symmetry": {
+              "cpu": 8.197246765000012,
+              "wall": 8.199377302080393
+            },
+            "audit_encoding": {
+              "cpu": 3.3810014399999835,
+              "wall": 3.3815558087080717
+            },
+            "persistence": {
+              "cpu": 0.8103334329999806,
+              "wall": 1.4903618339449167
+            }
+          },
+          "peak_worker_rss_kib": 484048,
+          "repair": {
+            "calls": 25174,
+            "full_hits": 20618,
+            "prefix_hits": 0,
+            "history_hits": 20566,
+            "topology_hits": 4514,
+            "boundary_rebases": 3172,
+            "dependency_checks": 226298,
+            "mapping_misses": 63492,
+            "island_misses": 2590,
+            "topology_misses": 139598,
+            "boundary_misses": 0,
+            "logical_extensions": 123250,
+            "reused_extensions": 94873,
+            "logical_certificates": 85358,
+            "reused_certificates": 55668,
+            "entries": 4556,
+            "resident_bytes": 32837856,
+            "peak_resident_bytes": 32837856,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0
+          },
+          "symmetry": {
+            "calls": 23176,
+            "partition_hits": 3337,
+            "group_solves": 19839,
+            "color_hits": 3082058,
+            "cache_clears": 0,
+            "resident_bytes": 41213822,
+            "cache_budget_bytes": 67108864
+          }
+        },
+        "extensions": {
+          "compute_cpu": 39.50903862099997,
+          "phases": {
+            "setup": {
+              "cpu": 0.041390498,
+              "wall": 0.04221174865961075
+            },
+            "search": {
+              "cpu": 20.43475210700001,
+              "wall": 20.43980399891734
+            },
+            "symmetry": {
+              "cpu": 19.032896015999967,
+              "wall": 19.037238413468003
+            },
+            "audit_encoding": {
+              "cpu": 3.362898265000018,
+              "wall": 3.3635559622198343
+            },
+            "persistence": {
+              "cpu": 0.7720107230000177,
+              "wall": 2.256753832101822
+            }
+          },
+          "peak_worker_rss_kib": 442736,
+          "repair": {
+            "calls": 25174,
+            "full_hits": 20618,
+            "prefix_hits": 0,
+            "history_hits": 20566,
+            "topology_hits": 4514,
+            "boundary_rebases": 3172,
+            "dependency_checks": 226298,
+            "mapping_misses": 63492,
+            "island_misses": 2590,
+            "topology_misses": 139598,
+            "boundary_misses": 0,
+            "logical_extensions": 123250,
+            "reused_extensions": 94873,
+            "logical_certificates": 85358,
+            "reused_certificates": 55668,
+            "entries": 4556,
+            "resident_bytes": 32837856,
+            "peak_resident_bytes": 32837856,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0,
+            "extension_calls": 330170,
+            "extension_hits": 74816,
+            "extension_negative_hits": 17095,
+            "extension_evictions": 243332,
+            "extension_resident_bytes": 67101132,
+            "extension_peak_bytes": 67108864,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": null
+        },
+        "combined": {
+          "compute_cpu": 29.344874328,
+          "phases": {
+            "setup": {
+              "cpu": 0.04470169299999999,
+              "wall": 0.04586493782699108
+            },
+            "search": {
+              "cpu": 20.816527813000018,
+              "wall": 20.822767784819007
+            },
+            "symmetry": {
+              "cpu": 8.483644821999983,
+              "wall": 8.485574305057526
+            },
+            "audit_encoding": {
+              "cpu": 3.392588165999976,
+              "wall": 3.3933391701430082
+            },
+            "persistence": {
+              "cpu": 0.815769039999998,
+              "wall": 1.358942873775959
+            }
+          },
+          "peak_worker_rss_kib": 565872,
+          "repair": {
+            "calls": 25174,
+            "full_hits": 20618,
+            "prefix_hits": 0,
+            "history_hits": 20566,
+            "topology_hits": 4514,
+            "boundary_rebases": 3172,
+            "dependency_checks": 226298,
+            "mapping_misses": 63492,
+            "island_misses": 2590,
+            "topology_misses": 139598,
+            "boundary_misses": 0,
+            "logical_extensions": 123250,
+            "reused_extensions": 94873,
+            "logical_certificates": 85358,
+            "reused_certificates": 55668,
+            "entries": 4556,
+            "resident_bytes": 32837856,
+            "peak_resident_bytes": 32837856,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0,
+            "extension_calls": 330170,
+            "extension_hits": 74816,
+            "extension_negative_hits": 17095,
+            "extension_evictions": 243332,
+            "extension_resident_bytes": 67101132,
+            "extension_peak_bytes": 67108864,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": {
+            "calls": 23176,
+            "partition_hits": 3337,
+            "group_solves": 19839,
+            "color_hits": 3082058,
+            "cache_clears": 0,
+            "resident_bytes": 41213822,
+            "cache_budget_bytes": 67108864
+          }
+        }
+      }
+    },
+    {
+      "index": 76,
+      "direction": "P_to_R",
+      "seed": 0,
+      "repeat": 0,
+      "slot": 1,
+      "methods": {
+        "baseline": {
+          "compute_cpu": 46.669531196,
+          "phases": {
+            "setup": {
+              "cpu": 0.010197306000000017,
+              "wall": 0.010998127982020378
+            },
+            "search": {
+              "cpu": 28.58408676600002,
+              "wall": 28.589834621176124
+            },
+            "symmetry": {
+              "cpu": 18.075247123999983,
+              "wall": 18.077853536233306
+            },
+            "audit_encoding": {
+              "cpu": 7.212251424000016,
+              "wall": 7.213162027299404
+            },
+            "persistence": {
+              "cpu": 1.7186929730000082,
+              "wall": 2.198718722909689
+            }
+          },
+          "peak_worker_rss_kib": 482740,
+          "repair": null,
+          "symmetry": null
+        },
+        "current": {
+          "compute_cpu": 48.24727859300002,
+          "phases": {
+            "setup": {
+              "cpu": 0.01021747700000003,
+              "wall": 0.010955164209008217
+            },
+            "search": {
+              "cpu": 29.76276391599999,
+              "wall": 29.770431838929653
+            },
+            "symmetry": {
+              "cpu": 18.47429720000003,
+              "wall": 18.476275138556957
+            },
+            "audit_encoding": {
+              "cpu": 7.4243109819999695,
+              "wall": 7.4252058155834675
+            },
+            "persistence": {
+              "cpu": 1.8286832530000183,
+              "wall": 3.6774974036961794
+            }
+          },
+          "peak_worker_rss_kib": 482880,
+          "repair": null,
+          "symmetry": null
+        },
+        "repair": {
+          "compute_cpu": 43.420097422999966,
+          "phases": {
+            "setup": {
+              "cpu": 0.020369668000000007,
+              "wall": 0.021795516833662987
+            },
+            "search": {
+              "cpu": 24.946708435999977,
+              "wall": 24.95239402912557
+            },
+            "symmetry": {
+              "cpu": 18.453019318999992,
+              "wall": 18.51142865791917
+            },
+            "audit_encoding": {
+              "cpu": 7.243777968000014,
+              "wall": 7.245011353865266
+            },
+            "persistence": {
+              "cpu": 1.5549263269999947,
+              "wall": 2.8016613759100437
+            }
+          },
+          "peak_worker_rss_kib": 465200,
+          "repair": {
+            "calls": 44471,
+            "full_hits": 24909,
+            "prefix_hits": 0,
+            "history_hits": 24903,
+            "topology_hits": 2307,
+            "boundary_rebases": 4697,
+            "dependency_checks": 71655,
+            "mapping_misses": 19221,
+            "island_misses": 48,
+            "topology_misses": 27477,
+            "boundary_misses": 0,
+            "logical_extensions": 129744,
+            "reused_extensions": 49256,
+            "logical_certificates": 51674,
+            "reused_certificates": 13560,
+            "entries": 12758,
+            "resident_bytes": 67108678,
+            "peak_resident_bytes": 67108863,
+            "cache_budget_bytes": 67108864,
+            "evictions": 6804
+          },
+          "symmetry": null
+        },
+        "shared_symmetry": {
+          "compute_cpu": 51.916022604000005,
+          "phases": {
+            "setup": {
+              "cpu": 0.02043563100000001,
+              "wall": 0.021419832482933998
+            },
+            "search": {
+              "cpu": 29.472778423999987,
+              "wall": 29.477707279846072
+            },
+            "symmetry": {
+              "cpu": 22.42280854900002,
+              "wall": 22.425100250169635
+            },
+            "audit_encoding": {
+              "cpu": 7.8331813020000105,
+              "wall": 7.8344005066901445
+            },
+            "persistence": {
+              "cpu": 1.5453342990000083,
+              "wall": 2.639640249311924
+            }
+          },
+          "peak_worker_rss_kib": null,
+          "repair": null,
+          "symmetry": null
+        },
+        "symmetry": {
+          "compute_cpu": 35.67563160300002,
+          "phases": {
+            "setup": {
+              "cpu": 0.03679180900000001,
+              "wall": 0.0378175787627697
+            },
+            "search": {
+              "cpu": 27.28909559500002,
+              "wall": 27.29824864678085
+            },
+            "symmetry": {
+              "cpu": 8.349744199000003,
+              "wall": 8.35113101825118
+            },
+            "audit_encoding": {
+              "cpu": 7.353917967999971,
+              "wall": 7.354506423696876
+            },
+            "persistence": {
+              "cpu": 1.5603709419999778,
+              "wall": 3.332704471424222
+            }
+          },
+          "peak_worker_rss_kib": 578468,
+          "repair": {
+            "calls": 44471,
+            "full_hits": 24909,
+            "prefix_hits": 0,
+            "history_hits": 24903,
+            "topology_hits": 2307,
+            "boundary_rebases": 4697,
+            "dependency_checks": 71655,
+            "mapping_misses": 19221,
+            "island_misses": 48,
+            "topology_misses": 27477,
+            "boundary_misses": 0,
+            "logical_extensions": 129744,
+            "reused_extensions": 49256,
+            "logical_certificates": 51674,
+            "reused_certificates": 13560,
+            "entries": 12758,
+            "resident_bytes": 67108678,
+            "peak_resident_bytes": 67108863,
+            "cache_budget_bytes": 67108864,
+            "evictions": 6804
+          },
+          "symmetry": {
+            "calls": 27989,
+            "partition_hits": 69,
+            "group_solves": 27920,
+            "color_hits": 3302059,
+            "cache_clears": 0,
+            "resident_bytes": 49267382,
+            "cache_budget_bytes": 67108864
+          }
+        },
+        "extensions": {
+          "compute_cpu": 45.11428771999996,
+          "phases": {
+            "setup": {
+              "cpu": 0.020877917999999995,
+              "wall": 0.022166039794683456
+            },
+            "search": {
+              "cpu": 26.825769951999987,
+              "wall": 26.830188928171992
+            },
+            "symmetry": {
+              "cpu": 18.26763984999997,
+              "wall": 18.26941842958331
+            },
+            "audit_encoding": {
+              "cpu": 7.213016371000008,
+              "wall": 7.2141299322247505
+            },
+            "persistence": {
+              "cpu": 1.5215436200000134,
+              "wall": 2.2040012944489717
+            }
+          },
+          "peak_worker_rss_kib": 553272,
+          "repair": {
+            "calls": 44471,
+            "full_hits": 24909,
+            "prefix_hits": 0,
+            "history_hits": 24903,
+            "topology_hits": 2307,
+            "boundary_rebases": 4697,
+            "dependency_checks": 71655,
+            "mapping_misses": 19221,
+            "island_misses": 48,
+            "topology_misses": 27477,
+            "boundary_misses": 0,
+            "logical_extensions": 129744,
+            "reused_extensions": 49256,
+            "logical_certificates": 51674,
+            "reused_certificates": 13560,
+            "entries": 12758,
+            "resident_bytes": 67108678,
+            "peak_resident_bytes": 67108863,
+            "cache_budget_bytes": 67108864,
+            "evictions": 6804,
+            "extension_calls": 351252,
+            "extension_hits": 176261,
+            "extension_negative_hits": 101846,
+            "extension_evictions": 157509,
+            "extension_resident_bytes": 67092516,
+            "extension_peak_bytes": 67108864,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": null
+        },
+        "combined": {
+          "compute_cpu": 36.82388111999996,
+          "phases": {
+            "setup": {
+              "cpu": 0.03930671800000002,
+              "wall": 0.04019538313150406
+            },
+            "search": {
+              "cpu": 28.367012911999986,
+              "wall": 28.372731238603592
+            },
+            "symmetry": {
+              "cpu": 8.417561489999976,
+              "wall": 8.418423675000668
+            },
+            "audit_encoding": {
+              "cpu": 7.323938900999991,
+              "wall": 7.324971500784159
+            },
+            "persistence": {
+              "cpu": 1.5276160839999877,
+              "wall": 1.7358878906816244
+            }
+          },
+          "peak_worker_rss_kib": 665756,
+          "repair": {
+            "calls": 44471,
+            "full_hits": 24909,
+            "prefix_hits": 0,
+            "history_hits": 24903,
+            "topology_hits": 2307,
+            "boundary_rebases": 4697,
+            "dependency_checks": 71655,
+            "mapping_misses": 19221,
+            "island_misses": 48,
+            "topology_misses": 27477,
+            "boundary_misses": 0,
+            "logical_extensions": 129744,
+            "reused_extensions": 49256,
+            "logical_certificates": 51674,
+            "reused_certificates": 13560,
+            "entries": 12758,
+            "resident_bytes": 67108678,
+            "peak_resident_bytes": 67108863,
+            "cache_budget_bytes": 67108864,
+            "evictions": 6804,
+            "extension_calls": 351252,
+            "extension_hits": 176261,
+            "extension_negative_hits": 101846,
+            "extension_evictions": 157509,
+            "extension_resident_bytes": 67092516,
+            "extension_peak_bytes": 67108864,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": {
+            "calls": 27989,
+            "partition_hits": 69,
+            "group_solves": 27920,
+            "color_hits": 3302059,
+            "cache_clears": 0,
+            "resident_bytes": 49267382,
+            "cache_budget_bytes": 67108864
+          }
+        }
+      }
+    },
+    {
+      "index": 77,
+      "direction": "P_to_R",
+      "seed": 0,
+      "repeat": 0,
+      "slot": 2,
+      "methods": {
+        "baseline": {
+          "compute_cpu": 22.736617071999998,
+          "phases": {
+            "setup": {
+              "cpu": 0.007275564000000012,
+              "wall": 0.008057564496994019
+            },
+            "search": {
+              "cpu": 12.867615565000012,
+              "wall": 12.87143567763269
+            },
+            "symmetry": {
+              "cpu": 9.861725942999986,
+              "wall": 9.86316524259746
+            },
+            "audit_encoding": {
+              "cpu": 2.8104661030000058,
+              "wall": 2.8109080214053392
+            },
+            "persistence": {
+              "cpu": 0.7242062210000022,
+              "wall": 1.9391465410590172
+            }
+          },
+          "peak_worker_rss_kib": 294236,
+          "repair": null,
+          "symmetry": null
+        },
+        "current": {
+          "compute_cpu": 22.52185577200002,
+          "phases": {
+            "setup": {
+              "cpu": 0.007282277000000004,
+              "wall": 0.008411306887865067
+            },
+            "search": {
+              "cpu": 12.806844624000021,
+              "wall": 12.809999264776707
+            },
+            "symmetry": {
+              "cpu": 9.707728870999997,
+              "wall": 9.709185292944312
+            },
+            "audit_encoding": {
+              "cpu": 2.7970858220000125,
+              "wall": 2.7977216355502605
+            },
+            "persistence": {
+              "cpu": 0.7190918839999925,
+              "wall": 0.7968133762478828
+            }
+          },
+          "peak_worker_rss_kib": 292872,
+          "repair": null,
+          "symmetry": null
+        },
+        "repair": {
+          "compute_cpu": 19.099264752999982,
+          "phases": {
+            "setup": {
+              "cpu": 0.014478080000000004,
+              "wall": 0.015186026692390442
+            },
+            "search": {
+              "cpu": 9.811214026999997,
+              "wall": 9.813292689621449
+            },
+            "symmetry": {
+              "cpu": 9.273572645999984,
+              "wall": 9.275245897471905
+            },
+            "audit_encoding": {
+              "cpu": 2.77049856,
+              "wall": 2.770882736891508
+            },
+            "persistence": {
+              "cpu": 0.6144780570000062,
+              "wall": 1.0656894706189632
+            }
+          },
+          "peak_worker_rss_kib": 359752,
+          "repair": {
+            "calls": 21847,
+            "full_hits": 12595,
+            "prefix_hits": 0,
+            "history_hits": 12581,
+            "topology_hits": 298,
+            "boundary_rebases": 3071,
+            "dependency_checks": 25094,
+            "mapping_misses": 7704,
+            "island_misses": 12,
+            "topology_misses": 4778,
+            "boundary_misses": 5,
+            "logical_extensions": 69216,
+            "reused_extensions": 21011,
+            "logical_certificates": 34345,
+            "reused_certificates": 5517,
+            "entries": 9252,
+            "resident_bytes": 40363964,
+            "peak_resident_bytes": 40363964,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0
+          },
+          "symmetry": null
+        },
+        "shared_symmetry": {
+          "compute_cpu": 24.43500289000003,
+          "phases": {
+            "setup": {
+              "cpu": 0.01464548299999996,
+              "wall": 0.015327006578445435
+            },
+            "search": {
+              "cpu": 13.423798039000022,
+              "wall": 13.438429770991206
+            },
+            "symmetry": {
+              "cpu": 10.996559368000005,
+              "wall": 11.006668535992503
+            },
+            "audit_encoding": {
+              "cpu": 2.967172925000005,
+              "wall": 2.9687022641301155
+            },
+            "persistence": {
+              "cpu": 0.6910651470000104,
+              "wall": 3.002254420891404
+            }
+          },
+          "peak_worker_rss_kib": null,
+          "repair": null,
+          "symmetry": null
+        },
+        "symmetry": {
+          "compute_cpu": 15.240009622000011,
+          "phases": {
+            "setup": {
+              "cpu": 0.018444218000000012,
+              "wall": 0.019418539479374886
+            },
+            "search": {
+              "cpu": 10.855453657999998,
+              "wall": 10.859093554317951
+            },
+            "symmetry": {
+              "cpu": 4.366111746000012,
+              "wall": 4.369471948593855
+            },
+            "audit_encoding": {
+              "cpu": 2.797548126000004,
+              "wall": 2.7978143263608217
+            },
+            "persistence": {
+              "cpu": 0.6807655710000051,
+              "wall": 1.7638239338994026
+            }
+          },
+          "peak_worker_rss_kib": 432676,
+          "repair": {
+            "calls": 21847,
+            "full_hits": 12595,
+            "prefix_hits": 0,
+            "history_hits": 12581,
+            "topology_hits": 298,
+            "boundary_rebases": 3071,
+            "dependency_checks": 25094,
+            "mapping_misses": 7704,
+            "island_misses": 12,
+            "topology_misses": 4778,
+            "boundary_misses": 5,
+            "logical_extensions": 69216,
+            "reused_extensions": 21011,
+            "logical_certificates": 34345,
+            "reused_certificates": 5517,
+            "entries": 9252,
+            "resident_bytes": 40363964,
+            "peak_resident_bytes": 40363964,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0
+          },
+          "symmetry": {
+            "calls": 18489,
+            "partition_hits": 108,
+            "group_solves": 18381,
+            "color_hits": 1811271,
+            "cache_clears": 0,
+            "resident_bytes": 28049900,
+            "cache_budget_bytes": 67108864
+          }
+        },
+        "extensions": {
+          "compute_cpu": 20.950578867999997,
+          "phases": {
+            "setup": {
+              "cpu": 0.015123841999999998,
+              "wall": 0.01576090231537819
+            },
+            "search": {
+              "cpu": 11.244466950000001,
+              "wall": 11.247350858524442
+            },
+            "symmetry": {
+              "cpu": 9.690988075999995,
+              "wall": 9.692370910197496
+            },
+            "audit_encoding": {
+              "cpu": 2.819532001000013,
+              "wall": 2.820241779088974
+            },
+            "persistence": {
+              "cpu": 0.6667043070000008,
+              "wall": 1.1744937989860773
+            }
+          },
+          "peak_worker_rss_kib": 433680,
+          "repair": {
+            "calls": 21847,
+            "full_hits": 12595,
+            "prefix_hits": 0,
+            "history_hits": 12581,
+            "topology_hits": 298,
+            "boundary_rebases": 3071,
+            "dependency_checks": 25094,
+            "mapping_misses": 7704,
+            "island_misses": 12,
+            "topology_misses": 4778,
+            "boundary_misses": 5,
+            "logical_extensions": 69216,
+            "reused_extensions": 21011,
+            "logical_certificates": 34345,
+            "reused_certificates": 5517,
+            "entries": 9252,
+            "resident_bytes": 40363964,
+            "peak_resident_bytes": 40363964,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0,
+            "extension_calls": 194346,
+            "extension_hits": 79668,
+            "extension_negative_hits": 42611,
+            "extension_evictions": 90055,
+            "extension_resident_bytes": 67106352,
+            "extension_peak_bytes": 67108864,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": null
+        },
+        "combined": {
+          "compute_cpu": 16.203329814999968,
+          "phases": {
+            "setup": {
+              "cpu": 0.018973942999999993,
+              "wall": 0.019945088773965836
+            },
+            "search": {
+              "cpu": 11.842073418999995,
+              "wall": 11.845089552924037
+            },
+            "symmetry": {
+              "cpu": 4.342282452999973,
+              "wall": 4.343096993863583
+            },
+            "audit_encoding": {
+              "cpu": 2.8386656510000066,
+              "wall": 2.8390307053923607
+            },
+            "persistence": {
+              "cpu": 0.7076261139999975,
+              "wall": 1.7385546043515205
+            }
+          },
+          "peak_worker_rss_kib": 502200,
+          "repair": {
+            "calls": 21847,
+            "full_hits": 12595,
+            "prefix_hits": 0,
+            "history_hits": 12581,
+            "topology_hits": 298,
+            "boundary_rebases": 3071,
+            "dependency_checks": 25094,
+            "mapping_misses": 7704,
+            "island_misses": 12,
+            "topology_misses": 4778,
+            "boundary_misses": 5,
+            "logical_extensions": 69216,
+            "reused_extensions": 21011,
+            "logical_certificates": 34345,
+            "reused_certificates": 5517,
+            "entries": 9252,
+            "resident_bytes": 40363964,
+            "peak_resident_bytes": 40363964,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0,
+            "extension_calls": 194346,
+            "extension_hits": 79668,
+            "extension_negative_hits": 42611,
+            "extension_evictions": 90055,
+            "extension_resident_bytes": 67106352,
+            "extension_peak_bytes": 67108864,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": {
+            "calls": 18489,
+            "partition_hits": 108,
+            "group_solves": 18381,
+            "color_hits": 1811271,
+            "cache_clears": 0,
+            "resident_bytes": 28049900,
+            "cache_budget_bytes": 67108864
+          }
+        }
+      }
+    },
+    {
+      "index": 114,
+      "direction": "R_to_P",
+      "seed": 0,
+      "repeat": 0,
+      "slot": 3,
+      "methods": {
+        "baseline": {
+          "compute_cpu": 0.12332143799999984,
+          "phases": {
+            "setup": {
+              "cpu": 0.0017486859999999993,
+              "wall": 0.002467166632413864
+            },
+            "search": {
+              "cpu": 0.07821339099999985,
+              "wall": 0.07827100902795792
+            },
+            "symmetry": {
+              "cpu": 0.043359360999999985,
+              "wall": 0.04358326457440853
+            },
+            "audit_encoding": {
+              "cpu": 0.007148659999999973,
+              "wall": 0.0071570780128240585
+            },
+            "persistence": {
+              "cpu": 0.013471864000000444,
+              "wall": 0.03502817824482918
+            }
+          },
+          "peak_worker_rss_kib": 54196,
+          "repair": null,
+          "symmetry": null
+        },
+        "current": {
+          "compute_cpu": 0.12373965900000011,
+          "phases": {
+            "setup": {
+              "cpu": 0.0017473769999999944,
+              "wall": 0.002948552370071411
+            },
+            "search": {
+              "cpu": 0.07858917000000015,
+              "wall": 0.07862594723701477
+            },
+            "symmetry": {
+              "cpu": 0.043403111999999966,
+              "wall": 0.04355855658650398
+            },
+            "audit_encoding": {
+              "cpu": 0.007176338999999976,
+              "wall": 0.007184799760580063
+            },
+            "persistence": {
+              "cpu": 0.013550700999999998,
+              "wall": 0.03442948870360851
+            }
+          },
+          "peak_worker_rss_kib": 54252,
+          "repair": null,
+          "symmetry": null
+        },
+        "repair": {
+          "compute_cpu": 0.11214084900000004,
+          "phases": {
+            "setup": {
+              "cpu": 0.0025249940000000026,
+              "wall": 0.0033945441246032715
+            },
+            "search": {
+              "cpu": 0.06581959100000007,
+              "wall": 0.06587398052215576
+            },
+            "symmetry": {
+              "cpu": 0.043796263999999974,
+              "wall": 0.04393706098198891
+            },
+            "audit_encoding": {
+              "cpu": 0.007179679999999966,
+              "wall": 0.007192919030785561
+            },
+            "persistence": {
+              "cpu": 0.01345686700000015,
+              "wall": 0.03393128886818886
+            }
+          },
+          "peak_worker_rss_kib": 54776,
+          "repair": {
+            "calls": 150,
+            "full_hits": 11,
+            "prefix_hits": 0,
+            "history_hits": 8,
+            "topology_hits": 3,
+            "boundary_rebases": 0,
+            "dependency_checks": 240,
+            "mapping_misses": 3,
+            "island_misses": 0,
+            "topology_misses": 226,
+            "boundary_misses": 0,
+            "logical_extensions": 1010,
+            "reused_extensions": 15,
+            "logical_certificates": 326,
+            "reused_certificates": 0,
+            "entries": 139,
+            "resident_bytes": 275320,
+            "peak_resident_bytes": 275320,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0
+          },
+          "symmetry": null
+        },
+        "shared_symmetry": {
+          "compute_cpu": 0.09549814600000017,
+          "phases": {
+            "setup": {
+              "cpu": 0.0024191880000000165,
+              "wall": 0.004093382507562637
+            },
+            "search": {
+              "cpu": 0.06886116100000006,
+              "wall": 0.06894940137863159
+            },
+            "symmetry": {
+              "cpu": 0.024217797000000096,
+              "wall": 0.02537938579916954
+            },
+            "audit_encoding": {
+              "cpu": 0.007174675000000019,
+              "wall": 0.007182510569691658
+            },
+            "persistence": {
+              "cpu": 0.012940619999999792,
+              "wall": 0.0343612264841795
+            }
+          },
+          "peak_worker_rss_kib": null,
+          "repair": null,
+          "symmetry": null
+        },
+        "symmetry": {
+          "compute_cpu": 0.08670538500000013,
+          "phases": {
+            "setup": {
+              "cpu": 0.003884174000000018,
+              "wall": 0.006798194721341133
+            },
+            "search": {
+              "cpu": 0.06772459199999992,
+              "wall": 0.06774952448904514
+            },
+            "symmetry": {
+              "cpu": 0.0150966190000002,
+              "wall": 0.015125945210456848
+            },
+            "audit_encoding": {
+              "cpu": 0.007142868000000191,
+              "wall": 0.007150501012802124
+            },
+            "persistence": {
+              "cpu": 0.013298447000000102,
+              "wall": 0.03424283303320408
+            }
+          },
+          "peak_worker_rss_kib": 55452,
+          "repair": {
+            "calls": 150,
+            "full_hits": 11,
+            "prefix_hits": 0,
+            "history_hits": 8,
+            "topology_hits": 3,
+            "boundary_rebases": 0,
+            "dependency_checks": 240,
+            "mapping_misses": 3,
+            "island_misses": 0,
+            "topology_misses": 226,
+            "boundary_misses": 0,
+            "logical_extensions": 1010,
+            "reused_extensions": 15,
+            "logical_certificates": 326,
+            "reused_certificates": 0,
+            "entries": 139,
+            "resident_bytes": 275320,
+            "peak_resident_bytes": 275320,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0
+          },
+          "symmetry": {
+            "calls": 139,
+            "partition_hits": 28,
+            "group_solves": 111,
+            "color_hits": 3791,
+            "cache_clears": 0,
+            "resident_bytes": 103228,
+            "cache_budget_bytes": 67108864
+          }
+        },
+        "extensions": {
+          "compute_cpu": 0.11315318299999971,
+          "phases": {
+            "setup": {
+              "cpu": 0.0024506009999999967,
+              "wall": 0.0031431708484888077
+            },
+            "search": {
+              "cpu": 0.06682303299999987,
+              "wall": 0.06691141426563263
+            },
+            "symmetry": {
+              "cpu": 0.04387954899999985,
+              "wall": 0.04415235482156277
+            },
+            "audit_encoding": {
+              "cpu": 0.007201993000000018,
+              "wall": 0.007224157452583313
+            },
+            "persistence": {
+              "cpu": 0.013890513000000104,
+              "wall": 0.03497905656695366
+            }
+          },
+          "peak_worker_rss_kib": 57036,
+          "repair": {
+            "calls": 150,
+            "full_hits": 11,
+            "prefix_hits": 0,
+            "history_hits": 8,
+            "topology_hits": 3,
+            "boundary_rebases": 0,
+            "dependency_checks": 240,
+            "mapping_misses": 3,
+            "island_misses": 0,
+            "topology_misses": 226,
+            "boundary_misses": 0,
+            "logical_extensions": 1010,
+            "reused_extensions": 15,
+            "logical_certificates": 326,
+            "reused_certificates": 0,
+            "entries": 139,
+            "resident_bytes": 275320,
+            "peak_resident_bytes": 275320,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0,
+            "extension_calls": 1717,
+            "extension_hits": 511,
+            "extension_negative_hits": 100,
+            "extension_evictions": 0,
+            "extension_resident_bytes": 1940752,
+            "extension_peak_bytes": 1940752,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": null
+        },
+        "combined": {
+          "compute_cpu": 0.08814123199999985,
+          "phases": {
+            "setup": {
+              "cpu": 0.0032198239999999823,
+              "wall": 0.004630440846085548
+            },
+            "search": {
+              "cpu": 0.06991877399999985,
+              "wall": 0.0699677225202322
+            },
+            "symmetry": {
+              "cpu": 0.015002634000000015,
+              "wall": 0.015031065791845322
+            },
+            "audit_encoding": {
+              "cpu": 0.00716572600000015,
+              "wall": 0.007190223783254623
+            },
+            "persistence": {
+              "cpu": 0.014097998000000056,
+              "wall": 0.036107512190937996
+            }
+          },
+          "peak_worker_rss_kib": 57412,
+          "repair": {
+            "calls": 150,
+            "full_hits": 11,
+            "prefix_hits": 0,
+            "history_hits": 8,
+            "topology_hits": 3,
+            "boundary_rebases": 0,
+            "dependency_checks": 240,
+            "mapping_misses": 3,
+            "island_misses": 0,
+            "topology_misses": 226,
+            "boundary_misses": 0,
+            "logical_extensions": 1010,
+            "reused_extensions": 15,
+            "logical_certificates": 326,
+            "reused_certificates": 0,
+            "entries": 139,
+            "resident_bytes": 275320,
+            "peak_resident_bytes": 275320,
+            "cache_budget_bytes": 67108864,
+            "evictions": 0,
+            "extension_calls": 1717,
+            "extension_hits": 511,
+            "extension_negative_hits": 100,
+            "extension_evictions": 0,
+            "extension_resident_bytes": 1940752,
+            "extension_peak_bytes": 1940752,
+            "extension_budget_bytes": 67108864
+          },
+          "symmetry": {
+            "calls": 139,
+            "partition_hits": 28,
+            "group_solves": 111,
+            "color_hits": 3791,
+            "cache_clears": 0,
+            "resident_bytes": 103228,
+            "cache_budget_bytes": 67108864
+          }
+        }
+      }
+    }
+  ]
+}
