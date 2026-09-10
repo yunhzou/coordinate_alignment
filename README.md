@@ -3,6 +3,13 @@
 Symmetry-aware WBO atom mapping, analytical R/P alignment, and
 mechanism-local transition-state analysis.
 
+## Current work and stable versions
+
+See the [branch guide](docs/BRANCHES.md) for preserved pre-acceleration baselines,
+active development, and archived experiments. The
+[paper branch](https://github.com/yunhzou/coordinate_alignment/tree/paper/continuous-fragment-growth/manuscript)
+contains the manuscript PDF, figures, animations, and reproducible figure data.
+
 ## Design
 
 The computational API consists of immutable typed stages:
