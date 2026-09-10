@@ -1324,15 +1324,20 @@ void extend_free_atom(const Cand& c, const Context& ctx, std::vector<Cand>& chil
     }
 }
 
+#include "extension_cache.h"
+
 std::vector<Cand> extend_sym_cands(const std::vector<Cand>& cands, const Context& ctx,
-                                   const Canonicalizer& canon, long& certificate_calls) {
+                                   const Canonicalizer& canon, long& certificate_calls,
+                                   ExtensionCache* extension_cache=nullptr) {
     std::vector<Cand> children;
     for (const auto& c : cands) {
         bool covers = true;
         for (int u : ctx.bonded_in_frag)
             if (!c.has(u)) { covers = false; break; }
         if (!covers) continue;
-        if (ctx.is_merge()) {
+        if (extension_cache) {
+            extension_cache->extend(c,ctx,children);
+        } else if (ctx.is_merge()) {
             Cand child;
             if (extend_locked_merge(c, ctx, child)) children.push_back(std::move(child));
         } else {
@@ -1392,7 +1397,8 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
                        const std::vector<Pair>* islands, const std::vector<Pair>& prior_deferred,
                        bool allow_mapped_seed, GrowthTrace* trace = nullptr,
                        const GrowthTrace* previous = nullptr, int resume_step = -1,
-                       GrowthDependencies* dependencies = nullptr) {
+                       GrowthDependencies* dependencies = nullptr,
+                       ExtensionCache* extension_cache = nullptr) {
     SourceReadScope dependency_scope(R, trace ? &trace->reads : nullptr);
     GrowResult result;
     GrowProfile& prof = result.profile;
@@ -1588,7 +1594,7 @@ GrowResult grow_island(const Source& R, const Target& P, int seed, const std::ve
             ctx.sig_fragment[n] = 1;
             for (int a : ctx.island_atoms) ctx.sig_fragment[a] = 1;
             if (dependencies) dependencies->boundary(ctx.sig_fragment);
-            new_cands = extend_sym_cands(cands, ctx, canon, certificate_calls);
+            new_cands = extend_sym_cands(cands, ctx, canon, certificate_calls, extension_cache);
         }
         if ((long)new_cands.size() > max_branches) {
             prof.result = "live_branch_cap";

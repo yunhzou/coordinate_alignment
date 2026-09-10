@@ -6,6 +6,7 @@ class FragmentRepair {
     const Target& target;
     std::vector<Pair> active_cuts;
     size_t budget, resident=0, peak_resident=0;
+    std::unique_ptr<ExtensionCache> extensions;
     struct Entry {
         std::string key;
         GrowResult result;
@@ -99,9 +100,10 @@ class FragmentRepair {
         return true;
     }
 public:
-    FragmentRepair(const PySource& source,const PyTarget& product,size_t cache_bytes)
+    FragmentRepair(const PySource& source,const PyTarget& product,size_t cache_bytes,size_t extension_bytes=0)
         :base(source.g),active_source(source.g),target(product.g),budget(cache_bytes) {
         base.reads=nullptr;active_source.reads=nullptr;
+        if (extension_bytes) extensions=std::make_unique<ExtensionCache>(extension_bytes);
     }
     std::pair<GrowResult,long> compute(const std::vector<Pair>& cuts_in,int seed,const std::vector<int>& mapping,
                     double graph_floor,double iso_tol,int min_lock_size,long max_branches,
@@ -159,7 +161,7 @@ public:
                 Entry entry(base.n);
                 GrowthTrace trace(active_source);trace.store_checkpoints=false;
                 result=grow_island(active_source,target,seed,mapping,graph_floor,iso_tol,min_lock_size,
-                    max_branches,islands_ptr,prior_deferred,allow_mapped_seed,&trace,nullptr,-1,&entry.dependencies);
+                    max_branches,islands_ptr,prior_deferred,allow_mapped_seed,&trace,nullptr,-1,&entry.dependencies,extensions.get());
                 entry.key=std::move(key);entry.result=result;entry.mapping=mapping;
                 entry.islands=islands;entry.cuts=cuts;entry.deferred=deferred;
                 entry.row_reads.resize(base.n);
@@ -200,14 +202,15 @@ public:
         out["logical_certificates"]=logical_certificates;out["reused_certificates"]=reused_certificates;
         out["entries"]=lru.size();out["resident_bytes"]=resident;out["peak_resident_bytes"]=peak_resident;
         out["cache_budget_bytes"]=budget;out["evictions"]=evictions;
+        if (extensions) out.attr("update")(extensions->stats());
         return out;
     }
 };
 
 void register_fragment_repair(py::module_& mod) {
     py::class_<FragmentRepair>(mod,"FragmentRepair")
-        .def(py::init<const PySource&,const PyTarget&,size_t>(),
-            py::arg("source"),py::arg("target"),py::arg("cache_bytes"),py::keep_alive<1,3>())
+        .def(py::init<const PySource&,const PyTarget&,size_t,size_t>(),
+            py::arg("source"),py::arg("target"),py::arg("cache_bytes"),py::arg("extension_cache_bytes")=0,py::keep_alive<1,3>())
         .def("grow",&FragmentRepair::grow,py::arg("cuts"),py::arg("seed"),py::arg("mapping"),
              py::arg("graph_floor"),py::arg("iso_tol"),py::arg("min_lock_size"),py::arg("max_branches"),
              py::arg("islands"),py::arg("prior_deferred_edges"),py::arg("allow_mapped_seed"))

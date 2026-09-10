@@ -31,6 +31,11 @@
 #include <pybind11/stl.h>
 
 #include <stdexcept>
+#include <algorithm>
+#include <map>
+#include <set>
+#include <tuple>
+#include <unordered_map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -127,6 +132,103 @@ struct AutGraph {
     }
 };
 
+// Fixed topology, reusable atom-role colors and exact conditioned partitions.
+// The partition and generator order match the Python implementation; only
+// construction/caching move here. No symmetry group is expanded into elements.
+class ConditionedAutGraph {
+    AutGraph graph;
+    std::vector<int> atoms, vertices;
+    std::vector<std::string> base_colors;
+    std::map<int,int> atom_index;
+    std::vector<std::pair<std::string,std::vector<int>>> edge_cells;
+    using ColorKey=std::tuple<std::string,std::string,std::string>;
+    std::map<ColorKey,std::string> color_cache;
+    std::unordered_map<std::string,std::vector<std::vector<int>>> group_cache;
+    size_t budget, group_bytes=0, color_bytes=0;
+    long calls=0,hits=0,solves=0,color_hits=0,clears=0;
+public:
+    ConditionedAutGraph(int n,const std::vector<std::pair<int,int>>& edges,
+        std::vector<int> atom_labels,std::vector<int> vertex_indices,
+        std::vector<std::string> colors,
+        std::vector<std::pair<std::string,std::vector<int>>> fixed_cells,size_t cache_bytes)
+        :graph(n,edges),atoms(std::move(atom_labels)),vertices(std::move(vertex_indices)),
+         base_colors(std::move(colors)),edge_cells(std::move(fixed_cells)),budget(cache_bytes) {
+        for(size_t i=0;i<atoms.size();++i) atom_index.emplace(atoms[i],i);
+    }
+    std::vector<std::vector<int>> generators(const std::vector<std::pair<int,int>>& locked,
+                                             const std::map<int,std::string>& roles) {
+        ++calls;
+        std::vector<std::vector<int>> lock_roles(atoms.size());
+        for(auto [r,p]:locked) {
+            auto found=atom_index.find(p);
+            if(found!=atom_index.end()) lock_roles[found->second].push_back(r);
+        }
+        std::map<std::string,std::vector<int>> colored;
+        for(size_t i=0;i<atoms.size();++i) {
+            auto& locks=lock_roles[i];std::sort(locks.begin(),locks.end());
+            std::string locked_repr="(";
+            for(size_t j=0;j<locks.size();++j) {
+                if(j) locked_repr+=", ";
+                locked_repr+="('locked', "+std::to_string(locks[j])+")";
+            }
+            if(locks.size()==1) locked_repr+=",";
+            locked_repr+=")";
+            auto role=roles.find(atoms[i]);
+            ColorKey key{base_colors[i],locked_repr,role==roles.end()?"()":role->second};
+            auto found=color_cache.find(key);
+            if(found==color_cache.end()) {
+                std::string value="('atom', "+std::get<0>(key)+", ("+std::get<1>(key)+", "+std::get<2>(key)+"))";
+                size_t bytes=sizeof(ColorKey)+sizeof(std::string)+128+value.size()
+                    +std::get<0>(key).size()+std::get<1>(key).size()+std::get<2>(key).size();
+                if(color_bytes+bytes>budget/4) {color_cache.clear();color_bytes=0;++clears;}
+                color_bytes+=bytes;
+                found=color_cache.emplace(std::move(key),std::move(value)).first;
+            } else ++color_hits;
+            colored[found->second].push_back(vertices[i]);
+        }
+        for(const auto& [name,vs]:edge_cells) colored[name]=vs;
+        std::vector<std::vector<int>> cells;
+        std::string key;
+        for(const auto& [name,vs]:colored) {
+            // Reproduce Python set iteration, including non-contiguous vertex IDs.
+            py::set cell;
+            for(int v:vs) cell.add(py::int_(v));
+            std::vector<int> ordered;
+            for(auto v:cell) ordered.push_back(py::cast<int>(v));
+            for(int v:ordered) key.append(reinterpret_cast<const char*>(&v),sizeof(v));
+            int sep=-1;key.append(reinterpret_cast<const char*>(&sep),sizeof(sep));
+            cells.push_back(std::move(ordered));
+        }
+        auto cached=group_cache.find(key);
+        if(cached!=group_cache.end()) {++hits;return cached->second;}
+        ++solves;
+        if(cells.size()==1) cells.clear(); // pynauty's full-cell coloring rule
+        auto raw=graph.generators(cells);
+        std::map<int,int> vertex_to_atom;
+        for(size_t i=0;i<atoms.size();++i) vertex_to_atom.emplace(vertices[i],atoms[i]);
+        int degree=atoms.empty()?0:*std::max_element(atoms.begin(),atoms.end())+1;
+        std::vector<int> identity(degree);
+        for(int i=0;i<degree;++i) identity[i]=i;
+        std::set<std::vector<int>> seen;
+        std::vector<std::vector<int>> out;
+        for(const auto& g:raw) {
+            auto projected=identity;
+            for(size_t i=0;i<atoms.size();++i) projected[atoms[i]]=vertex_to_atom.at(g[vertices[i]]);
+            if(projected!=identity && seen.insert(projected).second) out.push_back(std::move(projected));
+        }
+        size_t bytes=key.size()+128+out.size()*(sizeof(std::vector<int>)+degree*sizeof(int));
+        if(group_bytes+bytes>budget*3/4) {group_cache.clear();group_bytes=0;++clears;}
+        if(bytes<=budget*3/4) {group_cache.emplace(std::move(key),out);group_bytes+=bytes;}
+        return out;
+    }
+    py::dict stats() const {
+        py::dict d;d["calls"]=calls;d["partition_hits"]=hits;d["group_solves"]=solves;
+        d["color_hits"]=color_hits;d["cache_clears"]=clears;
+        d["resident_bytes"]=color_bytes+group_bytes;d["cache_budget_bytes"]=budget;
+        return d;
+    }
+};
+
 }  // namespace autgrp_native
 
 void register_autgrp(py::module_& mod) {
@@ -141,4 +243,10 @@ void register_autgrp(py::module_& mod) {
              "Generators (list of permutations) in nauty's emission order for the\n"
              "ordered partition ``cells`` (list of vertex lists; [] for no colouring).")
         .def_readonly("n_vertices", &AutGraph::n);
+    using autgrp_native::ConditionedAutGraph;
+    py::class_<ConditionedAutGraph>(mod,"ConditionedAutGraph")
+        .def(py::init<int,const std::vector<std::pair<int,int>>&,std::vector<int>,std::vector<int>,
+             std::vector<std::string>,std::vector<std::pair<std::string,std::vector<int>>>,size_t>())
+        .def("generators",&ConditionedAutGraph::generators)
+        .def("stats",&ConditionedAutGraph::stats);
 }

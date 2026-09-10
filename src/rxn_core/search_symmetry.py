@@ -22,6 +22,21 @@ class SymmetryWorkspace:
         self.groups = {}
         self.canonicalizer = None
 
+    def conditioned_generators(self, candidate, locked):
+        if self.canonicalizer is None:
+            self.canonicalizer = _CandidateAutomorphismCanonicalizer(self.target, wbo_tol=self.iso_tolerance)
+        canonicalizer = self.canonicalizer
+        locked_roles = defaultdict(list)
+        for r, p in sorted(locked):
+            if p in canonicalizer.atom_index:
+                locked_roles[p].append(('locked', r))
+        coloring = canonicalizer._colored_vertices(candidate, group_domains=True,
+            locked_roles={p: tuple(roles) for p, roles in locked_roles.items()})
+        key = tuple(vertices for _label, vertices in coloring)
+        if key not in self.coloring_cache:
+            self.coloring_cache[key] = canonicalizer.atom_generators(candidate, colored_vertices=coloring)
+        return self.coloring_cache[key]
+
 
 def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, workspace=None):
     """Finalize exact groups on ancestors of the requested result states.
@@ -47,7 +62,6 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
         return groups.setdefault(group, group)
     # One graph topology for this target, recolored sequentially for each exact
     # conditioned transition. No graph object escapes this finalization pass.
-    canonicalizer = workspace.canonicalizer
     requests = 0
     for edge in graph.transitions:
         if edge.match is None:
@@ -66,21 +80,7 @@ def finalize_graph_symmetry(graph, target, *, iso_tolerance, states=None, worksp
         key = (locked, frozen_value(state))
         if key not in cache:
             candidate = candidate_from_record(state)
-            if canonicalizer is None:
-                canonicalizer = _CandidateAutomorphismCanonicalizer(target, wbo_tol=iso_tolerance)
-                workspace.canonicalizer = canonicalizer
-            locked_roles = defaultdict(list)
-            for r, p in sorted(locked):
-                if p in canonicalizer.atom_index:
-                    locked_roles[p].append(('locked', r))
-            coloring = canonicalizer._colored_vertices(candidate, group_domains=True,
-                locked_roles={p: tuple(roles) for p, roles in locked_roles.items()})
-            # Nauty observes the ordered partition, not our descriptive labels.
-            coloring_key = tuple(vertices for _label, vertices in coloring)
-            if coloring_key not in coloring_cache:
-                coloring_cache[coloring_key] = intern(canonicalizer.atom_generators(
-                    candidate, colored_vertices=coloring))
-            cache[key] = coloring_cache[coloring_key]
+            cache[key] = intern(workspace.conditioned_generators(candidate, locked))
         symmetry = {**state, 'automorph_generators': cache[key],
                     'automorph_group_source': 'conditioned_search_transition'}
         edges.append(replace(edge, match={**edge.match, 'symmetry': symmetry}))
