@@ -84,3 +84,17 @@ checkpoints, independent finalization, timing and bounded worker orchestration.
 Do not alter fragment growth or retry via another mapper. Preserve this failed
 attempt and its counters, and run the complete benchmark again under the
 corrected, frozen execution backend.
+
+## Collection-only watchdog finding
+
+The per-cut-worker revision passes 505 tests. Golden 410 in both directions
+finished and saved every raw cut AND every finalized cut before the watchdog.
+The watchdog interrupted final archive encoding, not fragment search. Saved
+timing events show about 31 CPU seconds in parent graph combining and another
+33 in the already-finalized parent symmetry pass, per direction. Reconstruct
+these outputs from their saved cuts; do not rerun matching.
+
+Optimize collection without changing records: direct dataclass constructors
+for index-offset copies, and identity memoization of immutable generator tuples
+during group interning. Validate equality against the existing implementation
+and replay saved full-benchmark artifacts through the corrected collection path.

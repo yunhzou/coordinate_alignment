@@ -148,6 +148,9 @@ def prepare_revision(args):
         manifest['branch_cap_scope'] = dict(original='Native growth and synchronized live frontier',
             adaptive='Identical per-policy native growth and synchronized live frontier')
     manifest['adaptive_workers'] = args.adaptive_workers
+    if args.adaptive_policy == 'shared_cut_workers':
+        manifest['adaptive_cpu_seconds'] = None
+        manifest['adaptive_stop_policy'] = 'Complete original policies; per-AAM 300-second wall watchdog, no soft CPU cutoff'
     save(args.run/'manifest.json', manifest)
     (args.run/'status').mkdir()
     print(json.dumps(dict(run=str(args.run), candidate_calls=len(tasks), original_artifacts=str(reference))), flush=True)
