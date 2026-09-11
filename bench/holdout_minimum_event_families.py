@@ -145,9 +145,12 @@ def native_membership(raw,canonical,patterns,method,snapshot,generators,deadline
     return results,dict(queries=queries,encoded=encoded,exhausted=exhausted)
 
 
-def aam_membership(raw,canonical,patterns,snapshot,generators,deadline):
+def aam_membership(raw,canonical,patterns,snapshot,generators,deadline,
+                   directions=('R_to_P','P_to_R'),known_results=None):
     results = {k:dict(status='represented',method='saved_terminal',witness=v)
                for k,v in snapshot['methods']['aam']['patterns'].items()}
+    if known_results:
+        results.update(known_results)
     minimum = snapshot['methods']['aam']['minimum']
     pending = {k:v for k,v in patterns.items() if v['total']==minimum and k not in results}
     for k,v in patterns.items():
@@ -157,7 +160,7 @@ def aam_membership(raw,canonical,patterns,snapshot,generators,deadline):
     unknown = set()
     queries,encoded,paths_checked,invariant_terminals = 0,0,0,0
     exhausted = True
-    for direction in ('R_to_P','P_to_R'):
+    for direction in directions:
         if not pending:break
         if time.perf_counter()>deadline:exhausted=False;break
         reverse = direction=='P_to_R'

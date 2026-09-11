@@ -1,0 +1,20 @@
+[
+  {
+    "index": 11,
+    "direct_forward_complete": true,
+    "exact_pattern_set_agreement": true,
+    "patterns": 1
+  },
+  {
+    "index": 64,
+    "direct_forward_complete": true,
+    "exact_pattern_set_agreement": true,
+    "patterns": 2
+  },
+  {
+    "index": 101,
+    "direct_forward_complete": true,
+    "exact_pattern_set_agreement": true,
+    "patterns": 1
+  }
+]

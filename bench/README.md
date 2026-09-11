@@ -8,6 +8,8 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 
 | Script | Responsibility |
 |---|---|
+| `holdout_forward_analysis.py` | Forward-only elementary-step scores, saved directional timings and alternative-family checks |
+| `publish_holdout_forward_analysis.py` | Validate forward provenance; publish score, CPU and alternative comparisons with an offline viewer |
 | `holdout_minimum_events.py` | Full-H minimum-event snapshots and joint symmetry canonicalization on saved holdout outputs |
 | `holdout_minimum_event_families.py` | Correlated AAM path / SLAP label-family membership, with explicit unresolved status |
 | `enumerate_slap_minimum_events.py` / `enumerate_aam_minimum_events.py` | Event-pattern enumeration at recorded benchmark minima; completeness and lower-bound records |

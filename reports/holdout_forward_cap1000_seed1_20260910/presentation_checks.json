@@ -1,0 +1,34 @@
+[
+  {
+    "case": 11,
+    "aam_only": 0,
+    "sweep_only": 1,
+    "shared": 1
+  },
+  {
+    "case": 64,
+    "aam_only": 2,
+    "sweep_only": 1,
+    "shared": 0
+  },
+  {
+    "case": 101,
+    "aam_only": 0,
+    "sweep_only": 1,
+    "shared": 1
+  },
+  {
+    "case": 129,
+    "aam_only": 2,
+    "sweep_only": 0,
+    "shared": 8
+  },
+  {
+    "offline_browser": "passed",
+    "mobile_width": 390,
+    "page_errors": []
+  },
+  {
+    "pdf": "one page; all text inside page bounds"
+  }
+]

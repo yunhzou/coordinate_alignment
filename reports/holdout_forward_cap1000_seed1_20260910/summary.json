@@ -1,0 +1,215 @@
+{
+  "direction": "R_to_P",
+  "cases": 140,
+  "full_mappings": {
+    "aam": 140,
+    "native_slap": 140,
+    "slap_sweep": 140
+  },
+  "score_comparisons": {
+    "native_slap": {
+      "tie": 134,
+      "aam_lower": 6
+    },
+    "slap_sweep": {
+      "tie": 136,
+      "aam_lower": 4
+    }
+  },
+  "timing": {
+    "aam": {
+      "cpu": {
+        "total": 942.5760586260001,
+        "mean": 6.732686133042858,
+        "median": 2.2488124199999993,
+        "maximum": 236.11963746200007
+      },
+      "wall": {
+        "total": 246.45733348745853,
+        "mean": 1.7604095249104181,
+        "median": 0.5732562085613608,
+        "maximum": 50.33035906869918
+      },
+      "historical_scoring_cpu": 117.533319732
+    },
+    "native_slap": {
+      "cpu": {
+        "total": 12.145399785,
+        "mean": 0.08675285560714285,
+        "median": 0.075704047,
+        "maximum": 0.34588689400000006
+      },
+      "wall": {
+        "total": 15.16524553205818,
+        "mean": 0.10832318237184414,
+        "median": 0.09164212085306644,
+        "maximum": 0.3629905516281724
+      },
+      "historical_scoring_cpu": 11.083469653999998
+    },
+    "slap_sweep": {
+      "cpu": {
+        "total": 693.7564725189999,
+        "mean": 4.955403375135714,
+        "median": 2.0161170419999985,
+        "maximum": 68.58223005200003
+      },
+      "wall": {
+        "total": 694.1017708368599,
+        "mean": 4.957869791691857,
+        "median": 2.0178818735294044,
+        "maximum": 68.58667188603431
+      },
+      "historical_scoring_cpu": null
+    }
+  },
+  "aam_cpu_over_slap_sweep": 1.3586555166880778,
+  "calls": 8370,
+  "native_outputs": 10765,
+  "alternatives": {
+    "cases": 140,
+    "comparisons": {
+      "native_slap": {
+        "tied_cases": 134,
+        "verified_aam_patterns": 193,
+        "slap_patterns": 167,
+        "shared_patterns": 165,
+        "aam_only_patterns": 28,
+        "slap_only_proven_patterns": 2,
+        "unresolved_memberships": 0,
+        "complete_equal_catalogue_cases": 101,
+        "equal_observed_catalogue_cases": 112,
+        "certified_different_cases": 22,
+        "aam_multiple_cases": 39,
+        "slap_multiple_cases": 26,
+        "both_multiple_cases": 25,
+        "difference_cases": [
+          2,
+          6,
+          11,
+          25,
+          37,
+          45,
+          47,
+          48,
+          49,
+          54,
+          56,
+          58,
+          72,
+          87,
+          97,
+          101,
+          116,
+          117,
+          124,
+          127,
+          129,
+          132
+        ],
+        "incomplete_aam_cases": [
+          4,
+          6,
+          25,
+          26,
+          28,
+          36,
+          37,
+          44,
+          45,
+          48,
+          49,
+          53,
+          54,
+          55,
+          56,
+          68,
+          70,
+          71,
+          77,
+          97
+        ]
+      },
+      "slap_sweep": {
+        "tied_cases": 136,
+        "verified_aam_patterns": 196,
+        "slap_patterns": 195,
+        "shared_patterns": 192,
+        "aam_only_patterns": 4,
+        "slap_only_proven_patterns": 3,
+        "unresolved_memberships": 0,
+        "complete_equal_catalogue_cases": 112,
+        "equal_observed_catalogue_cases": 132,
+        "certified_different_cases": 4,
+        "aam_multiple_cases": 40,
+        "slap_multiple_cases": 41,
+        "both_multiple_cases": 39,
+        "difference_cases": [
+          11,
+          64,
+          101,
+          129
+        ],
+        "incomplete_aam_cases": [
+          4,
+          6,
+          25,
+          26,
+          28,
+          36,
+          37,
+          44,
+          45,
+          48,
+          49,
+          53,
+          54,
+          55,
+          56,
+          68,
+          70,
+          71,
+          77,
+          97
+        ]
+      }
+    },
+    "total_verified_patterns": {
+      "aam": 202,
+      "native_slap": 178,
+      "slap_sweep": 199
+    },
+    "complete_catalogue_cases": {
+      "aam": 120,
+      "native_slap": 140,
+      "slap_sweep": 140
+    },
+    "full_aam_terminals_scanned": 96481,
+    "independently_rescored_witnesses": 579,
+    "scope": "Patterns at each method's recorded benchmark minimum, with explicit H. AAM catalogues are lower bounds where full family enumeration is incomplete. Individual negative membership claims require complete family queries or complete enumeration. Distinct bond-edit patterns are not experimentally validated mechanisms."
+  },
+  "new_analysis_timing": {
+    "forward_terminal_scan": {
+      "cpu": 137.766602759,
+      "wall": 140.65563373127952
+    },
+    "forward_slap_event_enumeration": {
+      "cpu": 51.704558446,
+      "wall": 58.18182565597817
+    },
+    "forward_aam_membership": {
+      "cpu": 112.68759987,
+      "wall": 112.66476578358561
+    },
+    "forward_aam_event_enumeration": {
+      "cpu": 6064.102257569,
+      "wall": 6065.18957997486
+    },
+    "total_new_analysis": {
+      "cpu": 6374.888052643,
+      "wall": 6409.467183539644
+    }
+  },
+  "chemical_accuracy": null,
+  "scope": "Forward-only, one seed, cap 1000; recorded minimum full-H event scores and mapping CPU. Alternative counts merge joint reactant symmetries; incomplete catalogues remain lower bounds. Elapsed times use eight AAM workers versus one SLAP worker and different persistence scopes."
+}

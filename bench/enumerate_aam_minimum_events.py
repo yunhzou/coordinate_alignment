@@ -36,11 +36,12 @@ def case(args):
     metrics=dict(encoded_paths=0,scanned_paths=0,invariant_terminals=0,invariant_paths=0,
                  additional_models=0,unknown_families=0,completed_families=0,duplicate_families=0)
     complete=True;reasons=[]
+    directions=getattr(args,'directions',('R_to_P','P_to_R'))
     def checkpoint():
         save(args.run/f'aam_enumeration/{args.index}.json',dict(index=args.index,minimum=minimum,patterns=patterns,
-            complete=complete,metrics=metrics,reasons=reasons,seconds=time.perf_counter()-started,
+            complete=complete,metrics=metrics,reasons=reasons,seconds=time.perf_counter()-started,directions=directions,
             scope='All saved path families at the recorded benchmark minimum if complete; otherwise verified event-pattern lower bound.'))
-    for direction in ('R_to_P','P_to_R'):
+    for direction in directions:
         if time.perf_counter()>deadline:complete=False;reasons.append('case budget');break
         reverse=direction=='P_to_R';search_problem=AAMProblem(problem.product,problem.reactant) if reverse else problem
         feature=canonical.features[0 if reverse else 1]

@@ -5,6 +5,14 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Forward-only elementary steps: scores, alternatives and mapping time](holdout_forward_cap1000_seed1_20260910/README.md)
+— reactant → product only, as requested for the elementary-step comparison.
+One-seed, cap-1000 AAM retains every bidirectional best score. It has four lower
+scores and 136 ties against forward SLAP+sweep, with mean mapping CPU of 6.733 s
+versus 4.955 s. The report includes direction-specific alternative membership,
+completeness flags and an offline bond-edit viewer. Earlier bidirectional
+reports below remain separate protocol records.
+
 [140 cases: alternative bond-edit patterns at tied minimum scores](holdout_minimum_event_patterns_20260910/README.md)
 — full-H event sets with joint symmetry normalization and an offline bond viewer.
 On 138 AAM / SLAP-sweep score ties, all 204 verified AAM patterns are shared;
@@ -81,6 +89,7 @@ archives. Large AAM archives and expanded candidate banks remain on the cluster:
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910
+/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_forward_cap1000_seed1_20260910
 ```
 
 These cluster copies are not a claim of independent/offsite backup. Do not delete

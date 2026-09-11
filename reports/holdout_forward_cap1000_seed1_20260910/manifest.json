@@ -1,0 +1,41 @@
+{
+  "direction": "R_to_P",
+  "cases": 140,
+  "config": {
+    "cut_floor": 0.2,
+    "graph_floor": 0.2,
+    "iso_tolerance": 1.0,
+    "event_threshold": 0.5,
+    "metal_event_threshold": 0.3,
+    "seed_count": 1,
+    "branch_limit": 1000,
+    "task_chunksize": 1,
+    "symmetry_repair": true,
+    "symmetry_repair_min_changes": 1,
+    "symmetry_repair_max_evaluations": 20000,
+    "anchors": [],
+    "seed_selection": "random"
+  },
+  "aam_source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910",
+  "slap_sweep_source": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910",
+  "prior_alternative_analysis": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910",
+  "source_commit": "6268b0d8bce06d58a5cc82b7d375a2c8af8d270a",
+  "original_engine_commit": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+  "score_scope": "Recorded best forward full-H event score. Alternative catalogues hold this score fixed.",
+  "timing_scope": "Use measured forward-direction CPU and wall records, never half a bidirectional total.",
+  "scoring_note": "Forward SLAP-sweep scoring CPU is not separately available in historical records.",
+  "sources_sha256": {
+    "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/manifest.json": "849cb74b3cc3baf52078cc68fa73036ad0b0ad2a662d31998db6a451e2927dd3",
+    "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/case_metrics.json": "2a846b90aed8413cf5274dce64208e66ff048eee1dd33c27b445509e5fd2a64e",
+    "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910/manifest.json": "b41cc031fc5e8fade8dffa3ed511481fbaae3f304ef2e896a957ca57ed5f5f2a",
+    "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910/case_metrics.json": "340e2f81acb14454212991a0a693cda4043070e0d9f4815d247927195ed8501c",
+    "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/manifest.json": "9731154f9f430ef1bef48df0c11d91cb665d0aba7b2a092557572604df82d9db"
+  },
+  "frozen_sha256": {
+    "holdout_forward_analysis.py": "7bdf2465f2b9a3739ec08e8cd39961597b270beac9ce6e7fd5178fd11da3346a",
+    "holdout_minimum_events.py": "be4eefdbab39e425f9dd7916ddc542dbf9af2dd4648ebf259f512fb5575dadc9",
+    "holdout_minimum_event_families.py": "7fbef28c45ab0579b018d9eba72c4f0966ebe1ed39660abc4142da19fcc3cd0b",
+    "enumerate_slap_minimum_events.py": "097ab83dedc47b2d6220c0d324cf1268d7fc4dde6e22eb9e72bd83f36d1a2c5d",
+    "enumerate_aam_minimum_events.py": "555873db620fd29328563eaa97a128c7bd5335069008dcff6f30b4d8c93c6f6a"
+  }
+}
