@@ -61,7 +61,7 @@ def align_product(reactant, product):
     return ((p - p0) @ (u @ correction @ vt) + r0).tolist()
 
 
-def comparison_document(case):
+def comparison_document(case, *, trajectory_frames=0):
     """Adapt complete saved R/P or endpoint/TS witnesses to the original viewer."""
     r, p = case['endpoints']
     mechanisms = []
@@ -84,6 +84,19 @@ def comparison_document(case):
             pattern_id=record.get('pattern'), provenance=record.get('provenance', {}),
             core_atoms=sorted({a for e in events for a in e['r']}), igs=[], gt=None,
         ))
+        if trajectory_frames:
+            from .alignment.interpolation import internal_coordinate_interpolation
+            n = len(mapping)
+            reactant_bonds = {(a, b) for a in range(n) for b in range(a + 1, n)
+                              if r['wbo'][a][b] > .2}
+            product_bonds = {(a, b) for a in range(n) for b in range(a + 1, n)
+                             if p['wbo'][mapping[a]][mapping[b]] > .2}
+            mechanisms[-1]['endpoint_interpolation'] = internal_coordinate_interpolation(
+                r['coordinates'], ordered, r['elements'],
+                bonded_pairs=sorted(reactant_bonds | product_bonds),
+                persistent_bonded_pairs=sorted(reactant_bonds & product_bonds),
+                reactant_bonded_pairs=sorted(reactant_bonds),
+                product_bonded_pairs=sorted(product_bonds), n_frames=trajectory_frames)
     return dict(step=str(case['name']), index=case['index'], n_atoms=len(r['elements']),
                 default_mech_id=1, include_gt=False, note=case.get('note', ''),
                 reactant=dict(elements=r['elements'], coords=r['coordinates'], wbo=r['wbo']),
