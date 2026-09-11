@@ -42,18 +42,6 @@ None of these commands starts a benchmark search.
 
 The active missing-pattern comparison is
 `reports/holdout_missing_pattern_seeds_20260910/viewer.html`.
-It includes the original 101-frame R/P internal-coordinate trajectory for all
-nine saved witnesses. Rebuild it with `tools/render_mapping_comparison.py
-reports/holdout_missing_pattern_seeds_20260910/viewer_data.json
-reports/holdout_missing_pattern_seeds_20260910/viewer.html --trajectory`.
-The trajectory supports playback, frame stepping/scrubbing, individual bond-event
-selection and multi-frame XYZ download. Its labels show R → native P indices.
-The single moving structure shows each selected event once: red for loss and
-green for gain, including weakening/strengthening. Persistent bonds use explicit
-endpoint connectivity, so close approaches do not invent extra bonds.
-Frames come from the existing `alignment/interpolation.py` implementation and
-the recorded mapping. They are geometric inspection paths, not computed reaction
-trajectories or search histories. No AAM/SLAP search is needed to generate them.
 Product fitting is a rigid display transform of the **recorded mapping**;
 switching to native P restores its original coordinates. Explicit WBO connectivity
 is used when provided. No search result is replaced by display fitting.
@@ -68,8 +56,6 @@ is used when provided. No search result is replaced by display fitting.
 - `tools/check_viewer_consolidation.py` checks the nine saved witnesses, native
   and aligned geometry, representative Golden/catalog/growth layouts and offline
   operation. Results and review images are under `docs/viewer-validation/`.
-- On the paper branch, `tools/check_mapping_trajectory.py` checks all nine
-  trajectories, endpoint identity, event overlays, playback and XYZ downloads.
 - Frozen stable branches are retained as historical algorithm baselines. This
   cleanup does not rewrite Git history or alter those baselines.
 

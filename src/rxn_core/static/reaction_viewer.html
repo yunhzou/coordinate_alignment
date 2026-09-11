@@ -22,22 +22,14 @@
     <div class="meta" id="gt_meta"></div></div>
 </div>
 <div class="panel interp-panel" id="interp-panel">
-  <div class="ph"><span class="lbl">R &rarr; P trajectory</span><span class="rk" id="interp_method"></span></div>
+  <div class="ph"><span class="lbl">R&rarr;P internal-coordinate interpolation</span><span class="rk" id="interp_method"></span></div>
   <div class="vw"><div id="vw_interp" class="vwbox"></div></div>
   <div class="interp-controls">
     <button class="dl" id="interpPlayBtn">Play</button>
-    <button class="dl" id="interpPrev" aria-label="Previous trajectory frame">←</button>
     <input type="range" id="interpFrame" min="0" max="20" value="0" step="1">
-    <button class="dl" id="interpNext" aria-label="Next trajectory frame">→</button>
     <span class="rk" id="interp_t">t=0.00</span>
-    <label>Speed <select id="interpSpeed"><option value="160">Slow</option><option value="80" selected>Normal</option><option value="30">Fast</option></select></label>
-    <button class="dl" id="interpDownload">Trajectory XYZ</button>
+    <label class="index-toggle"><input type="checkbox" id="showClashHighlights"> Highlight clashes</label>
   </div>
-  <div class="interp-controls"><label>Inspect <select id="interpEvent"><option value="all">All bond changes</option></select></label>
-    <label><input type="checkbox" id="interpEventLabels" checked> Event atom labels</label>
-    <label><input type="checkbox" id="showClashHighlights"> Highlight overlaps</label>
-    <button class="dl" id="interpReset">Reset view</button></div>
-  <div class="meta">Red: breaking / weakening · Green: forming / strengthening. Labels show R → native P indices. Interpolated geometry for inspecting a saved mapping.</div>
   <div class="meta" id="interp_meta"></div>
 </div>
 <div class="ig-grid" id="grid"></div><details id="event-details" hidden><summary>Selected bond events and saved mapping</summary><div id="event-table"></div><pre id="witness"></pre></details>
@@ -124,106 +116,15 @@ function describeWitness(mech) {
 }
 function makeStatic(divId, els, xyz, broken, formed, degMap=null, labels=null) { stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {backgroundColor:'white'}); addEndpointModel(v, divId, els, xyz); v.setStyle({}, {stick:{radius:0.10}, sphere:{scale:0.20}}); molecularViewers[divId]=v; applyDegeneracyStyles(v, degMap); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); addAtomLabels(v, els, xyz, labels); v.zoomTo(); v.render(); return v; }
 function makeAnimated(divId, els, xyz, disp, broken, formed, core, degMap=null, labels=null) { stopAnim(divId); document.getElementById(divId).innerHTML=""; const v = $3Dmol.createViewer(divId, {backgroundColor:'white'}); v.addModel(buildBody(els, xyz), 'xyz'); v.setStyle({}, {stick:{radius:0.10}, sphere:{scale:0.20}}); molecularViewers[divId]=v; applyDegeneracyStyles(v, degMap); drawBonds(v, xyz, broken, 'red'); drawBonds(v, xyz, formed, 'green'); drawArrows(v, xyz, disp, core); addAtomLabels(v, els, xyz, labels); v.zoomTo(); v.render(); let t=0; const period=30, amp=0.6; animTimers[divId] = setInterval(()=>{ t=(t+1)%period; const scale = amp*Math.sin(2*Math.PI*t/period); const cur = xyzAt(xyz, disp, scale); v.removeAllModels(); v.removeAllShapes(); clearLabels(v); v.addModel(buildBodyAt(els, xyz, disp, scale), 'xyz'); v.setStyle({}, {stick:{radius:0.10}, sphere:{scale:0.20}}); applyDegeneracyStyles(v, degMap); drawBonds(v, cur, broken, 'red'); drawBonds(v, cur, formed, 'green'); drawArrows(v, cur, disp, core); addAtomLabels(v, els, cur, labels); v.render(); }, 60); return v; }
-function stopInterpolation() {
-  if (interpPlayTimer) clearInterval(interpPlayTimer);
-  interpPlayTimer=null;
-  document.getElementById('interpPlayBtn').textContent='Play';
-}
-function trajectoryEvents(mech) {
-  if (mech.event_records && mech.event_records.length) return mech.event_records;
-  const events=[];
-  for (const [kind,pairs] of Object.entries({broken:mech.broken_bonds_R||[],formed:mech.formed_bonds_R||[],...(mech.order_events||{})}))
-    for (const pair of pairs) events.push({kind,r:pair,p:pair.map(a=>mech.mapping_RP[a])});
-  return events;
-}
-function trajectoryAtoms(mech,coords) {
-  const events=new Set(trajectoryEvents(mech).map(e=>[...e.r].sort((a,b)=>a-b).join(',')));
-  return DATA.reactant.elements.map((elem,i)=>{
-    const bonds=[];
-    for(let j=0;j<coords.length;j++) {
-      if(i===j || events.has([Math.min(i,j),Math.max(i,j)].join(','))) continue;
-      // Preserve endpoint connectivity; moving atoms never acquire guessed bonds.
-      if(DATA.reactant.wbo && DATA.product.wbo && DATA.reactant.wbo[i][j]>.2 && DATA.product.wbo[mech.mapping_RP[i]][mech.mapping_RP[j]]>.2) bonds.push(j);
-    }
-    return {elem,index:i,serial:i,x:coords[i][0],y:coords[i][1],z:coords[i][2],bonds,bondOrder:bonds.map(()=>1)};
-  });
-}
-function renderInterpolationFrame() {
-  const mech=findMech(currentMechId),path=mech && mech.endpoint_interpolation;
-  const panel=document.getElementById('interp-panel'),div=document.getElementById('vw_interp');
-  panel.hidden=!(path && path.frames && path.frames.length);
-  if(panel.hidden) { stopInterpolation();div.innerHTML='';interpViewer=null;interpViewerMechId=null;return; }
-  const slider=document.getElementById('interpFrame'),select=document.getElementById('interpEvent');
-  const sameViewer=!!(interpViewer && interpViewerMechId===mech.id);
-  const events=trajectoryEvents(mech);
-  if(!sameViewer) {
-    stopInterpolation();slider.value='0';select.replaceChildren(new Option('All bond changes','all'));
-    events.forEach((e,i)=>select.add(new Option(e.kind+' · R'+e.r.join('–R')+' → P'+e.p.join('–P'),String(i))));
-    div.innerHTML='';interpViewer=$3Dmol.createViewer('vw_interp',{backgroundColor:'white'});interpViewerMechId=mech.id;
-  }
-  slider.max=String(path.frames.length-1);
-  const index=Math.max(0,Math.min(path.frames.length-1,parseInt(slider.value)||0)),frame=path.frames[index],v=interpViewer;
-  const savedView=sameViewer?v.getView():null;
-  v.removeAllModels();v.removeAllShapes();clearLabels(v);
-  if(DATA.reactant.wbo && DATA.product.wbo) v.addModel().addAtoms(trajectoryAtoms(mech,frame.coords));
-  else v.addModel(buildBody(DATA.reactant.elements,frame.coords),'xyz');
-  v.setStyle({},{stick:{radius:.10},sphere:{scale:.20}});
-  const selected=select.value==='all'?events:[events[Number(select.value)]],atomIds=new Set();
-  for(const e of selected) {
-    const loss=e.kind==='broken'||e.kind==='weakened'||(e.kind==='order_changed'&&e.wbo&&e.wbo[1]<e.wbo[0]);
-    drawBonds(v,frame.coords,[e.r],loss?'red':'green');
-    e.r.forEach(a=>atomIds.add(a));
-  }
-  if(showAtomIndices || document.getElementById('interpEventLabels').checked) {
-    const labels=showAtomIndices?DATA.reactant.elements.map((_,i)=>i):[...atomIds];
-    for(const i of labels) v.addLabel('R'+i+'→P'+mech.mapping_RP[i],{
-      position:{x:frame.coords[i][0],y:frame.coords[i][1],z:frame.coords[i][2]},fontSize:11,fontColor:'black',
-      backgroundColor:'white',backgroundOpacity:.78,borderColor:'#666',borderThickness:.5,inFront:true});
-  }
-  if(showClashHighlights) for(const atom of new Set((frame.clashes?.pairs||[]).flatMap(pair=>pair.atoms)))
-    v.setStyle({serial:atom},{stick:{radius:.10},sphere:{scale:.35,color:'#333333'}});
-  if(savedView) v.setView(savedView); else v.zoomTo();
-  v.render();
-  document.getElementById('interp_t').textContent=(index+1)+' / '+path.frames.length+' · '+Math.round(frame.t*100)+'%';
-  document.getElementById('interp_method').textContent=mech.label;
-  const details=selected.map(e=>{
-    const [a,b]=e.r,distance=Math.hypot(...frame.coords[a].map((x,k)=>x-frame.coords[b][k]));
-    return e.kind+' R'+a+'–R'+b+': '+distance.toFixed(2)+' Å'+(e.wbo?' (endpoint WBO '+e.wbo.map(x=>x.toFixed(3)).join(' → ')+')':'');
-  });
-  document.getElementById('interp_meta').textContent=details.join(' · ');
-}
-function setInterpolationFrame(index) {
-  stopInterpolation();const slider=document.getElementById('interpFrame');
-  slider.value=String(Math.max(0,Math.min(Number(slider.max),index)));renderInterpolationFrame();
-}
-function toggleInterpolation() {
-  if(interpPlayTimer) {stopInterpolation();return;}
-  document.getElementById('interpPlayBtn').textContent='Pause';
-  interpPlayTimer=setInterval(()=>{
-    const slider=document.getElementById('interpFrame');slider.value=String((Number(slider.value)+1)%(Number(slider.max)+1));
-    renderInterpolationFrame();
-  },Number(document.getElementById('interpSpeed').value));
-}
-function downloadTrajectory() {
-  const mech=findMech(currentMechId),path=mech.endpoint_interpolation;
-  if(!path) return;
-  downloadText(safeName(DATA.step)+'_mech'+mech.id+'_trajectory.xyz',path.frames.map(frame=>
-    xyzText(DATA.reactant.elements,frame.coords,'R-order; '+mech.label+'; interpolation t='+frame.t.toFixed(4))).join(''));
-}
+function stopInterpolation() { if (interpPlayTimer) { clearInterval(interpPlayTimer); interpPlayTimer=null; } document.getElementById('interpPlayBtn').textContent='Play'; }
+function renderInterpolationFrame() { const mech=findMech(currentMechId); const path=mech && mech.endpoint_interpolation; document.getElementById("interp-panel").hidden=!(path && path.frames && path.frames.length); const div=document.getElementById('vw_interp'); if (!path || !path.frames || !path.frames.length) { div.innerHTML=''; interpViewer=null; interpViewerMechId=null; document.getElementById('interp_meta').textContent='Interpolation unavailable'; return; } const slider=document.getElementById('interpFrame'); slider.max=String(path.frames.length-1); const index=Math.max(0,Math.min(path.frames.length-1,parseInt(slider.value)||0)); const frame=path.frames[index]; const sameViewer=!!(interpViewer && interpViewerMechId===mech.id); const savedView=(sameViewer && interpViewer.getView) ? interpViewer.getView() : null; if (!sameViewer) { div.innerHTML=''; interpViewer=$3Dmol.createViewer('vw_interp',{backgroundColor:'white'}); interpViewerMechId=mech.id; } else { interpViewer.removeAllModels(); interpViewer.removeAllShapes(); clearLabels(interpViewer); } const v=interpViewer; v.addModel(buildBody(DATA.reactant.elements,frame.coords),'xyz'); v.setStyle({},{stick:{radius:0.10},sphere:{scale:0.20}}); applyDegeneracyStyles(v,rDegMap(mech)); drawBonds(v,frame.coords,mech.broken_bonds_R,'red'); drawBonds(v,frame.coords,mech.formed_bonds_R,'green'); addAtomLabels(v,DATA.reactant.elements,frame.coords,reactantAtomLabels()); if (showClashHighlights) { const clashAtoms=new Set(); for (const pair of (frame.clashes.pairs||[])) for (const atom of pair.atoms) clashAtoms.add(atom); for (const atom of clashAtoms) v.setStyle({serial:atom},{stick:{radius:0.14,color:'#d000ff'},sphere:{scale:0.42,color:'#d000ff'}}); } if (savedView && v.setView) v.setView(savedView); else v.zoomTo(); v.render(); document.getElementById('interp_t').textContent='t='+frame.t.toFixed(2); document.getElementById('interp_method').textContent=path.method; const ratio=frame.clashes.minimum_radius_ratio; const pairs=(frame.clashes.pairs||[]).map(p=>'R'+p.atoms[0]+'–R'+p.atoms[1]).join(', '); const residuals=frame.constraint_residuals||{}; const geometry=' <b>persistent bond error</b>='+((100*(residuals.max_persistent_bond_relative_error||0)).toFixed(2))+'% <b>angle error</b>='+((residuals.max_angle_error_degrees||0).toFixed(2))+'° <b>torsion error</b>='+((residuals.max_torsion_error_degrees||0).toFixed(2))+'°'; document.getElementById('interp_meta').innerHTML='<span class="'+(frame.clashes.count?'clash-bad':'clash-ok')+'"><b>severe overlaps</b>='+frame.clashes.count+'</span> <b>min clearance</b>='+(ratio===null?'n/a':ratio.toFixed(3)+' × covalent radii')+geometry+(pairs?' <b>pairs</b>='+pairs:''); }
+function toggleInterpolation() { if (interpPlayTimer) { stopInterpolation(); return; } document.getElementById('interpPlayBtn').textContent='Pause'; interpPlayTimer=setInterval(()=>{ const slider=document.getElementById('interpFrame'); let next=(parseInt(slider.value)||0)+1; if (next>parseInt(slider.max)) next=0; slider.value=String(next); renderInterpolationFrame(); },180); }
 function render() { const mech = findMech(currentMechId); describeWitness(mech); document.getElementById('r_meta').innerHTML = structureMeta(DATA.reactant); document.getElementById('p_meta').innerHTML = structureMeta(DATA.product); document.querySelectorAll('.mech-sel button[data-id]').forEach(b => { b.classList.toggle('active', parseInt(b.dataset.id)===currentMechId); }); makeStatic('vw_R', DATA.reactant.elements, DATA.reactant.coords, mech.broken_bonds_R, [], rDegMap(mech), reactantAtomLabels()); const alignedP = mech.product_xyz_in_R_aligned || mech.product_xyz_in_R; const pAligned = !!(rOrdered && alignedP); const pEls = pAligned ? DATA.reactant.elements : DATA.product.elements; const pXYZ = pAligned ? alignedP : DATA.product.coords; const pFormed = pAligned ? mech.formed_bonds_R : (mech.formed_bonds_P || []); makeStatic('vw_P', pEls, pXYZ, [], pFormed, mappedProductDegMap(mech, pAligned), productAtomLabels(mech, pAligned)); document.getElementById('prod_label').innerHTML = (pAligned ? "R-ordered + spatially aligned" : "native P")+" (mech #"+mech.id+") <button class='dl' onclick='downloadP()'>XYZ</button>"; renderInterpolationFrame(); const gtFrame = mech.gt ? targetFrame(mech.gt, mech) : null; const showGT = !!(gtFrame && gtFrame.disp); document.getElementById('ref-row').classList.toggle('no-gt', !showGT); document.getElementById('gt_panel').style.display = showGT ? "" : "none"; if (showGT) { makeAnimated('vw_GT', gtFrame.elements, gtFrame.xyz, gtFrame.disp, gtFrame.broken, gtFrame.formed, gtFrame.core, targetDegMap(gtFrame, mech), targetAtomLabels(gtFrame)); document.getElementById('gt_S').innerHTML = "S = "+mech.gt.S.toFixed(3)+" <button class='dl' onclick='downloadGT()'>XYZ</button>"; document.getElementById('gt_meta').innerHTML = scoreMeta(mech.gt)+" <b>frame</b>="+gtFrame.label; } else { stopAnim('vw_GT'); document.getElementById('vw_GT').innerHTML = ""; } const grid = document.getElementById('grid'); grid.innerHTML = ""; const igs = [...mech.igs].sort((a,b) => (b.S||0) - (a.S||0)); igs.forEach((ig, idx) => { const frame = targetFrame(ig, mech); const div = document.createElement('div'); let cls = 'panel'; if (ig.is_top2) cls += ' top2'; if (ig.is_union_top && !ig.is_top2) cls += ' union'; div.className = cls; const sStr = ig.S !== undefined ? "S = "+ig.S.toFixed(3) : "no score"; const tag = ig.is_top2 ? '<span style="background:#d4af37;color:white;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">TOP2</span>' : (ig.is_union_top ? '<span style="background:#ff9;color:#660;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">union</span>' : ''); const dl = frame.xyz ? '<button class="dl">XYZ</button> ' : ''; div.innerHTML = '<div class="ph"><span class="lbl">'+ig.label+tag+'</span><span class="rk">'+dl+sStr+'</span></div><div class="vw"><div id="vw_ig'+idx+'" class="vwbox"></div></div><div class="meta">'+scoreMeta(ig)+" <b>frame</b>="+frame.label+"</div>"; grid.appendChild(div); const btn = div.querySelector('button.dl'); if (btn) btn.onclick = () => downloadIG(ig); if (frame.disp) makeAnimated("vw_ig"+idx, frame.elements, frame.xyz, frame.disp, frame.broken, frame.formed, frame.core, targetDegMap(frame, mech), targetAtomLabels(frame)); else if (frame.xyz) makeStatic("vw_ig"+idx, frame.elements, frame.xyz, frame.broken, frame.formed, targetDegMap(frame, mech), targetAtomLabels(frame)); }); }
 const ms = document.getElementById('mech-sel'); ms.innerHTML = "<span style='font-size:13px;margin-right:8px;color:#444'>Mechanism:</span>"; document.getElementById('downloadAllBtn').onclick = downloadAll; document.getElementById('showAtomIndices').onchange = (e) => { showAtomIndices = !!e.target.checked; render(); }; document.getElementById('showDegeneracy').onchange = (e) => { showDegeneracy = !!e.target.checked; render(); }; document.getElementById('rOrdered').onchange = (e) => { rOrdered = !!e.target.checked; render(); }; DATA.mechanisms.forEach(m => { const b = document.createElement('button'); b.dataset.id = m.id; b.textContent = m.label + (m.gt ? "  GT S=" + m.gt.S.toFixed(3) : ""); if ((m.dedup_count||1) > 1) b.title = "Analytical branch encounters: "+m.dedup_count+"; source mechanisms: "+m.dedup_source_ids.join(", ")+"; cuts: "+m.dedup_cuts.join(", "); b.onclick = () => { currentMechId = m.id; render(); }; ms.appendChild(b); });
-document.getElementById('interpFrame').oninput = e => setInterpolationFrame(Number(e.target.value));
+document.getElementById('interpFrame').oninput = renderInterpolationFrame;
 document.getElementById('interpPlayBtn').onclick = toggleInterpolation;
-document.getElementById('interpPrev').onclick=()=>setInterpolationFrame(Number(document.getElementById('interpFrame').value)-1);
-document.getElementById('interpNext').onclick=()=>setInterpolationFrame(Number(document.getElementById('interpFrame').value)+1);
-document.getElementById('interpEvent').onchange=renderInterpolationFrame;
-document.getElementById('interpEventLabels').onchange=renderInterpolationFrame;
-document.getElementById('interpDownload').onclick=downloadTrajectory;
-document.getElementById('interpReset').onclick=()=>{if(interpViewer){interpViewer.zoomTo();interpViewer.render();}};
-document.getElementById('interpSpeed').onchange=()=>{if(interpPlayTimer){stopInterpolation();toggleInterpolation();}};
-window.trajectoryAPI={setFrame:setInterpolationFrame,getState:()=>({mechanism:currentMechId,frame:Number(document.getElementById('interpFrame').value),playing:!!interpPlayTimer})};
 document.getElementById('showClashHighlights').onchange = (e) => { showClashHighlights=!!e.target.checked; renderInterpolationFrame(); };
 window.addEventListener('load', render);
-window.addEventListener('resize',()=>{Object.values(molecularViewers).forEach(v=>{v.resize();v.render()});if(interpViewer){interpViewer.resize();interpViewer.render();}});
+window.addEventListener('resize',()=>Object.values(molecularViewers).forEach(v=>{v.resize();v.render()}));
 </script>
 </body></html>
