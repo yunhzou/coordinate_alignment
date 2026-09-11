@@ -1,0 +1,5042 @@
+[
+  {
+    "index": 0,
+    "name": "pr1.tempo_ts1",
+    "host": "bosque1",
+    "aam_events": 0,
+    "native_slap_events": 0,
+    "bidirectional_uncut_slap_events": 0,
+    "slap_sweep_events": 0,
+    "winner": "tie",
+    "aam_cpu": 0.7681417550000001,
+    "native_slap_cpu": 0.014975113999999956,
+    "slap_sweep_workflow_cpu": 0.3271972750000004,
+    "slap_sweep_mapping_cpu": 0.2758920300000001,
+    "slap_sweep_workflow_wall": 0.32977486960589886,
+    "aam_scoring_cpu": 0.07876083099999998,
+    "native_slap_scoring_cpu": 0.03339925799999999,
+    "slap_sweep_scoring_cpu": 0.02657256100000005,
+    "aggregation_cpu_including_read_decode": 0.06671558699999999,
+    "calls": 54,
+    "native_candidates": 54,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 27,
+        "workflow_cpu": 0.18103558699999978,
+        "workflow_wall": 0.18255558796226978,
+        "uncut_cpu": 0.01194236500000001
+      },
+      "P_to_R": {
+        "calls": 27,
+        "workflow_cpu": 0.14616168800000062,
+        "workflow_wall": 0.14721928164362907,
+        "uncut_cpu": 0.005457409999999996
+      }
+    }
+  },
+  {
+    "index": 1,
+    "name": "pr1.tempo_ts10",
+    "host": "bosque50",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 6.864344634,
+    "native_slap_cpu": 0.07773416100000008,
+    "slap_sweep_workflow_cpu": 3.8547368069999997,
+    "slap_sweep_mapping_cpu": 3.5422678089999993,
+    "slap_sweep_workflow_wall": 3.8590350542217493,
+    "aam_scoring_cpu": 0.417721545,
+    "native_slap_scoring_cpu": 0.08804414700000018,
+    "slap_sweep_scoring_cpu": 0.8002792460000001,
+    "aggregation_cpu_including_read_decode": 0.20548416500000002,
+    "calls": 117,
+    "native_candidates": 119,
+    "unique_label_partitions": 33,
+    "directions": {
+      "R_to_P": {
+        "calls": 59,
+        "workflow_cpu": 1.6161395520000004,
+        "workflow_wall": 1.618816145695746,
+        "uncut_cpu": 0.02925109799999992
+      },
+      "P_to_R": {
+        "calls": 58,
+        "workflow_cpu": 2.2385972549999993,
+        "workflow_wall": 2.2402189085260034,
+        "uncut_cpu": 0.02933130900000014
+      }
+    }
+  },
+  {
+    "index": 2,
+    "name": "pr1.tempo_ts2",
+    "host": "bosque50",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.703815365,
+    "native_slap_cpu": 0.07825468499999999,
+    "slap_sweep_workflow_cpu": 2.221859306999998,
+    "slap_sweep_mapping_cpu": 2.0981898930000003,
+    "slap_sweep_workflow_wall": 2.224992602132261,
+    "aam_scoring_cpu": 0.108190609,
+    "native_slap_scoring_cpu": 0.11259101000000005,
+    "slap_sweep_scoring_cpu": 0.14706718099999994,
+    "aggregation_cpu_including_read_decode": 0.175935062,
+    "calls": 58,
+    "native_candidates": 193,
+    "unique_label_partitions": 16,
+    "directions": {
+      "R_to_P": {
+        "calls": 29,
+        "workflow_cpu": 1.320384928999999,
+        "workflow_wall": 1.322185566648841,
+        "uncut_cpu": 0.05280630200000003
+      },
+      "P_to_R": {
+        "calls": 29,
+        "workflow_cpu": 0.9014743779999994,
+        "workflow_wall": 0.9028070354834199,
+        "uncut_cpu": 0.032313328000000086
+      }
+    }
+  },
+  {
+    "index": 3,
+    "name": "pr1.tempo_ts3",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 5.934403913999999,
+    "native_slap_cpu": 0.06314089299999992,
+    "slap_sweep_workflow_cpu": 4.216680124999999,
+    "slap_sweep_mapping_cpu": 3.9208997719999985,
+    "slap_sweep_workflow_wall": 4.219571125693619,
+    "aam_scoring_cpu": 0.3138387020000002,
+    "native_slap_scoring_cpu": 0.06045675100000003,
+    "slap_sweep_scoring_cpu": 0.215667222,
+    "aggregation_cpu_including_read_decode": 0.18423182800000001,
+    "calls": 118,
+    "native_candidates": 121,
+    "unique_label_partitions": 5,
+    "directions": {
+      "R_to_P": {
+        "calls": 59,
+        "workflow_cpu": 2.1608600999999994,
+        "workflow_wall": 2.1624553175643086,
+        "uncut_cpu": 0.0301705659999999
+      },
+      "P_to_R": {
+        "calls": 59,
+        "workflow_cpu": 2.0558200249999996,
+        "workflow_wall": 2.0571158081293106,
+        "uncut_cpu": 0.029893225999999995
+      }
+    }
+  },
+  {
+    "index": 4,
+    "name": "pr1.tempo_ts4",
+    "host": "bosque50",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 7.374383697000001,
+    "native_slap_cpu": 0.12603793100000005,
+    "slap_sweep_workflow_cpu": 11.642448524000008,
+    "slap_sweep_mapping_cpu": 11.304052398000003,
+    "slap_sweep_workflow_wall": 11.64725264441222,
+    "aam_scoring_cpu": 1.0919230700000002,
+    "native_slap_scoring_cpu": 0.06594685199999994,
+    "slap_sweep_scoring_cpu": 0.12716867399999998,
+    "aggregation_cpu_including_read_decode": 0.46334833400000003,
+    "calls": 116,
+    "native_candidates": 485,
+    "unique_label_partitions": 21,
+    "directions": {
+      "R_to_P": {
+        "calls": 58,
+        "workflow_cpu": 4.508900245000001,
+        "workflow_wall": 4.511375688947737,
+        "uncut_cpu": 0.08712542899999998
+      },
+      "P_to_R": {
+        "calls": 58,
+        "workflow_cpu": 7.133548279000006,
+        "workflow_wall": 7.135876955464482,
+        "uncut_cpu": 0.12905216799999997
+      }
+    }
+  },
+  {
+    "index": 5,
+    "name": "pr1.tempo_ts5",
+    "host": "bosque50",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 2.511986716,
+    "native_slap_cpu": 0.05826221399999998,
+    "slap_sweep_workflow_cpu": 1.961559390000001,
+    "slap_sweep_mapping_cpu": 1.7469408599999996,
+    "slap_sweep_workflow_wall": 1.9650307400152087,
+    "aam_scoring_cpu": 0.14130310000000001,
+    "native_slap_scoring_cpu": 0.08838039499999994,
+    "slap_sweep_scoring_cpu": 0.06796192600000006,
+    "aggregation_cpu_including_read_decode": 0.146023864,
+    "calls": 88,
+    "native_candidates": 88,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 44,
+        "workflow_cpu": 0.9745302809999996,
+        "workflow_wall": 0.9764028238132596,
+        "uncut_cpu": 0.02142360599999993
+      },
+      "P_to_R": {
+        "calls": 44,
+        "workflow_cpu": 0.9870291090000014,
+        "workflow_wall": 0.9886279162019491,
+        "uncut_cpu": 0.02179964000000001
+      }
+    }
+  },
+  {
+    "index": 6,
+    "name": "pr1.tempo_ts6",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 12.748174440999998,
+    "native_slap_cpu": 0.10536906400000001,
+    "slap_sweep_workflow_cpu": 5.849232504999998,
+    "slap_sweep_mapping_cpu": 5.610425159999998,
+    "slap_sweep_workflow_wall": 5.852780663408339,
+    "aam_scoring_cpu": 0.6383825980000002,
+    "native_slap_scoring_cpu": 0.05693203400000013,
+    "slap_sweep_scoring_cpu": 0.082315111,
+    "aggregation_cpu_including_read_decode": 0.310561524,
+    "calls": 88,
+    "native_candidates": 327,
+    "unique_label_partitions": 21,
+    "directions": {
+      "R_to_P": {
+        "calls": 44,
+        "workflow_cpu": 3.2132554789999994,
+        "workflow_wall": 3.215218116529286,
+        "uncut_cpu": 0.079078592
+      },
+      "P_to_R": {
+        "calls": 44,
+        "workflow_cpu": 2.6359770259999986,
+        "workflow_wall": 2.637562546879053,
+        "uncut_cpu": 0.06883876700000002
+      }
+    }
+  },
+  {
+    "index": 7,
+    "name": "pr1.tempo_ts8",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 9.730055855,
+    "native_slap_cpu": 0.13509516999999993,
+    "slap_sweep_workflow_cpu": 12.767481333,
+    "slap_sweep_mapping_cpu": 12.303120859,
+    "slap_sweep_workflow_wall": 12.787182736210525,
+    "aam_scoring_cpu": 0.6576543029999999,
+    "native_slap_scoring_cpu": 0.06770511400000001,
+    "slap_sweep_scoring_cpu": 0.103023105,
+    "aggregation_cpu_including_read_decode": 0.55059976,
+    "calls": 134,
+    "native_candidates": 399,
+    "unique_label_partitions": 12,
+    "directions": {
+      "R_to_P": {
+        "calls": 67,
+        "workflow_cpu": 6.385932941999998,
+        "workflow_wall": 6.4034715332090855,
+        "uncut_cpu": 0.09150118100000004
+      },
+      "P_to_R": {
+        "calls": 67,
+        "workflow_cpu": 6.381548391,
+        "workflow_wall": 6.38371120300144,
+        "uncut_cpu": 0.10001171899999994
+      }
+    }
+  },
+  {
+    "index": 8,
+    "name": "pr1.tempo_ts9",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 5.3941636840000005,
+    "native_slap_cpu": 0.06390826800000005,
+    "slap_sweep_workflow_cpu": 3.309089674,
+    "slap_sweep_mapping_cpu": 2.9950840309999998,
+    "slap_sweep_workflow_wall": 3.3118897080421448,
+    "aam_scoring_cpu": 0.2235701510000001,
+    "native_slap_scoring_cpu": 0.06649654400000005,
+    "slap_sweep_scoring_cpu": 0.06065475699999989,
+    "aggregation_cpu_including_read_decode": 0.21733883199999998,
+    "calls": 119,
+    "native_candidates": 121,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 60,
+        "workflow_cpu": 1.757095418000001,
+        "workflow_wall": 1.758687644265592,
+        "uncut_cpu": 0.030213000000000045
+      },
+      "P_to_R": {
+        "calls": 59,
+        "workflow_cpu": 1.551994255999999,
+        "workflow_wall": 1.5532020637765527,
+        "uncut_cpu": 0.03017842000000004
+      }
+    }
+  },
+  {
+    "index": 9,
+    "name": "pr10.carborane_ts1",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 17.059789361,
+    "native_slap_cpu": 0.119262855,
+    "slap_sweep_workflow_cpu": 10.042748417999992,
+    "slap_sweep_mapping_cpu": 9.454123327999998,
+    "slap_sweep_workflow_wall": 10.058840362355113,
+    "aam_scoring_cpu": 1.230262098,
+    "native_slap_scoring_cpu": 0.06567823499999981,
+    "slap_sweep_scoring_cpu": 0.097012176,
+    "aggregation_cpu_including_read_decode": 0.297022508,
+    "calls": 160,
+    "native_candidates": 184,
+    "unique_label_partitions": 6,
+    "directions": {
+      "R_to_P": {
+        "calls": 81,
+        "workflow_cpu": 6.674389906999995,
+        "workflow_wall": 6.689194544218481,
+        "uncut_cpu": 0.08378231699999994
+      },
+      "P_to_R": {
+        "calls": 79,
+        "workflow_cpu": 3.3683585109999963,
+        "workflow_wall": 3.3696458181366324,
+        "uncut_cpu": 0.04242508900000008
+      }
+    }
+  },
+  {
+    "index": 10,
+    "name": "pr10.carborane_ts2",
+    "host": "bosque70",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 10.615020092000002,
+    "native_slap_cpu": 0.07774603700000005,
+    "slap_sweep_workflow_cpu": 6.534328373999999,
+    "slap_sweep_mapping_cpu": 5.965461515000003,
+    "slap_sweep_workflow_wall": 6.53742291405797,
+    "aam_scoring_cpu": 0.639832366,
+    "native_slap_scoring_cpu": 0.06615622099999996,
+    "slap_sweep_scoring_cpu": 0.06609166500000008,
+    "aggregation_cpu_including_read_decode": 0.274441302,
+    "calls": 157,
+    "native_candidates": 157,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 79,
+        "workflow_cpu": 3.2551606429999973,
+        "workflow_wall": 3.256618406623602,
+        "uncut_cpu": 0.041502857000000115
+      },
+      "P_to_R": {
+        "calls": 78,
+        "workflow_cpu": 3.2791677310000025,
+        "workflow_wall": 3.280804507434368,
+        "uncut_cpu": 0.041409918000000046
+      }
+    }
+  },
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 11.046908283,
+    "native_slap_cpu": 0.08397748199999999,
+    "slap_sweep_workflow_cpu": 9.921108313000001,
+    "slap_sweep_mapping_cpu": 9.366869842000003,
+    "slap_sweep_workflow_wall": 9.924951842986047,
+    "aam_scoring_cpu": 0.6173611520000002,
+    "native_slap_scoring_cpu": 0.06572895099999987,
+    "slap_sweep_scoring_cpu": 0.08500343600000004,
+    "aggregation_cpu_including_read_decode": 0.288531679,
+    "calls": 156,
+    "native_candidates": 175,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 78,
+        "workflow_cpu": 3.3887213840000037,
+        "workflow_wall": 3.3905466813594103,
+        "uncut_cpu": 0.04403277299999986
+      },
+      "P_to_R": {
+        "calls": 78,
+        "workflow_cpu": 6.532386928999998,
+        "workflow_wall": 6.534405161626637,
+        "uncut_cpu": 0.08882422999999995
+      }
+    }
+  },
+  {
+    "index": 12,
+    "name": "pr11.cycloadditions_tsIIIa",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 4.869249155,
+    "native_slap_cpu": 0.080108069,
+    "slap_sweep_workflow_cpu": 6.026107548999999,
+    "slap_sweep_mapping_cpu": 5.558232372,
+    "slap_sweep_workflow_wall": 6.030980042181909,
+    "aam_scoring_cpu": 0.2802476329999999,
+    "native_slap_scoring_cpu": 0.06079589699999999,
+    "slap_sweep_scoring_cpu": 0.05966211899999996,
+    "aggregation_cpu_including_read_decode": 0.276122392,
+    "calls": 137,
+    "native_candidates": 137,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 68,
+        "workflow_cpu": 3.038996654,
+        "workflow_wall": 3.041670488193631,
+        "uncut_cpu": 0.04351238800000001
+      },
+      "P_to_R": {
+        "calls": 69,
+        "workflow_cpu": 2.9871108949999985,
+        "workflow_wall": 2.989309553988278,
+        "uncut_cpu": 0.04351797300000004
+      }
+    }
+  },
+  {
+    "index": 13,
+    "name": "pr11.cycloadditions_tsIIIb",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 4.993789535,
+    "native_slap_cpu": 0.08553689299999989,
+    "slap_sweep_workflow_cpu": 5.971016443999998,
+    "slap_sweep_mapping_cpu": 5.497235621,
+    "slap_sweep_workflow_wall": 5.974123594351113,
+    "aam_scoring_cpu": 0.27630581799999976,
+    "native_slap_scoring_cpu": 0.06243055799999997,
+    "slap_sweep_scoring_cpu": 0.05829087200000005,
+    "aggregation_cpu_including_read_decode": 0.272486017,
+    "calls": 137,
+    "native_candidates": 137,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 68,
+        "workflow_cpu": 3.0282297919999985,
+        "workflow_wall": 3.0299833165481687,
+        "uncut_cpu": 0.043354055999999974
+      },
+      "P_to_R": {
+        "calls": 69,
+        "workflow_cpu": 2.9427866519999997,
+        "workflow_wall": 2.944140277802944,
+        "uncut_cpu": 0.04359290599999999
+      }
+    }
+  },
+  {
+    "index": 14,
+    "name": "pr11.cycloadditions_tsIIa",
+    "host": "bosque59",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 4.594841788,
+    "native_slap_cpu": 0.078805397,
+    "slap_sweep_workflow_cpu": 6.860965725000005,
+    "slap_sweep_mapping_cpu": 6.427729943000002,
+    "slap_sweep_workflow_wall": 6.864896336570382,
+    "aam_scoring_cpu": 0.13460068000000014,
+    "native_slap_scoring_cpu": 0.10466185099999992,
+    "slap_sweep_scoring_cpu": 0.11741123600000003,
+    "aggregation_cpu_including_read_decode": 0.278634427,
+    "calls": 145,
+    "native_candidates": 145,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 72,
+        "workflow_cpu": 3.7604772930000063,
+        "workflow_wall": 3.7631750712171197,
+        "uncut_cpu": 0.037878100000000026
+      },
+      "P_to_R": {
+        "calls": 73,
+        "workflow_cpu": 3.1004884319999992,
+        "workflow_wall": 3.1017212653532624,
+        "uncut_cpu": 0.03895077000000002
+      }
+    }
+  },
+  {
+    "index": 15,
+    "name": "pr11.cycloadditions_tsIIb",
+    "host": "bosque59",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 4.564441811,
+    "native_slap_cpu": 0.07878463399999991,
+    "slap_sweep_workflow_cpu": 6.918135949999996,
+    "slap_sweep_mapping_cpu": 6.485471210999998,
+    "slap_sweep_workflow_wall": 6.9316205736249685,
+    "aam_scoring_cpu": 0.143806914,
+    "native_slap_scoring_cpu": 0.11082245300000015,
+    "slap_sweep_scoring_cpu": 0.11800026099999994,
+    "aggregation_cpu_including_read_decode": 0.278347743,
+    "calls": 145,
+    "native_candidates": 145,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 72,
+        "workflow_cpu": 3.822352909999998,
+        "workflow_wall": 3.8347404189407825,
+        "uncut_cpu": 0.03830469000000003
+      },
+      "P_to_R": {
+        "calls": 73,
+        "workflow_cpu": 3.095783039999998,
+        "workflow_wall": 3.096880154684186,
+        "uncut_cpu": 0.0388075579999998
+      }
+    }
+  },
+  {
+    "index": 16,
+    "name": "pr11.cycloadditions_tsIVa",
+    "host": "bosque60",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 4.540045504,
+    "native_slap_cpu": 0.09749937100000006,
+    "slap_sweep_workflow_cpu": 6.698462537000004,
+    "slap_sweep_mapping_cpu": 6.211208786000002,
+    "slap_sweep_workflow_wall": 6.7028565891087055,
+    "aam_scoring_cpu": 0.291450419,
+    "native_slap_scoring_cpu": 0.061847272000000064,
+    "slap_sweep_scoring_cpu": 0.06648707499999995,
+    "aggregation_cpu_including_read_decode": 0.27288657699999996,
+    "calls": 139,
+    "native_candidates": 140,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 69,
+        "workflow_cpu": 2.8951995980000027,
+        "workflow_wall": 2.897090314887464,
+        "uncut_cpu": 0.04232310599999989
+      },
+      "P_to_R": {
+        "calls": 70,
+        "workflow_cpu": 3.803262939000001,
+        "workflow_wall": 3.8057662742212415,
+        "uncut_cpu": 0.04250203100000016
+      }
+    }
+  },
+  {
+    "index": 17,
+    "name": "pr11.cycloadditions_tsIVb",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 4.744914885,
+    "native_slap_cpu": 0.09807337800000004,
+    "slap_sweep_workflow_cpu": 6.692079471999991,
+    "slap_sweep_mapping_cpu": 6.209452531999995,
+    "slap_sweep_workflow_wall": 6.695049756206572,
+    "aam_scoring_cpu": 0.2915947010000002,
+    "native_slap_scoring_cpu": 0.05951596499999989,
+    "slap_sweep_scoring_cpu": 0.0626323900000001,
+    "aggregation_cpu_including_read_decode": 0.27724309,
+    "calls": 139,
+    "native_candidates": 140,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 69,
+        "workflow_cpu": 2.875072878999997,
+        "workflow_wall": 2.876842999830842,
+        "uncut_cpu": 0.04193880699999997
+      },
+      "P_to_R": {
+        "calls": 70,
+        "workflow_cpu": 3.817006592999994,
+        "workflow_wall": 3.81820675637573,
+        "uncut_cpu": 0.04212176699999992
+      }
+    }
+  },
+  {
+    "index": 18,
+    "name": "pr11.cycloadditions_tsIa",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 7.033706804,
+    "native_slap_cpu": 0.07811091999999997,
+    "slap_sweep_workflow_cpu": 5.712459923999996,
+    "slap_sweep_mapping_cpu": 5.291050516,
+    "slap_sweep_workflow_wall": 5.716763693839312,
+    "aam_scoring_cpu": 0.25075392499999993,
+    "native_slap_scoring_cpu": 0.061191040999999835,
+    "slap_sweep_scoring_cpu": 0.06790773399999994,
+    "aggregation_cpu_including_read_decode": 0.276276668,
+    "calls": 143,
+    "native_candidates": 143,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 71,
+        "workflow_cpu": 2.8117627239999967,
+        "workflow_wall": 2.8147519351914525,
+        "uncut_cpu": 0.03959925600000003
+      },
+      "P_to_R": {
+        "calls": 72,
+        "workflow_cpu": 2.900697199999999,
+        "workflow_wall": 2.902011758647859,
+        "uncut_cpu": 0.039739517999999974
+      }
+    }
+  },
+  {
+    "index": 19,
+    "name": "pr11.cycloadditions_tsIb",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 7.033909250000001,
+    "native_slap_cpu": 0.083725159,
+    "slap_sweep_workflow_cpu": 5.725799147999998,
+    "slap_sweep_mapping_cpu": 5.295026971999999,
+    "slap_sweep_workflow_wall": 5.7293481817469,
+    "aam_scoring_cpu": 0.254430672,
+    "native_slap_scoring_cpu": 0.06187403200000019,
+    "slap_sweep_scoring_cpu": 0.062279860999999936,
+    "aggregation_cpu_including_read_decode": 0.274046123,
+    "calls": 143,
+    "native_candidates": 143,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 71,
+        "workflow_cpu": 2.8283546800000003,
+        "workflow_wall": 2.830244825221598,
+        "uncut_cpu": 0.039599886000000084
+      },
+      "P_to_R": {
+        "calls": 72,
+        "workflow_cpu": 2.897444467999998,
+        "workflow_wall": 2.899103356525302,
+        "uncut_cpu": 0.04013194499999995
+      }
+    }
+  },
+  {
+    "index": 20,
+    "name": "pr13.Cyclobutane_JOC2023_TS-CD1-3_step2",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.3531481029999997,
+    "native_slap_cpu": 0.06472623200000005,
+    "slap_sweep_workflow_cpu": 2.356051591,
+    "slap_sweep_mapping_cpu": 2.1222079299999983,
+    "slap_sweep_workflow_wall": 2.3587634107097983,
+    "aam_scoring_cpu": 0.11736269499999996,
+    "native_slap_scoring_cpu": 0.06716983499999984,
+    "slap_sweep_scoring_cpu": 0.055792964,
+    "aggregation_cpu_including_read_decode": 0.181292114,
+    "calls": 97,
+    "native_candidates": 99,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 49,
+        "workflow_cpu": 1.339615784,
+        "workflow_wall": 1.3412420889362693,
+        "uncut_cpu": 0.02480340500000011
+      },
+      "P_to_R": {
+        "calls": 48,
+        "workflow_cpu": 1.0164358069999997,
+        "workflow_wall": 1.017521321773529,
+        "uncut_cpu": 0.024690276999999816
+      }
+    }
+  },
+  {
+    "index": 21,
+    "name": "pr13.Cyclobutane_JOC2023_TS-CD_step1",
+    "host": "bosque50",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 2.653360828,
+    "native_slap_cpu": 0.05671685999999998,
+    "slap_sweep_workflow_cpu": 2.155183203000003,
+    "slap_sweep_mapping_cpu": 1.924965892000001,
+    "slap_sweep_workflow_wall": 2.1584301479160786,
+    "aam_scoring_cpu": 0.12478262299999976,
+    "native_slap_scoring_cpu": 0.05185703599999991,
+    "slap_sweep_scoring_cpu": 0.05206437800000008,
+    "aggregation_cpu_including_read_decode": 0.17829298300000002,
+    "calls": 96,
+    "native_candidates": 97,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 49,
+        "workflow_cpu": 1.0558298660000016,
+        "workflow_wall": 1.0577189084142447,
+        "uncut_cpu": 0.024073254999999905
+      },
+      "P_to_R": {
+        "calls": 47,
+        "workflow_cpu": 1.0993533370000015,
+        "workflow_wall": 1.100711239501834,
+        "uncut_cpu": 0.023777306000000054
+      }
+    }
+  },
+  {
+    "index": 22,
+    "name": "pr13.Cyclobutane_JOC2023_TS-D1G-3_step3G",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.3989580459999997,
+    "native_slap_cpu": 0.05855653100000002,
+    "slap_sweep_workflow_cpu": 2.275231133000001,
+    "slap_sweep_mapping_cpu": 2.037688621,
+    "slap_sweep_workflow_wall": 2.2780919894576073,
+    "aam_scoring_cpu": 0.10009178000000007,
+    "native_slap_scoring_cpu": 0.05745007099999988,
+    "slap_sweep_scoring_cpu": 0.05599502600000006,
+    "aggregation_cpu_including_read_decode": 0.18366153999999998,
+    "calls": 97,
+    "native_candidates": 99,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 48,
+        "workflow_cpu": 1.0608391850000005,
+        "workflow_wall": 1.0623077126219869,
+        "uncut_cpu": 0.024545615999999937
+      },
+      "P_to_R": {
+        "calls": 49,
+        "workflow_cpu": 1.2143919480000007,
+        "workflow_wall": 1.2157842768356204,
+        "uncut_cpu": 0.0245659250000001
+      }
+    }
+  },
+  {
+    "index": 23,
+    "name": "pr13.Cyclobutane_JOC2023_multiplicity_fixed_TS-CD1-3_step2",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.283890230999999,
+    "native_slap_cpu": 0.069234935,
+    "slap_sweep_workflow_cpu": 2.3500403770000022,
+    "slap_sweep_mapping_cpu": 2.1126801090000003,
+    "slap_sweep_workflow_wall": 2.3537171510979533,
+    "aam_scoring_cpu": 0.107359639,
+    "native_slap_scoring_cpu": 0.057687672000000134,
+    "slap_sweep_scoring_cpu": 0.05572270899999998,
+    "aggregation_cpu_including_read_decode": 0.183253991,
+    "calls": 97,
+    "native_candidates": 99,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 49,
+        "workflow_cpu": 1.2278515990000018,
+        "workflow_wall": 1.2303351955488324,
+        "uncut_cpu": 0.025527873999999895
+      },
+      "P_to_R": {
+        "calls": 48,
+        "workflow_cpu": 1.1221887780000004,
+        "workflow_wall": 1.123381955549121,
+        "uncut_cpu": 0.024618629000000003
+      }
+    }
+  },
+  {
+    "index": 24,
+    "name": "pr13.Cyclobutane_JOC2023_multiplicity_fixed_TS-D1G-3_step3G",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.317217344,
+    "native_slap_cpu": 0.062472026000000014,
+    "slap_sweep_workflow_cpu": 2.561676932999997,
+    "slap_sweep_mapping_cpu": 2.307771505,
+    "slap_sweep_workflow_wall": 2.564100799150765,
+    "aam_scoring_cpu": 0.0996289079999999,
+    "native_slap_scoring_cpu": 0.05746608500000017,
+    "slap_sweep_scoring_cpu": 0.05593919799999991,
+    "aggregation_cpu_including_read_decode": 0.189244668,
+    "calls": 97,
+    "native_candidates": 99,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 48,
+        "workflow_cpu": 1.1397813229999998,
+        "workflow_wall": 1.14115718472749,
+        "uncut_cpu": 0.02555175200000004
+      },
+      "P_to_R": {
+        "calls": 49,
+        "workflow_cpu": 1.4218956099999973,
+        "workflow_wall": 1.422943614423275,
+        "uncut_cpu": 0.024745777000000024
+      }
+    }
+  },
+  {
+    "index": 25,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS11_step1_reductive_coupling",
+    "host": "bosque70",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 276.08742084100004,
+    "native_slap_cpu": 0.19352130899999997,
+    "slap_sweep_workflow_cpu": 77.48736739600002,
+    "slap_sweep_mapping_cpu": 75.39793706199998,
+    "slap_sweep_workflow_wall": 77.49551679566503,
+    "aam_scoring_cpu": 75.226836568,
+    "native_slap_scoring_cpu": 0.14539627600000005,
+    "slap_sweep_scoring_cpu": 2.721491558,
+    "aggregation_cpu_including_read_decode": 0.850723541,
+    "calls": 290,
+    "native_candidates": 298,
+    "unique_label_partitions": 13,
+    "directions": {
+      "R_to_P": {
+        "calls": 145,
+        "workflow_cpu": 39.78433720299997,
+        "workflow_wall": 39.788318222388625,
+        "uncut_cpu": 0.11927416499999999
+      },
+      "P_to_R": {
+        "calls": 145,
+        "workflow_cpu": 37.703030193000046,
+        "workflow_wall": 37.7071985732764,
+        "uncut_cpu": 0.12012724000000008
+      }
+    }
+  },
+  {
+    "index": 26,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS12_step2_prot_oxidation",
+    "host": "bosque70",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 64.348552469,
+    "native_slap_cpu": 0.27552421400000005,
+    "slap_sweep_workflow_cpu": 93.60767432899996,
+    "slap_sweep_mapping_cpu": 91.30494651100003,
+    "slap_sweep_workflow_wall": 93.61589079815894,
+    "aam_scoring_cpu": 7.665751414,
+    "native_slap_scoring_cpu": 0.16743897500000005,
+    "slap_sweep_scoring_cpu": 4.929406988,
+    "aggregation_cpu_including_read_decode": 1.820183404,
+    "calls": 290,
+    "native_candidates": 588,
+    "unique_label_partitions": 120,
+    "directions": {
+      "R_to_P": {
+        "calls": 145,
+        "workflow_cpu": 52.97027763299992,
+        "workflow_wall": 52.974676323123276,
+        "uncut_cpu": 0.23335997200000014
+      },
+      "P_to_R": {
+        "calls": 145,
+        "workflow_cpu": 40.63739669600005,
+        "workflow_wall": 40.64121447503567,
+        "uncut_cpu": 0.23340393000000004
+      }
+    }
+  },
+  {
+    "index": 27,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS13_step3_bHelimination",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 55.216951212000005,
+    "native_slap_cpu": 0.18927583999999997,
+    "slap_sweep_workflow_cpu": 76.49590834,
+    "slap_sweep_mapping_cpu": 74.40234044399998,
+    "slap_sweep_workflow_wall": 76.50261178053916,
+    "aam_scoring_cpu": 1.278979772,
+    "native_slap_scoring_cpu": 0.140258408,
+    "slap_sweep_scoring_cpu": 3.352906753,
+    "aggregation_cpu_including_read_decode": 0.844077756,
+    "calls": 289,
+    "native_candidates": 293,
+    "unique_label_partitions": 5,
+    "directions": {
+      "R_to_P": {
+        "calls": 145,
+        "workflow_cpu": 40.92985533100005,
+        "workflow_wall": 40.9334362866357,
+        "uncut_cpu": 0.11763851700000005
+      },
+      "P_to_R": {
+        "calls": 144,
+        "workflow_cpu": 35.566053008999944,
+        "workflow_wall": 35.56917549390346,
+        "uncut_cpu": 0.11623949899999997
+      }
+    }
+  },
+  {
+    "index": 28,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS14_step4_reductive_elimination",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 69.06360435500001,
+    "native_slap_cpu": 0.305068515,
+    "slap_sweep_workflow_cpu": 138.05239676500008,
+    "slap_sweep_mapping_cpu": 135.87277722800007,
+    "slap_sweep_workflow_wall": 138.06167717278004,
+    "aam_scoring_cpu": 3.650653594,
+    "native_slap_scoring_cpu": 0.166223789,
+    "slap_sweep_scoring_cpu": 1.148037484,
+    "aggregation_cpu_including_read_decode": 1.6670131240000001,
+    "calls": 287,
+    "native_candidates": 572,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 144,
+        "workflow_cpu": 68.58223005200003,
+        "workflow_wall": 68.58667188603431,
+        "uncut_cpu": 0.193435193
+      },
+      "P_to_R": {
+        "calls": 143,
+        "workflow_cpu": 69.47016671300005,
+        "workflow_wall": 69.47500528674573,
+        "uncut_cpu": 0.22026478900000002
+      }
+    }
+  },
+  {
+    "index": 29,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS1_step1_OxidativeAdition_bluepath",
+    "host": "bosque59",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 14.237813211999999,
+    "native_slap_cpu": 0.18936166599999993,
+    "slap_sweep_workflow_cpu": 41.856643539000004,
+    "slap_sweep_mapping_cpu": 40.805029393999995,
+    "slap_sweep_workflow_wall": 41.86069024261087,
+    "aam_scoring_cpu": 0.569680467,
+    "native_slap_scoring_cpu": 0.09297751700000001,
+    "slap_sweep_scoring_cpu": 0.719728747,
+    "aggregation_cpu_including_read_decode": 0.795066697,
+    "calls": 197,
+    "native_candidates": 392,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 98,
+        "workflow_cpu": 20.858356554999983,
+        "workflow_wall": 20.86064637452364,
+        "uncut_cpu": 0.139912425
+      },
+      "P_to_R": {
+        "calls": 99,
+        "workflow_cpu": 20.998286984000018,
+        "workflow_wall": 21.000043868087232,
+        "uncut_cpu": 0.14087359300000002
+      }
+    }
+  },
+  {
+    "index": 30,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS2_step1_OxidativeAdition_blackpath",
+    "host": "bosque59",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 14.246490008000002,
+    "native_slap_cpu": 0.20601371999999996,
+    "slap_sweep_workflow_cpu": 42.101569604999995,
+    "slap_sweep_mapping_cpu": 41.048487971999975,
+    "slap_sweep_workflow_wall": 42.11822636332363,
+    "aam_scoring_cpu": 0.5602897889999998,
+    "native_slap_scoring_cpu": 0.09678966,
+    "slap_sweep_scoring_cpu": 0.7266191869999999,
+    "aggregation_cpu_including_read_decode": 0.7958920949999999,
+    "calls": 197,
+    "native_candidates": 392,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 98,
+        "workflow_cpu": 20.780880906000018,
+        "workflow_wall": 20.789543198421597,
+        "uncut_cpu": 0.14211218700000006
+      },
+      "P_to_R": {
+        "calls": 99,
+        "workflow_cpu": 21.32068869899998,
+        "workflow_wall": 21.32868316490203,
+        "uncut_cpu": 0.14007200799999997
+      }
+    }
+  },
+  {
+    "index": 31,
+    "name": "pr14.Pd_hydroamination_JOC2025_TS3_step2_alkene_inserion",
+    "host": "bosque59",
+    "aam_events": 7,
+    "native_slap_events": 9,
+    "bidirectional_uncut_slap_events": 9,
+    "slap_sweep_events": 7,
+    "winner": "tie",
+    "aam_cpu": 25.663451173,
+    "native_slap_cpu": 0.23439643200000004,
+    "slap_sweep_workflow_cpu": 43.085113269000004,
+    "slap_sweep_mapping_cpu": 41.72298044900001,
+    "slap_sweep_workflow_wall": 43.092428299598396,
+    "aam_scoring_cpu": 1.4614807949999997,
+    "native_slap_scoring_cpu": 0.13016584899999994,
+    "slap_sweep_scoring_cpu": 4.514485296,
+    "aggregation_cpu_including_read_decode": 0.763877907,
+    "calls": 230,
+    "native_candidates": 470,
+    "unique_label_partitions": 99,
+    "directions": {
+      "R_to_P": {
+        "calls": 114,
+        "workflow_cpu": 26.23290547300001,
+        "workflow_wall": 26.236972969025373,
+        "uncut_cpu": 0.16358126000000006
+      },
+      "P_to_R": {
+        "calls": 116,
+        "workflow_cpu": 16.852207795999995,
+        "workflow_wall": 16.855455330573022,
+        "uncut_cpu": 0.130938506
+      }
+    }
+  },
+  {
+    "index": 32,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-a_step1_halogen_abstraction_mult1",
+    "host": "bosque60",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.270751826999998,
+    "native_slap_cpu": 0.09512543300000009,
+    "slap_sweep_workflow_cpu": 8.093163705000007,
+    "slap_sweep_mapping_cpu": 7.421284938000005,
+    "slap_sweep_workflow_wall": 8.098913216032088,
+    "aam_scoring_cpu": 1.0506470669999999,
+    "native_slap_scoring_cpu": 0.10997366399999997,
+    "slap_sweep_scoring_cpu": 0.1321865189999999,
+    "aggregation_cpu_including_read_decode": 0.32617482500000006,
+    "calls": 172,
+    "native_candidates": 172,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 4.063248888000004,
+        "workflow_wall": 4.0666557271033525,
+        "uncut_cpu": 0.04677381299999994
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.029914817000003,
+        "workflow_wall": 4.032257488928735,
+        "uncut_cpu": 0.046886319999999926
+      }
+    }
+  },
+  {
+    "index": 33,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-a_step1_halogen_abstraction_mult3",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.362078034,
+    "native_slap_cpu": 0.08702820699999991,
+    "slap_sweep_workflow_cpu": 8.019600395000008,
+    "slap_sweep_mapping_cpu": 7.379935186000001,
+    "slap_sweep_workflow_wall": 8.024357749149203,
+    "aam_scoring_cpu": 0.840841771,
+    "native_slap_scoring_cpu": 0.12590887299999998,
+    "slap_sweep_scoring_cpu": 0.10573771199999993,
+    "aggregation_cpu_including_read_decode": 0.32011471,
+    "calls": 172,
+    "native_candidates": 172,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 4.0064904220000015,
+        "workflow_wall": 4.009340668097138,
+        "uncut_cpu": 0.047048329
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.013109973000007,
+        "workflow_wall": 4.015017081052065,
+        "uncut_cpu": 0.047061558000000114
+      }
+    }
+  },
+  {
+    "index": 34,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-a_step1_halogen_abstraction_mult5",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.717067903,
+    "native_slap_cpu": 0.09165382600000005,
+    "slap_sweep_workflow_cpu": 8.102095120999998,
+    "slap_sweep_mapping_cpu": 7.437656627999999,
+    "slap_sweep_workflow_wall": 8.106561611406505,
+    "aam_scoring_cpu": 0.9507765160000001,
+    "native_slap_scoring_cpu": 0.09029859699999987,
+    "slap_sweep_scoring_cpu": 0.07470953599999997,
+    "aggregation_cpu_including_read_decode": 0.32231437500000004,
+    "calls": 172,
+    "native_candidates": 172,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 4.074697468999997,
+        "workflow_wall": 4.0774415312334895,
+        "uncut_cpu": 0.046726368999999934
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.027397652,
+        "workflow_wall": 4.029120080173016,
+        "uncut_cpu": 0.04667895700000002
+      }
+    }
+  },
+  {
+    "index": 35,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-b_step2_radical_recombination_mult2",
+    "host": "bosque50",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 11.627430129,
+    "native_slap_cpu": 0.07631565400000007,
+    "slap_sweep_workflow_cpu": 5.384584634000003,
+    "slap_sweep_mapping_cpu": 4.890443490000001,
+    "slap_sweep_workflow_wall": 5.388242095708847,
+    "aam_scoring_cpu": 0.463236687,
+    "native_slap_scoring_cpu": 0.07963389899999984,
+    "slap_sweep_scoring_cpu": 0.06816134600000001,
+    "aggregation_cpu_including_read_decode": 0.257467549,
+    "calls": 149,
+    "native_candidates": 149,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 2.6885698110000016,
+        "workflow_wall": 2.690669596195221,
+        "uncut_cpu": 0.03605440299999996
+      },
+      "P_to_R": {
+        "calls": 75,
+        "workflow_cpu": 2.696014823000001,
+        "workflow_wall": 2.697572499513626,
+        "uncut_cpu": 0.03631830100000011
+      }
+    }
+  },
+  {
+    "index": 36,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-b_step2_radical_recombination_mult4",
+    "host": "bosque70",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 14.269741061999998,
+    "native_slap_cpu": 0.07783247100000001,
+    "slap_sweep_workflow_cpu": 5.425943169000002,
+    "slap_sweep_mapping_cpu": 4.922634085000002,
+    "slap_sweep_workflow_wall": 5.4292136784642935,
+    "aam_scoring_cpu": 0.7065760750000001,
+    "native_slap_scoring_cpu": 0.06557081800000009,
+    "slap_sweep_scoring_cpu": 0.06714501699999997,
+    "aggregation_cpu_including_read_decode": 0.25744553800000003,
+    "calls": 149,
+    "native_candidates": 149,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 2.7445839219999986,
+        "workflow_wall": 2.7465297831222415,
+        "uncut_cpu": 0.03649242399999997
+      },
+      "P_to_R": {
+        "calls": 75,
+        "workflow_cpu": 2.6813592470000027,
+        "workflow_wall": 2.682683895342052,
+        "uncut_cpu": 0.03599798300000012
+      }
+    }
+  },
+  {
+    "index": 37,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-b_step2_radical_recombination_mult6",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 15.403187285000001,
+    "native_slap_cpu": 0.11762308100000007,
+    "slap_sweep_workflow_cpu": 7.3748909000000005,
+    "slap_sweep_mapping_cpu": 6.892437025000001,
+    "slap_sweep_workflow_wall": 7.379063838161528,
+    "aam_scoring_cpu": 0.9889314649999998,
+    "native_slap_scoring_cpu": 0.06428379699999986,
+    "slap_sweep_scoring_cpu": 0.07560839099999994,
+    "aggregation_cpu_including_read_decode": 0.29307932000000003,
+    "calls": 148,
+    "native_candidates": 192,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 4.747652701,
+        "workflow_wall": 4.75046416092664,
+        "uncut_cpu": 0.06444506800000005
+      },
+      "P_to_R": {
+        "calls": 74,
+        "workflow_cpu": 2.627238199,
+        "workflow_wall": 2.628599677234888,
+        "uncut_cpu": 0.036665287000000046
+      }
+    }
+  },
+  {
+    "index": 38,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult2",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 13.41928249,
+    "native_slap_cpu": 0.075194482,
+    "slap_sweep_workflow_cpu": 6.082341283,
+    "slap_sweep_mapping_cpu": 5.581898971999998,
+    "slap_sweep_workflow_wall": 6.086529188789427,
+    "aam_scoring_cpu": 0.8596886469999998,
+    "native_slap_scoring_cpu": 0.10884466199999987,
+    "slap_sweep_scoring_cpu": 0.28758740399999994,
+    "aggregation_cpu_including_read_decode": 0.27466974,
+    "calls": 149,
+    "native_candidates": 159,
+    "unique_label_partitions": 9,
+    "directions": {
+      "R_to_P": {
+        "calls": 75,
+        "workflow_cpu": 3.096590569000005,
+        "workflow_wall": 3.0989228431135416,
+        "uncut_cpu": 0.03652596400000019
+      },
+      "P_to_R": {
+        "calls": 74,
+        "workflow_cpu": 2.9857507139999946,
+        "workflow_wall": 2.9876063456758857,
+        "uncut_cpu": 0.036758129999999944
+      }
+    }
+  },
+  {
+    "index": 39,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult4",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 19.324160089,
+    "native_slap_cpu": 0.08715608799999996,
+    "slap_sweep_workflow_cpu": 6.024725386999999,
+    "slap_sweep_mapping_cpu": 5.532446503999999,
+    "slap_sweep_workflow_wall": 6.0289231250062585,
+    "aam_scoring_cpu": 1.4614067259999999,
+    "native_slap_scoring_cpu": 0.09596444400000004,
+    "slap_sweep_scoring_cpu": 0.292774144,
+    "aggregation_cpu_including_read_decode": 0.275895237,
+    "calls": 149,
+    "native_candidates": 159,
+    "unique_label_partitions": 9,
+    "directions": {
+      "R_to_P": {
+        "calls": 75,
+        "workflow_cpu": 3.0463152639999995,
+        "workflow_wall": 3.048737058416009,
+        "uncut_cpu": 0.036736427000000016
+      },
+      "P_to_R": {
+        "calls": 74,
+        "workflow_cpu": 2.9784101229999997,
+        "workflow_wall": 2.9801860665902495,
+        "uncut_cpu": 0.03663861300000004
+      }
+    }
+  },
+  {
+    "index": 40,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS-c_step3_reductive_elimination_mult6",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 14.396014097999998,
+    "native_slap_cpu": 0.07570759999999999,
+    "slap_sweep_workflow_cpu": 8.147586830000002,
+    "slap_sweep_mapping_cpu": 7.659284448,
+    "slap_sweep_workflow_wall": 8.15144974552095,
+    "aam_scoring_cpu": 1.45733471,
+    "native_slap_scoring_cpu": 0.09864014600000015,
+    "slap_sweep_scoring_cpu": 0.29119505200000007,
+    "aggregation_cpu_including_read_decode": 0.30358596299999996,
+    "calls": 148,
+    "native_candidates": 202,
+    "unique_label_partitions": 9,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 2.973912801,
+        "workflow_wall": 2.97614858020097,
+        "uncut_cpu": 0.0367975880000001
+      },
+      "P_to_R": {
+        "calls": 74,
+        "workflow_cpu": 5.173674029000001,
+        "workflow_wall": 5.175301165319979,
+        "uncut_cpu": 0.06533582500000001
+      }
+    }
+  },
+  {
+    "index": 41,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_Step3_bluepath_side_reation_mult2",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 12.334966008,
+    "native_slap_cpu": 0.07560444799999999,
+    "slap_sweep_workflow_cpu": 6.390426418,
+    "slap_sweep_mapping_cpu": 5.917231971000001,
+    "slap_sweep_workflow_wall": 6.393879031762481,
+    "aam_scoring_cpu": 0.8763621720000001,
+    "native_slap_scoring_cpu": 0.093998048,
+    "slap_sweep_scoring_cpu": 0.6135206270000001,
+    "aggregation_cpu_including_read_decode": 0.27419196999999995,
+    "calls": 147,
+    "native_candidates": 161,
+    "unique_label_partitions": 20,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 3.4683951779999993,
+        "workflow_wall": 3.47054904140532,
+        "uncut_cpu": 0.039493471999999974
+      },
+      "P_to_R": {
+        "calls": 73,
+        "workflow_cpu": 2.9220312400000004,
+        "workflow_wall": 2.9233299903571606,
+        "uncut_cpu": 0.042465681999999894
+      }
+    }
+  },
+  {
+    "index": 42,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_Step3_bluepath_side_reation_mult4",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 12.353691535,
+    "native_slap_cpu": 0.08723018100000002,
+    "slap_sweep_workflow_cpu": 6.436987422,
+    "slap_sweep_mapping_cpu": 5.944668489999998,
+    "slap_sweep_workflow_wall": 6.440462734550238,
+    "aam_scoring_cpu": 0.9478799950000001,
+    "native_slap_scoring_cpu": 0.06359325999999998,
+    "slap_sweep_scoring_cpu": 0.40023473600000015,
+    "aggregation_cpu_including_read_decode": 0.273257994,
+    "calls": 147,
+    "native_candidates": 161,
+    "unique_label_partitions": 19,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 3.513248423999999,
+        "workflow_wall": 3.515060287900269,
+        "uncut_cpu": 0.03975216799999992
+      },
+      "P_to_R": {
+        "calls": 73,
+        "workflow_cpu": 2.9237389980000006,
+        "workflow_wall": 2.9254024466499686,
+        "uncut_cpu": 0.034132709999999955
+      }
+    }
+  },
+  {
+    "index": 43,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_Step3_bluepath_side_reation_mult6",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 12.068817351,
+    "native_slap_cpu": 0.07886753000000002,
+    "slap_sweep_workflow_cpu": 6.7251357920000014,
+    "slap_sweep_mapping_cpu": 6.237006417000002,
+    "slap_sweep_workflow_wall": 6.729267552495003,
+    "aam_scoring_cpu": 0.8571233529999998,
+    "native_slap_scoring_cpu": 0.09498125700000015,
+    "slap_sweep_scoring_cpu": 0.621393152,
+    "aggregation_cpu_including_read_decode": 0.273340286,
+    "calls": 147,
+    "native_candidates": 161,
+    "unique_label_partitions": 20,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 3.429028145000002,
+        "workflow_wall": 3.43151340354234,
+        "uncut_cpu": 0.04002003700000001
+      },
+      "P_to_R": {
+        "calls": 73,
+        "workflow_cpu": 3.296107646999999,
+        "workflow_wall": 3.297754148952663,
+        "uncut_cpu": 0.039732968000000035
+      }
+    }
+  },
+  {
+    "index": 44,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_prime_step2_redPath_mult3",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 23.662980587,
+    "native_slap_cpu": 0.13446067299999998,
+    "slap_sweep_workflow_cpu": 12.623499716000001,
+    "slap_sweep_mapping_cpu": 11.949066637999998,
+    "slap_sweep_workflow_wall": 12.629781481809914,
+    "aam_scoring_cpu": 1.3850500479999999,
+    "native_slap_scoring_cpu": 0.10575911599999999,
+    "slap_sweep_scoring_cpu": 0.4949774960000001,
+    "aggregation_cpu_including_read_decode": 0.379146989,
+    "calls": 172,
+    "native_candidates": 209,
+    "unique_label_partitions": 16,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 8.165475060999999,
+        "workflow_wall": 8.16844966262579,
+        "uncut_cpu": 0.089489971
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.458024655000003,
+        "workflow_wall": 4.4613318191841245,
+        "uncut_cpu": 0.04771904299999996
+      }
+    }
+  },
+  {
+    "index": 45,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS2_prime_step2_redPath_mult5",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 23.060087106,
+    "native_slap_cpu": 0.127756223,
+    "slap_sweep_workflow_cpu": 12.479747678,
+    "slap_sweep_mapping_cpu": 11.820126269999998,
+    "slap_sweep_workflow_wall": 12.485922043211758,
+    "aam_scoring_cpu": 1.595410993,
+    "native_slap_scoring_cpu": 0.10551328699999996,
+    "slap_sweep_scoring_cpu": 0.4699881479999999,
+    "aggregation_cpu_including_read_decode": 0.384912907,
+    "calls": 172,
+    "native_candidates": 209,
+    "unique_label_partitions": 15,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 8.049128402999996,
+        "workflow_wall": 8.05222084093839,
+        "uncut_cpu": 0.08838822299999993
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.430619275000005,
+        "workflow_wall": 4.433701202273369,
+        "uncut_cpu": 0.047425796999999936
+      }
+    }
+  },
+  {
+    "index": 46,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS7_step1_radical_recombination_mult2",
+    "host": "bosque50",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 18.160838183,
+    "native_slap_cpu": 0.08854715099999999,
+    "slap_sweep_workflow_cpu": 7.954893956999995,
+    "slap_sweep_mapping_cpu": 7.323631978,
+    "slap_sweep_workflow_wall": 7.9590037586167455,
+    "aam_scoring_cpu": 0.8944764740000002,
+    "native_slap_scoring_cpu": 0.10765603700000015,
+    "slap_sweep_scoring_cpu": 0.13074894199999998,
+    "aggregation_cpu_including_read_decode": 0.324123539,
+    "calls": 171,
+    "native_candidates": 171,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 85,
+        "workflow_cpu": 4.008650038999994,
+        "workflow_wall": 4.011091970838606,
+        "uncut_cpu": 0.04650907699999984
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 3.9462439180000013,
+        "workflow_wall": 3.947911787778139,
+        "uncut_cpu": 0.046468081999999966
+      }
+    }
+  },
+  {
+    "index": 47,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS7_step1_radical_recombination_mult6",
+    "host": "bosque59",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.980610991,
+    "native_slap_cpu": 0.12202758699999994,
+    "slap_sweep_workflow_cpu": 10.516073619,
+    "slap_sweep_mapping_cpu": 9.902320113,
+    "slap_sweep_workflow_wall": 10.520039419643581,
+    "aam_scoring_cpu": 1.137387888,
+    "native_slap_scoring_cpu": 0.07362525500000006,
+    "slap_sweep_scoring_cpu": 0.08142049399999995,
+    "aggregation_cpu_including_read_decode": 0.36075033700000003,
+    "calls": 170,
+    "native_candidates": 214,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 85,
+        "workflow_cpu": 6.663343513999999,
+        "workflow_wall": 6.665518708527088,
+        "uncut_cpu": 0.07800474099999999
+      },
+      "P_to_R": {
+        "calls": 85,
+        "workflow_cpu": 3.852730105000002,
+        "workflow_wall": 3.8545207111164927,
+        "uncut_cpu": 0.046729621
+      }
+    }
+  },
+  {
+    "index": 48,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult2",
+    "host": "bosque59",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 32.630583692,
+    "native_slap_cpu": 0.13987627800000002,
+    "slap_sweep_workflow_cpu": 12.763443174999987,
+    "slap_sweep_mapping_cpu": 12.123353475999991,
+    "slap_sweep_workflow_wall": 12.768070122227073,
+    "aam_scoring_cpu": 1.794629809,
+    "native_slap_scoring_cpu": 0.10273562899999988,
+    "slap_sweep_scoring_cpu": 0.4665226309999999,
+    "aggregation_cpu_including_read_decode": 0.374896113,
+    "calls": 171,
+    "native_candidates": 208,
+    "unique_label_partitions": 15,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 8.235965586999994,
+        "workflow_wall": 8.238430874422193,
+        "uncut_cpu": 0.08847787299999987
+      },
+      "P_to_R": {
+        "calls": 85,
+        "workflow_cpu": 4.527477587999993,
+        "workflow_wall": 4.52963924780488,
+        "uncut_cpu": 0.04753712900000007
+      }
+    }
+  },
+  {
+    "index": 49,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_TS8_step2_reductive_elimination_mult4",
+    "host": "bosque59",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 25.166064189,
+    "native_slap_cpu": 0.12391768299999995,
+    "slap_sweep_workflow_cpu": 12.859962118999999,
+    "slap_sweep_mapping_cpu": 12.205631831999996,
+    "slap_sweep_workflow_wall": 12.864244041964412,
+    "aam_scoring_cpu": 1.586399991,
+    "native_slap_scoring_cpu": 0.10446714099999999,
+    "slap_sweep_scoring_cpu": 0.44463687399999996,
+    "aggregation_cpu_including_read_decode": 0.377775284,
+    "calls": 171,
+    "native_candidates": 208,
+    "unique_label_partitions": 14,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 8.323264014999994,
+        "workflow_wall": 8.325830942951143,
+        "uncut_cpu": 0.10399652000000004
+      },
+      "P_to_R": {
+        "calls": 85,
+        "workflow_cpu": 4.536698104000005,
+        "workflow_wall": 4.538413099013269,
+        "uncut_cpu": 0.04732459100000008
+      }
+    }
+  },
+  {
+    "index": 50,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-a_step1_halogen_abstraction_mult3",
+    "host": "bosque59",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.400500759,
+    "native_slap_cpu": 0.09485095700000001,
+    "slap_sweep_workflow_cpu": 8.078860315999993,
+    "slap_sweep_mapping_cpu": 7.423125745999997,
+    "slap_sweep_workflow_wall": 8.083614211529493,
+    "aam_scoring_cpu": 0.8416966730000002,
+    "native_slap_scoring_cpu": 0.10806030900000008,
+    "slap_sweep_scoring_cpu": 0.10323685500000002,
+    "aggregation_cpu_including_read_decode": 0.32448546999999994,
+    "calls": 172,
+    "native_candidates": 172,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 4.0668741479999975,
+        "workflow_wall": 4.069777888245881,
+        "uncut_cpu": 0.04716244800000002
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.011986167999996,
+        "workflow_wall": 4.013836323283613,
+        "uncut_cpu": 0.04693811999999997
+      }
+    }
+  },
+  {
+    "index": 51,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-a_step1_halogen_abstraction_mult5",
+    "host": "bosque60",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.154385730999998,
+    "native_slap_cpu": 0.10212231699999996,
+    "slap_sweep_workflow_cpu": 8.043421659,
+    "slap_sweep_mapping_cpu": 7.381298038000002,
+    "slap_sweep_workflow_wall": 8.048224663361907,
+    "aam_scoring_cpu": 0.9196088729999998,
+    "native_slap_scoring_cpu": 0.07026037099999982,
+    "slap_sweep_scoring_cpu": 0.07576074899999996,
+    "aggregation_cpu_including_read_decode": 0.32193888000000004,
+    "calls": 172,
+    "native_candidates": 172,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 4.051483727999999,
+        "workflow_wall": 4.054161365143955,
+        "uncut_cpu": 0.04712907799999999
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 3.9919379310000016,
+        "workflow_wall": 3.9940632982179523,
+        "uncut_cpu": 0.04676015499999997
+      }
+    }
+  },
+  {
+    "index": 52,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-b_step2_radical_recombination_mult2",
+    "host": "bosque70",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 11.703068040000002,
+    "native_slap_cpu": 0.07393873800000006,
+    "slap_sweep_workflow_cpu": 5.3661266329999995,
+    "slap_sweep_mapping_cpu": 4.876973879000001,
+    "slap_sweep_workflow_wall": 5.369399001821876,
+    "aam_scoring_cpu": 0.4621479279999998,
+    "native_slap_scoring_cpu": 0.06635968400000003,
+    "slap_sweep_scoring_cpu": 0.07259655900000006,
+    "aggregation_cpu_including_read_decode": 0.26013215300000003,
+    "calls": 149,
+    "native_candidates": 149,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 2.67212888,
+        "workflow_wall": 2.6738406317308545,
+        "uncut_cpu": 0.03598774900000001
+      },
+      "P_to_R": {
+        "calls": 75,
+        "workflow_cpu": 2.6939977529999997,
+        "workflow_wall": 2.695558370091021,
+        "uncut_cpu": 0.03627043200000013
+      }
+    }
+  },
+  {
+    "index": 53,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-b_step2_radical_recombination_mult4",
+    "host": "bosque70",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 13.931716334999999,
+    "native_slap_cpu": 0.07913751700000005,
+    "slap_sweep_workflow_cpu": 5.435965337999994,
+    "slap_sweep_mapping_cpu": 4.9400286609999995,
+    "slap_sweep_workflow_wall": 5.440218559466302,
+    "aam_scoring_cpu": 0.6917859650000002,
+    "native_slap_scoring_cpu": 0.06463752399999989,
+    "slap_sweep_scoring_cpu": 0.06835148700000004,
+    "aggregation_cpu_including_read_decode": 0.25929036899999997,
+    "calls": 149,
+    "native_candidates": 149,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 2.755624788999997,
+        "workflow_wall": 2.757918804883957,
+        "uncut_cpu": 0.03658511099999995
+      },
+      "P_to_R": {
+        "calls": 75,
+        "workflow_cpu": 2.680340548999997,
+        "workflow_wall": 2.6822997545823455,
+        "uncut_cpu": 0.03635557199999995
+      }
+    }
+  },
+  {
+    "index": 54,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS-b_step2_radical_recombination_mult6",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 15.352992065,
+    "native_slap_cpu": 0.09946293800000006,
+    "slap_sweep_workflow_cpu": 7.399330744999998,
+    "slap_sweep_mapping_cpu": 6.9087130430000006,
+    "slap_sweep_workflow_wall": 7.402759504504502,
+    "aam_scoring_cpu": 0.9879692329999998,
+    "native_slap_scoring_cpu": 0.06499987200000001,
+    "slap_sweep_scoring_cpu": 0.07281622499999996,
+    "aggregation_cpu_including_read_decode": 0.296402868,
+    "calls": 148,
+    "native_candidates": 192,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 74,
+        "workflow_cpu": 4.768350816000001,
+        "workflow_wall": 4.770449293777347,
+        "uncut_cpu": 0.06435009400000002
+      },
+      "P_to_R": {
+        "calls": 74,
+        "workflow_cpu": 2.630979928999997,
+        "workflow_wall": 2.632310210727155,
+        "uncut_cpu": 0.04839027600000001
+      }
+    }
+  },
+  {
+    "index": 55,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS2_prime_step2_redPath_mult3",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 23.751542711999996,
+    "native_slap_cpu": 0.13639690599999998,
+    "slap_sweep_workflow_cpu": 12.630453417999995,
+    "slap_sweep_mapping_cpu": 11.954195299999995,
+    "slap_sweep_workflow_wall": 12.635885406285524,
+    "aam_scoring_cpu": 1.392498639,
+    "native_slap_scoring_cpu": 0.10364502000000009,
+    "slap_sweep_scoring_cpu": 0.49220470000000005,
+    "aggregation_cpu_including_read_decode": 0.377770724,
+    "calls": 172,
+    "native_candidates": 209,
+    "unique_label_partitions": 16,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 8.134577995999994,
+        "workflow_wall": 8.13734337221831,
+        "uncut_cpu": 0.0888815340000001
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.495875422,
+        "workflow_wall": 4.4985420340672135,
+        "uncut_cpu": 0.047520313000000036
+      }
+    }
+  },
+  {
+    "index": 56,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS2_prime_step2_redPath_mult5",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 22.956357202,
+    "native_slap_cpu": 0.16157894400000006,
+    "slap_sweep_workflow_cpu": 12.531973961000006,
+    "slap_sweep_mapping_cpu": 11.869874927000005,
+    "slap_sweep_workflow_wall": 12.53783000819385,
+    "aam_scoring_cpu": 1.5821934450000004,
+    "native_slap_scoring_cpu": 0.10701327299999996,
+    "slap_sweep_scoring_cpu": 0.47094149900000004,
+    "aggregation_cpu_including_read_decode": 0.377193487,
+    "calls": 172,
+    "native_candidates": 209,
+    "unique_label_partitions": 15,
+    "directions": {
+      "R_to_P": {
+        "calls": 86,
+        "workflow_cpu": 8.041924082000007,
+        "workflow_wall": 8.044664522632957,
+        "uncut_cpu": 0.08832647599999999
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 4.490049879,
+        "workflow_wall": 4.493165485560894,
+        "uncut_cpu": 0.047279608000000195
+      }
+    }
+  },
+  {
+    "index": 57,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS7_step1_radical_recombination_mult2",
+    "host": "bosque50",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 17.854448085,
+    "native_slap_cpu": 0.091419696,
+    "slap_sweep_workflow_cpu": 8.022837031000002,
+    "slap_sweep_mapping_cpu": 7.383759606,
+    "slap_sweep_workflow_wall": 8.026657806709409,
+    "aam_scoring_cpu": 0.8912002920000002,
+    "native_slap_scoring_cpu": 0.10557880199999992,
+    "slap_sweep_scoring_cpu": 0.13032865100000002,
+    "aggregation_cpu_including_read_decode": 0.319883892,
+    "calls": 171,
+    "native_candidates": 171,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 85,
+        "workflow_cpu": 4.022903181999999,
+        "workflow_wall": 4.025392504408956,
+        "uncut_cpu": 0.04678067000000008
+      },
+      "P_to_R": {
+        "calls": 86,
+        "workflow_cpu": 3.9999338490000014,
+        "workflow_wall": 4.001265302300453,
+        "uncut_cpu": 0.04649237400000006
+      }
+    }
+  },
+  {
+    "index": 58,
+    "name": "pr15.Fe_crosscoupling_ACScat2023_multiplicity_fixed_TS7_step1_radical_recombination_mult6",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 18.653845882999995,
+    "native_slap_cpu": 0.12631791599999997,
+    "slap_sweep_workflow_cpu": 10.643103155999995,
+    "slap_sweep_mapping_cpu": 10.007814597000001,
+    "slap_sweep_workflow_wall": 10.647036327980459,
+    "aam_scoring_cpu": 1.1357241680000003,
+    "native_slap_scoring_cpu": 0.07114287099999994,
+    "slap_sweep_scoring_cpu": 0.08273402400000007,
+    "aggregation_cpu_including_read_decode": 0.358323274,
+    "calls": 170,
+    "native_candidates": 214,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 85,
+        "workflow_cpu": 6.633842658999999,
+        "workflow_wall": 6.635971191339195,
+        "uncut_cpu": 0.07343070900000004
+      },
+      "P_to_R": {
+        "calls": 85,
+        "workflow_cpu": 4.009260496999996,
+        "workflow_wall": 4.011065136641264,
+        "uncut_cpu": 0.04885855300000008
+      }
+    }
+  },
+  {
+    "index": 59,
+    "name": "pr16.carbocation_ts11",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 1.130583528,
+    "native_slap_cpu": 0.03519686299999991,
+    "slap_sweep_workflow_cpu": 0.4606521530000003,
+    "slap_sweep_mapping_cpu": 0.3936683430000001,
+    "slap_sweep_workflow_wall": 0.46279395278543234,
+    "aam_scoring_cpu": 0.071124835,
+    "native_slap_scoring_cpu": 0.05951113799999996,
+    "slap_sweep_scoring_cpu": 0.09911711200000006,
+    "aggregation_cpu_including_read_decode": 0.09988153000000001,
+    "calls": 40,
+    "native_candidates": 53,
+    "unique_label_partitions": 17,
+    "directions": {
+      "R_to_P": {
+        "calls": 20,
+        "workflow_cpu": 0.23822349000000054,
+        "workflow_wall": 0.23958024848252535,
+        "uncut_cpu": 0.007539490999999954
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 0.22242866299999975,
+        "workflow_wall": 0.223213704302907,
+        "uncut_cpu": 0.007461951999999994
+      }
+    }
+  },
+  {
+    "index": 60,
+    "name": "pr16.carbocation_ts12",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.1222367059999994,
+    "native_slap_cpu": 0.046653080999999985,
+    "slap_sweep_workflow_cpu": 0.7293351259999993,
+    "slap_sweep_mapping_cpu": 0.649144682,
+    "slap_sweep_workflow_wall": 0.7316186353564262,
+    "aam_scoring_cpu": 0.06788675899999985,
+    "native_slap_scoring_cpu": 0.04356656599999997,
+    "slap_sweep_scoring_cpu": 0.12168242000000007,
+    "aggregation_cpu_including_read_decode": 0.09859585199999998,
+    "calls": 40,
+    "native_candidates": 48,
+    "unique_label_partitions": 16,
+    "directions": {
+      "R_to_P": {
+        "calls": 20,
+        "workflow_cpu": 0.38726996999999996,
+        "workflow_wall": 0.3886968707665801,
+        "uncut_cpu": 0.009110015000000193
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 0.3420651559999993,
+        "workflow_wall": 0.34292176458984613,
+        "uncut_cpu": 0.00918019399999992
+      }
+    }
+  },
+  {
+    "index": 61,
+    "name": "pr16.carbocation_ts2",
+    "host": "bosque59",
+    "aam_events": 0,
+    "native_slap_events": 0,
+    "bidirectional_uncut_slap_events": 0,
+    "slap_sweep_events": 0,
+    "winner": "tie",
+    "aam_cpu": 1.190542763,
+    "native_slap_cpu": 0.048438148000000014,
+    "slap_sweep_workflow_cpu": 0.5613176780000002,
+    "slap_sweep_mapping_cpu": 0.4923267050000002,
+    "slap_sweep_workflow_wall": 0.5638561192899942,
+    "aam_scoring_cpu": 0.07691228000000017,
+    "native_slap_scoring_cpu": 0.043258034999999806,
+    "slap_sweep_scoring_cpu": 0.04427930599999996,
+    "aggregation_cpu_including_read_decode": 0.09675322199999999,
+    "calls": 42,
+    "native_candidates": 42,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 21,
+        "workflow_cpu": 0.29217596000000035,
+        "workflow_wall": 0.2937634764239192,
+        "uncut_cpu": 0.009404802999999795
+      },
+      "P_to_R": {
+        "calls": 21,
+        "workflow_cpu": 0.26914171799999986,
+        "workflow_wall": 0.27009264286607504,
+        "uncut_cpu": 0.009475408000000018
+      }
+    }
+  },
+  {
+    "index": 62,
+    "name": "pr16.carbocation_ts3",
+    "host": "bosque59",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 1.21713661,
+    "native_slap_cpu": 0.036563572000000044,
+    "slap_sweep_workflow_cpu": 0.8473243649999995,
+    "slap_sweep_mapping_cpu": 0.7750096799999998,
+    "slap_sweep_workflow_wall": 0.8495931485667825,
+    "aam_scoring_cpu": 0.07896504199999987,
+    "native_slap_scoring_cpu": 0.04322926700000007,
+    "slap_sweep_scoring_cpu": 0.047683345000000044,
+    "aggregation_cpu_including_read_decode": 0.107808788,
+    "calls": 43,
+    "native_candidates": 67,
+    "unique_label_partitions": 12,
+    "directions": {
+      "R_to_P": {
+        "calls": 21,
+        "workflow_cpu": 0.2515093999999999,
+        "workflow_wall": 0.2527208710089326,
+        "uncut_cpu": 0.009598606000000065
+      },
+      "P_to_R": {
+        "calls": 22,
+        "workflow_cpu": 0.5958149649999996,
+        "workflow_wall": 0.5968722775578499,
+        "uncut_cpu": 0.024003378999999936
+      }
+    }
+  },
+  {
+    "index": 63,
+    "name": "pr16.carbocation_ts4",
+    "host": "bosque59",
+    "aam_events": 0,
+    "native_slap_events": 0,
+    "bidirectional_uncut_slap_events": 0,
+    "slap_sweep_events": 0,
+    "winner": "tie",
+    "aam_cpu": 1.1049685460000003,
+    "native_slap_cpu": 0.03878842900000001,
+    "slap_sweep_workflow_cpu": 0.5010089530000013,
+    "slap_sweep_mapping_cpu": 0.4279679770000001,
+    "slap_sweep_workflow_wall": 0.5036852760240436,
+    "aam_scoring_cpu": 0.07110442900000002,
+    "native_slap_scoring_cpu": 0.04365558800000002,
+    "slap_sweep_scoring_cpu": 0.041817431000000016,
+    "aggregation_cpu_including_read_decode": 0.097863123,
+    "calls": 44,
+    "native_candidates": 44,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 22,
+        "workflow_cpu": 0.2514416390000007,
+        "workflow_wall": 0.25308018550276756,
+        "uncut_cpu": 0.009547084000000039
+      },
+      "P_to_R": {
+        "calls": 22,
+        "workflow_cpu": 0.24956731400000054,
+        "workflow_wall": 0.250605090521276,
+        "uncut_cpu": 0.009818636999999963
+      }
+    }
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "host": "bosque59",
+    "aam_events": 5,
+    "native_slap_events": 9,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 1.24993578,
+    "native_slap_cpu": 0.16583594300000004,
+    "slap_sweep_workflow_cpu": 3.2422838779999976,
+    "slap_sweep_mapping_cpu": 3.158461307999998,
+    "slap_sweep_workflow_wall": 3.245827772654593,
+    "aam_scoring_cpu": 0.09772821100000018,
+    "native_slap_scoring_cpu": 0.05555506099999996,
+    "slap_sweep_scoring_cpu": 0.07622837299999996,
+    "aggregation_cpu_including_read_decode": 0.16442640600000002,
+    "calls": 41,
+    "native_candidates": 188,
+    "unique_label_partitions": 61,
+    "directions": {
+      "R_to_P": {
+        "calls": 21,
+        "workflow_cpu": 1.871373983999998,
+        "workflow_wall": 1.8733084294945002,
+        "uncut_cpu": 0.11745926899999992
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 1.3709098939999995,
+        "workflow_wall": 1.3725193431600928,
+        "uncut_cpu": 0.07061511099999995
+      }
+    }
+  },
+  {
+    "index": 65,
+    "name": "pr16.carbocation_ts7",
+    "host": "bosque60",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 1.222496847,
+    "native_slap_cpu": 0.03907250200000001,
+    "slap_sweep_workflow_cpu": 0.9412308660000003,
+    "slap_sweep_mapping_cpu": 0.8583409229999994,
+    "slap_sweep_workflow_wall": 0.9443483138456941,
+    "aam_scoring_cpu": 0.113463608,
+    "native_slap_scoring_cpu": 0.05425875300000005,
+    "slap_sweep_scoring_cpu": 0.13134886800000012,
+    "aggregation_cpu_including_read_decode": 0.117324634,
+    "calls": 40,
+    "native_candidates": 68,
+    "unique_label_partitions": 32,
+    "directions": {
+      "R_to_P": {
+        "calls": 20,
+        "workflow_cpu": 0.5048012610000008,
+        "workflow_wall": 0.5069778794422746,
+        "uncut_cpu": 0.011332043000000125
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 0.4364296049999995,
+        "workflow_wall": 0.4373704344034195,
+        "uncut_cpu": 0.01124320099999998
+      }
+    }
+  },
+  {
+    "index": 66,
+    "name": "pr16.carbocation_ts8",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.0939856779999997,
+    "native_slap_cpu": 0.03546791599999999,
+    "slap_sweep_workflow_cpu": 0.7281111030000004,
+    "slap_sweep_mapping_cpu": 0.6585434520000002,
+    "slap_sweep_workflow_wall": 0.7301753088831902,
+    "aam_scoring_cpu": 0.06874297400000007,
+    "native_slap_scoring_cpu": 0.04123033599999992,
+    "slap_sweep_scoring_cpu": 0.11854434000000003,
+    "aggregation_cpu_including_read_decode": 0.09673012700000001,
+    "calls": 40,
+    "native_candidates": 42,
+    "unique_label_partitions": 14,
+    "directions": {
+      "R_to_P": {
+        "calls": 20,
+        "workflow_cpu": 0.3728585439999995,
+        "workflow_wall": 0.37412396632134914,
+        "uncut_cpu": 0.008979714999999944
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 0.35525255900000086,
+        "workflow_wall": 0.356051342561841,
+        "uncut_cpu": 0.009217608000000155
+      }
+    }
+  },
+  {
+    "index": 67,
+    "name": "pr16.carbocation_ts9",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 1.0653968360000001,
+    "native_slap_cpu": 0.033571562,
+    "slap_sweep_workflow_cpu": 0.9365583279999987,
+    "slap_sweep_mapping_cpu": 0.8609995789999993,
+    "slap_sweep_workflow_wall": 0.9391324743628502,
+    "aam_scoring_cpu": 0.07610856800000021,
+    "native_slap_scoring_cpu": 0.0598442480000001,
+    "slap_sweep_scoring_cpu": 0.21646579199999993,
+    "aggregation_cpu_including_read_decode": 0.111371884,
+    "calls": 40,
+    "native_candidates": 69,
+    "unique_label_partitions": 32,
+    "directions": {
+      "R_to_P": {
+        "calls": 20,
+        "workflow_cpu": 0.4374485290000003,
+        "workflow_wall": 0.43916337192058563,
+        "uncut_cpu": 0.011262270000000019
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 0.4991097989999984,
+        "workflow_wall": 0.49996910244226456,
+        "uncut_cpu": 0.011376942999999917
+      }
+    }
+  },
+  {
+    "index": 68,
+    "name": "pr17.carbene.ins_ts6a",
+    "host": "bosque50",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 47.110677107,
+    "native_slap_cpu": 0.1953384880000001,
+    "slap_sweep_workflow_cpu": 37.45222093900002,
+    "slap_sweep_mapping_cpu": 35.48065357300001,
+    "slap_sweep_workflow_wall": 37.45751952752471,
+    "aam_scoring_cpu": 3.357345906,
+    "native_slap_scoring_cpu": 0.15660312599999981,
+    "slap_sweep_scoring_cpu": 0.476794897,
+    "aggregation_cpu_including_read_decode": 0.960237198,
+    "calls": 298,
+    "native_candidates": 306,
+    "unique_label_partitions": 12,
+    "directions": {
+      "R_to_P": {
+        "calls": 149,
+        "workflow_cpu": 18.010353457000008,
+        "workflow_wall": 18.01313664857298,
+        "uncut_cpu": 0.121916052
+      },
+      "P_to_R": {
+        "calls": 149,
+        "workflow_cpu": 19.441867482000013,
+        "workflow_wall": 19.44438287895173,
+        "uncut_cpu": 0.12239743099999989
+      }
+    }
+  },
+  {
+    "index": 69,
+    "name": "pr17.carbene.ins_ts8",
+    "host": "bosque59",
+    "aam_events": 5,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "aam",
+    "aam_cpu": 47.459539838,
+    "native_slap_cpu": 0.2102744649999999,
+    "slap_sweep_workflow_cpu": 36.242863645,
+    "slap_sweep_mapping_cpu": 34.23483805699999,
+    "slap_sweep_workflow_wall": 36.24942374415696,
+    "aam_scoring_cpu": 2.318772169,
+    "native_slap_scoring_cpu": 0.15454586100000012,
+    "slap_sweep_scoring_cpu": 0.15507511900000004,
+    "aggregation_cpu_including_read_decode": 0.9377156409999999,
+    "calls": 301,
+    "native_candidates": 301,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 151,
+        "workflow_cpu": 18.330904707000006,
+        "workflow_wall": 18.334295534528792,
+        "uncut_cpu": 0.125488221
+      },
+      "P_to_R": {
+        "calls": 150,
+        "workflow_cpu": 17.91195893799999,
+        "workflow_wall": 17.915128209628165,
+        "uncut_cpu": 0.12523836999999993
+      }
+    }
+  },
+  {
+    "index": 70,
+    "name": "pr18.Au.alkyl_tsBC",
+    "host": "bosque59",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 39.543401434,
+    "native_slap_cpu": 0.11829321199999998,
+    "slap_sweep_workflow_cpu": 17.351668391999997,
+    "slap_sweep_mapping_cpu": 16.646800147999993,
+    "slap_sweep_workflow_wall": 17.35653908457607,
+    "aam_scoring_cpu": 1.680847572,
+    "native_slap_scoring_cpu": 0.07107603100000004,
+    "slap_sweep_scoring_cpu": 0.9183837370000001,
+    "aggregation_cpu_including_read_decode": 0.400742747,
+    "calls": 183,
+    "native_candidates": 183,
+    "unique_label_partitions": 35,
+    "directions": {
+      "R_to_P": {
+        "calls": 92,
+        "workflow_cpu": 10.110640732000006,
+        "workflow_wall": 10.113714928738773,
+        "uncut_cpu": 0.0743420159999999
+      },
+      "P_to_R": {
+        "calls": 91,
+        "workflow_cpu": 7.241027659999991,
+        "workflow_wall": 7.242824155837297,
+        "uncut_cpu": 0.07213623700000005
+      }
+    }
+  },
+  {
+    "index": 71,
+    "name": "pr19.heck_ts1",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 27.404642092999993,
+    "native_slap_cpu": 0.06946846499999992,
+    "slap_sweep_workflow_cpu": 4.700978407999997,
+    "slap_sweep_mapping_cpu": 4.418982071999997,
+    "slap_sweep_workflow_wall": 4.704387439414859,
+    "aam_scoring_cpu": 2.680061356,
+    "native_slap_scoring_cpu": 0.07857166000000015,
+    "slap_sweep_scoring_cpu": 0.325031799,
+    "aggregation_cpu_including_read_decode": 0.219946902,
+    "calls": 117,
+    "native_candidates": 127,
+    "unique_label_partitions": 20,
+    "directions": {
+      "R_to_P": {
+        "calls": 58,
+        "workflow_cpu": 2.3209631919999985,
+        "workflow_wall": 2.3230706974864006,
+        "uncut_cpu": 0.036323784999999886
+      },
+      "P_to_R": {
+        "calls": 59,
+        "workflow_cpu": 2.3800152159999985,
+        "workflow_wall": 2.381316741928458,
+        "uncut_cpu": 0.03396560599999987
+      }
+    }
+  },
+  {
+    "index": 72,
+    "name": "pr19.heck_ts9",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 3.596370706,
+    "native_slap_cpu": 0.06195673599999996,
+    "slap_sweep_workflow_cpu": 3.7783863779999987,
+    "slap_sweep_mapping_cpu": 3.495008452000002,
+    "slap_sweep_workflow_wall": 3.780797716230154,
+    "aam_scoring_cpu": 0.23005722799999995,
+    "native_slap_scoring_cpu": 0.05453795800000005,
+    "slap_sweep_scoring_cpu": 0.235810792,
+    "aggregation_cpu_including_read_decode": 0.20156745599999998,
+    "calls": 117,
+    "native_candidates": 119,
+    "unique_label_partitions": 27,
+    "directions": {
+      "R_to_P": {
+        "calls": 59,
+        "workflow_cpu": 1.8272883359999978,
+        "workflow_wall": 1.8286948027089238,
+        "uncut_cpu": 0.025669978000000038
+      },
+      "P_to_R": {
+        "calls": 58,
+        "workflow_cpu": 1.9510980420000006,
+        "workflow_wall": 1.9521029135212302,
+        "uncut_cpu": 0.02551573099999993
+      }
+    }
+  },
+  {
+    "index": 73,
+    "name": "pr2.mbh_ts1",
+    "host": "bosque59",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 1.594269982,
+    "native_slap_cpu": 0.04439788,
+    "slap_sweep_workflow_cpu": 1.0989775440000003,
+    "slap_sweep_mapping_cpu": 0.9826175909999997,
+    "slap_sweep_workflow_wall": 1.102141197770834,
+    "aam_scoring_cpu": 0.11670791999999985,
+    "native_slap_scoring_cpu": 0.047618953999999825,
+    "slap_sweep_scoring_cpu": 0.05700140999999992,
+    "aggregation_cpu_including_read_decode": 0.117719273,
+    "calls": 67,
+    "native_candidates": 73,
+    "unique_label_partitions": 8,
+    "directions": {
+      "R_to_P": {
+        "calls": 33,
+        "workflow_cpu": 0.5788755510000015,
+        "workflow_wall": 0.5807208875194192,
+        "uncut_cpu": 0.014085632999999986
+      },
+      "P_to_R": {
+        "calls": 34,
+        "workflow_cpu": 0.5201019929999987,
+        "workflow_wall": 0.5214203102514148,
+        "uncut_cpu": 0.014937913999999997
+      }
+    }
+  },
+  {
+    "index": 74,
+    "name": "pr2.mbh_ts2",
+    "host": "bosque60",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.6342487070000002,
+    "native_slap_cpu": 0.052591975999999985,
+    "slap_sweep_workflow_cpu": 2.3468148939999995,
+    "slap_sweep_mapping_cpu": 2.1458657810000012,
+    "slap_sweep_workflow_wall": 2.3505077082663774,
+    "aam_scoring_cpu": 0.144705278,
+    "native_slap_scoring_cpu": 0.07670500599999985,
+    "slap_sweep_scoring_cpu": 0.09808936800000001,
+    "aggregation_cpu_including_read_decode": 0.173357912,
+    "calls": 101,
+    "native_candidates": 101,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 50,
+        "workflow_cpu": 1.2078956329999997,
+        "workflow_wall": 1.2098051756620407,
+        "uncut_cpu": 0.028394689999999945
+      },
+      "P_to_R": {
+        "calls": 51,
+        "workflow_cpu": 1.1389192609999998,
+        "workflow_wall": 1.1407025326043367,
+        "uncut_cpu": 0.024503187999999954
+      }
+    }
+  },
+  {
+    "index": 75,
+    "name": "pr2.mbh_ts8",
+    "host": "bosque50",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.905772691,
+    "native_slap_cpu": 0.05523212300000002,
+    "slap_sweep_workflow_cpu": 2.8597606590000018,
+    "slap_sweep_mapping_cpu": 2.649798541,
+    "slap_sweep_workflow_wall": 2.863300796598196,
+    "aam_scoring_cpu": 0.18965269999999967,
+    "native_slap_scoring_cpu": 0.05138732999999984,
+    "slap_sweep_scoring_cpu": 0.07391187099999996,
+    "aggregation_cpu_including_read_decode": 0.178511645,
+    "calls": 101,
+    "native_candidates": 110,
+    "unique_label_partitions": 11,
+    "directions": {
+      "R_to_P": {
+        "calls": 51,
+        "workflow_cpu": 1.4028627080000002,
+        "workflow_wall": 1.405058498494327,
+        "uncut_cpu": 0.026941475999999853
+      },
+      "P_to_R": {
+        "calls": 50,
+        "workflow_cpu": 1.4568979510000015,
+        "workflow_wall": 1.458242298103869,
+        "uncut_cpu": 0.02701450900000002
+      }
+    }
+  },
+  {
+    "index": 76,
+    "name": "pr3.Suzuki.Ni_ts11.TM",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 361.745986537,
+    "native_slap_cpu": 0.13823991299999994,
+    "slap_sweep_workflow_cpu": 23.356341436000005,
+    "slap_sweep_mapping_cpu": 21.962334999000007,
+    "slap_sweep_workflow_wall": 23.360256254673004,
+    "aam_scoring_cpu": 51.370869991999996,
+    "native_slap_scoring_cpu": 0.14323643299999989,
+    "slap_sweep_scoring_cpu": 0.21670371200000005,
+    "aggregation_cpu_including_read_decode": 0.636907833,
+    "calls": 253,
+    "native_candidates": 259,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 127,
+        "workflow_cpu": 11.38683876100001,
+        "workflow_wall": 11.389136259444058,
+        "uncut_cpu": 0.08535231799999987
+      },
+      "P_to_R": {
+        "calls": 126,
+        "workflow_cpu": 11.969502674999994,
+        "workflow_wall": 11.971119995228946,
+        "uncut_cpu": 0.08541556700000008
+      }
+    }
+  },
+  {
+    "index": 77,
+    "name": "pr3.Suzuki.Ni_ts14.RE",
+    "host": "bosque50",
+    "aam_events": 8,
+    "native_slap_events": 8,
+    "bidirectional_uncut_slap_events": 8,
+    "slap_sweep_events": 8,
+    "winner": "tie",
+    "aam_cpu": 122.142613994,
+    "native_slap_cpu": 0.18175471500000007,
+    "slap_sweep_workflow_cpu": 31.84939155400002,
+    "slap_sweep_mapping_cpu": 30.741501229999997,
+    "slap_sweep_workflow_wall": 31.853427348658442,
+    "aam_scoring_cpu": 16.957972618000003,
+    "native_slap_scoring_cpu": 0.13354428000000018,
+    "slap_sweep_scoring_cpu": 1.9221820690000002,
+    "aggregation_cpu_including_read_decode": 0.567682515,
+    "calls": 216,
+    "native_candidates": 256,
+    "unique_label_partitions": 68,
+    "directions": {
+      "R_to_P": {
+        "calls": 106,
+        "workflow_cpu": 15.000115151000012,
+        "workflow_wall": 15.002371905371547,
+        "uncut_cpu": 0.12943886400000004
+      },
+      "P_to_R": {
+        "calls": 110,
+        "workflow_cpu": 16.849276403000008,
+        "workflow_wall": 16.851055443286896,
+        "uncut_cpu": 0.12785857199999984
+      }
+    }
+  },
+  {
+    "index": 78,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-A",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.295818079,
+    "native_slap_cpu": 0.03847618099999994,
+    "slap_sweep_workflow_cpu": 0.3710207470000002,
+    "slap_sweep_mapping_cpu": 0.30113447000000004,
+    "slap_sweep_workflow_wall": 0.37328134197741747,
+    "aam_scoring_cpu": 0.08316190299999993,
+    "native_slap_scoring_cpu": 0.04516700099999982,
+    "slap_sweep_scoring_cpu": 0.04706609499999992,
+    "aggregation_cpu_including_read_decode": 0.097489063,
+    "calls": 48,
+    "native_candidates": 51,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 24,
+        "workflow_cpu": 0.19533627100000028,
+        "workflow_wall": 0.19661273527890444,
+        "uncut_cpu": 0.006284638999999981
+      },
+      "P_to_R": {
+        "calls": 24,
+        "workflow_cpu": 0.17568447599999992,
+        "workflow_wall": 0.17666860669851303,
+        "uncut_cpu": 0.006250967999999912
+      }
+    }
+  },
+  {
+    "index": 79,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-B",
+    "host": "bosque70",
+    "aam_events": 0,
+    "native_slap_events": 0,
+    "bidirectional_uncut_slap_events": 0,
+    "slap_sweep_events": 0,
+    "winner": "tie",
+    "aam_cpu": 1.2563807900000001,
+    "native_slap_cpu": 0.033783954000000005,
+    "slap_sweep_workflow_cpu": 0.38043907700000046,
+    "slap_sweep_mapping_cpu": 0.310052993,
+    "slap_sweep_workflow_wall": 0.38283825758844614,
+    "aam_scoring_cpu": 0.08156176999999998,
+    "native_slap_scoring_cpu": 0.06760441799999994,
+    "slap_sweep_scoring_cpu": 0.06774946000000004,
+    "aggregation_cpu_including_read_decode": 0.09709829799999999,
+    "calls": 48,
+    "native_candidates": 48,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 24,
+        "workflow_cpu": 0.18956659100000017,
+        "workflow_wall": 0.19100235123187304,
+        "uncut_cpu": 0.006154704999999927
+      },
+      "P_to_R": {
+        "calls": 24,
+        "workflow_cpu": 0.19087248600000029,
+        "workflow_wall": 0.1918359063565731,
+        "uncut_cpu": 0.006301771000000067
+      }
+    }
+  },
+  {
+    "index": 80,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-C",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.3131519150000002,
+    "native_slap_cpu": 0.03560726400000003,
+    "slap_sweep_workflow_cpu": 0.3956238959999999,
+    "slap_sweep_mapping_cpu": 0.324958207,
+    "slap_sweep_workflow_wall": 0.3980799401178956,
+    "aam_scoring_cpu": 0.07851989599999998,
+    "native_slap_scoring_cpu": 0.046251435999999924,
+    "slap_sweep_scoring_cpu": 0.09910534199999999,
+    "aggregation_cpu_including_read_decode": 0.09834717600000001,
+    "calls": 48,
+    "native_candidates": 54,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 24,
+        "workflow_cpu": 0.1982728709999999,
+        "workflow_wall": 0.19951111357659101,
+        "uncut_cpu": 0.006856580000000001
+      },
+      "P_to_R": {
+        "calls": 24,
+        "workflow_cpu": 0.197351025,
+        "workflow_wall": 0.1985688265413046,
+        "uncut_cpu": 0.006306232999999994
+      }
+    }
+  },
+  {
+    "index": 81,
+    "name": "pr4.Suzuki-Brcleavage_ts1.Br-cleavage-D",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 1.2883342129999997,
+    "native_slap_cpu": 0.03585490300000005,
+    "slap_sweep_workflow_cpu": 0.3947836480000001,
+    "slap_sweep_mapping_cpu": 0.32391773199999996,
+    "slap_sweep_workflow_wall": 0.3971605719998479,
+    "aam_scoring_cpu": 0.07847845799999997,
+    "native_slap_scoring_cpu": 0.044519090999999955,
+    "slap_sweep_scoring_cpu": 0.10006007000000006,
+    "aggregation_cpu_including_read_decode": 0.099546504,
+    "calls": 48,
+    "native_candidates": 54,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 24,
+        "workflow_cpu": 0.19790486200000001,
+        "workflow_wall": 0.19944054167717695,
+        "uncut_cpu": 0.00693491199999996
+      },
+      "P_to_R": {
+        "calls": 24,
+        "workflow_cpu": 0.19687878600000008,
+        "workflow_wall": 0.19772003032267094,
+        "uncut_cpu": 0.006286189999999969
+      }
+    }
+  },
+  {
+    "index": 82,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-A",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 3.048082955,
+    "native_slap_cpu": 0.03973516300000002,
+    "slap_sweep_workflow_cpu": 0.9149327369999994,
+    "slap_sweep_mapping_cpu": 0.7951877700000002,
+    "slap_sweep_workflow_wall": 0.9172033201903105,
+    "aam_scoring_cpu": 0.22209869400000026,
+    "native_slap_scoring_cpu": 0.047035332000000096,
+    "slap_sweep_scoring_cpu": 0.05483267700000005,
+    "aggregation_cpu_including_read_decode": 0.11900861600000001,
+    "calls": 74,
+    "native_candidates": 77,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 37,
+        "workflow_cpu": 0.47374053600000043,
+        "workflow_wall": 0.4749810202047229,
+        "uncut_cpu": 0.013622464999999973
+      },
+      "P_to_R": {
+        "calls": 37,
+        "workflow_cpu": 0.441192200999999,
+        "workflow_wall": 0.4422222999855876,
+        "uncut_cpu": 0.012682562999999925
+      }
+    }
+  },
+  {
+    "index": 83,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-B",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 3.0734504329999996,
+    "native_slap_cpu": 0.04380744599999997,
+    "slap_sweep_workflow_cpu": 1.0615705230000008,
+    "slap_sweep_mapping_cpu": 0.9296862459999994,
+    "slap_sweep_workflow_wall": 1.0642201900482178,
+    "aam_scoring_cpu": 0.2508746660000001,
+    "native_slap_scoring_cpu": 0.049392037999999916,
+    "slap_sweep_scoring_cpu": 0.12579296699999998,
+    "aggregation_cpu_including_read_decode": 0.118709486,
+    "calls": 74,
+    "native_candidates": 80,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 36,
+        "workflow_cpu": 0.5161182900000006,
+        "workflow_wall": 0.5176463592797518,
+        "uncut_cpu": 0.012092613000000085
+      },
+      "P_to_R": {
+        "calls": 38,
+        "workflow_cpu": 0.5454522330000002,
+        "workflow_wall": 0.546573830768466,
+        "uncut_cpu": 0.01273138500000004
+      }
+    }
+  },
+  {
+    "index": 84,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-C",
+    "host": "bosque59",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 3.054166565,
+    "native_slap_cpu": 0.04601467699999995,
+    "slap_sweep_workflow_cpu": 0.9888918259999989,
+    "slap_sweep_mapping_cpu": 0.864259130999999,
+    "slap_sweep_workflow_wall": 0.9914901060983539,
+    "aam_scoring_cpu": 0.23096662300000004,
+    "native_slap_scoring_cpu": 0.0489646640000001,
+    "slap_sweep_scoring_cpu": 0.12718172599999988,
+    "aggregation_cpu_including_read_decode": 0.11936236200000001,
+    "calls": 73,
+    "native_candidates": 79,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 36,
+        "workflow_cpu": 0.46410309599999977,
+        "workflow_wall": 0.4657862363383174,
+        "uncut_cpu": 0.012677362999999997
+      },
+      "P_to_R": {
+        "calls": 37,
+        "workflow_cpu": 0.5247887299999991,
+        "workflow_wall": 0.5257038697600365,
+        "uncut_cpu": 0.012643147000000132
+      }
+    }
+  },
+  {
+    "index": 85,
+    "name": "pr4.Suzuki-Brcleavage_ts2.Br-cleavage-D",
+    "host": "bosque60",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 2.9845145929999997,
+    "native_slap_cpu": 0.052466355999999936,
+    "slap_sweep_workflow_cpu": 1.060549588999999,
+    "slap_sweep_mapping_cpu": 0.9284303910000002,
+    "slap_sweep_workflow_wall": 1.0631972821429372,
+    "aam_scoring_cpu": 0.2039761819999999,
+    "native_slap_scoring_cpu": 0.08619701699999993,
+    "slap_sweep_scoring_cpu": 0.18048912700000008,
+    "aggregation_cpu_including_read_decode": 0.125794513,
+    "calls": 74,
+    "native_candidates": 80,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 37,
+        "workflow_cpu": 0.5304168469999994,
+        "workflow_wall": 0.5321045005694032,
+        "uncut_cpu": 0.01271434199999999
+      },
+      "P_to_R": {
+        "calls": 37,
+        "workflow_cpu": 0.5301327419999997,
+        "workflow_wall": 0.531092781573534,
+        "uncut_cpu": 0.012777121000000058
+      }
+    }
+  },
+  {
+    "index": 86,
+    "name": "pr5.Noyori_ts26",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 14.387490653999999,
+    "native_slap_cpu": 0.1170074029999999,
+    "slap_sweep_workflow_cpu": 23.046266031999984,
+    "slap_sweep_mapping_cpu": 22.020430840999992,
+    "slap_sweep_workflow_wall": 23.05387333314866,
+    "aam_scoring_cpu": 0.593189768,
+    "native_slap_scoring_cpu": 0.1094774890000001,
+    "slap_sweep_scoring_cpu": 0.7383436889999999,
+    "aggregation_cpu_including_read_decode": 0.41091641,
+    "calls": 194,
+    "native_candidates": 194,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 97,
+        "workflow_cpu": 11.529062906999991,
+        "workflow_wall": 11.53269650414586,
+        "uncut_cpu": 0.06705606900000005
+      },
+      "P_to_R": {
+        "calls": 97,
+        "workflow_cpu": 11.517203124999991,
+        "workflow_wall": 11.521176829002798,
+        "uncut_cpu": 0.06891500400000006
+      }
+    }
+  },
+  {
+    "index": 87,
+    "name": "pr5.Noyori_ts45",
+    "host": "bosque50",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 10.989315975999999,
+    "native_slap_cpu": 0.13753258599999996,
+    "slap_sweep_workflow_cpu": 25.674468565999987,
+    "slap_sweep_mapping_cpu": 24.66975217,
+    "slap_sweep_workflow_wall": 25.67984852939844,
+    "aam_scoring_cpu": 0.49121866999999986,
+    "native_slap_scoring_cpu": 0.10402684299999998,
+    "slap_sweep_scoring_cpu": 1.5729436499999998,
+    "aggregation_cpu_including_read_decode": 0.421234479,
+    "calls": 191,
+    "native_candidates": 205,
+    "unique_label_partitions": 11,
+    "directions": {
+      "R_to_P": {
+        "calls": 96,
+        "workflow_cpu": 14.780029666999976,
+        "workflow_wall": 14.782614713534713,
+        "uncut_cpu": 0.09752503499999998
+      },
+      "P_to_R": {
+        "calls": 95,
+        "workflow_cpu": 10.894438899000013,
+        "workflow_wall": 10.897233815863729,
+        "uncut_cpu": 0.06922743899999995
+      }
+    }
+  },
+  {
+    "index": 88,
+    "name": "pr5.Noyori_ts56",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 11.650264693999999,
+    "native_slap_cpu": 0.11595768500000003,
+    "slap_sweep_workflow_cpu": 24.46637663700001,
+    "slap_sweep_mapping_cpu": 23.48735444000001,
+    "slap_sweep_workflow_wall": 24.469955279491842,
+    "aam_scoring_cpu": 0.5478795089999999,
+    "native_slap_scoring_cpu": 0.10949854700000006,
+    "slap_sweep_scoring_cpu": 1.04787226,
+    "aggregation_cpu_including_read_decode": 0.413515216,
+    "calls": 190,
+    "native_candidates": 204,
+    "unique_label_partitions": 12,
+    "directions": {
+      "R_to_P": {
+        "calls": 95,
+        "workflow_cpu": 10.299173800000002,
+        "workflow_wall": 10.3010956896469,
+        "uncut_cpu": 0.06655422499999997
+      },
+      "P_to_R": {
+        "calls": 95,
+        "workflow_cpu": 14.167202837000008,
+        "workflow_wall": 14.168859589844942,
+        "uncut_cpu": 0.09343648300000007
+      }
+    }
+  },
+  {
+    "index": 89,
+    "name": "pr5.Noyori_ts5H2",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 11.839668992,
+    "native_slap_cpu": 0.11720924300000002,
+    "slap_sweep_workflow_cpu": 12.359540677000005,
+    "slap_sweep_mapping_cpu": 11.435386725,
+    "slap_sweep_workflow_wall": 12.363991399295628,
+    "aam_scoring_cpu": 0.578388095,
+    "native_slap_scoring_cpu": 0.11345070699999993,
+    "slap_sweep_scoring_cpu": 0.701269401,
+    "aggregation_cpu_including_read_decode": 0.43807439400000003,
+    "calls": 188,
+    "native_candidates": 188,
+    "unique_label_partitions": 35,
+    "directions": {
+      "R_to_P": {
+        "calls": 93,
+        "workflow_cpu": 6.406557253999999,
+        "workflow_wall": 6.408924772404134,
+        "uncut_cpu": 0.067873501
+      },
+      "P_to_R": {
+        "calls": 95,
+        "workflow_cpu": 5.952983423000006,
+        "workflow_wall": 5.955066626891494,
+        "uncut_cpu": 0.06781735500000008
+      }
+    }
+  },
+  {
+    "index": 90,
+    "name": "pr5.Noyori_ts65",
+    "host": "bosque70",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 15.958868036000002,
+    "native_slap_cpu": 0.34588689400000006,
+    "slap_sweep_workflow_cpu": 57.83676992799998,
+    "slap_sweep_mapping_cpu": 56.694762634,
+    "slap_sweep_workflow_wall": 57.84422092791647,
+    "aam_scoring_cpu": 0.8469962820000001,
+    "native_slap_scoring_cpu": 0.5980953009999999,
+    "slap_sweep_scoring_cpu": 1.8836627080000001,
+    "aggregation_cpu_including_read_decode": 0.441249668,
+    "calls": 204,
+    "native_candidates": 221,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 102,
+        "workflow_cpu": 32.84498449999999,
+        "workflow_wall": 32.84886485617608,
+        "uncut_cpu": 0.26618190600000013
+      },
+      "P_to_R": {
+        "calls": 102,
+        "workflow_cpu": 24.99178542799999,
+        "workflow_wall": 24.99535607174039,
+        "uncut_cpu": 0.21139533899999996
+      }
+    }
+  },
+  {
+    "index": 91,
+    "name": "pr6.AlNHCs_tsI",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 10.239130727,
+    "native_slap_cpu": 0.06639360100000002,
+    "slap_sweep_workflow_cpu": 2.9434089599999984,
+    "slap_sweep_mapping_cpu": 2.6657658500000005,
+    "slap_sweep_workflow_wall": 2.9473473075777292,
+    "aam_scoring_cpu": 1.235544646,
+    "native_slap_scoring_cpu": 0.05966372000000009,
+    "slap_sweep_scoring_cpu": 0.05551461099999999,
+    "aggregation_cpu_including_read_decode": 0.166852488,
+    "calls": 120,
+    "native_candidates": 120,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 60,
+        "workflow_cpu": 1.520733726,
+        "workflow_wall": 1.5231392160058022,
+        "uncut_cpu": 0.023641946999999996
+      },
+      "P_to_R": {
+        "calls": 60,
+        "workflow_cpu": 1.4226752339999984,
+        "workflow_wall": 1.424208091571927,
+        "uncut_cpu": 0.024807788000000053
+      }
+    }
+  },
+  {
+    "index": 92,
+    "name": "pr6.AlNHCs_tsII",
+    "host": "bosque70",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 8.612890351,
+    "native_slap_cpu": 0.09042850000000002,
+    "slap_sweep_workflow_cpu": 3.081552534000002,
+    "slap_sweep_mapping_cpu": 2.764683524000001,
+    "slap_sweep_workflow_wall": 3.0855202423408628,
+    "aam_scoring_cpu": 0.836316759,
+    "native_slap_scoring_cpu": 0.09354217800000009,
+    "slap_sweep_scoring_cpu": 0.11366768700000007,
+    "aggregation_cpu_including_read_decode": 0.173644837,
+    "calls": 120,
+    "native_candidates": 121,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 60,
+        "workflow_cpu": 1.5444433569999996,
+        "workflow_wall": 1.5468580117449164,
+        "uncut_cpu": 0.025738361999999904
+      },
+      "P_to_R": {
+        "calls": 60,
+        "workflow_cpu": 1.5371091770000023,
+        "workflow_wall": 1.5386622305959463,
+        "uncut_cpu": 0.025595647999999915
+      }
+    }
+  },
+  {
+    "index": 93,
+    "name": "pr7.V.dodh_ts1011-triplet",
+    "host": "bosque59",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 2.4776227229999996,
+    "native_slap_cpu": 0.07418076100000004,
+    "slap_sweep_workflow_cpu": 2.007491657,
+    "slap_sweep_mapping_cpu": 1.8437920080000003,
+    "slap_sweep_workflow_wall": 2.010546506382525,
+    "aam_scoring_cpu": 0.2810113809999999,
+    "native_slap_scoring_cpu": 0.05017631499999986,
+    "slap_sweep_scoring_cpu": 0.07289679399999993,
+    "aggregation_cpu_including_read_decode": 0.14253756699999998,
+    "calls": 84,
+    "native_candidates": 96,
+    "unique_label_partitions": 8,
+    "directions": {
+      "R_to_P": {
+        "calls": 41,
+        "workflow_cpu": 1.1917371169999997,
+        "workflow_wall": 1.1936237113550305,
+        "uncut_cpu": 0.028768625999999964
+      },
+      "P_to_R": {
+        "calls": 43,
+        "workflow_cpu": 0.8157545400000003,
+        "workflow_wall": 0.8169227950274944,
+        "uncut_cpu": 0.01730704499999991
+      }
+    }
+  },
+  {
+    "index": 94,
+    "name": "pr7.V.dodh_ts1015",
+    "host": "bosque59",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 2.03115546,
+    "native_slap_cpu": 0.04518688900000001,
+    "slap_sweep_workflow_cpu": 1.3349506899999994,
+    "slap_sweep_mapping_cpu": 1.1846142139999998,
+    "slap_sweep_workflow_wall": 1.3386988388374448,
+    "aam_scoring_cpu": 0.12524661599999987,
+    "native_slap_scoring_cpu": 0.08664410699999991,
+    "slap_sweep_scoring_cpu": 0.09947571699999991,
+    "aggregation_cpu_including_read_decode": 0.131938646,
+    "calls": 83,
+    "native_candidates": 83,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 41,
+        "workflow_cpu": 0.7038669039999993,
+        "workflow_wall": 0.7062967475503683,
+        "uncut_cpu": 0.01707287099999999
+      },
+      "P_to_R": {
+        "calls": 42,
+        "workflow_cpu": 0.6310837860000003,
+        "workflow_wall": 0.6324020912870765,
+        "uncut_cpu": 0.017109543999999977
+      }
+    }
+  },
+  {
+    "index": 95,
+    "name": "pr7.V.dodh_ts1112-triplet",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 2.95953259,
+    "native_slap_cpu": 0.07463938800000003,
+    "slap_sweep_workflow_cpu": 2.8058969169999957,
+    "slap_sweep_mapping_cpu": 2.641379740999998,
+    "slap_sweep_workflow_wall": 2.808712092228234,
+    "aam_scoring_cpu": 0.38549659999999997,
+    "native_slap_scoring_cpu": 0.08051748699999983,
+    "slap_sweep_scoring_cpu": 0.13490538500000016,
+    "aggregation_cpu_including_read_decode": 0.201197463,
+    "calls": 84,
+    "native_candidates": 170,
+    "unique_label_partitions": 8,
+    "directions": {
+      "R_to_P": {
+        "calls": 43,
+        "workflow_cpu": 1.4503004619999984,
+        "workflow_wall": 1.4520662585273385,
+        "uncut_cpu": 0.03420922599999998
+      },
+      "P_to_R": {
+        "calls": 41,
+        "workflow_cpu": 1.3555964549999975,
+        "workflow_wall": 1.3566458337008953,
+        "uncut_cpu": 0.03390886100000012
+      }
+    }
+  },
+  {
+    "index": 96,
+    "name": "pr7.V.dodh_ts13",
+    "host": "bosque59",
+    "aam_events": 1,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 1.6589122269999999,
+    "native_slap_cpu": 0.07330059899999997,
+    "slap_sweep_workflow_cpu": 1.3224370050000003,
+    "slap_sweep_mapping_cpu": 1.204046709,
+    "slap_sweep_workflow_wall": 1.3258156646043062,
+    "aam_scoring_cpu": 0.11829469599999998,
+    "native_slap_scoring_cpu": 0.06730764599999994,
+    "slap_sweep_scoring_cpu": 0.11872448800000013,
+    "aggregation_cpu_including_read_decode": 0.126914776,
+    "calls": 66,
+    "native_candidates": 86,
+    "unique_label_partitions": 8,
+    "directions": {
+      "R_to_P": {
+        "calls": 33,
+        "workflow_cpu": 0.8646547310000006,
+        "workflow_wall": 0.8667281195521355,
+        "uncut_cpu": 0.025452076999999962
+      },
+      "P_to_R": {
+        "calls": 33,
+        "workflow_cpu": 0.4577822739999997,
+        "workflow_wall": 0.45908754505217075,
+        "uncut_cpu": 0.013601441999999908
+      }
+    }
+  },
+  {
+    "index": 97,
+    "name": "pr7.V.dodh_ts1314",
+    "host": "bosque59",
+    "aam_events": 7,
+    "native_slap_events": 7,
+    "bidirectional_uncut_slap_events": 7,
+    "slap_sweep_events": 7,
+    "winner": "tie",
+    "aam_cpu": 10.000106878,
+    "native_slap_cpu": 0.06479107800000006,
+    "slap_sweep_workflow_cpu": 2.0492716979999983,
+    "slap_sweep_mapping_cpu": 1.8934539379999995,
+    "slap_sweep_workflow_wall": 2.052652522921562,
+    "aam_scoring_cpu": 1.4915543569999998,
+    "native_slap_scoring_cpu": 0.069933786,
+    "slap_sweep_scoring_cpu": 0.2001600189999999,
+    "aggregation_cpu_including_read_decode": 0.154779624,
+    "calls": 82,
+    "native_candidates": 113,
+    "unique_label_partitions": 15,
+    "directions": {
+      "R_to_P": {
+        "calls": 43,
+        "workflow_cpu": 1.2459535809999989,
+        "workflow_wall": 1.24803386349231,
+        "uncut_cpu": 0.032310907999999916
+      },
+      "P_to_R": {
+        "calls": 39,
+        "workflow_cpu": 0.8033181169999997,
+        "workflow_wall": 0.8046186594292521,
+        "uncut_cpu": 0.017745351000000187
+      }
+    }
+  },
+  {
+    "index": 98,
+    "name": "pr7.V.dodh_ts14",
+    "host": "bosque60",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 3.4491186600000003,
+    "native_slap_cpu": 0.05259506199999997,
+    "slap_sweep_workflow_cpu": 0.9483771979999999,
+    "slap_sweep_mapping_cpu": 0.8352673319999995,
+    "slap_sweep_workflow_wall": 0.9512110007926822,
+    "aam_scoring_cpu": 0.5459451319999999,
+    "native_slap_scoring_cpu": 0.06416637299999994,
+    "slap_sweep_scoring_cpu": 0.09124406399999996,
+    "aggregation_cpu_including_read_decode": 0.116973996,
+    "calls": 67,
+    "native_candidates": 71,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 33,
+        "workflow_cpu": 0.5007314349999994,
+        "workflow_wall": 0.502329159528017,
+        "uncut_cpu": 0.013528909000000033
+      },
+      "P_to_R": {
+        "calls": 34,
+        "workflow_cpu": 0.4476457630000005,
+        "workflow_wall": 0.4488818412646651,
+        "uncut_cpu": 0.01358520299999999
+      }
+    }
+  },
+  {
+    "index": 99,
+    "name": "pr7.V.dodh_ts141",
+    "host": "bosque59",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.8702145139999997,
+    "native_slap_cpu": 0.04505198499999996,
+    "slap_sweep_workflow_cpu": 1.5440439979999996,
+    "slap_sweep_mapping_cpu": 1.4187509869999997,
+    "slap_sweep_workflow_wall": 1.5471680872142315,
+    "aam_scoring_cpu": 0.1878600079999999,
+    "native_slap_scoring_cpu": 0.05736145100000001,
+    "slap_sweep_scoring_cpu": 0.07020195600000001,
+    "aggregation_cpu_including_read_decode": 0.140132898,
+    "calls": 68,
+    "native_candidates": 100,
+    "unique_label_partitions": 17,
+    "directions": {
+      "R_to_P": {
+        "calls": 34,
+        "workflow_cpu": 0.556888903999999,
+        "workflow_wall": 0.5586256748065352,
+        "uncut_cpu": 0.013989635000000056
+      },
+      "P_to_R": {
+        "calls": 34,
+        "workflow_cpu": 0.9871550940000006,
+        "workflow_wall": 0.9885424124076962,
+        "uncut_cpu": 0.026176246000000014
+      }
+    }
+  },
+  {
+    "index": 100,
+    "name": "pr7.V.dodh_ts156",
+    "host": "bosque59",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 3.318536744,
+    "native_slap_cpu": 0.049305213000000014,
+    "slap_sweep_workflow_cpu": 1.7005197129999994,
+    "slap_sweep_mapping_cpu": 1.540428017999999,
+    "slap_sweep_workflow_wall": 1.7037732545286417,
+    "aam_scoring_cpu": 0.5777390639999997,
+    "native_slap_scoring_cpu": 0.06897436400000001,
+    "slap_sweep_scoring_cpu": 0.17417608699999998,
+    "aggregation_cpu_including_read_decode": 0.144161904,
+    "calls": 85,
+    "native_candidates": 101,
+    "unique_label_partitions": 12,
+    "directions": {
+      "R_to_P": {
+        "calls": 42,
+        "workflow_cpu": 0.8347641920000001,
+        "workflow_wall": 0.8367544524371624,
+        "uncut_cpu": 0.017125338999999906
+      },
+      "P_to_R": {
+        "calls": 43,
+        "workflow_cpu": 0.8657555209999992,
+        "workflow_wall": 0.8670188020914793,
+        "uncut_cpu": 0.017306492000000118
+      }
+    }
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.5353471229999998,
+    "native_slap_cpu": 0.07567660200000004,
+    "slap_sweep_workflow_cpu": 1.4401688819999987,
+    "slap_sweep_mapping_cpu": 1.331714985,
+    "slap_sweep_workflow_wall": 1.44373987801373,
+    "aam_scoring_cpu": 0.09524192699999978,
+    "native_slap_scoring_cpu": 0.08108294800000015,
+    "slap_sweep_scoring_cpu": 0.12361689400000009,
+    "aggregation_cpu_including_read_decode": 0.15405918300000002,
+    "calls": 61,
+    "native_candidates": 124,
+    "unique_label_partitions": 17,
+    "directions": {
+      "R_to_P": {
+        "calls": 30,
+        "workflow_cpu": 0.734009766999999,
+        "workflow_wall": 0.7361762998625636,
+        "uncut_cpu": 0.03146515799999983
+      },
+      "P_to_R": {
+        "calls": 31,
+        "workflow_cpu": 0.7061591149999998,
+        "workflow_wall": 0.7075635781511664,
+        "uncut_cpu": 0.02453924899999993
+      }
+    }
+  },
+  {
+    "index": 102,
+    "name": "pr7.V.dodh_ts25-singlet",
+    "host": "bosque59",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 3.262021452,
+    "native_slap_cpu": 0.05509449799999999,
+    "slap_sweep_workflow_cpu": 1.4565359380000016,
+    "slap_sweep_mapping_cpu": 1.3473107650000005,
+    "slap_sweep_workflow_wall": 1.4596389336511493,
+    "aam_scoring_cpu": 0.2608840969999999,
+    "native_slap_scoring_cpu": 0.06529380699999998,
+    "slap_sweep_scoring_cpu": 0.09974047200000002,
+    "aggregation_cpu_including_read_decode": 0.146456818,
+    "calls": 59,
+    "native_candidates": 119,
+    "unique_label_partitions": 10,
+    "directions": {
+      "R_to_P": {
+        "calls": 29,
+        "workflow_cpu": 0.6897830760000006,
+        "workflow_wall": 0.6917399056255817,
+        "uncut_cpu": 0.02200220900000005
+      },
+      "P_to_R": {
+        "calls": 30,
+        "workflow_cpu": 0.766752862000001,
+        "workflow_wall": 0.7678990280255675,
+        "uncut_cpu": 0.025430526000000064
+      }
+    }
+  },
+  {
+    "index": 103,
+    "name": "pr7.V.dodh_ts25-triplet",
+    "host": "bosque60",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 2.7619920330000007,
+    "native_slap_cpu": 0.05562365700000005,
+    "slap_sweep_workflow_cpu": 1.5013235490000008,
+    "slap_sweep_mapping_cpu": 1.3908787260000004,
+    "slap_sweep_workflow_wall": 1.5043150642886758,
+    "aam_scoring_cpu": 0.22246179899999996,
+    "native_slap_scoring_cpu": 0.06212810199999996,
+    "slap_sweep_scoring_cpu": 0.07261227600000009,
+    "aggregation_cpu_including_read_decode": 0.147950718,
+    "calls": 59,
+    "native_candidates": 119,
+    "unique_label_partitions": 10,
+    "directions": {
+      "R_to_P": {
+        "calls": 29,
+        "workflow_cpu": 0.7335790020000009,
+        "workflow_wall": 0.7352866102010012,
+        "uncut_cpu": 0.026086209000000027
+      },
+      "P_to_R": {
+        "calls": 30,
+        "workflow_cpu": 0.7677445469999998,
+        "workflow_wall": 0.7690284540876746,
+        "uncut_cpu": 0.025547363000000045
+      }
+    }
+  },
+  {
+    "index": 104,
+    "name": "pr7.V.dodh_ts32",
+    "host": "bosque60",
+    "aam_events": 5,
+    "native_slap_events": 7,
+    "bidirectional_uncut_slap_events": 7,
+    "slap_sweep_events": 7,
+    "winner": "aam",
+    "aam_cpu": 2.448911768,
+    "native_slap_cpu": 0.07234842600000002,
+    "slap_sweep_workflow_cpu": 2.3605853609999983,
+    "slap_sweep_mapping_cpu": 2.2264453649999987,
+    "slap_sweep_workflow_wall": 2.3641363671049476,
+    "aam_scoring_cpu": 0.3965247649999999,
+    "native_slap_scoring_cpu": 0.08880511199999996,
+    "slap_sweep_scoring_cpu": 0.16472535600000016,
+    "aggregation_cpu_including_read_decode": 0.165734522,
+    "calls": 66,
+    "native_candidates": 154,
+    "unique_label_partitions": 15,
+    "directions": {
+      "R_to_P": {
+        "calls": 33,
+        "workflow_cpu": 0.8779809120000003,
+        "workflow_wall": 0.8797878725454211,
+        "uncut_cpu": 0.028818138000000104
+      },
+      "P_to_R": {
+        "calls": 33,
+        "workflow_cpu": 1.4826044489999979,
+        "workflow_wall": 1.4843484945595264,
+        "uncut_cpu": 0.047082544000000004
+      }
+    }
+  },
+  {
+    "index": 105,
+    "name": "pr7.V.dodh_ts45-singlet",
+    "host": "bosque50",
+    "aam_events": 7,
+    "native_slap_events": 7,
+    "bidirectional_uncut_slap_events": 7,
+    "slap_sweep_events": 7,
+    "winner": "tie",
+    "aam_cpu": 22.980001514999998,
+    "native_slap_cpu": 0.08679055299999994,
+    "slap_sweep_workflow_cpu": 3.319746872000001,
+    "slap_sweep_mapping_cpu": 3.1402977420000013,
+    "slap_sweep_workflow_wall": 3.323054950684309,
+    "aam_scoring_cpu": 3.335333019,
+    "native_slap_scoring_cpu": 0.08112393099999982,
+    "slap_sweep_scoring_cpu": 0.19531876799999992,
+    "aggregation_cpu_including_read_decode": 0.212899455,
+    "calls": 86,
+    "native_candidates": 177,
+    "unique_label_partitions": 13,
+    "directions": {
+      "R_to_P": {
+        "calls": 43,
+        "workflow_cpu": 1.6762754750000002,
+        "workflow_wall": 1.678254695609212,
+        "uncut_cpu": 0.039603111000000024
+      },
+      "P_to_R": {
+        "calls": 43,
+        "workflow_cpu": 1.6434713970000008,
+        "workflow_wall": 1.644800255075097,
+        "uncut_cpu": 0.039368347000000026
+      }
+    }
+  },
+  {
+    "index": 106,
+    "name": "pr7.V.dodh_ts45-triplet",
+    "host": "bosque50",
+    "aam_events": 7,
+    "native_slap_events": 7,
+    "bidirectional_uncut_slap_events": 7,
+    "slap_sweep_events": 7,
+    "winner": "tie",
+    "aam_cpu": 21.466795195,
+    "native_slap_cpu": 0.077095986,
+    "slap_sweep_workflow_cpu": 3.3523117390000015,
+    "slap_sweep_mapping_cpu": 3.1715745670000004,
+    "slap_sweep_workflow_wall": 3.3564330572262406,
+    "aam_scoring_cpu": 3.5527399089999996,
+    "native_slap_scoring_cpu": 0.0814139100000002,
+    "slap_sweep_scoring_cpu": 0.19525579000000004,
+    "aggregation_cpu_including_read_decode": 0.212021264,
+    "calls": 86,
+    "native_candidates": 177,
+    "unique_label_partitions": 13,
+    "directions": {
+      "R_to_P": {
+        "calls": 43,
+        "workflow_cpu": 1.6921345549999989,
+        "workflow_wall": 1.6945092510432005,
+        "uncut_cpu": 0.04007595399999997
+      },
+      "P_to_R": {
+        "calls": 43,
+        "workflow_cpu": 1.6601771840000026,
+        "workflow_wall": 1.6619238061830401,
+        "uncut_cpu": 0.03984322500000015
+      }
+    }
+  },
+  {
+    "index": 107,
+    "name": "pr7.V.dodh_ts56-singlet",
+    "host": "bosque50",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 1.8052325569999998,
+    "native_slap_cpu": 0.053425732999999975,
+    "slap_sweep_workflow_cpu": 1.553333374000002,
+    "slap_sweep_mapping_cpu": 1.4387738670000014,
+    "slap_sweep_workflow_wall": 1.5565372295677662,
+    "aam_scoring_cpu": 0.19664529100000006,
+    "native_slap_scoring_cpu": 0.0464722179999999,
+    "slap_sweep_scoring_cpu": 0.05535091300000006,
+    "aggregation_cpu_including_read_decode": 0.15175912199999997,
+    "calls": 62,
+    "native_candidates": 127,
+    "unique_label_partitions": 13,
+    "directions": {
+      "R_to_P": {
+        "calls": 30,
+        "workflow_cpu": 0.7349280330000005,
+        "workflow_wall": 0.7370956297963858,
+        "uncut_cpu": 0.02538687400000006
+      },
+      "P_to_R": {
+        "calls": 32,
+        "workflow_cpu": 0.8184053410000014,
+        "workflow_wall": 0.8194415997713804,
+        "uncut_cpu": 0.02499088100000002
+      }
+    }
+  },
+  {
+    "index": 108,
+    "name": "pr7.V.dodh_ts56-triplet",
+    "host": "bosque70",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 1.8602642239999998,
+    "native_slap_cpu": 0.053103376000000035,
+    "slap_sweep_workflow_cpu": 1.4255105649999995,
+    "slap_sweep_mapping_cpu": 1.3155442149999999,
+    "slap_sweep_workflow_wall": 1.4288451550528407,
+    "aam_scoring_cpu": 0.20524204199999985,
+    "native_slap_scoring_cpu": 0.048570248000000094,
+    "slap_sweep_scoring_cpu": 0.05651592399999994,
+    "aggregation_cpu_including_read_decode": 0.151751788,
+    "calls": 62,
+    "native_candidates": 127,
+    "unique_label_partitions": 13,
+    "directions": {
+      "R_to_P": {
+        "calls": 30,
+        "workflow_cpu": 0.7255483329999999,
+        "workflow_wall": 0.7277512717992067,
+        "uncut_cpu": 0.025076973000000002
+      },
+      "P_to_R": {
+        "calls": 32,
+        "workflow_cpu": 0.6999622319999996,
+        "workflow_wall": 0.701093883253634,
+        "uncut_cpu": 0.021662734999999822
+      }
+    }
+  },
+  {
+    "index": 109,
+    "name": "pr7.V.dodh_ts61",
+    "host": "bosque70",
+    "aam_events": 7,
+    "native_slap_events": 7,
+    "bidirectional_uncut_slap_events": 7,
+    "slap_sweep_events": 7,
+    "winner": "tie",
+    "aam_cpu": 4.328904309,
+    "native_slap_cpu": 0.05080869900000007,
+    "slap_sweep_workflow_cpu": 0.714025704,
+    "slap_sweep_mapping_cpu": 0.6192693989999992,
+    "slap_sweep_workflow_wall": 0.7222573412582278,
+    "aam_scoring_cpu": 1.3323301339999996,
+    "native_slap_scoring_cpu": 0.043345095000000056,
+    "slap_sweep_scoring_cpu": 0.04544540399999997,
+    "aggregation_cpu_including_read_decode": 0.10895684199999998,
+    "calls": 56,
+    "native_candidates": 58,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 30,
+        "workflow_cpu": 0.3801127249999994,
+        "workflow_wall": 0.38730048201978207,
+        "uncut_cpu": 0.013979266000000212
+      },
+      "P_to_R": {
+        "calls": 26,
+        "workflow_cpu": 0.3339129790000006,
+        "workflow_wall": 0.33495685923844576,
+        "uncut_cpu": 0.010889700999999974
+      }
+    }
+  },
+  {
+    "index": 110,
+    "name": "pr7.V.dodh_ts67",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.624039192,
+    "native_slap_cpu": 0.03911610099999996,
+    "slap_sweep_workflow_cpu": 0.693572312000001,
+    "slap_sweep_mapping_cpu": 0.6067286839999999,
+    "slap_sweep_workflow_wall": 0.6964120464399457,
+    "aam_scoring_cpu": 0.20881563900000022,
+    "native_slap_scoring_cpu": 0.06137880500000015,
+    "slap_sweep_scoring_cpu": 0.08801694599999998,
+    "aggregation_cpu_including_read_decode": 0.113844318,
+    "calls": 57,
+    "native_candidates": 67,
+    "unique_label_partitions": 5,
+    "directions": {
+      "R_to_P": {
+        "calls": 30,
+        "workflow_cpu": 0.4030282260000012,
+        "workflow_wall": 0.40489157661795616,
+        "uncut_cpu": 0.009763022999999982
+      },
+      "P_to_R": {
+        "calls": 27,
+        "workflow_cpu": 0.2905440859999998,
+        "workflow_wall": 0.29152046982198954,
+        "uncut_cpu": 0.012329970000000023
+      }
+    }
+  },
+  {
+    "index": 111,
+    "name": "pr7.V.dodh_ts71",
+    "host": "bosque70",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 1.6873935989999997,
+    "native_slap_cpu": 0.038237691000000074,
+    "slap_sweep_workflow_cpu": 0.6281102390000001,
+    "slap_sweep_mapping_cpu": 0.5385024050000002,
+    "slap_sweep_workflow_wall": 0.631391353905201,
+    "aam_scoring_cpu": 0.16064856900000013,
+    "native_slap_scoring_cpu": 0.04417200999999982,
+    "slap_sweep_scoring_cpu": 0.06202802799999996,
+    "aggregation_cpu_including_read_decode": 0.10816831799999999,
+    "calls": 53,
+    "native_candidates": 61,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 27,
+        "workflow_cpu": 0.2993189380000002,
+        "workflow_wall": 0.3010793402791023,
+        "uncut_cpu": 0.011701598000000035
+      },
+      "P_to_R": {
+        "calls": 26,
+        "workflow_cpu": 0.32879130099999987,
+        "workflow_wall": 0.33031201362609863,
+        "uncut_cpu": 0.011047322000000026
+      }
+    }
+  },
+  {
+    "index": 112,
+    "name": "pr7.V.dodh_ts81",
+    "host": "bosque70",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 2.7832174489999995,
+    "native_slap_cpu": 0.033172382000000056,
+    "slap_sweep_workflow_cpu": 0.709907008999998,
+    "slap_sweep_mapping_cpu": 0.6169338069999997,
+    "slap_sweep_workflow_wall": 0.7134688496589661,
+    "aam_scoring_cpu": 0.4188445470000002,
+    "native_slap_scoring_cpu": 0.042848314,
+    "slap_sweep_scoring_cpu": 0.04779212200000005,
+    "aggregation_cpu_including_read_decode": 0.111492239,
+    "calls": 55,
+    "native_candidates": 61,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 29,
+        "workflow_cpu": 0.343209396999999,
+        "workflow_wall": 0.34529067762196064,
+        "uncut_cpu": 0.010992656999999961
+      },
+      "P_to_R": {
+        "calls": 26,
+        "workflow_cpu": 0.36669761199999906,
+        "workflow_wall": 0.3681781720370054,
+        "uncut_cpu": 0.010925697999999984
+      }
+    }
+  },
+  {
+    "index": 113,
+    "name": "pr7.V.dodh_ts81-b",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.6334887999999999,
+    "native_slap_cpu": 0.07092457699999999,
+    "slap_sweep_workflow_cpu": 0.7314646569999997,
+    "slap_sweep_mapping_cpu": 0.6379702440000001,
+    "slap_sweep_workflow_wall": 0.734266665764153,
+    "aam_scoring_cpu": 0.13275244500000016,
+    "native_slap_scoring_cpu": 0.046186061,
+    "slap_sweep_scoring_cpu": 0.048236736999999974,
+    "aggregation_cpu_including_read_decode": 0.109676861,
+    "calls": 55,
+    "native_candidates": 61,
+    "unique_label_partitions": 5,
+    "directions": {
+      "R_to_P": {
+        "calls": 29,
+        "workflow_cpu": 0.34236619300000004,
+        "workflow_wall": 0.3438982358202338,
+        "uncut_cpu": 0.01090787900000001
+      },
+      "P_to_R": {
+        "calls": 26,
+        "workflow_cpu": 0.3890984639999997,
+        "workflow_wall": 0.3903684299439192,
+        "uncut_cpu": 0.0110393780000001
+      }
+    }
+  },
+  {
+    "index": 114,
+    "name": "pr7.V.dodh_ts910",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.5325816209999994,
+    "native_slap_cpu": 0.09530229700000004,
+    "slap_sweep_workflow_cpu": 2.187715562,
+    "slap_sweep_mapping_cpu": 2.067553125,
+    "slap_sweep_workflow_wall": 2.1915028858929873,
+    "aam_scoring_cpu": 0.1140411309999998,
+    "native_slap_scoring_cpu": 0.07276548699999985,
+    "slap_sweep_scoring_cpu": 0.176130931,
+    "aggregation_cpu_including_read_decode": 0.19036124200000004,
+    "calls": 62,
+    "native_candidates": 184,
+    "unique_label_partitions": 27,
+    "directions": {
+      "R_to_P": {
+        "calls": 31,
+        "workflow_cpu": 1.0592658959999999,
+        "workflow_wall": 1.06171097420156,
+        "uncut_cpu": 0.04171960999999991
+      },
+      "P_to_R": {
+        "calls": 31,
+        "workflow_cpu": 1.1284496660000003,
+        "workflow_wall": 1.1297919116914272,
+        "uncut_cpu": 0.03737145900000005
+      }
+    }
+  },
+  {
+    "index": 115,
+    "name": "pr7.V.dodh_ts910-water",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.7543118039999999,
+    "native_slap_cpu": 0.08926285499999997,
+    "slap_sweep_workflow_cpu": 2.549881716,
+    "slap_sweep_mapping_cpu": 2.4159291440000015,
+    "slap_sweep_workflow_wall": 2.5535734202712774,
+    "aam_scoring_cpu": 0.13500155700000005,
+    "native_slap_scoring_cpu": 0.0769050870000001,
+    "slap_sweep_scoring_cpu": 0.2518952550000001,
+    "aggregation_cpu_including_read_decode": 0.20511706400000002,
+    "calls": 66,
+    "native_candidates": 196,
+    "unique_label_partitions": 35,
+    "directions": {
+      "R_to_P": {
+        "calls": 33,
+        "workflow_cpu": 1.3287341270000004,
+        "workflow_wall": 1.3308841837570071,
+        "uncut_cpu": 0.05357460199999997
+      },
+      "P_to_R": {
+        "calls": 33,
+        "workflow_cpu": 1.2211475889999994,
+        "workflow_wall": 1.2226892365142703,
+        "uncut_cpu": 0.04313908700000002
+      }
+    }
+  },
+  {
+    "index": 116,
+    "name": "pr8.ketenes_ts1prime",
+    "host": "bosque59",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 6.311058796999999,
+    "native_slap_cpu": 0.12444107399999993,
+    "slap_sweep_workflow_cpu": 7.753495241000007,
+    "slap_sweep_mapping_cpu": 7.379275220999999,
+    "slap_sweep_workflow_wall": 7.756865072995424,
+    "aam_scoring_cpu": 1.064417054,
+    "native_slap_scoring_cpu": 0.08134421000000014,
+    "slap_sweep_scoring_cpu": 0.1947953979999999,
+    "aggregation_cpu_including_read_decode": 0.280020936,
+    "calls": 137,
+    "native_candidates": 167,
+    "unique_label_partitions": 11,
+    "directions": {
+      "R_to_P": {
+        "calls": 71,
+        "workflow_cpu": 5.169364020000004,
+        "workflow_wall": 5.171137633733451,
+        "uncut_cpu": 0.0686975230000001
+      },
+      "P_to_R": {
+        "calls": 66,
+        "workflow_cpu": 2.5841312210000025,
+        "workflow_wall": 2.585727439261973,
+        "uncut_cpu": 0.038844275999999955
+      }
+    }
+  },
+  {
+    "index": 117,
+    "name": "pr8.ketenes_ts2prime",
+    "host": "bosque59",
+    "aam_events": 1,
+    "native_slap_events": 1,
+    "bidirectional_uncut_slap_events": 1,
+    "slap_sweep_events": 1,
+    "winner": "tie",
+    "aam_cpu": 8.025247421,
+    "native_slap_cpu": 0.10694306900000006,
+    "slap_sweep_workflow_cpu": 7.158691452999998,
+    "slap_sweep_mapping_cpu": 6.792209875000001,
+    "slap_sweep_workflow_wall": 7.161630855873227,
+    "aam_scoring_cpu": 0.8520954269999998,
+    "native_slap_scoring_cpu": 0.08118466099999999,
+    "slap_sweep_scoring_cpu": 0.13598231900000002,
+    "aggregation_cpu_including_read_decode": 0.270089969,
+    "calls": 134,
+    "native_candidates": 153,
+    "unique_label_partitions": 6,
+    "directions": {
+      "R_to_P": {
+        "calls": 66,
+        "workflow_cpu": 4.347615700999997,
+        "workflow_wall": 4.349398116581142,
+        "uncut_cpu": 0.06351681199999992
+      },
+      "P_to_R": {
+        "calls": 68,
+        "workflow_cpu": 2.8110757520000007,
+        "workflow_wall": 2.812232739292085,
+        "uncut_cpu": 0.037232992000000076
+      }
+    }
+  },
+  {
+    "index": 118,
+    "name": "pr9.carbene.rearr_ts10",
+    "host": "bosque60",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.0681707669999998,
+    "native_slap_cpu": 0.033393570999999955,
+    "slap_sweep_workflow_cpu": 0.41020919999999994,
+    "slap_sweep_mapping_cpu": 0.3443146559999998,
+    "slap_sweep_workflow_wall": 0.4127715975046158,
+    "aam_scoring_cpu": 0.07249093699999998,
+    "native_slap_scoring_cpu": 0.041228421000000015,
+    "slap_sweep_scoring_cpu": 0.04340296300000002,
+    "aggregation_cpu_including_read_decode": 0.09848989999999999,
+    "calls": 40,
+    "native_candidates": 46,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 20,
+        "workflow_cpu": 0.22819272700000004,
+        "workflow_wall": 0.22945463471114635,
+        "uncut_cpu": 0.00804470200000007
+      },
+      "P_to_R": {
+        "calls": 20,
+        "workflow_cpu": 0.1820164729999999,
+        "workflow_wall": 0.18331696279346943,
+        "uncut_cpu": 0.008009738000000044
+      }
+    }
+  },
+  {
+    "index": 119,
+    "name": "pr9.carbene.rearr_ts11",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 6.311852351,
+    "native_slap_cpu": 0.08078660299999996,
+    "slap_sweep_workflow_cpu": 4.977249466000002,
+    "slap_sweep_mapping_cpu": 4.466386220000001,
+    "slap_sweep_workflow_wall": 4.98060064855963,
+    "aam_scoring_cpu": 0.5635653899999999,
+    "native_slap_scoring_cpu": 0.05795643200000011,
+    "slap_sweep_scoring_cpu": 0.062528252,
+    "aggregation_cpu_including_read_decode": 0.24172046999999997,
+    "calls": 130,
+    "native_candidates": 136,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 66,
+        "workflow_cpu": 2.4373932790000006,
+        "workflow_wall": 2.4393451372161508,
+        "uncut_cpu": 0.03682422399999996
+      },
+      "P_to_R": {
+        "calls": 64,
+        "workflow_cpu": 2.5398561870000007,
+        "workflow_wall": 2.541255511343479,
+        "uncut_cpu": 0.03694379899999989
+      }
+    }
+  },
+  {
+    "index": 120,
+    "name": "pr9.carbene.rearr_ts13a",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.4591412849999998,
+    "native_slap_cpu": 0.043592469999999994,
+    "slap_sweep_workflow_cpu": 1.6689719040000006,
+    "slap_sweep_mapping_cpu": 1.5576003760000003,
+    "slap_sweep_workflow_wall": 1.6711161760613322,
+    "aam_scoring_cpu": 0.07578457100000002,
+    "native_slap_scoring_cpu": 0.04741841400000002,
+    "slap_sweep_scoring_cpu": 0.04414108399999994,
+    "aggregation_cpu_including_read_decode": 0.136283724,
+    "calls": 58,
+    "native_candidates": 112,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 29,
+        "workflow_cpu": 0.8369212199999999,
+        "workflow_wall": 0.8382359622046351,
+        "uncut_cpu": 0.019307909000000012
+      },
+      "P_to_R": {
+        "calls": 29,
+        "workflow_cpu": 0.8320506840000007,
+        "workflow_wall": 0.8328802138566971,
+        "uncut_cpu": 0.01909577100000004
+      }
+    }
+  },
+  {
+    "index": 121,
+    "name": "pr9.carbene.rearr_ts33",
+    "host": "bosque50",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 60.385111687000006,
+    "native_slap_cpu": 0.09442583300000007,
+    "slap_sweep_workflow_cpu": 5.268886714999994,
+    "slap_sweep_mapping_cpu": 4.760957991999996,
+    "slap_sweep_workflow_wall": 5.272820999845862,
+    "aam_scoring_cpu": 4.870372352999999,
+    "native_slap_scoring_cpu": 0.07041331299999998,
+    "slap_sweep_scoring_cpu": 0.07250114500000004,
+    "aggregation_cpu_including_read_decode": 0.23985603,
+    "calls": 130,
+    "native_candidates": 132,
+    "unique_label_partitions": 7,
+    "directions": {
+      "R_to_P": {
+        "calls": 64,
+        "workflow_cpu": 2.5696723679999955,
+        "workflow_wall": 2.5719909062609076,
+        "uncut_cpu": 0.04081600200000002
+      },
+      "P_to_R": {
+        "calls": 66,
+        "workflow_cpu": 2.699214346999998,
+        "workflow_wall": 2.7008300935849547,
+        "uncut_cpu": 0.03732345700000006
+      }
+    }
+  },
+  {
+    "index": 122,
+    "name": "pr9.carbene.rearr_ts39-endo",
+    "host": "bosque50",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 10.199095168,
+    "native_slap_cpu": 0.05028996799999996,
+    "slap_sweep_workflow_cpu": 3.477884540999997,
+    "slap_sweep_mapping_cpu": 3.2680715689999973,
+    "slap_sweep_workflow_wall": 3.4810038236901164,
+    "aam_scoring_cpu": 0.4255001530000002,
+    "native_slap_scoring_cpu": 0.05082462300000001,
+    "slap_sweep_scoring_cpu": 0.30151306,
+    "aggregation_cpu_including_read_decode": 0.16982690299999997,
+    "calls": 92,
+    "native_candidates": 128,
+    "unique_label_partitions": 52,
+    "directions": {
+      "R_to_P": {
+        "calls": 45,
+        "workflow_cpu": 1.0718813539999978,
+        "workflow_wall": 1.0735750896856189,
+        "uncut_cpu": 0.02117923399999999
+      },
+      "P_to_R": {
+        "calls": 47,
+        "workflow_cpu": 2.4060031869999996,
+        "workflow_wall": 2.4074287340044975,
+        "uncut_cpu": 0.021075652999999916
+      }
+    }
+  },
+  {
+    "index": 123,
+    "name": "pr9.carbene.rearr_ts41a-endo",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 36.08373563,
+    "native_slap_cpu": 0.076730254,
+    "slap_sweep_workflow_cpu": 3.4920060390000023,
+    "slap_sweep_mapping_cpu": 3.256782970000001,
+    "slap_sweep_workflow_wall": 3.494732793420553,
+    "aam_scoring_cpu": 1.5521148310000001,
+    "native_slap_scoring_cpu": 0.04871991100000006,
+    "slap_sweep_scoring_cpu": 0.052490676000000014,
+    "aggregation_cpu_including_read_decode": 0.153640193,
+    "calls": 94,
+    "native_candidates": 110,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 47,
+        "workflow_cpu": 2.253119696000001,
+        "workflow_wall": 2.2546349419280887,
+        "uncut_cpu": 0.03510552300000014
+      },
+      "P_to_R": {
+        "calls": 47,
+        "workflow_cpu": 1.238886343000001,
+        "workflow_wall": 1.2400978514924645,
+        "uncut_cpu": 0.023324041000000073
+      }
+    }
+  },
+  {
+    "index": 124,
+    "name": "pr9.carbene.rearr_ts42",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 9.303697837999998,
+    "native_slap_cpu": 0.07570049400000001,
+    "slap_sweep_workflow_cpu": 6.358282211000002,
+    "slap_sweep_mapping_cpu": 5.911823513000002,
+    "slap_sweep_workflow_wall": 6.362394378520548,
+    "aam_scoring_cpu": 0.540189314,
+    "native_slap_scoring_cpu": 0.05644173600000002,
+    "slap_sweep_scoring_cpu": 0.10510955599999994,
+    "aggregation_cpu_including_read_decode": 0.26367418,
+    "calls": 130,
+    "native_candidates": 155,
+    "unique_label_partitions": 19,
+    "directions": {
+      "R_to_P": {
+        "calls": 64,
+        "workflow_cpu": 3.3340783620000023,
+        "workflow_wall": 3.336158998310566,
+        "uncut_cpu": 0.037538775999999996
+      },
+      "P_to_R": {
+        "calls": 66,
+        "workflow_cpu": 3.024203849,
+        "workflow_wall": 3.0262353802099824,
+        "uncut_cpu": 0.03821790199999986
+      }
+    }
+  },
+  {
+    "index": 125,
+    "name": "pr9.carbene.rearr_ts47a",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 7.0057642310000015,
+    "native_slap_cpu": 0.06229111899999995,
+    "slap_sweep_workflow_cpu": 4.39661031,
+    "slap_sweep_mapping_cpu": 4.176434240000001,
+    "slap_sweep_workflow_wall": 4.400208036415279,
+    "aam_scoring_cpu": 0.33465563099999973,
+    "native_slap_scoring_cpu": 0.04998988300000007,
+    "slap_sweep_scoring_cpu": 0.17163706400000012,
+    "aggregation_cpu_including_read_decode": 0.173790512,
+    "calls": 92,
+    "native_candidates": 124,
+    "unique_label_partitions": 45,
+    "directions": {
+      "R_to_P": {
+        "calls": 45,
+        "workflow_cpu": 1.2292435419999994,
+        "workflow_wall": 1.2312353495508432,
+        "uncut_cpu": 0.021255208000000136
+      },
+      "P_to_R": {
+        "calls": 47,
+        "workflow_cpu": 3.167366768,
+        "workflow_wall": 3.1689726868644357,
+        "uncut_cpu": 0.021597230000000023
+      }
+    }
+  },
+  {
+    "index": 126,
+    "name": "TS_01",
+    "host": "bosque70",
+    "aam_events": 3,
+    "native_slap_events": 3,
+    "bidirectional_uncut_slap_events": 3,
+    "slap_sweep_events": 3,
+    "winner": "tie",
+    "aam_cpu": 1.5908374529999998,
+    "native_slap_cpu": 0.04336736600000002,
+    "slap_sweep_workflow_cpu": 1.0611826790000007,
+    "slap_sweep_mapping_cpu": 0.939569498,
+    "slap_sweep_workflow_wall": 1.063503623008728,
+    "aam_scoring_cpu": 0.08531782799999998,
+    "native_slap_scoring_cpu": 0.06276438900000003,
+    "slap_sweep_scoring_cpu": 0.04965385599999994,
+    "aggregation_cpu_including_read_decode": 0.12197836299999999,
+    "calls": 70,
+    "native_candidates": 74,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 35,
+        "workflow_cpu": 0.5216014650000006,
+        "workflow_wall": 0.5229667965322733,
+        "uncut_cpu": 0.013975342999999918
+      },
+      "P_to_R": {
+        "calls": 35,
+        "workflow_cpu": 0.5395812140000003,
+        "workflow_wall": 0.5405368264764547,
+        "uncut_cpu": 0.0129045470000001
+      }
+    }
+  },
+  {
+    "index": 127,
+    "name": "TS_02",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.2172351790000002,
+    "native_slap_cpu": 0.03550461699999996,
+    "slap_sweep_workflow_cpu": 0.48349963299999976,
+    "slap_sweep_mapping_cpu": 0.40407836000000064,
+    "slap_sweep_workflow_wall": 0.485766570083797,
+    "aam_scoring_cpu": 0.08404141399999987,
+    "native_slap_scoring_cpu": 0.059466559000000085,
+    "slap_sweep_scoring_cpu": 0.04492499999999999,
+    "aggregation_cpu_including_read_decode": 0.10070673100000001,
+    "calls": 49,
+    "native_candidates": 52,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 25,
+        "workflow_cpu": 0.2368650400000002,
+        "workflow_wall": 0.2383296312764287,
+        "uncut_cpu": 0.007750935999999875
+      },
+      "P_to_R": {
+        "calls": 24,
+        "workflow_cpu": 0.24663459299999957,
+        "workflow_wall": 0.24743693880736828,
+        "uncut_cpu": 0.007862824000000046
+      }
+    }
+  },
+  {
+    "index": 128,
+    "name": "TS_03",
+    "host": "bosque59",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 1.2834852779999997,
+    "native_slap_cpu": 0.03717672300000008,
+    "slap_sweep_workflow_cpu": 0.7728024669999991,
+    "slap_sweep_mapping_cpu": 0.6791740009999995,
+    "slap_sweep_workflow_wall": 0.7753440579399467,
+    "aam_scoring_cpu": 0.0824971910000003,
+    "native_slap_scoring_cpu": 0.06223818399999992,
+    "slap_sweep_scoring_cpu": 0.045689291000000076,
+    "aggregation_cpu_including_read_decode": 0.104998665,
+    "calls": 49,
+    "native_candidates": 53,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 24,
+        "workflow_cpu": 0.33766780599999935,
+        "workflow_wall": 0.33917080983519554,
+        "uncut_cpu": 0.013250534000000092
+      },
+      "P_to_R": {
+        "calls": 25,
+        "workflow_cpu": 0.43513466099999976,
+        "workflow_wall": 0.4361732481047511,
+        "uncut_cpu": 0.012818806999999821
+      }
+    }
+  },
+  {
+    "index": 129,
+    "name": "TS_04",
+    "host": "bosque59",
+    "aam_events": 8,
+    "native_slap_events": 8,
+    "bidirectional_uncut_slap_events": 8,
+    "slap_sweep_events": 8,
+    "winner": "tie",
+    "aam_cpu": 5.747660501,
+    "native_slap_cpu": 0.06742694599999999,
+    "slap_sweep_workflow_cpu": 6.01322955,
+    "slap_sweep_mapping_cpu": 5.598169528,
+    "slap_sweep_workflow_wall": 6.016693023964763,
+    "aam_scoring_cpu": 0.4289330229999999,
+    "native_slap_scoring_cpu": 0.09697139399999988,
+    "slap_sweep_scoring_cpu": 1.971152757,
+    "aggregation_cpu_including_read_decode": 0.238059978,
+    "calls": 126,
+    "native_candidates": 145,
+    "unique_label_partitions": 56,
+    "directions": {
+      "R_to_P": {
+        "calls": 62,
+        "workflow_cpu": 3.420752217000002,
+        "workflow_wall": 3.4228041972965,
+        "uncut_cpu": 0.032706778999999964
+      },
+      "P_to_R": {
+        "calls": 64,
+        "workflow_cpu": 2.592477332999998,
+        "workflow_wall": 2.5938888266682625,
+        "uncut_cpu": 0.03262737800000004
+      }
+    }
+  },
+  {
+    "index": 130,
+    "name": "TS_05",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 1.7928611179999998,
+    "native_slap_cpu": 0.04782911299999992,
+    "slap_sweep_workflow_cpu": 1.242309567000002,
+    "slap_sweep_mapping_cpu": 1.1062330570000012,
+    "slap_sweep_workflow_wall": 1.2450952781364322,
+    "aam_scoring_cpu": 0.08858129299999984,
+    "native_slap_scoring_cpu": 0.04870606199999994,
+    "slap_sweep_scoring_cpu": 0.04799239599999994,
+    "aggregation_cpu_including_read_decode": 0.123873015,
+    "calls": 74,
+    "native_candidates": 75,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 38,
+        "workflow_cpu": 0.6504165890000012,
+        "workflow_wall": 0.6518433000892401,
+        "uncut_cpu": 0.015622285000000069
+      },
+      "P_to_R": {
+        "calls": 36,
+        "workflow_cpu": 0.5918929780000007,
+        "workflow_wall": 0.5932519780471921,
+        "uncut_cpu": 0.015596678000000086
+      }
+    }
+  },
+  {
+    "index": 131,
+    "name": "TS_07",
+    "host": "bosque59",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 3.085764962,
+    "native_slap_cpu": 0.06129264500000009,
+    "slap_sweep_workflow_cpu": 3.1143303259999993,
+    "slap_sweep_mapping_cpu": 2.8317769049999995,
+    "slap_sweep_workflow_wall": 3.1170639609918,
+    "aam_scoring_cpu": 0.2549262560000001,
+    "native_slap_scoring_cpu": 0.054208505999999934,
+    "slap_sweep_scoring_cpu": 0.05353345400000009,
+    "aggregation_cpu_including_read_decode": 0.207925665,
+    "calls": 113,
+    "native_candidates": 117,
+    "unique_label_partitions": 2,
+    "directions": {
+      "R_to_P": {
+        "calls": 57,
+        "workflow_cpu": 1.6277920499999992,
+        "workflow_wall": 1.6291675260290504,
+        "uncut_cpu": 0.024714718000000024
+      },
+      "P_to_R": {
+        "calls": 56,
+        "workflow_cpu": 1.486538276,
+        "workflow_wall": 1.4878964349627495,
+        "uncut_cpu": 0.024874916999999885
+      }
+    }
+  },
+  {
+    "index": 132,
+    "name": "TS_08",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 2.22640242,
+    "native_slap_cpu": 0.04405370200000003,
+    "slap_sweep_workflow_cpu": 1.431644619,
+    "slap_sweep_mapping_cpu": 1.270964089,
+    "slap_sweep_workflow_wall": 1.4341784939169884,
+    "aam_scoring_cpu": 0.11163763500000012,
+    "native_slap_scoring_cpu": 0.07240869500000002,
+    "slap_sweep_scoring_cpu": 0.10325451399999996,
+    "aggregation_cpu_including_read_decode": 0.133560982,
+    "calls": 81,
+    "native_candidates": 92,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 40,
+        "workflow_cpu": 0.7269441920000006,
+        "workflow_wall": 0.728252237662673,
+        "uncut_cpu": 0.014747339000000026
+      },
+      "P_to_R": {
+        "calls": 41,
+        "workflow_cpu": 0.7047004269999995,
+        "workflow_wall": 0.7059262562543154,
+        "uncut_cpu": 0.0159778599999999
+      }
+    }
+  },
+  {
+    "index": 133,
+    "name": "TS_09",
+    "host": "bosque60",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 4.652604099999999,
+    "native_slap_cpu": 0.07648025800000002,
+    "slap_sweep_workflow_cpu": 5.222946685,
+    "slap_sweep_mapping_cpu": 4.8339448690000015,
+    "slap_sweep_workflow_wall": 5.225773353129625,
+    "aam_scoring_cpu": 0.19762257799999983,
+    "native_slap_scoring_cpu": 0.09768096999999987,
+    "slap_sweep_scoring_cpu": 0.14064005300000004,
+    "aggregation_cpu_including_read_decode": 0.245670135,
+    "calls": 135,
+    "native_candidates": 137,
+    "unique_label_partitions": 5,
+    "directions": {
+      "R_to_P": {
+        "calls": 67,
+        "workflow_cpu": 2.3384400539999985,
+        "workflow_wall": 2.3401772808283567,
+        "uncut_cpu": 0.03642395300000001
+      },
+      "P_to_R": {
+        "calls": 68,
+        "workflow_cpu": 2.8845066310000016,
+        "workflow_wall": 2.8855960723012686,
+        "uncut_cpu": 0.03661896100000006
+      }
+    }
+  },
+  {
+    "index": 134,
+    "name": "TS_10",
+    "host": "bosque50",
+    "aam_events": 6,
+    "native_slap_events": 6,
+    "bidirectional_uncut_slap_events": 6,
+    "slap_sweep_events": 6,
+    "winner": "tie",
+    "aam_cpu": 31.925190758000003,
+    "native_slap_cpu": 0.075769176,
+    "slap_sweep_workflow_cpu": 7.489748604,
+    "slap_sweep_mapping_cpu": 7.155203664,
+    "slap_sweep_workflow_wall": 7.492635234259069,
+    "aam_scoring_cpu": 1.69621873,
+    "native_slap_scoring_cpu": 0.07301289300000002,
+    "slap_sweep_scoring_cpu": 0.156502712,
+    "aggregation_cpu_including_read_decode": 0.22210203699999997,
+    "calls": 120,
+    "native_candidates": 121,
+    "unique_label_partitions": 8,
+    "directions": {
+      "R_to_P": {
+        "calls": 59,
+        "workflow_cpu": 2.4202144239999965,
+        "workflow_wall": 2.4217304633930326,
+        "uncut_cpu": 0.03184926399999999
+      },
+      "P_to_R": {
+        "calls": 61,
+        "workflow_cpu": 5.069534180000003,
+        "workflow_wall": 5.070904770866036,
+        "uncut_cpu": 0.03164281300000005
+      }
+    }
+  },
+  {
+    "index": 135,
+    "name": "TS_11",
+    "host": "bosque50",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 10.046373627000001,
+    "native_slap_cpu": 0.06095207800000002,
+    "slap_sweep_workflow_cpu": 1.5664378479999996,
+    "slap_sweep_mapping_cpu": 1.4159516509999996,
+    "slap_sweep_workflow_wall": 1.5687185190618038,
+    "aam_scoring_cpu": 0.5870505710000002,
+    "native_slap_scoring_cpu": 0.050676662999999955,
+    "slap_sweep_scoring_cpu": 0.06998234599999997,
+    "aggregation_cpu_including_read_decode": 0.130760629,
+    "calls": 77,
+    "native_candidates": 83,
+    "unique_label_partitions": 12,
+    "directions": {
+      "R_to_P": {
+        "calls": 38,
+        "workflow_cpu": 0.8287252460000001,
+        "workflow_wall": 0.8301134537905455,
+        "uncut_cpu": 0.016489662000000016
+      },
+      "P_to_R": {
+        "calls": 39,
+        "workflow_cpu": 0.7377126019999996,
+        "workflow_wall": 0.7386050652712584,
+        "uncut_cpu": 0.016437702000000165
+      }
+    }
+  },
+  {
+    "index": 136,
+    "name": "TS_12",
+    "host": "bosque70",
+    "aam_events": 5,
+    "native_slap_events": 5,
+    "bidirectional_uncut_slap_events": 5,
+    "slap_sweep_events": 5,
+    "winner": "tie",
+    "aam_cpu": 3.6943789670000005,
+    "native_slap_cpu": 0.03774343499999999,
+    "slap_sweep_workflow_cpu": 1.2084032479999993,
+    "slap_sweep_mapping_cpu": 1.0517927819999984,
+    "slap_sweep_workflow_wall": 1.2109724981710315,
+    "aam_scoring_cpu": 0.31899283,
+    "native_slap_scoring_cpu": 0.0467598010000001,
+    "slap_sweep_scoring_cpu": 0.050702672999999976,
+    "aggregation_cpu_including_read_decode": 0.120834341,
+    "calls": 81,
+    "native_candidates": 83,
+    "unique_label_partitions": 3,
+    "directions": {
+      "R_to_P": {
+        "calls": 40,
+        "workflow_cpu": 0.5906158619999996,
+        "workflow_wall": 0.5922254733741283,
+        "uncut_cpu": 0.014015449000000069
+      },
+      "P_to_R": {
+        "calls": 41,
+        "workflow_cpu": 0.6177873859999996,
+        "workflow_wall": 0.6187470247969031,
+        "uncut_cpu": 0.014296781000000092
+      }
+    }
+  },
+  {
+    "index": 137,
+    "name": "TS_13",
+    "host": "bosque70",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 2.696006991,
+    "native_slap_cpu": 0.03593651799999997,
+    "slap_sweep_workflow_cpu": 0.9210909160000003,
+    "slap_sweep_mapping_cpu": 0.8125736819999997,
+    "slap_sweep_workflow_wall": 0.9245262620970607,
+    "aam_scoring_cpu": 0.24908437500000002,
+    "native_slap_scoring_cpu": 0.046807915999999894,
+    "slap_sweep_scoring_cpu": 0.12387046699999993,
+    "aggregation_cpu_including_read_decode": 0.110947273,
+    "calls": 64,
+    "native_candidates": 68,
+    "unique_label_partitions": 4,
+    "directions": {
+      "R_to_P": {
+        "calls": 32,
+        "workflow_cpu": 0.4526259689999995,
+        "workflow_wall": 0.4547128798440099,
+        "uncut_cpu": 0.013071777999999923
+      },
+      "P_to_R": {
+        "calls": 32,
+        "workflow_cpu": 0.46846494700000074,
+        "workflow_wall": 0.4698133822530508,
+        "uncut_cpu": 0.012317599000000068
+      }
+    }
+  },
+  {
+    "index": 138,
+    "name": "TS_15",
+    "host": "bosque59",
+    "aam_events": 4,
+    "native_slap_events": 4,
+    "bidirectional_uncut_slap_events": 4,
+    "slap_sweep_events": 4,
+    "winner": "tie",
+    "aam_cpu": 4.2548742960000006,
+    "native_slap_cpu": 0.0680007560000001,
+    "slap_sweep_workflow_cpu": 4.813604270000004,
+    "slap_sweep_mapping_cpu": 4.510707465000001,
+    "slap_sweep_workflow_wall": 4.816045100800693,
+    "aam_scoring_cpu": 0.24563258700000024,
+    "native_slap_scoring_cpu": 0.05447923500000007,
+    "slap_sweep_scoring_cpu": 0.45663554799999995,
+    "aggregation_cpu_including_read_decode": 0.20663155700000002,
+    "calls": 118,
+    "native_candidates": 118,
+    "unique_label_partitions": 22,
+    "directions": {
+      "R_to_P": {
+        "calls": 59,
+        "workflow_cpu": 2.8755611240000025,
+        "workflow_wall": 2.876923185773194,
+        "uncut_cpu": 0.03587176699999994
+      },
+      "P_to_R": {
+        "calls": 59,
+        "workflow_cpu": 1.938043146000002,
+        "workflow_wall": 1.9391219150274992,
+        "uncut_cpu": 0.035827061000000104
+      }
+    }
+  },
+  {
+    "index": 139,
+    "name": "TS_16",
+    "host": "bosque59",
+    "aam_events": 2,
+    "native_slap_events": 2,
+    "bidirectional_uncut_slap_events": 2,
+    "slap_sweep_events": 2,
+    "winner": "tie",
+    "aam_cpu": 1.4382966389999998,
+    "native_slap_cpu": 0.040513244000000004,
+    "slap_sweep_workflow_cpu": 1.0085255659999994,
+    "slap_sweep_mapping_cpu": 0.8711303269999994,
+    "slap_sweep_workflow_wall": 1.011085075326264,
+    "aam_scoring_cpu": 0.08268170499999994,
+    "native_slap_scoring_cpu": 0.04469129599999988,
+    "slap_sweep_scoring_cpu": 0.043689599999999995,
+    "aggregation_cpu_including_read_decode": 0.115592168,
+    "calls": 64,
+    "native_candidates": 64,
+    "unique_label_partitions": 1,
+    "directions": {
+      "R_to_P": {
+        "calls": 32,
+        "workflow_cpu": 0.5014262509999989,
+        "workflow_wall": 0.5032235439866781,
+        "uncut_cpu": 0.015290200000000032
+      },
+      "P_to_R": {
+        "calls": 32,
+        "workflow_cpu": 0.5070993150000006,
+        "workflow_wall": 0.5078615313395858,
+        "uncut_cpu": 0.014779846000000041
+      }
+    }
+  }
+]

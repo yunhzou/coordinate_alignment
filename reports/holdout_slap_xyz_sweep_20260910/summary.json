@@ -1,0 +1,62 @@
+{
+  "cases": 140,
+  "paired_complete_cases": 140,
+  "full_mapping_cases": {
+    "aam": 140,
+    "native_slap": 140,
+    "slap_sweep": 140
+  },
+  "aam_vs_native": {
+    "tie": 134,
+    "aam": 6
+  },
+  "aam_vs_sweep": {
+    "tie": 138,
+    "aam": 2
+  },
+  "sweep_vs_native": {
+    "tie": 136,
+    "sweep_lower": 4
+  },
+  "sweep_vs_bidirectional_uncut": {
+    "tie": 136,
+    "sweep_lower": 4
+  },
+  "timing": {
+    "aam": {
+      "total_cpu_seconds": 2238.525038979,
+      "mean_cpu_seconds": 15.989464564135714,
+      "median_cpu_seconds": 5.8410322075,
+      "max_cpu_seconds": 361.745986537,
+      "scoring_cpu_seconds": 243.27713470199998
+    },
+    "native_slap": {
+      "total_cpu_seconds": 12.145399785,
+      "mean_cpu_seconds": 0.08675285560714285,
+      "median_cpu_seconds": 0.075704047,
+      "max_cpu_seconds": 0.34588689400000006,
+      "scoring_cpu_seconds": 11.083469653999998
+    },
+    "slap_sweep": {
+      "total_cpu_seconds": 1321.80617394,
+      "mean_cpu_seconds": 9.441472671,
+      "median_cpu_seconds": 4.035708465999999,
+      "max_cpu_seconds": 138.05239676500008,
+      "scoring_cpu_seconds": 47.045693607000004
+    }
+  },
+  "aam_cpu_over_slap_sweep": 1.6935350152787318,
+  "sweep_cpu_over_native": 108.83183734902474,
+  "total_sweep_calls": 16748,
+  "total_native_candidates": 21325,
+  "unique_scored_label_partitions": 1660,
+  "unresolved_scores": 0,
+  "search_errors": 0,
+  "unfinished_variants": 0,
+  "matched_native_uncut_controls": 140,
+  "matched_hosts": 140,
+  "chemical_accuracy": null,
+  "graph_scope": "Unchanged upstream geoms2lgp, original XYZ components, bond_scale=1.2, base=0; binary native XYZ adjacency. No WBO graph substitution.",
+  "cut_scope": "Both directions; uncut plus every individual source edge, including H bonds. Rebuild initial WL labels after each cut. Restore original endpoints for scoring.",
+  "timing_scope": "Single CPU. Sum initial XYZ graph preparation, per-cut graph construction, mapping and native label export CPU; exclude compressed artifact encoding/writing and offline scoring. Each case runs on the same host as its paired AAM/native-SLAP baseline."
+}

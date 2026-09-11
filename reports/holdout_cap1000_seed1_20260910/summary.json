@@ -1,0 +1,38 @@
+{
+  "cases": 140,
+  "event_comparison": {
+    "tie": 134,
+    "aam": 6
+  },
+  "paired_complete_cases": 140,
+  "timing": {
+    "aam": {
+      "total_cpu_seconds": 2238.525038979,
+      "mean_cpu_seconds": 15.989464564135714,
+      "median_cpu_seconds": 5.8410322075,
+      "max_cpu_seconds": 361.745986537,
+      "scoring_cpu_seconds": 243.27713470199998,
+      "summed_search_wall_including_io": 608.8588092951104
+    },
+    "slap": {
+      "total_cpu_seconds": 12.145399785,
+      "mean_cpu_seconds": 0.08675285560714285,
+      "median_cpu_seconds": 0.075704047,
+      "max_cpu_seconds": 0.34588689400000006,
+      "scoring_cpu_seconds": 11.083469653999998,
+      "summed_search_wall_including_io": 15.16524553205818
+    }
+  },
+  "aam_cpu_over_slap": 184.31052732769305,
+  "full_mapping_cases": {
+    "aam": 140,
+    "slap": 140
+  },
+  "differs_from_previous_slap": [],
+  "unresolved_slap_h_candidates": 0,
+  "phase_exits": {
+    "0": 840
+  },
+  "chemical_accuracy": null,
+  "scope": "AAM summed parent plus child compute CPU, excluding measured archive persistence/loading, over both directions. SLAP native map_3d CPU includes XYZ input processing. Scoring measured separately. Imports/dispatch excluded from primary compute timers. Same host per paired case; AAM eight workers, SLAP one. Wall times are observed search durations, not equal-core latency."
+}

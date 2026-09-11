@@ -1,0 +1,48 @@
+{
+  "audited_witnesses": 456,
+  "counts": {
+    "aam": 280,
+    "slap": 176
+  },
+  "full_archives": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910",
+  "hashed_search_and_scoring_artifacts": 1820,
+  "frozen_files_verified": 266,
+  "slap_source_files_verified": 7,
+  "archived_configuration_checks": [
+    {
+      "index": 0,
+      "direction": "R_to_P",
+      "contexts": 27,
+      "cuts": 27,
+      "branch_limit": 1000,
+      "max_seed_orders_per_cut": 1
+    },
+    {
+      "index": 0,
+      "direction": "P_to_R",
+      "contexts": 27,
+      "cuts": 27,
+      "branch_limit": 1000,
+      "max_seed_orders_per_cut": 1
+    },
+    {
+      "index": 123,
+      "direction": "R_to_P",
+      "contexts": 47,
+      "cuts": 47,
+      "branch_limit": 1000,
+      "max_seed_orders_per_cut": 1
+    },
+    {
+      "index": 123,
+      "direction": "P_to_R",
+      "contexts": 47,
+      "cuts": 47,
+      "branch_limit": 1000,
+      "max_seed_orders_per_cut": 1
+    }
+  ],
+  "input_files_verified": 1864,
+  "scoring_check": "Independent scalar bond_events validates each directional AAM minimum and every scored SLAP candidate.",
+  "failures": 0
+}

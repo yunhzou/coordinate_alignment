@@ -5,6 +5,17 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[140 cases: one-seed cap-1000 AAM versus native SLAP and SLAP with cuts](holdout_slap_xyz_sweep_20260910/README.md)
+— fresh mapping and CPU comparison on matched hosts. Against the native XYZ
+single-edge sweep, AAM has two lower minimum-change scores and 138 ties;
+mean mapping CPU is 15.989 s for AAM and 9.441 s for SLAP with cuts.
+All 16,748 sweep calls completed. Scores are not reference-mapping accuracy.
+
+[One-seed cap-1000 AAM versus native XYZ SLAP](holdout_cap1000_seed1_20260910/README.md)
+— the paired baseline underlying that sweep comparison: six AAM-lower scores,
+134 ties, all 140 mappings available. Separate from the manuscript's fixed
+ten-seed/cap-100 panels; the frozen stable engine remains unchanged.
+
 [Exact conditioned symmetry and fragment reuse](conditioned_reuse_20260910/README.md)
 — full ten-seed stress ablation: 1.58x compute speedup, 24,840 exact graph checks;
 opt-in public backend, unchanged seed/cut policy, rejected slower extension cache.
@@ -59,6 +70,8 @@ archives. Large AAM archives and expanded candidate banks remain on the cluster:
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_competitors_full_20260908
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_slap_expanded_20260908
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_slap_all_atoms_20260908
+/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910
+/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910
 ```
 
 These cluster copies are not a claim of independent/offsite backup. Do not delete
