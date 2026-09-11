@@ -1,0 +1,27 @@
+{
+  "original_unstarted_jobs": [
+    "468372_1",
+    "468372_10",
+    "468372_17",
+    "468372_18"
+  ],
+  "reason": "Stalled CONFIGURING on bosque60 for over nine minutes; no worker status or output exists.",
+  "job": "468512",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--exclude=bosque49,bosque50,bosque56,bosque59,bosque60,bosque70",
+    "--nodes=1",
+    "--cpus-per-task=1",
+    "--mem=8G",
+    "--time=00:10:00",
+    "--no-requeue",
+    "--array=1,10,17,18",
+    "--job-name=aam_min_events",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/status/aam_enumeration_%A_%a.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/engine/bench PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 timeout --kill-after=5s 500 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/enumerate_aam.py case --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910 --seconds 240 --index \"$SLURM_ARRAY_TASK_ID\""
+  ],
+  "time": 1789090047.217675
+}

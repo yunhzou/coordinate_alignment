@@ -1,0 +1,21 @@
+{
+  "original_unstarted": "467937_21",
+  "replacement": "468079",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--exclude=bosque49,bosque50,bosque56",
+    "--nodes=1",
+    "--cpus-per-task=1",
+    "--mem=8G",
+    "--time=00:20:00",
+    "--no-requeue",
+    "--array=21%1",
+    "--job-name=min_events_snapshot",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/status/snapshot_%A_%a.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/engine/bench PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/driver.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910 --phase snapshot --seconds 900 --index \"$SLURM_ARRAY_TASK_ID\""
+  ],
+  "reason": "Allocation never started; no status or output existed."
+}

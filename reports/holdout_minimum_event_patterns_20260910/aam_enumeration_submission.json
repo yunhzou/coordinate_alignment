@@ -1,0 +1,23 @@
+{
+  "job": "468372",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--exclude=bosque49,bosque50,bosque56,bosque59,bosque70",
+    "--nodes=1",
+    "--cpus-per-task=1",
+    "--mem=8G",
+    "--time=00:10:00",
+    "--no-requeue",
+    "--array=0-139%32",
+    "--job-name=aam_min_events",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/status/aam_enumeration_%A_%a.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/engine/bench PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 timeout --kill-after=5s 500 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910/enumerate_aam.py case --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910 --seconds 240 --index \"$SLURM_ARRAY_TASK_ID\""
+  ],
+  "drivers_sha256": {
+    "enumerate_aam.py": "03e0e46e9fa9e8833b7893ae4e50b6c5ef48b9b37a2894886d22db4e7f1c3462",
+    "enumerate_slap_minimum_events.py": "097ab83dedc47b2d6220c0d324cf1268d7fc4dde6e22eb9e72bd83f36d1a2c5d"
+  }
+}

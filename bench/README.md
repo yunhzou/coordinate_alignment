@@ -8,6 +8,12 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 
 | Script | Responsibility |
 |---|---|
+| `holdout_minimum_events.py` | Full-H minimum-event snapshots and joint symmetry canonicalization on saved holdout outputs |
+| `holdout_minimum_event_families.py` | Correlated AAM path / SLAP label-family membership, with explicit unresolved status |
+| `enumerate_slap_minimum_events.py` / `enumerate_aam_minimum_events.py` | Event-pattern enumeration at recorded benchmark minima; completeness and lower-bound records |
+| `complete_minimum_event_checks.py` | Targeted longer SLAP queries and AAM membership checks for newly exposed patterns |
+| `validate_minimum_event_analysis.py` | Exhaustive finite checks on small real output families |
+| `publish_minimum_event_analysis.py` | Independently rescore witnesses; generate the report, figures and offline bond-edit viewer |
 | `conditioned_reuse_pilot.py` | Frozen-engine, same-node conditioning/growth-reuse ablations; complete graph checks, recoverable timers and saved outputs |
 | `public_reuse_pilot.py` | Public AAM reference/reused-native integration, parent+worker CPU accounting and full raw/final checkpoints |
 | `publish_conditioned_reuse.py` | Verify and package those saved experiments, logs, source hashes and tests without rerunning matching |

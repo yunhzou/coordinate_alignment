@@ -1,0 +1,33 @@
+[
+  {
+    "case": 64,
+    "displayed_patterns": 3
+  },
+  {
+    "case": 101,
+    "displayed_patterns": 2
+  },
+  {
+    "case": 129,
+    "displayed_patterns": 16
+  },
+  {
+    "case": 132,
+    "displayed_patterns": 5
+  },
+  {
+    "offline_browser": "passed",
+    "mobile_width": 390,
+    "page_errors": []
+  },
+  {
+    "pdf": "one page, all text within page bounds"
+  },
+  {
+    "non_tied_cases": [
+      69,
+      104
+    ],
+    "alternative_comparison": "explicitly inapplicable, not unresolved"
+  }
+]

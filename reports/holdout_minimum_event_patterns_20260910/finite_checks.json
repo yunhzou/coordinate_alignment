@@ -1,0 +1,108 @@
+{
+  "families": [
+    {
+      "index": 0,
+      "candidate": 0,
+      "all_assignments": 36,
+      "minimum": 0,
+      "minimum_assignments": 36,
+      "event_classes": 1,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 25,
+      "candidate": 0,
+      "all_assignments": 576,
+      "minimum": 5,
+      "minimum_assignments": 576,
+      "event_classes": 2,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 25,
+      "candidate": 2,
+      "all_assignments": 576,
+      "minimum": 5,
+      "minimum_assignments": 576,
+      "event_classes": 2,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 25,
+      "candidate": 9,
+      "all_assignments": 288,
+      "minimum": 5,
+      "minimum_assignments": 288,
+      "event_classes": 1,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 25,
+      "candidate": 10,
+      "all_assignments": 288,
+      "minimum": 5,
+      "minimum_assignments": 288,
+      "event_classes": 1,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 25,
+      "candidate": 12,
+      "all_assignments": 1728,
+      "minimum": 5,
+      "minimum_assignments": 576,
+      "event_classes": 2,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 101,
+      "candidate": 0,
+      "all_assignments": 4,
+      "minimum": 4,
+      "minimum_assignments": 4,
+      "event_classes": 1,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 101,
+      "candidate": 16,
+      "all_assignments": 8,
+      "minimum": 4,
+      "minimum_assignments": 4,
+      "event_classes": 1,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 132,
+      "candidate": 0,
+      "all_assignments": 5184,
+      "minimum": 4,
+      "minimum_assignments": 5184,
+      "event_classes": 2,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    },
+    {
+      "index": 132,
+      "candidate": 3,
+      "all_assignments": 5184,
+      "minimum": 4,
+      "minimum_assignments": 5184,
+      "event_classes": 3,
+      "symbolic_complete": true,
+      "exact_pattern_set_agreement": true
+    }
+  ],
+  "explicit_assignments_checked": 13872,
+  "symmetry_and_event_type_checks": 100,
+  "failures": 0,
+  "scope": "Exhaustive within-label assignments for ten small real SLAP families validate event blocking and twin symmetry reduction. This is a postprocessing verification, not a mapper accuracy benchmark."
+}

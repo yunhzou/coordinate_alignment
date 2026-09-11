@@ -5,6 +5,14 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[140 cases: alternative bond-edit patterns at tied minimum scores](holdout_minimum_event_patterns_20260910/README.md)
+— full-H event sets with joint symmetry normalization and an offline bond viewer.
+On 138 AAM / SLAP-sweep score ties, all 204 verified AAM patterns are shared;
+SLAP sweep has three additional patterns excluded from the saved AAM families
+(cases 11, 64 and 101). SLAP catalogues are complete; AAM enumeration is complete
+in 96/140 cases and otherwise gives lower bounds. Scores are held at the preceding
+benchmark minima. This is candidate bond-edit coverage, not pathway validation.
+
 [140 cases: one-seed cap-1000 AAM versus native SLAP and SLAP with cuts](holdout_slap_xyz_sweep_20260910/README.md)
 — fresh mapping and CPU comparison on matched hosts. Against the native XYZ
 single-edge sweep, AAM has two lower minimum-change scores and 138 ties;
@@ -72,6 +80,7 @@ archives. Large AAM archives and expanded candidate banks remain on the cluster:
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_slap_all_atoms_20260908
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910
+/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910
 ```
 
 These cluster copies are not a claim of independent/offsite backup. Do not delete
