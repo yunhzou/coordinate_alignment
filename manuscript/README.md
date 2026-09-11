@@ -21,6 +21,9 @@ It contains its own data and needs no server or network connection.
 
 The [review bundle](manuscript_bundle.zip) contains the PDF, LaTeX sources,
 template assets, figure sources/data, figures, animations, and build scripts.
+The interactive animation uses the shared reaction style; the bundle includes its
+shared presentation helper and styles under `src/rxn_core/`. Presentation refreshes
+leave the compiled PDF, scientific figures, movie files and recorded events unchanged.
 
 ## Draft and evidence
 

@@ -6,6 +6,13 @@ benchmark. Each selected case uses 1, 3, 10 and 30 seed orders per cut, with cap
 1000, tolerance 1.0, explicit H, the original uncut/single-edge sweep and
 **reactant → product only**. The stable frozen engine remains unchanged.
 
+Open [the original-style 3D comparison](viewer.html) for all three cases. Yellow
+mechanism buttons select the one-seed AAM alternatives, the missing SLAP witness,
+and the actual recovered AAM witnesses for case 101. The R-order/alignment toggle
+switches between native P and display-only rigid fitting. Expand the event details
+to inspect exact bonds and mapping provenance. The nine saved witnesses were
+independently rescored; producing this viewer does not start another search.
+
 ## Recovery of the specific missing patterns
 
 | Case | Name | Target event score | 1 seed | 3 seeds | 10 seeds | 30 seeds |

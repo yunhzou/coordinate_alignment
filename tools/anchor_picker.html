@@ -5,55 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Anchor Picker</title>
   <script src="https://3dmol.org/build/3Dmol-min.js"></script>
-  <style>
-    html,body{margin:0;padding:0;font-family:-apple-system,sans-serif;background:#fafafa}
-    body{padding:14px;box-sizing:border-box}
-    h2{margin:0 0 4px;font-size:18px}
-    .topbar{display:flex;gap:10px;align-items:stretch;margin-bottom:14px}
-    .mech-sel{flex:1;background:white;padding:10px;border:1px solid #ccc;border-radius:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .mech-sel span{font-size:13px;margin-right:2px;color:#444}
-    .mech-sel label{display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:12px;color:#024}
-    .mech-sel input[type="file"]{max-width:260px;font-size:12px}
-    .mech-sel button,.download-all,.dl{border:1px solid #aaa;background:#fff;border-radius:4px;cursor:pointer;font-family:ui-monospace,monospace;color:#024}
-    .mech-sel button{padding:6px 12px;font-size:12px}
-    .mech-sel button.active{background:#ffd700;border-color:#a90;font-weight:600}
-    .download-all{padding:0 16px;border-color:#888;border-radius:6px;font-size:12px}
-    .download-all:hover,.dl:hover,.mech-sel button:hover{background:#eef}
-    .index-toggle{display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid #aaa;background:white;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;color:#024;white-space:nowrap}
-    .index-toggle input{margin:0}
-    .work-row{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;align-items:start}
-    .ref-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
-    .panel{background:white;border:1px solid #ddd;border-radius:6px;padding:6px 8px 8px}
-    .ph{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px;gap:8px}
-    .ph .lbl{font-weight:600;font-size:13px}
-    .ph .rk{font-family:ui-monospace,monospace;color:#024;white-space:nowrap}
-    .dl{padding:3px 7px;margin-left:6px;font-size:11px}
-    .vw{position:relative;width:100%;height:300px}
-    .vwbox{position:absolute;inset:0}
-    .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#777;font-family:ui-monospace,monospace;font-size:12px}
-    .meta{font-family:ui-monospace,monospace;font-size:11px;color:#444;padding:3px 0 0;line-height:1.4}
-    .meta b{color:#024}
-    .side{display:grid;gap:12px}
-    .select-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .select-cell{border:1px solid #ddd;border-radius:4px;padding:8px;background:#fff;min-height:52px}
-    .select-cell .k{font-family:ui-monospace,monospace;font-size:11px;color:#444;margin-bottom:4px}
-    .select-cell .v{font-size:15px;font-weight:600;color:#024}
-    table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
-    th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:middle}
-    th{color:#444;font-weight:600;background:#fafafa;position:sticky;top:0}
-    .pairs{max-height:calc(100vh - 430px);overflow:auto}
-    .swatch{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,.25);vertical-align:-1px}
-    textarea{width:100%;height:74px;resize:vertical;border:1px solid #ccc;border-radius:4px;padding:7px;font-family:ui-monospace,monospace;font-size:12px;color:#024;box-sizing:border-box}
-    .exports{display:grid;gap:8px}
-    .btnrow{display:flex;gap:8px;flex-wrap:wrap}
-    .danger{color:#a00}
-    .toast{position:fixed;right:14px;bottom:14px;background:#222;color:white;padding:8px 11px;border-radius:4px;font-size:13px;opacity:0;transform:translateY(6px);transition:opacity .14s ease,transform .14s ease;pointer-events:none;z-index:20}
-    .toast.show{opacity:1;transform:translateY(0)}
-    @media(max-width:1100px){.work-row{grid-template-columns:1fr}.pairs{max-height:280px}}
-    @media(max-width:760px){.topbar{flex-wrap:wrap}.ref-row{grid-template-columns:1fr}.mech-sel input[type="file"]{max-width:180px}.download-all,.index-toggle{height:32px}.vw{height:260px}}
-  </style>
-</head>
-<body>
+
+<link rel="stylesheet" href="../src/rxn_core/static/reaction_viewer.css"></head>
+<body data-viewer-layout="anchor">
   <h2>Anchor Picker</h2>
   <div class="topbar">
     <div class="mech-sel">

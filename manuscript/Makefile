@@ -5,6 +5,6 @@ all:
 figures:
 	PYTHONPATH=.build-deps $(PYTHON) scripts/build_figures.py
 animations:
-	PYTHONPATH=.build-deps $(PYTHON) scripts/build_animations.py
+	PYTHONPATH=../src:.build-deps $(PYTHON) scripts/build_animations.py
 verify:
 	PYTHONPATH=.build-deps $(PYTHON) scripts/validate_outputs.py

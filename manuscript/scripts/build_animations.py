@@ -1,4 +1,6 @@
 """Build the offline viewer and MP4/GIF movies from recorded events."""
+
+from rxn_core.viewers import style_document
 import json
 import os
 from pathlib import Path
@@ -16,7 +18,7 @@ from molecular_layout import projection
 DATA=json.loads((MAN/'evidence/animation_data.json').read_text())
 OUT=MAN/'animations';OUT.mkdir(exist_ok=True)
 html=(MAN/'scripts/animation_template.html').read_text().replace('__DATA__',json.dumps(DATA).replace('</','<\\/'))
-(OUT/'index.html').write_text(html)
+(OUT/'index.html').write_text(style_document(html, layout='growth_animation'))
 
 def project(ep):
     return projection(ep)

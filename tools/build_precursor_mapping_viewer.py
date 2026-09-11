@@ -2,6 +2,8 @@
 """Build a standalone viewer for ranked per-precursor AAM mappings."""
 from __future__ import annotations
 
+from rxn_core.viewers import style_document
+
 import argparse
 import gzip
 import json
@@ -102,8 +104,7 @@ def main():
                "3Dmol-min.js").read_text()
     data = json.dumps(payload, separators=(",", ":"))
     colors = json.dumps(COLORS)
-    html = f"""<!doctype html><html><head><meta charset="utf-8"><title>{args.title}</title><style>
-body{{margin:0;height:100vh;overflow:hidden;font:13px system-ui;background:#eef2f6;color:#172033}}header{{height:78px;padding:12px 18px;background:#101828;color:white}}h1{{margin:0 0 5px;font-size:19px}}.legend{{color:#b7c4d8}}.dot{{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 5px 0 12px}}#layout{{height:calc(100vh - 78px);display:grid;grid-template-columns:330px 1fr}}aside{{overflow:auto;background:white;border-right:1px solid #d9e1ea}}button{{display:block;width:100%;padding:11px;text-align:left;border:0;border-bottom:1px solid #d9e1ea;background:white;cursor:pointer}}button.active{{background:#eaf3ff;box-shadow:inset 4px 0 #2684ff}}button b,button small{{display:block}}button small{{color:#64748b;margin-top:3px}}main{{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}}.panel{{position:relative;background:white;border:1px solid #d9e1ea;border-radius:9px;overflow:hidden}}.view{{position:absolute;inset:0}}.label{{position:absolute;z-index:4;left:10px;top:9px;right:10px;background:#ffffffdf;border:1px solid #d9e1ea;border-radius:7px;padding:7px 9px}}.label b,.label small{{display:block}}.label small{{color:#64748b;margin-top:2px}}.controls{{position:absolute;z-index:10;right:18px;top:90px;background:#ffffffed;padding:7px 9px;border-radius:7px}}</style><script>{library}</script></head><body><header><h1>{args.title}</h1><div class="legend"><b>Colors and P# labels come from AAM.</b><span class="dot" style="background:#1565c0"></span>retained/mapped <span class="dot" style="background:#c62828"></span>R leaving <span class="dot" style="background:#ef6c00"></span>P unresolved · same P# means the same mapped atom</div></header><div id="layout"><aside id="list"></aside><main><div class="controls"><label><input id="labels" type="checkbox"> show P# atom identities</label></div><section class="panel"><div class="label" id="LR"></div><div class="view" id="R"></div></section><section class="panel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></main></div><script>
+    html = f"""<!doctype html><html><head><meta charset="utf-8"><title>{args.title}</title><script>{library}</script></head><body><header><h1>{args.title}</h1><div class="legend"><b>Colors and P# labels come from AAM.</b><span class="dot" style="background:#1565c0"></span>retained/mapped <span class="dot" style="background:#c62828"></span>R leaving <span class="dot" style="background:#ef6c00"></span>P unresolved · same P# means the same mapped atom</div></header><div id="layout"><aside id="list"></aside><main><div class="controls"><label><input id="labels" type="checkbox"> show P# atom identities</label></div><section class="panel"><div class="label" id="LR"></div><div class="view" id="R"></div></section><section class="panel"><div class="label" id="LP"></div><div class="view" id="P"></div></section></main></div><script>
 const payload={data},mappingColors={colors},mappingViewers={{}},mappingCurrent={{}};
 function pt(m,i){{return{{x:m.coords[i][0],y:m.coords[i][1],z:m.coords[i][2]}}}}
 function show(id,m,labels){{let v=mappingViewers[id];if(!v){{v=$3Dmol.createViewer(id,{{backgroundColor:'white'}});mappingViewers[id]=v}}else{{v.removeAllModels();v.removeAllLabels()}}v.addModel(m.mol,'sdf');v.setStyle({{}},{{stick:{{radius:.12}},sphere:{{scale:.23}}}});Object.entries(m.styles).forEach(([name,atoms])=>v.addStyle({{index:atoms}},{{stick:{{color:mappingColors[name],radius:.19}},sphere:{{color:mappingColors[name],scale:.34}}}}));if(document.getElementById('labels').checked)labels.filter(l=>m.elements[l.atom]!=='H').forEach(l=>v.addLabel(l.text,{{position:pt(m,l.atom),fontSize:9,fontColor:'#111',backgroundColor:'white',backgroundOpacity:.72,inFront:true}}));v.zoomTo();v.render()}}
@@ -112,7 +113,7 @@ const list=document.getElementById('list');payload.results.forEach((x,i)=>{{cons
 </script></body></html>"""
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(html)
+    output.write_text(style_document(html, 'catalog', 'precursor'))
     print(output.resolve())
 
 

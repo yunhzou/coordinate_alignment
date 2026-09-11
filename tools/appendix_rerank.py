@@ -8,6 +8,8 @@ manifest charge/multiplicity, and aggregates a compact GT + top-2 IG viewer.
 """
 from __future__ import annotations
 
+from rxn_core.viewers import viewer_style
+
 import argparse
 import csv
 import json
@@ -453,6 +455,7 @@ def flat_record_for_step(run_root: Path, step: str) -> dict | None:
     }
 
 
+@viewer_style('reaction', 'appendix')
 def html_template(data_json: str) -> str:
     return f"""<!doctype html>
 <html>
@@ -460,23 +463,7 @@ def html_template(data_json: str) -> str:
 <meta charset="utf-8">
 <title>BGCP appendix rerank - GT and top-2 IG modes</title>
 <script src="https://3dmol.org/build/3Dmol-min.js"></script>
-<style>
-body {{ font-family: Arial, sans-serif; margin: 12px; background: #f7f7f7; color: #222; }}
-.ctl {{ background: #fff; border: 1px solid #d0d0d0; border-radius: 6px; padding: 8px 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
-select {{ min-width: 520px; max-width: 70vw; padding: 4px 6px; }}
-input[type="text"] {{ padding: 4px 6px; width: 180px; }}
-button {{ padding: 4px 8px; }}
-.row {{ display: flex; gap: 12px; margin-top: 12px; }}
-.pane {{ flex: 1; min-width: 0; background: #fff; border: 1px solid #d0d0d0; border-radius: 6px; padding: 8px; }}
-.viewer {{ width: 100%; height: 540px; position: relative; }}
-h2 {{ margin: 0 0 10px; font-size: 18px; }}
-h3 {{ margin: 0 0 4px; font-size: 14px; }}
-.stats {{ font-size: 12px; color: #444; line-height: 1.35; min-height: 34px; }}
-.legend span {{ display: inline-block; border-radius: 4px; padding: 2px 7px; font-size: 12px; margin-left: 4px; }}
-.broken {{ background: #ffd9d9; color: #7a0000; }}
-.formed {{ background: #d9f0d9; color: #005a00; }}
-.core {{ background: #dbe8ff; color: #003c86; }}
-</style>
+
 </head>
 <body>
 <h2>BGCP appendix rerank - ground truth and top-2 initial guesses</h2>

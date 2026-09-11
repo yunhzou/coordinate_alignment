@@ -1,0 +1,289 @@
+[
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t01_fluorinated_phosphorus_ligand/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "3ea640cfc8c4c44bf2ea55dc25152965e30d93627d8000fdf1df75b0da1f4a0f",
+    "current_sha256": "3fadae62c599888fdb0b2199890cce1b32677e27d87584e0332f848032bcfdd8"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t02_chloro_quinoline_alcohol/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "ff09f633b4ea30c93de586a6738b75cd92eaac455d78fc2ef941ff5b12539dc9",
+    "current_sha256": "d28772e6918ffbbbd4f27b8ffd2d74d31f50dcfbe5a07c1ba76697c8fe2c4a69"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t03_aryl_magnesium_bromide/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "04c031364d3c7a04f72de67147f4dd994bb98d7666ad740169c56dac697ef53f",
+    "current_sha256": "8f4783d7082fdd4f4eebd44656ee5b63c6edbf5aa352d38642ad76216097c8c2"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t04_dimethyl_azobenzene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "0f65f1c5912a01ee61d228e8b0e4bf43a330c6ad2844bc1f2b35abf738f2fffa",
+    "current_sha256": "20cdcc849e79455a0b9b3d51c42bd3f9c21f6f550f73bd41e4150458e835655e"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t05_cyano_thiazole_amidine/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "c287eb586507deef7f72649a878e47dffeb9954723553251808e81fd8f93b00d",
+    "current_sha256": "e7ef8dbe736875c141e1cfed6175e0ac99dd407b621c041b58580cad4a0028bf"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t06_phenyl_cyclooctadiene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "0165f1e3067d4cdcd310a7129a8745d179a5c9740b994bf07a295b0af33674b5",
+    "current_sha256": "3120c90a834037966993b2e35f7600ee2bb100f08eb4b5a161a5e59488769ea9"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t07_acetophenone/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "afbe44847196f354b283ee88263be785564dbecb37efd2e25a3dd09205a06b64",
+    "current_sha256": "2cfe84417e99984eebd491df363086ab99c44173f35d5bba323e55982e0ce30f"
+  },
+  {
+    "path": "data/retro_runs/eight_target_merged_fast_delivery_with_inventory/t08_cyclohexene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_41f5757b",
+    "previous_sha256": "158a334c452f8db4d337c171d063b4b962fa755e333af3a813cece8c72576bda",
+    "current_sha256": "13bdd0973d730da541d61c615eab8ac2e845be76be5eb93e33cd5ea08d782752"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t01_fluorinated_phosphorus_ligand/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "1ee3ee83c5fff54edc5fa016c359d6941a996588a269b8d81e978d9238b307a9",
+    "current_sha256": "bf15bb2dcb37282fdf45a1f9a4b3bef5da039a252f5a1b838921ce2e1970caee"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t02_chloro_quinoline_alcohol/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "f17502451b3859f53f3df0754d8fda879c979b531705bf8df03e3754aad559fe",
+    "current_sha256": "faee9acc01489306c055cd04591709fb41566fa93e9b6b390690f53de0252186"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t03_aryl_magnesium_bromide/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "7ea973de61b55166e91f0f633041e954572dacbd9d5ac94683972d92409ea769",
+    "current_sha256": "c97acc4c1c0b3de887c1653ee63be232c32266ccd65c4a830e4b8504ae40e65e"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t04_dimethyl_azobenzene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "87534dfaa35d2c3c53b47a9121ebf597decff8f9b1db66b0bdcd8b2241660500",
+    "current_sha256": "5de3ea9a68981ec0e35f785a522f20b0511131bb3faebca434d04b863f276f58"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t05_cyano_thiazole_amidine/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "234f7db77e20a773e418581e1ae394ade680d94bda2a27f6384b0faa4d984d55",
+    "current_sha256": "70429b1a464576160d2abc894ecb6f8a3b0689b96770bc56cf66c72de3709d45"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t06_phenyl_cyclooctadiene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "86594cd09337cfad33e25d8c97c38e3438d9c66eca13a69c44acaea7c94ce4b3",
+    "current_sha256": "769397f8445fc8e63fbbd19a7dc1eaf83d735435919e8e096756469d26bc61af"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t07_acetophenone/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "b5db40e967c119b896f516dd2942123fec1bb382616b5e0b2b740a68c0d4c20b",
+    "current_sha256": "b1885236e53f9e26bfbed068abb6045b4451ac83bc4679651e25f0ad6165f4d8"
+  },
+  {
+    "path": "data/retro_runs/eight_target_recommendations/t08_cyclohexene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog_saved_f89a7f7a",
+    "previous_sha256": "e6df55c94dc037b285d5f1f7b10ee4b31d5f277c456dbb9961bc3dacb4832928",
+    "current_sha256": "01d2b64cf5dc2d5e9dd2d262d02aabbaaddf21fc8aacda157c6f442529708001"
+  },
+  {
+    "path": "manuscript/animations/index.html",
+    "family": "reaction",
+    "layout": "growth_animation",
+    "previous_sha256": "9475e6c3a87f508dadbf6c53075d39ad32e41e06b67c8990113e186c6fc60107",
+    "current_sha256": "5657149cd7e6088102fe2a2ce15c731c92489279239feb1b7ca3ab01ac66af7f"
+  },
+  {
+    "path": "reports/eight_case_studies/index.html",
+    "family": "catalog",
+    "layout": "beta_status",
+    "previous_sha256": "edd087c89f8584a1b2650e454676d849eb6ab5368b42b2717465b93a749f3552",
+    "current_sha256": "4793c8d0e83df12e50c4f976f97e47215d47f46f67bc01a21a12fd3d638cdee1"
+  },
+  {
+    "path": "reports/eight_case_studies/t01_fluorinated_phosphorus_ligand/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "8983a61a9b5edc8039159ab0df8a8e4a6405244b2bdb28137abf78e2fb2f8420",
+    "current_sha256": "b390e480ee6af8f6af549850453604fbb4dc957560941c5927dcdddb51d9d581"
+  },
+  {
+    "path": "reports/eight_case_studies/t02_chloro_quinoline_alcohol/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "9f1872f428120f59acc5159305fbe38ccd20d93708da7449cf6c660d95e1b6ed",
+    "current_sha256": "1addc8b75770404c1fd1a3cc8b0122671b4442484d9405ae5d933324d637156c"
+  },
+  {
+    "path": "reports/eight_case_studies/t03_aryl_magnesium_bromide/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "de8ead019e467d76d9aafb37235a676d55ac5b0fa2ded44ec724686e9f154e27",
+    "current_sha256": "dd3314c615327089fb0fd64ab10fd599f7296a7e9c73f589a2060fdc240ed11e"
+  },
+  {
+    "path": "reports/eight_case_studies/t04_dimethyl_azobenzene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "cb1fb52fc5a131237816dcfd1b5c1ebc9d8dca945dc70e954d541073e8123454",
+    "current_sha256": "f502d534e64b8e8896e4a694a0eb1390b5296f29d4520477aa472f6ccd0666f1"
+  },
+  {
+    "path": "reports/eight_case_studies/t05_cyano_thiazole_amidine/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "60ab1aa29477c4f23ce2ca684f2e07e554cab342bd01117c0bd40df528017a16",
+    "current_sha256": "a571461207cb648535ce3a7ef4329289732712bae185a283075332d65ea10431"
+  },
+  {
+    "path": "reports/eight_case_studies/t06_phenyl_cyclooctadiene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "e4eb4dce0a381e909cc54677041f23e7d84d89b6e80a5cc4f1f101935eb8ee17",
+    "current_sha256": "82e3d4e75a8fd1caef75a166265cd46ba47db7e692eb4db72f04f9b3e6d73eca"
+  },
+  {
+    "path": "reports/eight_case_studies/t07_acetophenone/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "535bb15f35f5f1264943a7873fa88d94d793b667b12b09e79dc4ce46cc1e6b9a",
+    "current_sha256": "ee8c9453e07a87908f47e6462569b14bd523dbb3d4c3f587adddaffa589292fa"
+  },
+  {
+    "path": "reports/eight_case_studies/t08_cyclohexene/viewer.html",
+    "family": "catalog",
+    "layout": "catalog",
+    "previous_sha256": "22ab6969a5cc925389a6283fcdbdd2be3af76cda9130a00578300f0fda71e90e",
+    "current_sha256": "967c3bc7323f87726118d7b6f0cbd2dccc71ce3ed73facb044c3f23acd240ea7"
+  },
+  {
+    "path": "reports/golden_590_closest/viewer.html",
+    "family": "reaction",
+    "layout": "golden_remaining",
+    "previous_sha256": "97b9d403d9d3c2516992c38f9ba4c285e5d511c483ea5618bb38174a5603470a",
+    "current_sha256": "2e62ac439143cf6cf94fb1f09b887472e617a4bcfe6f3a632cfae4863b61290b"
+  },
+  {
+    "path": "reports/golden_590_correct_five/viewer.html",
+    "family": "reaction",
+    "layout": "golden_remaining",
+    "previous_sha256": "41b36c5b63aaeb0612b607817cb89e93a80b60b180dd291dd7897d444ac2235a",
+    "current_sha256": "43c26b8e76ea6794da23002a283f0ade28ad9a1f528bb382ce079321ac813ff4"
+  },
+  {
+    "path": "reports/golden_alternatives_20260907/case15/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "ee98dae6eceb0d1e6a05d9567bedd0f3425c2bd8d37005543be4cb7208ec6171",
+    "current_sha256": "2473c4e8a4891676d9d7053dbeab6aeebb214152bb51098d1b8e0b736a4474a1"
+  },
+  {
+    "path": "reports/golden_alternatives_20260907/case21/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "3edffd29169646f5363b2f5345e17237bdd72a05756b70fef236438c1988adbb",
+    "current_sha256": "3f09d43cdb2699f76d0c9aa558a4f73be6cb45a7446c38b1d4c070ff6ac282ba"
+  },
+  {
+    "path": "reports/golden_alternatives_20260907/case9/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "13c81431a430ed2c889b76606bd72e39dda824aa352a2816e19df252dfdc913a",
+    "current_sha256": "0fedb33a654e162240d9e06d03487cab28df398144cc626888d839b8d74b2eaf"
+  },
+  {
+    "path": "reports/golden_cap2000_20260907/case1665_recovered/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "c9b9f4bc058f427962a24e97f5eca20fd197e101f3413989925e04886b2f841b",
+    "current_sha256": "dcdf3136e70ab7a91adbfd522ae9e5a61646da648e7290e9140ee1eb0671df53"
+  },
+  {
+    "path": "reports/golden_cap2000_20260907/case1665_seeds3/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "68cec9e6be2e8bcbf5c86f14a0a3b9d5083032076fe97481e6d86908f566315c",
+    "current_sha256": "1913f8d691e3c911cf813e5092980e7689fd3e67ef97a0ad8882541124df06e8"
+  },
+  {
+    "path": "reports/golden_direction1665_20260907/P_to_R/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "a5e80e0b3966cde129d26e0352741e5c32ea068321115aaa8837a25b881fbd7e",
+    "current_sha256": "b975e25ae36e086a932636ae1512dc44f017121b8c0ea150a9020677b84cd891"
+  },
+  {
+    "path": "reports/golden_direction1665_20260907/R_to_P/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "caa34a61876aa05b7fc0cce126b900ceeb4dc2a3982ef4e73a44a5ff77c73b70",
+    "current_sha256": "256496b878062fb13b75dee3906eb2e7a3e9e0b8e34e2fc63f890a5b3e84f6c8"
+  },
+  {
+    "path": "reports/golden_mapping_diagnosis_20260907/case1665/viewer.html",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "88c41bcedae065fc50d7d174f2e72075b2d4d736af19da8738ac7a513bb557ed",
+    "current_sha256": "de6343e9e3038c60a877e8186c9877c5dd350ed800265f8fbd33cb97ae657a05"
+  },
+  {
+    "path": "reports/golden_pattern_benchmark_20260908/case1033/viewer.html.gz",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "bcb9eefb50ce324e9b3366bfc836a2cadaf9d6026170c1b28b22db50fc11808d",
+    "current_sha256": "c983fab37f00e2711a4e4d4d78824443c262ebc5bdfd296e0bb247909fb8bfb1"
+  },
+  {
+    "path": "reports/golden_pattern_extraction_20260908/case1033/viewer.html.gz",
+    "family": "reaction",
+    "layout": "golden_mapping",
+    "previous_sha256": "220468d20ed2456f2bca0c5164b4520423a6900222ef869bf57c9d8d241d3c3e",
+    "current_sha256": "201783055d60f524829fe2284e8281a7bdc7d268c9de2f380ecab81e847ddcff"
+  },
+  {
+    "path": "reports/golden_remaining_21/viewer.html",
+    "family": "reaction",
+    "layout": "golden_remaining",
+    "previous_sha256": "cfa7b2c6ba265dea29d1e37b6cb9f3df5a0b0ab977744c2e51dae125152a4964",
+    "current_sha256": "a60403fa87eed0541ac6225090b22fe89025677e96a6e7ec0409abe0b180ed83"
+  },
+  {
+    "path": "reports/holdout_forward_cap1000_seed1_20260910/viewer.html",
+    "family": "reaction",
+    "layout": "minimum",
+    "previous_sha256": "68917fc62ce8c44b63173f3ef0c5333251fc0d432cf3c09e9d16e0466c10986b",
+    "current_sha256": "6203ce2a9ae6a91093b51d87517059ec59d4b0ae5340f3e632974f645710d66c"
+  },
+  {
+    "path": "reports/holdout_minimum_event_patterns_20260910/viewer.html",
+    "family": "reaction",
+    "layout": "minimum",
+    "previous_sha256": "9ca6cc288eeea5f80626a930eb1bf8498677c019702c62f2b9ad98b5ee0f3d8c",
+    "current_sha256": "beb97ed722c21e39b77ffc1734424635dbf636a06a4286e7e5958de72b4b7bc6"
+  }
+]

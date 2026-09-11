@@ -5,10 +5,10 @@ recovers case135's 5-event pattern. Results below describe the original
 tolerance0.5 archives, not a general inability of AAM to find that mapping.
 
 [Offline 3D mapping comparison viewer](viewer.html): cases 135, 59 and 64.
-Opens on case 135 (AAM 7 events; SLAP 5), using the compact dark AAM layout:
-two large original-geometry R/P panels, linked rotation, AAM/SLAP selection,
-explicit hydrogens, event overlays and collapsible per-bond WBO tables.
-Source-identity colors are optional; element colors are the default.
+Opens on case 135 (AAM 7 events; SLAP 5) in the shared original white R/P/TS
+viewer. Yellow mechanism buttons select saved witnesses; the R-order/alignment
+control switches between native P and a rigid fit under the selected mapping.
+Atom labels, event overlays and an expandable event/witness table are available.
 These are saved concrete witnesses, not ground truth.
 
 Our AAM is not simply a weaker SLAP. Their saved solution sets differ in both

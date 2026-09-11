@@ -1,4 +1,6 @@
 """Build an audited minimum-event catalogue, figures, and an offline viewer."""
+
+from rxn_core.viewers import style_document
 import argparse
 from collections import Counter
 import csv
@@ -307,6 +309,7 @@ def figure(rows,summary,destination):
 def viewer(rows,summary,destination):
     payload=json.dumps(dict(cases=rows,summary=summary),separators=(',',':')).replace('</','<\\/')
     template=Path(__file__).with_name('minimum_events_viewer.html').read_text()
+    template=style_document(template, layout='minimum')
     (destination/'viewer.html').write_text(template.replace('__PAYLOAD__',payload))
 
 

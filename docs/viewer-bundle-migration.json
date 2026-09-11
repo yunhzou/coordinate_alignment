@@ -1,0 +1,47 @@
+[
+  {
+    "archive": "reports/holdout_forward_cap1000_seed1_20260910/analysis_sources.tar.gz",
+    "member": "published/minimum_events_viewer.html",
+    "previous_sha256": "6c15d6629a79a0998363147322f7ed400cc5a881afc49d6d151a6c2285ae435b",
+    "current_sha256": "b4f2fe38cbc238186e229a7c33f702c7c74a1eff9056e7d9ad00a738f909c4c3",
+    "reason": "Replace obsolete private presentation with the shared reaction stylesheet. The original provenance template hash is historical; all other archived source members remain byte-identical."
+  },
+  {
+    "archive": "reports/holdout_minimum_event_patterns_20260910/analysis_sources.tar.gz",
+    "member": "published/minimum_events_viewer.html",
+    "previous_sha256": "6c15d6629a79a0998363147322f7ed400cc5a881afc49d6d151a6c2285ae435b",
+    "current_sha256": "b4f2fe38cbc238186e229a7c33f702c7c74a1eff9056e7d9ad00a738f909c4c3",
+    "reason": "Replace obsolete private presentation with the shared reaction stylesheet. The original provenance template hash is historical; all other archived source members remain byte-identical."
+  },
+  {
+    "archive": "manuscript/manuscript_bundle.zip",
+    "reason": "Consolidate interactive presentation into the two shared styles. Other bundle members remain byte-identical.",
+    "updated": [
+      {
+        "member": "manuscript/README.md",
+        "previous_sha256": "c7319a9c43afdaa41e412a7284bf4f989e85acc58854e714fdeb2c2e1e320542",
+        "current_sha256": "7c32967b1a25d7fbcf62d116c099fbc00c9ccdea292385673e9cfd503b77b605"
+      },
+      {
+        "member": "manuscript/Makefile",
+        "previous_sha256": "2980df22a2896af14bc71b177b44a45f1695e2519073e2599180194fee94aed2",
+        "current_sha256": "1ffc88942057ba63c510ef40fb977292bf845e0e0f374ab67665b038c9b5b93b"
+      },
+      {
+        "member": "manuscript/animations/index.html",
+        "previous_sha256": "9475e6c3a87f508dadbf6c53075d39ad32e41e06b67c8990113e186c6fc60107",
+        "current_sha256": "5657149cd7e6088102fe2a2ce15c731c92489279239feb1b7ca3ab01ac66af7f"
+      },
+      {
+        "member": "manuscript/scripts/animation_template.html",
+        "previous_sha256": "dec8d583ce94d8e98fe871a39aabe7783ba7190417d36d70667218e64e927e26",
+        "current_sha256": "03f71f79958487dbe5498688dffffcf8a26f6b723883e0174635496180e375d2"
+      },
+      {
+        "member": "manuscript/scripts/build_animations.py",
+        "previous_sha256": "1bcdcc496b8f920f183b6e3b833a99536f8d2945db53654df832515b3a1759c4",
+        "current_sha256": "ed6d79a055c979306e57cd10073467e916fd7d0d17dc44947d24c1129d1443bb"
+      }
+    ]
+  }
+]

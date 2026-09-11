@@ -2,6 +2,8 @@
 """Pack typed per-case TS viewers into one self-contained batch navigator."""
 from __future__ import annotations
 
+from rxn_core.viewers import style_document
+
 import argparse
 import base64
 import gzip
@@ -59,18 +61,7 @@ def build(results_root, output):
     shared = _gzip64(common)
     marker = MARKER.decode()
     html = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Typed TS analysis — {len(records)} cases</title><style>
-*{{box-sizing:border-box}}html,body{{height:100%;margin:0;font:14px system-ui;color:#172033;background:#eef2f7}}
-body{{display:grid;grid-template-rows:auto 1fr;overflow:hidden}}header{{background:#172033;color:#fff;padding:9px 13px;display:flex;gap:15px;align-items:center}}
-h1{{font-size:17px;margin:0}}header span{{color:#cbd8ee}}main{{display:grid;grid-template-columns:340px 1fr;min-height:0}}
-aside{{background:white;border-right:1px solid #cbd5e1;display:grid;grid-template-rows:auto auto 1fr;min-height:0}}
-#search{{margin:10px;padding:8px;border:1px solid #aebbd0;border-radius:6px}}#current{{padding:0 10px 9px;color:#526077;font-size:12px}}
-#list{{overflow:auto;border-top:1px solid #e2e8f0}}.case{{width:100%;border:0;border-bottom:1px solid #edf0f5;background:#fff;padding:8px 10px;text-align:left;cursor:pointer}}
-.case:hover{{background:#edf5ff}}.case.active{{background:#cfe5ff}}.name{{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-.meta{{font-size:11px;color:#66758d}}#stage{{position:relative;min-width:0;min-height:0}}iframe{{border:0;width:100%;height:100%;background:#fff}}
-#loading{{display:none;position:absolute;inset:0;place-items:center;background:#fffE;z-index:2}}#loading.show{{display:grid}}
-@media(max-width:850px){{main{{grid-template-columns:230px 1fr}}header span{{display:none}}}}
-</style></head><body><header><h1>Typed TS analysis</h1><span>{len(records)} cases · R/P alignment · ranked initial guesses · reactive-mode scores</span></header>
+<title>Typed TS analysis — {len(records)} cases</title></head><body><header><h1>Typed TS analysis</h1><span>{len(records)} cases · R/P alignment · ranked initial guesses · reactive-mode scores</span></header>
 <main><aside><input id="search" type="search" placeholder="Filter cases…"><div id="current">Select a case</div><div id="list"></div></aside>
 <section id="stage"><div id="loading">Loading embedded case viewer…</div><iframe id="viewer"></iframe></section></main>
 <script>const CASES={payload},COMMON="{shared}",MARKER="{marker}";const list=document.getElementById('list'),frame=document.getElementById('viewer'),loading=document.getElementById('loading'),current=document.getElementById('current');let filtered=CASES.slice(),selected=null,token=0;
@@ -79,7 +70,7 @@ function render(){{list.innerHTML='';for(const c of filtered){{const b=document.
 async function openCase(c){{const mine=++token;selected=c.id;render();loading.classList.add('show');current.textContent=`${{c.id}} — ${{c.atoms}} atoms, ${{c.mechanisms}} mechanisms, ${{c.ranked}} ranked rows`;location.hash=encodeURIComponent(c.id);try{{const [lib,body]=await Promise.all([common,unzip(c.payload)]);if(mine!==token)return;frame.srcdoc=body.replace(MARKER,lib)}}catch(e){{frame.srcdoc='<pre style="color:#b91c1c;padding:20px">'+String(e)+'</pre>'}}finally{{if(mine===token)loading.classList.remove('show')}}}}
 document.getElementById('search').oninput=e=>{{const q=e.target.value.trim().toLowerCase();filtered=CASES.filter(c=>c.id.toLowerCase().includes(q)||String(c.atoms)===q);render()}};render();const wanted=decodeURIComponent(location.hash.slice(1));openCase(CASES.find(c=>c.id===wanted)||CASES[0]);</script></body></html>"""
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(html)
+    output.write_text(style_document(html, 'catalog', 'typed_batch'))
     return {"output": str(output), "cases": len(records),
             "bytes": output.stat().st_size}
 

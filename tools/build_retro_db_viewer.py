@@ -2,6 +2,8 @@
 """Build an interactive 3D viewer from merged blind catalog-search results."""
 from __future__ import annotations
 
+from rxn_core.viewers import viewer_style
+
 import argparse
 from collections import Counter
 from html import escape
@@ -303,6 +305,7 @@ def _payload(
     }
 
 
+@viewer_style('catalog', 'catalog')
 def _html(payload):
     score_plot = (Path(__file__).parents[1] / 'src/rxn_core/static/retro_score_plot.js').read_text()
     fragment_colors = (Path(__file__).parents[1] / 'src/rxn_core/static/retro_fragment_colors.js').read_text()
@@ -324,45 +327,7 @@ def _html(payload):
     palette = [_color(i) for i in range(max(
         (len(a["precursors"]) for a in payload["assemblies"]), default=0))]
     return f"""<!doctype html><html><head><meta charset="utf-8">
-<title>Geometric building-block results</title><style>
-:root{{--bg:#f3f5f8;--card:#fff;--ink:#172033;--muted:#64748b;--line:#dbe2ea;--blue:#2684ff;--orange:#ff8b00}}
-*{{box-sizing:border-box}} body{{margin:0;height:100vh;overflow:hidden;font:13px system-ui;background:var(--bg);color:var(--ink)}}
-header{{height:72px;padding:11px 18px;background:#101828;color:white;display:flex;align-items:center;justify-content:space-between}}
-h1{{font-size:18px;margin:0 0 4px}} .muted{{color:#9fb0c8}} .metrics{{display:flex;gap:18px}} .metric b{{display:block;font-size:17px}} .metric small{{color:#9fb0c8}}
-#layout{{display:grid;grid-template-columns:330px 1fr;height:calc(100vh - 72px)}}
-aside{{background:white;border-right:1px solid var(--line);overflow:auto}} .intro{{padding:12px;border-bottom:1px solid var(--line);line-height:1.45}}
-.result{{padding:10px 12px;border:0;border-bottom:1px solid var(--line);width:100%;text-align:left;background:white;cursor:pointer}}
-.result:hover{{background:#f5f8fc}} .result.active{{background:#eaf3ff;box-shadow:inset 4px 0 var(--blue)}}
-.patternhead{{padding:9px 12px;background:#e2e8f0;border-top:2px solid #94a3b8;border-bottom:1px solid var(--line);font-weight:800}}
-.patternhead small{{display:block;color:#475569;font-weight:500;margin-top:2px}}
-.rank{{font-weight:750;font-size:14px}} .badge{{background:#0f9d66;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
-.truthbox{{margin-top:10px;padding:8px;border-radius:7px;background:#ecfdf3;border:1px solid #6ee7a8;color:#166534}} .truthbox.partial{{background:#fffbeb;border-color:#fbbf24;color:#92400e}} .truthbox.missing{{background:#fef2f2;border-color:#fca5a5;color:#991b1b}} .truthreactants{{display:block;margin-top:7px;padding-top:7px;border-top:1px solid currentColor;line-height:1.5}} .patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
-.patternbadge{{background:#475569;color:white;border-radius:10px;padding:2px 7px;margin-left:7px;font-size:10px}}
-.truthbox.incomplete{{background:#fffbeb;border-color:#fbbf24;color:#92400e}} .truthbox.not-evaluated{{background:#f8fafc;border-color:#94a3b8;color:#334155}}
-.ids{{color:#475569;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .score{{color:#64748b;font-size:11px;margin-top:4px}}
-.scoregrid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}} .scorecell{{background:#f1f5f9;border:1px solid #dbe2ea;border-radius:6px;padding:6px;min-width:0}} .scorecell b{{display:block;font-size:18px}} .scorecell small{{display:block;font-size:10px;color:#475569}} .scorecell.breaking b{{color:#c62828}} .scorecell.forming b{{color:#148343}}
-#selectedScores .scoregrid{{grid-template-columns:repeat(6,minmax(0,1fr));margin:0 0 6px}} #selectedScores .scorecell b{{font-size:22px}} .sortbar{{padding:10px 12px;background:white;position:sticky;top:0;z-index:6;border-bottom:1px solid var(--line)}} .sortbar select{{width:100%;margin-top:4px;padding:6px}} .sortbar small{{display:block;color:#64748b;margin-top:4px}}
-main{{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;overflow:auto}}
-#moleculeWorkspace{{display:grid;grid-template-columns:minmax(260px, .38fr) minmax(0, .62fr);min-height:540px;gap:8px;padding:0 8px 8px}}
-#reactants{{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0}} #reactants .panel{{flex:0 0 300px}}
-#moleculeWorkspace.target-focus{{grid-template-columns:1fr}} #moleculeWorkspace.target-focus #reactants{{display:none}}
-#scorePlotPanel{{margin:6px 8px;padding:6px 10px;background:white;border:1px solid var(--line);border-radius:8px}} #scorePlot{{display:block;width:100%;height:180px}} #scorePlotChoices{{display:flex;gap:5px;align-items:center;overflow:auto;white-space:nowrap;min-height:30px}} #scorePlotChoices button{{padding:4px 7px;background:white;border:1px solid #94a3b8;border-radius:5px;cursor:pointer}} #scorePlotChoices .chosen{{border:2px solid #2684ff;background:#eaf3ff}} .plotnote{{font-size:11px;color:#475569}}
-.panel{{position:relative;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:220px}}
-#productWrap{{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:0;min-width:0}} #Ppanel{{height:100%;min-height:380px;display:flex;flex-direction:column}} .view{{position:absolute;inset:0}}
-#Ppanel .label{{position:static;max-width:none;border:0;border-bottom:1px solid var(--line);border-radius:0;background:white;flex:none}}
-#Ppanel .label small{{white-space:normal}} #P{{position:relative;flex:1;min-height:320px}}
-#selectedScores .scoregrid{{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}} #selectedScores .scorecell{{padding:4px}} #selectedScores .scorecell b{{font-size:18px}}
-.target-tools{{display:flex;gap:8px;align-items:center;padding:6px 0}} .target-tools button{{padding:6px 10px;border:1px solid #94a3b8;border-radius:6px;background:white;cursor:pointer}} .target-tools span{{color:var(--muted);font-size:11px}}
-#fragmentLegend{{display:flex;flex-wrap:wrap;gap:5px;max-height:82px;overflow:auto;padding:4px 0}} #fragmentLegend>span:first-child{{width:100%;font-size:11px;color:var(--muted)}} .fragment-chip{{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;font-size:11px}} .fragment-chip i{{width:12px;height:12px;border-radius:3px;display:inline-block}}
-#scorePlotPanel summary{{cursor:pointer;font-weight:700;padding:4px 0}} #scorePlotPanel .controls{{margin-bottom:2px}}
-#scorePlotPanel,#moleculeWorkspace,#reactants{{min-width:0}} #scorePlotChoices{{max-width:100%;min-width:0}} header>div:first-child{{min-width:0}} header .muted{{max-height:32px;overflow:hidden}}
-@media(max-width:1000px){{.metrics{{display:none}} #layout{{grid-template-columns:270px minmax(0,1fr)}} #moleculeWorkspace{{grid-template-columns:minmax(0,1fr);min-height:940px;grid-template-rows:minmax(620px,1fr) 300px}} #productWrap{{grid-row:1}} #reactants{{flex-direction:row;grid-row:2}} #reactants .panel{{flex:0 0 280px}} #moleculeWorkspace.target-focus{{grid-template-rows:1fr}}}}
-@media(max-width:650px){{header{{height:auto;min-height:72px}} .metrics{{display:none}} #layout{{grid-template-columns:1fr;height:calc(100dvh - 72px);overflow:auto}} aside{{max-height:220px}} main{{overflow:visible}} #moleculeWorkspace{{min-height:900px}}}}
-.label{{position:absolute;z-index:3;left:10px;top:9px;max-width:80%;background:#ffffffdf;border:1px solid var(--line);border-radius:7px;padding:6px 9px;pointer-events:none}}
-.label b{{display:block}} .label small{{display:block;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.controls{{display:flex;gap:12px;flex-wrap:wrap;background:#ffffffdc;padding:4px 0}}
-.dot{{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 5px 0 10px}} code{{font-size:11px}}
-</style><script>{library}</script><script>{score_plot}</script><script>{fragment_colors}</script></head><body>
+<title>Geometric building-block results</title><script>{library}</script><script>{score_plot}</script><script>{fragment_colors}</script></head><body>
 <header><div><h1>{payload['summary']['title']}</h1><div class="muted">{escape(payload['summary']['search_scope'])} · Explicit-H fragment mappings</div></div>
 <div class="metrics"><span class="metric"><b>{payload['summary']['catalog_rows']:,}</b><small>catalog R</small></span><span class="metric"><b>{payload['summary']['matched_precursors']:,}</b><small>matched R</small></span><span class="metric"><b>{payload['summary']['fragment_candidates']:,}</b><small>fragments</small></span><span class="metric"><b>{payload['summary']['assemblies']}</b><small>ranked assemblies</small></span></div></header>
 <div id="layout"><aside><div class="intro"><b>Each color is one matched fragment.</b><br>

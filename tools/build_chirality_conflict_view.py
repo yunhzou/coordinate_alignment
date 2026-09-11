@@ -2,6 +2,8 @@
 """Build a self-contained viewer for rejected index-chirality mechanisms."""
 from __future__ import annotations
 
+from rxn_core.viewers import style_document
+
 import argparse
 import json
 from pathlib import Path
@@ -74,22 +76,13 @@ def build(case_root: Path, selection_manifest: Path, output: Path):
     html = HTML.replace("__THREEDMOL__", three_dmol).replace(
         "__DATA__", json.dumps(data))
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(html, encoding="utf-8")
+    output.write_text(style_document(html, 'reaction', 'chirality'), encoding="utf-8")
     return output
 
 
 HTML = r'''<!doctype html><html><head><meta charset="utf-8">
 <title>Index-chirality conflict</title><script>__THREEDMOL__</script>
-<style>
-body{font-family:-apple-system,sans-serif;margin:14px;background:#f6f8fb;color:#182235}
-h2{margin:0 0 4px}.sub{font:12px ui-monospace,monospace;color:#53657a;margin-bottom:10px}
-.controls,.panel,.details{background:white;border:1px solid #d5dce5;border-radius:7px;padding:9px}
-.controls{display:flex;gap:12px;align-items:center;margin-bottom:10px}.controls select{max-width:550px}
-select,label{font:12px ui-monospace,monospace}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.viewer{height:520px;position:relative}.viewer>div{position:absolute;inset:0}
-.ph{font-weight:650}.details{margin-top:10px;font:12px/1.55 ui-monospace,monospace;white-space:pre-wrap}
-.legend{font-size:12px;margin:5px 0}.center{color:#d7191c}.neighbor{color:#f28e2b}.mutable{color:#0099b8}
-</style></head><body>
+</head><body>
 <h2 id="title"></h2><div class="sub">Rejected AAM mechanism diagnostic · source mapping shown without replacement</div>
 <div class="controls"><label>Mechanism <select id="mechanism"></select></label>
 <label>Conflicting frame <select id="frame"></select></label>

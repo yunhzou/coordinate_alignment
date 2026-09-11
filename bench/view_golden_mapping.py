@@ -1,4 +1,6 @@
 """Offline 2D reference/actual AAM comparison from an existing checkpoint."""
+
+from rxn_core.viewers import viewer_style
 import argparse
 import ast
 import colorsys
@@ -119,6 +121,7 @@ def mapping_fragments(record, problem):
                  target=sorted(mapping[r] for r in group)) for i,group in enumerate(groups)]
 
 
+@viewer_style('reaction', 'golden_mapping')
 def render_viewer(payload, reactant, product, problem, config):
     records = payload['records']
     parts = Chem.GetMolFrags(reactant, asMols=True)
@@ -186,13 +189,7 @@ def render_viewer(payload, reactant, product, problem, config):
                      '</table></details><details><summary>Saved fragment-growth decisions</summary>'+details+'</details></section>')
     options = ''.join(f'<option>{r["label"]}</option>' for r in records)
     return ('''<!doctype html><meta charset="utf-8"><title>Inspect exact AAM correspondence</title>
-<style>
-body{font:16px system-ui;margin:24px;background:#f4f6f8;color:#172432}.notice{background:#fff0d5;padding:12px;border-left:5px solid #d55e00}
-.controls{position:sticky;top:0;z-index:5;background:#edf2f7;padding:10px;box-shadow:0 2px 4px #bbc}select,button{font:inherit;padding:8px;margin-right:12px}label{margin-right:12px}
-#inspector{font-weight:600;padding:8px 0;color:#164a79}.layout{display:grid;grid-template-columns:40% 1fr;gap:18px}.sources{display:grid;gap:12px}article{background:white;border:1px solid #ccd5dd;border-radius:10px;padding:10px}article p{margin:6px 0}h3{margin:5px;font-size:18px}h3 span{float:right}svg{width:100%;height:auto}.target{position:sticky;top:112px;align-self:start}details{background:white;padding:18px;margin:12px 0}td,th{padding:7px 15px;text-align:left}tr[data-p]{cursor:pointer}tr.raw-difference{background:#fff3dc}tr.selected{outline:2px solid #173bdf}section{display:none}.hydrogen-1{display:none}
-.chip{display:inline-block;margin:4px 10px 4px 0;padding:5px 10px;border-left:9px solid var(--fragment);background:white}.atom-hit{fill:transparent;stroke:transparent;pointer-events:all;cursor:pointer}.atom-hit.selected,.atom-hit:focus{stroke:#173bdf;stroke-width:3;fill:#b8c8ff;fill-opacity:.3;outline:none}body.hide-unused .unused{display:none}
-@media(max-width:1000px){.layout{grid-template-columns:1fr}.target{position:static;grid-row:1}.controls{position:static}}
-</style>'''+f'<header><h1>Case {payload["index"]} — inspect the atom correspondence</h1>'+
+'''+f'<header><h1>Case {payload["index"]} — inspect the atom correspondence</h1>'+
         '<p><b>r57 means source atom 57 on BOTH drawings.</b> R5 means source molecule 5. Click an atom to see its own product index and source molecule. All indices are zero-based.</p>'+
         f'<p>{config.seed_count} seed orders · cap {config.branch_limit} · tolerance {config.iso_tolerance} · explicit-H search. {payload["cap_stops"]:,} cap stops in this archive. Reference recovery: {html.escape(payload["evaluation"]["reference_recovery"])}</p>'+
         '<p class="notice">Reference and AAM are separate views. No symmetry-equivalent copies are relabelled to hide differences. Same colors across views denote the same target heavy-atom region; compare r-labels to verify the actual source assignment. Reference H identities are unannotated (p…?).</p></header>'+

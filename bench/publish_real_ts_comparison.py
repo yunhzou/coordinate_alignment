@@ -1,4 +1,4 @@
-"""Package saved real-TS comparisons and an offline preferred-style viewer."""
+"""Package saved real-TS comparisons and validated display data."""
 import argparse
 import json
 from pathlib import Path
@@ -10,6 +10,7 @@ from compare_real_ts_mappings import METHODS, save
 from rxn_core import AAMProblem
 from rxn_core.domain import MolecularEndpoint
 from rxn_core.family_scoring import bond_events
+from rxn_core.viewers import collection_html, comparison_document
 
 
 def scalar_events(problem, mapping):
@@ -93,25 +94,9 @@ def main(args):
             append(row['index'],labels['aam_weighted'],score_rows[(row['index'],'aam_weighted')]['best'],
                    labels[method],score_rows[(row['index'],method)]['best'],
                    'Best all-H event score within saved families. Core assignments are not independently validated.')
-    template=Path(__file__).with_name('elementary_comparison_viewer.html').read_text()
-    replacements={
-        '<b>R</b><span>Original reactants</span>':'<b>Source</b><span>R or P endpoint, as named above</span>',
-        '<b>P</b><span>Product · mapped source identities</span>':'<b>TS</b><span>Cached reference TS geometry · mapped source identities</span>',
-        'Our AAM target':'Choice A target','SLAP target':'Choice B target',
-        'AAM → p${mapping(0)[r]}, SLAP → p${mapping(1)[r]}':'${current.records[0].name} → p${mapping(0)[r]}, ${current.records[1].name} → p${mapping(1)[r]}',
-        '`Our AAM · ${current.records[0].counts.total} events`':'`${current.records[0].name} · ${current.records[0].counts.total} events`',
-        '`SLAP · ${current.records[1].counts.total} events`':'`${current.records[1].name} · ${current.records[1].counts.total} events`',
-        'trace R → P':'trace source → TS',
-        'R atoms → P atoms':'Source atoms → TS atoms',
-        'WBO R → P':'WBO source → TS',
-        'Both choices are actual saved mappings, not ground truth.':'Both choices are saved full-atom mappings, not ground truth. Here r denotes the source endpoint atom index and p denotes the TS atom index.',
-    }
-    for before,after in replacements.items():
-        assert before in template;template=template.replace(before,after)
-    library=(Path(__file__).resolve().parents[1]/'src/rxn_core/static/3Dmol-min.js').read_text()
-    html=template.replace('__LIBRARY__',library).replace('__DATA__',json.dumps(displays))
-    (args.output/'viewer.html').write_text(html)
     save(args.output/'viewer_data.json',displays)
+    (args.output/'viewer.html').write_text(collection_html(
+        [comparison_document(row) for row in displays], 'Endpoint / TS comparison'))
     for name in ('analysis.json','membership.json','core_equivalence.json','manifest.json','references.json',
                  'submission.json','relocation.json','scoring_submission.json'):
         shutil.copy2(args.run/name,args.output/name)
@@ -126,7 +111,7 @@ def main(args):
         archive.add(args.run/'slap_core.py',arcname='slap_core.py')
         archive.add(args.run/'engine/bench/compare_real_ts_mappings.py',arcname='search_driver.py')
         archive.add(args.run/'score_real_ts_families.py',arcname='score_driver.py')
-    print(json.dumps(dict(rescored=checked,viewer=str((args.output/'viewer.html').resolve()),totals=totals),indent=2))
+    print(json.dumps(dict(rescored=checked,display_data=str((args.output/'viewer_data.json').resolve()),totals=totals),indent=2))
 
 
 if __name__=='__main__':

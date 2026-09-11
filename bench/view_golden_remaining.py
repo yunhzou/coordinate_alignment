@@ -1,4 +1,6 @@
 """Offline simultaneous reference/detected views from saved AAM archives only."""
+
+from rxn_core.viewers import style_document
 import argparse
 import colorsys
 from collections import Counter
@@ -157,6 +159,7 @@ def redraw(args):
 def combine(args):
     cases=[json.loads((args.output/f'{i}.json').read_text()) for i in INDICES]
     template=Path(__file__).with_name('golden_remaining_template.html').read_text()
+    template=style_document(template, layout='golden_remaining')
     data=json.dumps(cases,separators=(',',':')).replace('</',r'<\/')
     target=args.html_directory or args.output;target.mkdir(parents=True,exist_ok=True)
     (target/'viewer.html').write_text(template.replace('__DATA__',data))

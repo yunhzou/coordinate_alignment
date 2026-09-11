@@ -6,6 +6,9 @@ mechanism-local transition-state analysis.
 Paper benchmarks: [results and artifact index](reports/README.md) ·
 [benchmark scripts and reproduction guide](bench/README.md).
 
+Interactive views use [two shared styles](docs/VIEWERS.md): the original white
+R/P/TS presentation and the catalog/results presentation.
+
 ## Current work and stable versions
 
 See the [branch guide](docs/BRANCHES.md) for preserved pre-acceleration baselines,

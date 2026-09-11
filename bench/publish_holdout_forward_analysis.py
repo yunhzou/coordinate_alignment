@@ -1,4 +1,6 @@
 """Publish the audited forward-only elementary-step comparison."""
+
+from rxn_core.viewers import style_document
 import argparse
 from collections import Counter
 import csv
@@ -105,6 +107,7 @@ def publish(args):
     report(rows,summary,destination,args.run)
     figure(rows,summary,destination)
     template=Path(__file__).with_name('minimum_events_viewer.html').read_text()
+    template=style_document(template, layout='minimum')
     template=template.replace('The same total can describe different bond changes.','Reactant → product only; one seed, cap 1000. The same total can describe different bond changes.')
     template=template.replace('every individual edge deletion in both directions','every individual reactant-edge deletion in the reactant → product direction')
     template=template.replace('The analysis scans all saved full AAM terminal witnesses','The analysis scans forward AAM terminal witnesses')

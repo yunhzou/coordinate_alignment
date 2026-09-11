@@ -4,6 +4,11 @@ Results and exact cluster locations: [paper index](../reports/README.md).
 Scripts remain at their original paths so saved commands/imports keep working.
 No benchmark needs rerunning merely to inspect saved mappings or metrics.
 
+Use the [two shared viewer styles](../docs/VIEWERS.md). R/P and TS comparisons
+use the restored original white-panel renderer; benchmark-specific skins are
+retired. `missing_pattern_display_data.py` prepares the three-case witnesses and
+`tools/render_mapping_comparison.py` renders them through the shared module.
+
 ## Maintained experiment entry points
 
 | Script | Responsibility |

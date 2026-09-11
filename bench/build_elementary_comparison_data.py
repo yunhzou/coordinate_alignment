@@ -1,4 +1,4 @@
-"""Offline native-geometry viewer of saved mappings; no search or SMILES conversion."""
+"""Export validated native-geometry comparison data without a viewer template."""
 import argparse
 import json
 from pathlib import Path
@@ -44,18 +44,14 @@ def build(base, output, comparison=None, indices=(135, 59, 64), overrides=()):
                           ('yes' if row['best_aam_heavy_pattern_matches_any_slap_modulo_score_preserving_symmetry'] else
                            'not among best saved witnesses; this alone is not a compressed-family exclusion')))
     output.parent.mkdir(parents=True, exist_ok=True)
-    library = (Path(__file__).resolve().parents[1] / 'src/rxn_core/static/3Dmol-min.js').read_text()
-    output.write_text(HTML.replace('__LIBRARY__', library).replace('__DATA__', json.dumps(cases)))
+    output.write_text(json.dumps(cases, separators=(',', ':')) + '\n')
     print(output.resolve())
-
-
-HTML = (Path(__file__).with_name('elementary_comparison_viewer.html')).read_text()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base', type=Path, default=Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks'))
-    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True, help='Comparison JSON output path')
     parser.add_argument('--comparison', type=Path)
     parser.add_argument('--all-cases', action='store_true')
     parser.add_argument('--overrides', nargs='*', type=Path, default=[])

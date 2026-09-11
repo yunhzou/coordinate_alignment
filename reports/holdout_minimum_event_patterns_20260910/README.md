@@ -101,3 +101,8 @@ source paths in the submission records and the manuscript plotting dependencies.
 `slurm_accounting.tsv` records analysis workers, including cancelled allocations
 that never started. These postprocessing costs do not alter the mapping-speed
 comparison in the preceding benchmark report.
+
+Presentation cleanup: the bundled HTML template now embeds the shared reaction
+style. `presentation-migration.json` inside the archive records its old and new
+hashes; original provenance hashes describe the historical publication. All other
+archived source members, including the frozen numerical analysis, are unchanged.

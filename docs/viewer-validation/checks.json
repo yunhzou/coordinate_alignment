@@ -1,0 +1,78 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "case": 11,
+      "mechanism": 1,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 11,
+      "mechanism": 2,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 64,
+      "mechanism": 1,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 64,
+      "mechanism": 2,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 64,
+      "mechanism": 3,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 1,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 2,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 3,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 4,
+      "native_and_aligned_geometry": "passed"
+    },
+    {
+      "page": "reports/holdout_forward_cap1000_seed1_20260910/viewer.html",
+      "layout": "minimum",
+      "status": "passed"
+    },
+    {
+      "page": "reports/golden_remaining_21/viewer.html",
+      "layout": "golden_remaining",
+      "status": "passed"
+    },
+    {
+      "page": "reports/golden_alternatives_20260907/case9/viewer.html",
+      "layout": "golden_mapping",
+      "status": "passed"
+    },
+    {
+      "page": "reports/eight_case_studies/t02_chloro_quinoline_alcohol/viewer.html",
+      "layout": "catalog",
+      "status": "passed"
+    },
+    {
+      "page": "manuscript/animations/index.html",
+      "layout": "growth_animation",
+      "status": "passed"
+    }
+  ],
+  "javascript_errors": [],
+  "external_requests": [],
+  "scope": "Presentation and actual saved mapping checks; no benchmark search."
+}

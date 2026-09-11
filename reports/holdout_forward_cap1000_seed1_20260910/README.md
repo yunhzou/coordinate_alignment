@@ -117,3 +117,8 @@ validation and process startup are excluded). It reuses
 prior catalogues and exclusion proofs, so it is not a fresh alternative-extraction
 speed benchmark. Mapping searches were not rerun, and the earlier bidirectional
 report is preserved as a distinct protocol.
+
+Presentation cleanup: the bundled HTML template now embeds the shared reaction
+style. `presentation-migration.json` inside the archive records its old and new
+hashes; original provenance hashes describe the historical publication. All other
+archived source members, including the frozen numerical analysis, are unchanged.
