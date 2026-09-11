@@ -53,9 +53,8 @@ def main():
               window.bondOverlayCalls=[];
               const draw=drawBonds,paint=render;
               drawBonds=(v,xyz,pairs,color)=>{
-                const m=findMech(currentMechId),side=xyz===DATA.reactant.coords?'R':
-                  [DATA.product.coords,m.product_xyz_in_R,m.product_xyz_in_R_aligned].includes(xyz)?'P':null;
-                if(side) for(const pair of pairs) window.bondOverlayCalls.push({side,pair:[...pair],color});
+                for(const pair of pairs) window.bondOverlayCalls.push({
+                  side:xyz===DATA.reactant.coords?'R':'P',pair:[...pair],color});
                 return draw(v,xyz,pairs,color);
               };
               render=()=>{window.bondOverlayCalls=[];return paint()};
