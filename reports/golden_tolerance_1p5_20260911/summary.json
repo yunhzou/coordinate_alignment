@@ -1,0 +1,212 @@
+{
+  "cases": 1851,
+  "metrics": {
+    "tol_1p0": {
+      "recovery": {
+        "recovered": 1833,
+        "not_recovered": 17,
+        "unknown": 1
+      },
+      "completed_search_cases": 1851,
+      "completed_directional_evaluations": 3702,
+      "capped_cases": 1370,
+      "completed_mapping_cpu": 26928.815872102,
+      "unknown_indices": [
+        912
+      ],
+      "not_recovered_indices": [
+        7,
+        19,
+        44,
+        590,
+        602,
+        850,
+        871,
+        986,
+        1228,
+        1285,
+        1314,
+        1358,
+        1377,
+        1384,
+        1475,
+        1553,
+        1568
+      ]
+    },
+    "tol_1p5": {
+      "recovery": {
+        "recovered": 1830,
+        "not_recovered": 19,
+        "unknown": 2
+      },
+      "completed_search_cases": 1851,
+      "completed_directional_evaluations": 3702,
+      "capped_cases": 1375,
+      "completed_mapping_cpu": 26691.849243981,
+      "unknown_indices": [
+        912,
+        1599
+      ],
+      "not_recovered_indices": [
+        7,
+        19,
+        44,
+        590,
+        602,
+        812,
+        850,
+        871,
+        986,
+        1228,
+        1285,
+        1314,
+        1358,
+        1377,
+        1384,
+        1475,
+        1517,
+        1553,
+        1568
+      ]
+    },
+    "archived_1p0": {
+      "recovery": {
+        "recovered": 1833,
+        "not_recovered": 17,
+        "unknown": 1
+      },
+      "completed_search_cases": 1851,
+      "completed_directional_evaluations": 3702,
+      "capped_cases": 1370,
+      "completed_mapping_cpu": 27084.864642877,
+      "unknown_indices": [
+        912
+      ],
+      "not_recovered_indices": [
+        7,
+        19,
+        44,
+        590,
+        602,
+        850,
+        871,
+        986,
+        1228,
+        1285,
+        1314,
+        1358,
+        1377,
+        1384,
+        1475,
+        1553,
+        1568
+      ]
+    }
+  },
+  "paired_complete_cases": 1851,
+  "paired_mapping_cpu": {
+    "tol_1p0": 26928.815872102,
+    "tol_1p5": 26691.849243981
+  },
+  "cpu_ratio_1p5_over_1p0": 0.9912002581455319,
+  "recovery_changes": [
+    {
+      "index": 812,
+      "baseline": "recovered",
+      "trial": "not_recovered"
+    },
+    {
+      "index": 1517,
+      "baseline": "recovered",
+      "trial": "not_recovered"
+    },
+    {
+      "index": 1599,
+      "baseline": "recovered",
+      "trial": "unknown"
+    }
+  ],
+  "baseline_reproduction_changes": [],
+  "phase_statuses": {
+    "search": {
+      "tasks": 3702,
+      "outcomes": {
+        "0": 7404
+      },
+      "execution_span": 406.172235250473,
+      "exceptions": []
+    },
+    "analyze": {
+      "tasks": 3702,
+      "outcomes": {
+        "0": 7404
+      },
+      "execution_span": 261.175630569458,
+      "exceptions": []
+    }
+  },
+  "directional_recovery": {
+    "tol_1p0": {
+      "R_to_P": {
+        "recovered": 1792,
+        "not_recovered": 58,
+        "unknown": 1
+      },
+      "P_to_R": {
+        "recovered": 1786,
+        "not_recovered": 58,
+        "unknown": 7
+      }
+    },
+    "tol_1p5": {
+      "R_to_P": {
+        "recovered": 1790,
+        "not_recovered": 60,
+        "unknown": 1
+      },
+      "P_to_R": {
+        "recovered": 1787,
+        "not_recovered": 57,
+        "unknown": 7
+      }
+    }
+  },
+  "paired_case_cpu_median": {
+    "tol_1p0": 4.981978196999999,
+    "tol_1p5": 4.976861382999999
+  },
+  "faster_cases_at_1p5": 915,
+  "representative_and_graph_counts": {
+    "tol_1p0": {
+      "states": 49096835,
+      "terminals": 3619811
+    },
+    "tol_1p5": {
+      "states": 49171416,
+      "terminals": 3605584
+    }
+  },
+  "witness_validation": {
+    "checked_directional_witnesses": {
+      "tol_1p0": 3578,
+      "tol_1p5": 3577
+    },
+    "violations": 0,
+    "scope": "Every recovered directional output: saved input-oriented witness is injective, element preserving, and matches the fixed heavy chemical reference modulo endpoint chemical symmetry. This does not exhaustively audit every non-witness compressed family member."
+  },
+  "targeted_extended_verification": {
+    "index": 1599,
+    "direction": "P_to_R",
+    "seconds": 240.0,
+    "search_rerun": false,
+    "outcome": "not_recovered",
+    "updated_trial_recovery": {
+      "recovered": 1830,
+      "not_recovered": 20,
+      "unknown": 1
+    },
+    "scope": "Additional verification only; primary fixed-budget metrics above are unchanged."
+  },
+  "frozen_sources_and_inputs_unchanged": true
+}

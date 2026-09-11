@@ -1,0 +1,18 @@
+{
+  "job": "469274",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--nodelist=bosque83",
+    "--nodes=1",
+    "--cpus-per-task=1",
+    "--mem=16G",
+    "--time=00:06:00",
+    "--no-requeue",
+    "--job-name=golden1599_verify",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/status/extended_1599_%j.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/engine/bench PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 timeout --kill-after=5s 330 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/query_golden_tolerance_archive.py --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911 --index 1599 --direction P_to_R --seconds 240 --output /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/extended_1599.json"
+  ]
+}

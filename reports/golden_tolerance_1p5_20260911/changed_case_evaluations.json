@@ -1,0 +1,929 @@
+[
+  {
+    "index": 812,
+    "variant": "tol_1p0",
+    "direction": "R_to_P",
+    "evaluation": {
+      "reference_pairs": 12,
+      "reference_annotation_complete": true,
+      "top1_correct": true,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 3189,
+      "witness_terminal": 3189,
+      "candidate_terminals": 511,
+      "unique_representative_chemistries": 25,
+      "unique_heavy_representatives": 25,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 0.1432605180889368,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 2,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          11,
+          9
+        ],
+        [
+          12,
+          12
+        ],
+        [
+          13,
+          13
+        ],
+        [
+          14,
+          19
+        ],
+        [
+          15,
+          14
+        ],
+        [
+          16,
+          15
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          19,
+          16
+        ],
+        [
+          20,
+          25
+        ],
+        [
+          21,
+          24
+        ],
+        [
+          22,
+          23
+        ],
+        [
+          23,
+          22
+        ],
+        [
+          24,
+          21
+        ],
+        [
+          25,
+          20
+        ]
+      ],
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.05184524800000001,
+        "wall": 0.054260087199509144
+      },
+      "analysis_cpu": 0.194502414,
+      "analysis_wall": 0.19699711631983519
+    }
+  },
+  {
+    "index": 812,
+    "variant": "tol_1p0",
+    "direction": "P_to_R",
+    "evaluation": {
+      "reference_pairs": 12,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 583,
+      "witness_terminal": null,
+      "candidate_terminals": 2175,
+      "unique_representative_chemistries": 36,
+      "unique_heavy_representatives": 36,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 3.9065729081630707,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 4,
+        "formed": 5,
+        "bond_order_changed": 2
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.25265959800000015,
+        "wall": 0.2582651162520051
+      },
+      "analysis_cpu": 4.171913089,
+      "analysis_wall": 4.175381395034492
+    }
+  },
+  {
+    "index": 812,
+    "variant": "tol_1p5",
+    "direction": "R_to_P",
+    "evaluation": {
+      "reference_pairs": 12,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 215,
+      "witness_terminal": null,
+      "candidate_terminals": 92,
+      "unique_representative_chemistries": 8,
+      "unique_heavy_representatives": 8,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": false,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 0.1553407246246934,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 2,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.0074018919999998545,
+        "wall": 0.008455509319901466
+      },
+      "analysis_cpu": 0.1720201779999999,
+      "analysis_wall": 0.1816317243501544
+    }
+  },
+  {
+    "index": 812,
+    "variant": "tol_1p5",
+    "direction": "P_to_R",
+    "evaluation": {
+      "reference_pairs": 12,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 1502,
+      "witness_terminal": null,
+      "candidate_terminals": 1931,
+      "unique_representative_chemistries": 41,
+      "unique_heavy_representatives": 41,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 3.2236674251034856,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 4,
+        "formed": 5,
+        "bond_order_changed": 1
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.1815081649999999,
+        "wall": 0.18647123780101538
+      },
+      "analysis_cpu": 3.455541073,
+      "analysis_wall": 3.4584048967808485
+    }
+  },
+  {
+    "index": 1517,
+    "variant": "tol_1p0",
+    "direction": "R_to_P",
+    "evaluation": {
+      "reference_pairs": 27,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 16015,
+      "witness_terminal": null,
+      "candidate_terminals": 2778,
+      "unique_representative_chemistries": 919,
+      "unique_heavy_representatives": 1087,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 9.246247140690684,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 4,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.378668459,
+        "wall": 0.3907103482633829
+      },
+      "analysis_cpu": 11.241992494000002,
+      "analysis_wall": 11.276207509450614
+    }
+  },
+  {
+    "index": 1517,
+    "variant": "tol_1p0",
+    "direction": "P_to_R",
+    "evaluation": {
+      "reference_pairs": 27,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 7406,
+      "witness_terminal": 12260,
+      "candidate_terminals": 1722,
+      "unique_representative_chemistries": 365,
+      "unique_heavy_representatives": 418,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 0.8726041112095118,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 4,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          7,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          11,
+          4
+        ],
+        [
+          12,
+          5
+        ],
+        [
+          13,
+          26
+        ],
+        [
+          14,
+          18
+        ],
+        [
+          15,
+          19
+        ],
+        [
+          16,
+          25
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          18,
+          7
+        ],
+        [
+          19,
+          8
+        ],
+        [
+          20,
+          9
+        ],
+        [
+          21,
+          10
+        ],
+        [
+          22,
+          11
+        ],
+        [
+          23,
+          12
+        ],
+        [
+          24,
+          13
+        ],
+        [
+          25,
+          14
+        ],
+        [
+          26,
+          15
+        ],
+        [
+          27,
+          16
+        ],
+        [
+          28,
+          6
+        ],
+        [
+          30,
+          20
+        ],
+        [
+          31,
+          21
+        ],
+        [
+          37,
+          22
+        ],
+        [
+          39,
+          23
+        ],
+        [
+          40,
+          24
+        ],
+        [
+          56,
+          29
+        ],
+        [
+          57,
+          27
+        ],
+        [
+          58,
+          28
+        ],
+        [
+          59,
+          30
+        ],
+        [
+          60,
+          39
+        ],
+        [
+          61,
+          36
+        ],
+        [
+          62,
+          32
+        ],
+        [
+          63,
+          33
+        ],
+        [
+          64,
+          34
+        ],
+        [
+          65,
+          35
+        ],
+        [
+          66,
+          31
+        ],
+        [
+          68,
+          37
+        ],
+        [
+          73,
+          38
+        ]
+      ],
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.28173040000000005,
+        "wall": 0.302813908085227
+      },
+      "analysis_cpu": 1.843912054,
+      "analysis_wall": 1.8543105721473694
+    }
+  },
+  {
+    "index": 1517,
+    "variant": "tol_1p5",
+    "direction": "R_to_P",
+    "evaluation": {
+      "reference_pairs": 27,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 15311,
+      "witness_terminal": null,
+      "candidate_terminals": 2270,
+      "unique_representative_chemistries": 692,
+      "unique_heavy_representatives": 842,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 7.508970500901341,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 4,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.2987734040000001,
+        "wall": 0.30724645126610994
+      },
+      "analysis_cpu": 9.087704093000001,
+      "analysis_wall": 9.126427391543984
+    }
+  },
+  {
+    "index": 1517,
+    "variant": "tol_1p5",
+    "direction": "P_to_R",
+    "evaluation": {
+      "reference_pairs": 27,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 11843,
+      "witness_terminal": null,
+      "candidate_terminals": 1241,
+      "unique_representative_chemistries": 164,
+      "unique_heavy_representatives": 237,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 20.638846782036126,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 157,
+      "top_events": {
+        "broken": 4,
+        "formed": 3,
+        "bond_order_changed": 1
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.1836628279999999,
+        "wall": 0.18990873452275991
+      },
+      "analysis_cpu": 21.388507237,
+      "analysis_wall": 21.40632217284292
+    }
+  },
+  {
+    "index": 1599,
+    "variant": "tol_1p0",
+    "direction": "R_to_P",
+    "evaluation": {
+      "reference_pairs": 23,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 21846,
+      "witness_terminal": null,
+      "candidate_terminals": 4503,
+      "unique_representative_chemistries": 677,
+      "unique_heavy_representatives": 755,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 12.359532192349434,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 8,
+        "formed": 4,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.42231590099999994,
+        "wall": 0.4626280600205064
+      },
+      "analysis_cpu": 14.305221062,
+      "analysis_wall": 14.322275213897228
+    }
+  },
+  {
+    "index": 1599,
+    "variant": "tol_1p0",
+    "direction": "P_to_R",
+    "evaluation": {
+      "reference_pairs": 23,
+      "reference_annotation_complete": true,
+      "top1_correct": true,
+      "representative_recovery": true,
+      "reference_recovery": "recovered",
+      "top_terminal": 1678,
+      "witness_terminal": 1678,
+      "candidate_terminals": 4101,
+      "unique_representative_chemistries": 54,
+      "unique_heavy_representatives": 84,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 2.4542812928557396,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "top_events": {
+        "broken": 4,
+        "formed": 3,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "input_orientation_witness": [
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          32,
+          16
+        ],
+        [
+          33,
+          17
+        ],
+        [
+          34,
+          18
+        ],
+        [
+          35,
+          19
+        ],
+        [
+          36,
+          20
+        ],
+        [
+          37,
+          21
+        ],
+        [
+          38,
+          22
+        ],
+        [
+          41,
+          15
+        ],
+        [
+          42,
+          14
+        ],
+        [
+          43,
+          1
+        ],
+        [
+          44,
+          2
+        ],
+        [
+          45,
+          0
+        ],
+        [
+          51,
+          23
+        ],
+        [
+          52,
+          28
+        ],
+        [
+          53,
+          27
+        ],
+        [
+          54,
+          30
+        ],
+        [
+          55,
+          29
+        ],
+        [
+          56,
+          31
+        ],
+        [
+          57,
+          32
+        ],
+        [
+          58,
+          33
+        ],
+        [
+          59,
+          34
+        ],
+        [
+          60,
+          35
+        ],
+        [
+          87,
+          38
+        ],
+        [
+          88,
+          39
+        ],
+        [
+          89,
+          40
+        ],
+        [
+          90,
+          41
+        ],
+        [
+          94,
+          37
+        ],
+        [
+          95,
+          36
+        ],
+        [
+          96,
+          24
+        ],
+        [
+          97,
+          26
+        ],
+        [
+          98,
+          25
+        ]
+      ],
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 1.4771013509999997,
+        "wall": 1.4779432378709316
+      },
+      "analysis_cpu": 3.7203240170000003,
+      "analysis_wall": 3.725780534557998
+    }
+  },
+  {
+    "index": 1599,
+    "variant": "tol_1p5",
+    "direction": "R_to_P",
+    "evaluation": {
+      "reference_pairs": 23,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "not_recovered",
+      "top_terminal": 21176,
+      "witness_terminal": null,
+      "candidate_terminals": 4751,
+      "unique_representative_chemistries": 618,
+      "unique_heavy_representatives": 709,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 13.150884826667607,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 4,
+      "top_events": {
+        "broken": 8,
+        "formed": 4,
+        "bond_order_changed": 0
+      },
+      "search_direction": "R_to_P",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 0.407470424,
+        "wall": 0.4593995986506343
+      },
+      "analysis_cpu": 15.148352245,
+      "analysis_wall": 15.200877979397774
+    }
+  },
+  {
+    "index": 1599,
+    "variant": "tol_1p5",
+    "direction": "P_to_R",
+    "evaluation": {
+      "reference_pairs": 23,
+      "reference_annotation_complete": true,
+      "top1_correct": false,
+      "representative_recovery": false,
+      "reference_recovery": "unknown",
+      "top_terminal": 17659,
+      "witness_terminal": null,
+      "candidate_terminals": 4180,
+      "unique_representative_chemistries": 45,
+      "unique_heavy_representatives": 69,
+      "best_target_heavy_coverage": 1.0,
+      "best_target_all_atom_coverage": 1.0,
+      "capped": true,
+      "symbolic_queries": 0,
+      "unknown_queries": 0,
+      "evaluation_seconds": 60.02295267023146,
+      "verifier": "full_explicit_domain_and_group_v1",
+      "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+      "rejected_heavy_projections": 0,
+      "top_events": {
+        "broken": 6,
+        "formed": 5,
+        "bond_order_changed": 0
+      },
+      "search_direction": "P_to_R",
+      "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+      "coverage_space": "original input product",
+      "label": "full_sweep",
+      "loading": {
+        "cpu": 2.1580549209999997,
+        "wall": 2.1777187259867787
+      },
+      "analysis_cpu": 61.905563007000005,
+      "analysis_wall": 61.91266065929085
+    }
+  }
+]

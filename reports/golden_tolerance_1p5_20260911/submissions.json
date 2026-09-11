@@ -1,0 +1,43 @@
+[
+  {
+    "phase": "search",
+    "job": "469242",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--exclude=bosque49,bosque56",
+      "--nodes=1",
+      "--cpus-per-task=32",
+      "--mem=64G",
+      "--time=00:30:00",
+      "--no-requeue",
+      "--array=0-15%16",
+      "--job-name=golden_tol15_search",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/status/search_%A_%a.out",
+      "--wrap",
+      "/project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/driver.py batch --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911 --phase search"
+    ]
+  },
+  {
+    "phase": "analyze",
+    "job": "469243",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--exclude=bosque49,bosque56",
+      "--nodes=1",
+      "--cpus-per-task=8",
+      "--mem=64G",
+      "--time=00:30:00",
+      "--no-requeue",
+      "--array=0-15%16",
+      "--job-name=golden_tol15_analyze",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/status/analyze_%A_%a.out",
+      "--dependency=afterany:469242",
+      "--wrap",
+      "/project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/driver.py batch --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911 --phase analyze"
+    ]
+  }
+]

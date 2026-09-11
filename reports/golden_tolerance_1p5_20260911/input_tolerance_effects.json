@@ -1,0 +1,2964 @@
+{
+  "endpoint_positive_weight_case_counts": {
+    "1.0": 1851,
+    "2.0": 1699,
+    "1.5": 1513,
+    "3.0": 326
+  },
+  "cases_with_new_cross_endpoint_weight_pairs": [
+    {
+      "index": 4,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 6,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 17,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 19,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 23,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 25,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 30,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 39,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 40,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 45,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 48,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 76,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 84,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 94,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 115,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 126,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 136,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 144,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 154,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 168,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 177,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 194,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 210,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 228,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 229,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 231,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 234,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 237,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 239,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 242,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 244,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 245,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 248,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 249,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 257,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 274,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 280,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 285,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 295,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 296,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 297,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 306,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 314,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 324,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 351,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 359,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 361,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 364,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 403,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 410,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 411,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 413,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 438,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 455,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 458,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 461,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 480,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 496,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 520,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 532,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 533,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 536,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 539,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 545,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 561,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 563,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 572,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 575,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 576,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 589,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 590,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 595,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 598,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 599,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 600,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 608,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 612,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 634,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 635,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 658,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 659,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 710,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 714,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 715,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 719,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 723,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 724,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 726,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 730,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 733,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 741,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 743,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 746,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 748,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 749,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 751,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 754,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 758,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 763,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 772,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 776,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 778,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 779,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 780,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 782,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 785,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 789,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 790,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 794,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 800,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 806,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 808,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 811,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 812,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 813,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 814,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 815,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 819,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 820,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 822,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 823,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 824,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 827,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 831,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 832,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 837,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 840,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 841,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 842,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 847,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 848,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 852,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 853,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 854,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 856,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 858,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 861,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 862,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 884,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 886,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 890,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 891,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 892,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 894,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 901,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 902,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 909,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 910,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 919,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 928,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 929,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 938,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 943,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 948,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 954,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 990,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1006,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1015,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1021,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1022,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1029,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1047,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1048,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1056,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1061,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1064,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1070,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1078,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1079,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1104,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1108,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1113,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1116,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1117,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1122,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1129,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1133,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1136,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1138,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1141,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1142,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1144,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1146,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1150,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1151,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1152,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1154,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1155,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1157,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1159,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1160,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1191,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1193,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1196,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1199,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 1223,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1225,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1227,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1231,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1270,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1288,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1292,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 1304,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1310,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1312,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1313,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 1314,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1316,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ]
+      ]
+    },
+    {
+      "index": 1319,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1339,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1352,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1361,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1362,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1365,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1383,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1384,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1391,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1401,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1406,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1407,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1408,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1424,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1431,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1434,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1448,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1453,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1458,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1473,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1474,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1475,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1479,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1480,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1481,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1491,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1492,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1493,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1516,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1517,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1518,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1519,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1521,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1526,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1527,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1528,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1529,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1530,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1531,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1532,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1533,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1534,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1539,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1540,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1541,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1542,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1543,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1549,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1550,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1551,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1552,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1553,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1564,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1574,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1575,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1576,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1586,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1592,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1599,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1623,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1667,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1691,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1695,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1701,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1713,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1730,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1739,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1740,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1744,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1745,
+      "added_weight_pairs": [
+        [
+          1.5,
+          3.0
+        ],
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1798,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1802,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    },
+    {
+      "index": 1849,
+      "added_weight_pairs": [
+        [
+          3.0,
+          1.5
+        ]
+      ]
+    }
+  ],
+  "scope": "Input bond-weight gate only; ignores atom labels and subgraph context. This does not predict whether an added edge assignment survives full search."
+}

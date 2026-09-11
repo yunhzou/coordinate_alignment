@@ -1,0 +1,42 @@
+{
+  "index": 1599,
+  "direction": "P_to_R",
+  "variant": "tol_1p5",
+  "search_rerun": false,
+  "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/runs/tol_1p5/results/golden/1599/P_to_R/original/cuts/aam.pkl.gz",
+  "archive_sha256": "c69cf74d31ab6cdb30627ab48392f2ec6424af623be37c7c15e2e9dc274052fb",
+  "reference_sha256": "b577831884a4868b1c5fba5f10f0c17dc3562969edead3ca7b9e1be1f7ac4ea5",
+  "driver_sha256": "636f788ff3b8218f0d88f581b066ce9701264d20b0eccaae912434404bebf738",
+  "verification_seconds": 240.0,
+  "per_query_timeout_ms": 1500,
+  "elapsed_verification": 80.34389226697385,
+  "evaluation": {
+    "reference_pairs": 23,
+    "reference_annotation_complete": true,
+    "top1_correct": false,
+    "representative_recovery": false,
+    "reference_recovery": "not_recovered",
+    "top_terminal": 17659,
+    "witness_terminal": null,
+    "candidate_terminals": 4180,
+    "unique_representative_chemistries": 45,
+    "unique_heavy_representatives": 69,
+    "best_target_heavy_coverage": 1.0,
+    "best_target_all_atom_coverage": 1.0,
+    "capped": true,
+    "symbolic_queries": 0,
+    "unknown_queries": 0,
+    "evaluation_seconds": 78.93123520258814,
+    "verifier": "full_explicit_domain_and_group_v1",
+    "reference_semantics": "exact heavy-atom relation including unmatched atoms, modulo endpoint chemical symmetry",
+    "rejected_heavy_projections": 1,
+    "top_events": {
+      "broken": 6,
+      "formed": 5,
+      "bond_order_changed": 0
+    },
+    "search_direction": "P_to_R",
+    "mapping_space": "search source/target; use orientation.json to recover input R/P indices",
+    "coverage_space": "original input product"
+  }
+}

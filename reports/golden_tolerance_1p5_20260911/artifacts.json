@@ -1,0 +1,6 @@
+{
+  "raw_run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911",
+  "frozen_driver": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/golden_tol15_20260911/driver.py",
+  "publisher_sha256": "c207c6e4365cfb9db869cc76fd522d40e3325655045525f5db7565ee52ac6e57",
+  "baseline": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/aam_one_seed_bidirectional_20260910"
+}
