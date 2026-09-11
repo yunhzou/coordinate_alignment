@@ -29,8 +29,10 @@ h2{margin:0 0 4px;font-size:18px}
 .meta b{color:#024}
 .interp-panel{margin:0 0 18px}
 .interp-panel .vw{height:360px}
-.interp-controls{display:flex;align-items:center;gap:10px;width:100%}
+.interp-controls{display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;margin-top:6px}
 .interp-controls input[type=range]{flex:1}
+.interp-controls label{display:flex;align-items:center;gap:5px;max-width:100%}
+#interpEvent{min-width:0}#interp_meta{line-height:1.8}
 .clash-ok{color:#16733b}
 .clash-bad{color:#b00020;font-weight:700}
 
