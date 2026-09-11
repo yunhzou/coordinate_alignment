@@ -99,7 +99,13 @@ function addEndpointModel(v, divId, els, xyz) {
  if (!endpoint || !endpoint.wbo) { v.addModel(buildBody(els,xyz),'xyz'); return; }
  const order=side===1 && rOrdered ? els.map((_,i)=>mech.mapping_RP[i]) : els.map((_,i)=>i);
  v.addModel().addAtoms(els.map((elem,i)=>({elem,index:i,serial:i,x:xyz[i][0],y:xyz[i][1],z:xyz[i][2],bonds:order.flatMap((j,k)=>k!==i && endpoint.wbo[order[i]][j]>.2?[k]:[]),bondOrder:order.flatMap((j,k)=>k!==i && endpoint.wbo[order[i]][j]>.2?[1]:[])})));
- for (const [kind,pairs] of Object.entries(mech.order_events||{})) {const actual=side===1 && !rOrdered ? pairs.map(([a,b])=>[mech.mapping_RP[a],mech.mapping_RP[b]]) : pairs;drawBonds(v,xyz,actual,{strengthened:'#3269aa',weakened:'#8b5ca5',order_changed:'#b98400'}[kind]);}
+ for (const [kind,pairs] of Object.entries(mech.order_events||{})) for (const [a,b] of pairs) {
+  const pa=mech.mapping_RP[a],pb=mech.mapping_RP[b];
+  const delta=kind==='strengthened'?1:kind==='weakened'?-1:DATA.product.wbo[pa][pb]-DATA.reactant.wbo[a][b];
+  if (delta===0) continue;
+  const actual=side===1 && !rOrdered ? [pa,pb] : [a,b];
+  drawBonds(v,xyz,[actual],delta>0?'green':'red');
+ }
 }
 function describeWitness(mech) {
  document.getElementById('comparison-note').textContent=DATA.note||'';

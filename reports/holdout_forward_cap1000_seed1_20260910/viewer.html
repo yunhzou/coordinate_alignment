@@ -352,7 +352,7 @@ body[data-viewer-layout="anchor"] .vw{height:260px}}
 <div class="toolbar"><div><h2 id="title"></h2><p id="scores" class="counts"></p></div><div><button id="prev">←</button> <button id="next">→</button></div></div>
 <p id="completeness" class="note"></p>
 <div class="controls"><label>Patterns<select id="patternfilter"><option value="all">All benchmark-minimum patterns</option><option value="aam_score">At AAM's benchmark score</option><option value="shared">Shared by AAM and SLAP sweep</option><option value="sweep_only">SLAP sweep only — proved</option><option value="aam_only">AAM only — proved</option><option value="unresolved">Unresolved membership</option></select></label><label class="check"><input id="hydrogens" type="checkbox">Show all hydrogen atoms</label></div>
-<div class="legend"><span style="--c:#be4c38">Broken</span><span style="--c:#008770">Formed</span><span style="--c:#3269aa">Strengthened</span><span style="--c:#8b5ca5">Weakened</span></div>
+<div class="legend"><span style="--c:red">Broken / weakened</span><span style="--c:green">Formed / strengthened</span></div>
 <p class="muted">Diagrams use a projection of the reactant coordinates. Highlighted bonds refer to the displayed representative; a method may encode a symmetry-equivalent relabeling. Atom indices are zero-based. These are candidate bond-edit patterns, not experimentally verified pathways.</p>
 <div id="cards" class="cards"></div>
 <details><summary>How the comparison was checked</summary><p>AAM uses one seed order, branch cap 1000 and tolerance 1.0. Native XYZ SLAP is shown both without cuts and with the uncut plus every individual reactant-edge deletion in the reactant → product direction. Every pattern is scored on the original full-H WBO matrices: bond presence &gt; 0.2, order-change magnitude &gt; 0.5. This catalogue holds the benchmark's recorded minimum score fixed.</p><p>The analysis scans forward AAM terminal witnesses, enumerates SLAP label-family event patterns, and queries the correlated AAM families. “Excluded” requires completed membership checks or completed enumeration. An unfinished enumeration is a lower bound and cannot prove absence. Additional AAM alternatives may exist where enumeration remains incomplete.</p><p>The downloadable report includes mappings, compressed-family witnesses, completeness flags, source hashes and independent finite checks. No mapping search or benchmark timing was rerun.</p></details>
@@ -361,7 +361,7 @@ body[data-viewer-layout="anchor"] .vw{height:260px}}
 <script>
 'use strict';
 const data=JSON.parse(document.getElementById('data').textContent),cases=data.cases,el=id=>document.getElementById(id);
-const names={aam:'AAM',native_slap:'Native SLAP',slap_sweep:'SLAP + sweep'},colors={broken:'#be4c38',formed:'#008770',strengthened:'#3269aa',weakened:'#8b5ca5'};
+const names={aam:'AAM',native_slap:'Native SLAP',slap_sweep:'SLAP + sweep'},colors={broken:'red',formed:'green',strengthened:'green',weakened:'red'};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sum=data.summary.comparisons.slap_sweep;
 el('overall').innerHTML=[['Tied scores',sum.tied_cases],['Verified shared patterns',sum.shared_patterns],['Certified differing cases',sum.certified_different_cases]].map(([a,b])=>`<div class="stat"><strong>${b}</strong>${a}</div>`).join('');

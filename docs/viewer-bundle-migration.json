@@ -3,15 +3,17 @@
     "archive": "reports/holdout_forward_cap1000_seed1_20260910/analysis_sources.tar.gz",
     "member": "published/minimum_events_viewer.html",
     "previous_sha256": "6c15d6629a79a0998363147322f7ed400cc5a881afc49d6d151a6c2285ae435b",
-    "current_sha256": "b4f2fe38cbc238186e229a7c33f702c7c74a1eff9056e7d9ad00a738f909c4c3",
-    "reason": "Replace obsolete private presentation with the shared reaction stylesheet. The original provenance template hash is historical; all other archived source members remain byte-identical."
+    "current_sha256": "497e517bcdf5708bbae2d32cd3c272ef5994b21c7e8e143a3c04988646033366",
+    "reason": "Replace obsolete private presentation with the shared reaction stylesheet. The original provenance template hash is historical; all other archived source members remain byte-identical.",
+    "color_convention": "red: broken/weakened; green: formed/strengthened"
   },
   {
     "archive": "reports/holdout_minimum_event_patterns_20260910/analysis_sources.tar.gz",
     "member": "published/minimum_events_viewer.html",
     "previous_sha256": "6c15d6629a79a0998363147322f7ed400cc5a881afc49d6d151a6c2285ae435b",
-    "current_sha256": "b4f2fe38cbc238186e229a7c33f702c7c74a1eff9056e7d9ad00a738f909c4c3",
-    "reason": "Replace obsolete private presentation with the shared reaction stylesheet. The original provenance template hash is historical; all other archived source members remain byte-identical."
+    "current_sha256": "497e517bcdf5708bbae2d32cd3c272ef5994b21c7e8e143a3c04988646033366",
+    "reason": "Replace obsolete private presentation with the shared reaction stylesheet. The original provenance template hash is historical; all other archived source members remain byte-identical.",
+    "color_convention": "red: broken/weakened; green: formed/strengthened"
   },
   {
     "archive": "manuscript/manuscript_bundle.zip",
