@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "context": 24,
+      "terminal": 198,
+      "fixed_geometry": "passed",
+      "event_colors": "passed",
+      "candidate_selection": "passed",
+      "playback": "passed"
+    },
+    {
+      "context": 24,
+      "terminal": 199,
+      "fixed_geometry": "passed",
+      "event_colors": "passed",
+      "candidate_selection": "passed",
+      "playback": "passed"
+    },
+    {
+      "context": 734,
+      "terminal": 6085,
+      "fixed_geometry": "passed",
+      "event_colors": "passed",
+      "candidate_selection": "passed",
+      "playback": "passed"
+    },
+    {
+      "context": 734,
+      "terminal": 6086,
+      "fixed_geometry": "passed",
+      "event_colors": "passed",
+      "candidate_selection": "passed",
+      "playback": "passed"
+    },
+    {
+      "context": 734,
+      "terminal": 6087,
+      "fixed_geometry": "passed",
+      "event_colors": "passed",
+      "candidate_selection": "passed",
+      "playback": "passed"
+    }
+  ],
+  "javascript_errors": [],
+  "external_requests": []
+}

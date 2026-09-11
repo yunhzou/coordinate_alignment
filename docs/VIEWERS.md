@@ -21,6 +21,12 @@ remain 2D where the evidence has no native geometry; they use the same reaction
 style. Catalog layouts retain their existing result-navigation behavior.
 Different layouts and chemical highlight colors are not independent skins.
 
+The reusable **algorithm search trajectory** pipeline is documented in
+[SEARCH_TRAJECTORIES.md](SEARCH_TRAJECTORIES.md). It captures verified fragment
+events from selected saved archives and renders them with `growth_trace_html`.
+The PR7 example is `reports/pr7_search_trajectory_20260911/algorithm_trajectory.html`.
+Its endpoint coordinates remain fixed; playback follows growth and branching.
+
 Bond-event overlays use **red for breaking or weakening** and **green for forming
 or strengthening**, always in the R → P direction. Do not add separate colors for
 bond-order changes. In the R/P comparison, **R shows only red changes** and

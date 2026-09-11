@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 24,
+      "terminal": 198,
+      "frames": 65,
+      "archived_fragment_matches": "exact",
+      "complete": true,
+      "events": 4
+    },
+    {
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 24,
+      "terminal": 199,
+      "frames": 65,
+      "archived_fragment_matches": "exact",
+      "complete": true,
+      "events": 4
+    },
+    {
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 734,
+      "terminal": 6085,
+      "frames": 65,
+      "archived_fragment_matches": "exact",
+      "complete": true,
+      "events": 4
+    },
+    {
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 734,
+      "terminal": 6086,
+      "frames": 65,
+      "archived_fragment_matches": "exact",
+      "complete": true,
+      "events": 4
+    },
+    {
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 734,
+      "terminal": 6087,
+      "frames": 65,
+      "archived_fragment_matches": "exact",
+      "complete": true,
+      "events": 4
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fragment-growth search trajectory</title><script>__LIBRARY__</script></head><body>
+<h2 id="title">Fragment-growth search trajectory</h2>
+<p class="meta" id="configuration"></p>
+<div class="topbar"><div class="mech-sel" id="runs"></div><label>Saved branch <select id="path"></select></label>
+<button class="dl" id="critical">Jump to decision</button><button class="dl" id="start">Replay from start</button></div>
+<div class="panel"><div class="trace-controls"><button class="dl" id="play">Play</button>
+<button class="dl" id="prev" aria-label="Previous search event">←</button><input id="step" type="range" min="0" value="0" aria-label="Search event">
+<button class="dl" id="next" aria-label="Next search event">→</button><span id="counter"></span>
+<label>Speed <select id="speed"><option value="1400">Slow</option><option value="700" selected>Normal</option><option value="250">Fast</option></select></label>
+<select id="events" aria-label="Choose a search event"></select></div>
+<h2 id="event-title"></h2><p id="explanation"></p><div id="stats" class="meta"></div></div>
+<div class="topbar trace-options"><label><input id="labels" type="checkbox" checked> Key atom labels</label>
+<label><input id="all-labels" type="checkbox"> All atom labels</label><label><input id="final-events" type="checkbox"> Final bond events</label>
+<button class="dl" id="focus">Focus current fragment</button><button class="dl" id="reset">Reset views</button>
+<span class="meta">Gold atoms: growing fragment / selected trial · gray context: unassigned · dark context: committed</span></div>
+<div class="ref-row no-gt">
+<div class="panel"><div class="ph"><span class="lbl">Reactant R</span><span class="rk">original atom indices</span></div><div class="vw"><div id="r" class="vwbox"></div></div></div>
+<div class="panel"><div class="ph"><span class="lbl">Product P</span><span class="rk">native product indices</span></div><div class="vw"><div id="p" class="vwbox"></div></div></div>
+</div><p id="occupancy" class="meta"></p>
+<div class="trace-grid"><section class="panel"><h2>Live fragment candidates</h2><div id="candidates" class="mech-sel"></div>
+<p class="meta">Each button shows an actual compressed candidate representative. Changing the preview does not change the saved branch selected above.</p>
+<div id="mapping"></div><details><summary>Symmetry blocks and recorded state</summary><pre id="symmetry"></pre></details></section>
+<section class="panel"><h2 id="trial-title">Candidate test</h2><p id="trial-note"></p><div id="trials"></div></section></div>
+<details open><summary>Retained fragment branches · click a terminal to follow it</summary><div id="graph"></div></details>
+<details><summary>Trace provenance</summary><p id="scope"></p><pre id="provenance"></pre></details>
+<script>
+const DATA=__DATA__,$=id=>document.getElementById(id);
+let ri=0,pi=0,fi=0,ci=0,trial=null,timer=null;
+const run=()=>DATA.runs[ri],path=()=>run().paths[pi],frame=()=>path().frames[fi];
+const viewers={r:$3Dmol.createViewer('r',{backgroundColor:'white'}),p:$3Dmol.createViewer('p',{backgroundColor:'white'})};
+const positions={r:DATA.input.reactant.coordinates,p:DATA.input.product.coordinates};
+const keyAtoms=new Set(DATA.key_atoms),atomCount=DATA.input.reactant.elements.length;
+const point=(side,i)=>({x:positions[side][i][0],y:positions[side][i][1],z:positions[side][i][2]});
+function addMolecule(side){
+ const ep=DATA.input[side==='r'?'reactant':'product'];
+ viewers[side].addModel().addAtoms(ep.elements.map((elem,i)=>{
+  const cuts=new Set(run().cuts.map(pair=>[...pair].sort((a,b)=>a-b).join(',')));
+  const bonds=ep.wbo[i].flatMap((w,j)=>i!==j&&w>run().config.graph_floor&&!(side==='r'&&cuts.has([Math.min(i,j),Math.max(i,j)].join(',')))?[j]:[]);
+  return {elem,index:i,serial:i,...point(side,i),bonds,bondOrder:bonds.map(()=>1)};
+ }));viewers[side].zoomTo();
+}
+for(const side of ['r','p'])addMolecule(side);
+function currentMapping(){const f=frame();return {...f.locked,...(f.candidates[ci]?.witness||{})};}
+function trialRow(){return trial===null?null:frame().trial?.trials[ci]?.find(row=>row.target===trial);}
+function previewMapping(){const m=currentMapping(),row=trialRow();if(row?.witness)Object.assign(m,row.witness);else if(row?.status==='rejected')m[frame().trial.added]=row.target;return m;}
+function bond(side,pair,color,radius=.15,dashed=true){viewers[side].addCylinder({start:point(side,pair[0]),end:point(side,pair[1]),radius,color,dashed});}
+function paint(){
+ const f=frame(),m=previewMapping(),inv=Object.fromEntries(Object.entries(m).map(([r,p])=>[p,+r]));
+ const active=new Set(f.active),locked=new Set(Object.keys(f.locked).map(Number)),row=trialRow();
+ if(row)active.add(f.trial.added);
+ for(const side of ['r','p']){
+  const v=viewers[side],ep=DATA.input[side==='r'?'reactant':'product'];v.removeAllShapes();v.removeAllLabels();
+  v.setStyle({},{stick:{radius:.085,color:'#c4c4c4'},sphere:{scale:.17,color:'#c4c4c4'}});
+  for(const [r,p] of Object.entries(m)){
+   const i=side==='r'?+r:p;
+   v.setStyle({index:i},active.has(+r)?{stick:{radius:.10,color:'#555555'},sphere:{scale:.30,color:'#ffd700'}}:
+     {stick:{radius:.10},sphere:{scale:.23}});
+  }
+  if(f.kind==='pop'&&(side==='r'||row))v.addSphere({center:point(side,side==='r'?f.trial.added:row.target),
+      radius:.32,color:'#ffd700',opacity:.35});
+  for(let i=0;i<ep.elements.length;i++){
+   const r=side==='r'?i:inv[i],key=keyAtoms.has(r)||(side==='p'&&DATA.watch_targets.includes(i));
+   if(!$('all-labels').checked&&!($('labels').checked&&key))continue;
+   let label=side==='r'?ep.elements[i]+' R'+i+(m[i]!==undefined?'→P'+m[i]:''):
+      ep.elements[i]+' P'+i+(r!==undefined?'←R'+r:'');
+   v.addLabel(label,{position:point(side,i),fontSize:11,fontColor:'black',backgroundColor:'white',
+     backgroundOpacity:.82,borderColor:'#888',borderThickness:.5,inFront:true});
+  }
+ }
+ for(const cut of run().cuts)bond('r',cut,'#777777',.06,true);
+ for(const pair of f.deferred)bond('r',pair,'#777777',.075,true);
+ if(f.edge){bond('r',f.edge,'#222222',.14,true);if(f.edge.every(a=>m[a]!==undefined))bond('p',f.edge.map(a=>m[a]),'#222222',.14,true);}
+ if($('final-events').checked)for(const e of path().events){const loss=['broken','weakened'].includes(e.kind);bond(loss?'r':'p',loss?e.r:e.p,loss?'red':'green');}
+ for(const v of Object.values(viewers))v.render();
+ const actual=currentMapping(),occupied=Object.fromEntries(Object.entries(actual).map(([r,p])=>[p,+r]));
+ $('occupancy').textContent=DATA.watch_targets.map(p=>'P'+p+': '+(occupied[p]===undefined?'unassigned':
+   'R'+occupied[p]+(locked.has(occupied[p])?' committed':' in current candidate'))).join('   ·   ');
+ if(row)$('trial-note').textContent=(row.status==='rejected'?'Rejected trial':row.status==='compatible'?'Compatible trial':row.status==='occupied'?'Unavailable target':'Symmetry reservation')+
+   ' R'+f.trial.added+'→P'+row.target+'. '+row.reason;
+}
+function candidateSummary(c){const keys=Object.keys(c.witness).map(Number),chosen=keys.filter(a=>keyAtoms.has(a));
+ return (chosen.length?chosen:keys.slice(0,3)).map(a=>'R'+a+'→P'+c.witness[a]).join(' ');}
+function renderCandidates(){
+ const f=frame();$('candidates').replaceChildren();
+ f.candidates.forEach((c,i)=>{const b=document.createElement('button');b.textContent=(i+1)+'. '+candidateSummary(c);b.classList.toggle('active',ci===i);
+  b.onclick=()=>{stop();ci=i;trial=null;render()};$('candidates').append(b)});
+ if(!f.candidates.length)$('candidates').textContent=f.kind==='terminal'?'Saved terminal mapping':'Fragment committed';
+ $('symmetry').textContent=JSON.stringify(f.candidates[ci]||{mapping:f.locked,deferred:f.deferred},null,2);
+ const m=currentMapping();$('mapping').textContent=Object.entries(m).sort((a,b)=>a[0]-b[0]).map(([r,p])=>'R'+r+'→P'+p).join(' · ');
+}
+function renderTrials(){
+ const f=frame();$('trials').replaceChildren();$('trial-note').textContent='';
+ $('trial-title').textContent=f.trial?'Test R'+f.trial.added+' against product atoms':'Growth decision';
+ const rows=f.trial?.trials[ci];
+ if(rows?.length){
+  const table=document.createElement('table'),head=table.insertRow();['Target','Status','WBO check for this candidate'].forEach(t=>{const th=document.createElement('th');th.textContent=t;head.append(th)});
+  for(const row of rows){const tr=table.insertRow();tr.classList.toggle('selected-trial',trial===row.target);
+   const b=document.createElement('button');b.className='dl';b.textContent='P'+row.target;b.onclick=()=>{stop();trial=row.target;renderTrials();paint()};tr.insertCell().append(b);
+   tr.insertCell().textContent=row.status;
+   tr.insertCell().textContent=row.status==='occupied'||row.status==='symmetry'?row.reason:row.bonds.map(b=>
+     'R'+b.r.join('–R')+': '+b.wbo.map(w=>w.toFixed(3)).join(' → ')+'; |Δ| '+b.delta.toFixed(3)+(b.wbo[1]<run().config.graph_floor?' (target nonbond)':b.delta>run().config.iso_tolerance?' > '+run().config.iso_tolerance:' ≤ '+run().config.iso_tolerance)).join('; ');
+  }$('trials').append(table);
+ }else if(f.trial){
+  $('trial-note').textContent='The next atom is already committed. This step tests whether its earlier fragment can merge; step forward for the outcome.';
+ }else if(f.refinement){
+  const q=f.refinement.dedupe[0];$('trial-note').textContent=f.kind==='consumed'?
+   'No candidate can extend across this edge. Record a deferred boundary and continue growing.':
+   f.refinement.before+' parent candidate(s) → '+(q?q.before+' compatible child candidate(s) → '+q.after+' after deduplication':f.refinement.after+' surviving candidate(s)')+'.';
+ }else if(f.kind==='terminal'){
+  $('trial-note').textContent=path().events.map(e=>e.kind+' R'+e.r.join('–R')).join(' · ');
+ }else $('trial-note').textContent='Step to a “Test” event to inspect the possible target atoms. At fragment saturation, switch the saved branch to follow another retained placement.';
+}
+function drawGraph(){
+ const g=run().graph,depth={},pos={},rows={};
+ for(const s of g.states){depth[s.id]=Math.max(0,...g.transitions.filter(e=>e.target===s.id).map(e=>(depth[e.source]||0)+1));(rows[depth[s.id]]??=[]).push(s);}
+ Object.entries(rows).forEach(([d,states])=>states.forEach((s,i)=>pos[s.id]=[35+Number(d)*170,25+i*48]));
+ const height=Math.max(...Object.values(pos).map(p=>p[1]))+30,width=Math.max(...Object.values(pos).map(p=>p[0]))+90;
+ const chosen=new Set(path().frames.map(f=>f.transition).filter(x=>x!==undefined));
+ let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'">';
+ for(const e of g.transitions){const a=pos[e.source],b=pos[e.target];svg+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+(chosen.has(e.id)?'#b28b00':'#bbbbbb')+'" stroke-width="'+(chosen.has(e.id)?3:1)+'"/>';}
+ for(const s of g.states){const p=pos[s.id],terminal=run().paths.some(path=>path.terminal===s.id);svg+='<circle data-state="'+s.id+'" cx="'+p[0]+'" cy="'+p[1]+'" r="12" fill="'+(s.id===path().terminal?'#ffd700':'#eeeeee')+'" stroke="#666"/><text x="'+(p[0]+16)+'" y="'+(p[1]+4)+'" font-size="11">'+s.id+' · '+s.assigned+'/'+atomCount+'</text>';}
+ $('graph').innerHTML=svg+'</svg>';
+ $('graph').querySelectorAll('[data-state]').forEach(n=>n.onclick=()=>{const i=run().paths.findIndex(p=>p.terminal===+n.dataset.state);if(i>=0){pi=i;setup(false);setFrame(path().frames.length-1)}});
+}
+function render(){
+ const f=frame();$('event-title').textContent=f.title;$('counter').textContent=(fi+1)+' / '+path().frames.length;$('step').value=fi;$('events').value=fi;
+ $('stats').textContent=Object.keys(f.locked).length+' committed atoms · '+f.active.length+' in growing fragment · '+f.candidates.length+' live candidate(s)';
+ $('explanation').textContent=f.kind==='pop'?'Preview a target below to see the actual compatibility check before growth.':
+  f.kind==='commit'?'At least one extension survives, so the shared fragment grows.':
+  f.kind==='consumed'?'This extension has no surviving candidate. The atom stays outside this fragment.':
+  f.kind==='locked'?'The selected saved path commits this placement before starting the next fragment.':
+  f.kind==='terminal'?'Final events for this recorded mapping: red losses on R, green gains on P.':'';
+ renderCandidates();renderTrials();paint();drawGraph();
+}
+function stop(){clearTimeout(timer);timer=null;$('play').textContent='Play';}
+function setFrame(index){stop();fi=Math.max(0,Math.min(path().frames.length-1,index));ci=frame().preferred||0;trial=null;$('final-events').checked=frame().kind==='terminal';render();}
+function tick(){if(fi===path().frames.length-1){stop();return;}fi++;ci=frame().preferred||0;trial=null;$('final-events').checked=frame().kind==='terminal';render();timer=setTimeout(tick,+$('speed').value);}
+function play(){if(timer){stop();return;}if(fi===path().frames.length-1)setFrame(0);$('play').textContent='Pause';timer=setTimeout(tick,+$('speed').value);}
+function jump(){const focus=run().focus;if(!focus)return;
+ const i=path().frames.findIndex(f=>f.kind==='pop'&&f.trial.edge[0]===focus.source_edge[0]&&f.trial.edge[1]===focus.source_edge[1]);
+ if(i>=0){setFrame(i);trial=focus.target;render();}}
+function setup(jumpToDecision=true){stop();
+ $('title').textContent=DATA.name;document.title=DATA.name;
+ $('configuration').textContent=(run().cuts.length?run().cuts.map(p=>'R'+p.join('–R')).join(', ')+' sweep cut':'Uncut')+' · matching tolerance '+run().config.iso_tolerance+' · cap '+run().config.branch_limit;
+ $('critical').hidden=!run().focus;$('critical').textContent=run().focus?'Jump to P'+run().focus.target+' decision':'Jump to decision';
+ for(const side of ['r','p']){viewers[side].removeAllModels();addMolecule(side);}
+$('path').replaceChildren(...run().paths.map((p,i)=>new Option(p.label,String(i))));$('path').value=pi;
+ $('step').max=path().frames.length-1;$('events').replaceChildren(...path().frames.map((f,i)=>new Option((i+1)+'. '+f.title,String(i))));
+ $('runs').querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===ri));
+ $('scope').textContent=DATA.scope;$('provenance').textContent=JSON.stringify({engine_source:DATA.engine_source,requested_commit:DATA.requested_engine_commit,source_hashes:DATA.capture_source,seed_order:run().seed_order,...run().provenance},null,2);
+ setFrame(0);if(jumpToDecision)jump();}
+DATA.runs.forEach((r,i)=>{const b=document.createElement('button');b.textContent=r.label;b.onclick=()=>{ri=i;pi=Math.max(0,run().paths.findIndex(p=>p.terminal===run().default_terminal));setup()};$('runs').append(b)});
+$('path').onchange=()=>{pi=+$('path').value;setup()};$('play').onclick=play;$('start').onclick=()=>{setFrame(0);play()};$('critical').onclick=jump;
+$('prev').onclick=()=>setFrame(fi-1);$('next').onclick=()=>setFrame(fi+1);$('step').oninput=e=>setFrame(+e.target.value);$('events').onchange=e=>setFrame(+e.target.value);
+for(const id of ['labels','all-labels','final-events'])$(id).onchange=paint;
+$('reset').onclick=()=>{for(const v of Object.values(viewers)){v.zoomTo();v.render()}};
+$('focus').onclick=()=>{const f=frame(),m=previewMapping(),atoms=[...new Set([...f.active,...(f.edge||[])])];
+ if(!atoms.length)return;viewers.r.zoomTo({index:atoms});viewers.p.zoomTo({index:atoms.map(a=>m[a]).filter(a=>a!==undefined)});for(const v of Object.values(viewers))v.render();};
+window.addEventListener('resize',()=>{for(const v of Object.values(viewers)){v.resize();v.render()}});
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT'].includes(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();play()}if(e.key==='ArrowRight')setFrame(fi+1);if(e.key==='ArrowLeft')setFrame(fi-1)});
+window.searchTrajectory={setFrame,setRun:i=>{ri=i;pi=Math.max(0,run().paths.findIndex(p=>p.terminal===run().default_terminal));setup()},setPath:i=>{pi=i;setup()},
+ getState:()=>({run:ri,path:pi,frame:fi,candidate:ci,trial,playing:!!timer}),mapping:previewMapping};setup();
+</script></body></html>

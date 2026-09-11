@@ -1,0 +1,24 @@
+{
+  "title": "PR7 · fragment-growth search trajectory",
+  "engine_source": "../../../aam_benchmarks/holdout_cap1000_seed1_20260910/original/src",
+  "engine_commit": "98b01b175eeed31f70d13e7cbf178b80bf07c9e0",
+  "key_atoms": [0, 1, 2, 18, 19, 20, 21, 22, 23],
+  "watch_targets": [9, 15, 18],
+  "selections": [
+    {
+      "archive": "../../../aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 24,
+      "label": "1 seed · C9 first",
+      "focus": {"source_edge": [0, 1], "target": 9},
+      "path_labels": {"198": "H transfer · terminal 198", "199": "H transfer · terminal 199"}
+    },
+    {
+      "archive": "../../../aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "context": 734,
+      "label": "O21 first · order 15 from 30 seeds",
+      "default_terminal": 6087,
+      "focus": {"source_edge": [0, 2], "target": 9},
+      "path_labels": {"6085": "H transfer · terminal 6085", "6086": "H transfer · terminal 6086", "6087": "C–O cleavage · terminal 6087"}
+    }
+  ]
+}
