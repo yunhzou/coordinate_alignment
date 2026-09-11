@@ -34,6 +34,26 @@ h2{margin:0 0 4px;font-size:18px}
 .clash-ok{color:#16733b}
 .clash-bad{color:#b00020;font-weight:700}
 
+/* Algorithm-event adapter: the same white 3D panels and yellow selections. */
+body[data-viewer-layout="growth_trace"] .topbar{align-items:center}
+body[data-viewer-layout="growth_trace"] .trace-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+body[data-viewer-layout="growth_trace"] #step{flex:1;min-width:120px}
+body[data-viewer-layout="growth_trace"] #events{max-width:440px}
+body[data-viewer-layout="growth_trace"] .trace-options{margin-top:12px;margin-bottom:8px}
+body[data-viewer-layout="growth_trace"] .ref-row .vw{height:380px}
+body[data-viewer-layout="growth_trace"] .trace-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body[data-viewer-layout="growth_trace"] #mapping{font-family:ui-monospace,monospace;font-size:12px;line-height:1.8}
+body[data-viewer-layout="growth_trace"] table{width:100%;border-collapse:collapse;font-size:12px}
+body[data-viewer-layout="growth_trace"] th,body[data-viewer-layout="growth_trace"] td{text-align:left;padding:6px;border-bottom:1px solid #ddd;overflow-wrap:anywhere}
+body[data-viewer-layout="growth_trace"] .selected-trial{background:#fff5bf}
+body[data-viewer-layout="growth_trace"] #graph{overflow:auto}
+body[data-viewer-layout="growth_trace"] #graph circle{cursor:pointer}
+body[data-viewer-layout="growth_trace"] #explanation{margin:6px 0}
+body[data-viewer-layout="growth_trace"] #candidates{padding:6px}
+body[data-viewer-layout="growth_trace"] label{display:flex;align-items:center;gap:5px;min-width:0}
+@media(max-width:700px){body[data-viewer-layout="growth_trace"] .trace-grid{grid-template-columns:1fr}
+body[data-viewer-layout="growth_trace"] #events{max-width:100%}}
+
 
 /* Shared collection wrapper and evidence details. */
 .panel{min-width:0}.vw{overflow:hidden}.meta,h2{overflow-wrap:anywhere}.mech-sel button{max-width:100%}

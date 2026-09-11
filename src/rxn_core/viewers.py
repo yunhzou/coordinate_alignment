@@ -100,6 +100,14 @@ def reaction_html(document):
             .replace('__DATA__', _json(document)))
 
 
+def growth_trace_html(document):
+    """Present recorded algorithm events using the shared 3D reaction style."""
+    template = (ASSETS / 'growth_trace.html').read_text()
+    page = style_document(template, layout='growth_trace')
+    return (page.replace('__LIBRARY__', (ASSETS / '3Dmol-min.js').read_text())
+            .replace('__DATA__', _json(document)))
+
+
 def collection_html(documents, title='R/P and TS comparison'):
     """One copy of the shared renderer and libraries, with a saved-case selector."""
     if not documents:
