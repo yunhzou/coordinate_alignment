@@ -1,0 +1,37 @@
+{
+  "index": 68,
+  "variant": "original",
+  "atoms": 135,
+  "representatives": 250,
+  "loading_cpu": 0.07574060900000013,
+  "analysis_cpu": 62.264162989,
+  "extraction_cpu": 0.410357777,
+  "profile": {
+    "vector_event_counts": {
+      "cpu": 0.053229360000002,
+      "calls": 2
+    },
+    "score_response_features": {
+      "cpu": 0.5112480749999999,
+      "calls": 1
+    },
+    "colored_graph": {
+      "cpu": 0.05277394199999996,
+      "calls": 1
+    },
+    "nauty_certificate": {
+      "cpu": 60.551854100000014,
+      "calls": 6
+    },
+    "scalar_events": {
+      "cpu": 0.1910440340000079,
+      "calls": 13
+    },
+    "describe_inclusive": {
+      "cpu": 61.795499720999985,
+      "calls": 13
+    }
+  },
+  "frozen_analysis_cpu": 62.124932728,
+  "verified_same_histogram_and_minimum_patterns": true
+}

@@ -72,3 +72,5 @@ All 55 holdout inputs unaffected by normalization reproduce the same checked sea
 Input conversion: 0.386 CPU seconds for 140 cases (separate post-run measurement). Successful holdout event analysis CPU: original 577.155 s; binary 614.502 s. These analysis totals exclude archive loading, auxiliary structural audits, failed attempts and optional family queries.
 
 Raw outputs and logs: `/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911`. Drivers: `bench/metal_binary_benchmark.py`, `bench/metal_binary_events.py`, `bench/publish_metal_binary.py`. The run manifest records source hashes, configurations and scoring semantics.
+
+Timing clarification: [component profiling](analysis_profile/README.md) shows that one slow case spends 97% of its analysis CPU on symmetry normalization of event patterns; counting the 0.5/0.3 events takes only 0.053 seconds for its 250 saved representatives. The aggregate analysis timer includes both tasks.
