@@ -5,6 +5,12 @@ raw runs are preserved in place; this index does not merge experimental protocol
 
 ## Primary evidence
 
+[Additional seeds on the three missing forward alternatives](holdout_missing_pattern_seeds_20260910/README.md)
+— targeted cases 11, 64 and 101 only; cap 1000, forward sweep, 1/3/10/30 seeds.
+Ten seeds recover case 101's missing four-event pattern. Cases 11 and 64 remain
+excluded from the saved 30-seed families; no fresh run hits the branch cap.
+This is a selected-case diagnostic, with paired CPU timings, not a full rerun.
+
 [Forward-only elementary steps: scores, alternatives and mapping time](holdout_forward_cap1000_seed1_20260910/README.md)
 — reactant → product only, as requested for the elementary-step comparison.
 One-seed, cap-1000 AAM retains every bidirectional best score. It has four lower
@@ -90,6 +96,7 @@ archives. Large AAM archives and expanded candidate banks remain on the cluster:
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_slap_xyz_sweep_20260910
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_minimum_event_patterns_20260910
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_forward_cap1000_seed1_20260910
+/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910
 ```
 
 These cluster copies are not a claim of independent/offsite backup. Do not delete

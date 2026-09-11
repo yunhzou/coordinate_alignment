@@ -1,0 +1,115 @@
+{
+  "cases": [
+    11,
+    64,
+    101
+  ],
+  "seeds": [
+    1,
+    3,
+    10,
+    30
+  ],
+  "certificates": 12,
+  "literal_invariance_checks": 366,
+  "known_positive_controls": 2,
+  "false_exclusions": 0,
+  "results": [
+    {
+      "index": 11,
+      "variant": "seed_1",
+      "excluded": true,
+      "full_terminals": 160,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 64,
+      "variant": "seed_1",
+      "excluded": true,
+      "full_terminals": 58,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 101,
+      "variant": "seed_1",
+      "excluded": true,
+      "full_terminals": 82,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 11,
+      "variant": "seed_3",
+      "excluded": true,
+      "full_terminals": 746,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 64,
+      "variant": "seed_3",
+      "excluded": true,
+      "full_terminals": 174,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 101,
+      "variant": "seed_3",
+      "excluded": true,
+      "full_terminals": 246,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 11,
+      "variant": "seed_10",
+      "excluded": true,
+      "full_terminals": 1655,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 64,
+      "variant": "seed_10",
+      "excluded": true,
+      "full_terminals": 580,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 101,
+      "variant": "seed_10",
+      "excluded": false,
+      "full_terminals": 829,
+      "noninvariant": 0,
+      "matching": 1
+    },
+    {
+      "index": 11,
+      "variant": "seed_30",
+      "excluded": true,
+      "full_terminals": 5637,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 64,
+      "variant": "seed_30",
+      "excluded": true,
+      "full_terminals": 1740,
+      "noninvariant": 0,
+      "matching": 0
+    },
+    {
+      "index": 101,
+      "variant": "seed_30",
+      "excluded": false,
+      "full_terminals": 2531,
+      "noninvariant": 0,
+      "matching": 7
+    }
+  ]
+}

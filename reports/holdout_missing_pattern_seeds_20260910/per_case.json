@@ -1,0 +1,2666 @@
+[
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "variant": "seed_1",
+    "seeds": 1,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 160,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 7,
+      "encoded": 24,
+      "paths_checked": 24,
+      "invariant_terminals": 136,
+      "exhausted": true
+    },
+    "search_cpu": 5.433897971,
+    "search_wall": 1.1347664669156075,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 1.1053464375436306,
+      "cut_count": 78,
+      "raw_result_count": 160,
+      "retained_branch_count": 160,
+      "max_live_branches": 24,
+      "max_growth_candidates": 42,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.009868957102298737,
+      "completed_group_requests": 433,
+      "completed_group_calculations": 430,
+      "completed_group_cache_hits": 3,
+      "worker_search_seconds": 4.1420109160244465,
+      "checkpoint_seconds": 0.2869139835238457,
+      "symmetry_finalization_seconds": 0.023872170597314835,
+      "checkpoint_restore_and_finalize_seconds": 0.18745382316410542
+    },
+    "analysis_cpu": 10.564974498,
+    "analysis_wall": 10.565571902319789,
+    "minimum_witness": {
+      "id": "5bbdb74e069b681b7afe0240ede55b1a6a6082e28a1caa553a92d911a0c4b9a7",
+      "mapping": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        4,
+        7,
+        6,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38,
+        37,
+        39,
+        40,
+        42,
+        41,
+        43,
+        44,
+        46,
+        45,
+        47,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        18,
+        17,
+        19,
+        20,
+        22,
+        23,
+        21,
+        24,
+        26,
+        25,
+        27,
+        49,
+        50,
+        51,
+        52,
+        48,
+        57,
+        59,
+        58,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        53,
+        55,
+        54,
+        56,
+        73
+      ],
+      "events": {
+        "broken": [
+          [
+            48,
+            73
+          ]
+        ],
+        "formed": [
+          [
+            52,
+            73
+          ]
+        ],
+        "strengthened": [
+          [
+            48,
+            49
+          ]
+        ],
+        "weakened": [
+          [
+            51,
+            52
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 1,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 2,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "6e0fd520ce89f66b8ec5d753ae81f2c90c3d1076b7e634181ff53c1fece20cf0",
+    "search_sha256": "1c7d90497193deb7852943247e4a2c7b5f9d340969fa99578a1679cbd7a4d9fe",
+    "coarse_certificate": {
+      "index": 11,
+      "variant": "seed_1",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "6e0fd520ce89f66b8ec5d753ae81f2c90c3d1076b7e634181ff53c1fece20cf0",
+      "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "restricted_target": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "full_terminals": 160,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "6228fdf5b01fe5951042c7f7751d86ffd3d7358c12cc0c59a2833b38c9c6f548": 119,
+        "b0bc161759f3096b9e31d5c1d5d79ed64237ac7dc0c95ff36f5cd58721ec5671": 1,
+        "40812ade9aa65841ee288ee412d56c959da6e872773cad28319387954db602e5": 3,
+        "afb89695d276af7d407bf509a9464e552ea176c7353713b57f8978f1fad4d02b": 2,
+        "bf5a75a50ef7ed4ded98e50be53661a8999801dd9e51e6e79d4a20a473540377": 2,
+        "ffd5575e92cf800c38e06fe2cb82927c175678f13c17e3714d4e33243a0bc56b": 1,
+        "f0f5a66d9b74691d942d7da232b4de065093e722d5435f08f5f09af98d0ccdff": 1,
+        "07d9a2a280480cebf10be146d365d668dfc2f1c984c2801c994fb63b7fb3deb6": 1,
+        "03fc2d5d162583da444712210fafe11f463af643a2965acd1387c197cdd858c5": 2,
+        "d7b76a58812b53db42d9ee2670001383ffcfb32d565647cd82076975d9aa167c": 1,
+        "0cfadd72c801a24c6079b578c9ca13abfa85ecb547c7edfe6104c3833d8d5967": 1,
+        "ce8be9faf0b0b0fe5029eac2e939c3a49844e7504426fe54cdd91baeffbb0535": 2,
+        "ef8abb8d45929349db0297d5fcb578953599d4cf68c9c53fa74d003087d49c34": 24
+      },
+      "complete_exclusion": true,
+      "action_checks": 26,
+      "literal_invariance_checks": 78,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.15289292899999996,
+      "wall": 0.22822029702365398,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "variant": "seed_1",
+    "seeds": 1,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 5,
+    "target_score": 5,
+    "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 58,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "paths_checked": 0,
+      "invariant_terminals": 58,
+      "exhausted": true
+    },
+    "search_cpu": 0.767894179,
+    "search_wall": 0.2848418913781643,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.27995351888239384,
+      "cut_count": 21,
+      "raw_result_count": 58,
+      "retained_branch_count": 58,
+      "max_live_branches": 6,
+      "max_growth_candidates": 65,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.0025390051305294037,
+      "completed_group_requests": 76,
+      "completed_group_calculations": 75,
+      "completed_group_cache_hits": 1,
+      "worker_search_seconds": 0.44718292262405157,
+      "checkpoint_seconds": 0.14676775503903627,
+      "symmetry_finalization_seconds": 0.005139922723174095,
+      "checkpoint_restore_and_finalize_seconds": 0.05474396329373121
+    },
+    "analysis_cpu": 0.017067615999999952,
+    "analysis_wall": 0.017518414184451103,
+    "minimum_witness": {
+      "id": "813601b86a448a82726192afd93f123f7b401e4a24a2e273f9c7396a3a456da5",
+      "mapping": [
+        12,
+        1,
+        2,
+        13,
+        6,
+        11,
+        3,
+        8,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            14
+          ]
+        ],
+        "strengthened": [
+          [
+            1,
+            2
+          ]
+        ],
+        "weakened": [
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 5,
+      "terminal": 4,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "a46e18f809f460c27cd727f8d5e61bd72e7625c46795d2bd233b980a177a4a35",
+    "search_sha256": "ec4d79ed07f2df6b422c89cd4e8f7f5371c8fef7b47c968fe2ee2cba57e6f16d",
+    "coarse_certificate": {
+      "index": 64,
+      "variant": "seed_1",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "a46e18f809f460c27cd727f8d5e61bd72e7625c46795d2bd233b980a177a4a35",
+      "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "restricted_target": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "full_terminals": 58,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "81d2227c18f3d2792536e37ce00eff1b966c21af5d3080cbd4e8ddb424b494ad": 42,
+        "c7c809b6e152a07d09f7271821835fdd56fa8afb03bf567c88cbbc22fcb67d20": 2,
+        "58087e2d8bdaa278d8145eb28ea362915e4f1ae705f9cef5d7850737d7c69bcb": 2,
+        "2e9d35e0d0ab7bcbbf9ed27519fec30ca7f33f1bd989287c3d2248ab015af7fc": 2,
+        "99165606bc973c9f7bd13bda7c309a99fef39026e0f521a41ebb2baa395e5048": 2,
+        "e3fe7e1b30d76e3417fe80ecd6be25d18c34b6cd26ac6a93736fee3db9cd0783": 2,
+        "d5d76e6829e8485096e22122cc0d12070d1a327b6a1fb638b5ed9b7f4fdb7bd4": 2,
+        "6789a2f3f072cf573442d8b79af36d093224d21647dc095670a372f64f5fce69": 2,
+        "58e2b20da6cda5c773a0bacd6d8ad726afe7819bc0cdd74525777290c93aafaa": 2
+      },
+      "complete_exclusion": true,
+      "action_checks": 0,
+      "literal_invariance_checks": 0,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.00950187899999999,
+      "wall": 0.03437558002769947,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "variant": "seed_1",
+    "seeds": 1,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 82,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 64,
+      "encoded": 82,
+      "paths_checked": 82,
+      "invariant_terminals": 0,
+      "exhausted": true
+    },
+    "search_cpu": 0.8553467049999999,
+    "search_wall": 0.3242990365251899,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.3153605544939637,
+      "cut_count": 32,
+      "raw_result_count": 82,
+      "retained_branch_count": 82,
+      "max_live_branches": 4,
+      "max_growth_candidates": 8,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.004206552170217037,
+      "completed_group_requests": 242,
+      "completed_group_calculations": 233,
+      "completed_group_cache_hits": 9,
+      "worker_search_seconds": 0.3580107865855098,
+      "checkpoint_seconds": 0.2153702937066555,
+      "symmetry_finalization_seconds": 0.007210920564830303,
+      "checkpoint_restore_and_finalize_seconds": 0.06881172675639391
+    },
+    "analysis_cpu": 2.843685243,
+    "analysis_wall": 2.8429412515833974,
+    "minimum_witness": {
+      "id": "26a8510fc54516bc25d2f752f4ed5fdb19f2ced9dc542865bcd4214124ede328",
+      "mapping": [
+        8,
+        15,
+        18,
+        2,
+        16,
+        17,
+        13,
+        3,
+        14,
+        4,
+        5,
+        0,
+        1,
+        6,
+        7,
+        19,
+        20,
+        21,
+        10,
+        11,
+        12,
+        9,
+        27,
+        22,
+        26,
+        25,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            21,
+            22
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            22
+          ]
+        ],
+        "strengthened": [],
+        "weakened": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 0,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 4,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "30e43d5dbe3cff249fd07fb39e5da41481cfe92dc4e62b7462c0c3a7e1378cbd",
+    "search_sha256": "181218eb8a59ef87a46eec2dc7fa03b7900a97666b6e7b842b1010a7fedb87c6",
+    "coarse_certificate": {
+      "index": 101,
+      "variant": "seed_1",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "30e43d5dbe3cff249fd07fb39e5da41481cfe92dc4e62b7462c0c3a7e1378cbd",
+      "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+      "restricted_target": "ab0815b9b5544a2161219162c5f9d853591e4a71719b5588dde2a6699e1ccda0",
+      "full_terminals": 82,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "587a2d8647eda4f55e7ba5dde60d2550bbc53cbcd0971294c7c2a04d195a8ce0": 78,
+        "5e48b08a0133ba548ff9e3e4cd1cb5a733514829720041d40f0584fd7dc11391": 4
+      },
+      "complete_exclusion": true,
+      "action_checks": 3,
+      "literal_invariance_checks": 9,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.019577233000000027,
+      "wall": 0.03332202695310116,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "variant": "seed_3",
+    "seeds": 3,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 746,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 16,
+      "encoded": 53,
+      "paths_checked": 53,
+      "invariant_terminals": 693,
+      "exhausted": true
+    },
+    "search_cpu": 10.41130975,
+    "search_wall": 2.453413797542453,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 2.3590048495680094,
+      "cut_count": 78,
+      "raw_result_count": 746,
+      "retained_branch_count": 746,
+      "max_live_branches": 240,
+      "max_growth_candidates": 42,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.02952143456786871,
+      "completed_group_requests": 2282,
+      "completed_group_calculations": 2238,
+      "completed_group_cache_hits": 44,
+      "worker_search_seconds": 8.002231034450233,
+      "checkpoint_seconds": 0.441482437774539,
+      "symmetry_finalization_seconds": 0.06397971324622631,
+      "checkpoint_restore_and_finalize_seconds": 0.7072079265490174
+    },
+    "analysis_cpu": 22.889337292999997,
+    "analysis_wall": 22.89289818238467,
+    "minimum_witness": {
+      "id": "5bbdb74e069b681b7afe0240ede55b1a6a6082e28a1caa553a92d911a0c4b9a7",
+      "mapping": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        4,
+        7,
+        6,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38,
+        37,
+        39,
+        40,
+        42,
+        41,
+        43,
+        44,
+        46,
+        45,
+        47,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        18,
+        17,
+        19,
+        20,
+        22,
+        23,
+        21,
+        24,
+        26,
+        25,
+        27,
+        49,
+        50,
+        51,
+        52,
+        48,
+        57,
+        59,
+        58,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        53,
+        55,
+        54,
+        56,
+        73
+      ],
+      "events": {
+        "broken": [
+          [
+            48,
+            73
+          ]
+        ],
+        "formed": [
+          [
+            52,
+            73
+          ]
+        ],
+        "strengthened": [
+          [
+            48,
+            49
+          ]
+        ],
+        "weakened": [
+          [
+            51,
+            52
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 1,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 2,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "867b4163b651f5bb3a4d77be32a86972e1d75ad4456b296a569b873834822709",
+    "search_sha256": "2c9d93ed1a2f24b8a5e1c669ddbdf0ca965462ead4f17def3c2b5de1b1354189",
+    "coarse_certificate": {
+      "index": 11,
+      "variant": "seed_3",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "867b4163b651f5bb3a4d77be32a86972e1d75ad4456b296a569b873834822709",
+      "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "restricted_target": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "full_terminals": 746,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "6228fdf5b01fe5951042c7f7751d86ffd3d7358c12cc0c59a2833b38c9c6f548": 349,
+        "ef8abb8d45929349db0297d5fcb578953599d4cf68c9c53fa74d003087d49c34": 126,
+        "b0bc161759f3096b9e31d5c1d5d79ed64237ac7dc0c95ff36f5cd58721ec5671": 2,
+        "40812ade9aa65841ee288ee412d56c959da6e872773cad28319387954db602e5": 4,
+        "afb89695d276af7d407bf509a9464e552ea176c7353713b57f8978f1fad4d02b": 2,
+        "bf5a75a50ef7ed4ded98e50be53661a8999801dd9e51e6e79d4a20a473540377": 2,
+        "d7b76a58812b53db42d9ee2670001383ffcfb32d565647cd82076975d9aa167c": 4,
+        "41be446181e7321be64e1cb7681c394edbf3b961171828fbd6f4e5a1aeaf64e9": 2,
+        "dfe3ed68d0c58921de15db1973924152de81525fc50343805bedfad8638e983f": 3,
+        "2ccee5a9d43962ef6fbc2f38a37e1755dd5119bcee4329c26cb8b1d0e55ace7f": 1,
+        "edc2159cee01b9136ceea47e585cb78421e21ede81b111d73daee3ae6a909ff9": 1,
+        "f30eb73539dcd951ade6cae67ae29bda504dcb202369757b06a1dffaea193155": 51,
+        "92ce223babc5f20c8c7435c275235f7772ebac02fdfcb3c42ba2a3c9cc8a767a": 3,
+        "ffd5575e92cf800c38e06fe2cb82927c175678f13c17e3714d4e33243a0bc56b": 1,
+        "f0f5a66d9b74691d942d7da232b4de065093e722d5435f08f5f09af98d0ccdff": 1,
+        "07d9a2a280480cebf10be146d365d668dfc2f1c984c2801c994fb63b7fb3deb6": 1,
+        "03fc2d5d162583da444712210fafe11f463af643a2965acd1387c197cdd858c5": 2,
+        "b351f8f44be4b2dec5e03dec7647c8d87e01ef08cd4c536c6a247f8fa3f6b46c": 180,
+        "0cfadd72c801a24c6079b578c9ca13abfa85ecb547c7edfe6104c3833d8d5967": 3,
+        "ce8be9faf0b0b0fe5029eac2e939c3a49844e7504426fe54cdd91baeffbb0535": 3,
+        "acb98b09acf745eba45ddfb7ff565030a20aa89386471bba7f55f4c90d0b2b09": 1,
+        "9524f9e8a3950dcabc685b74121873f696f03abd1509732b84fb601b3a89cbce": 1,
+        "1c3c1cef8216418e36968bb320b60ef0165fd74344e7d952aa30c91a737cc985": 1,
+        "2ead24e8003ca09cbd7b3a8ca3b1d55ea228e0b3841d3c8b94b3125734b3c832": 1,
+        "87333e4d65653dfac79fdad35a3ae37723147326020cd54d51f81652a1b81e64": 1
+      },
+      "complete_exclusion": true,
+      "action_checks": 26,
+      "literal_invariance_checks": 78,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.32599596799999997,
+      "wall": 0.3678798973560333,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "variant": "seed_3",
+    "seeds": 3,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 5,
+    "target_score": 5,
+    "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 174,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "paths_checked": 0,
+      "invariant_terminals": 174,
+      "exhausted": true
+    },
+    "search_cpu": 0.8338628609999998,
+    "search_wall": 0.1900671347975731,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.1804866762831807,
+      "cut_count": 21,
+      "raw_result_count": 174,
+      "retained_branch_count": 174,
+      "max_live_branches": 6,
+      "max_growth_candidates": 65,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.004881400614976883,
+      "completed_group_requests": 228,
+      "completed_group_calculations": 196,
+      "completed_group_cache_hits": 32,
+      "worker_search_seconds": 0.37181602604687214,
+      "checkpoint_seconds": 0.05993829481303692,
+      "symmetry_finalization_seconds": 0.006648114882409573,
+      "checkpoint_restore_and_finalize_seconds": 0.04828742053359747
+    },
+    "analysis_cpu": 0.04086534900000005,
+    "analysis_wall": 0.0413562236353755,
+    "minimum_witness": {
+      "id": "813601b86a448a82726192afd93f123f7b401e4a24a2e273f9c7396a3a456da5",
+      "mapping": [
+        12,
+        1,
+        2,
+        13,
+        6,
+        11,
+        3,
+        8,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            14
+          ]
+        ],
+        "strengthened": [
+          [
+            1,
+            2
+          ]
+        ],
+        "weakened": [
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 5,
+      "terminal": 10,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "7b2e84e2c1d15ba8da0d3f9c76e9b103939c32fdfc4aa5c44c327f5007292ab7",
+    "search_sha256": "2219822b98381d5cfa848fbc1c5720f8a8754bb890eb3310d601c13a35c5b742",
+    "coarse_certificate": {
+      "index": 64,
+      "variant": "seed_3",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "7b2e84e2c1d15ba8da0d3f9c76e9b103939c32fdfc4aa5c44c327f5007292ab7",
+      "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "restricted_target": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "full_terminals": 174,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "81d2227c18f3d2792536e37ce00eff1b966c21af5d3080cbd4e8ddb424b494ad": 126,
+        "c7c809b6e152a07d09f7271821835fdd56fa8afb03bf567c88cbbc22fcb67d20": 6,
+        "58087e2d8bdaa278d8145eb28ea362915e4f1ae705f9cef5d7850737d7c69bcb": 6,
+        "2e9d35e0d0ab7bcbbf9ed27519fec30ca7f33f1bd989287c3d2248ab015af7fc": 6,
+        "99165606bc973c9f7bd13bda7c309a99fef39026e0f521a41ebb2baa395e5048": 6,
+        "e3fe7e1b30d76e3417fe80ecd6be25d18c34b6cd26ac6a93736fee3db9cd0783": 6,
+        "d5d76e6829e8485096e22122cc0d12070d1a327b6a1fb638b5ed9b7f4fdb7bd4": 6,
+        "6789a2f3f072cf573442d8b79af36d093224d21647dc095670a372f64f5fce69": 6,
+        "58e2b20da6cda5c773a0bacd6d8ad726afe7819bc0cdd74525777290c93aafaa": 6
+      },
+      "complete_exclusion": true,
+      "action_checks": 0,
+      "literal_invariance_checks": 0,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.021373029000000043,
+      "wall": 0.04458863101899624,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "variant": "seed_3",
+    "seeds": 3,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 246,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 192,
+      "encoded": 246,
+      "paths_checked": 246,
+      "invariant_terminals": 0,
+      "exhausted": true
+    },
+    "search_cpu": 1.004897363,
+    "search_wall": 0.3411940475925803,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.31970348209142685,
+      "cut_count": 32,
+      "raw_result_count": 246,
+      "retained_branch_count": 246,
+      "max_live_branches": 4,
+      "max_growth_candidates": 8,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.01090291142463684,
+      "completed_group_requests": 729,
+      "completed_group_calculations": 541,
+      "completed_group_cache_hits": 188,
+      "worker_search_seconds": 0.41819956339895725,
+      "checkpoint_seconds": 0.7664479883387685,
+      "symmetry_finalization_seconds": 0.01224184688180685,
+      "checkpoint_restore_and_finalize_seconds": 0.07652621436864138
+    },
+    "analysis_cpu": 8.249273806,
+    "analysis_wall": 8.246569867245853,
+    "minimum_witness": {
+      "id": "26a8510fc54516bc25d2f752f4ed5fdb19f2ced9dc542865bcd4214124ede328",
+      "mapping": [
+        8,
+        15,
+        18,
+        2,
+        16,
+        17,
+        13,
+        3,
+        14,
+        4,
+        5,
+        0,
+        1,
+        6,
+        7,
+        19,
+        20,
+        21,
+        10,
+        11,
+        12,
+        9,
+        27,
+        22,
+        26,
+        25,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            21,
+            22
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            22
+          ]
+        ],
+        "strengthened": [],
+        "weakened": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 0,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 4,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "685eb586e89eaa0219b5bb78af8156ca33f329ef786e98033008edfce881da54",
+    "search_sha256": "075c2a7da3dd7d9072c2bcbd2ac972ff6bcf8b89f0b8322d2683e06120dc79c1",
+    "coarse_certificate": {
+      "index": 101,
+      "variant": "seed_3",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "685eb586e89eaa0219b5bb78af8156ca33f329ef786e98033008edfce881da54",
+      "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+      "restricted_target": "ab0815b9b5544a2161219162c5f9d853591e4a71719b5588dde2a6699e1ccda0",
+      "full_terminals": 246,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "587a2d8647eda4f55e7ba5dde60d2550bbc53cbcd0971294c7c2a04d195a8ce0": 234,
+        "5e48b08a0133ba548ff9e3e4cd1cb5a733514829720041d40f0584fd7dc11391": 12
+      },
+      "complete_exclusion": true,
+      "action_checks": 3,
+      "literal_invariance_checks": 9,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.14151532999999983,
+      "wall": 0.15240714699029922,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "variant": "seed_10",
+    "seeds": 10,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 1655,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 35,
+      "encoded": 117,
+      "paths_checked": 117,
+      "invariant_terminals": 1538,
+      "exhausted": true
+    },
+    "search_cpu": 18.870529061,
+    "search_wall": 4.104611130431294,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 3.8450423860922456,
+      "cut_count": 78,
+      "raw_result_count": 1655,
+      "retained_branch_count": 1655,
+      "max_live_branches": 240,
+      "max_growth_candidates": 42,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.061260866932570934,
+      "completed_group_requests": 4594,
+      "completed_group_calculations": 4098,
+      "completed_group_cache_hits": 496,
+      "worker_search_seconds": 14.79101034346968,
+      "checkpoint_seconds": 6.347823959775269,
+      "symmetry_finalization_seconds": 0.18784478027373552,
+      "checkpoint_restore_and_finalize_seconds": 0.6438489574939013
+    },
+    "analysis_cpu": 44.074163442,
+    "analysis_wall": 44.098642533645034,
+    "minimum_witness": {
+      "id": "5bbdb74e069b681b7afe0240ede55b1a6a6082e28a1caa553a92d911a0c4b9a7",
+      "mapping": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        4,
+        7,
+        6,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38,
+        37,
+        39,
+        40,
+        42,
+        41,
+        43,
+        44,
+        46,
+        45,
+        47,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        18,
+        17,
+        19,
+        20,
+        22,
+        23,
+        21,
+        24,
+        26,
+        25,
+        27,
+        49,
+        50,
+        51,
+        52,
+        48,
+        57,
+        59,
+        58,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        53,
+        55,
+        54,
+        56,
+        73
+      ],
+      "events": {
+        "broken": [
+          [
+            48,
+            73
+          ]
+        ],
+        "formed": [
+          [
+            52,
+            73
+          ]
+        ],
+        "strengthened": [
+          [
+            48,
+            49
+          ]
+        ],
+        "weakened": [
+          [
+            51,
+            52
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 1,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 2,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "daf87e38cda49dd880933b03014d0d6e2e7bad16411fa453dc7f0cef0b694b75",
+    "search_sha256": "e7c1d5f66596f0d8ac313b4e8f4eb74229be2624e6996db68917317edb628fc4",
+    "coarse_certificate": {
+      "index": 11,
+      "variant": "seed_10",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "daf87e38cda49dd880933b03014d0d6e2e7bad16411fa453dc7f0cef0b694b75",
+      "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "restricted_target": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "full_terminals": 1655,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "6228fdf5b01fe5951042c7f7751d86ffd3d7358c12cc0c59a2833b38c9c6f548": 1201,
+        "ef8abb8d45929349db0297d5fcb578953599d4cf68c9c53fa74d003087d49c34": 150,
+        "f30eb73539dcd951ade6cae67ae29bda504dcb202369757b06a1dffaea193155": 63,
+        "0e668cd03a6bd71b7a346a84281dcd10422e74ce6d0a7646cf79d594dc57a1f0": 3,
+        "b351f8f44be4b2dec5e03dec7647c8d87e01ef08cd4c536c6a247f8fa3f6b46c": 183,
+        "b0bc161759f3096b9e31d5c1d5d79ed64237ac7dc0c95ff36f5cd58721ec5671": 3,
+        "40812ade9aa65841ee288ee412d56c959da6e872773cad28319387954db602e5": 5,
+        "afb89695d276af7d407bf509a9464e552ea176c7353713b57f8978f1fad4d02b": 3,
+        "bf5a75a50ef7ed4ded98e50be53661a8999801dd9e51e6e79d4a20a473540377": 3,
+        "d7b76a58812b53db42d9ee2670001383ffcfb32d565647cd82076975d9aa167c": 4,
+        "41be446181e7321be64e1cb7681c394edbf3b961171828fbd6f4e5a1aeaf64e9": 2,
+        "dfe3ed68d0c58921de15db1973924152de81525fc50343805bedfad8638e983f": 3,
+        "2ccee5a9d43962ef6fbc2f38a37e1755dd5119bcee4329c26cb8b1d0e55ace7f": 1,
+        "edc2159cee01b9136ceea47e585cb78421e21ede81b111d73daee3ae6a909ff9": 1,
+        "92ce223babc5f20c8c7435c275235f7772ebac02fdfcb3c42ba2a3c9cc8a767a": 3,
+        "ffd5575e92cf800c38e06fe2cb82927c175678f13c17e3714d4e33243a0bc56b": 1,
+        "f0f5a66d9b74691d942d7da232b4de065093e722d5435f08f5f09af98d0ccdff": 1,
+        "07d9a2a280480cebf10be146d365d668dfc2f1c984c2801c994fb63b7fb3deb6": 1,
+        "03fc2d5d162583da444712210fafe11f463af643a2965acd1387c197cdd858c5": 2,
+        "0cfadd72c801a24c6079b578c9ca13abfa85ecb547c7edfe6104c3833d8d5967": 3,
+        "ce8be9faf0b0b0fe5029eac2e939c3a49844e7504426fe54cdd91baeffbb0535": 3,
+        "acb98b09acf745eba45ddfb7ff565030a20aa89386471bba7f55f4c90d0b2b09": 1,
+        "9524f9e8a3950dcabc685b74121873f696f03abd1509732b84fb601b3a89cbce": 1,
+        "1c3c1cef8216418e36968bb320b60ef0165fd74344e7d952aa30c91a737cc985": 1,
+        "2ead24e8003ca09cbd7b3a8ca3b1d55ea228e0b3841d3c8b94b3125734b3c832": 1,
+        "4ca0c750a12dadf8340e5cb732c637333952b314089281de7b554c0619f20c0a": 3,
+        "41c441fc4fdf6f784675582c1f417447335142d24ac971eb8bd887819903b4a2": 2,
+        "6f79f02f6276eb9fb0410f284995f54178e71f61415b3793347160aa0da42623": 2,
+        "8f7e66e107c1d719dfb5b65afe834ce594ea3ce22811928fb1b447a2c61bcbaf": 4,
+        "87333e4d65653dfac79fdad35a3ae37723147326020cd54d51f81652a1b81e64": 1
+      },
+      "complete_exclusion": true,
+      "action_checks": 26,
+      "literal_invariance_checks": 78,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.816954967,
+      "wall": 0.9534749444574118,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "variant": "seed_10",
+    "seeds": 10,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 5,
+    "target_score": 5,
+    "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 580,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "paths_checked": 0,
+      "invariant_terminals": 580,
+      "exhausted": true
+    },
+    "search_cpu": 1.6887297099999998,
+    "search_wall": 0.7143533769994974,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.6899316944181919,
+      "cut_count": 21,
+      "raw_result_count": 580,
+      "retained_branch_count": 580,
+      "max_live_branches": 6,
+      "max_growth_candidates": 65,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.0129410270601511,
+      "completed_group_requests": 760,
+      "completed_group_calculations": 503,
+      "completed_group_cache_hits": 257,
+      "worker_search_seconds": 0.9736549034714699,
+      "checkpoint_seconds": 0.41178948152810335,
+      "symmetry_finalization_seconds": 0.011103811673820019,
+      "checkpoint_restore_and_finalize_seconds": 0.0811850568279624
+    },
+    "analysis_cpu": 0.16037437900000007,
+    "analysis_wall": 0.16086873598396778,
+    "minimum_witness": {
+      "id": "813601b86a448a82726192afd93f123f7b401e4a24a2e273f9c7396a3a456da5",
+      "mapping": [
+        12,
+        1,
+        2,
+        13,
+        6,
+        11,
+        3,
+        8,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            14
+          ]
+        ],
+        "strengthened": [
+          [
+            1,
+            2
+          ]
+        ],
+        "weakened": [
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 5,
+      "terminal": 31,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "e5b48c4e521a1d64a2622f11658601c27b15ca601fb7bae95b1402d6db00254f",
+    "search_sha256": "c845537264b496a9a638a19a622f2da999f4376f5cde2ee11d75f9291e8242b9",
+    "coarse_certificate": {
+      "index": 64,
+      "variant": "seed_10",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "e5b48c4e521a1d64a2622f11658601c27b15ca601fb7bae95b1402d6db00254f",
+      "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "restricted_target": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "full_terminals": 580,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "81d2227c18f3d2792536e37ce00eff1b966c21af5d3080cbd4e8ddb424b494ad": 420,
+        "c7c809b6e152a07d09f7271821835fdd56fa8afb03bf567c88cbbc22fcb67d20": 20,
+        "58087e2d8bdaa278d8145eb28ea362915e4f1ae705f9cef5d7850737d7c69bcb": 20,
+        "2e9d35e0d0ab7bcbbf9ed27519fec30ca7f33f1bd989287c3d2248ab015af7fc": 20,
+        "99165606bc973c9f7bd13bda7c309a99fef39026e0f521a41ebb2baa395e5048": 20,
+        "e3fe7e1b30d76e3417fe80ecd6be25d18c34b6cd26ac6a93736fee3db9cd0783": 20,
+        "d5d76e6829e8485096e22122cc0d12070d1a327b6a1fb638b5ed9b7f4fdb7bd4": 20,
+        "6789a2f3f072cf573442d8b79af36d093224d21647dc095670a372f64f5fce69": 20,
+        "58e2b20da6cda5c773a0bacd6d8ad726afe7819bc0cdd74525777290c93aafaa": 20
+      },
+      "complete_exclusion": true,
+      "action_checks": 0,
+      "literal_invariance_checks": 0,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.06420784499999987,
+      "wall": 0.11934968829154968,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "variant": "seed_10",
+    "seeds": 10,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+    "target_result": {
+      "status": "represented",
+      "method": "saved_terminal",
+      "witness": {
+        "id": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+        "mapping": [
+          8,
+          18,
+          9,
+          2,
+          16,
+          17,
+          13,
+          3,
+          14,
+          4,
+          5,
+          0,
+          1,
+          6,
+          7,
+          19,
+          20,
+          21,
+          11,
+          10,
+          15,
+          12,
+          22,
+          27,
+          24,
+          23,
+          25,
+          26
+        ],
+        "events": {
+          "broken": [
+            [
+              19,
+              20
+            ]
+          ],
+          "formed": [
+            [
+              0,
+              20
+            ],
+            [
+              2,
+              19
+            ]
+          ],
+          "strengthened": [],
+          "weakened": [
+            [
+              0,
+              2
+            ]
+          ]
+        },
+        "counts": {
+          "broken": 1,
+          "formed": 2,
+          "strengthened": 0,
+          "weakened": 1
+        },
+        "total": 4,
+        "terminal": 2380,
+        "direction": "R_to_P"
+      }
+    },
+    "target_in_terminal_representatives": true,
+    "full_terminals_scanned": 829,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "exhausted": true
+    },
+    "search_cpu": 1.623496766,
+    "search_wall": 0.46590512059628963,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.39688074961304665,
+      "cut_count": 32,
+      "raw_result_count": 829,
+      "retained_branch_count": 829,
+      "max_live_branches": 6,
+      "max_growth_candidates": 8,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.033130863681435585,
+      "completed_group_requests": 2466,
+      "completed_group_calculations": 1135,
+      "completed_group_cache_hits": 1331,
+      "worker_search_seconds": 0.6532316720113158,
+      "checkpoint_seconds": 0.15407101530581713,
+      "symmetry_finalization_seconds": 0.04184363130480051,
+      "checkpoint_restore_and_finalize_seconds": 0.1304411208257079
+    },
+    "analysis_cpu": 0.37983223999999993,
+    "analysis_wall": 0.42376234382390976,
+    "minimum_witness": {
+      "id": "26a8510fc54516bc25d2f752f4ed5fdb19f2ced9dc542865bcd4214124ede328",
+      "mapping": [
+        8,
+        15,
+        18,
+        2,
+        16,
+        17,
+        13,
+        3,
+        14,
+        4,
+        5,
+        0,
+        1,
+        6,
+        7,
+        19,
+        20,
+        21,
+        10,
+        11,
+        12,
+        9,
+        27,
+        22,
+        26,
+        25,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            21,
+            22
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            22
+          ]
+        ],
+        "strengthened": [],
+        "weakened": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 0,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 4,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "f37bae0454e38a324b7f74e87a7c9438efd0cd98dbbdaf13dd0dd8ee4f9c7ef5",
+    "search_sha256": "98a31349b8616ac74bb9d841a8c63897c6a0c2bd7da275b80d679f0c5ae585c9",
+    "coarse_certificate": {
+      "index": 101,
+      "variant": "seed_10",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "f37bae0454e38a324b7f74e87a7c9438efd0cd98dbbdaf13dd0dd8ee4f9c7ef5",
+      "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+      "restricted_target": "ab0815b9b5544a2161219162c5f9d853591e4a71719b5588dde2a6699e1ccda0",
+      "full_terminals": 829,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [
+        2380
+      ],
+      "restricted_signature_counts": {
+        "587a2d8647eda4f55e7ba5dde60d2550bbc53cbcd0971294c7c2a04d195a8ce0": 788,
+        "5e48b08a0133ba548ff9e3e4cd1cb5a733514829720041d40f0584fd7dc11391": 40,
+        "ab0815b9b5544a2161219162c5f9d853591e4a71719b5588dde2a6699e1ccda0": 1
+      },
+      "complete_exclusion": false,
+      "action_checks": 4,
+      "literal_invariance_checks": 12,
+      "initial_target_status": "represented",
+      "cpu": 0.3759545000000002,
+      "wall": 0.37779470160603523,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "variant": "seed_30",
+    "seeds": 30,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "binary_heavy_event_invariance_certificate",
+      "certificate": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/coarse_checks/seed_30/11.json"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 5637,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 85,
+      "encoded": 584,
+      "paths_checked": 584,
+      "invariant_terminals": 2114,
+      "exhausted": false
+    },
+    "search_cpu": 42.933236207,
+    "search_wall": 8.851414505392313,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 8.038242286071181,
+      "cut_count": 78,
+      "raw_result_count": 5637,
+      "retained_branch_count": 5637,
+      "max_live_branches": 984,
+      "max_growth_candidates": 42,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.2170542934909463,
+      "completed_group_requests": 16602,
+      "completed_group_calculations": 13800,
+      "completed_group_cache_hits": 2802,
+      "worker_search_seconds": 32.35247756540775,
+      "checkpoint_seconds": 1.3571380451321602,
+      "symmetry_finalization_seconds": 0.6384336389601231,
+      "checkpoint_restore_and_finalize_seconds": 2.279410651884973
+    },
+    "analysis_cpu": 245.77742562400002,
+    "analysis_wall": 245.80748040694743,
+    "minimum_witness": {
+      "id": "5bbdb74e069b681b7afe0240ede55b1a6a6082e28a1caa553a92d911a0c4b9a7",
+      "mapping": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        4,
+        7,
+        6,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38,
+        37,
+        39,
+        40,
+        42,
+        41,
+        43,
+        44,
+        46,
+        45,
+        47,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        18,
+        17,
+        19,
+        20,
+        22,
+        23,
+        21,
+        24,
+        26,
+        25,
+        27,
+        49,
+        50,
+        51,
+        52,
+        48,
+        57,
+        59,
+        58,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        53,
+        55,
+        54,
+        56,
+        73
+      ],
+      "events": {
+        "broken": [
+          [
+            48,
+            73
+          ]
+        ],
+        "formed": [
+          [
+            52,
+            73
+          ]
+        ],
+        "strengthened": [
+          [
+            48,
+            49
+          ]
+        ],
+        "weakened": [
+          [
+            51,
+            52
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 1,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 2,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "f4d0df8f0890155162180f21f8e5c3d3395f72cbdec32e94a8e626d2c4468660",
+    "search_sha256": "0b2f728102ccf859f036dbc5513e07f98f76f3b90191daf3eaf8a103e5c74a3f",
+    "coarse_certificate": {
+      "index": 11,
+      "variant": "seed_30",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "f4d0df8f0890155162180f21f8e5c3d3395f72cbdec32e94a8e626d2c4468660",
+      "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "restricted_target": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+      "full_terminals": 5637,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "6228fdf5b01fe5951042c7f7751d86ffd3d7358c12cc0c59a2833b38c9c6f548": 3565,
+        "ef8abb8d45929349db0297d5fcb578953599d4cf68c9c53fa74d003087d49c34": 442,
+        "6d1a95b052948160c98f0adcfc98247727c26b89a4e60851605147634dd7a7d7": 12,
+        "73f96539fd724ba8caea463c0d9707f39e260a64331d5ab881f02dfd33a9d238": 12,
+        "749e0b51f68ea231aeb46c2f8d6884905eb2f54ec575b46fd3dca353400c86f4": 2,
+        "2ced4545e011a98bf6affdda6ce6488601e13c75832e1378f3fa0de350e0cdca": 7,
+        "f30eb73539dcd951ade6cae67ae29bda504dcb202369757b06a1dffaea193155": 250,
+        "587b3c3865321948c560cdece013f64cae263843eeffe851704bb276e1585ffe": 7,
+        "0dd5860636f6f17707c64e738f2e91977355e4f90cf1034978dacfcdc64b75d0": 4,
+        "5572e55574419fd7ac468ddff3f6201e5af67259806e4a9b1c7e68280156844a": 4,
+        "0e668cd03a6bd71b7a346a84281dcd10422e74ce6d0a7646cf79d594dc57a1f0": 27,
+        "b351f8f44be4b2dec5e03dec7647c8d87e01ef08cd4c536c6a247f8fa3f6b46c": 244,
+        "986725da0cbb27f83d03eba41d4f1171bb4b23c3f369bd89a8728138fb4d1094": 1,
+        "b0bc161759f3096b9e31d5c1d5d79ed64237ac7dc0c95ff36f5cd58721ec5671": 6,
+        "40812ade9aa65841ee288ee412d56c959da6e872773cad28319387954db602e5": 8,
+        "afb89695d276af7d407bf509a9464e552ea176c7353713b57f8978f1fad4d02b": 5,
+        "bf5a75a50ef7ed4ded98e50be53661a8999801dd9e51e6e79d4a20a473540377": 6,
+        "d7b76a58812b53db42d9ee2670001383ffcfb32d565647cd82076975d9aa167c": 5,
+        "41be446181e7321be64e1cb7681c394edbf3b961171828fbd6f4e5a1aeaf64e9": 2,
+        "dfe3ed68d0c58921de15db1973924152de81525fc50343805bedfad8638e983f": 4,
+        "2ccee5a9d43962ef6fbc2f38a37e1755dd5119bcee4329c26cb8b1d0e55ace7f": 3,
+        "edc2159cee01b9136ceea47e585cb78421e21ede81b111d73daee3ae6a909ff9": 2,
+        "8f7e66e107c1d719dfb5b65afe834ce594ea3ce22811928fb1b447a2c61bcbaf": 5,
+        "2f2b621627cd2413cf129be3b39490482da975b360502dfa5dba6148711526c0": 6,
+        "2fb7885d9eb6e1fca21d045e60c55d480bc313401547cb9a06f6d46819552104": 6,
+        "92ce223babc5f20c8c7435c275235f7772ebac02fdfcb3c42ba2a3c9cc8a767a": 3,
+        "26cc190582543474bf48017ac03f05b4259d85febbebd3b96fb93d647059ef07": 4,
+        "7072baee0ae1c60b8bb8b3fc419f0b5de9020cc021d873344c038d3a5a018a5c": 1,
+        "0a0afa49a14d8ee1b874bb2e2b61264b78aaa76e65b4b7f139b5d15b1eb51500": 5,
+        "076d1a7809f4c726a73901cede9eee3d2d9df71b840d0c912df9d5b6cbf7631e": 5,
+        "1534bd077de4a9db3e53a1e0eef11f40cd646414ba4a57a472c0fc15cd03b63c": 3,
+        "13bc765af8136baa202db1b0de72b108a578e84abd4988c43d7c86241f8ce6a6": 3,
+        "8656781f62a1a4d5d48c3cbb5d7b223a82f8c25677fbbaf3fe9012c0c5a0b992": 3,
+        "13c2200908333501cdaacc0b6ec193827ece634ed5ffed68f59e6661c32e3457": 3,
+        "dd9e60f15a6d2f52acb54b456137c39af3323ba02cc9170954f2efa1b8fd5c9c": 4,
+        "ffd5575e92cf800c38e06fe2cb82927c175678f13c17e3714d4e33243a0bc56b": 3,
+        "f0f5a66d9b74691d942d7da232b4de065093e722d5435f08f5f09af98d0ccdff": 2,
+        "07d9a2a280480cebf10be146d365d668dfc2f1c984c2801c994fb63b7fb3deb6": 1,
+        "03fc2d5d162583da444712210fafe11f463af643a2965acd1387c197cdd858c5": 4,
+        "f1f1f345e192e7b2d8c917eacfe5ea09a8445997f1348b314e4ca4576cfa6b65": 12,
+        "735216d562fb0d7dbc7c7acebdc2677e9bdc99e7d76d34f6bf0f4ac77cecc7f1": 12,
+        "b32c9a37542736891bceb56492cf87df2f9f801af6c9727db9e187a4ec01df28": 12,
+        "79367bbc0d74e6ddec502111793a0c496ccd595c2ce99124e6595e8c2742d972": 27,
+        "3ee150a3b8306c08221c79ecd43bd5fe7b17de9bf02fcef465164efd6407cc6f": 27,
+        "8b3642bc2850aa1a685952271510891928d3c8754e2903e560ddd1300ccef6d1": 24,
+        "46dc700500c9ed7dea2278bfe1ea098605c1c50514a2fa0cb811f330d55572f1": 24,
+        "26c1d9d71bea3a2cb01fd4c66dc371890a2f13bac661b9b25c55250e05ebfafd": 24,
+        "037ae96c09401b304d1f0e2fd90d53616b9ab5f719202a373142926d8c89b95b": 24,
+        "d99ad376846ba34129654236dee73a35b539baa7eba704ea1f2a25179cf0893c": 24,
+        "a1cc56208ea20acc1e3efc1385c8f66535035de09cd71608a83e89eddaa82535": 24,
+        "90eb739f16c46a805186eda69f30701659f9faa511a1b3b12483964f33822e83": 24,
+        "cd61e79de0d4b8979d7db65437ea20ef1c74c63e03b8804a6f2d94611ee04c1e": 36,
+        "9408b27c33f0dcc4ff91872737dcec0d3577555e345876c6095f08e94b4ab442": 36,
+        "8485edf38b43ecf490969ea3137c77ee3e373610ee9cdf92e4102c944108e0a5": 3,
+        "064b4402bf83be6d8014e2e38271ad3f12e178580388d17023767b3931f8afbc": 3,
+        "d856636860d90195a506aa2e2ef84e51e5f380bb90a48e0a42fd7177a617f4d6": 3,
+        "1a3bcb8e15e8072014afdd432bae72fb0b8f8cb7f88b4856d95650f3550a7baa": 3,
+        "12bf19c15037d0b1bd7405f3e0a78b37aa148de0846ff1896286d73fa14bd380": 3,
+        "0a0e82667d3a7311bb845cfe83f4bf7ae619d90881fb086b8198f0395ecce9d1": 40,
+        "d269f68eff3f84e0a49a2c4e5cc2a262eafc61918a138430d94a49142618f19c": 40,
+        "7c066ed99862aef5a6a973f2fbcf4b7275a419c89d0ef1237dfd2bc2e58ae442": 40,
+        "9d5e16530c41e95835d47bd6aaa4f70c1291b597965265082faddcc921d04fc4": 40,
+        "56f164e6c8a6592a3145bb7d4b3477804ed7ed5d02413e80c31e282981192f6f": 40,
+        "4aa4922be9b40134a93d77a2679a594d8f8791687d941cdc6bf9a6cb62f1f7ba": 40,
+        "cc8a08609a78db138c96be45ee33951b08c1fbc4fd93d10c2d56f4574bb35578": 40,
+        "27703b2901b3f2efde859a94efb9b7953deb599a4a443f07c755f42b2fe9d3ef": 120,
+        "96515f426bc1077cffba5b7c2bf83af03a53f5ee39da3e405700200981746d0d": 120,
+        "f4f092be75fac6139fafd84bc117d148069f47ae4c73dc11bf04f4f635c48224": 20,
+        "c86defa6d875faaac39a88efa082c2d6bbb4f9543c51ebebc187a2a63cd1afb6": 20,
+        "0cfadd72c801a24c6079b578c9ca13abfa85ecb547c7edfe6104c3833d8d5967": 3,
+        "ce8be9faf0b0b0fe5029eac2e939c3a49844e7504426fe54cdd91baeffbb0535": 4,
+        "4df07a5b894b2915735002d65f5d45a07baac3f2b4eca5c3bf4b4f99e6f9c20a": 1,
+        "6872a15e7eb89443ad19f858229c9b089a557c5933d789e19b91d2ce57f7642b": 1,
+        "29db07e9b1abb19dfe5e57b977a1ea551ccbd7b853c9bf846d637b2035f7a37a": 1,
+        "1bb7e2054495e98698da084ca3d593943d31976d5791425c4da0d2c9f857f9ab": 4,
+        "25720e4fca669821e16b2ae52c81e5ff9aa99227a99b9d45a485b057b08fee8d": 4,
+        "acb98b09acf745eba45ddfb7ff565030a20aa89386471bba7f55f4c90d0b2b09": 2,
+        "9524f9e8a3950dcabc685b74121873f696f03abd1509732b84fb601b3a89cbce": 4,
+        "1c3c1cef8216418e36968bb320b60ef0165fd74344e7d952aa30c91a737cc985": 3,
+        "2ead24e8003ca09cbd7b3a8ca3b1d55ea228e0b3841d3c8b94b3125734b3c832": 4,
+        "41c67bd7d82d541cec441e80a44e481e1350a870eb066079f077acf1e738ca8d": 1,
+        "9d6a247aa4b3abe83b1fdd366a6ac731296398e49a2e8b6ef61fac37fd16ba6f": 1,
+        "4ca0c750a12dadf8340e5cb732c637333952b314089281de7b554c0619f20c0a": 6,
+        "41c441fc4fdf6f784675582c1f417447335142d24ac971eb8bd887819903b4a2": 3,
+        "6f79f02f6276eb9fb0410f284995f54178e71f61415b3793347160aa0da42623": 2,
+        "c3c529ccb5f5ac333ce86c764c0f4d4bc986e90f1ab66e431fb77ba9d142a6a5": 2,
+        "2f4fa596ec7aa0efae815cd1278669a4824d7b0da70eb700e54f366a3041cb22": 1,
+        "d38f4aa2a583f1d54b95a56ed6ad456cea1fc1388701687ac66625642d0d6960": 3,
+        "87333e4d65653dfac79fdad35a3ae37723147326020cd54d51f81652a1b81e64": 2,
+        "56ee1f7d873c058ddc22a154282b57c36f0fa54c84f596a72ae558838da6d1b2": 1
+      },
+      "complete_exclusion": true,
+      "action_checks": 30,
+      "literal_invariance_checks": 90,
+      "initial_target_status": "unresolved",
+      "cpu": 2.576966571,
+      "wall": 2.5780759900808334,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "initial_target_result": {
+      "status": "unresolved",
+      "method": "compressed_path_query"
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "variant": "seed_30",
+    "seeds": 30,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 5,
+    "target_score": 5,
+    "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 1740,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "paths_checked": 0,
+      "invariant_terminals": 1740,
+      "exhausted": true
+    },
+    "search_cpu": 2.6791326100000004,
+    "search_wall": 0.6889567328616977,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.6198451621457934,
+      "cut_count": 21,
+      "raw_result_count": 1740,
+      "retained_branch_count": 1740,
+      "max_live_branches": 6,
+      "max_growth_candidates": 65,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.03707525413483381,
+      "completed_group_requests": 2280,
+      "completed_group_calculations": 774,
+      "completed_group_cache_hits": 1506,
+      "worker_search_seconds": 1.91537528578192,
+      "checkpoint_seconds": 0.30061680916696787,
+      "symmetry_finalization_seconds": 0.03342369105666876,
+      "checkpoint_restore_and_finalize_seconds": 0.12681763712316751
+    },
+    "analysis_cpu": 0.4081244300000001,
+    "analysis_wall": 0.40878855623304844,
+    "minimum_witness": {
+      "id": "813601b86a448a82726192afd93f123f7b401e4a24a2e273f9c7396a3a456da5",
+      "mapping": [
+        12,
+        1,
+        2,
+        13,
+        6,
+        11,
+        3,
+        8,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            14
+          ]
+        ],
+        "strengthened": [
+          [
+            1,
+            2
+          ]
+        ],
+        "weakened": [
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 5,
+      "terminal": 91,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "dfa0e357f2b697cbbee943916383cb7f89b710a6a45c84f1d0e4ac05b96acdbd",
+    "search_sha256": "49b7975d0992bdeba2e9bf022d4a5ebc6669edd4d5f4d5aa307d72da7c9932a0",
+    "coarse_certificate": {
+      "index": 64,
+      "variant": "seed_30",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "dfa0e357f2b697cbbee943916383cb7f89b710a6a45c84f1d0e4ac05b96acdbd",
+      "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "restricted_target": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+      "full_terminals": 1740,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [],
+      "restricted_signature_counts": {
+        "81d2227c18f3d2792536e37ce00eff1b966c21af5d3080cbd4e8ddb424b494ad": 1260,
+        "c7c809b6e152a07d09f7271821835fdd56fa8afb03bf567c88cbbc22fcb67d20": 60,
+        "58087e2d8bdaa278d8145eb28ea362915e4f1ae705f9cef5d7850737d7c69bcb": 60,
+        "2e9d35e0d0ab7bcbbf9ed27519fec30ca7f33f1bd989287c3d2248ab015af7fc": 60,
+        "99165606bc973c9f7bd13bda7c309a99fef39026e0f521a41ebb2baa395e5048": 60,
+        "e3fe7e1b30d76e3417fe80ecd6be25d18c34b6cd26ac6a93736fee3db9cd0783": 60,
+        "d5d76e6829e8485096e22122cc0d12070d1a327b6a1fb638b5ed9b7f4fdb7bd4": 60,
+        "6789a2f3f072cf573442d8b79af36d093224d21647dc095670a372f64f5fce69": 60,
+        "58e2b20da6cda5c773a0bacd6d8ad726afe7819bc0cdd74525777290c93aafaa": 60
+      },
+      "complete_exclusion": true,
+      "action_checks": 0,
+      "literal_invariance_checks": 0,
+      "initial_target_status": "excluded_from_saved_families",
+      "cpu": 0.5849025649999993,
+      "wall": 0.5865893643349409,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "variant": "seed_30",
+    "seeds": 30,
+    "cap": 1000,
+    "fresh": true,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+    "target_result": {
+      "status": "represented",
+      "method": "saved_terminal",
+      "witness": {
+        "id": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+        "mapping": [
+          8,
+          18,
+          9,
+          2,
+          17,
+          16,
+          6,
+          1,
+          7,
+          0,
+          5,
+          4,
+          3,
+          13,
+          14,
+          21,
+          20,
+          19,
+          11,
+          10,
+          15,
+          12,
+          22,
+          27,
+          23,
+          24,
+          25,
+          26
+        ],
+        "events": {
+          "broken": [
+            [
+              19,
+              20
+            ]
+          ],
+          "formed": [
+            [
+              0,
+              20
+            ],
+            [
+              2,
+              19
+            ]
+          ],
+          "strengthened": [],
+          "weakened": [
+            [
+              0,
+              2
+            ]
+          ]
+        },
+        "counts": {
+          "broken": 1,
+          "formed": 2,
+          "strengthened": 0,
+          "weakened": 1
+        },
+        "total": 4,
+        "terminal": 5914,
+        "direction": "R_to_P"
+      }
+    },
+    "target_in_terminal_representatives": true,
+    "full_terminals_scanned": 2531,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "exhausted": true
+    },
+    "search_cpu": 3.809237282,
+    "search_wall": 1.264437704347074,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 1.0703187985345721,
+      "cut_count": 32,
+      "raw_result_count": 2531,
+      "retained_branch_count": 2531,
+      "max_live_branches": 12,
+      "max_growth_candidates": 10,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.09627075400203466,
+      "completed_group_requests": 7489,
+      "completed_group_calculations": 2192,
+      "completed_group_cache_hits": 5297,
+      "worker_search_seconds": 1.843316855840385,
+      "checkpoint_seconds": 0.30874274391680956,
+      "symmetry_finalization_seconds": 0.16323713958263397,
+      "checkpoint_restore_and_finalize_seconds": 0.36041454784572124
+    },
+    "analysis_cpu": 1.146352178,
+    "analysis_wall": 1.146666537038982,
+    "minimum_witness": {
+      "id": "26a8510fc54516bc25d2f752f4ed5fdb19f2ced9dc542865bcd4214124ede328",
+      "mapping": [
+        8,
+        15,
+        18,
+        2,
+        16,
+        17,
+        13,
+        3,
+        14,
+        4,
+        5,
+        0,
+        1,
+        6,
+        7,
+        19,
+        20,
+        21,
+        10,
+        11,
+        12,
+        9,
+        27,
+        22,
+        26,
+        25,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            21,
+            22
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            22
+          ]
+        ],
+        "strengthened": [],
+        "weakened": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 0,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 4,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "7640def53d05f8ae7f79d3e542f87b32a289a5f385b9f794738f0c3dc8c5492c",
+    "search_sha256": "4a410b4607518c1c51aa6e81866ea57adb86eca21531ccb293692e37128c3c73",
+    "coarse_certificate": {
+      "index": 101,
+      "variant": "seed_30",
+      "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+      "archive_sha256": "7640def53d05f8ae7f79d3e542f87b32a289a5f385b9f794738f0c3dc8c5492c",
+      "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+      "restricted_target": "ab0815b9b5544a2161219162c5f9d853591e4a71719b5588dde2a6699e1ccda0",
+      "full_terminals": 2531,
+      "noninvariant_terminals": [],
+      "matching_invariant_terminals": [
+        5914,
+        6087,
+        6092,
+        6104,
+        7053,
+        7155,
+        7217
+      ],
+      "restricted_signature_counts": {
+        "587a2d8647eda4f55e7ba5dde60d2550bbc53cbcd0971294c7c2a04d195a8ce0": 2400,
+        "5e48b08a0133ba548ff9e3e4cd1cb5a733514829720041d40f0584fd7dc11391": 124,
+        "ab0815b9b5544a2161219162c5f9d853591e4a71719b5588dde2a6699e1ccda0": 7
+      },
+      "complete_exclusion": false,
+      "action_checks": 4,
+      "literal_invariance_checks": 12,
+      "initial_target_status": "represented",
+      "cpu": 0.6114141819999999,
+      "wall": 0.6339160203933716,
+      "proof": "Every path action in each invariant terminal family preserves the full product binary heavy-atom graph. Thus broken/formed heavy bonds cannot vary within that family. No target restricted pattern matches any invariant terminal modulo the same reactant symmetry; noninvariant terminals prevent exclusion."
+    },
+    "host": "bosque83"
+  },
+  {
+    "index": 11,
+    "name": "pr10.carborane_ts3",
+    "variant": "cached_seed10_cap100",
+    "seeds": 10,
+    "cap": 100,
+    "fresh": false,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "604a2c308aac059d027d3e78a7f544adc7ab9d1652bda0960fb237cc038d1e1b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 1515,
+    "minimum_representative_patterns": 1,
+    "query_metrics": {
+      "queries": 35,
+      "encoded": 117,
+      "paths_checked": 117,
+      "invariant_terminals": 1398,
+      "exhausted": true
+    },
+    "search_cpu": 18.880597926999997,
+    "search_wall": 3.365789122879505,
+    "capped": true,
+    "search_metrics": {
+      "elapsed_seconds": 3.1036002468317747,
+      "cut_count": 78,
+      "raw_result_count": 1515,
+      "retained_branch_count": 1515,
+      "max_live_branches": 100,
+      "max_growth_candidates": 42,
+      "subtree_branch_cap_count": 104,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.05796180199831724,
+      "completed_group_requests": 4030,
+      "completed_group_calculations": 3541,
+      "completed_group_cache_hits": 489,
+      "worker_search_seconds": 15.047322250436991,
+      "checkpoint_seconds": 0.46008375426754355,
+      "symmetry_finalization_seconds": 0.1806216980330646,
+      "checkpoint_restore_and_finalize_seconds": 0.5079489392228425
+    },
+    "analysis_cpu": 47.496039174,
+    "analysis_wall": 47.6368611631915,
+    "minimum_witness": {
+      "id": "5bbdb74e069b681b7afe0240ede55b1a6a6082e28a1caa553a92d911a0c4b9a7",
+      "mapping": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        4,
+        7,
+        6,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38,
+        37,
+        39,
+        40,
+        42,
+        41,
+        43,
+        44,
+        46,
+        45,
+        47,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        18,
+        17,
+        19,
+        20,
+        22,
+        23,
+        21,
+        24,
+        26,
+        25,
+        27,
+        49,
+        50,
+        51,
+        52,
+        48,
+        57,
+        59,
+        58,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        53,
+        55,
+        54,
+        56,
+        73
+      ],
+      "events": {
+        "broken": [
+          [
+            48,
+            73
+          ]
+        ],
+        "formed": [
+          [
+            52,
+            73
+          ]
+        ],
+        "strengthened": [
+          [
+            48,
+            49
+          ]
+        ],
+        "weakened": [
+          [
+            51,
+            52
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 1,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 2,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910/results/holdout/11/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "7fb59999005a069ec7fec5fd9aa821901c2457af2deaa1ff8847e10ee0987c67",
+    "search_sha256": "5c207c8e39c6662760c81cd39511be97e2f5124e523e03c90f55beeb1a3a1cb1",
+    "host": "bosque26"
+  },
+  {
+    "index": 64,
+    "name": "pr16.carbocation_ts5",
+    "variant": "cached_seed10_cap100",
+    "seeds": 10,
+    "cap": 100,
+    "fresh": false,
+    "direction": "R_to_P",
+    "minimum_events": 5,
+    "target_score": 5,
+    "target_pattern": "fd46d8cab1e4fac4649ef6a05bec03ce695fe9ccbf206436dbe807d31064ab7b",
+    "target_result": {
+      "status": "excluded_from_saved_families",
+      "method": "compressed_path_query"
+    },
+    "target_in_terminal_representatives": false,
+    "full_terminals_scanned": 580,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "paths_checked": 0,
+      "invariant_terminals": 580,
+      "exhausted": true
+    },
+    "search_cpu": 1.5870507329999999,
+    "search_wall": 0.3501731874421239,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.32397483102977276,
+      "cut_count": 21,
+      "raw_result_count": 580,
+      "retained_branch_count": 580,
+      "max_live_branches": 6,
+      "max_growth_candidates": 65,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.01309692021459341,
+      "completed_group_requests": 760,
+      "completed_group_calculations": 526,
+      "completed_group_cache_hits": 234,
+      "worker_search_seconds": 0.9661531830206513,
+      "checkpoint_seconds": 0.08919108007103205,
+      "symmetry_finalization_seconds": 0.011238796636462212,
+      "checkpoint_restore_and_finalize_seconds": 0.08618699200451374
+    },
+    "analysis_cpu": 0.17360249900000002,
+    "analysis_wall": 0.22227484546601772,
+    "minimum_witness": {
+      "id": "813601b86a448a82726192afd93f123f7b401e4a24a2e273f9c7396a3a456da5",
+      "mapping": [
+        12,
+        1,
+        2,
+        13,
+        6,
+        11,
+        3,
+        8,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            14
+          ]
+        ],
+        "strengthened": [
+          [
+            1,
+            2
+          ]
+        ],
+        "weakened": [
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 1,
+        "weakened": 1
+      },
+      "total": 5,
+      "terminal": 31,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910/results/holdout/64/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "911a37602d3b5e3153f4a075ae9f60f91c3d6a13168696820b67b1fc4f6b2532",
+    "search_sha256": "e3796cabe8dd98314627cae1d34924d58a55ea691dc3ca1e079d6b70abd05be8",
+    "host": "bosque70"
+  },
+  {
+    "index": 101,
+    "name": "pr7.V.dodh_ts19",
+    "variant": "cached_seed10_cap100",
+    "seeds": 10,
+    "cap": 100,
+    "fresh": false,
+    "direction": "R_to_P",
+    "minimum_events": 4,
+    "target_score": 4,
+    "target_pattern": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+    "target_result": {
+      "status": "represented",
+      "method": "saved_terminal",
+      "witness": {
+        "id": "3156ce99399fff86c89dddd8c70f436a671a80c27ff6c44274802bdd31ec5514",
+        "mapping": [
+          8,
+          18,
+          9,
+          2,
+          16,
+          17,
+          13,
+          3,
+          14,
+          4,
+          5,
+          0,
+          1,
+          6,
+          7,
+          19,
+          20,
+          21,
+          11,
+          10,
+          15,
+          12,
+          22,
+          27,
+          24,
+          23,
+          25,
+          26
+        ],
+        "events": {
+          "broken": [
+            [
+              19,
+              20
+            ]
+          ],
+          "formed": [
+            [
+              0,
+              20
+            ],
+            [
+              2,
+              19
+            ]
+          ],
+          "strengthened": [],
+          "weakened": [
+            [
+              0,
+              2
+            ]
+          ]
+        },
+        "counts": {
+          "broken": 1,
+          "formed": 2,
+          "strengthened": 0,
+          "weakened": 1
+        },
+        "total": 4,
+        "terminal": 2380,
+        "direction": "R_to_P"
+      }
+    },
+    "target_in_terminal_representatives": true,
+    "full_terminals_scanned": 829,
+    "minimum_representative_patterns": 2,
+    "query_metrics": {
+      "queries": 0,
+      "encoded": 0,
+      "exhausted": true
+    },
+    "search_cpu": 1.661279713,
+    "search_wall": 0.47688356041908264,
+    "capped": false,
+    "search_metrics": {
+      "elapsed_seconds": 0.4064005594700575,
+      "cut_count": 32,
+      "raw_result_count": 829,
+      "retained_branch_count": 829,
+      "max_live_branches": 6,
+      "max_growth_candidates": 8,
+      "subtree_branch_cap_count": 0,
+      "worker_returned_branch_count": 0,
+      "parent_merge_seconds": 0.03309010248631239,
+      "completed_group_requests": 2466,
+      "completed_group_calculations": 1115,
+      "completed_group_cache_hits": 1351,
+      "worker_search_seconds": 0.6880922224372625,
+      "checkpoint_seconds": 0.13566682860255241,
+      "symmetry_finalization_seconds": 0.04510965757071972,
+      "checkpoint_restore_and_finalize_seconds": 0.1245823884382844
+    },
+    "analysis_cpu": 0.3776577660000001,
+    "analysis_wall": 0.42877340223640203,
+    "minimum_witness": {
+      "id": "26a8510fc54516bc25d2f752f4ed5fdb19f2ced9dc542865bcd4214124ede328",
+      "mapping": [
+        8,
+        15,
+        18,
+        2,
+        16,
+        17,
+        13,
+        3,
+        14,
+        4,
+        5,
+        0,
+        1,
+        6,
+        7,
+        19,
+        20,
+        21,
+        10,
+        11,
+        12,
+        9,
+        27,
+        22,
+        26,
+        25,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            21,
+            22
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            22
+          ]
+        ],
+        "strengthened": [],
+        "weakened": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 1,
+        "formed": 2,
+        "strengthened": 0,
+        "weakened": 1
+      },
+      "total": 4,
+      "terminal": 4,
+      "direction": "R_to_P"
+    },
+    "archive": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910/results/holdout/101/R_to_P/original/cuts/aam.pkl.gz",
+    "archive_sha256": "71ad9542dcb7a72be0ea381087177e0d1cf3488b473b57badb35bd55109ca924",
+    "search_sha256": "948c236d4dfd82912de9aadac21cedbab6c592c19b5bc2a896364a54d4191277",
+    "host": "bosque44"
+  }
+]

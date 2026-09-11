@@ -8,6 +8,8 @@ No benchmark needs rerunning merely to inspect saved mappings or metrics.
 
 | Script | Responsibility |
 |---|---|
+| `holdout_missing_pattern_seeds.py` / `publish_missing_pattern_seeds.py` | Targeted seed-budget diagnostic on cases 11, 64 and 101; frozen search, exact target recovery and paired CPU |
+| `certify_heavy_event_exclusion.py` | Necessary-condition exclusion using invariant broken/formed heavy-bond patterns, checked against positive controls |
 | `holdout_forward_analysis.py` | Forward-only elementary-step scores, saved directional timings and alternative-family checks |
 | `publish_holdout_forward_analysis.py` | Validate forward provenance; publish score, CPU and alternative comparisons with an offline viewer |
 | `holdout_minimum_events.py` | Full-H minimum-event snapshots and joint symmetry canonicalization on saved holdout outputs |

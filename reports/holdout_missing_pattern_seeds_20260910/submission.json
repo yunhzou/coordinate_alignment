@@ -1,0 +1,19 @@
+{
+  "job": "468659",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--nodelist=bosque83",
+    "--nodes=1",
+    "--cpus-per-task=8",
+    "--mem=32G",
+    "--time=00:45:00",
+    "--no-requeue",
+    "--array=0-2%3",
+    "--job-name=three_case_seeds",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/status/slurm_%A_%a.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/engine/bench PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/holdout_missing_pattern_seeds.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910 --slot \"$SLURM_ARRAY_TASK_ID\""
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "cases": [
+    11,
+    64,
+    101
+  ],
+  "direction": "R_to_P",
+  "cap": 1000,
+  "seeds": [
+    1,
+    3,
+    10,
+    30
+  ],
+  "recovery": {
+    "1": {
+      "recovered": [],
+      "excluded": [
+        11,
+        64,
+        101
+      ],
+      "unresolved": [],
+      "search_cpu": 7.057138855
+    },
+    "3": {
+      "recovered": [],
+      "excluded": [
+        11,
+        64,
+        101
+      ],
+      "unresolved": [],
+      "search_cpu": 12.250069973999999
+    },
+    "10": {
+      "recovered": [
+        101
+      ],
+      "excluded": [
+        11,
+        64
+      ],
+      "unresolved": [],
+      "search_cpu": 22.182755537
+    },
+    "30": {
+      "recovered": [
+        101
+      ],
+      "excluded": [
+        11,
+        64
+      ],
+      "unresolved": [],
+      "search_cpu": 49.421606099
+    }
+  },
+  "fresh_mapping_runs": 12,
+  "full_benchmark_rerun": false,
+  "independently_checked_witnesses": 18,
+  "capped_fresh_runs": [],
+  "fresh_search_cpu_total": 90.911570465,
+  "analysis_cpu_total": 390.300032535,
+  "analysis_cost_scope": "Completed timed analysis stages and certificates. Cancelled general-query retry is recorded separately in Slurm accounting.",
+  "cancelled_general_query_cpu": null,
+  "cancelled_query_accounting_note": "No validated inclusive descendant CPU total survived cancellation. Slurm counters are retained verbatim; completed-analysis CPU is not the whole campaign cost.",
+  "scope": "Recovery of three specific missing bond-edit patterns at their previously recorded scores. Targeted diagnostic, not 140-case accuracy or total alternative coverage. Minimum seed count between tested budgets is not established."
+}

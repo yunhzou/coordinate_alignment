@@ -1,0 +1,16 @@
+case,seeds,cap,fresh,minimum_events,target_score,target_status,in_terminal_representatives,mapping_cpu,mapping_wall,analysis_cpu,capped,host
+11,1,1000,True,4,4,excluded_from_saved_families,False,5.433897971,1.1347664669156075,10.564974498,False,bosque83
+64,1,1000,True,5,5,excluded_from_saved_families,False,0.767894179,0.2848418913781643,0.017067615999999952,False,bosque83
+101,1,1000,True,4,4,excluded_from_saved_families,False,0.8553467049999999,0.3242990365251899,2.843685243,False,bosque83
+11,3,1000,True,4,4,excluded_from_saved_families,False,10.41130975,2.453413797542453,22.889337292999997,False,bosque83
+64,3,1000,True,5,5,excluded_from_saved_families,False,0.8338628609999998,0.1900671347975731,0.04086534900000005,False,bosque83
+101,3,1000,True,4,4,excluded_from_saved_families,False,1.004897363,0.3411940475925803,8.249273806,False,bosque83
+11,10,1000,True,4,4,excluded_from_saved_families,False,18.870529061,4.104611130431294,44.074163442,False,bosque83
+64,10,1000,True,5,5,excluded_from_saved_families,False,1.6887297099999998,0.7143533769994974,0.16037437900000007,False,bosque83
+101,10,1000,True,4,4,represented,True,1.623496766,0.46590512059628963,0.37983223999999993,False,bosque83
+11,30,1000,True,4,4,excluded_from_saved_families,False,42.933236207,8.851414505392313,245.77742562400002,False,bosque83
+64,30,1000,True,5,5,excluded_from_saved_families,False,2.6791326100000004,0.6889567328616977,0.4081244300000001,False,bosque83
+101,30,1000,True,4,4,represented,True,3.809237282,1.264437704347074,1.146352178,False,bosque83
+11,10,100,False,4,4,excluded_from_saved_families,False,18.880597926999997,3.365789122879505,47.496039174,True,bosque26
+64,10,100,False,5,5,excluded_from_saved_families,False,1.5870507329999999,0.3501731874421239,0.17360249900000002,False,bosque70
+101,10,100,False,4,4,represented,True,1.661279713,0.47688356041908264,0.3776577660000001,False,bosque44

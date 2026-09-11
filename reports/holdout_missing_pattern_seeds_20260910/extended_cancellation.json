@@ -1,0 +1,10 @@
+{
+  "job": "468662",
+  "previous_state": "RUNNING",
+  "cancelled": true,
+  "time": 1789093822.9491973,
+  "reason": "Complete necessary-condition certificate excludes the target from all 5637 saved full-terminal families; validated against completed queries and known positives. Stop the redundant general query.",
+  "certificate": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/coarse_checks/seed_30/11.json",
+  "certificate_sha256": "5ea067f7f845cc3621bdc124e30d17503fe420c64c4a9869d6c14c13ab89c41e",
+  "coarse_driver_sha256": "9454fe06aa4a79dd7abc6fa94ade10cada1f570739dbe76e87b38e0a8a313cfc"
+}

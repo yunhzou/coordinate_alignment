@@ -146,7 +146,8 @@ def native_membership(raw,canonical,patterns,method,snapshot,generators,deadline
 
 
 def aam_membership(raw,canonical,patterns,snapshot,generators,deadline,
-                   directions=('R_to_P','P_to_R'),known_results=None):
+                   directions=('R_to_P','P_to_R'),known_results=None,archive_root=None):
+    archive_root=AAM if archive_root is None else Path(archive_root)
     results = {k:dict(status='represented',method='saved_terminal',witness=v)
                for k,v in snapshot['methods']['aam']['patterns'].items()}
     if known_results:
@@ -166,7 +167,7 @@ def aam_membership(raw,canonical,patterns,snapshot,generators,deadline,
         reverse = direction=='P_to_R'
         search_problem = AAMProblem(problem.product,problem.reactant) if reverse else problem
         feature = canonical.features[0 if reverse else 1]
-        graph = read_aam_checkpoint(AAM/f"results/holdout/{snapshot['index']}/{direction}/original/cuts/aam.pkl.gz").graph
+        graph = read_aam_checkpoint(archive_root/f"results/holdout/{snapshot['index']}/{direction}/original/cuts/aam.pkl.gz").graph
         @lru_cache(None)
         def invariant_action(images):return exact_action(images,feature)
         @lru_cache(None)

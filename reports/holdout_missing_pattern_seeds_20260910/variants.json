@@ -1,0 +1,32 @@
+{
+  "seed_1": {
+    "run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_1",
+    "seeds": 1,
+    "cap": 1000,
+    "fresh": true
+  },
+  "seed_3": {
+    "run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_3",
+    "seeds": 3,
+    "cap": 1000,
+    "fresh": true
+  },
+  "seed_10": {
+    "run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_10",
+    "seeds": 10,
+    "cap": 1000,
+    "fresh": true
+  },
+  "seed_30": {
+    "run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/runs/seed_30",
+    "seeds": 30,
+    "cap": 1000,
+    "fresh": true
+  },
+  "cached_seed10_cap100": {
+    "run": "/project/yunhengzou/coordinate_alignment/aam_benchmarks/adaptive_full_20260910",
+    "seeds": 10,
+    "cap": 100,
+    "fresh": false
+  }
+}

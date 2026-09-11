@@ -1,0 +1,20 @@
+{
+  "job": "468662",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--partition=cpunodes_nia",
+    "--nodelist=bosque83",
+    "--nodes=1",
+    "--cpus-per-task=1",
+    "--mem=8G",
+    "--time=00:20:00",
+    "--no-requeue",
+    "--job-name=case11_seed30_query",
+    "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/status/extended_%j.out",
+    "--wrap",
+    "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_cap1000_seed1_20260910/engine/bench PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 timeout --kill-after=5s 1150 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/extended_driver.py analyze --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910 --variant seed_30 --index 11 --query-seconds 900 --output /project/yunhengzou/coordinate_alignment/aam_benchmarks/holdout_missing_pattern_seeds_20260910/analysis_extended/seed_30/11.json"
+  ],
+  "driver_sha256": "127843b6d42035eeddc141702b3b9838fa644b8c4ed5ba1c16b41655c2728b5e",
+  "reason": "Original target-family check reached its 240-second analysis limit; reuse the saved 30-seed case-11 mapping archive."
+}
