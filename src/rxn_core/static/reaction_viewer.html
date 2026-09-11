@@ -102,7 +102,7 @@ function addEndpointModel(v, divId, els, xyz) {
  for (const [kind,pairs] of Object.entries(mech.order_events||{})) for (const [a,b] of pairs) {
   const pa=mech.mapping_RP[a],pb=mech.mapping_RP[b];
   const delta=kind==='strengthened'?1:kind==='weakened'?-1:DATA.product.wbo[pa][pb]-DATA.reactant.wbo[a][b];
-  if (delta===0) continue;
+  if (delta===0 || (side===0 && delta>0) || (side===1 && delta<0)) continue;
   const actual=side===1 && !rOrdered ? [pa,pb] : [a,b];
   drawBonds(v,xyz,[actual],delta>0?'green':'red');
  }

@@ -1,100 +1,167 @@
 {
   "status": "passed",
+  "convention": "R: red broken/weakened; P: green formed/strengthened; each event shown once.",
   "checks": [
     {
       "case": 11,
       "mechanism": 1,
-      "order_event_colors": [
-        "green",
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
+    },
+    {
+      "case": 11,
+      "mechanism": 1,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
     },
     {
       "case": 11,
       "mechanism": 2,
-      "order_event_colors": [],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
     },
     {
       "case": 11,
-      "visible_overlay_colors": [],
+      "mechanism": 2,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
       "status": "passed"
     },
     {
       "case": 64,
       "mechanism": 1,
-      "order_event_colors": [
-        "green",
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 3,
+      "total": 5,
+      "status": "passed"
+    },
+    {
+      "case": 64,
+      "mechanism": 1,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 3,
+      "total": 5,
+      "status": "passed"
     },
     {
       "case": 64,
       "mechanism": 2,
-      "order_event_colors": [
-        "green",
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 3,
+      "total": 5,
+      "status": "passed"
+    },
+    {
+      "case": 64,
+      "mechanism": 2,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 3,
+      "total": 5,
+      "status": "passed"
     },
     {
       "case": 64,
       "mechanism": 3,
-      "order_event_colors": [],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 3,
+      "total": 5,
+      "status": "passed"
     },
     {
       "case": 64,
-      "visible_overlay_colors": [],
+      "mechanism": 3,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 3,
+      "total": 5,
       "status": "passed"
     },
     {
       "case": 101,
       "mechanism": 1,
-      "order_event_colors": [
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 1,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
     },
     {
       "case": 101,
       "mechanism": 2,
-      "order_event_colors": [
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 2,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
     },
     {
       "case": 101,
       "mechanism": 3,
-      "order_event_colors": [
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
+    },
+    {
+      "case": 101,
+      "mechanism": 3,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
     },
     {
       "case": 101,
       "mechanism": 4,
-      "order_event_colors": [
-        "red"
-      ],
-      "native_and_aligned": "passed"
+      "product_frame": "aligned",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
+      "status": "passed"
     },
     {
       "case": 101,
-      "visible_overlay_colors": [],
-      "status": "passed"
-    },
-    {
-      "page": "holdout_forward_cap1000_seed1_20260910",
-      "event_colors": "red/green",
-      "status": "passed"
-    },
-    {
-      "page": "holdout_minimum_event_patterns_20260910",
-      "event_colors": "red/green",
+      "mechanism": 4,
+      "product_frame": "native",
+      "R_red": 2,
+      "P_green": 2,
+      "total": 4,
       "status": "passed"
     }
   ],

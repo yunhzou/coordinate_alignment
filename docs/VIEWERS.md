@@ -23,7 +23,9 @@ Different layouts and chemical highlight colors are not independent skins.
 
 Bond-event overlays use **red for breaking or weakening** and **green for forming
 or strengthening**, always in the R → P direction. Do not add separate colors for
-bond-order changes. Event names and numerical WBO changes remain in the details.
+bond-order changes. In the R/P comparison, **R shows only red changes** and
+**P shows only green changes**; each event is highlighted once across the two
+panels. Event names and numerical WBO changes remain in the details.
 
 ## Saved comparisons
 

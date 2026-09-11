@@ -9,6 +9,24 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/viewer-validation'
 
 
+def check_endpoint_overlays(frame):
+    return frame.evaluate('''() => {
+      const mech=findMech(currentMechId),expected={R:[],P:[]},seen={R:[],P:[]};
+      const key=(color,pair)=>color+':'+[...pair].sort((a,b)=>a-b).join(',');
+      for(const event of mech.event_records) {
+        const side=event.wbo[1]<event.wbo[0]?'R':'P',color=side==='R'?'red':'green';
+        expected[side].push(key(color,side==='R'||rOrdered?event.r:event.p));
+      }
+      for(const call of window.bondOverlayCalls) seen[call.side].push(key(call.color,call.pair));
+      for(const side of ['R','P']) {
+        if(JSON.stringify(seen[side].sort())!==JSON.stringify(expected[side].sort()))
+          throw Error('Incorrect or duplicated '+side+' bond overlays: '+JSON.stringify(seen));
+      }
+      return {case:DATA.index,mechanism:mech.id,product_frame:rOrdered?'aligned':'native',
+              R_red:seen.R.length,P_green:seen.P.length,total:seen.R.length+seen.P.length,status:'passed'};
+    }''')
+
+
 def main():
     OUT.mkdir(exist_ok=True)
     environment = dict(os.environ)
@@ -17,7 +35,7 @@ def main():
         environment['LD_LIBRARY_PATH'] = str(libraries) + ':' + environment.get('LD_LIBRARY_PATH', '')
     cached = Path('/h/399/yunhengzou/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome')
     executable = os.environ.get('MANUSCRIPT_BROWSER', str(cached) if cached.exists() else None)
-    errors, external, checks = [], [], []
+    errors, external, checks, color_checks = [], [], [], []
     with sync_playwright() as pw:
         browser = pw.chromium.launch(executable_path=executable, env=environment, headless=True,
                                      args=['--no-sandbox', '--enable-unsafe-swiftshader'])
@@ -31,12 +49,23 @@ def main():
             frame = page.frames[1]
             frame.wait_for_function(f'typeof DATA !== "undefined" && DATA.index === {index}')
             frame.wait_for_selector('#vw_R canvas')
+            frame.evaluate('''() => {
+              window.bondOverlayCalls=[];
+              const draw=drawBonds,paint=render;
+              drawBonds=(v,xyz,pairs,color)=>{
+                for(const pair of pairs) window.bondOverlayCalls.push({
+                  side:xyz===DATA.reactant.coords?'R':'P',pair:[...pair],color});
+                return draw(v,xyz,pairs,color);
+              };
+              render=()=>{window.bondOverlayCalls=[];return paint()};
+            }''')
             assert frame.locator('#mech-sel button').count() == count
             assert '__TITLE__' not in frame.locator('h2').inner_text()
             for mechanism in range(1, count + 1):
                 frame.locator(f'#mech-sel button[data-id="{mechanism}"]').click()
                 assert frame.evaluate('currentMechId') == mechanism
                 assert frame.evaluate("findMech(currentMechId).event_records.length") == (5 if index == 64 else 4)
+                color_checks.append(check_endpoint_overlays(frame))
                 # Display fitting may rotate/translate P; the selected correspondence stays fixed.
                 assert frame.evaluate('''() => {
                   const m=findMech(currentMechId),r=molecularViewers.vw_R.selectedAtoms({}),p=molecularViewers.vw_P.selectedAtoms({});
@@ -45,10 +74,12 @@ def main():
                     [a.x,a.y,a.z].every((x,j)=>Math.abs(x-m.product_xyz_in_R_aligned[i][j])<1e-9));
                 }''')
                 frame.locator('#rOrdered').uncheck()
+                color_checks.append(check_endpoint_overlays(frame))
                 assert frame.evaluate('''() => molecularViewers.vw_P.selectedAtoms({}).every((a,i)=>
                     [a.x,a.y,a.z].every((x,j)=>Math.abs(x-DATA.product.coords[i][j])<1e-9))''')
                 frame.locator('#rOrdered').check()
                 checks.append({'case':index, 'mechanism':mechanism, 'native_and_aligned_geometry':'passed'})
+            frame.locator('#mech-sel button[data-id="1"]').click()
             frame.locator('#showAtomIndices').check()
             frame.locator('#showAtomIndices').uncheck()
             frame.locator('#event-details').evaluate('(node)=>node.open=true')
@@ -90,6 +121,9 @@ def main():
     (OUT / 'checks.json').write_text(json.dumps(dict(status='passed', checks=checks,
         javascript_errors=errors, external_requests=external,
         scope='Presentation and actual saved mapping checks; no benchmark search.'), indent=2) + '\n')
+    (OUT / 'red-green-checks.json').write_text(json.dumps(dict(status='passed',
+        convention='R: red broken/weakened; P: green formed/strengthened; each event shown once.',
+        checks=color_checks, javascript_errors=errors), indent=2) + '\n')
     print('Shared viewer browser checks passed.')
 
 
