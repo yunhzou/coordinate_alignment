@@ -1,0 +1,369 @@
+{
+  "command": [
+    "sacct",
+    "-j",
+    "469599,469600,469623",
+    "--noheader",
+    "--parsable2",
+    "--format=JobID%60,State,ExitCode,Elapsed,TotalCPU"
+  ],
+  "tasks": [
+    {
+      "job": "469599_10",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:33",
+      "total_cpu": "00:06.269"
+    },
+    {
+      "job": "469599_28",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:03:17",
+      "total_cpu": "02:50.138"
+    },
+    {
+      "job": "469599_40",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:32",
+      "total_cpu": "00:05.492"
+    },
+    {
+      "job": "469599_47",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:36",
+      "total_cpu": "00:09.801"
+    },
+    {
+      "job": "469599_48",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:36",
+      "total_cpu": "00:09.536"
+    },
+    {
+      "job": "469599_51",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:41",
+      "total_cpu": "00:13.404"
+    },
+    {
+      "job": "469599_52",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:39",
+      "total_cpu": "00:13.180"
+    },
+    {
+      "job": "469599_57",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:31",
+      "total_cpu": "00:05.520"
+    },
+    {
+      "job": "469599_58",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:36",
+      "total_cpu": "00:09.959"
+    },
+    {
+      "job": "469599_59",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:35",
+      "total_cpu": "00:09.482"
+    },
+    {
+      "job": "469599_72",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:33",
+      "total_cpu": "00:07.465"
+    },
+    {
+      "job": "469599_73",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:30",
+      "total_cpu": "00:04.444"
+    },
+    {
+      "job": "469599_135",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:28",
+      "total_cpu": "00:02.559"
+    },
+    {
+      "job": "469599_142",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:31",
+      "total_cpu": "00:05.004"
+    },
+    {
+      "job": "469599_143",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:28",
+      "total_cpu": "00:02.251"
+    },
+    {
+      "job": "469599_144",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:31",
+      "total_cpu": "00:05.225"
+    },
+    {
+      "job": "469599_145",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:29",
+      "total_cpu": "00:02.667"
+    },
+    {
+      "job": "469599_150",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:30",
+      "total_cpu": "00:04.265"
+    },
+    {
+      "job": "469599_153",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:29",
+      "total_cpu": "00:03.061"
+    },
+    {
+      "job": "469599_155",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:31",
+      "total_cpu": "00:04.872"
+    },
+    {
+      "job": "469599_157",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:32",
+      "total_cpu": "00:06.173"
+    },
+    {
+      "job": "469599_159",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:28",
+      "total_cpu": "00:02.307"
+    },
+    {
+      "job": "469599_160",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:09",
+      "total_cpu": "00:07.576"
+    },
+    {
+      "job": "469599_161",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:08",
+      "total_cpu": "00:05.895"
+    },
+    {
+      "job": "469600_10",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:08",
+      "total_cpu": "00:06.175"
+    },
+    {
+      "job": "469600_28",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:02:20",
+      "total_cpu": "02:18.400"
+    },
+    {
+      "job": "469600_40",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:07",
+      "total_cpu": "00:05.437"
+    },
+    {
+      "job": "469600_47",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:11",
+      "total_cpu": "00:09.154"
+    },
+    {
+      "job": "469600_51",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:11",
+      "total_cpu": "00:09.844"
+    },
+    {
+      "job": "469600_52",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:11",
+      "total_cpu": "00:09.646"
+    },
+    {
+      "job": "469600_57",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:06",
+      "total_cpu": "00:05.469"
+    },
+    {
+      "job": "469600_58",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:10",
+      "total_cpu": "00:09.236"
+    },
+    {
+      "job": "469600_72",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:09",
+      "total_cpu": "00:07.434"
+    },
+    {
+      "job": "469600_73",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:06",
+      "total_cpu": "00:04.432"
+    },
+    {
+      "job": "469600_79",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:44",
+      "total_cpu": "00:42.867"
+    },
+    {
+      "job": "469600_99",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:05",
+      "total_cpu": "00:03.709"
+    },
+    {
+      "job": "469600_135",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:04",
+      "total_cpu": "00:02.359"
+    },
+    {
+      "job": "469600_142",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:06",
+      "total_cpu": "00:05.022"
+    },
+    {
+      "job": "469600_143",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:03",
+      "total_cpu": "00:02.257"
+    },
+    {
+      "job": "469600_144",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:07",
+      "total_cpu": "00:05.251"
+    },
+    {
+      "job": "469600_145",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:04",
+      "total_cpu": "00:02.671"
+    },
+    {
+      "job": "469600_150",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:06",
+      "total_cpu": "00:04.268"
+    },
+    {
+      "job": "469600_153",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:05",
+      "total_cpu": "00:03.046"
+    },
+    {
+      "job": "469600_155",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:06",
+      "total_cpu": "00:04.625"
+    },
+    {
+      "job": "469600_157",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:07",
+      "total_cpu": "00:06.097"
+    },
+    {
+      "job": "469600_159",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:03",
+      "total_cpu": "00:02.193"
+    },
+    {
+      "job": "469600_160",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:09",
+      "total_cpu": "00:07.550"
+    },
+    {
+      "job": "469600_161",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:07",
+      "total_cpu": "00:05.904"
+    },
+    {
+      "job": "469623_0",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:03",
+      "total_cpu": "00:01.325"
+    },
+    {
+      "job": "469623_1",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:38",
+      "total_cpu": "00:36.120"
+    },
+    {
+      "job": "469623_2",
+      "state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:00:03",
+      "total_cpu": "00:01.151"
+    }
+  ]
+}

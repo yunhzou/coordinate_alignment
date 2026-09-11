@@ -1,0 +1,29 @@
+[
+  {
+    "slots": [
+      0,
+      1,
+      2
+    ],
+    "job": "469623",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--nodelist=bosque83,bosque84",
+      "--nodes=1",
+      "--cpus-per-task=1",
+      "--mem=16G",
+      "--time=00:15:00",
+      "--no-requeue",
+      "--array=0,1,2%16",
+      "--job-name=metal_family_query",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/status/query_%A_%a.out",
+      "--wrap",
+      "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/engine/bench PYTHONDONTWRITEBYTECODE=1 RXN_CORE_NATIVE=1 PYTHONHASHSEED=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 timeout --kill-after=5s 420 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/analysis_v2.py query --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911 --seconds 120 --slot \"$SLURM_ARRAY_TASK_ID\""
+    ],
+    "seconds_per_variant": 120,
+    "outer_watchdog": 420,
+    "selection": "Historical missing patterns at holdout 11, 64, 101; also the only differing minimum representative pattern sets among currently completed pairs."
+  }
+]

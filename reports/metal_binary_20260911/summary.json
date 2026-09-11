@@ -1,0 +1,895 @@
+{
+  "holdout": {
+    "cases": 140,
+    "paired_completed_cases": 140,
+    "metrics": {
+      "original": {
+        "searches_complete": 140,
+        "analyses_complete": 140,
+        "full_mapping_cases": 140,
+        "paired_mapping_cpu": 941.484479858,
+        "paired_median_cpu": 2.2292315424999996,
+        "capped_cases": 13,
+        "saved_full_representatives": 79601,
+        "analysis_cpu": 577.154639899,
+        "audit_violations": 0
+      },
+      "metal_binary": {
+        "searches_complete": 140,
+        "analyses_complete": 140,
+        "full_mapping_cases": 140,
+        "paired_mapping_cpu": 917.013036806,
+        "paired_median_cpu": 2.170112514,
+        "capped_cases": 13,
+        "saved_full_representatives": 88364,
+        "analysis_cpu": 614.502267716,
+        "audit_violations": 0
+      }
+    },
+    "cpu_ratio_binary_over_original": 0.9740075980267981,
+    "representative_event_comparison": {
+      "equal": 140
+    },
+    "best_verified_event_comparison": {
+      "equal": 140
+    },
+    "score_changes": [],
+    "representative_pattern_changes": [
+      {
+        "index": 101,
+        "shared": 1,
+        "original_only": 0,
+        "binary_only": 1
+      }
+    ],
+    "targeted_family_comparison": [
+      {
+        "index": 101,
+        "shared": 1,
+        "binary_gain": 1
+      },
+      {
+        "index": 11,
+        "shared": 1,
+        "neither": 1
+      },
+      {
+        "index": 64,
+        "shared": 2,
+        "neither": 1
+      }
+    ],
+    "score_scope": "Best saved representative / best verified supplied pattern; these are achievable scores, not global optimality certificates."
+  },
+  "golden": {
+    "changed_cases": [
+      {
+        "index": 691,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 692,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 904,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 937,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 959,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 1093,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 1312,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 1418,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 1447,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 1474,
+        "archived": "recovered",
+        "original": "recovered",
+        "metal_binary": "recovered"
+      },
+      {
+        "index": 1475,
+        "archived": "not_recovered",
+        "original": "not_recovered",
+        "metal_binary": "not_recovered"
+      }
+    ],
+    "coverage_with_unchanged_archives": {
+      "original": {
+        "recovered": 1833,
+        "not_recovered": 17,
+        "unknown": 1
+      },
+      "metal_binary": {
+        "recovered": 1833,
+        "not_recovered": 17,
+        "unknown": 1
+      }
+    },
+    "scope": "Only 11 input-changing Golden cases rerun; other 1840 exact unchanged search problems reuse archived reference checks. No full-Golden fresh timing claim."
+  },
+  "scoring": "Original raw-WBO classify_bonds: decrease >= pair threshold is broken/weakened; increase >= threshold is formed/strengthened. Ordinary 0.5, metal-containing 0.3, inclusive. No separate event bond-floor gate.",
+  "historical_score_caveat": "Older benchmark helper counted graph-floor changes plus order shifts >0.5, without a metal override. Both arms are freshly rescored here; old event totals are not directly comparable.",
+  "analysis_repair": {
+    "reason": "Auxiliary audit skipped no transitions but mistakenly required finalized symmetry on discarded history; correction permits absent groups only outside returned terminal ancestry. Searches and frozen initial driver are unchanged.",
+    "retried_variants": 48,
+    "scope": "Postprocessing only; initial frozen drivers and all saved search results remain unchanged. Failed attempt logs are retained."
+  },
+  "scheduler_accounting": {
+    "command": [
+      "sacct",
+      "-j",
+      "469599,469600,469623",
+      "--noheader",
+      "--parsable2",
+      "--format=JobID%60,State,ExitCode,Elapsed,TotalCPU"
+    ],
+    "tasks": [
+      {
+        "job": "469599_10",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:33",
+        "total_cpu": "00:06.269"
+      },
+      {
+        "job": "469599_28",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:03:17",
+        "total_cpu": "02:50.138"
+      },
+      {
+        "job": "469599_40",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:32",
+        "total_cpu": "00:05.492"
+      },
+      {
+        "job": "469599_47",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:36",
+        "total_cpu": "00:09.801"
+      },
+      {
+        "job": "469599_48",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:36",
+        "total_cpu": "00:09.536"
+      },
+      {
+        "job": "469599_51",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:41",
+        "total_cpu": "00:13.404"
+      },
+      {
+        "job": "469599_52",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:39",
+        "total_cpu": "00:13.180"
+      },
+      {
+        "job": "469599_57",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:31",
+        "total_cpu": "00:05.520"
+      },
+      {
+        "job": "469599_58",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:36",
+        "total_cpu": "00:09.959"
+      },
+      {
+        "job": "469599_59",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:35",
+        "total_cpu": "00:09.482"
+      },
+      {
+        "job": "469599_72",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:33",
+        "total_cpu": "00:07.465"
+      },
+      {
+        "job": "469599_73",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:30",
+        "total_cpu": "00:04.444"
+      },
+      {
+        "job": "469599_135",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:28",
+        "total_cpu": "00:02.559"
+      },
+      {
+        "job": "469599_142",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:31",
+        "total_cpu": "00:05.004"
+      },
+      {
+        "job": "469599_143",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:28",
+        "total_cpu": "00:02.251"
+      },
+      {
+        "job": "469599_144",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:31",
+        "total_cpu": "00:05.225"
+      },
+      {
+        "job": "469599_145",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:29",
+        "total_cpu": "00:02.667"
+      },
+      {
+        "job": "469599_150",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:30",
+        "total_cpu": "00:04.265"
+      },
+      {
+        "job": "469599_153",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:29",
+        "total_cpu": "00:03.061"
+      },
+      {
+        "job": "469599_155",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:31",
+        "total_cpu": "00:04.872"
+      },
+      {
+        "job": "469599_157",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:32",
+        "total_cpu": "00:06.173"
+      },
+      {
+        "job": "469599_159",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:28",
+        "total_cpu": "00:02.307"
+      },
+      {
+        "job": "469599_160",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:09",
+        "total_cpu": "00:07.576"
+      },
+      {
+        "job": "469599_161",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:08",
+        "total_cpu": "00:05.895"
+      },
+      {
+        "job": "469600_10",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:08",
+        "total_cpu": "00:06.175"
+      },
+      {
+        "job": "469600_28",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:02:20",
+        "total_cpu": "02:18.400"
+      },
+      {
+        "job": "469600_40",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:07",
+        "total_cpu": "00:05.437"
+      },
+      {
+        "job": "469600_47",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:11",
+        "total_cpu": "00:09.154"
+      },
+      {
+        "job": "469600_51",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:11",
+        "total_cpu": "00:09.844"
+      },
+      {
+        "job": "469600_52",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:11",
+        "total_cpu": "00:09.646"
+      },
+      {
+        "job": "469600_57",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:06",
+        "total_cpu": "00:05.469"
+      },
+      {
+        "job": "469600_58",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:10",
+        "total_cpu": "00:09.236"
+      },
+      {
+        "job": "469600_72",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:09",
+        "total_cpu": "00:07.434"
+      },
+      {
+        "job": "469600_73",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:06",
+        "total_cpu": "00:04.432"
+      },
+      {
+        "job": "469600_79",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:44",
+        "total_cpu": "00:42.867"
+      },
+      {
+        "job": "469600_99",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:05",
+        "total_cpu": "00:03.709"
+      },
+      {
+        "job": "469600_135",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:04",
+        "total_cpu": "00:02.359"
+      },
+      {
+        "job": "469600_142",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:06",
+        "total_cpu": "00:05.022"
+      },
+      {
+        "job": "469600_143",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:03",
+        "total_cpu": "00:02.257"
+      },
+      {
+        "job": "469600_144",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:07",
+        "total_cpu": "00:05.251"
+      },
+      {
+        "job": "469600_145",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:04",
+        "total_cpu": "00:02.671"
+      },
+      {
+        "job": "469600_150",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:06",
+        "total_cpu": "00:04.268"
+      },
+      {
+        "job": "469600_153",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:05",
+        "total_cpu": "00:03.046"
+      },
+      {
+        "job": "469600_155",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:06",
+        "total_cpu": "00:04.625"
+      },
+      {
+        "job": "469600_157",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:07",
+        "total_cpu": "00:06.097"
+      },
+      {
+        "job": "469600_159",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:03",
+        "total_cpu": "00:02.193"
+      },
+      {
+        "job": "469600_160",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:09",
+        "total_cpu": "00:07.550"
+      },
+      {
+        "job": "469600_161",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:07",
+        "total_cpu": "00:05.904"
+      },
+      {
+        "job": "469623_0",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:03",
+        "total_cpu": "00:01.325"
+      },
+      {
+        "job": "469623_1",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:38",
+        "total_cpu": "00:36.120"
+      },
+      {
+        "job": "469623_2",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "elapsed": "00:00:03",
+        "total_cpu": "00:01.151"
+      }
+    ]
+  },
+  "unchanged_holdout_controls": {
+    "cases": 55,
+    "indices": [
+      11,
+      64,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      59,
+      60,
+      61,
+      62,
+      63,
+      65,
+      66,
+      67,
+      73,
+      74,
+      75,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      130,
+      133,
+      134,
+      135,
+      137,
+      138,
+      139
+    ],
+    "checks": "Identical state/terminal counts, cap flags, full representative counts, lowest representative scores and minimum pattern IDs."
+  },
+  "phase_statuses": {
+    "search": {
+      "outcomes": {
+        "0": 324
+      },
+      "exceptions": []
+    },
+    "analyze": {
+      "outcomes": {
+        "0": 276,
+        "1": 48
+      },
+      "exceptions": [
+        {
+          "slot": 10,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.3680118741467595
+        },
+        {
+          "slot": 10,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 5.211645653471351
+        },
+        {
+          "slot": 28,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 156.27998048160225
+        },
+        {
+          "slot": 28,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 133.97165491990745
+        },
+        {
+          "slot": 40,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.302246688865125
+        },
+        {
+          "slot": 40,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 5.218258607201278
+        },
+        {
+          "slot": 47,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 9.06244951300323
+        },
+        {
+          "slot": 47,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 9.27948253788054
+        },
+        {
+          "slot": 48,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 9.263203267939389
+        },
+        {
+          "slot": 51,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 9.02292141970247
+        },
+        {
+          "slot": 51,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 12.625500432215631
+        },
+        {
+          "slot": 52,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 12.422072477638721
+        },
+        {
+          "slot": 52,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 8.893022852018476
+        },
+        {
+          "slot": 57,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 5.271605247631669
+        },
+        {
+          "slot": 57,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.214594339951873
+        },
+        {
+          "slot": 58,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 9.377367687411606
+        },
+        {
+          "slot": 58,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 9.035220249556005
+        },
+        {
+          "slot": 59,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 9.191113944165409
+        },
+        {
+          "slot": 72,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 6.555946936830878
+        },
+        {
+          "slot": 72,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 6.441823562607169
+        },
+        {
+          "slot": 73,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 3.436050853691995
+        },
+        {
+          "slot": 73,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 3.3079856410622597
+        },
+        {
+          "slot": 79,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 36.45523636136204
+        },
+        {
+          "slot": 99,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 3.246642935089767
+        },
+        {
+          "slot": 135,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 2.455738414078951
+        },
+        {
+          "slot": 135,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 2.3435236550867558
+        },
+        {
+          "slot": 142,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.011493535712361
+        },
+        {
+          "slot": 142,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 4.919816350564361
+        },
+        {
+          "slot": 143,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 2.245876223780215
+        },
+        {
+          "slot": 143,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 2.1884230906143785
+        },
+        {
+          "slot": 144,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.384895276278257
+        },
+        {
+          "slot": 144,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 5.164334870874882
+        },
+        {
+          "slot": 145,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 2.7837962517514825
+        },
+        {
+          "slot": 145,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 2.7020882107317448
+        },
+        {
+          "slot": 150,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 3.8687627213075757
+        },
+        {
+          "slot": 150,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 3.720970061607659
+        },
+        {
+          "slot": 153,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 2.8454455183818936
+        },
+        {
+          "slot": 153,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 2.729378681629896
+        },
+        {
+          "slot": 155,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 4.474138612858951
+        },
+        {
+          "slot": 155,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 4.302082592621446
+        },
+        {
+          "slot": 157,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 5.6516213826835155
+        },
+        {
+          "slot": 157,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.531929184682667
+        },
+        {
+          "slot": 159,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 2.237830894999206
+        },
+        {
+          "slot": 159,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 2.2198873041197658
+        },
+        {
+          "slot": 160,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 7.3580347541719675
+        },
+        {
+          "slot": 160,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 7.3045889642089605
+        },
+        {
+          "slot": 161,
+          "variant": "metal_binary",
+          "exit": 1,
+          "wall_including_startup_io": 5.926779685541987
+        },
+        {
+          "slot": 161,
+          "variant": "original",
+          "exit": 1,
+          "wall_including_startup_io": 5.886956611648202
+        }
+      ]
+    }
+  },
+  "input_conversion": {
+    "cpu_seconds": 0.3862076230000038,
+    "wall_seconds": 0.38632092997431755,
+    "cases": 140,
+    "scope": "One post-run measurement of the same conversion, excluding raw input loading. Not included in mapping CPU."
+  },
+  "source_and_input_hashes_verified": true
+}

@@ -1,0 +1,345 @@
+{
+  "dataset": "holdout",
+  "index": 101,
+  "direction": "R_to_P",
+  "patterns": {
+    "a995040455d3182ef09bed4a5cc3d83189852c47da73821320d34197822b2b01": {
+      "id": "a995040455d3182ef09bed4a5cc3d83189852c47da73821320d34197822b2b01",
+      "mapping": [
+        8,
+        15,
+        18,
+        2,
+        16,
+        17,
+        13,
+        3,
+        14,
+        4,
+        5,
+        0,
+        1,
+        6,
+        7,
+        19,
+        20,
+        21,
+        10,
+        11,
+        12,
+        9,
+        27,
+        22,
+        25,
+        26,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            21,
+            22
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            22
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4
+    },
+    "36486cdbf7fa432805bc1d0fd4c5fd363fdd43df5ee6a3dc691b8ce80fd40d99": {
+      "id": "36486cdbf7fa432805bc1d0fd4c5fd363fdd43df5ee6a3dc691b8ce80fd40d99",
+      "mapping": [
+        8,
+        9,
+        18,
+        2,
+        17,
+        16,
+        6,
+        1,
+        7,
+        0,
+        5,
+        4,
+        3,
+        13,
+        14,
+        21,
+        20,
+        19,
+        10,
+        11,
+        12,
+        15,
+        27,
+        22,
+        25,
+        26,
+        23,
+        24
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            18,
+            21
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            21
+          ],
+          [
+            1,
+            18
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4
+    }
+  },
+  "variants": {
+    "original": {
+      "results": {
+        "a995040455d3182ef09bed4a5cc3d83189852c47da73821320d34197822b2b01": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "a995040455d3182ef09bed4a5cc3d83189852c47da73821320d34197822b2b01",
+            "mapping": [
+              8,
+              18,
+              15,
+              2,
+              17,
+              16,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              13,
+              14,
+              21,
+              20,
+              19,
+              11,
+              10,
+              9,
+              12,
+              22,
+              27,
+              24,
+              23,
+              25,
+              26
+            ],
+            "events": {
+              "broken": [
+                [
+                  0,
+                  2
+                ],
+                [
+                  20,
+                  23
+                ]
+              ],
+              "formed": [
+                [
+                  0,
+                  20
+                ],
+                [
+                  2,
+                  23
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        },
+        "36486cdbf7fa432805bc1d0fd4c5fd363fdd43df5ee6a3dc691b8ce80fd40d99": {
+          "status": "excluded_from_saved_families"
+        }
+      },
+      "queries": 0,
+      "encoded": 0,
+      "paths_scanned": 0,
+      "exhausted": true,
+      "elapsed": 0.0135355768725276,
+      "scope": "Supplied patterns only; no enumeration of all unseen patterns or global optimum claim."
+    },
+    "metal_binary": {
+      "results": {
+        "a995040455d3182ef09bed4a5cc3d83189852c47da73821320d34197822b2b01": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "a995040455d3182ef09bed4a5cc3d83189852c47da73821320d34197822b2b01",
+            "mapping": [
+              8,
+              18,
+              15,
+              2,
+              17,
+              16,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              13,
+              14,
+              21,
+              20,
+              19,
+              11,
+              10,
+              9,
+              12,
+              22,
+              27,
+              23,
+              24,
+              25,
+              26
+            ],
+            "events": {
+              "broken": [
+                [
+                  0,
+                  2
+                ],
+                [
+                  20,
+                  23
+                ]
+              ],
+              "formed": [
+                [
+                  0,
+                  20
+                ],
+                [
+                  2,
+                  23
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        },
+        "36486cdbf7fa432805bc1d0fd4c5fd363fdd43df5ee6a3dc691b8ce80fd40d99": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "36486cdbf7fa432805bc1d0fd4c5fd363fdd43df5ee6a3dc691b8ce80fd40d99",
+            "mapping": [
+              8,
+              18,
+              9,
+              2,
+              17,
+              16,
+              6,
+              1,
+              7,
+              0,
+              5,
+              4,
+              3,
+              13,
+              14,
+              21,
+              20,
+              19,
+              11,
+              10,
+              15,
+              12,
+              22,
+              27,
+              24,
+              23,
+              26,
+              25
+            ],
+            "events": {
+              "broken": [
+                [
+                  0,
+                  2
+                ],
+                [
+                  19,
+                  20
+                ]
+              ],
+              "formed": [
+                [
+                  0,
+                  20
+                ],
+                [
+                  2,
+                  19
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        }
+      },
+      "queries": 0,
+      "encoded": 0,
+      "paths_scanned": 0,
+      "exhausted": true,
+      "elapsed": 0.00028435327112674713,
+      "scope": "Supplied patterns only; no enumeration of all unseen patterns or global optimum claim."
+    }
+  },
+  "complete": true
+}

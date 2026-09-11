@@ -1,0 +1,402 @@
+{
+  "dataset": "holdout",
+  "index": 64,
+  "direction": "R_to_P",
+  "patterns": {
+    "35186fdfe18707c29e4ff933945c030e2f4f99b9ed45ce92a6ec09784da7f130": {
+      "id": "35186fdfe18707c29e4ff933945c030e2f4f99b9ed45ce92a6ec09784da7f130",
+      "mapping": [
+        0,
+        14,
+        5,
+        7,
+        15,
+        10,
+        4,
+        9,
+        3,
+        8,
+        2,
+        11,
+        1,
+        6,
+        12,
+        13,
+        16,
+        17
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            6
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            6
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4
+    },
+    "2c75fb6fbe09768d62b4228941fbc27d405ff5c04ce72d695bb44efb8655b1f0": {
+      "id": "2c75fb6fbe09768d62b4228941fbc27d405ff5c04ce72d695bb44efb8655b1f0",
+      "mapping": [
+        4,
+        14,
+        5,
+        9,
+        15,
+        10,
+        0,
+        7,
+        1,
+        6,
+        2,
+        11,
+        3,
+        8,
+        12,
+        13,
+        16,
+        17
+      ],
+      "events": {
+        "broken": [
+          [
+            8,
+            14
+          ],
+          [
+            10,
+            12
+          ]
+        ],
+        "formed": [
+          [
+            8,
+            10
+          ],
+          [
+            12,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4
+    },
+    "eea74d6ca30777b58969b7c103b974ca6164caaef4d959da9a42d25c54fd6276": {
+      "id": "eea74d6ca30777b58969b7c103b974ca6164caaef4d959da9a42d25c54fd6276",
+      "mapping": [
+        12,
+        3,
+        2,
+        13,
+        8,
+        11,
+        1,
+        6,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            16
+          ],
+          [
+            6,
+            8
+          ]
+        ],
+        "formed": [
+          [
+            1,
+            8
+          ],
+          [
+            6,
+            16
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4
+    }
+  },
+  "variants": {
+    "original": {
+      "results": {
+        "35186fdfe18707c29e4ff933945c030e2f4f99b9ed45ce92a6ec09784da7f130": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "35186fdfe18707c29e4ff933945c030e2f4f99b9ed45ce92a6ec09784da7f130",
+            "mapping": [
+              12,
+              1,
+              2,
+              13,
+              6,
+              11,
+              3,
+              8,
+              4,
+              9,
+              14,
+              15,
+              16,
+              17,
+              5,
+              10,
+              0,
+              7
+            ],
+            "events": {
+              "broken": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  2,
+                  6
+                ]
+              ],
+              "formed": [
+                [
+                  0,
+                  6
+                ],
+                [
+                  1,
+                  2
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        },
+        "2c75fb6fbe09768d62b4228941fbc27d405ff5c04ce72d695bb44efb8655b1f0": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "2c75fb6fbe09768d62b4228941fbc27d405ff5c04ce72d695bb44efb8655b1f0",
+            "mapping": [
+              12,
+              3,
+              2,
+              13,
+              8,
+              11,
+              1,
+              6,
+              0,
+              7,
+              14,
+              15,
+              16,
+              17,
+              5,
+              10,
+              4,
+              9
+            ],
+            "events": {
+              "broken": [
+                [
+                  8,
+                  10
+                ],
+                [
+                  14,
+                  16
+                ]
+              ],
+              "formed": [
+                [
+                  8,
+                  14
+                ],
+                [
+                  10,
+                  16
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        },
+        "eea74d6ca30777b58969b7c103b974ca6164caaef4d959da9a42d25c54fd6276": {
+          "status": "excluded_from_saved_families"
+        }
+      },
+      "queries": 0,
+      "encoded": 0,
+      "paths_scanned": 0,
+      "exhausted": true,
+      "elapsed": 0.00369282066822052,
+      "scope": "Supplied patterns only; no enumeration of all unseen patterns or global optimum claim."
+    },
+    "metal_binary": {
+      "results": {
+        "35186fdfe18707c29e4ff933945c030e2f4f99b9ed45ce92a6ec09784da7f130": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "35186fdfe18707c29e4ff933945c030e2f4f99b9ed45ce92a6ec09784da7f130",
+            "mapping": [
+              12,
+              1,
+              2,
+              13,
+              6,
+              11,
+              3,
+              8,
+              4,
+              9,
+              14,
+              15,
+              16,
+              17,
+              5,
+              10,
+              0,
+              7
+            ],
+            "events": {
+              "broken": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  2,
+                  6
+                ]
+              ],
+              "formed": [
+                [
+                  0,
+                  6
+                ],
+                [
+                  1,
+                  2
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        },
+        "2c75fb6fbe09768d62b4228941fbc27d405ff5c04ce72d695bb44efb8655b1f0": {
+          "status": "represented",
+          "method": "saved_representative",
+          "witness": {
+            "id": "2c75fb6fbe09768d62b4228941fbc27d405ff5c04ce72d695bb44efb8655b1f0",
+            "mapping": [
+              12,
+              3,
+              2,
+              13,
+              8,
+              11,
+              1,
+              6,
+              0,
+              7,
+              14,
+              15,
+              16,
+              17,
+              5,
+              10,
+              4,
+              9
+            ],
+            "events": {
+              "broken": [
+                [
+                  8,
+                  10
+                ],
+                [
+                  14,
+                  16
+                ]
+              ],
+              "formed": [
+                [
+                  8,
+                  14
+                ],
+                [
+                  10,
+                  16
+                ]
+              ]
+            },
+            "counts": {
+              "broken": 2,
+              "formed": 2
+            },
+            "total": 4
+          }
+        },
+        "eea74d6ca30777b58969b7c103b974ca6164caaef4d959da9a42d25c54fd6276": {
+          "status": "excluded_from_saved_families"
+        }
+      },
+      "queries": 0,
+      "encoded": 0,
+      "paths_scanned": 0,
+      "exhausted": true,
+      "elapsed": 0.003501112572848797,
+      "scope": "Supplied patterns only; no enumeration of all unseen patterns or global optimum claim."
+    }
+  },
+  "complete": true
+}

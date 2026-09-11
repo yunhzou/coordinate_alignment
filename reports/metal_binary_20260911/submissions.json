@@ -1,0 +1,43 @@
+[
+  {
+    "phase": "search",
+    "job": "469275",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--nodelist=bosque83,bosque84",
+      "--nodes=1",
+      "--cpus-per-task=8",
+      "--mem=16G",
+      "--time=00:15:00",
+      "--no-requeue",
+      "--array=0-161%16",
+      "--job-name=metal_binary_search",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/status/search_%A_%a.out",
+      "--wrap",
+      "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/engine/bench PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/metal_binary_benchmark.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911 --phase search --slot \"$SLURM_ARRAY_TASK_ID\""
+    ]
+  },
+  {
+    "phase": "analyze",
+    "job": "469276",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=cpunodes_nia",
+      "--nodelist=bosque83,bosque84",
+      "--nodes=1",
+      "--cpus-per-task=1",
+      "--mem=16G",
+      "--time=00:15:00",
+      "--no-requeue",
+      "--array=0-161%32",
+      "--job-name=metal_binary_analyze",
+      "--output=/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/status/analyze_%A_%a.out",
+      "--dependency=afterany:469275",
+      "--wrap",
+      "env PYTHONPATH=/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/original/src:/project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/engine/bench PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /project/yunhengzou/coordinate_alignment/.venv/bin/python /project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911/metal_binary_benchmark.py worker --run /project/yunhengzou/coordinate_alignment/aam_benchmarks/metal_binary_20260911 --phase analyze --slot \"$SLURM_ARRAY_TASK_ID\""
+    ]
+  }
+]
