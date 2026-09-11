@@ -10,6 +10,7 @@ raw runs are preserved in place; this index does not merge experimental protocol
 Ten seeds recover case 101's missing four-event pattern. Cases 11 and 64 remain
 excluded from the saved 30-seed families; no fresh run hits the branch cap.
 This is a selected-case diagnostic, with paired CPU timings, not a full rerun.
+[Native 3D R/P viewer: detected, missing and recovered alternatives](holdout_missing_pattern_seeds_20260910/viewer.html).
 
 [Forward-only elementary steps: scores, alternatives and mapping time](holdout_forward_cap1000_seed1_20260910/README.md)
 — reactant → product only, as requested for the elementary-step comparison.

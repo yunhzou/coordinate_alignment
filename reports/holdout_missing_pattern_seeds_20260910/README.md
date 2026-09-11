@@ -6,6 +6,29 @@ benchmark. Each selected case uses 1, 3, 10 and 30 seed orders per cut, with cap
 1000, tolerance 1.0, explicit H, the original uncut/single-edge sweep and
 **reactant → product only**. The stable frozen engine remains unchanged.
 
+## Inspect the detected and missing patterns in 3D
+
+[Open the native 3D R/P viewer](viewer.html), or download the HTML and open it
+locally. It uses the existing R/P comparison style, original endpoint geometry,
+linked rotation, atom selection and colored bond-event overlays.
+
+Choose case **11, 64 or 101**, then switch between **AAM detected · 1 seed** and
+**Missing SLAP pattern**. The witness selector includes both one-seed AAM
+alternatives for case 64. For case 101, **AAM recovered · 10 seeds** shows the
+actual recovered witness; the selector also includes its thirty-seed witness.
+The recovered mapping can use different atom labels while representing the same
+symmetry-normalized pattern as SLAP. The seed strip always refers to the specific
+missing pattern, not all alternatives at higher seed counts.
+
+Use **Focus reaction center** for a close view, and click any event row to trace
+its atoms between R and P. Broken bonds are highlighted on R, formed bonds on P,
+and strengthened/weakened bonds on both. Turning off **All H** hides spectator
+hydrogens while retaining event H. The event table gives exact atom pairs and
+WBO values. All nine displayed witnesses were independently rescored, and the
+viewer checks original geometry, mapped identities, controls and offline loading.
+`viewer_data.json`, `viewer_provenance.json` and `viewer_validation.json` provide
+the displayed data and verification records. This viewer required no new search.
+
 ## Recovery of the specific missing patterns
 
 | Case | Name | Target event score | 1 seed | 3 seeds | 10 seeds | 30 seeds |

@@ -4,11 +4,17 @@ Results and exact cluster locations: [paper index](../reports/README.md).
 Scripts remain at their original paths so saved commands/imports keep working.
 No benchmark needs rerunning merely to inspect saved mappings or metrics.
 
+For mapping inspection, Yunheng prefers the existing **native 3D R/P or TS
+rendering style**, with endpoint geometry, linked rotation, atom correspondence
+and bond-event overlays. See `elementary_comparison_viewer.html` and the focused
+`missing_patterns_viewer.html` for that presentation.
+
 ## Maintained experiment entry points
 
 | Script | Responsibility |
 |---|---|
 | `holdout_missing_pattern_seeds.py` / `publish_missing_pattern_seeds.py` | Targeted seed-budget diagnostic on cases 11, 64 and 101; frozen search, exact target recovery and paired CPU |
+| `build_missing_patterns_viewer.py` / `check_missing_patterns_viewer.py` | Existing 3D R/P style for the three omissions: all one-seed AAM alternatives, missing SLAP patterns and recovered AAM witnesses; no new search |
 | `certify_heavy_event_exclusion.py` | Necessary-condition exclusion using invariant broken/formed heavy-bond patterns, checked against positive controls |
 | `holdout_forward_analysis.py` | Forward-only elementary-step scores, saved directional timings and alternative-family checks |
 | `publish_holdout_forward_analysis.py` | Validate forward provenance; publish score, CPU and alternative comparisons with an offline viewer |
