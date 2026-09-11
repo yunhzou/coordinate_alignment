@@ -21,6 +21,10 @@ remain 2D where the evidence has no native geometry; they use the same reaction
 style. Catalog layouts retain their existing result-navigation behavior.
 Different layouts and chemical highlight colors are not independent skins.
 
+Bond-event overlays use **red for breaking or weakening** and **green for forming
+or strengthening**, always in the R → P direction. Do not add separate colors for
+bond-order changes. Event names and numerical WBO changes remain in the details.
+
 ## Saved comparisons
 
 The detailed seed report and browser validation below are maintained on
