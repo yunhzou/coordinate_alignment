@@ -3,6 +3,8 @@
 Distance is literal heavy-atom pair disagreement, not family or symmetry distance.
 An optional reactant subset must occupy its reference target set collectively.
 """
+
+from rxn_core.viewers import style_document
 import argparse
 import ast
 import colorsys
@@ -110,6 +112,7 @@ def main(args):
         'differences':differences, 'required_source_map_labels':args.subset,
         'required_complement_map_labels':args.complement})
     template = Path(__file__).with_name('golden_remaining_template.html').read_text()
+    template=style_document(template, layout='golden_remaining')
     template = template.replace('21 unresolved cases • saved search results only • no reruns or reference-guided results inserted',
         'Post-hoc reference-nearest saved representative • no AAM rerun • not a top-ranked prediction')
     template = template.replace('/21', '/${cases.length}')

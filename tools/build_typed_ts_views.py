@@ -2,6 +2,8 @@
 """Build self-contained R/P plus ranked initial-guess viewers."""
 from __future__ import annotations
 
+from rxn_core.viewers import viewer_style
+
 import argparse
 import json
 from pathlib import Path
@@ -39,6 +41,7 @@ def _mechanisms(document):
     return mechanisms
 
 
+@viewer_style('reaction', 'typed_ts')
 def _html(case, elements_r, xyz_r, elements_p, xyz_p, document):
     mechanisms = _mechanisms(document)
     targets = {int(item["iteration"]): item
@@ -77,27 +80,13 @@ def _html(case, elements_r, xyz_r, elements_p, xyz_p, document):
                / "3Dmol-min.js").read_text()
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{case} — TS ranking</title><style>
-*{{box-sizing:border-box}}html,body{{height:100%;margin:0;font:13px system-ui;color:#172033;background:#eef2f7}}
-body{{display:grid;grid-template-rows:auto minmax(320px,52vh) 1fr;overflow:hidden}}
-header{{background:#172033;color:#fff;padding:9px 14px;display:flex;gap:15px;align-items:center}}
-h1{{font-size:16px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}select{{padding:5px}}
-#events{{color:#dbe7ff;margin-left:auto}}#views{{display:grid;grid-template-columns:1fr 1fr 1fr;min-height:0}}
-.panel{{position:relative;border-right:1px solid #cbd5e1;background:#111}}.panel:last-child{{border:0}}
-.label{{position:absolute;z-index:2;color:#fff;background:#111b;padding:6px 9px;border-radius:0 0 5px 0}}
-.viewer{{position:absolute;inset:0}}#lower{{min-height:0;overflow:auto;background:white;border-top:1px solid #cbd5e1}}
-table{{border-collapse:collapse;width:100%}}th{{position:sticky;top:0;background:#e8eef7;z-index:2}}
-th,td{{padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap}}
-th:nth-child(2),td:nth-child(2){{text-align:left}}tbody tr{{cursor:pointer}}tbody tr:hover{{background:#edf5ff}}
-tbody tr.active{{background:#cfe5ff}}.score{{font-weight:700}}.missing{{color:#9a3412}}
-@media(max-width:850px){{body{{grid-template-rows:auto minmax(500px,65vh) 1fr}}#views{{grid-template-columns:1fr;grid-template-rows:repeat(3,1fr)}}}}
-</style><script>{library}</script></head><body>
+<title>{case} — TS ranking</title><script>{library}</script></head><body>
 <header><h1>{case}</h1><label>Mechanism <select id="mechanism"></select></label><span id="events"></span></header>
 <section id="views"><div class="panel"><b class="label">Reactant</b><div id="r" class="viewer"></div></div>
 <div class="panel"><b class="label">Product aligned</b><div id="p" class="viewer"></div></div>
 <div class="panel"><b class="label" id="iglabel">Initial guess</b><div id="ig" class="viewer"></div></div></section>
 <section id="lower"><table><thead><tr><th>Rank</th><th>Guess</th><th>Score S</th><th>Mode overlap β</th><th>WBO progress</th><th>Imag. freq.</th><th>Endpoint support</th><th>Core candidates</th></tr></thead><tbody id="rows"></tbody></table></section>
-<script>const DATA={payload};const viewers={{r:$3Dmol.createViewer('r',{{backgroundColor:'#111'}}),p:$3Dmol.createViewer('p',{{backgroundColor:'#111'}}),ig:$3Dmol.createViewer('ig',{{backgroundColor:'#111'}})}};
+<script>const DATA={payload};const viewers={{r:$3Dmol.createViewer('r',{{backgroundColor:'white'}}),p:$3Dmol.createViewer('p',{{backgroundColor:'white'}}),ig:$3Dmol.createViewer('ig',{{backgroundColor:'white'}})}};
 let mech,activeIteration=null;const select=document.getElementById('mechanism'),rows=document.getElementById('rows');
 DATA.mechanisms.forEach(m=>{{const o=document.createElement('option');o.value=m.id;o.textContent=m.id;select.appendChild(o)}});
 function draw(viewer,xyz,core){{viewer.removeAllModels();viewer.addModel(xyz,'xyz');viewer.setStyle({{}},{{stick:{{radius:.14}},sphere:{{scale:.25}}}});if(core&&core.length)viewer.addStyle({{index:core}},{{stick:{{color:'#ff8c00',radius:.22}},sphere:{{color:'#ff8c00',scale:.42}}}});viewer.zoomTo();viewer.render()}}

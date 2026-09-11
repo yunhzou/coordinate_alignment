@@ -42,7 +42,7 @@ Repository = "https://github.com/yunhzou/coordinate_alignment"
 where = ["src"]
 
 [tool.setuptools.package-data]
-rxn_core = ["static/*.js", "static/*.html", "static/LICENSES/*"]
+rxn_core = ["static/*.js", "static/*.html", "static/*.css", "static/LICENSES/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -6,15 +6,16 @@ reduce capped searches, but also lose one historical alternative.** This is an
 exploratory comparison on three real cached structures, not curated TS accuracy.
 
 Open [the offline viewer](viewer.html). It uses actual saved full-atom mappings,
-original XYZ coordinates and WBO matrices. Switch the two method buttons over
-the same source and TS geometries; enable atom labels or click an event/atom.
-Identity colors represent source atom identities, not matched fragments.
+original XYZ coordinates and WBO matrices. The shared original white R/P/TS
+viewer uses yellow mechanism buttons to select a saved mapping, with atom labels,
+event overlays and an expandable event/witness table. R-order/alignment can be
+switched off to inspect the native P coordinates.
 The first selection exposes the concrete oxygen-role contrast described below.
 
 Full viewer path:
 
 ```text
-/h/399/yunhengzou/coordinate_alignment/reports/real_ts_comparison_20260909/viewer.html
+/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/real_ts_comparison_20260909/viewer.html
 ```
 
 ## 1. Best bond-event counts, including every explicit hydrogen
@@ -190,7 +191,7 @@ See [the pinned upstream core](https://github.com/shin1koda/slap-mapper/blob/ea2
 checks that SLAP fingerprint correlations and their returned alternatives survive
 the scoring adapter. An independent scalar all-pairs calculation verified 5,581
 full-H witnesses and all 50 viewer records. Both inline scripts passed JavaScript
-syntax checks. A live-browser visual inspection was not performed.
+syntax checks. These checks describe the original publication. Shared-style presentation checks are recorded in `docs/viewer-validation/checks.json`.
 
 Use `bench/compare_real_ts_mappings.py --help` for preparation/submission and
 saved-result query commands. `bench/score_real_ts_families.py` works only on saved

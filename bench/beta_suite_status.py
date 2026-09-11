@@ -1,4 +1,6 @@
 """Build a download index and concise progress snapshot for a beta case suite."""
+
+from rxn_core.viewers import style_document
 import argparse
 from html import escape
 import json
@@ -33,13 +35,13 @@ def update(root):
         body.append(f'<tr><td>{escape(row["case"])}</td><td>{escape(row["stage"])}</td>'
             f'<td>{row["seconds"]/60:.1f} min</td><td>{escape(progress)}</td><td>{link}</td></tr>')
     html='''<!doctype html><meta charset="utf-8"><title>Eight beta case studies</title>
-<style>body{font:15px system-ui;margin:32px;color:#172033}td,th{text-align:left;padding:12px;border-bottom:1px solid #ddd}a{color:#1767be}</style>
+
 <h1>Eight case studies · current beta workflow</h1><p>155,305 bank structures. Explicit H · tolerance 1.0 · branch cap 100 · no sweep.
 Pareto retention versus structural changes; equal scores prefer fewer fragments. Each viewer includes a clickable score plot and assembled R/P mappings.</p>
 <p>Independent reference validation is labelled separately from blind recommendations. Case 5 uses the corrected nitrile isomer. Case 5 matching is reused; the other seven scans are fresh.</p>
 <p style="color:#b42318">Case 1: blind processing exhausted its 12 GB allocation; its HTML shows only an independently validated reference assembly, not a successful blind recommendation.</p>
 <table><tr><th>Target</th><th>Status</th><th>Elapsed (incl. queue after start)</th><th>Completed scan shards</th><th>Viewer</th></tr>'''+''.join(body)+'</table>'
-    (root/'index.html').write_text(html)
+    (root/'index.html').write_text(style_document(html, 'catalog', 'beta_status'))
     (root/'progress.json').write_text(json.dumps(rows,indent=2)+'\n')
     print(json.dumps(rows),flush=True)
     return all(r['stage'] in ('complete','failed') for r in rows)

@@ -1,4 +1,6 @@
 """Checkpointed Golden campaign. Search and evaluation are independent jobs."""
+
+from rxn_core.viewers import style_document
 import argparse
 from dataclasses import asdict
 import gzip
@@ -250,10 +252,10 @@ def status(args):
             '<td><a href="'+str(row['index'])+'/evaluation.json">scores</a> · <a href="'+
             str(row['index'])+'/input.json">input</a></td></tr>')
     page='<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="30"><title>Golden AAM progress</title>'
-    page+='<style>body{font:14px system-ui;margin:24px}td,th{padding:7px;border-bottom:1px solid #ddd;text-align:left}pre{background:#f1f5f9;padding:16px}</style>'
+    page+=''
     page+='<h1>Golden AAM · '+str(len(manifest['records']))+' reactions</h1><p>Reference recovery ≠ top-1. Coverage is achieved by one returned mapping, not a union of incompatible branches. Search/evaluation failures remain in the denominator.</p>'
     page+='<pre>'+escape(json.dumps(report,indent=2))+'</pre><table><tr><th>Index</th><th>Stage</th><th>Reference recovered</th><th>Top-1 representative</th><th>P heavy coverage</th><th>Cap hit</th><th>Incomplete search</th><th>Evidence</th></tr>'+''.join(lines)+'</table>'
-    (args.run/'index.html').write_text(page)
+    (args.run/'index.html').write_text(style_document(page, 'catalog', 'campaign_status'))
 
 
 def main():

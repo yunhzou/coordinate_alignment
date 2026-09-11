@@ -1,6 +1,7 @@
 # 140 elementary steps: matching tolerance 1.0
 
 [Offline AAM/SLAP viewer — all 140 cases](viewer.html). Opens on TS_11 (case135).
+The shared original white R/P/TS viewer uses yellow buttons to select saved witnesses.
 Case123 explicitly displays its separate cap200 follow-up. No ground-truth
 mapping labels exist for this holdout; event counts are not chemical accuracy.
 
@@ -107,12 +108,13 @@ postprocessing sums are neither campaign wall time nor mapper-search CPU time.
 
 Entry points: `bench/elementary_tolerance_ab.py` (prepare, submit, analyze,
 summarize, cap_followup), existing comparison/family-query scripts, and
-`bench/build_elementary_comparison_viewer.py`. `evidence.tar.gz` contains compact
+`bench/build_elementary_comparison_data.py` (data export) and
+`tools/render_mapping_comparison.py` (shared original R/P/TS presentation). `evidence.tar.gz` contains compact
 per-case scores/mappings, summaries and run provenance; full AAM checkpoints
 remain on the cluster. Old tolerance0.5 artifacts were not overwritten.
 
 ```text
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909
 /project/yunhengzou/coordinate_alignment/aam_benchmarks/elementary140_tol1_20260909/case123_cap200
-/h/399/yunhengzou/coordinate_alignment/reports/elementary140_tol1_20260909/viewer.html
+/project/yunhengzou/coordinate_alignment/slap_sweep_worktree_20260910/reports/elementary140_tol1_20260909/viewer.html
 ```

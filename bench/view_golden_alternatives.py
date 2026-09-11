@@ -1,4 +1,6 @@
 """Browse every chemical class of saved representative mappings, without search."""
+
+from rxn_core.viewers import style_document
 import argparse
 from collections import Counter
 from dataclasses import asdict
@@ -176,11 +178,11 @@ def build(source,audit,index,output,*,direction=None,pattern_seconds=0,path_seco
             'Ranks are provisional until extraction completes. Reference labels are checked only after extraction.</p>')
         page=page.replace(f'<b>{len(classes)} chemical-equivalence classes</b>',
             f'<b>{len(classes)} displayed candidates (preserved representatives + extracted patterns)</b>')
-    page+='''<style>.class-row,.class-point{cursor:pointer}.class-row:hover{background:#daeafa}.class-point:hover circle{stroke:#e69f00;stroke-width:4}.overview{border:1px solid #ccd5dd;padding:18px}.class-active{background:#d1f0df}</style>
+    page+='''
 <script>document.querySelectorAll('[data-choice]').forEach(el=>{function choose(){mode.selectedIndex=Number(el.dataset.choice);render();document.querySelectorAll('.class-active').forEach(x=>x.classList.remove('class-active'));el.classList.add('class-active');document.querySelector('.controls').scrollIntoView({behavior:'smooth',block:'start'});}el.onclick=choose;el.onkeydown=e=>{if(e.key==='Enter')choose();};});</script>'''
     write_started=time.perf_counter()
     save(out/'mapping.json',payload);save(out/'classes.json',classes)
-    (out/'viewer.html').write_text(page)
+    (out/'viewer.html').write_text(style_document(page, layout='golden_mapping'))
     artifact_writing_seconds=time.perf_counter()-write_started
     summary=dict(index=index,terminals=len(aam.graph.terminals),raw_heavy=len(heavy_relations),classes=len(classes),
         representative_reference_ranks=[c['rank'] for c in classes if c['reference_equivalent']],

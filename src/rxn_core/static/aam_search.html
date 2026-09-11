@@ -1,11 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><title>AAM search graph</title>
-<style>
-body{margin:0;background:#10151d;color:#e8edf4;font:14px system-ui}header{padding:14px;background:#1e2938}
-select,button,input{margin:4px}#graph{overflow:auto;height:190px;border-bottom:1px solid #526071}
-#panels{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 350px);min-height:280px}
-.panel{position:relative}.viewer{position:absolute;inset:0}.label{position:absolute;z-index:2;padding:8px}
-#status,#legend{padding:8px 14px}circle{cursor:pointer}#notice{color:#ffc078}
-</style><script>__LIBRARY__</script></head><body>
+<script>__LIBRARY__</script></head><body>
 <header><b>Recorded AAM fragment decisions</b> <select id="context"></select>
 <select id="terminal"></select><button id="history">Next recorded history</button>
 <br><button id="play">Play / pause</button><input id="step" type="range" min="0" value="0">
@@ -22,7 +16,7 @@ const slider=document.getElementById('step'),status=document.getElementById('sta
 const incoming=g.states.map(()=>[]),roots=new Set(g.roots);
 g.transitions.forEach(e=>incoming[e.target].push(e));
 let selected=[],iterator=null,timer=null;
-const rv=$3Dmol.createViewer('r',{backgroundColor:'#10151d'}),pv=$3Dmol.createViewer('p',{backgroundColor:'#10151d'});
+const rv=$3Dmol.createViewer('r',{backgroundColor:'white'}),pv=$3Dmol.createViewer('p',{backgroundColor:'white'});
 function atoms(endpoint){return endpoint.elements.map((elem,i)=>{
   const bonds=[],orders=[];endpoint.wbo[i].forEach((w,j)=>{if(i!==j&&w>=data.config.graph_floor){bonds.push(j);orders.push(Math.max(1,Math.round(w)))}});
   return {elem,serial:i,index:i,x:endpoint.coordinates[i][0],y:endpoint.coordinates[i][1],z:endpoint.coordinates[i][2],bonds,bondOrder:orders};
@@ -66,7 +60,7 @@ function graphView(){
   for(const e of edges){const a=pos.get(e.source),b=pos.get(e.target),on=selected.includes(e.id);
     svg+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+(on?'#f0b558':'#526071')+'" stroke-width="'+(on?3:1)+'"'+(e.match?'':' stroke-dasharray="4 3"')+'/>';}
   for(const n of nodes){const p=pos.get(n.id),cap=g.stops.some(s=>s.state===n.id&&s.reason==='capped');
-    svg+='<circle data-node="'+n.id+'" cx="'+p[0]+'" cy="'+p[1]+'" r="12" fill="'+(cap?'#be4957':'#306d93')+'"/><text x="'+(p[0]+17)+'" y="'+(p[1]+4)+'" fill="#eee" font-size="11">'+n.id+' ('+n.mapping.length+')</text>';}
+    svg+='<circle data-node="'+n.id+'" cx="'+p[0]+'" cy="'+p[1]+'" r="12" fill="'+(cap?'#be4957':'#306d93')+'"/><text x="'+(p[0]+17)+'" y="'+(p[1]+4)+'" fill="#222" font-size="11">'+n.id+' ('+n.mapping.length+')</text>';}
   document.getElementById('graph').innerHTML=svg+'</svg>';
   document.querySelectorAll('[data-node]').forEach(circle=>circle.onclick=()=>{
     const node=circle.dataset.node;
