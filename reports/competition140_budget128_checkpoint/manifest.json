@@ -1,0 +1,574 @@
+{
+  "budget": 128,
+  "workers": 4,
+  "hard_case_seconds": 300,
+  "soft_search_seconds": 270,
+  "per_worker_mib": 3072,
+  "total_workers_mib": 8192,
+  "system_reserve_mib": 6144,
+  "source": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/work/fragment_competition_optimized.py",
+  "sha256": "8fa758897afb688e68128a52f4e8aa99a0ea8d3e1a987c1efd257e8b4cafc66b",
+  "inputs": {
+    "0": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case0/cuts/aam.pkl.gz",
+      "sha256": "cfda94967056e0adfbac934862c9b35b77cb6f9bde329c996c883ff097a1e1f9"
+    },
+    "1": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case1/cuts/aam.pkl.gz",
+      "sha256": "df2032e46737e8cc94ba7606b91bf5b75310388449109eadd771977d7fedcfef"
+    },
+    "2": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case2/cuts/aam.pkl.gz",
+      "sha256": "4e9db43be371011a1892aff9b242ecf7a0d9fe4b5e432ef839b0e3fe04274fee"
+    },
+    "3": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case3/cuts/aam.pkl.gz",
+      "sha256": "fb40d63abde87c6017a1e38399ee7882175f41d465b212a4fdd8eb17aa1ff7a4"
+    },
+    "4": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case4/cuts/aam.pkl.gz",
+      "sha256": "8dce2e2bb3717d0e9e4e1bddada22bf1a0409a3c64938b17b5e014831e3e3500"
+    },
+    "5": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case5/cuts/aam.pkl.gz",
+      "sha256": "d504fcabf497f1bdc0d550ff5e68b3507707d95ebfc38a81f5879b284a204718"
+    },
+    "6": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case6/cuts/aam.pkl.gz",
+      "sha256": "daf44972f23706084efc7d09da726a24a56803488ef666c0943782e25073b116"
+    },
+    "7": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case7/cuts/aam.pkl.gz",
+      "sha256": "c561e9e3396e4a08df01c76109b0486de7e27dd5f256563f7b2337ade811c521"
+    },
+    "8": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case8/cuts/aam.pkl.gz",
+      "sha256": "3b238c494ab6103f502b265b4273c78a81f17bff6c4b56e47342e12f734abedb"
+    },
+    "9": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case9/cuts/aam.pkl.gz",
+      "sha256": "c4c6680f371cbfec0d9a27fca0c945524ba62c0eb7ee8e60d792be5b0c43d324"
+    },
+    "10": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case10/cuts/aam.pkl.gz",
+      "sha256": "1778dc8502f0537afa1bdd9632948f69475e8cd0fd995477e22a902f99a1f58b"
+    },
+    "11": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case11/cuts/aam.pkl.gz",
+      "sha256": "b60b78dd95b98539d6ff74e05811c6dc21ef8e6896b070aba6404e8710e88ac1"
+    },
+    "12": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case12/cuts/aam.pkl.gz",
+      "sha256": "6c3d70c39cc85e51f49077250d0b0a3c522c74dfa1e72f9c6507ef9669cc7e38"
+    },
+    "13": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case13/cuts/aam.pkl.gz",
+      "sha256": "6a3a0acf0956fb022d4a13b54a6f629f02f0125fd3cd702d2f7fa2caa41ce6a1"
+    },
+    "14": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case14/cuts/aam.pkl.gz",
+      "sha256": "272e2e3af368b4b2ac84c7490edc2ed4f17b81d32d3566999d1b93aec723e5a5"
+    },
+    "15": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case15/cuts/aam.pkl.gz",
+      "sha256": "c9df042ed609e4c99e4af8c8aaad875f1969f7d14f89eade2f96f9e93f15be5c"
+    },
+    "16": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case16/cuts/aam.pkl.gz",
+      "sha256": "5abe21778a137461e7c0f0c61f899dc67cf77916e8af5c9cd49d512b2f560a25"
+    },
+    "17": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case17/cuts/aam.pkl.gz",
+      "sha256": "9fbe90714aaeac46d50351028da091fb5b0a345c869d560de77feb160f1bc326"
+    },
+    "18": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case18/cuts/aam.pkl.gz",
+      "sha256": "7eeece3fdb7c70e2242bd361a98d7651cb8062ef3f1c4cb08bb1b35148c872ef"
+    },
+    "19": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case19/cuts/aam.pkl.gz",
+      "sha256": "c9733346aa02121541ab00dfdc53c4a180c2a90aae563b8836161cadd5105db2"
+    },
+    "20": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case20/cuts/aam.pkl.gz",
+      "sha256": "0bcdc2252f5e945f360d1ed5b9aecf1f4fec313a3dea3e60a3c43fc4b09103de"
+    },
+    "21": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case21/cuts/aam.pkl.gz",
+      "sha256": "06cab2c1e4f93137f04bee4d6309f520c33e494ce96d5fef9c37a1473c9d5636"
+    },
+    "22": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case22/cuts/aam.pkl.gz",
+      "sha256": "3e40c2e1a278ee296d552793a80917a5caa86faf50db3f88dc19913da924a5f3"
+    },
+    "23": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case23/cuts/aam.pkl.gz",
+      "sha256": "125339491ac31b86341f5a66e6841b3fd4d274c4720f42bcbdffff21cea0325a"
+    },
+    "24": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case24/cuts/aam.pkl.gz",
+      "sha256": "f77289d72128d55546652ed4f4f67df404bf2b3ca63efda5d49c346ecf657c54"
+    },
+    "25": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_case25_retry/case25/cuts/aam.pkl.gz",
+      "sha256": "d6415bf41b83d589172dee7a999b7a9ea2407e0f85a3af82567632cee5f9b209"
+    },
+    "26": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case26/cuts/aam.pkl.gz",
+      "sha256": "81b76f2a38963ce67d72d6f5f6d7d026003ba702a14f4316abde2ab493c46b76"
+    },
+    "27": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case27/cuts/aam.pkl.gz",
+      "sha256": "38883679799b2d223af0f76993effbe3f6b97fc84f6970d5bb8044d17d3fff93"
+    },
+    "28": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case28/cuts/aam.pkl.gz",
+      "sha256": "a7af223ff73c98d6a2f27b67f5095a6f8027c9630ea5926682052ddd5a398e3e"
+    },
+    "29": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case29/cuts/aam.pkl.gz",
+      "sha256": "14ea7770e28c4d5d93a6435c3e3325a014770813a5ccba87fbba2dafd2e7f35d"
+    },
+    "30": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case30/cuts/aam.pkl.gz",
+      "sha256": "86644dd4b8b20592d0bbe6b621cf646cf4a52beb59d0a8dccb0b2358a7ff4cb9"
+    },
+    "31": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case31/cuts/aam.pkl.gz",
+      "sha256": "425cf20cd99c3a2169c48e70d2b6b64442995e131be6c06c4d9ac2f076f6f3b8"
+    },
+    "32": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case32/cuts/aam.pkl.gz",
+      "sha256": "561ec102d1332587e4346cb827edf873983e38befed9d4ddefd75671e7146f0c"
+    },
+    "33": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case33/cuts/aam.pkl.gz",
+      "sha256": "d25d1af86b693f0fab1837dc770c79b1946f9d8fe3a6c1797d5084d114c936f5"
+    },
+    "34": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case34/cuts/aam.pkl.gz",
+      "sha256": "b8999853ca08f978afecabc6982b36ec0338aab2690a87b65f82e65d1e1f1ee3"
+    },
+    "35": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case35/cuts/aam.pkl.gz",
+      "sha256": "c3ac34dad4d5bb044d1657da4fc091787a9f0ed166c89727003a43c2bbf52bcd"
+    },
+    "36": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case36/cuts/aam.pkl.gz",
+      "sha256": "ec3f99d7cff7d506fc2dd38be5e7b2619799c4c1b136360cbd6089f674d3caa7"
+    },
+    "37": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case37/cuts/aam.pkl.gz",
+      "sha256": "5766cb9c48bdbc32864a33b488437ffebabf4873708b0ab4a016bb44c9158dae"
+    },
+    "38": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case38/cuts/aam.pkl.gz",
+      "sha256": "e1f1aed65b011960d4e10a977328da30e440dbbf410bfc04d9944dbcdf8c38ea"
+    },
+    "39": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case39/cuts/aam.pkl.gz",
+      "sha256": "a94123ed45511de6c39568c0696c129760670b4b1bd1dffb6f66ca207ef82543"
+    },
+    "40": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case40/cuts/aam.pkl.gz",
+      "sha256": "81cd901fea43d4f215d351c73b2e93bd06cd335840400d1b5a5efd8960df675d"
+    },
+    "41": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case41/cuts/aam.pkl.gz",
+      "sha256": "7fb1c47a781f16b5fa77417272cc17d020cad9585ab26c40477ac847c64e1553"
+    },
+    "42": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case42/cuts/aam.pkl.gz",
+      "sha256": "fdc14fe149f474e8f96328879910db6762fbb30e1a1be630ac8c29d24482f60e"
+    },
+    "43": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case43/cuts/aam.pkl.gz",
+      "sha256": "f8cc01006e4763b6f69f002be5416e1b159d3eecc091efcbd05e400959d950ae"
+    },
+    "44": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case44/cuts/aam.pkl.gz",
+      "sha256": "c4342ae1d57965b3266b37daf0f71ef65d65915b921ec752616979582dd83d73"
+    },
+    "45": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case45/cuts/aam.pkl.gz",
+      "sha256": "8fef79cb62eadb0623d0d60f1c9d1c8bdb6e28070525bd6630a3b76bff214c7d"
+    },
+    "46": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case46/cuts/aam.pkl.gz",
+      "sha256": "397323c2df0390201d6001c3cdd23570e3d2fd80322ee59c9ad039df3068f6ad"
+    },
+    "47": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case47/cuts/aam.pkl.gz",
+      "sha256": "1999b40d3e3d1b9bd7cf9771444170dc929c0d0a9d7fa82efbfa88bf2a2424a0"
+    },
+    "48": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case48/cuts/aam.pkl.gz",
+      "sha256": "a77ecace1c6fd9ca88a7ccc569a97f80ba2f0c4755c94149b5a302148f2698a5"
+    },
+    "49": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case49/cuts/aam.pkl.gz",
+      "sha256": "d9e492c3e3dcb481cd28dc5ae43c5490efa72090aab5a55f98708cf6f70450fc"
+    },
+    "50": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case50/cuts/aam.pkl.gz",
+      "sha256": "0225e69a84ba162f1263d24913811f7acce0968c331d1e523f34af8a48be08e8"
+    },
+    "51": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case51/cuts/aam.pkl.gz",
+      "sha256": "369dd46ff293db9c2acfb3f911cf16077eddf8e317923050a3a48472e09d791e"
+    },
+    "52": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case52/cuts/aam.pkl.gz",
+      "sha256": "d15308cef951e9ca6d26d3e453f8fd80a3e2e096b1c4ec02ba0c0e4ac0b77142"
+    },
+    "53": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case53/cuts/aam.pkl.gz",
+      "sha256": "ea8443604a928d85803541c2c634cd2452870431f203b06050c67826dbbd2341"
+    },
+    "54": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case54/cuts/aam.pkl.gz",
+      "sha256": "4ef1e77e5c512521fbe441dbafc56fc9ab53b95d19ad22afc4fa7a4a0e8d7f61"
+    },
+    "55": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case55/cuts/aam.pkl.gz",
+      "sha256": "001462b193c9abebea7bb2e0d877b3cee95ef79f744a0ada1921cef9ce92e6d0"
+    },
+    "56": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case56/cuts/aam.pkl.gz",
+      "sha256": "e49e171df24f00d76213e70832f2f0ac2d2277e8eb77d240a46f838a740f4e26"
+    },
+    "57": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case57/cuts/aam.pkl.gz",
+      "sha256": "ee24ca09ee98a7fa073f0ac3c977af9a8a342b566ce7678d8ccd372814323259"
+    },
+    "58": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case58/cuts/aam.pkl.gz",
+      "sha256": "8baf2efb6fd8db6695778a8e83723fa6eac148a336afb2dd2402e42187363b56"
+    },
+    "59": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case59/cuts/aam.pkl.gz",
+      "sha256": "73e9053a0f8794cd457d21b65e9dfc65b7bb3dfa67860bd4b8fdd9fe99c4bb0e"
+    },
+    "60": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case60/cuts/aam.pkl.gz",
+      "sha256": "6a4ee5075176df2880222553b1c174ad53751054bc385ad72b214be799bf3271"
+    },
+    "61": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case61/cuts/aam.pkl.gz",
+      "sha256": "8a28096b4c7a96466e399eafdd05b5bf8b41081f22e98d9df3053b257b6f768f"
+    },
+    "62": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case62/cuts/aam.pkl.gz",
+      "sha256": "15e19506116c0eabaf22adeea5abac795ac2fe4700e59203da80711c9746af66"
+    },
+    "63": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case63/cuts/aam.pkl.gz",
+      "sha256": "d27af0763662fc293c0e23aac3f7ff7462f137ea7a4ea4f496a9c776960e1737"
+    },
+    "64": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case64/cuts/aam.pkl.gz",
+      "sha256": "cf1d8abd99dcfe9360c262120c7d69307085f18cf250f8a37de76d9e431373b6"
+    },
+    "65": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case65/cuts/aam.pkl.gz",
+      "sha256": "a642d703bf67928207b9c51dbb238b2ed9b3b47e99b70c4394dbc956ad462301"
+    },
+    "66": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case66/cuts/aam.pkl.gz",
+      "sha256": "6a5ae123a2b4c0c34e8aaec3e74cf0425804f21391f1843be14dcc651de2b4a8"
+    },
+    "67": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case67/cuts/aam.pkl.gz",
+      "sha256": "c3a7b24cdeb63a37397bb32c1ba68efe1811d712394d1959052fa3c9339f4f72"
+    },
+    "68": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case68/cuts/aam.pkl.gz",
+      "sha256": "20536a5d918296ece6ed5c0f073741f777a3102120d17de009b5f0ef9768432a"
+    },
+    "69": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case69/cuts/aam.pkl.gz",
+      "sha256": "2d245b73b497a6dc4ca1dab968bb50b2d6fd422daadf52801df5e2ed5b494ee1"
+    },
+    "70": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case70/cuts/aam.pkl.gz",
+      "sha256": "a892df1a5fe1472aaf44295d30a65ff39c65cede6d9cb14886f212adfa204897"
+    },
+    "71": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case71/cuts/aam.pkl.gz",
+      "sha256": "00f8ab06b5ac25e1a81e3aa74393ae0f22604e71623a6e1925b67a79a5816391"
+    },
+    "72": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case72/cuts/aam.pkl.gz",
+      "sha256": "6d450b30163f4819c75fa80925d368524c3e43557a19ac065162773289c84463"
+    },
+    "73": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case73/cuts/aam.pkl.gz",
+      "sha256": "e0f9bfd4d784845d9514c065951f94272332c8cc08b9860df900dc011f4d4aad"
+    },
+    "74": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case74/cuts/aam.pkl.gz",
+      "sha256": "972bfaf12768b350a8bc8dc5afef8e3d34f9c41792bea95331d8007b7c526831"
+    },
+    "75": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case75/cuts/aam.pkl.gz",
+      "sha256": "f0070d6d93003a9d69ca8130d319c1ec90a679217b87dbb4984d34caca25c967"
+    },
+    "76": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case76/cuts/aam.pkl.gz",
+      "sha256": "10178c9d4d35cdcd563749a4dfa107a36ce708eb6152104f60abf2e1bc48cd98"
+    },
+    "77": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case77/cuts/aam.pkl.gz",
+      "sha256": "608af35e8c39b7fac67454f0d3910e328bd9a6d1958754f68787392ccab54d15"
+    },
+    "78": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case78/cuts/aam.pkl.gz",
+      "sha256": "27dcf6651ccf7006d2aeef8afee13d1d5dd18cc67b8d3276a9c5061d989926cb"
+    },
+    "79": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case79/cuts/aam.pkl.gz",
+      "sha256": "383b6ed2952521a5b8f88a426ba2eeab83bbb3af67f8ad10c4b2ae4f2fd71881"
+    },
+    "80": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case80/cuts/aam.pkl.gz",
+      "sha256": "127021232aa24f04fd805c392644a099a96899e57d47c92d819007cd9211822e"
+    },
+    "81": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case81/cuts/aam.pkl.gz",
+      "sha256": "352ecb2ce0ed6f144675c794633ab088d6aa56ba907f64a5a778042a61673d36"
+    },
+    "82": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case82/cuts/aam.pkl.gz",
+      "sha256": "aa65be6290d77670615d755cda25a4696ac8450ededfc83f2688cca58b5df5aa"
+    },
+    "83": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case83/cuts/aam.pkl.gz",
+      "sha256": "b350981a1dc903319bf5abc1b9e090cfa87f76e467fefdf22d17b6a8fca7c799"
+    },
+    "84": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case84/cuts/aam.pkl.gz",
+      "sha256": "0a7c58997740b75bbf846649e03bb6a17b3edffbb59b4b1dae84f3dcf9ff529c"
+    },
+    "85": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case85/cuts/aam.pkl.gz",
+      "sha256": "e656223ba893ebff686ddb4e7dbee5e0bc2520acdbdd1b4aed653a916c0765f6"
+    },
+    "86": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case86/cuts/aam.pkl.gz",
+      "sha256": "d716a3766f4fe6fff954fa2574f2df5443bef777b826b23b61c064f59102a6c7"
+    },
+    "87": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case87/cuts/aam.pkl.gz",
+      "sha256": "af3a92f78b19aa2655648fa7b317803ad850adf170e32a0de976cc48d7f95488"
+    },
+    "88": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case88/cuts/aam.pkl.gz",
+      "sha256": "5b7706bedb466c9dda9799eb67d76daa572dad2990c5452abc9f881433b55b51"
+    },
+    "89": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case89/cuts/aam.pkl.gz",
+      "sha256": "a6dddbc3c13b528deb4309e7fc52a75b1218f3377201698e11653a62d696ba3d"
+    },
+    "90": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case90/cuts/aam.pkl.gz",
+      "sha256": "9e5cc498a5569772daec380a8f496b6ec484495be0d15254a3df2f2188fd0d12"
+    },
+    "91": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case91/cuts/aam.pkl.gz",
+      "sha256": "6b6d4b96771a59edc7571e7836b57d4d110ba0e8632b5bda95300e670c46522d"
+    },
+    "92": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case92/cuts/aam.pkl.gz",
+      "sha256": "598e5107b320a20e4f2330f1c8dc603ef81e8bb88a2e29de51854e56b4884e61"
+    },
+    "93": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case93/cuts/aam.pkl.gz",
+      "sha256": "59d1971b3acedc502d77432699b521666d30b1f85d0757126c296cc6af7d5748"
+    },
+    "94": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case94/cuts/aam.pkl.gz",
+      "sha256": "6ce8ec05153ad761929376161cbbd9ba233be337a7348a264e6d2732b883a3fa"
+    },
+    "95": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case95/cuts/aam.pkl.gz",
+      "sha256": "a417ae9423c1d4fa2e0446cc8e04500f3112a9b6659491ff18c00d4da6cc9315"
+    },
+    "96": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case96/cuts/aam.pkl.gz",
+      "sha256": "c362b0dcb87ce24e7c7e6105925f6bc16e968668fe5a45586fde2fd44a775887"
+    },
+    "97": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case97/cuts/aam.pkl.gz",
+      "sha256": "17cd9623ffd55bc6336eb0b72aa3797bc263384b2c80a985cfce25b8ff87e054"
+    },
+    "98": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case98/cuts/aam.pkl.gz",
+      "sha256": "85f38d15c80ac0f44a57c540afee78f18e0d434ac995d7ad4a5e97e06182161a"
+    },
+    "99": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case99/cuts/aam.pkl.gz",
+      "sha256": "0cfbb2ed5522e7930efb6915b46b4ce88392f4f32c6a07c3a1b3b22c3e453db6"
+    },
+    "100": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case100/cuts/aam.pkl.gz",
+      "sha256": "1398685c3995cc25462dcc3f7946523da13274ccc6b6d3f3bfba85eed36e1075"
+    },
+    "101": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case101/cuts/aam.pkl.gz",
+      "sha256": "800966f8b754ceb2a103ab23a18fab3f22df7c25be2c04eaa50b47e87a0bc5c8"
+    },
+    "102": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case102/cuts/aam.pkl.gz",
+      "sha256": "05448f2f708ae25d3efa9049da3202b7e85998d842be5a033e077914b2907e89"
+    },
+    "103": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case103/cuts/aam.pkl.gz",
+      "sha256": "54e7e0343e9226918ebe462c9f72e8c30d1242c87e1e211a3f4ace4cd9574d0e"
+    },
+    "104": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case104/cuts/aam.pkl.gz",
+      "sha256": "0fdb927ec8e56eaacdbe7038dabf0cc30a872e1f3c9bb0ec31ac4152c89a9ee0"
+    },
+    "105": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case105/cuts/aam.pkl.gz",
+      "sha256": "c09ecc8cf068e793bbe754f200efa3d2d077416b4e70f47a87ab8044ad31c24b"
+    },
+    "106": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case106/cuts/aam.pkl.gz",
+      "sha256": "02377d564f529d0644e8b5cc2cb71977207f657f610175fc45b84bea4571e04e"
+    },
+    "107": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case107/cuts/aam.pkl.gz",
+      "sha256": "360ef36f62f67beaef0a5f035fbbd5208e4826cc0ba47fb546d65c144c8454a6"
+    },
+    "108": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case108/cuts/aam.pkl.gz",
+      "sha256": "b3652ffcce30998c8f7bc7bee1f6de2379a21ae515089197f2e3c4875364e3c0"
+    },
+    "109": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case109/cuts/aam.pkl.gz",
+      "sha256": "0474486cd73d2d90db1076c0362fb9e27dde521c75c1506c34e24acadf9c0493"
+    },
+    "110": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case110/cuts/aam.pkl.gz",
+      "sha256": "10732af21d5d5148b640adc19ebccb030b8d583b4ef73e59298d3858c57b96d1"
+    },
+    "111": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case111/cuts/aam.pkl.gz",
+      "sha256": "0cc6f8bbfa6adfdef624b67d82c59e4ae6d565e8a193a33f60aca25bc517011d"
+    },
+    "112": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case112/cuts/aam.pkl.gz",
+      "sha256": "dd714663161901191a5c08690a50dbc956ed60bab5a2b44f331a21ad6d8be843"
+    },
+    "113": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case113/cuts/aam.pkl.gz",
+      "sha256": "68facbaf1c1c7877be1fad74f5b3d233d78f621af542fd4cdbc480acc7e560f2"
+    },
+    "114": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case114/cuts/aam.pkl.gz",
+      "sha256": "ba8ba5b87f9d1f5146adaad52344dbb2505f0a18f9b4ab74ee86c5912b1b4e5b"
+    },
+    "115": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case115/cuts/aam.pkl.gz",
+      "sha256": "3004ae3b1c445eb74ef6e77efe7f0a69df03a693258d8f8ff0da9699b1a4631e"
+    },
+    "116": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case116/cuts/aam.pkl.gz",
+      "sha256": "25665d0ee3d43a2ffda56bf1c40a679155ed550e791d88b82335cb63f39984bb"
+    },
+    "117": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case117/cuts/aam.pkl.gz",
+      "sha256": "29ec85879c9705f4b145df98aad30ccee44fbad7cd0617f13e5846d0f6031cc8"
+    },
+    "118": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case118/cuts/aam.pkl.gz",
+      "sha256": "a8ed071474348bfe8be2ae0a9e067a0848f458a39d0ee01198940f8aa1beab1a"
+    },
+    "119": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case119/cuts/aam.pkl.gz",
+      "sha256": "6ad111df5b1a1f73c0a5ed1fcb1d26ec37f78117ec1cd5c3e48501064301966b"
+    },
+    "120": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case120/cuts/aam.pkl.gz",
+      "sha256": "f50086825e685eeed66cc0ea5657b7f5e1a0be293cc7bc214b55246e4d35fdcf"
+    },
+    "121": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case121/cuts/aam.pkl.gz",
+      "sha256": "590d7c17bbce7942ff00bb2ea09f1b471ecf7aced2547aec057a30555e66911d"
+    },
+    "122": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case122/cuts/aam.pkl.gz",
+      "sha256": "4ad14bf46383422bc5ad475f75c263dde150ba2c873ce5208a17cb7a54e46942"
+    },
+    "123": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case123/cuts/aam.pkl.gz",
+      "sha256": "797a1df706b4a785434fa9395695dedfad8cdbe86d854f89e8934a9bf4a9ef2b"
+    },
+    "124": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case124/cuts/aam.pkl.gz",
+      "sha256": "c68e030d61b80b39a2dd5ed98d0c1441770e254714521634e74827a4ff4d86b6"
+    },
+    "125": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case125/cuts/aam.pkl.gz",
+      "sha256": "c4735454fa9a3ab49b60cab5d22d15390d04b448bfeb02219ebc4ed91183fe53"
+    },
+    "126": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case126/cuts/aam.pkl.gz",
+      "sha256": "4291ec7e08db293070a87be6198a71764177f8a685a0581bf456c87a600f9742"
+    },
+    "127": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case127/cuts/aam.pkl.gz",
+      "sha256": "a9f0ffab5e03398fba358ee0d9fef4c6c3aa391b184e3b9c8ac4f9819a53728b"
+    },
+    "128": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case128/cuts/aam.pkl.gz",
+      "sha256": "763f727b38a1309bc45fd437b20cee23e85d1c8a1fe4e3bcc3a31b9ba447311a"
+    },
+    "129": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case129/cuts/aam.pkl.gz",
+      "sha256": "7439dbc9a0e1e4760cf58cc5ccc150d68ec63af7e333ddab4dd06f8c213cf97c"
+    },
+    "130": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case130/cuts/aam.pkl.gz",
+      "sha256": "4ad63713b86e2d0fbdfa81a8aa6b9e67b8c3b6531801c716b4228ee3c4595a8a"
+    },
+    "131": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case131/cuts/aam.pkl.gz",
+      "sha256": "c8c8b59e5475da2ec953685f4cfd3ef0753a829965533ecc5380823a2f35b656"
+    },
+    "132": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case132/cuts/aam.pkl.gz",
+      "sha256": "4abb7fa9fc332fb8ed0a0cbcbabdfead58eb831e60971187ecbd6343ea63aadf"
+    },
+    "133": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case133/cuts/aam.pkl.gz",
+      "sha256": "d88fdf3c5be33b0b14e33f4d59562dde81fa2d35300b676cb3213fef69d7ad79"
+    },
+    "134": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case134/cuts/aam.pkl.gz",
+      "sha256": "5adf72ef8b35675c852bea56e5a7a307dffcaa174892838348cc69a7cf401fa7"
+    },
+    "135": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case135/cuts/aam.pkl.gz",
+      "sha256": "c23b0380677552ee5fc752945ee6cdcfd44ad633794f14516a380b8f07547a18"
+    },
+    "136": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case136/cuts/aam.pkl.gz",
+      "sha256": "8d04dba9cfad7507e111adfce79d9c0ae9809c76574ad72db48b9ee900d6f1b0"
+    },
+    "137": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case137/cuts/aam.pkl.gz",
+      "sha256": "0b23e527223ce57c1ffb6af88ea0948a4204ecb9b5e32878d64611df7d7d70d4"
+    },
+    "138": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case138/cuts/aam.pkl.gz",
+      "sha256": "08c26aa9b4d7bace9109951df34799357dfb8584dee92f47177fa50e991995f6"
+    },
+    "139": {
+      "path": "/Users/yunhengz/Documents/Codex/2026-09-11/aa/outputs/holdout140_cap2000_seed1/case139/cuts/aam.pkl.gz",
+      "sha256": "16241089d7e7244cace8b9ef8d895c6990a2f1ecee636e1c257b073c60ed083e"
+    }
+  },
+  "selection": "Budget selected on the four known gap cases; subsequent evaluation covers all 140 of the same dataset. This is not independent held-out validation."
+}

@@ -1,0 +1,2393 @@
+{
+  "cases": [
+    {
+      "case": 0,
+      "baseline_branches": 58,
+      "repair_branches": 295,
+      "combined_branches": 353,
+      "repair_new_branches": 295,
+      "baseline_terminals": 58,
+      "counts": {
+        "baseline_paths": 58,
+        "baseline_sum_local_branches": 58,
+        "repair_paths": 295,
+        "repair_sum_local_branches": 295
+      },
+      "wall_seconds": 0.3598802499473095,
+      "status": "passed",
+      "peak_mib": 49.828125
+    },
+    {
+      "case": 1,
+      "baseline_branches": 180,
+      "repair_branches": 169,
+      "combined_branches": 349,
+      "repair_new_branches": 169,
+      "baseline_terminals": 180,
+      "counts": {
+        "baseline_paths": 180,
+        "baseline_sum_local_branches": 180,
+        "repair_paths": 170,
+        "repair_sum_local_branches": 170
+      },
+      "wall_seconds": 0.41809945786371827,
+      "status": "passed",
+      "peak_mib": 50.109375
+    },
+    {
+      "case": 2,
+      "baseline_branches": 116,
+      "repair_branches": 2534,
+      "combined_branches": 2650,
+      "repair_new_branches": 2534,
+      "baseline_terminals": 116,
+      "counts": {
+        "baseline_paths": 116,
+        "baseline_sum_local_branches": 116,
+        "repair_paths": 2547,
+        "repair_sum_local_branches": 2547
+      },
+      "wall_seconds": 0.4798524999059737,
+      "status": "passed",
+      "peak_mib": 50.0625
+    },
+    {
+      "case": 3,
+      "baseline_branches": 137,
+      "repair_branches": 170,
+      "combined_branches": 307,
+      "repair_new_branches": 170,
+      "baseline_terminals": 137,
+      "counts": {
+        "baseline_paths": 137,
+        "baseline_sum_local_branches": 137,
+        "repair_paths": 175,
+        "repair_sum_local_branches": 175
+      },
+      "wall_seconds": 0.41846449999138713,
+      "status": "passed",
+      "peak_mib": 49.890625
+    },
+    {
+      "case": 4,
+      "baseline_branches": 1245,
+      "repair_branches": 343,
+      "combined_branches": 1588,
+      "repair_new_branches": 343,
+      "baseline_terminals": 1245,
+      "counts": {
+        "baseline_paths": 1245,
+        "baseline_sum_local_branches": 1245,
+        "repair_paths": 346,
+        "repair_sum_local_branches": 346
+      },
+      "wall_seconds": 0.5163878749590367,
+      "status": "passed",
+      "peak_mib": 73.78125
+    },
+    {
+      "case": 5,
+      "baseline_branches": 104,
+      "repair_branches": 1874,
+      "combined_branches": 1978,
+      "repair_new_branches": 1874,
+      "baseline_terminals": 104,
+      "counts": {
+        "baseline_paths": 104,
+        "baseline_sum_local_branches": 104,
+        "repair_paths": 1875,
+        "repair_sum_local_branches": 1875
+      },
+      "wall_seconds": 0.4844403329771012,
+      "status": "passed",
+      "peak_mib": 75.453125
+    },
+    {
+      "case": 6,
+      "baseline_branches": 7798,
+      "repair_branches": 466,
+      "combined_branches": 8264,
+      "repair_new_branches": 466,
+      "baseline_terminals": 7798,
+      "counts": {
+        "baseline_paths": 7798,
+        "baseline_sum_local_branches": 7798,
+        "repair_paths": 471,
+        "repair_sum_local_branches": 471
+      },
+      "wall_seconds": 0.9626872090157121,
+      "status": "passed",
+      "peak_mib": 152.3125
+    },
+    {
+      "case": 7,
+      "baseline_branches": 1124,
+      "repair_branches": 523,
+      "combined_branches": 1647,
+      "repair_new_branches": 523,
+      "baseline_terminals": 1124,
+      "counts": {
+        "baseline_paths": 1124,
+        "baseline_sum_local_branches": 1124,
+        "repair_paths": 524,
+        "repair_sum_local_branches": 524
+      },
+      "wall_seconds": 0.5400325409136713,
+      "status": "passed",
+      "peak_mib": 71.59375
+    },
+    {
+      "case": 8,
+      "baseline_branches": 81,
+      "repair_branches": 1473,
+      "combined_branches": 1554,
+      "repair_new_branches": 1473,
+      "baseline_terminals": 81,
+      "counts": {
+        "baseline_paths": 81,
+        "baseline_sum_local_branches": 81,
+        "repair_paths": 1476,
+        "repair_sum_local_branches": 1476
+      },
+      "wall_seconds": 0.4811068749986589,
+      "status": "passed",
+      "peak_mib": 54.484375
+    },
+    {
+      "case": 9,
+      "baseline_branches": 215,
+      "repair_branches": 136,
+      "combined_branches": 351,
+      "repair_new_branches": 136,
+      "baseline_terminals": 215,
+      "counts": {
+        "baseline_paths": 215,
+        "baseline_sum_local_branches": 215,
+        "repair_paths": 149,
+        "repair_sum_local_branches": 149
+      },
+      "wall_seconds": 0.4848310421220958,
+      "status": "passed",
+      "peak_mib": 59.171875
+    },
+    {
+      "case": 10,
+      "baseline_branches": 231,
+      "repair_branches": 237,
+      "combined_branches": 468,
+      "repair_new_branches": 237,
+      "baseline_terminals": 231,
+      "counts": {
+        "baseline_paths": 231,
+        "baseline_sum_local_branches": 231,
+        "repair_paths": 237,
+        "repair_sum_local_branches": 237
+      },
+      "wall_seconds": 0.4849894579965621,
+      "status": "passed",
+      "peak_mib": 59.734375
+    },
+    {
+      "case": 11,
+      "baseline_branches": 160,
+      "repair_branches": 514,
+      "combined_branches": 674,
+      "repair_new_branches": 514,
+      "baseline_terminals": 160,
+      "counts": {
+        "baseline_paths": 160,
+        "baseline_sum_local_branches": 160,
+        "repair_paths": 515,
+        "repair_sum_local_branches": 515
+      },
+      "wall_seconds": 0.4754594590049237,
+      "status": "passed",
+      "peak_mib": 59.4375
+    },
+    {
+      "case": 12,
+      "baseline_branches": 224,
+      "repair_branches": 277,
+      "combined_branches": 501,
+      "repair_new_branches": 277,
+      "baseline_terminals": 224,
+      "counts": {
+        "baseline_paths": 224,
+        "baseline_sum_local_branches": 224,
+        "repair_paths": 277,
+        "repair_sum_local_branches": 277
+      },
+      "wall_seconds": 0.38366995798423886,
+      "status": "passed",
+      "peak_mib": 57.25
+    },
+    {
+      "case": 13,
+      "baseline_branches": 224,
+      "repair_branches": 277,
+      "combined_branches": 501,
+      "repair_new_branches": 277,
+      "baseline_terminals": 224,
+      "counts": {
+        "baseline_paths": 224,
+        "baseline_sum_local_branches": 224,
+        "repair_paths": 277,
+        "repair_sum_local_branches": 277
+      },
+      "wall_seconds": 0.3886957080103457,
+      "status": "passed",
+      "peak_mib": 56.640625
+    },
+    {
+      "case": 14,
+      "baseline_branches": 73,
+      "repair_branches": 1822,
+      "combined_branches": 1895,
+      "repair_new_branches": 1822,
+      "baseline_terminals": 73,
+      "counts": {
+        "baseline_paths": 73,
+        "baseline_sum_local_branches": 73,
+        "repair_paths": 1824,
+        "repair_sum_local_branches": 1824
+      },
+      "wall_seconds": 0.5397898750379682,
+      "status": "passed",
+      "peak_mib": 75.203125
+    },
+    {
+      "case": 15,
+      "baseline_branches": 73,
+      "repair_branches": 1762,
+      "combined_branches": 1835,
+      "repair_new_branches": 1762,
+      "baseline_terminals": 73,
+      "counts": {
+        "baseline_paths": 73,
+        "baseline_sum_local_branches": 73,
+        "repair_paths": 1764,
+        "repair_sum_local_branches": 1764
+      },
+      "wall_seconds": 0.5428959580603987,
+      "status": "passed",
+      "peak_mib": 74.890625
+    },
+    {
+      "case": 16,
+      "baseline_branches": 73,
+      "repair_branches": 406,
+      "combined_branches": 479,
+      "repair_new_branches": 406,
+      "baseline_terminals": 73,
+      "counts": {
+        "baseline_paths": 73,
+        "baseline_sum_local_branches": 73,
+        "repair_paths": 406,
+        "repair_sum_local_branches": 406
+      },
+      "wall_seconds": 0.39681691606529057,
+      "status": "passed",
+      "peak_mib": 56.875
+    },
+    {
+      "case": 17,
+      "baseline_branches": 73,
+      "repair_branches": 395,
+      "combined_branches": 468,
+      "repair_new_branches": 395,
+      "baseline_terminals": 73,
+      "counts": {
+        "baseline_paths": 73,
+        "baseline_sum_local_branches": 73,
+        "repair_paths": 395,
+        "repair_sum_local_branches": 395
+      },
+      "wall_seconds": 0.4037494589574635,
+      "status": "passed",
+      "peak_mib": 54.375
+    },
+    {
+      "case": 18,
+      "baseline_branches": 84,
+      "repair_branches": 561,
+      "combined_branches": 645,
+      "repair_new_branches": 561,
+      "baseline_terminals": 84,
+      "counts": {
+        "baseline_paths": 84,
+        "baseline_sum_local_branches": 84,
+        "repair_paths": 563,
+        "repair_sum_local_branches": 563
+      },
+      "wall_seconds": 0.4180654161609709,
+      "status": "passed",
+      "peak_mib": 54.96875
+    },
+    {
+      "case": 19,
+      "baseline_branches": 84,
+      "repair_branches": 561,
+      "combined_branches": 645,
+      "repair_new_branches": 561,
+      "baseline_terminals": 84,
+      "counts": {
+        "baseline_paths": 84,
+        "baseline_sum_local_branches": 84,
+        "repair_paths": 563,
+        "repair_sum_local_branches": 563
+      },
+      "wall_seconds": 0.4235633749049157,
+      "status": "passed",
+      "peak_mib": 54.765625
+    },
+    {
+      "case": 20,
+      "baseline_branches": 103,
+      "repair_branches": 5613,
+      "combined_branches": 5716,
+      "repair_new_branches": 5613,
+      "baseline_terminals": 103,
+      "counts": {
+        "baseline_paths": 103,
+        "baseline_sum_local_branches": 103,
+        "repair_paths": 5621,
+        "repair_sum_local_branches": 5621
+      },
+      "wall_seconds": 0.9515314579475671,
+      "status": "passed",
+      "peak_mib": 106.484375
+    },
+    {
+      "case": 21,
+      "baseline_branches": 53,
+      "repair_branches": 301,
+      "combined_branches": 354,
+      "repair_new_branches": 301,
+      "baseline_terminals": 53,
+      "counts": {
+        "baseline_paths": 53,
+        "baseline_sum_local_branches": 53,
+        "repair_paths": 302,
+        "repair_sum_local_branches": 302
+      },
+      "wall_seconds": 0.3730502501130104,
+      "status": "passed",
+      "peak_mib": 55.21875
+    },
+    {
+      "case": 22,
+      "baseline_branches": 54,
+      "repair_branches": 1128,
+      "combined_branches": 1182,
+      "repair_new_branches": 1128,
+      "baseline_terminals": 54,
+      "counts": {
+        "baseline_paths": 54,
+        "baseline_sum_local_branches": 54,
+        "repair_paths": 1131,
+        "repair_sum_local_branches": 1131
+      },
+      "wall_seconds": 0.4290673329960555,
+      "status": "passed",
+      "peak_mib": 58.171875
+    },
+    {
+      "case": 23,
+      "baseline_branches": 103,
+      "repair_branches": 5613,
+      "combined_branches": 5716,
+      "repair_new_branches": 5613,
+      "baseline_terminals": 103,
+      "counts": {
+        "baseline_paths": 103,
+        "baseline_sum_local_branches": 103,
+        "repair_paths": 5621,
+        "repair_sum_local_branches": 5621
+      },
+      "wall_seconds": 0.9771038750186563,
+      "status": "passed",
+      "peak_mib": 108.4375
+    },
+    {
+      "case": 24,
+      "baseline_branches": 54,
+      "repair_branches": 1128,
+      "combined_branches": 1182,
+      "repair_new_branches": 1128,
+      "baseline_terminals": 54,
+      "counts": {
+        "baseline_paths": 54,
+        "baseline_sum_local_branches": 54,
+        "repair_paths": 1131,
+        "repair_sum_local_branches": 1131
+      },
+      "wall_seconds": 0.44894562498666346,
+      "status": "passed",
+      "peak_mib": 55.28125
+    },
+    {
+      "case": 25,
+      "baseline_branches": 52320,
+      "repair_branches": 349,
+      "combined_branches": 52669,
+      "repair_new_branches": 349,
+      "baseline_terminals": 52320,
+      "counts": {
+        "baseline_paths": 52320,
+        "baseline_sum_local_branches": 52320,
+        "repair_paths": 349,
+        "repair_sum_local_branches": 349
+      },
+      "wall_seconds": 6.840175042161718,
+      "status": "passed",
+      "peak_mib": 1367.34375
+    },
+    {
+      "case": 26,
+      "baseline_branches": 1146,
+      "repair_branches": 349,
+      "combined_branches": 1495,
+      "repair_new_branches": 349,
+      "baseline_terminals": 1146,
+      "counts": {
+        "baseline_paths": 1146,
+        "baseline_sum_local_branches": 1146,
+        "repair_paths": 351,
+        "repair_sum_local_branches": 351
+      },
+      "wall_seconds": 0.7914861659519374,
+      "status": "passed",
+      "peak_mib": 92.65625
+    },
+    {
+      "case": 27,
+      "baseline_branches": 302,
+      "repair_branches": 156,
+      "combined_branches": 458,
+      "repair_new_branches": 156,
+      "baseline_terminals": 302,
+      "counts": {
+        "baseline_paths": 302,
+        "baseline_sum_local_branches": 302,
+        "repair_paths": 156,
+        "repair_sum_local_branches": 156
+      },
+      "wall_seconds": 0.6810885421000421,
+      "status": "passed",
+      "peak_mib": 72.5625
+    },
+    {
+      "case": 28,
+      "baseline_branches": 1324,
+      "repair_branches": 2339,
+      "combined_branches": 3663,
+      "repair_new_branches": 2339,
+      "baseline_terminals": 1324,
+      "counts": {
+        "baseline_paths": 1324,
+        "baseline_sum_local_branches": 1324,
+        "repair_paths": 2339,
+        "repair_sum_local_branches": 2339
+      },
+      "wall_seconds": 1.1206172090023756,
+      "status": "passed",
+      "peak_mib": 146.21875
+    },
+    {
+      "case": 29,
+      "baseline_branches": 156,
+      "repair_branches": 641,
+      "combined_branches": 797,
+      "repair_new_branches": 641,
+      "baseline_terminals": 156,
+      "counts": {
+        "baseline_paths": 156,
+        "baseline_sum_local_branches": 156,
+        "repair_paths": 649,
+        "repair_sum_local_branches": 649
+      },
+      "wall_seconds": 0.5439227921888232,
+      "status": "passed",
+      "peak_mib": 62.203125
+    },
+    {
+      "case": 30,
+      "baseline_branches": 156,
+      "repair_branches": 641,
+      "combined_branches": 797,
+      "repair_new_branches": 641,
+      "baseline_terminals": 156,
+      "counts": {
+        "baseline_paths": 156,
+        "baseline_sum_local_branches": 156,
+        "repair_paths": 649,
+        "repair_sum_local_branches": 649
+      },
+      "wall_seconds": 0.561186958104372,
+      "status": "passed",
+      "peak_mib": 63.09375
+    },
+    {
+      "case": 31,
+      "baseline_branches": 920,
+      "repair_branches": 589,
+      "combined_branches": 1509,
+      "repair_new_branches": 589,
+      "baseline_terminals": 920,
+      "counts": {
+        "baseline_paths": 920,
+        "baseline_sum_local_branches": 920,
+        "repair_paths": 589,
+        "repair_sum_local_branches": 589
+      },
+      "wall_seconds": 0.6584050001110882,
+      "status": "passed",
+      "peak_mib": 74.53125
+    },
+    {
+      "case": 32,
+      "baseline_branches": 222,
+      "repair_branches": 338,
+      "combined_branches": 560,
+      "repair_new_branches": 338,
+      "baseline_terminals": 222,
+      "counts": {
+        "baseline_paths": 222,
+        "baseline_sum_local_branches": 222,
+        "repair_paths": 339,
+        "repair_sum_local_branches": 339
+      },
+      "wall_seconds": 0.5652073752135038,
+      "status": "passed",
+      "peak_mib": 66.546875
+    },
+    {
+      "case": 33,
+      "baseline_branches": 226,
+      "repair_branches": 523,
+      "combined_branches": 749,
+      "repair_new_branches": 523,
+      "baseline_terminals": 226,
+      "counts": {
+        "baseline_paths": 226,
+        "baseline_sum_local_branches": 226,
+        "repair_paths": 525,
+        "repair_sum_local_branches": 525
+      },
+      "wall_seconds": 0.5841513751074672,
+      "status": "passed",
+      "peak_mib": 66.59375
+    },
+    {
+      "case": 34,
+      "baseline_branches": 221,
+      "repair_branches": 344,
+      "combined_branches": 565,
+      "repair_new_branches": 344,
+      "baseline_terminals": 221,
+      "counts": {
+        "baseline_paths": 221,
+        "baseline_sum_local_branches": 221,
+        "repair_paths": 345,
+        "repair_sum_local_branches": 345
+      },
+      "wall_seconds": 0.5741062078159302,
+      "status": "passed",
+      "peak_mib": 66.34375
+    },
+    {
+      "case": 35,
+      "baseline_branches": 194,
+      "repair_branches": 15056,
+      "combined_branches": 15250,
+      "repair_new_branches": 15056,
+      "baseline_terminals": 194,
+      "counts": {
+        "baseline_paths": 194,
+        "baseline_sum_local_branches": 194,
+        "repair_paths": 15063,
+        "repair_sum_local_branches": 15063
+      },
+      "wall_seconds": 2.215852624969557,
+      "status": "passed",
+      "peak_mib": 143.21875
+    },
+    {
+      "case": 36,
+      "baseline_branches": 990,
+      "repair_branches": 488,
+      "combined_branches": 1478,
+      "repair_new_branches": 488,
+      "baseline_terminals": 990,
+      "counts": {
+        "baseline_paths": 990,
+        "baseline_sum_local_branches": 990,
+        "repair_paths": 488,
+        "repair_sum_local_branches": 488
+      },
+      "wall_seconds": 0.6059910422191024,
+      "status": "passed",
+      "peak_mib": 77.96875
+    },
+    {
+      "case": 37,
+      "baseline_branches": 1794,
+      "repair_branches": 1537,
+      "combined_branches": 3331,
+      "repair_new_branches": 1537,
+      "baseline_terminals": 1794,
+      "counts": {
+        "baseline_paths": 1794,
+        "baseline_sum_local_branches": 1794,
+        "repair_paths": 1543,
+        "repair_sum_local_branches": 1543
+      },
+      "wall_seconds": 0.9466669589746743,
+      "status": "passed",
+      "peak_mib": 94.96875
+    },
+    {
+      "case": 38,
+      "baseline_branches": 292,
+      "repair_branches": 288,
+      "combined_branches": 580,
+      "repair_new_branches": 288,
+      "baseline_terminals": 292,
+      "counts": {
+        "baseline_paths": 292,
+        "baseline_sum_local_branches": 292,
+        "repair_paths": 288,
+        "repair_sum_local_branches": 288
+      },
+      "wall_seconds": 0.6426126670558006,
+      "status": "passed",
+      "peak_mib": 68.890625
+    },
+    {
+      "case": 39,
+      "baseline_branches": 320,
+      "repair_branches": 191,
+      "combined_branches": 511,
+      "repair_new_branches": 191,
+      "baseline_terminals": 320,
+      "counts": {
+        "baseline_paths": 320,
+        "baseline_sum_local_branches": 320,
+        "repair_paths": 192,
+        "repair_sum_local_branches": 192
+      },
+      "wall_seconds": 0.5618286670651287,
+      "status": "passed",
+      "peak_mib": 67.96875
+    },
+    {
+      "case": 40,
+      "baseline_branches": 308,
+      "repair_branches": 665,
+      "combined_branches": 973,
+      "repair_new_branches": 665,
+      "baseline_terminals": 308,
+      "counts": {
+        "baseline_paths": 308,
+        "baseline_sum_local_branches": 308,
+        "repair_paths": 666,
+        "repair_sum_local_branches": 666
+      },
+      "wall_seconds": 0.6248253339435905,
+      "status": "passed",
+      "peak_mib": 67.625
+    },
+    {
+      "case": 41,
+      "baseline_branches": 252,
+      "repair_branches": 2377,
+      "combined_branches": 2629,
+      "repair_new_branches": 2377,
+      "baseline_terminals": 252,
+      "counts": {
+        "baseline_paths": 252,
+        "baseline_sum_local_branches": 252,
+        "repair_paths": 2379,
+        "repair_sum_local_branches": 2379
+      },
+      "wall_seconds": 0.8713600418996066,
+      "status": "passed",
+      "peak_mib": 130.859375
+    },
+    {
+      "case": 42,
+      "baseline_branches": 298,
+      "repair_branches": 372,
+      "combined_branches": 670,
+      "repair_new_branches": 372,
+      "baseline_terminals": 298,
+      "counts": {
+        "baseline_paths": 298,
+        "baseline_sum_local_branches": 298,
+        "repair_paths": 374,
+        "repair_sum_local_branches": 374
+      },
+      "wall_seconds": 0.5285914589185268,
+      "status": "passed",
+      "peak_mib": 67.78125
+    },
+    {
+      "case": 43,
+      "baseline_branches": 252,
+      "repair_branches": 578,
+      "combined_branches": 830,
+      "repair_new_branches": 578,
+      "baseline_terminals": 252,
+      "counts": {
+        "baseline_paths": 252,
+        "baseline_sum_local_branches": 252,
+        "repair_paths": 579,
+        "repair_sum_local_branches": 579
+      },
+      "wall_seconds": 0.540259333094582,
+      "status": "passed",
+      "peak_mib": 69.109375
+    },
+    {
+      "case": 44,
+      "baseline_branches": 2312,
+      "repair_branches": 480,
+      "combined_branches": 2792,
+      "repair_new_branches": 480,
+      "baseline_terminals": 2312,
+      "counts": {
+        "baseline_paths": 2312,
+        "baseline_sum_local_branches": 2312,
+        "repair_paths": 480,
+        "repair_sum_local_branches": 480
+      },
+      "wall_seconds": 1.0018207910470665,
+      "status": "passed",
+      "peak_mib": 147.671875
+    },
+    {
+      "case": 45,
+      "baseline_branches": 2255,
+      "repair_branches": 1641,
+      "combined_branches": 3896,
+      "repair_new_branches": 1641,
+      "baseline_terminals": 2255,
+      "counts": {
+        "baseline_paths": 2255,
+        "baseline_sum_local_branches": 2255,
+        "repair_paths": 1653,
+        "repair_sum_local_branches": 1653
+      },
+      "wall_seconds": 1.0721051672007889,
+      "status": "passed",
+      "peak_mib": 141.921875
+    },
+    {
+      "case": 46,
+      "baseline_branches": 284,
+      "repair_branches": 921,
+      "combined_branches": 1205,
+      "repair_new_branches": 921,
+      "baseline_terminals": 284,
+      "counts": {
+        "baseline_paths": 284,
+        "baseline_sum_local_branches": 284,
+        "repair_paths": 927,
+        "repair_sum_local_branches": 927
+      },
+      "wall_seconds": 0.6537999170832336,
+      "status": "passed",
+      "peak_mib": 78.109375
+    },
+    {
+      "case": 47,
+      "baseline_branches": 273,
+      "repair_branches": 149,
+      "combined_branches": 422,
+      "repair_new_branches": 149,
+      "baseline_terminals": 273,
+      "counts": {
+        "baseline_paths": 273,
+        "baseline_sum_local_branches": 273,
+        "repair_paths": 155,
+        "repair_sum_local_branches": 155
+      },
+      "wall_seconds": 0.5670451670885086,
+      "status": "passed",
+      "peak_mib": 67.75
+    },
+    {
+      "case": 48,
+      "baseline_branches": 2241,
+      "repair_branches": 1130,
+      "combined_branches": 3371,
+      "repair_new_branches": 1130,
+      "baseline_terminals": 2241,
+      "counts": {
+        "baseline_paths": 2241,
+        "baseline_sum_local_branches": 2241,
+        "repair_paths": 1130,
+        "repair_sum_local_branches": 1130
+      },
+      "wall_seconds": 1.2161387919913977,
+      "status": "passed",
+      "peak_mib": 158.859375
+    },
+    {
+      "case": 49,
+      "baseline_branches": 2254,
+      "repair_branches": 284,
+      "combined_branches": 2538,
+      "repair_new_branches": 284,
+      "baseline_terminals": 2254,
+      "counts": {
+        "baseline_paths": 2254,
+        "baseline_sum_local_branches": 2254,
+        "repair_paths": 284,
+        "repair_sum_local_branches": 284
+      },
+      "wall_seconds": 1.117521916050464,
+      "status": "passed",
+      "peak_mib": 146.6875
+    },
+    {
+      "case": 50,
+      "baseline_branches": 226,
+      "repair_branches": 523,
+      "combined_branches": 749,
+      "repair_new_branches": 523,
+      "baseline_terminals": 226,
+      "counts": {
+        "baseline_paths": 226,
+        "baseline_sum_local_branches": 226,
+        "repair_paths": 525,
+        "repair_sum_local_branches": 525
+      },
+      "wall_seconds": 0.6291325408965349,
+      "status": "passed",
+      "peak_mib": 66.15625
+    },
+    {
+      "case": 51,
+      "baseline_branches": 221,
+      "repair_branches": 344,
+      "combined_branches": 565,
+      "repair_new_branches": 344,
+      "baseline_terminals": 221,
+      "counts": {
+        "baseline_paths": 221,
+        "baseline_sum_local_branches": 221,
+        "repair_paths": 345,
+        "repair_sum_local_branches": 345
+      },
+      "wall_seconds": 0.6129372911527753,
+      "status": "passed",
+      "peak_mib": 66.671875
+    },
+    {
+      "case": 52,
+      "baseline_branches": 194,
+      "repair_branches": 15056,
+      "combined_branches": 15250,
+      "repair_new_branches": 15056,
+      "baseline_terminals": 194,
+      "counts": {
+        "baseline_paths": 194,
+        "baseline_sum_local_branches": 194,
+        "repair_paths": 15063,
+        "repair_sum_local_branches": 15063
+      },
+      "wall_seconds": 2.168806665809825,
+      "status": "passed",
+      "peak_mib": 144.0
+    },
+    {
+      "case": 53,
+      "baseline_branches": 990,
+      "repair_branches": 488,
+      "combined_branches": 1478,
+      "repair_new_branches": 488,
+      "baseline_terminals": 990,
+      "counts": {
+        "baseline_paths": 990,
+        "baseline_sum_local_branches": 990,
+        "repair_paths": 488,
+        "repair_sum_local_branches": 488
+      },
+      "wall_seconds": 0.619530666153878,
+      "status": "passed",
+      "peak_mib": 77.515625
+    },
+    {
+      "case": 54,
+      "baseline_branches": 1794,
+      "repair_branches": 1537,
+      "combined_branches": 3331,
+      "repair_new_branches": 1537,
+      "baseline_terminals": 1794,
+      "counts": {
+        "baseline_paths": 1794,
+        "baseline_sum_local_branches": 1794,
+        "repair_paths": 1543,
+        "repair_sum_local_branches": 1543
+      },
+      "wall_seconds": 0.8550131251104176,
+      "status": "passed",
+      "peak_mib": 92.109375
+    },
+    {
+      "case": 55,
+      "baseline_branches": 2312,
+      "repair_branches": 480,
+      "combined_branches": 2792,
+      "repair_new_branches": 480,
+      "baseline_terminals": 2312,
+      "counts": {
+        "baseline_paths": 2312,
+        "baseline_sum_local_branches": 2312,
+        "repair_paths": 480,
+        "repair_sum_local_branches": 480
+      },
+      "wall_seconds": 1.0032262499444187,
+      "status": "passed",
+      "peak_mib": 147.59375
+    },
+    {
+      "case": 56,
+      "baseline_branches": 2255,
+      "repair_branches": 1641,
+      "combined_branches": 3896,
+      "repair_new_branches": 1641,
+      "baseline_terminals": 2255,
+      "counts": {
+        "baseline_paths": 2255,
+        "baseline_sum_local_branches": 2255,
+        "repair_paths": 1653,
+        "repair_sum_local_branches": 1653
+      },
+      "wall_seconds": 1.011084958910942,
+      "status": "passed",
+      "peak_mib": 142.546875
+    },
+    {
+      "case": 57,
+      "baseline_branches": 284,
+      "repair_branches": 921,
+      "combined_branches": 1205,
+      "repair_new_branches": 921,
+      "baseline_terminals": 284,
+      "counts": {
+        "baseline_paths": 284,
+        "baseline_sum_local_branches": 284,
+        "repair_paths": 927,
+        "repair_sum_local_branches": 927
+      },
+      "wall_seconds": 0.5979579160921276,
+      "status": "passed",
+      "peak_mib": 67.828125
+    },
+    {
+      "case": 58,
+      "baseline_branches": 273,
+      "repair_branches": 149,
+      "combined_branches": 422,
+      "repair_new_branches": 149,
+      "baseline_terminals": 273,
+      "counts": {
+        "baseline_paths": 273,
+        "baseline_sum_local_branches": 273,
+        "repair_paths": 155,
+        "repair_sum_local_branches": 155
+      },
+      "wall_seconds": 0.5112357919570059,
+      "status": "passed",
+      "peak_mib": 68.140625
+    },
+    {
+      "case": 59,
+      "baseline_branches": 28,
+      "repair_branches": 191,
+      "combined_branches": 219,
+      "repair_new_branches": 191,
+      "baseline_terminals": 28,
+      "counts": {
+        "baseline_paths": 28,
+        "baseline_sum_local_branches": 28,
+        "repair_paths": 191,
+        "repair_sum_local_branches": 191
+      },
+      "wall_seconds": 0.350326957879588,
+      "status": "passed",
+      "peak_mib": 32.59375
+    },
+    {
+      "case": 60,
+      "baseline_branches": 33,
+      "repair_branches": 322,
+      "combined_branches": 355,
+      "repair_new_branches": 322,
+      "baseline_terminals": 33,
+      "counts": {
+        "baseline_paths": 33,
+        "baseline_sum_local_branches": 33,
+        "repair_paths": 323,
+        "repair_sum_local_branches": 323
+      },
+      "wall_seconds": 0.4002257911488414,
+      "status": "passed",
+      "peak_mib": 51.765625
+    },
+    {
+      "case": 61,
+      "baseline_branches": 30,
+      "repair_branches": 152,
+      "combined_branches": 182,
+      "repair_new_branches": 152,
+      "baseline_terminals": 30,
+      "counts": {
+        "baseline_paths": 30,
+        "baseline_sum_local_branches": 30,
+        "repair_paths": 160,
+        "repair_sum_local_branches": 160
+      },
+      "wall_seconds": 0.38619729201309383,
+      "status": "passed",
+      "peak_mib": 50.84375
+    },
+    {
+      "case": 62,
+      "baseline_branches": 23,
+      "repair_branches": 134,
+      "combined_branches": 157,
+      "repair_new_branches": 134,
+      "baseline_terminals": 23,
+      "counts": {
+        "baseline_paths": 23,
+        "baseline_sum_local_branches": 23,
+        "repair_paths": 141,
+        "repair_sum_local_branches": 141
+      },
+      "wall_seconds": 0.377905375091359,
+      "status": "passed",
+      "peak_mib": 51.03125
+    },
+    {
+      "case": 63,
+      "baseline_branches": 22,
+      "repair_branches": 143,
+      "combined_branches": 165,
+      "repair_new_branches": 143,
+      "baseline_terminals": 22,
+      "counts": {
+        "baseline_paths": 22,
+        "baseline_sum_local_branches": 22,
+        "repair_paths": 146,
+        "repair_sum_local_branches": 146
+      },
+      "wall_seconds": 0.36717041698284447,
+      "status": "passed",
+      "peak_mib": 51.25
+    },
+    {
+      "case": 64,
+      "baseline_branches": 58,
+      "repair_branches": 171,
+      "combined_branches": 229,
+      "repair_new_branches": 171,
+      "baseline_terminals": 58,
+      "counts": {
+        "baseline_paths": 58,
+        "baseline_sum_local_branches": 58,
+        "repair_paths": 177,
+        "repair_sum_local_branches": 177
+      },
+      "wall_seconds": 0.38954112492501736,
+      "status": "passed",
+      "peak_mib": 50.96875
+    },
+    {
+      "case": 65,
+      "baseline_branches": 143,
+      "repair_branches": 213,
+      "combined_branches": 356,
+      "repair_new_branches": 213,
+      "baseline_terminals": 143,
+      "counts": {
+        "baseline_paths": 143,
+        "baseline_sum_local_branches": 143,
+        "repair_paths": 240,
+        "repair_sum_local_branches": 240
+      },
+      "wall_seconds": 0.3934845000039786,
+      "status": "passed",
+      "peak_mib": 52.078125
+    },
+    {
+      "case": 66,
+      "baseline_branches": 34,
+      "repair_branches": 244,
+      "combined_branches": 277,
+      "repair_new_branches": 243,
+      "baseline_terminals": 34,
+      "counts": {
+        "baseline_paths": 34,
+        "baseline_sum_local_branches": 34,
+        "repair_paths": 245,
+        "repair_sum_local_branches": 245
+      },
+      "wall_seconds": 0.3895011250860989,
+      "status": "passed",
+      "peak_mib": 51.140625
+    },
+    {
+      "case": 67,
+      "baseline_branches": 38,
+      "repair_branches": 143,
+      "combined_branches": 181,
+      "repair_new_branches": 143,
+      "baseline_terminals": 38,
+      "counts": {
+        "baseline_paths": 38,
+        "baseline_sum_local_branches": 38,
+        "repair_paths": 152,
+        "repair_sum_local_branches": 152
+      },
+      "wall_seconds": 0.35021770908497274,
+      "status": "passed",
+      "peak_mib": 50.765625
+    },
+    {
+      "case": 68,
+      "baseline_branches": 256,
+      "repair_branches": 238,
+      "combined_branches": 494,
+      "repair_new_branches": 238,
+      "baseline_terminals": 256,
+      "counts": {
+        "baseline_paths": 256,
+        "baseline_sum_local_branches": 256,
+        "repair_paths": 239,
+        "repair_sum_local_branches": 239
+      },
+      "wall_seconds": 0.7363086249679327,
+      "status": "passed",
+      "peak_mib": 80.328125
+    },
+    {
+      "case": 69,
+      "baseline_branches": 497,
+      "repair_branches": 151,
+      "combined_branches": 648,
+      "repair_new_branches": 151,
+      "baseline_terminals": 497,
+      "counts": {
+        "baseline_paths": 497,
+        "baseline_sum_local_branches": 497,
+        "repair_paths": 152,
+        "repair_sum_local_branches": 152
+      },
+      "wall_seconds": 0.8017176249995828,
+      "status": "passed",
+      "peak_mib": 99.875
+    },
+    {
+      "case": 70,
+      "baseline_branches": 2143,
+      "repair_branches": 152,
+      "combined_branches": 2295,
+      "repair_new_branches": 152,
+      "baseline_terminals": 2143,
+      "counts": {
+        "baseline_paths": 2143,
+        "baseline_sum_local_branches": 2143,
+        "repair_paths": 153,
+        "repair_sum_local_branches": 153
+      },
+      "wall_seconds": 1.0592289159540087,
+      "status": "passed",
+      "peak_mib": 187.296875
+    },
+    {
+      "case": 71,
+      "baseline_branches": 4539,
+      "repair_branches": 421,
+      "combined_branches": 4960,
+      "repair_new_branches": 421,
+      "baseline_terminals": 4539,
+      "counts": {
+        "baseline_paths": 4539,
+        "baseline_sum_local_branches": 4539,
+        "repair_paths": 421,
+        "repair_sum_local_branches": 421
+      },
+      "wall_seconds": 1.132011250127107,
+      "status": "passed",
+      "peak_mib": 184.03125
+    },
+    {
+      "case": 72,
+      "baseline_branches": 110,
+      "repair_branches": 180,
+      "combined_branches": 290,
+      "repair_new_branches": 180,
+      "baseline_terminals": 110,
+      "counts": {
+        "baseline_paths": 110,
+        "baseline_sum_local_branches": 110,
+        "repair_paths": 183,
+        "repair_sum_local_branches": 183
+      },
+      "wall_seconds": 0.4031744999811053,
+      "status": "passed",
+      "peak_mib": 45.828125
+    },
+    {
+      "case": 73,
+      "baseline_branches": 76,
+      "repair_branches": 340,
+      "combined_branches": 416,
+      "repair_new_branches": 340,
+      "baseline_terminals": 76,
+      "counts": {
+        "baseline_paths": 76,
+        "baseline_sum_local_branches": 76,
+        "repair_paths": 342,
+        "repair_sum_local_branches": 342
+      },
+      "wall_seconds": 0.380191917065531,
+      "status": "passed",
+      "peak_mib": 44.375
+    },
+    {
+      "case": 74,
+      "baseline_branches": 54,
+      "repair_branches": 1558,
+      "combined_branches": 1612,
+      "repair_new_branches": 1558,
+      "baseline_terminals": 54,
+      "counts": {
+        "baseline_paths": 54,
+        "baseline_sum_local_branches": 54,
+        "repair_paths": 1563,
+        "repair_sum_local_branches": 1563
+      },
+      "wall_seconds": 0.5098595418967307,
+      "status": "passed",
+      "peak_mib": 71.625
+    },
+    {
+      "case": 75,
+      "baseline_branches": 54,
+      "repair_branches": 2633,
+      "combined_branches": 2687,
+      "repair_new_branches": 2633,
+      "baseline_terminals": 54,
+      "counts": {
+        "baseline_paths": 54,
+        "baseline_sum_local_branches": 54,
+        "repair_paths": 2638,
+        "repair_sum_local_branches": 2638
+      },
+      "wall_seconds": 0.7714174170978367,
+      "status": "passed",
+      "peak_mib": 132.078125
+    },
+    {
+      "case": 76,
+      "baseline_branches": 160,
+      "repair_branches": 132,
+      "combined_branches": 292,
+      "repair_new_branches": 132,
+      "baseline_terminals": 160,
+      "counts": {
+        "baseline_paths": 160,
+        "baseline_sum_local_branches": 160,
+        "repair_paths": 132,
+        "repair_sum_local_branches": 132
+      },
+      "wall_seconds": 0.6282404169905931,
+      "status": "passed",
+      "peak_mib": 71.40625
+    },
+    {
+      "case": 77,
+      "baseline_branches": 580,
+      "repair_branches": 128,
+      "combined_branches": 708,
+      "repair_new_branches": 128,
+      "baseline_terminals": 580,
+      "counts": {
+        "baseline_paths": 580,
+        "baseline_sum_local_branches": 580,
+        "repair_paths": 128,
+        "repair_sum_local_branches": 128
+      },
+      "wall_seconds": 0.5698023750446737,
+      "status": "passed",
+      "peak_mib": 72.890625
+    },
+    {
+      "case": 78,
+      "baseline_branches": 48,
+      "repair_branches": 139,
+      "combined_branches": 187,
+      "repair_new_branches": 139,
+      "baseline_terminals": 48,
+      "counts": {
+        "baseline_paths": 48,
+        "baseline_sum_local_branches": 48,
+        "repair_paths": 146,
+        "repair_sum_local_branches": 146
+      },
+      "wall_seconds": 0.3537560000550002,
+      "status": "passed",
+      "peak_mib": 34.34375
+    },
+    {
+      "case": 79,
+      "baseline_branches": 31,
+      "repair_branches": 39,
+      "combined_branches": 70,
+      "repair_new_branches": 39,
+      "baseline_terminals": 31,
+      "counts": {
+        "baseline_paths": 31,
+        "baseline_sum_local_branches": 31,
+        "repair_paths": 39,
+        "repair_sum_local_branches": 39
+      },
+      "wall_seconds": 0.12031533289700747,
+      "status": "passed",
+      "peak_mib": 45.3125
+    },
+    {
+      "case": 80,
+      "baseline_branches": 40,
+      "repair_branches": 45,
+      "combined_branches": 85,
+      "repair_new_branches": 45,
+      "baseline_terminals": 40,
+      "counts": {
+        "baseline_paths": 40,
+        "baseline_sum_local_branches": 40,
+        "repair_paths": 46,
+        "repair_sum_local_branches": 46
+      },
+      "wall_seconds": 0.12601604219526052,
+      "status": "passed",
+      "peak_mib": 44.828125
+    },
+    {
+      "case": 81,
+      "baseline_branches": 44,
+      "repair_branches": 122,
+      "combined_branches": 166,
+      "repair_new_branches": 122,
+      "baseline_terminals": 44,
+      "counts": {
+        "baseline_paths": 44,
+        "baseline_sum_local_branches": 44,
+        "repair_paths": 124,
+        "repair_sum_local_branches": 124
+      },
+      "wall_seconds": 0.36967370798811316,
+      "status": "passed",
+      "peak_mib": 52.0
+    },
+    {
+      "case": 82,
+      "baseline_branches": 168,
+      "repair_branches": 159,
+      "combined_branches": 327,
+      "repair_new_branches": 159,
+      "baseline_terminals": 168,
+      "counts": {
+        "baseline_paths": 168,
+        "baseline_sum_local_branches": 168,
+        "repair_paths": 166,
+        "repair_sum_local_branches": 166
+      },
+      "wall_seconds": 0.42984195821918547,
+      "status": "passed",
+      "peak_mib": 56.046875
+    },
+    {
+      "case": 83,
+      "baseline_branches": 215,
+      "repair_branches": 143,
+      "combined_branches": 358,
+      "repair_new_branches": 143,
+      "baseline_terminals": 215,
+      "counts": {
+        "baseline_paths": 215,
+        "baseline_sum_local_branches": 215,
+        "repair_paths": 144,
+        "repair_sum_local_branches": 144
+      },
+      "wall_seconds": 0.4300678342115134,
+      "status": "passed",
+      "peak_mib": 57.59375
+    },
+    {
+      "case": 84,
+      "baseline_branches": 211,
+      "repair_branches": 138,
+      "combined_branches": 349,
+      "repair_new_branches": 138,
+      "baseline_terminals": 211,
+      "counts": {
+        "baseline_paths": 211,
+        "baseline_sum_local_branches": 211,
+        "repair_paths": 141,
+        "repair_sum_local_branches": 141
+      },
+      "wall_seconds": 0.43027775012888014,
+      "status": "passed",
+      "peak_mib": 56.8125
+    },
+    {
+      "case": 85,
+      "baseline_branches": 200,
+      "repair_branches": 132,
+      "combined_branches": 332,
+      "repair_new_branches": 132,
+      "baseline_terminals": 200,
+      "counts": {
+        "baseline_paths": 200,
+        "baseline_sum_local_branches": 200,
+        "repair_paths": 134,
+        "repair_sum_local_branches": 134
+      },
+      "wall_seconds": 0.40690712514333427,
+      "status": "passed",
+      "peak_mib": 56.40625
+    },
+    {
+      "case": 86,
+      "baseline_branches": 161,
+      "repair_branches": 221,
+      "combined_branches": 382,
+      "repair_new_branches": 221,
+      "baseline_terminals": 161,
+      "counts": {
+        "baseline_paths": 161,
+        "baseline_sum_local_branches": 161,
+        "repair_paths": 223,
+        "repair_sum_local_branches": 223
+      },
+      "wall_seconds": 0.5282612091396004,
+      "status": "passed",
+      "peak_mib": 59.75
+    },
+    {
+      "case": 87,
+      "baseline_branches": 182,
+      "repair_branches": 125,
+      "combined_branches": 307,
+      "repair_new_branches": 125,
+      "baseline_terminals": 182,
+      "counts": {
+        "baseline_paths": 182,
+        "baseline_sum_local_branches": 182,
+        "repair_paths": 134,
+        "repair_sum_local_branches": 134
+      },
+      "wall_seconds": 0.5354118330869824,
+      "status": "passed",
+      "peak_mib": 59.796875
+    },
+    {
+      "case": 88,
+      "baseline_branches": 177,
+      "repair_branches": 304,
+      "combined_branches": 481,
+      "repair_new_branches": 304,
+      "baseline_terminals": 177,
+      "counts": {
+        "baseline_paths": 177,
+        "baseline_sum_local_branches": 177,
+        "repair_paths": 308,
+        "repair_sum_local_branches": 308
+      },
+      "wall_seconds": 0.5317491251043975,
+      "status": "passed",
+      "peak_mib": 61.0
+    },
+    {
+      "case": 89,
+      "baseline_branches": 563,
+      "repair_branches": 467,
+      "combined_branches": 1030,
+      "repair_new_branches": 467,
+      "baseline_terminals": 563,
+      "counts": {
+        "baseline_paths": 563,
+        "baseline_sum_local_branches": 563,
+        "repair_paths": 474,
+        "repair_sum_local_branches": 474
+      },
+      "wall_seconds": 0.5353515830356628,
+      "status": "passed",
+      "peak_mib": 66.71875
+    },
+    {
+      "case": 90,
+      "baseline_branches": 910,
+      "repair_branches": 112,
+      "combined_branches": 1022,
+      "repair_new_branches": 112,
+      "baseline_terminals": 910,
+      "counts": {
+        "baseline_paths": 910,
+        "baseline_sum_local_branches": 910,
+        "repair_paths": 133,
+        "repair_sum_local_branches": 133
+      },
+      "wall_seconds": 0.530868207802996,
+      "status": "passed",
+      "peak_mib": 70.8125
+    },
+    {
+      "case": 91,
+      "baseline_branches": 407,
+      "repair_branches": 317,
+      "combined_branches": 724,
+      "repair_new_branches": 317,
+      "baseline_terminals": 407,
+      "counts": {
+        "baseline_paths": 407,
+        "baseline_sum_local_branches": 407,
+        "repair_paths": 317,
+        "repair_sum_local_branches": 317
+      },
+      "wall_seconds": 0.549189625075087,
+      "status": "passed",
+      "peak_mib": 64.359375
+    },
+    {
+      "case": 92,
+      "baseline_branches": 167,
+      "repair_branches": 340,
+      "combined_branches": 507,
+      "repair_new_branches": 340,
+      "baseline_terminals": 167,
+      "counts": {
+        "baseline_paths": 167,
+        "baseline_sum_local_branches": 167,
+        "repair_paths": 348,
+        "repair_sum_local_branches": 348
+      },
+      "wall_seconds": 0.5096281250007451,
+      "status": "passed",
+      "peak_mib": 58.796875
+    },
+    {
+      "case": 93,
+      "baseline_branches": 317,
+      "repair_branches": 139,
+      "combined_branches": 456,
+      "repair_new_branches": 139,
+      "baseline_terminals": 317,
+      "counts": {
+        "baseline_paths": 317,
+        "baseline_sum_local_branches": 317,
+        "repair_paths": 139,
+        "repair_sum_local_branches": 139
+      },
+      "wall_seconds": 0.3891958750318736,
+      "status": "passed",
+      "peak_mib": 56.8125
+    },
+    {
+      "case": 94,
+      "baseline_branches": 76,
+      "repair_branches": 254,
+      "combined_branches": 330,
+      "repair_new_branches": 254,
+      "baseline_terminals": 76,
+      "counts": {
+        "baseline_paths": 76,
+        "baseline_sum_local_branches": 76,
+        "repair_paths": 261,
+        "repair_sum_local_branches": 261
+      },
+      "wall_seconds": 0.3831316251307726,
+      "status": "passed",
+      "peak_mib": 52.71875
+    },
+    {
+      "case": 95,
+      "baseline_branches": 59,
+      "repair_branches": 146,
+      "combined_branches": 205,
+      "repair_new_branches": 146,
+      "baseline_terminals": 59,
+      "counts": {
+        "baseline_paths": 59,
+        "baseline_sum_local_branches": 59,
+        "repair_paths": 163,
+        "repair_sum_local_branches": 163
+      },
+      "wall_seconds": 0.3771465828176588,
+      "status": "passed",
+      "peak_mib": 53.125
+    },
+    {
+      "case": 96,
+      "baseline_branches": 57,
+      "repair_branches": 153,
+      "combined_branches": 210,
+      "repair_new_branches": 153,
+      "baseline_terminals": 57,
+      "counts": {
+        "baseline_paths": 57,
+        "baseline_sum_local_branches": 57,
+        "repair_paths": 169,
+        "repair_sum_local_branches": 169
+      },
+      "wall_seconds": 0.3575974579434842,
+      "status": "passed",
+      "peak_mib": 52.40625
+    },
+    {
+      "case": 97,
+      "baseline_branches": 1838,
+      "repair_branches": 170,
+      "combined_branches": 2008,
+      "repair_new_branches": 170,
+      "baseline_terminals": 1838,
+      "counts": {
+        "baseline_paths": 1838,
+        "baseline_sum_local_branches": 1838,
+        "repair_paths": 186,
+        "repair_sum_local_branches": 186
+      },
+      "wall_seconds": 0.6503497080411762,
+      "status": "passed",
+      "peak_mib": 93.640625
+    },
+    {
+      "case": 98,
+      "baseline_branches": 2076,
+      "repair_branches": 201,
+      "combined_branches": 2277,
+      "repair_new_branches": 201,
+      "baseline_terminals": 2076,
+      "counts": {
+        "baseline_paths": 2076,
+        "baseline_sum_local_branches": 2076,
+        "repair_paths": 203,
+        "repair_sum_local_branches": 203
+      },
+      "wall_seconds": 0.5101716660428792,
+      "status": "passed",
+      "peak_mib": 75.046875
+    },
+    {
+      "case": 99,
+      "baseline_branches": 112,
+      "repair_branches": 215,
+      "combined_branches": 327,
+      "repair_new_branches": 215,
+      "baseline_terminals": 112,
+      "counts": {
+        "baseline_paths": 112,
+        "baseline_sum_local_branches": 112,
+        "repair_paths": 229,
+        "repair_sum_local_branches": 229
+      },
+      "wall_seconds": 0.3903801250271499,
+      "status": "passed",
+      "peak_mib": 52.65625
+    },
+    {
+      "case": 100,
+      "baseline_branches": 976,
+      "repair_branches": 145,
+      "combined_branches": 1121,
+      "repair_new_branches": 145,
+      "baseline_terminals": 976,
+      "counts": {
+        "baseline_paths": 976,
+        "baseline_sum_local_branches": 976,
+        "repair_paths": 145,
+        "repair_sum_local_branches": 145
+      },
+      "wall_seconds": 0.4566755830310285,
+      "status": "passed",
+      "peak_mib": 65.71875
+    },
+    {
+      "case": 101,
+      "baseline_branches": 82,
+      "repair_branches": 798,
+      "combined_branches": 880,
+      "repair_new_branches": 798,
+      "baseline_terminals": 82,
+      "counts": {
+        "baseline_paths": 82,
+        "baseline_sum_local_branches": 82,
+        "repair_paths": 807,
+        "repair_sum_local_branches": 807
+      },
+      "wall_seconds": 0.39623545901849866,
+      "status": "passed",
+      "peak_mib": 53.078125
+    },
+    {
+      "case": 102,
+      "baseline_branches": 58,
+      "repair_branches": 1956,
+      "combined_branches": 2014,
+      "repair_new_branches": 1956,
+      "baseline_terminals": 58,
+      "counts": {
+        "baseline_paths": 58,
+        "baseline_sum_local_branches": 58,
+        "repair_paths": 1961,
+        "repair_sum_local_branches": 1961
+      },
+      "wall_seconds": 0.47135787503793836,
+      "status": "passed",
+      "peak_mib": 55.40625
+    },
+    {
+      "case": 103,
+      "baseline_branches": 58,
+      "repair_branches": 1965,
+      "combined_branches": 2023,
+      "repair_new_branches": 1965,
+      "baseline_terminals": 58,
+      "counts": {
+        "baseline_paths": 58,
+        "baseline_sum_local_branches": 58,
+        "repair_paths": 1970,
+        "repair_sum_local_branches": 1970
+      },
+      "wall_seconds": 0.4736092919483781,
+      "status": "passed",
+      "peak_mib": 55.21875
+    },
+    {
+      "case": 104,
+      "baseline_branches": 917,
+      "repair_branches": 155,
+      "combined_branches": 1072,
+      "repair_new_branches": 155,
+      "baseline_terminals": 917,
+      "counts": {
+        "baseline_paths": 917,
+        "baseline_sum_local_branches": 917,
+        "repair_paths": 168,
+        "repair_sum_local_branches": 168
+      },
+      "wall_seconds": 0.38910270808264613,
+      "status": "passed",
+      "peak_mib": 47.421875
+    },
+    {
+      "case": 105,
+      "baseline_branches": 198,
+      "repair_branches": 1686,
+      "combined_branches": 1884,
+      "repair_new_branches": 1686,
+      "baseline_terminals": 198,
+      "counts": {
+        "baseline_paths": 198,
+        "baseline_sum_local_branches": 198,
+        "repair_paths": 1689,
+        "repair_sum_local_branches": 1689
+      },
+      "wall_seconds": 0.476220624987036,
+      "status": "passed",
+      "peak_mib": 45.296875
+    },
+    {
+      "case": 106,
+      "baseline_branches": 198,
+      "repair_branches": 1686,
+      "combined_branches": 1884,
+      "repair_new_branches": 1686,
+      "baseline_terminals": 198,
+      "counts": {
+        "baseline_paths": 198,
+        "baseline_sum_local_branches": 198,
+        "repair_paths": 1689,
+        "repair_sum_local_branches": 1689
+      },
+      "wall_seconds": 0.4803742920048535,
+      "status": "passed",
+      "peak_mib": 63.9375
+    },
+    {
+      "case": 107,
+      "baseline_branches": 323,
+      "repair_branches": 268,
+      "combined_branches": 591,
+      "repair_new_branches": 268,
+      "baseline_terminals": 323,
+      "counts": {
+        "baseline_paths": 323,
+        "baseline_sum_local_branches": 323,
+        "repair_paths": 269,
+        "repair_sum_local_branches": 269
+      },
+      "wall_seconds": 0.38927862513810396,
+      "status": "passed",
+      "peak_mib": 45.53125
+    },
+    {
+      "case": 108,
+      "baseline_branches": 323,
+      "repair_branches": 279,
+      "combined_branches": 602,
+      "repair_new_branches": 279,
+      "baseline_terminals": 323,
+      "counts": {
+        "baseline_paths": 323,
+        "baseline_sum_local_branches": 323,
+        "repair_paths": 280,
+        "repair_sum_local_branches": 280
+      },
+      "wall_seconds": 0.3778778749983758,
+      "status": "passed",
+      "peak_mib": 56.203125
+    },
+    {
+      "case": 109,
+      "baseline_branches": 132,
+      "repair_branches": 163,
+      "combined_branches": 295,
+      "repair_new_branches": 163,
+      "baseline_terminals": 132,
+      "counts": {
+        "baseline_paths": 132,
+        "baseline_sum_local_branches": 132,
+        "repair_paths": 165,
+        "repair_sum_local_branches": 165
+      },
+      "wall_seconds": 0.3890842499677092,
+      "status": "passed",
+      "peak_mib": 53.984375
+    },
+    {
+      "case": 110,
+      "baseline_branches": 33,
+      "repair_branches": 193,
+      "combined_branches": 226,
+      "repair_new_branches": 193,
+      "baseline_terminals": 33,
+      "counts": {
+        "baseline_paths": 33,
+        "baseline_sum_local_branches": 33,
+        "repair_paths": 202,
+        "repair_sum_local_branches": 202
+      },
+      "wall_seconds": 0.3700264170765877,
+      "status": "passed",
+      "peak_mib": 52.328125
+    },
+    {
+      "case": 111,
+      "baseline_branches": 301,
+      "repair_branches": 178,
+      "combined_branches": 479,
+      "repair_new_branches": 178,
+      "baseline_terminals": 301,
+      "counts": {
+        "baseline_paths": 301,
+        "baseline_sum_local_branches": 301,
+        "repair_paths": 192,
+        "repair_sum_local_branches": 192
+      },
+      "wall_seconds": 0.3881835830397904,
+      "status": "passed",
+      "peak_mib": 55.84375
+    },
+    {
+      "case": 112,
+      "baseline_branches": 90,
+      "repair_branches": 178,
+      "combined_branches": 268,
+      "repair_new_branches": 178,
+      "baseline_terminals": 90,
+      "counts": {
+        "baseline_paths": 90,
+        "baseline_sum_local_branches": 90,
+        "repair_paths": 179,
+        "repair_sum_local_branches": 179
+      },
+      "wall_seconds": 0.35474595916457474,
+      "status": "passed",
+      "peak_mib": 53.359375
+    },
+    {
+      "case": 113,
+      "baseline_branches": 60,
+      "repair_branches": 158,
+      "combined_branches": 218,
+      "repair_new_branches": 158,
+      "baseline_terminals": 60,
+      "counts": {
+        "baseline_paths": 60,
+        "baseline_sum_local_branches": 60,
+        "repair_paths": 159,
+        "repair_sum_local_branches": 159
+      },
+      "wall_seconds": 0.3444736669771373,
+      "status": "passed",
+      "peak_mib": 52.109375
+    },
+    {
+      "case": 114,
+      "baseline_branches": 46,
+      "repair_branches": 504,
+      "combined_branches": 550,
+      "repair_new_branches": 504,
+      "baseline_terminals": 46,
+      "counts": {
+        "baseline_paths": 46,
+        "baseline_sum_local_branches": 46,
+        "repair_paths": 504,
+        "repair_sum_local_branches": 504
+      },
+      "wall_seconds": 0.3670791669283062,
+      "status": "passed",
+      "peak_mib": 52.75
+    },
+    {
+      "case": 115,
+      "baseline_branches": 56,
+      "repair_branches": 382,
+      "combined_branches": 438,
+      "repair_new_branches": 382,
+      "baseline_terminals": 56,
+      "counts": {
+        "baseline_paths": 56,
+        "baseline_sum_local_branches": 56,
+        "repair_paths": 387,
+        "repair_sum_local_branches": 387
+      },
+      "wall_seconds": 0.36748800007626414,
+      "status": "passed",
+      "peak_mib": 53.234375
+    },
+    {
+      "case": 116,
+      "baseline_branches": 77,
+      "repair_branches": 142,
+      "combined_branches": 219,
+      "repair_new_branches": 142,
+      "baseline_terminals": 77,
+      "counts": {
+        "baseline_paths": 77,
+        "baseline_sum_local_branches": 77,
+        "repair_paths": 146,
+        "repair_sum_local_branches": 146
+      },
+      "wall_seconds": 0.40947641618549824,
+      "status": "passed",
+      "peak_mib": 57.609375
+    },
+    {
+      "case": 117,
+      "baseline_branches": 324,
+      "repair_branches": 226,
+      "combined_branches": 550,
+      "repair_new_branches": 226,
+      "baseline_terminals": 324,
+      "counts": {
+        "baseline_paths": 324,
+        "baseline_sum_local_branches": 324,
+        "repair_paths": 229,
+        "repair_sum_local_branches": 229
+      },
+      "wall_seconds": 0.4616560419090092,
+      "status": "passed",
+      "peak_mib": 65.515625
+    },
+    {
+      "case": 118,
+      "baseline_branches": 34,
+      "repair_branches": 172,
+      "combined_branches": 206,
+      "repair_new_branches": 172,
+      "baseline_terminals": 34,
+      "counts": {
+        "baseline_paths": 34,
+        "baseline_sum_local_branches": 34,
+        "repair_paths": 181,
+        "repair_sum_local_branches": 181
+      },
+      "wall_seconds": 0.3288514579180628,
+      "status": "passed",
+      "peak_mib": 51.0
+    },
+    {
+      "case": 119,
+      "baseline_branches": 307,
+      "repair_branches": 1596,
+      "combined_branches": 1903,
+      "repair_new_branches": 1596,
+      "baseline_terminals": 307,
+      "counts": {
+        "baseline_paths": 307,
+        "baseline_sum_local_branches": 307,
+        "repair_paths": 1599,
+        "repair_sum_local_branches": 1599
+      },
+      "wall_seconds": 0.5617209998890758,
+      "status": "passed",
+      "peak_mib": 59.90625
+    },
+    {
+      "case": 120,
+      "baseline_branches": 58,
+      "repair_branches": 246,
+      "combined_branches": 304,
+      "repair_new_branches": 246,
+      "baseline_terminals": 58,
+      "counts": {
+        "baseline_paths": 58,
+        "baseline_sum_local_branches": 58,
+        "repair_paths": 247,
+        "repair_sum_local_branches": 247
+      },
+      "wall_seconds": 0.34582250006496906,
+      "status": "passed",
+      "peak_mib": 51.078125
+    },
+    {
+      "case": 121,
+      "baseline_branches": 190,
+      "repair_branches": 513,
+      "combined_branches": 703,
+      "repair_new_branches": 513,
+      "baseline_terminals": 190,
+      "counts": {
+        "baseline_paths": 190,
+        "baseline_sum_local_branches": 190,
+        "repair_paths": 513,
+        "repair_sum_local_branches": 513
+      },
+      "wall_seconds": 0.4178821670357138,
+      "status": "passed",
+      "peak_mib": 46.546875
+    },
+    {
+      "case": 122,
+      "baseline_branches": 49,
+      "repair_branches": 237,
+      "combined_branches": 286,
+      "repair_new_branches": 237,
+      "baseline_terminals": 49,
+      "counts": {
+        "baseline_paths": 49,
+        "baseline_sum_local_branches": 49,
+        "repair_paths": 239,
+        "repair_sum_local_branches": 239
+      },
+      "wall_seconds": 0.34181258315220475,
+      "status": "passed",
+      "peak_mib": 46.53125
+    },
+    {
+      "case": 123,
+      "baseline_branches": 73,
+      "repair_branches": 201,
+      "combined_branches": 274,
+      "repair_new_branches": 201,
+      "baseline_terminals": 73,
+      "counts": {
+        "baseline_paths": 73,
+        "baseline_sum_local_branches": 73,
+        "repair_paths": 203,
+        "repair_sum_local_branches": 203
+      },
+      "wall_seconds": 0.3471487918868661,
+      "status": "passed",
+      "peak_mib": 45.921875
+    },
+    {
+      "case": 124,
+      "baseline_branches": 164,
+      "repair_branches": 1063,
+      "combined_branches": 1227,
+      "repair_new_branches": 1063,
+      "baseline_terminals": 164,
+      "counts": {
+        "baseline_paths": 164,
+        "baseline_sum_local_branches": 164,
+        "repair_paths": 1064,
+        "repair_sum_local_branches": 1064
+      },
+      "wall_seconds": 0.49527254211716354,
+      "status": "passed",
+      "peak_mib": 60.609375
+    },
+    {
+      "case": 125,
+      "baseline_branches": 84,
+      "repair_branches": 160,
+      "combined_branches": 244,
+      "repair_new_branches": 160,
+      "baseline_terminals": 84,
+      "counts": {
+        "baseline_paths": 84,
+        "baseline_sum_local_branches": 84,
+        "repair_paths": 161,
+        "repair_sum_local_branches": 161
+      },
+      "wall_seconds": 0.3377189168240875,
+      "status": "passed",
+      "peak_mib": 34.3125
+    },
+    {
+      "case": 126,
+      "baseline_branches": 38,
+      "repair_branches": 297,
+      "combined_branches": 335,
+      "repair_new_branches": 297,
+      "baseline_terminals": 38,
+      "counts": {
+        "baseline_paths": 38,
+        "baseline_sum_local_branches": 38,
+        "repair_paths": 297,
+        "repair_sum_local_branches": 297
+      },
+      "wall_seconds": 0.33602866693399847,
+      "status": "passed",
+      "peak_mib": 34.46875
+    },
+    {
+      "case": 127,
+      "baseline_branches": 34,
+      "repair_branches": 286,
+      "combined_branches": 319,
+      "repair_new_branches": 285,
+      "baseline_terminals": 34,
+      "counts": {
+        "baseline_paths": 34,
+        "baseline_sum_local_branches": 34,
+        "repair_paths": 303,
+        "repair_sum_local_branches": 303
+      },
+      "wall_seconds": 0.3289977500680834,
+      "status": "passed",
+      "peak_mib": 0.0
+    },
+    {
+      "case": 128,
+      "baseline_branches": 28,
+      "repair_branches": 140,
+      "combined_branches": 168,
+      "repair_new_branches": 140,
+      "baseline_terminals": 28,
+      "counts": {
+        "baseline_paths": 28,
+        "baseline_sum_local_branches": 28,
+        "repair_paths": 148,
+        "repair_sum_local_branches": 148
+      },
+      "wall_seconds": 0.26157966582104564,
+      "status": "passed",
+      "peak_mib": 51.109375
+    },
+    {
+      "case": 129,
+      "baseline_branches": 608,
+      "repair_branches": 256,
+      "combined_branches": 864,
+      "repair_new_branches": 256,
+      "baseline_terminals": 608,
+      "counts": {
+        "baseline_paths": 608,
+        "baseline_sum_local_branches": 608,
+        "repair_paths": 284,
+        "repair_sum_local_branches": 284
+      },
+      "wall_seconds": 0.40679770917631686,
+      "status": "passed",
+      "peak_mib": 62.859375
+    },
+    {
+      "case": 130,
+      "baseline_branches": 40,
+      "repair_branches": 936,
+      "combined_branches": 976,
+      "repair_new_branches": 936,
+      "baseline_terminals": 40,
+      "counts": {
+        "baseline_paths": 40,
+        "baseline_sum_local_branches": 40,
+        "repair_paths": 941,
+        "repair_sum_local_branches": 941
+      },
+      "wall_seconds": 0.39351791702210903,
+      "status": "passed",
+      "peak_mib": 57.703125
+    },
+    {
+      "case": 131,
+      "baseline_branches": 98,
+      "repair_branches": 327,
+      "combined_branches": 425,
+      "repair_new_branches": 327,
+      "baseline_terminals": 98,
+      "counts": {
+        "baseline_paths": 98,
+        "baseline_sum_local_branches": 98,
+        "repair_paths": 330,
+        "repair_sum_local_branches": 330
+      },
+      "wall_seconds": 0.38398575014434755,
+      "status": "passed",
+      "peak_mib": 56.25
+    },
+    {
+      "case": 132,
+      "baseline_branches": 267,
+      "repair_branches": 186,
+      "combined_branches": 453,
+      "repair_new_branches": 186,
+      "baseline_terminals": 267,
+      "counts": {
+        "baseline_paths": 267,
+        "baseline_sum_local_branches": 267,
+        "repair_paths": 228,
+        "repair_sum_local_branches": 228
+      },
+      "wall_seconds": 0.36503320885822177,
+      "status": "passed",
+      "peak_mib": 54.9375
+    },
+    {
+      "case": 133,
+      "baseline_branches": 87,
+      "repair_branches": 518,
+      "combined_branches": 605,
+      "repair_new_branches": 518,
+      "baseline_terminals": 87,
+      "counts": {
+        "baseline_paths": 87,
+        "baseline_sum_local_branches": 87,
+        "repair_paths": 521,
+        "repair_sum_local_branches": 521
+      },
+      "wall_seconds": 0.39644575002603233,
+      "status": "passed",
+      "peak_mib": 54.875
+    },
+    {
+      "case": 134,
+      "baseline_branches": 62,
+      "repair_branches": 918,
+      "combined_branches": 980,
+      "repair_new_branches": 918,
+      "baseline_terminals": 62,
+      "counts": {
+        "baseline_paths": 62,
+        "baseline_sum_local_branches": 62,
+        "repair_paths": 991,
+        "repair_sum_local_branches": 991
+      },
+      "wall_seconds": 0.40824308386072516,
+      "status": "passed",
+      "peak_mib": 53.375
+    },
+    {
+      "case": 135,
+      "baseline_branches": 2983,
+      "repair_branches": 2812,
+      "combined_branches": 5795,
+      "repair_new_branches": 2812,
+      "baseline_terminals": 2983,
+      "counts": {
+        "baseline_paths": 2983,
+        "baseline_sum_local_branches": 2983,
+        "repair_paths": 2812,
+        "repair_sum_local_branches": 2812
+      },
+      "wall_seconds": 0.7256079590879381,
+      "status": "passed",
+      "peak_mib": 97.0
+    },
+    {
+      "case": 136,
+      "baseline_branches": 477,
+      "repair_branches": 188,
+      "combined_branches": 665,
+      "repair_new_branches": 188,
+      "baseline_terminals": 477,
+      "counts": {
+        "baseline_paths": 477,
+        "baseline_sum_local_branches": 477,
+        "repair_paths": 189,
+        "repair_sum_local_branches": 189
+      },
+      "wall_seconds": 0.3899932911153883,
+      "status": "passed",
+      "peak_mib": 60.734375
+    },
+    {
+      "case": 137,
+      "baseline_branches": 626,
+      "repair_branches": 831,
+      "combined_branches": 1457,
+      "repair_new_branches": 831,
+      "baseline_terminals": 626,
+      "counts": {
+        "baseline_paths": 626,
+        "baseline_sum_local_branches": 626,
+        "repair_paths": 831,
+        "repair_sum_local_branches": 831
+      },
+      "wall_seconds": 0.4469201660249382,
+      "status": "passed",
+      "peak_mib": 63.25
+    },
+    {
+      "case": 138,
+      "baseline_branches": 136,
+      "repair_branches": 304,
+      "combined_branches": 440,
+      "repair_new_branches": 304,
+      "baseline_terminals": 136,
+      "counts": {
+        "baseline_paths": 136,
+        "baseline_sum_local_branches": 136,
+        "repair_paths": 304,
+        "repair_sum_local_branches": 304
+      },
+      "wall_seconds": 0.3813238749280572,
+      "status": "passed",
+      "peak_mib": 57.609375
+    },
+    {
+      "case": 139,
+      "baseline_branches": 36,
+      "repair_branches": 275,
+      "combined_branches": 311,
+      "repair_new_branches": 275,
+      "baseline_terminals": 36,
+      "counts": {
+        "baseline_paths": 36,
+        "baseline_sum_local_branches": 36,
+        "repair_paths": 276,
+        "repair_sum_local_branches": 276
+      },
+      "wall_seconds": 0.3175740831065923,
+      "status": "passed",
+      "peak_mib": 33.953125
+    }
+  ],
+  "baseline_branches": 120253,
+  "repair_branches": 117394,
+  "combined_branches": 237645,
+  "repair_new_branches": 117392,
+  "baseline_terminals": 120253,
+  "complete": true,
+  "wall_seconds": 32.85896758316085,
+  "peak_mib": 1610.96875,
+  "definition": "Exact AAMResult.branches relation-key equality, evaluated within each reaction across baseline and all accepted repairs. No decoded mappings or event classes used."
+}

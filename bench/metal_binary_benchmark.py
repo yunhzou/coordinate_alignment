@@ -13,7 +13,7 @@ import time
 from types import SimpleNamespace
 
 import numpy as np
-from metal_binary_events import binary_metal_input, DeltaPatterns, scalar_events, membership
+from metal_binary_events import binary_metal_input, DeltaPatterns, scalar_events, membership, recanonicalize_patterns
 
 DATA=Path('/project/yunhengzou/coordinate_alignment/aam_benchmarks')
 FROZEN=DATA/'holdout_cap1000_seed1_20260910'
@@ -216,6 +216,12 @@ def query(args):
     task=read(args.run/'tasks.json')[args.slot];assert task['dataset']=='holdout'
     raw=read(args.run/f"raw/holdout/{task['index']}/input.json");canonical=DeltaPatterns(raw)
     analyses={v:read(folder(args.run,task,v)/'raw_evaluation.json') for v in VARIANTS}
+    # Stored evaluations can predate the sparse, versioned ID schema.
+    for value in analyses.values():
+        for field in ('minimum_patterns', 'target_representatives'):
+            value[field] = recanonicalize_patterns(canonical, value[field])
+        if value['target'] is not None:
+            value['target'] = canonical.describe(value['target']['mapping'])
     patterns={}
     for v,value in analyses.items():
         patterns.update(value['minimum_patterns'])
