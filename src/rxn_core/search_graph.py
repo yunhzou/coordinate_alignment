@@ -201,7 +201,12 @@ class PathRealization:
 
 @dataclass(frozen=True)
 class SearchBranch:
-    """One literal matched-fragment relation and every path discovering it."""
+    """One unordered final fragment-pair combination and its saved alternatives.
+
+    representative/hierarchy describe the first witness only; paths contains
+    the complete union. Consumers needing one literal relation must explicitly
+    use AAMSearchGraph.literal_branches().
+    """
 
     paths: tuple[SearchPath, ...]
 
@@ -285,7 +290,23 @@ class AAMSearchGraph:
                         stack.append((edge.source, (edge.id,) + suffix))
 
     def branches(self):
-        """Deduplicate identical matched relations, retaining seed/cut paths."""
+        """Group final fragment pairs independently of seed/growth history.
+
+        All original paths remain available: grouping never selects only one
+        mapping or assumes that an intrinsic group exhausts a saved family.
+        """
+        from .final_branches import final_fragment_pairs
+        groups, keys = {}, {}
+        for path in self.paths():
+            if path.terminal not in keys:
+                context = path.context
+                keys[path.terminal] = (context.graph_floor, context.iso_tolerance,
+                    final_fragment_pairs(self.states[path.terminal]))
+            groups.setdefault(keys[path.terminal], []).append(path)
+        return tuple(SearchBranch(tuple(paths)) for paths in groups.values())
+
+    def literal_branches(self):
+        """Legacy ordered relation grouping for consumers of one hierarchy."""
         relations = {}
         for path in self.paths():
             fragments = []
@@ -297,7 +318,7 @@ class AAMSearchGraph:
                             if key not in {'multiplicity', 'automorph_group_source'}}
                 fragments.append((tuple(edge.match['fragment']),
                                   edge.preserved_bonds, frozen_value(symmetry),
-                                  frozen_value(edge.match['deferred_edges'])))
+                                  frozen_value(edge.match.get('deferred_edges', ()))))
             key = (tuple(sorted(path.mapping.items())), tuple(fragments))
             relations.setdefault(key, []).append(path)
         return tuple(SearchBranch(tuple(paths)) for paths in relations.values())

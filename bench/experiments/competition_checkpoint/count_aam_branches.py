@@ -1,4 +1,4 @@
-"""Count exactly the literal relation keys used by AAMResult.branches.
+"""Count the historical ordered relation keys, now graph.literal_branches().
 
 Cache fragment keys and intern them to count without retaining every SearchPath.
 No symmetry or atom-mapping expansion.
@@ -30,7 +30,7 @@ def child(case):
    key=(tuple(sorted(graph.states[path.terminal].mapping)),tuple(fragments));keys.add(key);local.add(key)
   counts[label+'_sum_local_branches']+=len(local)
   # Check against the public API on small archives, where no large memory cost arises.
-  if len(graph.terminals)<=10 and label=='baseline':assert len(local)==len(a.branches)
+  if len(graph.terminals)<=10 and label=='baseline':assert len(local)==len(a.graph.literal_branches())
   return len(graph.terminals)
  input_path=ROOT/f'outputs/holdout140_cap2000_seed1/case{case}/cuts/aam.pkl.gz' if case!=25 else ROOT/'outputs/holdout140_case25_retry/case25/cuts/aam.pkl.gz'
  terminals=collect(input_path,base,'baseline');gc.collect()
@@ -47,7 +47,7 @@ def main():
   return dict(json.loads((OUT/f'case{c}.json').read_text()),status=status,peak_mib=peak)
  with ThreadPoolExecutor(max_workers=4) as pool:rows=list(pool.map(run,range(140)))
  counts={k:sum(r.get(k,0) for r in rows) for k in ('baseline_branches','repair_branches','combined_branches','repair_new_branches','baseline_terminals')}
- result=dict(cases=rows,**counts,complete=all(r['status']=='passed' for r in rows),wall_seconds=time.perf_counter()-start,peak_mib=guard.peak_total_kib/1024,definition='Exact AAMResult.branches relation-key equality, evaluated within each reaction across baseline and all accepted repairs. No decoded mappings or event classes used.')
+ result=dict(cases=rows,**counts,complete=all(r['status']=='passed' for r in rows),wall_seconds=time.perf_counter()-start,peak_mib=guard.peak_total_kib/1024,definition='Historical ordered literal relation-key equality, evaluated within each reaction across baseline and all accepted repairs. No decoded mappings or event classes used.')
  save(OUT/'summary.json',result);print(json.dumps({k:v for k,v in result.items() if k!='cases'}),flush=True)
 if __name__=='__main__':
  if len(sys.argv)>1:child(int(sys.argv[1]))

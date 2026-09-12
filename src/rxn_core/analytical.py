@@ -223,7 +223,10 @@ def compile_mapping_families(aam: AAMResult, *, workers: int = 1):
     started = time.perf_counter()
     problem, config = aam.problem, aam.config
     records = []
-    for branch in aam.branches:
+    # This legacy adapter consumes one hierarchy at a time. Final branch
+    # grouping may contain several distinct mappings, so retain every literal
+    # relation here instead of selecting a grouped branch's first witness.
+    for branch in aam.graph.literal_branches():
         mapping = branch.representative.as_dict()
         if len(mapping) != problem.atom_count:
             raise ValueError('full mapping-family compilation requires complete branches')

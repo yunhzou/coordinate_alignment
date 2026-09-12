@@ -1,0 +1,1125 @@
+{
+  "cases": [
+    {
+      "case": 0,
+      "branches": 274,
+      "families": 348,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a7e96301c5872a6e885f2e57f2d3104bf78b851251c28fbe5a7ac1eae4cd241d"
+    },
+    {
+      "case": 1,
+      "branches": 261,
+      "families": 347,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ac2235ca455f08bb0cbe9d697e2cf7066034739ae02776bad0e219aacafd1d95"
+    },
+    {
+      "case": 2,
+      "branches": 2494,
+      "families": 2645,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "2010f31d2fc4d904567e58693d4c56d6ee66e18aaf1c5849f7639ac9925019d6"
+    },
+    {
+      "case": 3,
+      "branches": 213,
+      "families": 303,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ec30e47040afb9c1d0e548203156b4679ba3a0ed824deea1a80c98a06c07fffa"
+    },
+    {
+      "case": 4,
+      "branches": 637,
+      "families": 1585,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c2b695adadbe8073e3676272e7f894d907424ddf60cf2def684d59293d2c5916"
+    },
+    {
+      "case": 5,
+      "branches": 1549,
+      "families": 1972,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "b8d6c8fe815f988aaf09c954fbaf2ab7897907c9225363d65569de9489954b7a"
+    },
+    {
+      "case": 6,
+      "branches": 8021,
+      "families": 8253,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "73fedf3a91aa8d83ad13a00bc12427666a7cf5c667507efd49b286ed462554f6"
+    },
+    {
+      "case": 7,
+      "branches": 894,
+      "families": 1642,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "12a32529556e681ad17830a92986fd410878bad664b9d39b36d87ce58180fd51"
+    },
+    {
+      "case": 8,
+      "branches": 873,
+      "families": 1551,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "56b6c56973a64b82bcb44439e75403635bab5f74afdf2935d58067d12e6a1086"
+    },
+    {
+      "case": 9,
+      "branches": 191,
+      "families": 331,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "2705147ed1fc71892a1a59879c9de359209e4ecad9fd9801b484b6629c4cabfd"
+    },
+    {
+      "case": 10,
+      "branches": 402,
+      "families": 468,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "e507c6fc410d6d8ce4724663b0130f0408a4fb2a500dcc9f82ab0c786519abc9"
+    },
+    {
+      "case": 11,
+      "branches": 599,
+      "families": 674,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "8345cfe6e0e63455da9ddcdb6e4c4840d58822aa74c7c0d71dbb129564a7bb36"
+    },
+    {
+      "case": 12,
+      "branches": 390,
+      "families": 493,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1e48d34078aa4ca50be1083227c5bd25d921ac3c791d386a000caa120be295a4"
+    },
+    {
+      "case": 13,
+      "branches": 390,
+      "families": 493,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c3f7905d86b40d9d24bf73cb029e09bb04c07567be8896f82e079ba86eeb67dd"
+    },
+    {
+      "case": 14,
+      "branches": 1806,
+      "families": 1895,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7eaf640f007adc9d1c15e8f799007e6980cee437032035afd9938df3542aa838"
+    },
+    {
+      "case": 15,
+      "branches": 1772,
+      "families": 1835,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "16580001b61c75b3fed8d02710b7cff71857861ea1a17fe550616466c073babf"
+    },
+    {
+      "case": 16,
+      "branches": 324,
+      "families": 467,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a810538259ec96bcba073105a6575adbaff8e2695c08712e111688ec9a86fe79"
+    },
+    {
+      "case": 17,
+      "branches": 317,
+      "families": 462,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7288c1fa57f7716434e11673069a45b96e7a6521a13ef21bcab07fb9ae9d5126"
+    },
+    {
+      "case": 18,
+      "branches": 552,
+      "families": 645,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "022818c6c451fba0e362d2b588ceb28980ab80a491693e4d121c51fcf5dd2eec"
+    },
+    {
+      "case": 19,
+      "branches": 552,
+      "families": 645,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ca0a30316bafb761382225f02a5e9102ae001e8c7a55fc5229f507ac55795645"
+    },
+    {
+      "case": 20,
+      "branches": 4672,
+      "families": 5709,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "21ebde4ffc9b6c7332d0b02ed17bf5416cb18517f7b08c1c02b22b59ac749605"
+    },
+    {
+      "case": 21,
+      "branches": 267,
+      "families": 353,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "931c97b59aed17ce5cbaa176a77610f7a388d68748d1e606d25fc1e8ffb4e31b"
+    },
+    {
+      "case": 22,
+      "branches": 704,
+      "families": 1181,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "fdb1f954fe83660f51ffcbaf13514fc87e464c24ecd3fc31d930da4b55d5e98e"
+    },
+    {
+      "case": 23,
+      "branches": 4672,
+      "families": 5709,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "31aa1986e911252a9aea42902544859fbbeae2809998b6033dc53ec8901c0174"
+    },
+    {
+      "case": 24,
+      "branches": 704,
+      "families": 1181,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ff7ff74d57a638b43b3d262c822a48a321e457d5c3d4c26f9ee7eaaca34108ed"
+    },
+    {
+      "case": 25,
+      "branches": 2856,
+      "families": 52605,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "401f74c59a73a992817662eb882d896aee13b1dd730042c05721f4901ac3affc"
+    },
+    {
+      "case": 26,
+      "branches": 754,
+      "families": 1494,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "405888db2c323ba081d54b39185da7dc69a568bf9c2a7e74138a957011506c21"
+    },
+    {
+      "case": 27,
+      "branches": 330,
+      "families": 458,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1341cbb52173b946003bc65495a69069955c7fb223b4ff0d628f51e774ab4f79"
+    },
+    {
+      "case": 28,
+      "branches": 2891,
+      "families": 3663,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "94fb15285f78f62cfcfa37dabdefee0ced074f308d938e08ff265b65da68a263"
+    },
+    {
+      "case": 29,
+      "branches": 599,
+      "families": 796,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1eea3d1629067e943a6f0b23a462160533efd7315c674765a63e09dc1405ca1b"
+    },
+    {
+      "case": 30,
+      "branches": 599,
+      "families": 796,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "e60c6b9e001c42d28d02360f76c90b862af5f10039e85187f21036d55e9aadd5"
+    },
+    {
+      "case": 31,
+      "branches": 863,
+      "families": 1509,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "38db0d6ffa2ac9907f6bcd893b01804d76bf3db156a0d0098f396a2e2fa50414"
+    },
+    {
+      "case": 32,
+      "branches": 370,
+      "families": 560,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "17f253d7c61a9387758b30e7af786718dd237bcf04d6301fb1a26a614386bfd7"
+    },
+    {
+      "case": 33,
+      "branches": 402,
+      "families": 748,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "98a91c2a6e6c4c0219ea3740873c61b48af389f4f99a942ea0cc0f896caa97c8"
+    },
+    {
+      "case": 34,
+      "branches": 375,
+      "families": 565,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "65450a6853b08dc800f1aef5dd3cf5487a8c9092a30af876bdf3e5057a4e4bac"
+    },
+    {
+      "case": 35,
+      "branches": 9091,
+      "families": 15239,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "86fda5bd049c6b2c23d5beeb74d11a712c01dc3e512873ab026029c7ff862e58"
+    },
+    {
+      "case": 36,
+      "branches": 811,
+      "families": 1475,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "85358ff3615323d0619edbe584684d249c874ac622e52ff0e9335195220cb0e6"
+    },
+    {
+      "case": 37,
+      "branches": 1613,
+      "families": 3331,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a566b38718ccbcca175a7dc77d163b5f10a7b68804a3a3994206cd14f600ee0e"
+    },
+    {
+      "case": 38,
+      "branches": 331,
+      "families": 580,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d6fc3420927c0618b5dcb914d123f7e9e9370d60b7c0fe5bca33117bf19918fd"
+    },
+    {
+      "case": 39,
+      "branches": 242,
+      "families": 511,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "e80022ebdf35daff9078f6cb2a26ad501f3ef86028e405059a8b2cbf5d8eac9e"
+    },
+    {
+      "case": 40,
+      "branches": 620,
+      "families": 973,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "00310505036b542771b3833897f88102f5a7952592054481658025d86d716274"
+    },
+    {
+      "case": 41,
+      "branches": 2243,
+      "families": 2628,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "e3f4a880d074725e47383bfb5fa0df98495340d5221924bad318ba22f124415c"
+    },
+    {
+      "case": 42,
+      "branches": 370,
+      "families": 669,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1eb2070efaf22027aa1b26e7c24a0e42c1df333e33dd2fd0e352949f38ce69df"
+    },
+    {
+      "case": 43,
+      "branches": 530,
+      "families": 830,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "04142bd3b7d278114d9680b374941530622b6101d84390331a491868a7141657"
+    },
+    {
+      "case": 44,
+      "branches": 805,
+      "families": 2792,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "43311e9fdb5c7047f4fba9e7f5ce9b65ff98aea9623b5e3e15b9ba2f42b74689"
+    },
+    {
+      "case": 45,
+      "branches": 1817,
+      "families": 3889,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c54cfa175a6cc2c6390e6b16012ae0d078dd29062ca0288998a23fdd4103ef8a"
+    },
+    {
+      "case": 46,
+      "branches": 594,
+      "families": 1202,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "6a7c702b0f67517e3a8201f6ee38b17131a087799b789302ae42a55439fd2495"
+    },
+    {
+      "case": 47,
+      "branches": 212,
+      "families": 414,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "72c8b9b18870983fd9b0101715234b610819a4b827b79051869f10103efb8cd4"
+    },
+    {
+      "case": 48,
+      "branches": 1588,
+      "families": 3371,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7a1037d1d2b0f4e0b229ea5bea369069dc2443acbc932edd0064fc20b6648c1a"
+    },
+    {
+      "case": 49,
+      "branches": 693,
+      "families": 2538,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "6be85b5365578b1e1071a4939984cb786e30449c01a57861e4fad6fbc6306fbe"
+    },
+    {
+      "case": 50,
+      "branches": 402,
+      "families": 748,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "69054f63fe2d8fadae28044e9fb7397108e308f11b997b4035d20c3e8a6f5c2b"
+    },
+    {
+      "case": 51,
+      "branches": 375,
+      "families": 565,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "2aa7d9378c77681f0a7f0fe0eb4be986ac9325d5ec0ff28e83abb772de117fd3"
+    },
+    {
+      "case": 52,
+      "branches": 9091,
+      "families": 15239,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a483a3d714ba77f94be4f4f6ffad09325d9aa1fe719ba2b430b1f03dcce2eea0"
+    },
+    {
+      "case": 53,
+      "branches": 811,
+      "families": 1475,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "efd16dc583e9a8cd183a49c73b5d3638066b7363b33b9496ab72265a9a2c15a6"
+    },
+    {
+      "case": 54,
+      "branches": 1613,
+      "families": 3331,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a882160ab2f2615b68d2dfe959d044ed591aa27c8e17a0535dad3d6bc6080bf6"
+    },
+    {
+      "case": 55,
+      "branches": 805,
+      "families": 2792,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "59bebd747f6e93bcdee5103d0111bb0bd4458a166adfbf648e94cb6f4fc04cc4"
+    },
+    {
+      "case": 56,
+      "branches": 1817,
+      "families": 3889,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "5eaf24bc06db909215fc8806f656605fd400eb4db156fdc441299abe1811610b"
+    },
+    {
+      "case": 57,
+      "branches": 594,
+      "families": 1202,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "69a26cb2c5814de88a99ffa1fda80547c6c2424d6752bd35b66452e69a9ddbfe"
+    },
+    {
+      "case": 58,
+      "branches": 212,
+      "families": 414,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "5b141743fa282dcb09e79895bb23945b64ebbb72543ba1edced75cb4ce1ef472"
+    },
+    {
+      "case": 59,
+      "branches": 187,
+      "families": 211,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1f41f2e8eb9f0cfd63f42038718532d91df702716137993a71bbf56862f742a0"
+    },
+    {
+      "case": 60,
+      "branches": 314,
+      "families": 336,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "62f7e158eb96c375f30744666955f0a121f67e01586546cc47ae52dcbc5a832d"
+    },
+    {
+      "case": 61,
+      "branches": 115,
+      "families": 156,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "5dccb1cf95f21dd4b770fc9a3ea063ea3eda9879dc74b71dd3baf28c1579bc69"
+    },
+    {
+      "case": 62,
+      "branches": 108,
+      "families": 142,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "673d40176c55bfa64d5177967d73940d3eb056ff142dbf63d09a8636ddedcbfd"
+    },
+    {
+      "case": 63,
+      "branches": 111,
+      "families": 143,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c7e98abbe7f38bed027ad80e8e4c69e5f48180b6b1965a6179629830173f94c0"
+    },
+    {
+      "case": 64,
+      "branches": 132,
+      "families": 208,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d83764c98320fcc80cb2f5f060fd0edffc5ce84c3b8a4fc746e16481f4047cb3"
+    },
+    {
+      "case": 65,
+      "branches": 204,
+      "families": 319,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "fd126944924352375127c30016f3fd175818e78533ba45081b60d6bb1aff48bf"
+    },
+    {
+      "case": 66,
+      "branches": 246,
+      "families": 262,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "3f4c55f7d2c47ad40651c7057806d88bac3664fd738040353df4c3b1c8342f2c"
+    },
+    {
+      "case": 67,
+      "branches": 155,
+      "families": 176,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7ea7143de6c562ae2b91199088063f476c5cde96e31d43ba43d9fee99177b188"
+    },
+    {
+      "case": 68,
+      "branches": 411,
+      "families": 494,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "75b51e13abb85ed66f136bd3b29a76cf8c74afa9b8f0995c49e46b6e87b4893c"
+    },
+    {
+      "case": 69,
+      "branches": 280,
+      "families": 645,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "30bebda81a3a5e2564418384180204eb699c6fdde17877dd9ead519553301b10"
+    },
+    {
+      "case": 70,
+      "branches": 2244,
+      "families": 2295,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7c1caaee6c7c5a0ae8dabe0110ff7a06fe710464542bf669b9319137d7a9f31c"
+    },
+    {
+      "case": 71,
+      "branches": 3345,
+      "families": 4960,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ea7c21eab554ab5793b60479b6ebbfa83f3b965888d01c7a5f99507c5c65d2dc"
+    },
+    {
+      "case": 72,
+      "branches": 244,
+      "families": 286,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "15c1f4eb8fe0bfed18490e5c8ec89704c9c40eb75003924540926d4588e489f3"
+    },
+    {
+      "case": 73,
+      "branches": 281,
+      "families": 410,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ddb9c3aad07c881706d27f917aec608fd1c9b0e3c470defc84e4c87ec93ee328"
+    },
+    {
+      "case": 74,
+      "branches": 1252,
+      "families": 1606,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "548ff0913ac5f4cce72c96fc203bf409f9747fb364647a2330851d513bc30792"
+    },
+    {
+      "case": 75,
+      "branches": 2111,
+      "families": 2628,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c1150b3881390a5cbe2ab196fdc1c554f0c9203b44129359237eede8927f7065"
+    },
+    {
+      "case": 76,
+      "branches": 218,
+      "families": 292,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a7dd416b74fe27802a48a77d8815ef928b27412022c8a48c8c01e2cdadd69dc3"
+    },
+    {
+      "case": 77,
+      "branches": 492,
+      "families": 708,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d4be3f08c50e6d8a5f1dab9daac31221d3810cdba13c04ea15b18197b610888e"
+    },
+    {
+      "case": 78,
+      "branches": 73,
+      "families": 182,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d0a4a052f9f9557fc4ace661227f7551928beea6eec822ab1ecf723fe2d4a696"
+    },
+    {
+      "case": 79,
+      "branches": 33,
+      "families": 69,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "09765df6ca76f96af6fbb424530166c5823e363f53bd96c5c73b325f03f2e9c3"
+    },
+    {
+      "case": 80,
+      "branches": 37,
+      "families": 84,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "27174f432137b8ad0599073538cf1e3075004257e5f77984b76ac7b37f3454f7"
+    },
+    {
+      "case": 81,
+      "branches": 60,
+      "families": 158,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "aa17081707ac6eba141ca57090f1db48c39c622bad2ff44396a076cec5d50d33"
+    },
+    {
+      "case": 82,
+      "branches": 88,
+      "families": 321,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "4a18bb7f34f9b5f64ee69dbbbd2536035b8bdd9412552b6785a35addafd8cfa7"
+    },
+    {
+      "case": 83,
+      "branches": 79,
+      "families": 358,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c1490ea95ced150f12d75d51b615a7a321c3af9c5632ed791c6d3c6feaf9fcd3"
+    },
+    {
+      "case": 84,
+      "branches": 81,
+      "families": 349,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "eb23249b0be8bc2370aee614cefcc8c1d14e12f481066a0cb097484ac9ab683e"
+    },
+    {
+      "case": 85,
+      "branches": 94,
+      "families": 332,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "78b7fab818b2badae1a64d00234631891b4065af07393a862c696a3e67d2cc5a"
+    },
+    {
+      "case": 86,
+      "branches": 271,
+      "families": 371,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1dcd42e6811e77c4afb30ad1e8413bde82787b611836f22de9cb9be14428a45a"
+    },
+    {
+      "case": 87,
+      "branches": 187,
+      "families": 305,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "e0f92f052022b20650bed2405cb0cb4090a36e5a55bf6c1090c0355ec5a5ec0d"
+    },
+    {
+      "case": 88,
+      "branches": 354,
+      "families": 479,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a3220bc9158de0f34fce86f7c83e5ee59d89ece4b6d627080d3bf4fcac047b61"
+    },
+    {
+      "case": 89,
+      "branches": 658,
+      "families": 1019,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "efd53b78a1e9261abf072f71cae5a08f33c0c23a8b090a3afdb338ad13bfa36e"
+    },
+    {
+      "case": 90,
+      "branches": 531,
+      "families": 1003,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7c9bffff69a470248ced607857bf983cb3590daafaade5ccde8f8605610ddeed"
+    },
+    {
+      "case": 91,
+      "branches": 234,
+      "families": 721,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c9c5d77e19b2999165c35a6415098107353dab5aed39b90d14ae07684d09ff16"
+    },
+    {
+      "case": 92,
+      "branches": 282,
+      "families": 506,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "677b7e93d3990253edf4c83dcfa145301519a73d3208999faff4a0e56d96c81a"
+    },
+    {
+      "case": 93,
+      "branches": 212,
+      "families": 435,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "caee1980519111ae7443dbcc94824efcee86db328f3e7e43d94dde54ca1ba207"
+    },
+    {
+      "case": 94,
+      "branches": 207,
+      "families": 320,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "97b566fd4dac4aeac1f18c2a21cefa76d3bb5a0ce06635a40cbb1136771de482"
+    },
+    {
+      "case": 95,
+      "branches": 131,
+      "families": 187,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "da98da4687e3c9e1c300add182e8a5965e376de621444cfea115cc2bdd788551"
+    },
+    {
+      "case": 96,
+      "branches": 120,
+      "families": 195,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "c0dcbc4392d0db02a9d580e85bacd40dd9504cd42325d1913489486968dd8dfd"
+    },
+    {
+      "case": 97,
+      "branches": 949,
+      "families": 2008,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "e6c03cdfb3b380b4c85c93d1de620a423494fa89eef448c3c28bc0eb5b91accb"
+    },
+    {
+      "case": 98,
+      "branches": 573,
+      "families": 2148,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "fa1042efb39530abd903c169af645d847aeab5b052660158b2cf3ad2d929dea1"
+    },
+    {
+      "case": 99,
+      "branches": 119,
+      "families": 319,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ffae93c410bd32b072fd8d59432d0015a764adcd0ac53a422b8b6b0e814c6e65"
+    },
+    {
+      "case": 100,
+      "branches": 493,
+      "families": 1120,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "036dead5e9d6be14b71d90696a152094cffe215b6c2b30cef86fb3371c6f7326"
+    },
+    {
+      "case": 101,
+      "branches": 411,
+      "families": 874,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d1a3c1333c10bda585066510fdd27948c8a65eaa2945767e93134096c563118a"
+    },
+    {
+      "case": 102,
+      "branches": 1664,
+      "families": 2005,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "6e5d86db5c7e0e37471284ae81523915c75382eef9edb6ed523e24f1ef63e260"
+    },
+    {
+      "case": 103,
+      "branches": 1726,
+      "families": 2014,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "898a9fe696752a30ec4f044f7120c8c4796642009966739279307b7fef3d15f2"
+    },
+    {
+      "case": 104,
+      "branches": 409,
+      "families": 1051,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "0d41bcd3e0e71c6972c91768918fc01f41905b304961936639f98f472e81dfc8"
+    },
+    {
+      "case": 105,
+      "branches": 1622,
+      "families": 1881,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "5921929f091b2d4152cdc9d6563674a8a54e396421a91c1d0931463ba0ae68d7"
+    },
+    {
+      "case": 106,
+      "branches": 1622,
+      "families": 1881,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "0f5b544f0ff91d1310b86c947baf2652d9550bb736789c4b513b4341096b2efb"
+    },
+    {
+      "case": 107,
+      "branches": 472,
+      "families": 584,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "603ab83394c9fbbb83633fc527ef7d20ab7acb9a9ce232986052fbf3b037fc24"
+    },
+    {
+      "case": 108,
+      "branches": 473,
+      "families": 590,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a724e13a6374f407e8532c5741c75cac88ce5c2556e3edb237149576cc90f03b"
+    },
+    {
+      "case": 109,
+      "branches": 201,
+      "families": 295,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1d801f0c10cdba42e717b3aadea555f731f293b8b96bb5355b9b9d9664646d79"
+    },
+    {
+      "case": 110,
+      "branches": 152,
+      "families": 212,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "23834098f7b5b6e7bcf8217a6e37444f0a72885fb2ecb31989fdd733dcae89e8"
+    },
+    {
+      "case": 111,
+      "branches": 289,
+      "families": 467,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "7f97a7828454d73067df74cd8dedfd1a982c194df7cca79debd0a6f7fe1fcd55"
+    },
+    {
+      "case": 112,
+      "branches": 176,
+      "families": 268,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "385bc807275cbf39820366c41626d41954f123e70eb845d01913c0c4b12c5650"
+    },
+    {
+      "case": 113,
+      "branches": 163,
+      "families": 218,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "947eab8c4addf6fa1eee5cbc6943c0b55b0002d1e0e324f18dd85cb369fd0b42"
+    },
+    {
+      "case": 114,
+      "branches": 392,
+      "families": 546,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "039cbd23e0ea93ddfc2303e1c0251f7402a1adbe86538270bf4a04c12673dfb5"
+    },
+    {
+      "case": 115,
+      "branches": 383,
+      "families": 433,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d455d63c553975b5009dff314659c0509dfe11af6d04980667b104bdc31219ed"
+    },
+    {
+      "case": 116,
+      "branches": 188,
+      "families": 218,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d455c7e00c942b884775920db7372ad102aa210098c3734e1b764c22aaba183e"
+    },
+    {
+      "case": 117,
+      "branches": 223,
+      "families": 541,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "6bdf5316fc0635de5d817d1f65e9ea36991f1af94595c7958d25853a4c51f24a"
+    },
+    {
+      "case": 118,
+      "branches": 135,
+      "families": 199,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "1adbe563e3b662f0f591f90d5d07467c2c6bab50d45fc7a52135dce42122a72f"
+    },
+    {
+      "case": 119,
+      "branches": 883,
+      "families": 1902,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "4c2e3ea25684067e38127e5f6955792f6e09297460ff29ed04d836342bd77e8f"
+    },
+    {
+      "case": 120,
+      "branches": 254,
+      "families": 302,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "415c45530149c32410a47436354a753428f683ce3fc65e1bd72bff3a8ac41299"
+    },
+    {
+      "case": 121,
+      "branches": 552,
+      "families": 702,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "90ef479535e6a3985e28590a0ccbc570cd35a5688a3ec58fa6dfacdd7305f150"
+    },
+    {
+      "case": 122,
+      "branches": 252,
+      "families": 286,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "061d99ab90338d1e1877500472a6dca0a5b1c7f17cb42bfb7570f205dbf67033"
+    },
+    {
+      "case": 123,
+      "branches": 164,
+      "families": 269,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "451e4910629fd03d6696befdfce9fe142dd6751408394c6c9a183853c8fbcd1a"
+    },
+    {
+      "case": 124,
+      "branches": 567,
+      "families": 1227,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "5033673e56c75ef110a6e975d050dddd30c583755af5f060f314368663613bcb"
+    },
+    {
+      "case": 125,
+      "branches": 198,
+      "families": 244,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "8e749044e1b4d4bb945d05c0d3e2c62f7515a4357e1725b6abab4cde482968e5"
+    },
+    {
+      "case": 126,
+      "branches": 279,
+      "families": 333,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "eaa96db0c09af495db13b47bd24048f271c2b75ccfb62dbd61020d648f5912f7"
+    },
+    {
+      "case": 127,
+      "branches": 271,
+      "families": 309,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "d3279a935be8d653c5bea0c04eb7ba15101faa011903faf2d77efdb3c34a8394"
+    },
+    {
+      "case": 128,
+      "branches": 131,
+      "families": 164,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "8446c90658de8adc1e83599dbec12c9da056a39bb5c913ac1bc4f9dfc5f5ef41"
+    },
+    {
+      "case": 129,
+      "branches": 514,
+      "families": 840,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "8b6428d1b20895a1ae915a209ecc1c265f979510366f7c243e11400b711f736d"
+    },
+    {
+      "case": 130,
+      "branches": 946,
+      "families": 972,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "fb47d2dc09300a6b82a3f6dee8f0aeb68b85030eb74e1d2a3b236a7a24d7df75"
+    },
+    {
+      "case": 131,
+      "branches": 312,
+      "families": 420,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "333984e554a6b49b5fdd56336f766a8c80adcc3ccd013face434683df3c97ba3"
+    },
+    {
+      "case": 132,
+      "branches": 129,
+      "families": 435,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "a2d1d2e417503c9f3dfc2519616a0d0867643ffb663229e3fa345eb66e3f4bb8"
+    },
+    {
+      "case": 133,
+      "branches": 451,
+      "families": 600,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "f3b2801f670255b3fc90e7668b70e002b39883211bba9a11341c1b3b0654dd56"
+    },
+    {
+      "case": 134,
+      "branches": 736,
+      "families": 980,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "367b08094065dd21a9b7c5deaa44961adc323c4514ee34586023c717591e29e0"
+    },
+    {
+      "case": 135,
+      "branches": 5764,
+      "families": 5794,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "6e5b11a92c8aafbc4dba0623197dfddbe6cfa9e654c25d47b5c6b04abf7d7f48"
+    },
+    {
+      "case": 136,
+      "branches": 603,
+      "families": 657,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "717487f9528eb2a950a4ecb78e0d3dba7d03efd6597f76d488cd22b98c572ef7"
+    },
+    {
+      "case": 137,
+      "branches": 1266,
+      "families": 1457,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "ce0565214b495cd617c319d378e49111d24b73f5789706c4bc3e53cbfabb7c1d"
+    },
+    {
+      "case": 138,
+      "branches": 281,
+      "families": 439,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "96f782eedc83fd0248b17c112a3f52faee66269e8800b18bc530603ecd5e1aeb"
+    },
+    {
+      "case": 139,
+      "branches": 222,
+      "families": 300,
+      "all_provenance_retained": true,
+      "family_roundtrip_validated": true,
+      "problem_sha256": "6beadda704f26a0cce85abd8341503028b41c15c61a1824ebe75590c14cf1b80"
+    }
+  ],
+  "wall_seconds": 165.83786841691472
+}

@@ -229,6 +229,11 @@ class AAMResult:
     def branches(self):
         return self.graph.branches()
 
+    def final_catalogue(self):
+        """Unordered branches and unique flat families for exact postprocessing."""
+        from .final_branches import deduplicate_final_branches
+        return deduplicate_final_branches(self)
+
 
 @dataclass(frozen=True)
 class MechanismResult:

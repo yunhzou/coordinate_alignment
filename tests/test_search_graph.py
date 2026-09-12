@@ -56,12 +56,15 @@ def test_prefix_fork_reconvergence_does_not_copy_or_cross_contexts():
     assert len(paths) == 2
     assert all(p.transitions[0] == 0 for p in paths)
     assert paths[0].transitions[-1] == paths[1].transitions[-1]
-    assert len(result.branches()) == 2  # distinct fragment histories
+    assert len(result.branches()) == 1  # same final fragment pairs
+    assert len(result.branches()[0].paths) == 2
+    assert len(result.literal_branches()) == 2
     assert all(edge.source < edge.target for edge in result.transitions)
     combined = AAMSearchGraph.combine((result, result))
     assert len(tuple(combined.paths())) == 4  # not a Cartesian product
-    assert len(combined.branches()) == 2
-    assert all(len(b.paths) == 2 for b in combined.branches())
+    assert len(combined.branches()) == 1
+    assert len(combined.branches()[0].paths) == 4
+    assert len(combined.literal_branches()) == 2
 
 
 def test_online_admission_reuses_equal_continuation(monkeypatch):

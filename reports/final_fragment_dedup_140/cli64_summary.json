@@ -1,0 +1,1873 @@
+{
+  "branches": 132,
+  "flat_families": 208,
+  "input_paths": 235,
+  "incomplete_paths": 0,
+  "intrinsic_fragment_groups": 288,
+  "problem_sha256": "d83764c98320fcc80cb2f5f060fd0edffc5ce84c3b8a4fc746e16481f4047cb3",
+  "input_sha256": {
+    "outputs/final_fragment_dedup/cli64/input.json.gz": "100c4eef52d25ebffd40c8020eeb3e2f41f93c70ae5b042e5e7e8dd14bc9757d"
+  },
+  "decode_requested": true,
+  "max_events": 8,
+  "complete_window": true,
+  "decoded_families": 208,
+  "unfinished": [],
+  "patterns": {
+    "rxn_core.signed_events/v1:8b4389b3e8cc33dd75cbd0bb7b8168660106cf3d910731285a62c98165fb379c": {
+      "id": "rxn_core.signed_events/v1:8b4389b3e8cc33dd75cbd0bb7b8168660106cf3d910731285a62c98165fb379c",
+      "mapping": [
+        5,
+        14,
+        4,
+        10,
+        15,
+        9,
+        3,
+        8,
+        2,
+        11,
+        1,
+        6,
+        0,
+        7,
+        12,
+        13,
+        16,
+        17
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            10,
+            12
+          ]
+        ],
+        "formed": [
+          [
+            6,
+            14
+          ],
+          [
+            8,
+            10
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 2
+      },
+      "total": 6,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 0
+    },
+    "rxn_core.signed_events/v1:2d70d15564009850645c1bdd5e8880db7263a034cf83867d1a821c206a829cbd": {
+      "id": "rxn_core.signed_events/v1:2d70d15564009850645c1bdd5e8880db7263a034cf83867d1a821c206a829cbd",
+      "mapping": [
+        12,
+        1,
+        2,
+        13,
+        6,
+        11,
+        3,
+        8,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            6
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 2
+    },
+    "rxn_core.signed_events/v1:2131d96c13261aafbcdfafd5f779199c9bacc0dd9d7aa49c3efb34816c7d7e87": {
+      "id": "rxn_core.signed_events/v1:2131d96c13261aafbcdfafd5f779199c9bacc0dd9d7aa49c3efb34816c7d7e87",
+      "mapping": [
+        12,
+        2,
+        1,
+        13,
+        11,
+        6,
+        0,
+        7,
+        5,
+        10,
+        14,
+        15,
+        16,
+        17,
+        4,
+        9,
+        3,
+        8
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            16
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            10,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 3
+      },
+      "total": 7,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 6
+    },
+    "rxn_core.signed_events/v1:9ead9c3cb92d37f2799ea5b645a21a052b339c7a2851b7d4a1de4a7f2235a329": {
+      "id": "rxn_core.signed_events/v1:9ead9c3cb92d37f2799ea5b645a21a052b339c7a2851b7d4a1de4a7f2235a329",
+      "mapping": [
+        0,
+        5,
+        4,
+        7,
+        10,
+        9,
+        3,
+        8,
+        12,
+        13,
+        2,
+        11,
+        1,
+        6,
+        16,
+        17,
+        14,
+        15
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            16
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            10
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            16
+          ],
+          [
+            6,
+            10
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 4
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 9
+    },
+    "rxn_core.signed_events/v1:519d09b19fe909f7350a64e7650f05ef71e424e7ec5b141a974d187cce051d6d": {
+      "id": "rxn_core.signed_events/v1:519d09b19fe909f7350a64e7650f05ef71e424e7ec5b141a974d187cce051d6d",
+      "mapping": [
+        0,
+        5,
+        14,
+        7,
+        10,
+        15,
+        16,
+        17,
+        12,
+        13,
+        2,
+        11,
+        1,
+        6,
+        3,
+        8,
+        4,
+        9
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            16
+          ],
+          [
+            10,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 3,
+        "formed": 3
+      },
+      "total": 6,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 10
+    },
+    "rxn_core.signed_events/v1:a587d93e3bf71ef6063a12b7837527bd7cd66f6bc4787c8b7a8095fd77084a33": {
+      "id": "rxn_core.signed_events/v1:a587d93e3bf71ef6063a12b7837527bd7cd66f6bc4787c8b7a8095fd77084a33",
+      "mapping": [
+        5,
+        4,
+        14,
+        10,
+        9,
+        15,
+        16,
+        17,
+        2,
+        11,
+        1,
+        6,
+        0,
+        7,
+        12,
+        13,
+        3,
+        8
+      ],
+      "events": {
+        "broken": [
+          [
+            6,
+            8
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            10,
+            12
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            6,
+            14
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            8,
+            16
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 3
+      },
+      "total": 7,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 34
+    },
+    "rxn_core.signed_events/v1:783aca738d9e72523616a69c8770db97a5293e8c010ef7d726c53922e610ee36": {
+      "id": "rxn_core.signed_events/v1:783aca738d9e72523616a69c8770db97a5293e8c010ef7d726c53922e610ee36",
+      "mapping": [
+        5,
+        4,
+        14,
+        10,
+        9,
+        15,
+        16,
+        17,
+        12,
+        13,
+        1,
+        6,
+        0,
+        7,
+        2,
+        11,
+        3,
+        8
+      ],
+      "events": {
+        "broken": [
+          [
+            8,
+            10
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            10,
+            12
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            8,
+            16
+          ],
+          [
+            10,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 2
+      },
+      "total": 6,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 38
+    },
+    "rxn_core.signed_events/v1:8b5d63fdba2e10de42af2b5d312edd38df9b66a9ab3533b3a1bbfa4727edc517": {
+      "id": "rxn_core.signed_events/v1:8b5d63fdba2e10de42af2b5d312edd38df9b66a9ab3533b3a1bbfa4727edc517",
+      "mapping": [
+        12,
+        3,
+        2,
+        13,
+        8,
+        11,
+        1,
+        6,
+        0,
+        7,
+        14,
+        15,
+        16,
+        17,
+        5,
+        10,
+        4,
+        9
+      ],
+      "events": {
+        "broken": [
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            8,
+            14
+          ],
+          [
+            10,
+            16
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 2,
+        "formed": 2
+      },
+      "total": 4,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 41
+    },
+    "rxn_core.signed_events/v1:890f8ededb20daa6640762022464784cf09961fe8c954e5e7732a0c2677c2180": {
+      "id": "rxn_core.signed_events/v1:890f8ededb20daa6640762022464784cf09961fe8c954e5e7732a0c2677c2180",
+      "mapping": [
+        14,
+        5,
+        4,
+        15,
+        10,
+        9,
+        2,
+        11,
+        3,
+        8,
+        12,
+        13,
+        16,
+        17,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            2,
+            8
+          ],
+          [
+            6,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 2
+      },
+      "total": 6,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 63
+    },
+    "rxn_core.signed_events/v1:ccc6d18d1ea5f88c1bee9e604cd6a50600c7f0562821a7887f70e83b4396e2e4": {
+      "id": "rxn_core.signed_events/v1:ccc6d18d1ea5f88c1bee9e604cd6a50600c7f0562821a7887f70e83b4396e2e4",
+      "mapping": [
+        14,
+        4,
+        5,
+        15,
+        9,
+        10,
+        3,
+        8,
+        2,
+        11,
+        12,
+        13,
+        16,
+        17,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            16
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            1,
+            6
+          ],
+          [
+            2,
+            16
+          ],
+          [
+            6,
+            10
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 4
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 64
+    },
+    "rxn_core.signed_events/v1:39c7375eefb63621eecc11b75e748bbe2f0ae65419d85762e8152c53e91cd876": {
+      "id": "rxn_core.signed_events/v1:39c7375eefb63621eecc11b75e748bbe2f0ae65419d85762e8152c53e91cd876",
+      "mapping": [
+        4,
+        5,
+        14,
+        9,
+        10,
+        15,
+        3,
+        8,
+        2,
+        11,
+        12,
+        13,
+        16,
+        17,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            12
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            2,
+            12
+          ],
+          [
+            6,
+            10
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 4
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 65
+    },
+    "rxn_core.signed_events/v1:7de155536c5a8f28ecd296c4c783f3f2f33c9dec6b6caea4fe6fedf45606c04c": {
+      "id": "rxn_core.signed_events/v1:7de155536c5a8f28ecd296c4c783f3f2f33c9dec6b6caea4fe6fedf45606c04c",
+      "mapping": [
+        1,
+        0,
+        14,
+        6,
+        7,
+        15,
+        16,
+        17,
+        12,
+        13,
+        3,
+        8,
+        2,
+        11,
+        4,
+        9,
+        5,
+        10
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            10,
+            12
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            2,
+            14
+          ],
+          [
+            10,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 5,
+        "formed": 2
+      },
+      "total": 7,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 81
+    },
+    "rxn_core.signed_events/v1:8732562866dd1dd961a5fe0d08279cf5397abfd062941d627b6e7b697488e67a": {
+      "id": "rxn_core.signed_events/v1:8732562866dd1dd961a5fe0d08279cf5397abfd062941d627b6e7b697488e67a",
+      "mapping": [
+        0,
+        14,
+        16,
+        7,
+        15,
+        17,
+        12,
+        13,
+        3,
+        8,
+        2,
+        11,
+        1,
+        6,
+        4,
+        9,
+        5,
+        10
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            16
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            16
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 3
+      },
+      "total": 7,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 120
+    },
+    "rxn_core.signed_events/v1:ffb3dc7691e0d33bd5c443a20c7ac48b402b98ce05e6a82dfd7d889f203eca6c": {
+      "id": "rxn_core.signed_events/v1:ffb3dc7691e0d33bd5c443a20c7ac48b402b98ce05e6a82dfd7d889f203eca6c",
+      "mapping": [
+        4,
+        5,
+        3,
+        9,
+        10,
+        8,
+        2,
+        11,
+        12,
+        13,
+        16,
+        17,
+        14,
+        15,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            2,
+            8
+          ],
+          [
+            6,
+            14
+          ],
+          [
+            8,
+            10
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 5,
+        "formed": 3
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 121
+    },
+    "rxn_core.signed_events/v1:a31d44f6eb2bc7cc0efb1dc698a39726e1904069c9dae1e74125beb3c404cbd6": {
+      "id": "rxn_core.signed_events/v1:a31d44f6eb2bc7cc0efb1dc698a39726e1904069c9dae1e74125beb3c404cbd6",
+      "mapping": [
+        4,
+        5,
+        2,
+        9,
+        10,
+        11,
+        3,
+        8,
+        12,
+        13,
+        16,
+        17,
+        14,
+        15,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            14
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            2,
+            14
+          ],
+          [
+            8,
+            10
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 5,
+        "formed": 3
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 122
+    },
+    "rxn_core.signed_events/v1:96c4017af30f38dc4dde5caed5f4f61abae10e41c6c3dd4b10aeb92ee8130c8e": {
+      "id": "rxn_core.signed_events/v1:96c4017af30f38dc4dde5caed5f4f61abae10e41c6c3dd4b10aeb92ee8130c8e",
+      "mapping": [
+        4,
+        5,
+        12,
+        9,
+        10,
+        13,
+        3,
+        8,
+        2,
+        11,
+        16,
+        17,
+        14,
+        15,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            2,
+            10
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 5,
+        "formed": 3
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 123
+    },
+    "rxn_core.signed_events/v1:21b48cbb7713c5e359a54ffddea0b397e7e0ae9b7ac979dd5a15ddfb7838776f": {
+      "id": "rxn_core.signed_events/v1:21b48cbb7713c5e359a54ffddea0b397e7e0ae9b7ac979dd5a15ddfb7838776f",
+      "mapping": [
+        4,
+        5,
+        3,
+        9,
+        10,
+        8,
+        12,
+        13,
+        2,
+        11,
+        16,
+        17,
+        14,
+        15,
+        1,
+        6,
+        0,
+        7
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            2,
+            8
+          ],
+          [
+            6,
+            10
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 5,
+        "formed": 3
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 124
+    },
+    "rxn_core.signed_events/v1:1d6c3ac572f0aa6e776d636c1757c28dd28f8376e8f368fa2cb14ee93d169143": {
+      "id": "rxn_core.signed_events/v1:1d6c3ac572f0aa6e776d636c1757c28dd28f8376e8f368fa2cb14ee93d169143",
+      "mapping": [
+        4,
+        3,
+        5,
+        9,
+        8,
+        10,
+        0,
+        7,
+        12,
+        13,
+        16,
+        17,
+        14,
+        15,
+        1,
+        6,
+        2,
+        11
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            2
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            8,
+            14
+          ]
+        ],
+        "formed": [
+          [
+            1,
+            8
+          ],
+          [
+            6,
+            14
+          ],
+          [
+            8,
+            10
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 3,
+        "formed": 3
+      },
+      "total": 6,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 125
+    },
+    "rxn_core.signed_events/v1:b0923b1b5f25e1be6201f4ce81e296c8f124fefcf6086e726ebb9ad887f35ab1": {
+      "id": "rxn_core.signed_events/v1:b0923b1b5f25e1be6201f4ce81e296c8f124fefcf6086e726ebb9ad887f35ab1",
+      "mapping": [
+        4,
+        3,
+        0,
+        9,
+        8,
+        7,
+        5,
+        10,
+        12,
+        13,
+        16,
+        17,
+        14,
+        15,
+        1,
+        6,
+        2,
+        11
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            8,
+            14
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            6
+          ],
+          [
+            1,
+            8
+          ],
+          [
+            2,
+            14
+          ],
+          [
+            8,
+            10
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 4
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 126
+    },
+    "rxn_core.signed_events/v1:a2d3fb54578147bd469ac2f9a9c12b470624f2742f6e2099dcbf5726165d2610": {
+      "id": "rxn_core.signed_events/v1:a2d3fb54578147bd469ac2f9a9c12b470624f2742f6e2099dcbf5726165d2610",
+      "mapping": [
+        0,
+        5,
+        1,
+        7,
+        10,
+        6,
+        2,
+        11,
+        3,
+        8,
+        12,
+        13,
+        16,
+        17,
+        4,
+        9,
+        14,
+        15
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            12
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            16
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            14
+          ],
+          [
+            12,
+            16
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 4
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 130
+    },
+    "rxn_core.signed_events/v1:f9cea130bce281390f3e7235958f6cc1854a05a2eeaa68c9bed0c1d3555a9d85": {
+      "id": "rxn_core.signed_events/v1:f9cea130bce281390f3e7235958f6cc1854a05a2eeaa68c9bed0c1d3555a9d85",
+      "mapping": [
+        12,
+        2,
+        3,
+        13,
+        11,
+        8,
+        4,
+        9,
+        5,
+        10,
+        16,
+        17,
+        14,
+        15,
+        0,
+        7,
+        1,
+        6
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            12
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            10
+          ],
+          [
+            6,
+            12
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 5,
+        "formed": 3
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 155
+    },
+    "rxn_core.signed_events/v1:d4a2fc70b6411cd88bc7f7cd32cf62e40cf10f73b07fa8cb36fe335448848fa4": {
+      "id": "rxn_core.signed_events/v1:d4a2fc70b6411cd88bc7f7cd32cf62e40cf10f73b07fa8cb36fe335448848fa4",
+      "mapping": [
+        12,
+        3,
+        16,
+        13,
+        8,
+        17,
+        14,
+        15,
+        0,
+        7,
+        1,
+        6,
+        2,
+        11,
+        5,
+        10,
+        4,
+        9
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            12
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            6,
+            8
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            12
+          ],
+          [
+            6,
+            16
+          ],
+          [
+            8,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 4
+      },
+      "total": 8,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 163
+    },
+    "rxn_core.signed_events/v1:a445758d1175b4f380fd3c934e084a45e44b53bb21025643f0f81a69360dd3ee": {
+      "id": "rxn_core.signed_events/v1:a445758d1175b4f380fd3c934e084a45e44b53bb21025643f0f81a69360dd3ee",
+      "mapping": [
+        1,
+        2,
+        16,
+        6,
+        11,
+        17,
+        14,
+        15,
+        4,
+        9,
+        5,
+        10,
+        0,
+        7,
+        3,
+        8,
+        12,
+        13
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            16
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            14
+          ],
+          [
+            2,
+            16
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 4,
+        "formed": 3
+      },
+      "total": 7,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 167
+    },
+    "rxn_core.signed_events/v1:81c1ffb3ad2348f00fd30a6616cc078c1bbe6fbdda333f6a6ff9ea630d854730": {
+      "id": "rxn_core.signed_events/v1:81c1ffb3ad2348f00fd30a6616cc078c1bbe6fbdda333f6a6ff9ea630d854730",
+      "mapping": [
+        12,
+        1,
+        0,
+        13,
+        6,
+        7,
+        5,
+        10,
+        4,
+        9,
+        14,
+        15,
+        16,
+        17,
+        3,
+        8,
+        2,
+        11
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            14,
+            16
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            14
+          ],
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 3,
+        "formed": 2
+      },
+      "total": 5,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 171
+    },
+    "rxn_core.signed_events/v1:ee05954902ef935b8bc1e1ff417fbe33e5326a8c07f707047f2c115abcf7bc03": {
+      "id": "rxn_core.signed_events/v1:ee05954902ef935b8bc1e1ff417fbe33e5326a8c07f707047f2c115abcf7bc03",
+      "mapping": [
+        4,
+        3,
+        14,
+        9,
+        8,
+        15,
+        16,
+        17,
+        12,
+        13,
+        0,
+        7,
+        5,
+        10,
+        1,
+        6,
+        2,
+        11
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            2
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            8,
+            14
+          ]
+        ],
+        "formed": [
+          [
+            1,
+            8
+          ],
+          [
+            10,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 3,
+        "formed": 2
+      },
+      "total": 5,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 190
+    },
+    "rxn_core.signed_events/v1:dfc07f70431779e04231e77f5d35fb49cc9aefe5775508a106da0491262a90b2": {
+      "id": "rxn_core.signed_events/v1:dfc07f70431779e04231e77f5d35fb49cc9aefe5775508a106da0491262a90b2",
+      "mapping": [
+        4,
+        14,
+        1,
+        9,
+        15,
+        6,
+        2,
+        11,
+        3,
+        8,
+        0,
+        7,
+        5,
+        10,
+        12,
+        13,
+        16,
+        17
+      ],
+      "events": {
+        "broken": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            8,
+            10
+          ]
+        ],
+        "formed": [
+          [
+            0,
+            8
+          ],
+          [
+            2,
+            10
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 3,
+        "formed": 2
+      },
+      "total": 5,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 192
+    },
+    "rxn_core.signed_events/v1:8628f45ff0a6a5016f336a9c515d7a364709cd51043ee9f986806859e648b076": {
+      "id": "rxn_core.signed_events/v1:8628f45ff0a6a5016f336a9c515d7a364709cd51043ee9f986806859e648b076",
+      "mapping": [
+        4,
+        14,
+        3,
+        9,
+        15,
+        8,
+        2,
+        11,
+        1,
+        6,
+        0,
+        7,
+        5,
+        10,
+        12,
+        13,
+        16,
+        17
+      ],
+      "events": {
+        "broken": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            6
+          ],
+          [
+            8,
+            14
+          ]
+        ],
+        "formed": [
+          [
+            2,
+            14
+          ]
+        ]
+      },
+      "counts": {
+        "broken": 3,
+        "formed": 1
+      },
+      "total": 4,
+      "policy": {
+        "schema": "rxn_core.signed_events/v1",
+        "threshold": 0.5,
+        "metal_threshold": 0.3,
+        "includes_hydrogens": true
+      },
+      "actions": [],
+      "family": 193
+    }
+  },
+  "wall_seconds": 0.0682422078680247
+}
